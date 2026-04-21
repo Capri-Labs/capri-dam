@@ -24,19 +24,15 @@ jobs:
       - name: Install System Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y graphviz default-jre plantuml
+          sudo apt-get install -y graphviz default-jre plantuml  asciidoctor
 
       - name: Install Asciidoctor Gems
         run: |
-          gem install asciidoctor-pdf asciidoctor-diagram rouge
+          gem install asciidoctor-pdf asciidoctor-diagram rouge --no-document
 
       - name: Generate PDF
         run: |
-          asciidoctor-pdf \
-            -r asciidoctor-diagram \
-            -a allow-uri-read \
-            -a icons=font \
-            -a source-highlighter=rouge \
+          asciidoctor-pdf -r asciidoctor-diagram \
             -o headless-dam-architecture.pdf \
             docs/architecture/index.adoc
 
