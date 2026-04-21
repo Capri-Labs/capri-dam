@@ -24,7 +24,7 @@ jobs:
       - name: Install System Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y graphviz default-jre
+          sudo apt-get install -y graphviz default-jre plantuml
 
       - name: Install Asciidoctor Gems
         run: |
