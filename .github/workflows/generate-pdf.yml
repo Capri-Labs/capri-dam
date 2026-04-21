@@ -1,0 +1,47 @@
+name: Generate arc42 PDF with Diagrams
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'docs/**'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: true
+
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y graphviz default-jre
+
+      - name: Install Asciidoctor Gems
+        run: |
+          gem install asciidoctor-pdf asciidoctor-diagram rouge
+
+      - name: Generate PDF
+        run: |
+          asciidoctor-pdf \
+            -r asciidoctor-diagram \
+            -a allow-uri-read \
+            -a icons=font \
+            -a source-highlighter=rouge \
+            -o headless-dam-architecture.pdf \
+            docs/index.adoc
+
+      - name: Upload PDF Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: architecture-pdf
+          path: headless-dam-architecture.pdf

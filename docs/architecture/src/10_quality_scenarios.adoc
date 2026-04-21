@@ -1,0 +1,67 @@
+[[section-quality-scenarios]]
+== Quality Scenarios
+
+This section quantifies the quality goals of the **Headless DAM** through concrete, measurable scenarios. These scenarios serve as the basis for architectural verification and load testing.
+
+=== Quality Tree
+
+The Quality Tree is visualized here as a mindmap, branching from the core mission of the Headless DAM into its primary quality attributes and their specific measurable refinements.
+
+[plantuml, target="quality-tree", format="svg"]
+....
+@startmindmap
+<style>
+mindmapDiagram {
+  node {
+    BackgroundColor lightblue
+  }
+  .goal {
+    BackgroundColor gold
+  }
+  .scenario {
+    BackgroundColor white
+    FontSize 10
+  }
+}
+</style>
+* Headless DAM Quality Tree <<goal>>
+** Cost Efficiency
+*** Storage Optimization
+**** Only 1 master binary per asset <<scenario>>
+*** Operational TCO
+**** Pay-as-you-go infrastructure <<scenario>>
+** Performance
+*** Edge Latency
+**** <150ms TTFB on cache miss <<scenario>>
+*** Search Velocity
+**** <100ms for metadata queries <<scenario>>
+** Security
+*** Budget Protection
+**** HMAC URL Signing to prevent "denial-of-wallet" <<scenario>>
+*** Data Isolation
+**** Private buckets with Edge-only access <<scenario>>
+** Scalability
+*** Global Delivery
+**** Offload 99% of traffic to Fastly Edge <<scenario>>
+@endmindmap
+....
+
+=== Quality Scenarios
+
+The following scenarios describe the expected system behavior under specific conditions.
+
+[cols="1,1,3,1", options="header"]
+|===
+| Attribute | ID | Scenario | Priority
+| **Performance** | **QS-1** | **Cache Miss Latency:** An end-user requests a new image size for the first time. Fastly IO fetches the master from the Cloud Storage (S3/Azure), transforms it, and delivers it with a Time-to-First-Byte (TTFB) of **< 150ms**. | High
+| **Cost** | **QS-2** | **Storage Footprint:** The asset library grows to 500,000 items. Because only the high-res master is stored (no pre-rendered versions), the storage bill remains **linear and predictable** compared to legacy systems. | High
+| **Security** | **QS-3** | **Denial-of-Wallet Protection:** A malicious script attempts to request 10,000 different image widths to inflate transformation costs. Fastly **rejects 100%** of these requests because they lack a valid HMAC signature. | High
+| **Scalability** | **QS-4** | **Traffic Spike:** A viral social media campaign drives 20,000 requests per second to a specific asset. Fastly serves **99.9%** of requests from the Edge Cache, resulting in zero increased load on the Core API. | Medium
+| **Usability** | **QS-5** | **Discovery Speed:** A user searches for assets using three combined tags (e.g., "Summer", "2026", "Shoes"). The Admin Portal returns faceted results in **< 100ms** via the Typesense index. | Medium
+| **Availability** | **QS-6** | **Origin Failure Resilience:** The primary Cloud Storage region experiences a partial outage. Fastly continues to serve **cached assets** for the duration of the TTL, maintaining site functionality for existing content. | Low
+|===
+
+=== Evaluation and Verification
+* **QS-1 & QS-4** will be verified using **k6** or **JMeter** load testing scripts targeting the Fastly Edge.
+* **QS-3** will be verified by a security audit script that attempts to manipulate URL parameters without a signature.
+* **QS-2** will be tracked via monthly Cloud Billing reports to ensure the storage-to-asset ratio remains 1:1.

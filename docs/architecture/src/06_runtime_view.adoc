@@ -1,0 +1,83 @@
+[[section-runtime-view]]
+== Runtime View
+
+=== Scenario 1: Asset Ingestion and Indexing
+This scenario describes what happens when a user uploads a new master asset. The goal is to store the binary securely and make the metadata searchable immediately.
+
+[plantuml, target="runtime-upload", format="svg"]
+....
+@startuml
+actor User
+participant "Admin Portal" as UI
+participant "Core API" as API
+database "Object Storage" as S3
+database "Postgres" as DB
+participant "Typesense" as Search
+
+User -> UI : Upload image (shoes.jpg)
+UI -> API : POST /assets (multipart)
+activate API
+
+API -> S3 : Stream Binary
+S3 --> API : OK (Storage Path)
+
+API -> API : Extract Metadata (Exif/Size)
+API -> DB : Save Asset Record (Path, Meta)
+API -> Search : Index Asset (Tags, Filename)
+
+API --> UI : 201 Created (Asset ID)
+deactivate API
+UI --> User : Show Success & Preview
+@enduml
+....
+
+* **Execution Steps:**
+1. **Streaming:** To keep memory usage low, the API streams the file directly to the Cloud Storage (S3/Azure) rather than buffering the whole file.
+2. **Metadata Extraction:** The API identifies dimensions and color profiles to prevent UI "layout shift" later.
+3. **Async Indexing:** The Search Index update is non-blocking to ensure the UI remains responsive.
+
+=== Scenario 2: Dynamic Rendering and Delivery
+This is the core "Dynamic Media Alternative" flow. It shows how a high-res master becomes a web-ready thumbnail at the edge.
+
+[plantuml, target="runtime-delivery", format="svg"]
+....
+@startuml
+actor "End User Browser" as Browser
+participant "Fastly Edge" as Fastly
+participant "Headless DAM API" as API
+database "Object Storage" as S3
+
+Browser -> Fastly : GET /shoes.jpg?width=400&crop=face
+activate Fastly
+
+alt Cache Hit
+    Fastly --> Browser : Return Optimized Image
+else Cache Miss
+    Fastly -> API : Validate Signature & Get Focal Point
+    API --> Fastly : Transformation Config (X,Y coords)
+
+    Fastly -> S3 : Fetch Master Binary
+    S3 --> Fastly : High-Res Image
+
+    Fastly -> Fastly : IO: Resize 400px & Smart Crop
+    Fastly --> Browser : Return Optimized Image
+    Fastly -> Fastly : Cache Result
+end
+deactivate Fastly
+@enduml
+....
+
+* **Execution Steps:**
+1. **Edge Request:** The browser requests a specific version of the image.
+2. **Just-in-Time Transformation:** Fastly only fetches the master image from your storage *once*. Subsequent requests for different sizes use the master already cached at the edge.
+3. **Parameter Validation:** To prevent cost-attacks, Fastly can check a cryptographic signature on the URL to ensure the `width` or `crop` hasn't been tampered with.
+
+=== Scenario 3: Smart Metadata Update (Re-cropping)
+What happens when a user changes the focal point of an image in the GUI?
+
+* **Execution Steps:**
+1. User clicks a new focal point in the **Admin Portal**.
+2. **Core API** updates the `focal_point_x/y` in **PostgreSQL**.
+3. **Core API** issues a **Purge Request** to **Fastly** using the Asset's `Surrogate-Key`.
+4. Fastly drops all existing crops/sizes for that asset from its global cache.
+5. Next time a user visits the site, Fastly re-generates the image using the *new* focal point coordinates.

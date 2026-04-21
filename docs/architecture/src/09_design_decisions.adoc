@@ -1,0 +1,78 @@
+[[section-design-decisions]]
+== Design Decisions
+
+This section documents the major architectural choices made to achieve a high-performance DAM on a minimal budget.
+
+=== ADR 1: Use of Fastly IO vs. Self-Hosted Image Processing
+**Status:** Accepted
+
+**Background:**
+Traditionally, dynamic imaging requires a dedicated server cluster running software like Thumbor or ImageMagick. While the software is free, the infrastructure cost and maintenance overhead (scaling, patching, global caching) are significant.
+
+**Assumptions:**
+
+* Image transformation is a CPU-intensive task.
+* Global latency is a high priority for end-user experience.
+* We want to minimize "DevOps" time for a small team.
+
+**Requirements:**
+
+* Real-time resizing and format conversion.
+* Built-in CDN for global delivery.
+* Scalability to handle traffic spikes without manual intervention.
+
+**Decision:**
+We will use **Fastly Image Optimizer (IO)** as the primary transformation engine.
+
+**Consequences:**
+
+* **Pros:** Zero server maintenance; pay-as-you-go pricing; world-class performance.
+* **Cons:** Monthly usage fees based on requests; dependence on a single vendor for the transformation layer.
+
+=== ADR 2: Metadata-Driven Delivery vs. Pre-rendered Renditions
+**Status:** Accepted
+
+**Background:**
+Legacy systems often pre-calculate 10-20 sizes of an image upon upload and store them in the cloud. This leads to "storage bloat."
+
+**Assumptions:**
+
+* Storage costs increase linearly with the number of files.
+* Frontend requirements change over time (new devices/aspect ratios).
+
+**Requirements:**
+
+* Support for any arbitrary image dimension on-the-fly.
+* Minimal storage footprint in S3/Azure.
+
+**Decision:**
+We will store only the **Master Asset** and a set of **Metadata Instructions** (focal points, default crops). The URL Generator will construct the required transformation parameters in real-time.
+
+**Consequences:**
+
+* **Pros:** Storage costs reduced by ~90%; total flexibility for frontend developers.
+* **Cons:** Requires a robust URL-signing strategy to prevent "denial-of-wallet" attacks via infinite resizing requests.
+
+=== ADR 3: Sidecar Search (Typesense) vs. Database Full-Text Search
+**Status:** Accepted
+
+**Background:**
+Relational databases (PostgreSQL) can perform text searches, but performance degrades as the asset library grows, and they lack "search-as-you-type" features.
+
+**Assumptions:**
+
+* Users expect an "instant" search experience similar to modern e-commerce sites.
+* Metadata will grow to include hundreds of thousands of tags.
+
+**Requirements:**
+
+* Sub-second search results.
+* Support for typo-tolerance and faceted filtering.
+
+**Decision:**
+Use **Typesense** as a dedicated search index alongside PostgreSQL.
+
+**Consequences:**
+
+* **Pros:** Extremely fast UI; offloads heavy query work from the primary database.
+* **Cons:** Requires a synchronization mechanism to keep the index and DB in parity.

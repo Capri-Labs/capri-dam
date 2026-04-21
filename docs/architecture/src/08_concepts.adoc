@@ -1,0 +1,60 @@
+[[section-concepts]]
+== Cross-cutting Concepts
+
+=== Upgrade Concept
+To maintain the "Minimum Budget" goal, we follow a **Blue/Green Deployment** or **Canary** strategy using serverless versioning.
+
+- **Database Migrations:** Managed via tools like **Prisma** or **Liquibase**. Schema changes must always be backward compatible (expand-then-contract) to avoid downtime for the API.
+- **Fastly VCL/Compute Updates:** Versioned using the Fastly API. New edge logic is tested on a "Staging Service" before being promoted to the production service.
+
+=== Observability and Auditing
+* **Asset Lifecycle Logs:** Every upload, delete, and metadata change is logged in a `system_audit_log` table in PostgreSQL.
+* **Fastly Log Streaming:** Real-time logs are streamed from the Edge to a budget-friendly destination (like **S3 + Athena** or **BetterStack**) to track delivery performance and cache hit ratios.
+* **User Audit:** Tracks "who changed which tag" to ensure accountability within the Admin UI.
+
+=== Security
+==== Overview
+The security model is based on **Least Privilege**. The API acts as the gatekeeper, while the Edge (Fastly) acts as the enforcement point.
+
+==== Requirements
+* **Signed URLs (HMAC):** To prevent "Cost-of-Service" attacks (unauthorized resizing of images), delivery URLs must be signed.
+* **Storage Isolation:** The S3/Azure buckets must **not** be public. Only the Fastly IP ranges and the Core API IAM role have access.
+* **Authentication:** The Admin Portal uses OIDC (e.g., **Keycloak** or **Auth0**) to manage user access.
+
+==== Operations
+* **Token Rotation:** API keys for Fastly and Cloud Storage are rotated every 90 days via automated scripts.
+* **Rate Limiting:** Implemented at the Fastly Edge to prevent brute-force search queries or rapid-fire uploads.
+
+=== Monitoring
+.We focus on "Golden Signals":
+* **Latency:** Time-to-First-Byte (TTFB) for image transformations.
+* **Traffic:** Number of requests per second (monitored to stay within Fastly/Cloud free tiers).
+* **Errors:** Tracking 4xx (Client errors) and 5xx (Transformation failures).
+* **Saturation:** Monitoring S3 egress limits and Database connection pools.
+
+=== Testing
+[plantuml, target="testing-strategy", format="svg"]
+....
+@startuml
+package "Testing Layers" {
+    [Unit Tests] as Unit <<Vitest/Jest>>
+    [Integration Tests] as Integration <<Supertest>>
+    [E2E Tests] as E2E <<Playwright>>
+    [Edge Tests] as Edge <<Fastly Fiddle>>
+}
+note right of Edge: Validates VCL/Wasm logic
+@enduml
+....
+
+* **Automated:** Every Pull Request triggers the Unit and Integration suite.
+* **Edge Simulation:** Use local Fastly emulators (Vic) to test transformation logic before deployment.
+
+=== Release Management
+* **CI/CD Pipeline:** Fully automated via**GitHub Actions**.
+* **Triggers:** Commits to `main` deploy to Staging.
+** GitHub "Releases" (Tags) trigger production deployment.
+* **Artifacts:** Docker images for the API and static assets for the UI.
+
+=== Change Management
+* **ADRs (Architecture Decision Records):** Significant changes to the architecture (e.g., adding a new storage provider) must be documented in the `/docs/adr` folder.
+* **Small Batches:** We prefer small, frequent updates over "big bang" releases to minimize risk in a small-team environment.

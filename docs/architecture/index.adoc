@@ -1,0 +1,62 @@
+= Headless DAM - Documentation
+Contact: Ashok Pelluru
+v0.1.0, 2026-04-21
+:toc: left
+:toclevels: 4
+:sectnums:
+:icons: font
+:experimental:
+:source-highlighter: rouge
+:imagesdir: ./images
+:!prewrap:
+:lang: en
+
+// /////////////////////////////////////////////////////////////////////////////
+
+This document serves as the **Headless DAM (Digital Asset Management)** architecture documentation.
+The system is designed to provide enterprise-grade dynamic media capabilities (real-time image transformation, metadata-driven delivery, and multi-cloud storage) using a cost-efficient, "edge-first" approach powered by **Fastly IO**.
+
+ifdef::backend-html5[]
+The documentation can also be downloaded as a link:headless-dam-architecture.pdf[PDF].
+endif::backend-html5[]
+
+Use the [Source Repository URL] to submit merge requests and track architectural decisions (ADRs).
+
+// /////////////////////////////////////////////////////////////////////////////
+
+
+// 1. Introduction and Goals
+include::src/01_introduction_and_goals.adoc[]
+
+// 2. Architecture Constraints
+include::src/02_constraints.adoc[]
+
+// 3. System Scope and Context
+include::src/03_scope_and_context.adoc[]
+
+// 4. Solution Strategy
+include::src/04_solution_strategy.adoc[]
+
+// 5. Building Block View
+include::src/05_building_block_view.adoc[]
+
+// 6. Runtime View
+include::src/06_runtime_view.adoc[]
+
+// 7. Deployment View
+include::src/07_deployment_view.adoc[]
+
+// 8. Concepts
+include::src/08_concepts.adoc[]
+
+// 9. Design Decisions
+include::src/09_design_decisions.adoc[]
+
+// 10. Quality
+include::src/10_quality_scenarios.adoc[]
+
+// 11. Technical Risks
+include::src/11_technical_risks.adoc[]
+
+// 12. Glossary
+include::src/12_glossary.adoc[]

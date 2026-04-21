@@ -1,0 +1,50 @@
+[[section-technical-risks]]
+== Risks and Technical Debts
+
+This section identifies potential pitfalls and planned compromises. Tracking these early ensures that the "minimum budget" approach doesn't lead to long-term operational failure.
+
+=== Technical Risks
+
+[cols="1,2,2", options="header"]
+|===
+| Risk | Impact | Mitigation
+| **Fastly IO Over-usage** | Unexpected monthly bill due to high volume of unique transformations. | Implement **HMAC URL Signing** to prevent unauthorized resizing and set up **Billing Alerts** in the Fastly console.
+| **Cache Invalidation Latency** | Users see old versions of images after a metadata update. | Use **Surrogate Keys** for targeted purging and implement "Cache-Busting" versioning in URLs if necessary.
+| **Vendor Lock-in (Fastly)** | Transformation logic is heavily dependent on Fastly IO proprietary parameters. | Abstrate the "URL Generator" logic in the Core API to allow for potential migration to other edge providers (e.g., Cloudflare Images).
+| **Metadata Inconsistency** | Desync between the binary in S3 and the record in PostgreSQL. | Implement a **Background Reconciliation Worker** to verify that every DB record has a corresponding physical file.
+|===
+
+=== Business or Domain Risks
+
+[cols="1,2,2", options="header"]
+|===
+| Risk | Impact | Mitigation
+| **Feature Parity Gap** | Business users miss specific "Legacy Suite" features (e.g., Shoppable Video). | Clearly define the MVP scope and provide a roadmap for custom-built interactive features using Open Source libraries (e.g., Video.js).
+| **Multi-Cloud Complexity** | Higher cognitive load for dev team to manage S3, Azure, and GCP configurations. | Use **Infrastructure as Code (Terraform)** to standardize bucket policies and access across all providers.
+| **Legal/Copyright Compliance** | Unauthorized assets uploaded to the system without proper metadata/rights. | Implement mandatory "License Type" fields in the upload GUI and automated EXIF copyright extraction.
+|===
+
+=== Software Risks (Technical Debt)
+
+[cols="1,2,2", options="header"]
+|===
+| Risk | Impact | Mitigation
+| **Lack of Built-in CMS Plugins** | Frontend teams have to manually integrate the DAM API into their CMS. | Develop lightweight **SDKs and Web Components** (e.g., `<headless-dam-image>`) to simplify integration.
+| **Synchronous Tagging** | Large uploads might time out if metadata extraction is too heavy. | Move EXIF extraction and Search Indexing to an **Asynchronous Queue** (e.g., Redis or AWS SQS).
+| **Missing Image Editor** | Users cannot "manually" crop or rotate inside the UI. | Integrate an open-source client-side editor (e.g., **Pica** or **Filerobot**) to provide a visual editing experience.
+|===
+
+[plantuml, target="risk-assessment-matrix", format="svg"]
+....
+@startuml
+rectangle "High Impact / Low Probability" as HILP #Yellow
+rectangle "High Impact / High Probability" as HIHP #Red
+rectangle "Low Impact / Low Probability" as LILP #Green
+rectangle "Low Impact / High Probability" as LIHP #Orange
+
+(Vendor Lock-in) -up-> HILP
+(Fastly Cost Spikes) -up-> HIHP
+(Metadata Desync) -up-> LIHP
+(Missing GUI Editor) -up-> LILP
+@enduml
+....

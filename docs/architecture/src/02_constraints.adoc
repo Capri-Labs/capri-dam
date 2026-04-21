@@ -1,0 +1,38 @@
+[[section-constraints]]
+== Architecture Constraints
+
+=== Technical Constraints
+These constraints define the technology standards and hardware/software boundaries the system must operate within.
+
+[cols="1,3", options="header"]
+|===
+| ID | Constraint
+| **TC-1** | **Edge-Only Processing**: All real-time image manipulations (resizing, cropping, format conversion) must be performed using **Fastly Image Optimizer (IO)** to ensure zero load on the origin servers.
+| **TC-2** | **Storage Agnosticism**: The system must provide a standard interface to support multiple storage backends including **AWS S3, Azure Blob Storage, and Google Cloud Storage**.
+| **TC-3** | **Headless Architecture**: The system must not have a coupled frontend for delivery; all assets must be accessible via a RESTful API and CDN-based URLs.
+| **TC-4** | **Database Selection**: To maintain a low budget, the metadata store must utilize open-source or cost-efficient managed databases (e.g., **PostgreSQL**).
+| **TC-5** | **Cache Invalidation**: The architecture must support near-instant (soft or hard) purging via the Fastly API to maintain content consistency.
+|===
+
+=== Organizational Constraints
+These constraints involve budget, timing, and human resources.
+
+[cols="1,3", options="header"]
+|===
+| ID | Constraint
+| **OC-1** | **Budget Efficiency**: The solution must avoid high fixed-cost enterprise licensing. Operational costs must scale linearly with actual usage (bandwidth/requests).
+| **OC-2** | **Time-to-Market**: The initial "Go Small" (MVP) version must be deployable within a short timeframe to demonstrate immediate TCO (Total Cost of Ownership) reduction.
+| **OC-3** | **Small Team Operation**: The system must be maintainable by a small engineering team without requiring dedicated "Legacy Suite" specialists.
+|===
+
+=== Policies and Conventions
+These are the rules and standards followed during development and operation.
+
+[cols="1,3", options="header"]
+|===
+| ID | Constraint
+| **PC-1** | **Architecture Documentation**: All architectural decisions must be documented following the **arc42** standard.
+| **PC-2** | **Security First**: All asset upload endpoints must be secured via modern authentication (e.g., OAuth2/JWT).
+| **PC-3** | **Naming Conventions**: Assets and URL parameters should follow a predictable, human-readable naming convention to simplify frontend integration.
+| **PC-4** | **Cloud-Native Deployment**: Preference is given to containerized (Docker) or serverless deployments to ensure infrastructure portability.
+|===

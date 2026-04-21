@@ -1,0 +1,105 @@
+[[section-deployment-view]]
+== Deployment View
+
+The Headless DAM is designed for high portability. It leverages managed services to reduce operational overhead (No-Ops) while maintaining a strict separation between the Management Plane and the Delivery Plane.
+
+=== Infrastructure Level 1: Global Logical Overview
+This level shows how the system is distributed between the Cloud Provider (for data and logic) and the Edge Provider (for delivery).
+
+[plantuml, target="deployment-level-1", format="svg"]
+....
+@startuml
+skinparam componentStyle uml2
+
+node "End User Environment" {
+    [Web/Mobile Browser] as Browser
+}
+
+node "Fastly Edge Network" {
+    [Image Optimizer (IO)] as EdgeIO
+    [Edge Cache] as Cache
+}
+
+node "Cloud Provider (AWS/Azure/GCP)" {
+    package "Application Layer" {
+        [Admin Portal (Static)] as StaticUI
+        [Core API (Container/Serverless)] as API
+    }
+    package "Data Layer" {
+        database "Managed SQL" as DB
+        database "Search Service" as Search
+    }
+    package "Storage Layer" {
+        [Object Storage Bucket] as S3
+    }
+}
+
+Browser --> EdgeIO : "HTTPS Requests"
+EdgeIO --> S3 : "Fetch Master (Origin)"
+API --> S3 : "Write Master"
+API --> DB : "Persistence"
+API --> Search : "Indexing"
+StaticUI --> API : "Management"
+@enduml
+....
+
+=== Infrastructure Level 2: Technical Detailed View (AWS Example)
+To provide depth, this level details a specific "Minimum Budget" implementation on AWS. This setup uses **Lambda** or **App Runner** for the API to ensure you only pay when someone is actually using the Admin UI.
+
+[plantuml, target="deployment-aws-detailed", format="svg"]
+....
+@startuml
+!define AWSPuml https://raw.githubusercontent.com/plantuml-office/plantuml-asciidoc-admonition-icons/master/dist
+
+package "Public Internet" {
+    [Fastly Global CDN] as Fastly
+}
+
+node "AWS Cloud" {
+    node "Frontend" {
+        [S3 Website Hosting / CloudFront] as Web
+    }
+
+    node "Compute" {
+        [AWS Lambda / App Runner] as LambdaAPI
+        note right: Scales to zero when not in use
+    }
+
+    node "Persistence" {
+        [RDS Aurora Serverless] as RDS
+        [Typesense Cloud / Self-Hosted] as TS
+    }
+
+    node "Storage" {
+        [S3 Bucket (Private)] as S3Private
+    }
+}
+
+Fastly --> S3Private : "Secure OAI/IAM Access"
+Web --> LambdaAPI : "API Calls"
+LambdaAPI --> RDS : "Metadata"
+LambdaAPI --> TS : "Search"
+LambdaAPI --> S3Private : "Uploads"
+@enduml
+....
+
+
+
+=== Deployment Elements
+
+[cols="1,2,2", options="header"]
+|===
+| Node / Artifact | Category | Description
+| **Fastly Edge** | Edge Computing | Handles the heavy lifting of Image Optimization. Configured via VCL or Compute@Edge to point to the S3 Bucket as the 'Primary Origin'.
+| **Admin Portal** | Static Web | A React/Next.js application deployed as static files (S3 Website or Vercel). High availability at near-zero cost.
+| **Core API** | Serverless / PaaS | A containerized Node.js service. Using AWS Lambda or Google Cloud Run ensures we don't pay for idle CPU time.
+| **S3/Azure Blob** | Object Storage | The source of truth. Configured with a 'Private' access policy; only the Core API (for writes) and Fastly (for reads) have access.
+| **Managed SQL** | Database | PostgreSQL instance. For the 'Go Small' phase, a small or serverless instance is sufficient for metadata storage.
+|===
+
+=== Infrastructure Mapping
+To achieve the "Budget Alternative" goal, the following mapping is used:
+
+1.  **Zero-Inertia Scaling:** Using Lambda/App Runner means no billing during nights or weekends when the marketing team isn't uploading.
+2.  **Origin Shielding:** Fastly is configured with "Origin Shield" to minimize egress costs from the Cloud Provider (S3/Azure).
+3.  **Cross-Region Availability:** Since Fastly is global, the origin storage can sit in a single cheap region (e.g., US-East-1 or EU-West-1) without affecting end-user performance.
