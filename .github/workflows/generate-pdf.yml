@@ -28,18 +28,13 @@ jobs:
 
       - name: Install Asciidoctor Gems
         run: |
-          gem install asciidoctor-pdf asciidoctor-diagram rouge --no-document
+          gem install asciidoctor-diagram asciidoctor-diagram-plantuml asciidoctor-pdf rouge --no-document
 
       - name: Generate PDF
         run: |
           asciidoctor-pdf \
             -r asciidoctor-diagram \
-            -a plantuml-server-url=http://www.plantuml.com/plantuml \
-            -a plantuml-server-type=plantuml \
             -a allow-uri-read \
-            -a icons=font \
-            -a source-highlighter=rouge \
-            -a outdir=./docs/architecture \
             -o headless-dam-architecture.pdf \
             docs/architecture/index.adoc
 
