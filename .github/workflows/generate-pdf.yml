@@ -32,7 +32,12 @@ jobs:
 
       - name: Generate PDF
         run: |
-          asciidoctor-pdf -r asciidoctor-diagram \
+          asciidoctor-pdf \
+            -r asciidoctor-diagram \
+            -a plantuml-server-url=http://www.plantuml.com/plantuml \
+            -a allow-uri-read \
+            -a icons=font \
+            -a source-highlighter=rouge \
             -o headless-dam-architecture.pdf \
             docs/architecture/index.adoc
 
