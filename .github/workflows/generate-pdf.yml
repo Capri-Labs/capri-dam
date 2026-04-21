@@ -38,7 +38,7 @@ jobs:
             -a icons=font \
             -a source-highlighter=rouge \
             -o headless-dam-architecture.pdf \
-            docs/index.adoc
+            docs/architecture/index.adoc
 
       - name: Upload PDF Artifact
         uses: actions/upload-artifact@v4
