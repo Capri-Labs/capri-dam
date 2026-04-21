@@ -35,6 +35,7 @@ jobs:
           asciidoctor-pdf \
             -r asciidoctor-diagram \
             -a plantuml-server-url=http://www.plantuml.com/plantuml \
+            -a plantuml-server-type=plantuml \
             -a allow-uri-read \
             -a icons=font \
             -a source-highlighter=rouge \
