@@ -39,6 +39,7 @@ jobs:
             -a allow-uri-read \
             -a icons=font \
             -a source-highlighter=rouge \
+            -a outdir=./docs/architecture \
             -o headless-dam-architecture.pdf \
             docs/architecture/index.adoc
 
