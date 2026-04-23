@@ -44,7 +44,27 @@ install: check-system ## Install Ruby gems and JS packages
 	$(YARN) install
 	$(YARN) add react react-dom @mui/material @emotion/react @emotion/styled @mui/icons-material
 
-db-setup: ## Create and migrate the database
+auth-setup: ## Initialize Devise if not already present
+	@if [ ! -f config/initializers/devise.rb ]; then \
+		echo "--- Initializing Devise Authentication ---"; \
+		$(BUNDLE) exec rails generate devise:install; \
+	fi
+	@if [ ! -f app/models/user.rb ]; then \
+		echo "--- Generating User Model ---"; \
+		$(BUNDLE) exec rails generate devise User; \
+	fi
+
+test-setup: ## Initialize rspec if not already present
+	echo "--- Initializing rspec setup ---";
+	$(BUNDLE) exec rails generate rspec:install;
+	echo "--- Initializing rspec finished ---";
+
+seed: ## Populate the database with default admin user
+	@echo "--- Seeding Database ---"
+	./bin/rails db:seed
+	@echo "Default admin user has been created"
+
+db-setup: auth-setup seed test-setup ## Create and migrate the database
 	@echo "--- Setting up Postgres ---"
 	@# Check if Postgres is running via Homebrew
 	@if ! brew services list | grep -q "postgresql@14.*started"; then \
@@ -67,6 +87,10 @@ setup: install db-setup ## The 'One Command' to rule them all
 
 dev: ## Start the engine
 	./bin/dev
+
+all-tests: ## Run all RSpec tests
+	@echo "--- Running Tests ---"
+	bundle exec rspec
 
 clean: ## Remove logs, temp files and compiled assets
 	$(RAILS) log:clear tmp:clear

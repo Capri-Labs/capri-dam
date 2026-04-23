@@ -64,3 +64,14 @@ group :test do
   gem "capybara"
   gem "selenium-webdriver"
 end
+
+# Database and Authentication Logic
+gem 'devise'
+
+gem "responders"
+
+group :development, :test do
+  gem 'rspec-rails'
+  gem 'factory_bot_rails'
+  gem 'faker' # Optional: generates random data for tests
+end

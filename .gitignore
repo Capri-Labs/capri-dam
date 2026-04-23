@@ -97,3 +97,6 @@ AGENTS.local.md
 CLAUDE.local.md
 /OpenCode.md
 .ai/*
+
+app/assets/builds/
+/.rspec
