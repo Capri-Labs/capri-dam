@@ -1,0 +1,50 @@
+---
+openapi: 3.0.1
+info:
+  title: Headless DAM API V1
+  version: v1
+  description: Secure, Cloud-Agnostic Asset Management API
+paths:
+  "/api/v1/search":
+    get:
+      summary: search assets
+      tags:
+      - Search
+      security:
+      - bearer_auth: []
+      parameters:
+      - name: q
+        in: query
+        description: Search query
+        schema:
+          type: string
+      - name: format
+        in: query
+        description: Filter by image format
+        schema:
+          type: string
+      responses:
+        '200':
+          description: successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total:
+                    type: integer
+                  results:
+                    type: array
+                    items:
+                      type: object
+        '401':
+          description: unauthorized
+components:
+  securitySchemes:
+    bearer_auth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+servers:
+- url: http://localhost:3000
+  description: Local Development Server

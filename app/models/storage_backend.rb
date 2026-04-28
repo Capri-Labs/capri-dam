@@ -1,0 +1,2 @@
+class StorageBackend < ApplicationRecord
+end

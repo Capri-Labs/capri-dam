@@ -75,3 +75,15 @@ group :development, :test do
   gem 'factory_bot_rails'
   gem 'faker' # Optional: generates random data for tests
 end
+gem "doorkeeper", "~> 5.9"
+
+gem "sidekiq"
+gem "redis"
+
+# Swagger (OpenAPI) file.
+gem 'rswag-api'
+gem 'rswag-ui'
+
+group :test do
+  gem 'rswag-specs'
+end

@@ -1,0 +1,2 @@
+class TransformationPreset < ApplicationRecord
+end

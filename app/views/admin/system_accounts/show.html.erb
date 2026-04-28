@@ -1,0 +1,23 @@
+<div style="max-width: 800px; margin: 2rem auto; font-family: sans-serif; border: 1px solid #e2e8f0; padding: 2rem; border-radius: 8px; background: #fff;">
+  <h1 style="color: #2d3748;">🔑 Application Credentials</h1>
+  <p style="background: #fff5f5; color: #c53030; padding: 1rem; border-left: 4px solid #c53030;">
+    <strong>Warning:</strong> For security reasons, we will only show this Client Secret <strong>once</strong>. Please copy it now and store it in a secure vault.
+  </p>
+
+  <div style="margin-top: 2rem;">
+    <label style="font-weight: bold; color: #4a5568;">Application Name</label>
+    <div style="padding: 0.5rem; background: #f7fafc; margin-bottom: 1rem;"><%= @app.name %></div>
+
+    <label style="font-weight: bold; color: #4a5568;">Client ID (UID)</label>
+    <div style="display: flex; gap: 10px; margin-bottom: 1rem;">
+      <input type="text" value="<%= @app.uid %>" readonly style="flex-grow: 1; padding: 0.5rem; background: #edf2f7; border: 1px solid #cbd5e0;">
+    </div>
+
+    <label style="font-weight: bold; color: #4a5568;">Client Secret</label>
+    <div style="display: flex; gap: 10px; margin-bottom: 2rem;">
+      <input type="text" value="<%= @app.secret %>" readonly style="flex-grow: 1; padding: 0.5rem; background: #fefcbf; border: 1px solid #ecc94b; font-family: monospace;">
+    </div>
+
+    <%= link_to "I have saved these credentials", admin_dashboard_path, style: "display: inline-block; background: #48bb78; color: white; padding: 0.8rem 1.5rem; text-decoration: none; border-radius: 4px; font-weight: bold;" %>
+  </div>
+</div>

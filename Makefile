@@ -12,13 +12,13 @@ help: ## Show this help message
 bootstrap: ## Force install system dependencies (macOS/Homebrew only)
 	@echo "--- 1. Bootstrapping System Packages ---"
 	@command -v brew >/dev/null 2>&1 || { echo "Homebrew not found. Install it first."; exit 1; }
-	brew install rbenv ruby-build node yarn exiv2 pkg-config postgresql@14
+	brew install redis rbenv ruby-build node yarn exiv2 pkg-config postgresql@14
 	@echo "--- 2. Ensuring Ruby $(RUBY_VERSION) is installed ---"
 	rbenv install -s $(RUBY_VERSION)
 	rbenv global $(RUBY_VERSION)
 	@echo "--- 3. Installing Global Rails Gem ---"
 	# We install rails globally so we can run 'rails new' to fix the project structure
-	gem install rails --no-document
+	gem install rails sidekiq redis --no-document
 	@echo "\033[33mSystem packages installed. If this is your first time, run 'source ~/.zshrc' then 'make setup'\033[0m"
 
 check-system: ## Verify if we are on the right Ruby and have Yarn
@@ -44,6 +44,10 @@ install: check-system ## Install Ruby gems and JS packages
 	$(YARN) install
 	$(YARN) add react react-dom @mui/material @emotion/react @emotion/styled @mui/icons-material
 
+upload-workers: ## Manual start for just the workers (if needed)
+	@echo "--- Starting Ingest Engine ---"
+	bundle exec sidekiq -C config/sidekiq.yml
+
 auth-setup: ## Initialize Devise if not already present
 	@if [ ! -f config/initializers/devise.rb ]; then \
 		echo "--- Initializing Devise Authentication ---"; \
@@ -55,14 +59,26 @@ auth-setup: ## Initialize Devise if not already present
 	fi
 
 test-setup: ## Initialize rspec if not already present
-	echo "--- Initializing rspec setup ---";
-	$(BUNDLE) exec rails generate rspec:install;
-	echo "--- Initializing rspec finished ---";
+	@if [ ! -d "spec" ]; then \
+		echo "--- Initializing rspec setup ---"; \
+		$(BUNDLE) exec rails generate rspec:install; \
+		echo "--- Initializing rspec finished ---"; \
+	else \
+		echo "--- RSpec is already initialized. Skipping. ---"; \
+	fi
 
 seed: ## Populate the database with default admin user
 	@echo "--- Seeding Database ---"
 	./bin/rails db:seed
 	@echo "Default admin user has been created"
+
+setup-oauth: ## Install and configure Doorkeeper for OAuth2
+	@echo "--- Installing Doorkeeper ---"
+	bundle add doorkeeper
+	bundle exec rails generate doorkeeper:install
+	bundle exec rails generate doorkeeper:migration
+	@echo "--- Applying OAuth Migrations ---"
+	bundle exec rails db:migrate
 
 db-setup: auth-setup seed test-setup ## Create and migrate the database
 	@echo "--- Setting up Postgres ---"
@@ -83,9 +99,14 @@ db-setup: auth-setup seed test-setup ## Create and migrate the database
 
 setup: install db-setup ## The 'One Command' to rule them all
 	@echo "\033[32m--- Headless DAM Setup Complete ---\033[0m"
-	@echo "Run 'make dev' to start."
+	@echo "Run 'make dev' to start the server, workers, and redis."
 
-dev: ## Start the engine
+swagger: ## Generate Swagger OpenAPI documentation from specs
+	@echo "--- Generating OpenAPI Spec ---"
+	RAILS_ENV=test bundle exec rails rswag:specs:swaggerize
+
+dev: ## Start the full engine (Server + Ingest Workers)
+	@echo "--- Launching Headless DAM Ecosystem ---"
 	./bin/dev
 
 all-tests: ## Run all RSpec tests

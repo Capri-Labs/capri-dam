@@ -1,0 +1,14 @@
+<div style="max-width: 600px; margin: 2rem auto; font-family: sans-serif;">
+  <%= link_to "← Back to Dashboard", admin_dashboard_path %>
+  <h1>Create New Service Account</h1>
+  <p>This will generate a Client ID and Secret for API access.</p>
+
+  <%= form_with(model: [:admin, @app], url: admin_system_accounts_path) do |f| %>
+    <div style="margin-bottom: 1rem;">
+      <%= f.label :name, "Application Name (e.g., 'Web Uploader')" %><br>
+      <%= f.text_field :name, required: true, style: "width: 100%; padding: 0.5rem;" %>
+    </div>
+
+    <%= f.submit "Generate Credentials", style: "background: #2b6cb0; color: white; padding: 0.7rem 1.5rem; border: none; cursor: pointer;" %>
+  <% end %>
+</div>

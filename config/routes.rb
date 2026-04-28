@@ -1,7 +1,10 @@
 Rails.application.routes.draw do
+  mount Rswag::Ui::Engine => '/api-docs'
+  mount Rswag::Api::Engine => '/api-docs'
+  use_doorkeeper
   devise_for :users, controllers: {
-      sessions: 'users/sessions'
-    }
+    sessions: 'users/sessions'
+  }
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 
   authenticated :user do
@@ -25,4 +28,10 @@ Rails.application.routes.draw do
 
   # Defines the root path route ("/")
   # root "posts#index"
+  namespace :api do
+    namespace :v1 do
+      get 'search', to: 'assets#search'
+      resources :assets, only: [:create]
+    end
+  end
 end
