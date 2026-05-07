@@ -1,5 +1,7 @@
 module Admin
   class SystemAccountsController < BaseController
+    before_action :set_app, only: [:show, :destroy]
+
     def new
       @app = Doorkeeper::Application.new
     end
@@ -11,25 +13,26 @@ module Admin
       @app.scopes = "read write" # Defaulting to full access for now
 
       if @app.save
-        redirect_to admin_dashboard_path, notice: "Account created! ID: #{@app.uid}"
+        redirect_to settings_path, notice: "System account '#{@app.name}' created! Please save your Secret now."
       else
         render :new, status: :unprocessable_entity
       end
     end
 
     def show
-      @app = Doorkeeper::Application.find(params[:id])
-      # We show the secret here. In a production app, you might only
-      # allow this if the app was created within the last 30 seconds.
+      # Fetched via before_action :set_app
     end
 
     def destroy
-      @app = Doorkeeper::Application.find(params[:id])
       @app.destroy
-      redirect_to admin_dashboard_path, notice: "Account revoked."
+      redirect_to settings_path, notice: "System Account revoked successfully."
     end
 
     private
+
+    def set_app
+      @app = Doorkeeper::Application.find(params[:id])
+    end
 
     def app_params
       params.require(:doorkeeper_application).permit(:name)

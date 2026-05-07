@@ -265,7 +265,7 @@ Devise.setup do |config|
   # If you have any extra navigational formats, like :iphone or :mobile, you
   # should add them to the navigational formats lists.
   #
-  # The "*/*" below is required to match Internet Explorer requests.
+  # The "*/*" below is required to match Internet AssetExplorer requests.
   config.navigational_formats = ['*/*', :html, :json]
 
   # The default HTTP method used to sign out a resource. Default is :delete.
@@ -276,6 +276,14 @@ Devise.setup do |config|
   # up on your models and hooks.
   # config.omniauth :github, 'APP_ID', 'APP_SECRET', scope: 'user,public_repo'
 
+  config.omniauth :keycloak_openid,
+                  ENV.fetch('KEYCLOAK_CLIENT_ID', 'development_id'), # Fallback string
+                  ENV.fetch('KEYCLOAK_CLIENT_SECRET', 'development_secret'),
+                  client_options: {
+                    site: ENV.fetch('KEYCLOAK_URL', 'http://localhost:8080'),
+                    realm: ENV.fetch('KEYCLOAK_REALM', 'master')
+                  },
+                  strategy_class: OmniAuth::Strategies::KeycloakOpenId
   # ==> Warden configuration
   # If you want to use other strategies, that are not supported by Devise, or
   # change the failure app, you can configure them inside the config.warden block.

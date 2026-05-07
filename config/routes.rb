@@ -34,4 +34,22 @@ Rails.application.routes.draw do
       resources :assets, only: [:create]
     end
   end
+
+  # This creates settings_path (for show) and update_settings_path
+  resource :settings, only: [:show, :update], controller: 'settings'
+
+  namespace :admin do
+    # This creates admin_system_accounts_path, admin_system_account_path(id), etc.
+    resources :system_accounts, only: [:index, :show, :new, :create, :destroy]
+    # ... other admin routes ...
+  end
+
+  # This is for folders and assets
+  namespace :api do
+    namespace :v1 do
+      # Add :create here
+      resources :folders, only: [:show, :create]
+      resources :assets, only: [:show, :update, :create]
+    end
+  end
 end

@@ -1,5 +1,7 @@
 source "https://rubygems.org"
 
+gem 'dotenv-rails', groups: [:development, :test]
+
 # Bundle edge Rails instead: gem "rails", github: "rails/rails", branch: "main"
 gem "rails", "~> 8.1.3"
 # The modern asset pipeline for Rails [https://github.com/rails/propshaft]
@@ -87,3 +89,7 @@ gem 'rswag-ui'
 group :test do
   gem 'rswag-specs'
 end
+
+# Add the SSO Engine
+gem 'omniauth-keycloak'
+gem 'omniauth-rails_csrf_protection' # Crucial for security

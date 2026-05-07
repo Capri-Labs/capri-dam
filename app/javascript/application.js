@@ -3,6 +3,8 @@ import { createRoot } from 'react-dom/client';
 import Dashboard from './components/Dashboard';
 import Login from './components/Login';
 
+import "@hotwired/turbo-rails"
+
 document.addEventListener('DOMContentLoaded', () => {
     const container = document.getElementById('root');
 

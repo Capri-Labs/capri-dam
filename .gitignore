@@ -10,6 +10,9 @@
 # Ignore all environment files.
 /.env*
 
+# ...but allow a template so other devs know what keys they need
+!.env.example
+
 # Ignore all logfiles and tempfiles.
 /log/*
 /tmp/*

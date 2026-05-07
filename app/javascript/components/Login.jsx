@@ -1,14 +1,18 @@
 import React, { useState } from 'react';
-import { Box, TextField, Button, Typography, Container, Paper, Avatar, CssBaseline } from '@mui/material';
+import {
+    Box, TextField, Button, Typography, Container,
+    Paper, Avatar, CssBaseline, Divider
+} from '@mui/material';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
+import VpnKeyIcon from '@mui/icons-material/VpnKey'; // Icon for SSO
 
 export default function Login() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
 
+    // Handle Local Login (JSON API)
     const handleSubmit = async (event) => {
         event.preventDefault();
-
         const response = await fetch('/users/sign_in.json', {
             method: 'POST',
             headers: {
@@ -22,8 +26,27 @@ export default function Login() {
         if (response.ok) {
             window.location.href = '/dashboard';
         } else {
-            alert(response.error || 'Login failed');
+            alert('Login failed. Please check your credentials.');
         }
+    };
+
+    // Handle Keycloak SSO Login (Full Page Redirect)
+    const handleSSO = () => {
+        // OmniAuth 2.0+ requires a POST request to initiate.
+        // We create a hidden form and submit it to handle CSRF properly.
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/users/auth/keycloak_openid';
+
+        const csrfToken = document.querySelector('[name="csrf-token"]').content;
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'authenticity_token';
+        csrfInput.value = csrfToken;
+
+        form.appendChild(csrfInput);
+        document.body.appendChild(form);
+        form.submit();
     };
 
     return (
@@ -36,7 +59,8 @@ export default function Login() {
                 <Typography component="h1" variant="h5">
                     Headless DAM Login
                 </Typography>
-                <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
+
+                <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1, width: '100%' }}>
                     <TextField
                         margin="normal"
                         required
@@ -64,6 +88,23 @@ export default function Login() {
                         sx={{ mt: 3, mb: 2, py: 1.5, fontWeight: 'bold' }}
                     >
                         Sign In
+                    </Button>
+
+                    <Divider sx={{ my: 2 }}>
+                        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                            OR
+                        </Typography>
+                    </Divider>
+
+                    <Button
+                        fullWidth
+                        variant="outlined"
+                        color="secondary"
+                        startIcon={<VpnKeyIcon />}
+                        onClick={handleSSO}
+                        sx={{ py: 1.5, fontWeight: 'bold', textTransform: 'none' }}
+                    >
+                        Sign in with Enterprise SSO
                     </Button>
                 </Box>
             </Paper>

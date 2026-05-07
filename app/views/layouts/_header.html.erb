@@ -1,0 +1,31 @@
+<header style="background: #2f3542; color: white; height: 64px; display: flex; align-items: center; padding: 0 24px; position: fixed; top: 0; width: 100%; z-index: 1201; box-shadow: 0px 2px 4px -1px rgba(0,0,0,0.2);">
+  <div style="display: flex; align-items: center; flex-grow: 1;">
+    <h1 style="margin: 0; font-size: 1.25rem; font-weight: 500; font-family: 'Roboto', 'Helvetica', 'Arial', sans-serif;">
+      Headless DAM
+      <span style="background: #1976d2; color: white; font-size: 0.75rem; padding: 2px 8px; border-radius: 16px; margin-left: 8px; vertical-align: middle;">
+        MVP v1.0
+      </span>
+    </h1>
+
+    <% if user_signed_in? %>
+      <nav style="margin-left: 40px; display: flex; gap: 20px;">
+
+      </nav>
+    <% end %>
+  </div>
+
+  <div style="display: flex; align-items: center; gap: 20px;">
+    <% if user_signed_in? %>
+      <span style="font-size: 0.85rem; color: rgba(255,255,255,0.7);">Welcome back, <%= current_user.name %></span>
+      <%= button_to destroy_user_session_path, method: :delete, style: "background: none; border: none; color: white; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 0.9rem; font-weight: 500; text-transform: uppercase;" do %>
+        <svg style="width:20px;height:20px" viewBox="0 0 24 24"><path fill="currentColor" d="M16,17L21,12L16,7V10H9V14H16V17M14,2H4A2,2 0 0,0 2,4V20A2,2 0 0,0 4,22H14A2,2 0 0,0 16,20V16H14V20H4V4H14V8H16V4A2,2 0 0,0 14,2Z" /></svg>
+        Sign Out
+      <% end %>
+    <% else %>
+
+    <% end %>
+  </div>
+</header>
+
+<%# Spacer to prevent content from going under the fixed header %>
+<div style="height: 64px;"></div>

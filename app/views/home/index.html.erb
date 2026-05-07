@@ -1,1 +1,6 @@
-<div id="root" data-view="login"></div>
+<div
+  id="root"
+  data-view="login"
+  data-sso-path="<%= user_keycloak_openid_omniauth_authorize_path %>"
+  data-csrf-token="<%= form_authenticity_token %>">
+</div>

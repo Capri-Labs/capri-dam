@@ -8,3 +8,21 @@
  *
  * Consider organizing styles into separate files for maintainability.
  */
+
+/* Ensure the browser starts with a clean slate */
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    /* Prevent that annoying tiny horizontal wobble */
+    overflow-x: hidden;
+    /* Better font rendering for modern screens */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* The most important rule for modern layouts */
+* {
+    box-sizing: border-box;
+}

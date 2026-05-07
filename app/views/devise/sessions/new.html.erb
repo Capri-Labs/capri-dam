@@ -1,0 +1,13 @@
+<div class="login-box">
+  <!-- Your existing Username/Password form -->
+  <%= render "devise/shared/links" %>
+
+  <hr>
+  <div class="sso-section">
+    <%= button_to "Sign in with Enterprise SSO (Keycloak)",
+                  user_keycloak_openid_omniauth_authorize_path,
+                  method: :post,
+                  data: { turbo: false },
+                  class: "sso-button" %>
+  </div>
+</div>

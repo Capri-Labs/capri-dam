@@ -38,7 +38,7 @@ end
 puts "✅ Created Storage Backend: #{backend.name}"
 
 # 4. Create an Initial Folder
-folder = Folder.find_or_create_by!(name: 'General Assets')
-puts "✅ Created Default Folder: #{folder.name}"
+# folder = Folder.find_or_create_by!(name: 'General Assets')
+# puts "✅ Created Default Folder: #{folder.name}"
 
 puts "--- 🚀 Seed Complete! ---"

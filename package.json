@@ -4,8 +4,11 @@
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
+    "@hotwired/turbo-rails": "^8.0.23",
     "@mui/icons-material": "^9.0.0",
     "@mui/material": "^9.0.0",
+    "@rails/activestorage": "^7.1.0",
+    "@rails/request.js": "^0.0.8",
     "esbuild": "^0.20.0",
     "react": "^19.2.5",
     "react-dom": "^19.2.5"
