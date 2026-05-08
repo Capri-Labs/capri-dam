@@ -52,4 +52,10 @@ Rails.application.routes.draw do
       resources :assets, only: [:show, :update, :create]
     end
   end
+
+  resource :settings, only: [:show, :update] do
+    collection do
+      patch :update_storage
+    end
+  end
 end

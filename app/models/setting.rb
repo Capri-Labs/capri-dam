@@ -1,14 +1,31 @@
 class Setting < ApplicationRecord
+  # Encrypt these specific keys automatically in the DB
+  # You must have your master.key set up in Rails
   validates :key, presence: true, uniqueness: true
 
-  # Usage: Setting.get('site_name')
-  def self.get(key, default = nil)
-    find_by(key: key)&.value || default
+  def self.set(key_name, value)
+    setting = find_or_initialize_by(key: key_name.to_s)
+    setting.value = value
+    setting.save!
   end
 
-  # Usage: Setting.set('site_name', 'My Headless DAM')
-  def self.set(key, value)
-    setting = find_or_initialize_by(key: key)
-    setting.update(value: value)
+  def self.get(key_name)
+    find_by(key: key_name.to_s)&.value
   end
+
+  def self.get_provider_config(provider)
+    data = JSON.parse(get("storage_config_#{provider}") || "{}")
+
+    # Mask sensitive fields before sending to React
+    data.each do |key, value|
+      if key.to_s.include?('secret') && value.present?
+        data[key] = "********" # Send asterisks to UI
+      end
+    end
+    data
+  end
+
+  # Logic to ensure sensitive keys are handled correctly
+  # (Optional: You could use the 'lockbox' gem or Rails native 'encrypts' if
+  # you had a dedicated column, but for a KV-store, ensure your DB is encrypted at rest).
 end

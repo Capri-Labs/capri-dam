@@ -1,22 +1,4 @@
-<div style="max-width: 600px; margin: 40px auto; font-family: sans-serif; background: white; padding: 30px; border-radius: 8px; border: 1px solid #e2e8f0;">
-  <h1>Create System Service Account</h1>
-  <p style="color: #718096; margin-bottom: 30px;">This will generate a Client ID and Secret for API access.</p>
-
-  <%= form_with model: @app, url: admin_system_accounts_path, method: :post do |f| %>
-    <% if @app.errors.any? %>
-      <div style="color: #e53e3e; margin-bottom: 20px;">
-        <%= @app.errors.full_messages.to_sentence %>
-      </div>
-    <% end %>
-
-    <div style="margin-bottom: 20px;">
-      <%= f.label :name, "Application Name", style: "display: block; font-weight: bold; margin-bottom: 5px;" %>
-      <%= f.text_field :name, placeholder: "e.g. Marketing Site API", style: "width: 100%; padding: 10px; border: 1px solid #cbd5e0; border-radius: 4px;" %>
-    </div>
-
-    <div style="display: flex; gap: 10px;">
-      <%= f.submit "Generate Credentials", style: "background: #3182ce; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;" %>
-      <%= link_to "Cancel", settings_path, style: "padding: 10px; color: #718096; text-decoration: none;" %>
-    </div>
-  <% end %>
+<div id="root"
+     data-view="system_account_new"
+     data-user-is-admin="<%= current_user.admin? %>">
 </div>
