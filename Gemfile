@@ -93,3 +93,6 @@ end
 # Add the SSO Engine
 gem 'omniauth-keycloak'
 gem 'omniauth-rails_csrf_protection' # Crucial for security
+
+gem 'aws-sdk-s3', '~> 1'
+gem "liquid", "~> 5.12"

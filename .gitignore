@@ -103,3 +103,7 @@ CLAUDE.local.md
 
 app/assets/builds/
 /.rspec
+
+# Ignore Redis data dumps
+dump.rdb
+*.rdb

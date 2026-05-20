@@ -117,7 +117,7 @@ export default function AssetExplorer() {
                             onClick={() => setCurrentId(folder.id)}
                             sx={{ p: 2, textAlign: 'center', border: '1px solid #e0e6ed', cursor: 'pointer', '&:hover': { border: '1px solid #3182ce', bgcolor: '#fff' } }}
                         >
-                            <FolderIcon sx={{ fontSize: 48, color: '#4299e1' }} />
+                            <FolderIcon sx={{ fontSize: 48, minWidth: 80, color: '#4299e1' }} />
                             <Typography variant="body2" fontWeight="bold" noWrap sx={{ mt: 1 }}>{folder.name}</Typography>
                         </Paper>
                     </Grid>

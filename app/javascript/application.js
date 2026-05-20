@@ -1,32 +1,63 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import Dashboard from './components/Dashboard';
-import Login from './components/Login';
-import Settings from './components/Settings';
-
 import "@hotwired/turbo-rails"
+
+// Components
+import Header from './components/Header'; // Import your Header
+import Dashboard from './components/Dashboard';
+import Settings from './components/Settings';
 import SystemAccountShow from "./components/system_accounts/SystemAccountShow";
 import SystemAccountNew from "./components/system_accounts/SystemAccountNew";
+import Login from './components/Login';
+import { NotificationProvider } from './context/NotificationContext';
+import UserGroupsManager from './components/Admin/UserGroupsManager';
+import UsersManager from './components/Admin/UsersManager';
+import EmailEngineManager from './components/Admin/EmailEngineManager';
 
-// Use 'turbo:load' instead of 'DOMContentLoaded'
 document.addEventListener('turbo:load', () => {
-    const container = document.getElementById('root');
-    if (!container) return;
+    // --- 1. MOUNT THE HEADER ---
+    const headerContainer = document.getElementById('header-root');
+    if (headerContainer) {
+        headerContainer.innerHTML = ''; // Clear to prevent duplicates
+        const headerRoot = createRoot(headerContainer);
+        const headerProps = {
+            userName: headerContainer.dataset.userName,
+            isSignedIn: headerContainer.dataset.signedIn === 'true'
+        };
+        headerRoot.render(<Header {...headerProps} />);
+    }
 
-    container.innerHTML = '';
-    const root = createRoot(container);
-    const view = container.getAttribute('data-view');
-    const props = Object.assign({}, container.dataset);
+    // --- 2. MOUNT THE MAIN CONTENT ---
+    const mainContainer = document.getElementById('root');
+    if (mainContainer) {
+        mainContainer.innerHTML = ''; // Clear for Turbo refreshes
+        const mainRoot = createRoot(mainContainer);
+        const view = mainContainer.getAttribute('data-view');
+        const props = Object.assign({}, mainContainer.dataset);
 
-    if (view === 'dashboard') {
-        root.render(<Dashboard {...props} />);
-    } else if (view === 'settings') {
-        root.render(<Settings {...props} />);
-    } else if (view === 'system_account_show') {
-        root.render(<SystemAccountShow {...props} />);
-    } else if (view === 'system_account_new') {
-        root.render(<SystemAccountNew {...props} />);
-    } else {
-        root.render(<Login />);
+        // Wrap the components inside the Provider layout block
+        const renderWithContext = (Component) => (
+            <NotificationProvider>
+                {Component}
+            </NotificationProvider>
+        );
+
+        if (view === 'dashboard') {
+            mainRoot.render(renderWithContext(<Dashboard {...props} />));
+        } else if (view === 'settings') {
+            mainRoot.render(renderWithContext(<Settings {...props} />));
+        } else if (view === 'system_account_show') {
+            mainRoot.render(renderWithContext(<SystemAccountShow {...props} />));
+        } else if (view === 'system_account_new') {
+            mainRoot.render(renderWithContext(<SystemAccountNew {...props} />));
+        } else if (view === 'user_groups') {
+            mainRoot.render(renderWithContext(<UserGroupsManager {...props} />));
+        } else if (view === 'users') {
+            mainRoot.render(renderWithContext(<UsersManager {...props} />));
+        } else if (view === 'email_engine') {
+            mainRoot.render(renderWithContext(<EmailEngineManager {...props} />));
+        } else {
+            mainRoot.render(renderWithContext(<Login />));
+        }
     }
 });

@@ -9,6 +9,8 @@ class Folder < ApplicationRecord
   # Asset relationship
   has_many :assets, dependent: :destroy
 
+  has_many :folder_policies, dependent: :destroy
+
   # Validations
   validates :name, presence: true
   validates :user_id, presence: true
@@ -28,6 +30,11 @@ class Folder < ApplicationRecord
       current = current.parent
     end
     path
+  end
+
+  # Quick helper to see which groups govern this specific folder
+  def governing_groups
+    UserGroup.joins(:folder_policies).where(folder_policies: { folder_id: id })
   end
 
   private

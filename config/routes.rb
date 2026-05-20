@@ -1,12 +1,11 @@
 Rails.application.routes.draw do
   mount Rswag::Ui::Engine => '/api-docs'
   mount Rswag::Api::Engine => '/api-docs'
-  use_doorkeeper
-  devise_for :users, controllers: {
-    sessions: 'users/sessions'
-  }
-  # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 
+  use_doorkeeper
+  devise_for :users, controllers: { sessions: 'users/sessions' }
+
+  # Authentication-based Root Logic
   authenticated :user do
     root to: "dashboard#index", as: :authenticated_root
   end
@@ -15,47 +14,81 @@ Rails.application.routes.draw do
     root to: "home#index", as: :unauthenticated_root
   end
 
-  # Optional: Keep the dashboard accessible at /dashboard
   get '/dashboard', to: 'dashboard#index'
-
-  # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.
-  # Can be used by load balancers and uptime monitors to verify that the app is live.
   get "up" => "rails/health#show", as: :rails_health_check
 
-  # Render dynamic PWA files from app/views/pwa/* (remember to link manifest in application.html.erb)
-  # get "manifest" => "rails/pwa#manifest", as: :pwa_manifest
-  # get "service-worker" => "rails/pwa#service_worker", as: :pwa_service_worker
-
-  # Defines the root path route ("/")
-  # root "posts#index"
+  # --- API Namespace (Consolidated) ---
   namespace :api do
     namespace :v1 do
       get 'search', to: 'assets#search'
-      resources :assets, only: [:create]
-    end
-  end
-
-  # This creates settings_path (for show) and update_settings_path
-  resource :settings, only: [:show, :update], controller: 'settings'
-
-  namespace :admin do
-    # This creates admin_system_accounts_path, admin_system_account_path(id), etc.
-    resources :system_accounts, only: [:index, :show, :new, :create, :destroy]
-    # ... other admin routes ...
-  end
-
-  # This is for folders and assets
-  namespace :api do
-    namespace :v1 do
-      # Add :create here
       resources :folders, only: [:show, :create]
       resources :assets, only: [:show, :update, :create]
     end
   end
 
-  resource :settings, only: [:show, :update] do
+  # --- Settings Resource (Consolidated) ---
+  # Using 'resource' (singular) because there is only one set of settings per user/system
+  resource :settings, only: [:show, :update], controller: 'settings' do
     collection do
       patch :update_storage
+      post :test_connection # Now accessible as test_connection_settings_path
+
+      # NEW: Renders SettingsIndex in System Mode via SettingsController#show
+      get :system, to: 'settings#show', as: :system
+    end
+  end
+
+  # --- System Operations & Observability API ---
+  # Keeps the high-privilege metrics and SMTP updates isolated under an admin space
+  namespace :admin do
+    get 'system_status', to: 'system_status#index'
+    post 'system_status/update_smtp', to: 'system_status#update_smtp'
+    post 'system_status/test_email', to: 'system_status#test_email'
+    post 'system_status/restart_server', to: 'system_status#restart_server'
+  end
+
+  # --- Admin Namespace ---
+  namespace :admin do
+    resources :system_accounts, only: [:index, :show, :new, :create, :destroy]
+
+    # Group & Membership Management
+    resources :user_groups, except: [:new, :edit] do
+      member do
+        post :add_user
+        delete :remove_user
+      end
+    end
+
+    # User Directory & Identity Management
+    resources :users, only: [:index, :create, :update] do
+      member do
+        post :toggle_status
+      end
+    end
+
+    # Folder Access Control Lists (Nested under folders)
+    resources :folders, only: [] do
+      resources :folder_policies, only: [:index, :create, :destroy], param: :group_id
+    end
+
+    # Communication Engine
+    resources :email_templates, except: [:new, :edit]
+
+    resources :email_deliveries, only: [:index] do
+      member do
+        post :retry # Endpoint to manually retry a failed email
+      end
+    end
+  end
+
+  # --- Workflows ---
+  scope module: 'workflows' do
+    resources :workflows do
+      member do
+        patch :toggle_status
+      end
+      # Nested steps if you want to manage them independently later
+      resources :workflow_steps, only: [:index, :create, :update, :destroy]
     end
   end
 end

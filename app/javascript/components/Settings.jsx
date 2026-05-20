@@ -10,6 +10,8 @@ import { Save, Shield,
     Delete as DeleteIcon,
     CloudUpload } from '@mui/icons-material';
 import Sidebar from './Sidebar';
+import SystemStatus from './Admin/SystemStatus';
+import { navigateTo } from '../utils/globalutils';
 
 export default function Settings(props) {
 
@@ -17,7 +19,8 @@ export default function Settings(props) {
     const isAdmin = props.userIsAdmin === 'true';
     const [loading, setLoading] = useState(false);
 
-    const [activeView, setActiveView] = useState('Settings');
+    const [testStatus, setTestStatus] = useState({ loading: false, msg: null, error: null });
+    const [activeView, setActiveView] = useState('General');
     const parsedAllConfigs = typeof props.allConfigs === 'string'
         ? JSON.parse(props.allConfigs || '{}')
         : (props.allConfigs || {});
@@ -75,11 +78,6 @@ export default function Settings(props) {
         }
     };
 
-    // Navigation Helper
-    const navigateTo = (url) => {
-        window.location.href = url;
-    };
-
     // Revoke Account Helper
     const handleDeleteAccount = (appId) => {
         if (window.confirm("Are you sure you want to revoke these credentials? This cannot be undone.")) {
@@ -105,6 +103,52 @@ export default function Settings(props) {
             form.submit();
         }
     };
+
+    const handleTestConnection = async () => {
+        setTestStatus({ loading: true, msg: null, error: null });
+        const payload = {
+            storage_config: {
+                provider: storageProvider,
+                ...allConfigs[storageProvider]
+            }
+        };
+
+        try {
+            const response = await fetch('/settings/test_connection', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await response.json();
+            if (response.ok) {
+                setTestStatus({ loading: false, msg: data.message, error: null });
+            } else {
+                setTestStatus({ loading: false, msg: null, error: data.error });
+            }
+        } catch (err) {
+            setTestStatus({ loading: false, msg: null, error: "Network error occurred." });
+        }
+    };
+
+    const currentSubView = props.currentSubView || 'General';
+    const smtpConfig = React.useMemo(() => {
+        try {
+            return props.smtpConfig ? JSON.parse(props.smtpConfig) : {};
+        } catch (e) {
+            console.error("Error parsing smtpConfig:", e);
+            return {};
+        }
+    }, [props.smtpConfig]);
+
+    if (currentSubView === 'System') {
+        return (
+            <SystemStatus incomingConfigs={smtpConfig} />
+        );
+    }
 
     return (
         <Box sx={{ display: 'flex', bgcolor: '#f4f7fb', minHeight: '100vh' }}>
@@ -306,6 +350,14 @@ export default function Settings(props) {
                         <Stack direction="row" spacing={2} justifyContent="flex-end" sx={{ mt: 2 }}>
                             <Button
                                 variant="outlined"
+                                color="primary"
+                                onClick={handleTestConnection}
+                                disabled={testStatus.loading || storageProvider === 'local'}
+                            >
+                                {testStatus.loading ? <CircularProgress size={20} /> : "Test Connection"}
+                            </Button>
+                            <Button
+                                variant="outlined"
                                 color="inherit"
                                 onClick={handleClear}
                                 sx={{ borderRadius: 2, textTransform: 'none' }}
@@ -323,6 +375,16 @@ export default function Settings(props) {
                             </Button>
                         </Stack>
 
+                        <Stack direction="row" spacing={2} sx={{ mt: 2, display: 'block' }}>
+                            {/* THE ERROR MESSAGE UNDER THE BUTTON */}
+                            {testStatus.error && (
+                                <Alert severity="error">{testStatus.error}</Alert>
+                            )}
+                            {/* SUCCESS MESSAGE */}
+                            {testStatus.msg && (
+                                <Alert severity="success">{testStatus.msg}</Alert>
+                            )}
+                        </Stack>
                     </Paper>
                 )}
             </Box>

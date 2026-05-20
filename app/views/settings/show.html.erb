@@ -6,12 +6,16 @@
      data-settings-notifications="<%= Setting.get('notifications_enabled') %>"
      data-settings-mimes="<%= Setting.get('allowed_mimes') %>"
 
+     <%# --- DYNAMIC SYSTEM VIEW ATTRIBUTES --- %>
+     data-current-sub-view="<%= @sub_view %>"
+     data-smtp-config='<%= raw (@smtp_config || {}).to_json %>'
+
      <%# --- NEW STORAGE ATTRIBUTES --- %>
      data-active-provider="<%= @active_provider %>"
      data-all-configs='<%= raw @all_configs.to_json %>'
 
-     <%# Wrap the value in single quotes and remove the extra inner single quotes %>
-     data-system-apps='<%= raw @system_apps.map { |app|
+     <%# Guarding map with a safe conditional in case system_apps is nil %>
+     data-system-apps='<%= raw (@system_apps || []).map { |app|
           {
             id: app.id,
             name: app.name,

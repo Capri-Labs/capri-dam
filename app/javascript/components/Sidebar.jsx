@@ -27,7 +27,7 @@ export default function Sidebar({ activeView, onNavigate }) {
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                     <Box sx={{ width: 34, height: 34, bgcolor: '#5e35b1', borderRadius: 2 }} />
                     <Typography variant="h5" sx={{ fontWeight: 800, color: '#121926', letterSpacing: 1 }}>
-                        BERRY
+                        Headless DAM
                     </Typography>
                 </Box>
             </Toolbar>
