@@ -17,10 +17,7 @@ export default function WorkflowList({ workflows = [], onCreate, onEdit, onToggl
         }
 
         try {
-            // 2. Get CSRF token for Rails
             const csrfToken = document.querySelector('[name="csrf-token"]').content;
-
-            // 3. Send DELETE request
             const response = await fetch(`/workflows/${id}`, {
                 method: 'DELETE',
                 headers: {
@@ -30,7 +27,6 @@ export default function WorkflowList({ workflows = [], onCreate, onEdit, onToggl
             });
 
             if (response.ok) {
-                // Optional: Show a success message
                 console.log("Workflow deleted successfully");
             } else {
                 const data = await response.json();

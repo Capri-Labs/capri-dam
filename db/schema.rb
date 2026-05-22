@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_05_20_075119) do
+ActiveRecord::Schema[8.1].define(version: 2026_05_21_150607) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -77,16 +77,48 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_20_075119) do
 
   create_table "folders", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.datetime "created_at", null: false
+    t.datetime "deleted_at"
     t.string "name", null: false
     t.uuid "parent_id"
     t.string "path"
+    t.jsonb "properties", default: {}
     t.string "slug"
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
+    t.uuid "uuid", default: -> { "gen_random_uuid()" }, null: false
+    t.index ["deleted_at"], name: "index_folders_on_deleted_at"
     t.index ["parent_id"], name: "index_folders_on_parent_id"
     t.index ["path"], name: "index_folders_on_path"
     t.index ["slug"], name: "index_folders_on_slug"
     t.index ["user_id"], name: "index_folders_on_user_id"
+    t.index ["uuid"], name: "index_folders_on_uuid", unique: true
+  end
+
+  create_table "in_app_notifications", force: :cascade do |t|
+    t.string "action_type", null: false
+    t.bigint "actor_id"
+    t.datetime "created_at", null: false
+    t.string "message", null: false
+    t.bigint "notifiable_id", null: false
+    t.string "notifiable_type", null: false
+    t.datetime "read_at"
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["actor_id"], name: "index_in_app_notifications_on_actor_id"
+    t.index ["notifiable_type", "notifiable_id"], name: "index_in_app_notifications_on_notifiable"
+    t.index ["user_id", "read_at"], name: "index_in_app_notifications_on_user_id_and_read_at"
+    t.index ["user_id"], name: "index_in_app_notifications_on_user_id"
+  end
+
+  create_table "notifications", force: :cascade do |t|
+    t.string "action_url"
+    t.datetime "created_at", null: false
+    t.string "message"
+    t.datetime "read_at"
+    t.string "title"
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["user_id"], name: "index_notifications_on_user_id"
   end
 
   create_table "oauth_access_grants", force: :cascade do |t|
@@ -201,6 +233,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_20_075119) do
     t.index ["name"], name: "index_user_groups_on_name", unique: true
   end
 
+  create_table "user_preferences", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.boolean "receive_mention_emails", default: true, null: false
+    t.boolean "receive_workflow_emails", default: true, null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["user_id"], name: "index_user_preferences_on_user_id"
+  end
+
   create_table "users", force: :cascade do |t|
     t.boolean "active", default: true
     t.boolean "admin", default: false, null: false
@@ -235,13 +276,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_20_075119) do
   create_table "workflow_instances", force: :cascade do |t|
     t.uuid "asset_id", null: false
     t.jsonb "audit_log"
+    t.jsonb "blueprint_snapshot", default: {}
+    t.datetime "completed_at"
     t.datetime "created_at", null: false
     t.integer "current_step_id"
     t.integer "last_action_by_id"
+    t.datetime "started_at"
     t.string "status"
     t.datetime "updated_at", null: false
     t.bigint "workflow_id", null: false
     t.index ["asset_id"], name: "index_workflow_instances_on_asset_id"
+    t.index ["completed_at"], name: "index_workflow_instances_on_completed_at"
+    t.index ["started_at"], name: "index_workflow_instances_on_started_at"
     t.index ["workflow_id"], name: "index_workflow_instances_on_workflow_id"
   end
 
@@ -260,6 +306,21 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_20_075119) do
     t.integer "updated_by_id"
     t.bigint "workflow_id", null: false
     t.index ["workflow_id"], name: "index_workflow_steps_on_workflow_id"
+  end
+
+  create_table "workflow_tasks", force: :cascade do |t|
+    t.text "comment"
+    t.datetime "completed_at"
+    t.datetime "created_at", null: false
+    t.string "status", default: "pending", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.bigint "workflow_instance_id", null: false
+    t.bigint "workflow_step_id", null: false
+    t.index ["user_id", "status"], name: "index_workflow_tasks_on_user_id_and_status"
+    t.index ["user_id"], name: "index_workflow_tasks_on_user_id"
+    t.index ["workflow_instance_id"], name: "index_workflow_tasks_on_workflow_instance_id"
+    t.index ["workflow_step_id"], name: "index_workflow_tasks_on_workflow_step_id"
   end
 
   create_table "workflows", force: :cascade do |t|
@@ -283,13 +344,20 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_20_075119) do
   add_foreign_key "folder_policies", "user_groups"
   add_foreign_key "folders", "folders", column: "parent_id"
   add_foreign_key "folders", "users"
+  add_foreign_key "in_app_notifications", "users"
+  add_foreign_key "in_app_notifications", "users", column: "actor_id"
+  add_foreign_key "notifications", "users"
   add_foreign_key "oauth_access_grants", "oauth_applications", column: "application_id"
   add_foreign_key "oauth_access_tokens", "oauth_applications", column: "application_id"
   add_foreign_key "renditions", "assets"
   add_foreign_key "renditions", "storage_backends"
   add_foreign_key "user_group_memberships", "user_groups"
   add_foreign_key "user_group_memberships", "users"
+  add_foreign_key "user_preferences", "users"
   add_foreign_key "workflow_instances", "assets"
   add_foreign_key "workflow_instances", "workflows"
   add_foreign_key "workflow_steps", "workflows"
+  add_foreign_key "workflow_tasks", "users"
+  add_foreign_key "workflow_tasks", "workflow_instances"
+  add_foreign_key "workflow_tasks", "workflow_steps"
 end

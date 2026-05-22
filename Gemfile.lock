@@ -557,6 +557,8 @@ DEPENDENCIES
   jsbundling-rails
   kamal
   liquid (~> 5.12)
+  marcel (~> 1.1)
+  mini_magick (~> 5.3)
   omniauth-keycloak
   omniauth-rails_csrf_protection
   pg (~> 1.1)

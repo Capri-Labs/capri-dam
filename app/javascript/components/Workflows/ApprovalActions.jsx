@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, Button, TextField, Stack, Typography, Paper } from '@mui/material';
+import { Button, TextField, Stack, Typography, Paper } from '@mui/material';
 import { CheckCircle, Cancel } from '@mui/icons-material';
 
 export default function ApprovalActions({ assetId, currentStep, onActionComplete }) {

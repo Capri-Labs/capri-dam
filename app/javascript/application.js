@@ -13,6 +13,10 @@ import { NotificationProvider } from './context/NotificationContext';
 import UserGroupsManager from './components/Admin/UserGroupsManager';
 import UsersManager from './components/Admin/UsersManager';
 import EmailEngineManager from './components/Admin/EmailEngineManager';
+import App from './components/App';
+import AssetExplorer from "./components/AssetExplorer";
+import WorkflowDashboard from "./components/WorkflowDashboard";
+import WorkflowContainer from "./components/WorkflowContainer";
 
 document.addEventListener('turbo:load', () => {
     // --- 1. MOUNT THE HEADER ---
@@ -56,6 +60,16 @@ document.addEventListener('turbo:load', () => {
             mainRoot.render(renderWithContext(<UsersManager {...props} />));
         } else if (view === 'email_engine') {
             mainRoot.render(renderWithContext(<EmailEngineManager {...props} />));
+        } else if (view === 'app') {
+            mainRoot.render(renderWithContext(<App {...props} />));
+        } else if (view === 'asset_explorer') {
+            mainRoot.render(renderWithContext(<AssetExplorer {...props} />));
+        }  else if (view === 'workflows_container') {
+            mainRoot.render(renderWithContext(<WorkflowContainer {...props} />));
+
+        } else if (view === 'workflow_dashboard') {
+            mainRoot.render(renderWithContext(<WorkflowDashboard {...props} />));
+
         } else {
             mainRoot.render(renderWithContext(<Login />));
         }

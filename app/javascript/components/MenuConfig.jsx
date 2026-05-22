@@ -7,7 +7,7 @@ import {
     GroupWorkOutlined,
     SettingsOutlined,
     AccountTree,
-    DnsOutlined, EmailOutlined
+    DnsOutlined, EmailOutlined, AssignmentOutlined
 } from '@mui/icons-material';
 
 export const MENU_GROUPS = [
@@ -17,7 +17,8 @@ export const MENU_GROUPS = [
         items: [
             { id: 'Overview', label: 'Overview', icon: <DashboardOutlined fontSize="small" /> },
             { id: 'All Assets', label: 'All Assets', icon: <PhotoLibraryOutlined fontSize="small" /> },
-            { id: 'Workflows', label: 'Workflows', icon: <AccountTree fontSize="small" /> },
+            { id: 'Workflows', label: 'Workflows', icon: <AccountTree fontSize="small" />, url: '/workflows' },
+            { id: 'My Tasks', label: 'My Tasks', icon: <AssignmentOutlined fontSize="small" />, url: '/workflows/dashboard' },
             { id: 'Analytics', label: 'Analytics', icon: <AnalyticsOutlined fontSize="small" /> }
         ]
     },

@@ -2,6 +2,9 @@ class Folder < ApplicationRecord
   # Ownership & Governance
   belongs_to :user
 
+  # Ensure a UUID is generated if not provided by the database
+  before_validation :ensure_uuid, on: :create
+
   # Hierarchical structure
   belongs_to :parent, class_name: 'Folder', optional: true
   has_many :children, class_name: 'Folder', foreign_key: 'parent_id', dependent: :destroy
@@ -19,6 +22,8 @@ class Folder < ApplicationRecord
   validates :name, uniqueness: { scope: [:parent_id, :user_id], message: "already exists in this location" }
 
   before_validation :generate_slug, if: -> { name.present? && (name_changed? || slug.blank?) }
+
+  include SoftDeletable
 
   # Helper for the React Breadcrumbs
   # Returns an array of hashes: [{id: 1, name: 'Root'}, {id: 5, name: 'Sub'}]
@@ -41,5 +46,9 @@ class Folder < ApplicationRecord
 
   def generate_slug
     self.slug = name.parameterize
+  end
+
+  def ensure_uuid
+    self.uuid ||= SecureRandom.uuid
   end
 end

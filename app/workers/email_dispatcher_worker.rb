@@ -2,7 +2,7 @@ class EmailDispatcherWorker
   include Sidekiq::Worker
 
   # Configure Sidekiq strictly for 3 retries on the mailers queue.
-  sidekiq_options queue: :mailers, retry: 3
+  sidekiq_options queue: 'mailers', retry: 3
 
   # If the email fails 3 times, Sidekiq natively catches it here.
   # We use this block to permanently mark the delivery as failed in your database.

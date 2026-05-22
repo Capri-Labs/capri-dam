@@ -3,3 +3,6 @@
   - default
   - ingest  # Dedicated queue for the 50k batch
   - metadata
+  - workflow # Dedicated queue for workflows
+  - notifications # Dedicated queue for notifications
+  - mailers # Dedicated queue to dispatch mails

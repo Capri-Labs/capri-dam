@@ -5,7 +5,6 @@ import {
     Divider, Tab, Tabs, MenuItem, Tooltip, Alert, Grid, CssBaseline, Toolbar
 } from '@mui/material';
 import {
-    Close,
     SettingsEthernet, History, Replay, ContentCopy, DeleteOutlined, MailOutlined, AddCircleOutlined
 } from '@mui/icons-material';
 import Sidebar from "../Sidebar";

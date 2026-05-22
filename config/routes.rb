@@ -21,8 +21,26 @@ Rails.application.routes.draw do
   namespace :api do
     namespace :v1 do
       get 'search', to: 'assets#search'
+      # The global bin endpoint
+      get 'bin', to: 'assets#bin'
+
       resources :folders, only: [:show, :create]
       resources :assets, only: [:show, :update, :create]
+
+      resources :assets do
+        member do
+          post :restore
+          delete :permanent, to: 'assets#permanent_delete'
+          get :workflow_history
+        end
+      end
+
+      resources :folders do
+        member do
+          post :restore
+          delete :permanent, to: 'folders#permanent_delete'
+        end
+      end
     end
   end
 
@@ -81,14 +99,45 @@ Rails.application.routes.draw do
     end
   end
 
+  # 1. THE FRONTEND ROUTE (Serves the HTML Shell)
   # --- Workflows ---
-  scope module: 'workflows' do
-    resources :workflows do
-      member do
-        patch :toggle_status
+  get '/workflows', to: 'workflows#index'
+  get 'workflows/dashboard', to: 'workflows#dashboard'
+  resources :workflows do
+    member do
+      patch :toggle_status
+    end
+    # Nested steps if you want to manage them independently later
+    resources :workflow_steps, only: [:index, :create, :update, :destroy]
+  end
+
+  resources :workflow_tasks, only: [] do
+    post :submit, on: :member
+  end
+
+  # 2. THE API ROUTES (Serves the JSON Data)
+  namespace :api do
+    namespace :v1 do
+      # Add this line to map the dashboard fetch request to your specific controller
+      get 'workflows/dashboard', to: 'workflow_tasks#dashboard'
+
+      resources :workflow_tasks, only: [] do
+        post :submit, on: :member
       end
-      # Nested steps if you want to manage them independently later
-      resources :workflow_steps, only: [:index, :create, :update, :destroy]
+
+      # ... notifications routes ...
+      resources :notifications, only: [:index] do
+        collection do
+          patch :mark_all_read
+        end
+        member do
+          patch :mark_read
+        end
+      end
+
+      # ... assets and folders routes ...
     end
   end
+
+
 end

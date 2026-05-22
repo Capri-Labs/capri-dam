@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
 import {
     Box, CssBaseline, Toolbar, Typography, Paper, TextField,
-    CircularProgress, FormControlLabel, Button, Divider, Table,
+    CircularProgress, Button, Divider, Table,
     TableBody, TableCell, TableContainer, TableHead, TableRow,
-    Chip, Stack, Grid, FormControl, InputLabel, Select, MenuItem, Alert
+    Stack, Grid, FormControl, InputLabel, Select, MenuItem, Alert
 } from '@mui/material';
 import { Save, Shield,
-    Settings as SettingsIcon,
     Delete as DeleteIcon,
     CloudUpload } from '@mui/icons-material';
 import Sidebar from './Sidebar';

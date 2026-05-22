@@ -96,3 +96,7 @@ gem 'omniauth-rails_csrf_protection' # Crucial for security
 
 gem 'aws-sdk-s3', '~> 1'
 gem "liquid", "~> 5.12"
+
+gem "mini_magick", "~> 5.3"
+
+gem "marcel", "~> 1.1"

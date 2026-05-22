@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import {
     Box, Grid, Paper, Typography, Button, TextField, Switch, FormControlLabel,
-    Divider, CircularProgress, Chip, Stack, List, ListItem, ListItemText, Alert,
+    CircularProgress, Stack, Alert,
     Tab, Tabs, CssBaseline, Toolbar, MenuItem
 } from '@mui/material';
 import {
-    Dns, Email, Storage, RestartAlt, Sync, CheckCircle,
+    Dns, Email, RestartAlt, Sync, CheckCircle,
     Cancel, Warning, Speed, PriorityHigh
 } from '@mui/icons-material';
 import Sidebar from "../Sidebar";
@@ -250,6 +250,9 @@ export default function SystemStatus({ incomingConfigs }) {
                                             </Typography>
                                             <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mt: 1 }}>
                                                 Queue Depth: {diagnostics?.cache_queue?.queue_depth} • Latency: {diagnostics?.cache_queue?.latency_ms} ms
+                                            </Typography>
+                                            <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mt: 1 }}>
+                                                Redis Version: {diagnostics?.cache_queue?.redis_version} • Active: {diagnostics?.cache_queue?.active_workers}
                                             </Typography>
                                         </Paper>
                                     </Grid>

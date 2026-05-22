@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { AppBar, Toolbar, Button, Box, InputBase, alpha, styled, Typography } from '@mui/material';
 import { Logout, Search as SearchIcon, Login } from '@mui/icons-material';
 
+import NotificationBell from './NotificationBell';
+
 // Styled components for the search bar
 const SearchContainer = styled('div')(({ theme }) => ({
     position: 'relative',
@@ -78,7 +80,7 @@ export default function Header(props) {
                     src="/images/logo.png"
                     alt="Headless DAM Logo"
                     sx={{
-                        height: 65, // Slightly reduced to fit better with search
+                        height: 65,
                         width: 'auto',
                         cursor: 'pointer',
                     }}
@@ -105,6 +107,9 @@ export default function Header(props) {
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                     {props.isSignedIn ? (
                         <>
+                            {/* 🚨 The Notification Engine Interface */}
+                            <NotificationBell />
+
                             <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)', display: { xs: 'none', md: 'block' } }}>
                                 Welcome, {props.userName}
                             </Typography>
