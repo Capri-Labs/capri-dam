@@ -1,8 +1,20 @@
+---
 :concurrency: 25
 :queues:
-  - default
-  - ingest  # Dedicated queue for the 50k batch
-  - metadata
-  - workflow # Dedicated queue for workflows
-  - notifications # Dedicated queue for notifications
-  - mailers # Dedicated queue to dispatch mails
+  # Format is [queue_name, weight]
+  # Higher weight = checked more frequently
+
+  # Critical Priority (Fast, User-Facing)
+  - [mailers, 5]       # Password resets and auth emails must go out instantly
+  - [notifications, 5] # Inbox tasks and UI alerts
+
+  # Standard Priority
+  - [default, 3]       # Standard application jobs
+
+  # Medium Priority (System Processing)
+  - [workflow, 2]      # Transitioning states, creating audit logs
+  - [metadata, 2]      # AI tagging, EXIF extraction
+
+  # Low Priority (Heavy CPU/Memory, Background Tasks)
+  - [reports, 1]       # PDF/Excel generation
+  - [ingest, 1]        # 50k batch uploads

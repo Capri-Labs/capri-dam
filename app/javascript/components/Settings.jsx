@@ -155,8 +155,6 @@ export default function Settings(props) {
             <Sidebar activeView={activeView} onNavigate={(v) => v === 'Settings' ? null : navigateTo('/dashboard')} />
 
             <Box component="main" sx={{ flexGrow: 1, p: 4 }}>
-                <Toolbar />
-
                 {/* ... (Personal Preferences Section stays the same) ... */}
 
                 {isAdmin && (

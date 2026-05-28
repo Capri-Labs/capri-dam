@@ -165,7 +165,6 @@ export default function SystemStatus({ incomingConfigs }) {
             <Sidebar activeView={activeView} onNavigate={(v) => v === 'System' ? null : navigateTo('/dashboard')} />
 
             <Box component="main" sx={{ flexGrow: 1, p: 4 }}>
-                <Toolbar/>
                 <Box sx={{ width: '100%', p: 1 }}>
                     <Box sx={{
                         display: 'flex',

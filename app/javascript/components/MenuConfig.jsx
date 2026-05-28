@@ -4,66 +4,74 @@ import {
     PhotoLibraryOutlined,
     AnalyticsOutlined,
     PeopleAltOutlined,
-    GroupWorkOutlined,
     SettingsOutlined,
     AccountTree,
-    DnsOutlined, EmailOutlined, AssignmentOutlined
+    AssignmentOutlined,
+    FolderOpenOutlined,
+    DeleteOutlined,
+    DnsOutlined,
+    EmailOutlined,
+    GroupWorkOutlined,
+    FormatListBulletedOutlined,
+    PersonOutlined,
+    SecurityOutlined
 } from '@mui/icons-material';
 
 export const MENU_GROUPS = [
     {
-        id: 'dashboard',
-        title: 'Dashboard',
+        id: 'core',
+        title: 'Core Application',
         items: [
-            { id: 'Overview', label: 'Overview', icon: <DashboardOutlined fontSize="small" /> },
-            { id: 'All Assets', label: 'All Assets', icon: <PhotoLibraryOutlined fontSize="small" /> },
-            { id: 'Workflows', label: 'Workflows', icon: <AccountTree fontSize="small" />, url: '/workflows' },
+            { id: 'Overview', label: 'Overview', icon: <DashboardOutlined fontSize="small" />, url: '/dashboard' },
+            {
+                id: 'Assets',
+                label: 'Digital Assets',
+                icon: <PhotoLibraryOutlined fontSize="small" />,
+                children: [
+                    { id: 'All Assets', label: 'All Assets', icon: <FolderOpenOutlined fontSize="small" />, url: '/folders' },
+                    { id: 'Bin', label: 'Recycle Bin', icon: <DeleteOutlined fontSize="small" />, url: '/bin' }
+                ]
+            },
+        ]
+    },
+    {
+        id: 'workflows',
+        title: 'Workflows & Tasks',
+        items: [
             { id: 'My Tasks', label: 'My Tasks', icon: <AssignmentOutlined fontSize="small" />, url: '/workflows/dashboard' },
-            { id: 'Analytics', label: 'Analytics', icon: <AnalyticsOutlined fontSize="small" /> }
+            { id: 'Workflows', label: 'Active Workflows', icon: <AccountTree fontSize="small" />, url: '/workflows' }
         ]
     },
     {
-        id: 'application',
-        title: 'Application',
+        id: 'insights',
+        title: 'Insights',
+        items: [
+            { id: 'Reports', label: 'Reports', icon: <AnalyticsOutlined fontSize="small" />, url: '/reports' }
+        ]
+    },
+    {
+        id: 'administration',
+        title: 'Administration',
         items: [
             {
-                id: 'Users',
-                label: 'Users',
+                id: 'Identity',
+                label: 'Access & Identity',
                 icon: <PeopleAltOutlined fontSize="small" />,
-                url: '/admin/users',
-            },
-            {
-                id: 'User Groups',
-                label: 'User Groups',
-                icon: <GroupWorkOutlined fontSize="small" />,
-                url: '/admin/user_groups'
-            },
-            {
-                // Add the new Email Engine routing
-                id: 'Email Engine',
-                label: 'Email Engine',
-                url: '/admin/email_templates',
-                icon: <EmailOutlined fontSize="small" />
-            }
-        ]
-    },
-    {
-        id: 'settings',
-        title: 'Settings',
-        items: [
-            {
-                id: 'General',
-                label: 'General',
-                icon: <SettingsOutlined fontSize="small" />,
-                isLink: true,
-                url: '/settings'
+                children: [
+                    { id: 'Users', label: 'Users', icon: <PersonOutlined fontSize="small" />, url: '/admin/users' },
+                    { id: 'User Groups', label: 'User Groups', icon: <GroupWorkOutlined fontSize="small" />, url: '/admin/user_groups' },
+                    { id: 'Policies', label: 'Security Policies', icon: <SecurityOutlined fontSize="small" />, url: '/admin/policies' }
+                ]
             },
             {
                 id: 'System',
-                label: 'System Operations',
-                icon: <DnsOutlined fontSize="small" />, // MUI icon for server/infra
-                isLink: true,
-                url: '/settings/system'
+                label: 'System Settings',
+                icon: <SettingsOutlined fontSize="small" />,
+                children: [
+                    { id: 'General', label: 'General Settings', icon: <SettingsOutlined fontSize="small" />, url: '/settings' },
+                    { id: 'Email Engine', label: 'Email Engine', icon: <EmailOutlined fontSize="small" />, url: '/admin/email_templates' },
+                    { id: 'System Ops', label: 'System Operations', icon: <DnsOutlined fontSize="small" />, url: '/settings/system' }
+                ]
             }
         ]
     }

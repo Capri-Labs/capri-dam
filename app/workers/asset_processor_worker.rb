@@ -80,7 +80,7 @@ class AssetProcessorWorker
         )
       )
       # Announce to the event stream that a new asset was just ingested
-      WorkflowInitiatorWorker.perform_async(asset.id, 'on_upload')
+      AssetWorkflowTriggerWorker.perform_async(asset.id, 'on_upload')
 
       Rails.logger.info "✅ Asset #{asset.uuid} processed and stored as #{file_path}"
 

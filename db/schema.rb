@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_05_21_150607) do
+ActiveRecord::Schema[8.1].define(version: 2026_05_27_164224) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -30,6 +30,30 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_21_150607) do
     t.index ["properties"], name: "index_assets_on_properties", using: :gin
     t.index ["user_id"], name: "index_assets_on_user_id"
     t.index ["uuid"], name: "index_assets_on_uuid", unique: true
+  end
+
+  create_table "audit_logs", force: :cascade do |t|
+    t.string "action"
+    t.integer "auditable_id"
+    t.string "auditable_type"
+    t.jsonb "changes_data"
+    t.datetime "created_at", null: false
+    t.string "ip_address"
+    t.datetime "updated_at", null: false
+    t.string "user_agent"
+    t.bigint "user_id"
+    t.index ["auditable_type", "auditable_id", "ip_address", "user_id"], name: "idx_audit_logs_polymorphic_ip_user"
+    t.index ["user_id"], name: "index_audit_logs_on_user_id"
+  end
+
+  create_table "daily_metrics", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.jsonb "metadata", default: {}
+    t.date "metric_date", null: false
+    t.string "metric_name", null: false
+    t.integer "metric_value", default: 0
+    t.datetime "updated_at", null: false
+    t.index ["metric_date", "metric_name"], name: "index_daily_metrics_on_metric_date_and_metric_name", unique: true
   end
 
   create_table "email_deliveries", force: :cascade do |t|
@@ -181,6 +205,26 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_21_150607) do
     t.index ["storage_backend_id"], name: "index_renditions_on_storage_backend_id"
   end
 
+  create_table "report_definitions", force: :cascade do |t|
+    t.boolean "active"
+    t.datetime "created_at", null: false
+    t.string "name"
+    t.jsonb "query_config"
+    t.string "report_type"
+    t.datetime "updated_at", null: false
+  end
+
+  create_table "report_snapshots", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.text "error_message"
+    t.string "format", null: false
+    t.jsonb "parameters", default: {}
+    t.bigint "report_definition_id", null: false
+    t.integer "status", default: 0
+    t.datetime "updated_at", null: false
+    t.index ["report_definition_id"], name: "index_report_snapshots_on_report_definition_id"
+  end
+
   create_table "settings", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "key"
@@ -251,6 +295,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_21_150607) do
     t.string "email", default: "", null: false
     t.string "encrypted_password", default: "", null: false
     t.string "first_name"
+    t.boolean "force_password_change", default: false
     t.string "last_name"
     t.string "name", null: false
     t.jsonb "preferences", default: {}
@@ -261,7 +306,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_21_150607) do
     t.string "role", default: "viewer"
     t.string "uid"
     t.datetime "updated_at", null: false
-    t.string "username", null: false
+    t.string "username"
     t.index ["active"], name: "index_users_on_active"
     t.index ["department"], name: "index_users_on_department"
     t.index ["email"], name: "index_users_on_email", unique: true
@@ -327,11 +372,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_21_150607) do
     t.datetime "created_at", null: false
     t.integer "created_by_id"
     t.text "description"
+    t.string "exclude_folder_ids", default: [], array: true
     t.string "fallback_assignee_id"
     t.string "fallback_assignee_type"
+    t.string "folder_scope", default: "all"
+    t.jsonb "graph_data", default: {}
     t.jsonb "metadata"
     t.string "name"
     t.integer "status"
+    t.string "target_folder_ids", default: [], array: true
     t.string "trigger_type"
     t.datetime "updated_at", null: false
     t.integer "updated_by_id"
@@ -339,6 +388,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_21_150607) do
 
   add_foreign_key "assets", "folders"
   add_foreign_key "assets", "users"
+  add_foreign_key "audit_logs", "users"
   add_foreign_key "email_deliveries", "email_templates"
   add_foreign_key "folder_policies", "folders"
   add_foreign_key "folder_policies", "user_groups"
@@ -351,6 +401,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_21_150607) do
   add_foreign_key "oauth_access_tokens", "oauth_applications", column: "application_id"
   add_foreign_key "renditions", "assets"
   add_foreign_key "renditions", "storage_backends"
+  add_foreign_key "report_snapshots", "report_definitions"
   add_foreign_key "user_group_memberships", "user_groups"
   add_foreign_key "user_group_memberships", "users"
   add_foreign_key "user_preferences", "users"

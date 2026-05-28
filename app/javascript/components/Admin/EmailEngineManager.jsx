@@ -134,7 +134,6 @@ export default function EmailEngineManager() {
             <CssBaseline />
             <Sidebar activeView={activeView} onNavigate={(v) => v === 'System' ? null : navigateTo('/dashboard')} />
             <Box component="main" sx={{ width: '100%', p: 2 }}>
-                <Toolbar/>
                 <Box sx={{
                     display: 'flex',
                     justifyContent: 'space-between',

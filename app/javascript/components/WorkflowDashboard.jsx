@@ -124,10 +124,9 @@ export default function WorkflowDashboard({ onNavigateToAsset }) {
     return (
         <Box sx={{ display: 'flex', bgcolor: '#f4f7fb', minHeight: '100vh' }}>
             <CssBaseline />
-            <Sidebar activeView={activeView} onNavigate={navigateTo} />
+            <Sidebar activeView={activeView} onNavigate={(v) => v === 'My Tasks' ? null : navigateTo('/dashboard')} />
 
             <Box component="main" sx={{ flexGrow: 1, p: 4, width: '100%' }}>
-                <Toolbar/>
                 <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
                     <Typography variant="h5" fontWeight="bold" color="#1e293b">Workflow Operations Center</Typography>
                     <Button startIcon={<Refresh />} onClick={fetchDashboardData}>Refresh</Button>

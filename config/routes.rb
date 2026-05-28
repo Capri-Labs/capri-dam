@@ -5,6 +5,10 @@ Rails.application.routes.draw do
   use_doorkeeper
   devise_for :users, controllers: { sessions: 'users/sessions' }
 
+  devise_scope :user do
+    post 'users/force_password_update', to: 'users/sessions#force_password_update'
+  end
+
   # Authentication-based Root Logic
   authenticated :user do
     root to: "dashboard#index", as: :authenticated_root
@@ -15,6 +19,10 @@ Rails.application.routes.draw do
   end
 
   get '/dashboard', to: 'dashboard#index'
+  get '/reports', to: 'admin/reports#index'
+  get '/bin', to: 'dashboard#bin'
+  get '/folders', to: 'dashboard#folders'
+
   get "up" => "rails/health#show", as: :rails_health_check
 
   # --- API Namespace (Consolidated) ---
@@ -97,6 +105,16 @@ Rails.application.routes.draw do
         post :retry # Endpoint to manually retry a failed email
       end
     end
+
+    # Routing for Report Definitions
+    resources :reports, only: [:index, :show] do
+      post :generate, on: :member
+    end
+
+    # Routing for Snapshot downloads
+    resources :report_snapshots, only: [:index] do
+      get :download, on: :member
+    end
   end
 
   # 1. THE FRONTEND ROUTE (Serves the HTML Shell)
@@ -138,6 +156,5 @@ Rails.application.routes.draw do
       # ... assets and folders routes ...
     end
   end
-
 
 end

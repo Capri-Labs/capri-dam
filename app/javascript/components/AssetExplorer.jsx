@@ -2,18 +2,25 @@ import React, { useState, useEffect } from 'react';
 import {
     Box, Grid, Typography, Breadcrumbs, Link, Paper, Stack, IconButton,
     Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Tooltip, Divider,
-    ImageList, ImageListItem, ImageListItemBar, Checkbox, FormControlLabel // <-- Added Checkbox
+    ImageList, ImageListItem, ImageListItemBar, Checkbox, FormControlLabel
 } from '@mui/material';
 import {
     Folder as FolderIcon, InsertDriveFile, InfoOutlined,
-    Home, CreateNewFolder, CloudUpload, DeleteOutlined, // <-- Added Delete Icon
-    PictureAsPdf, VideoFile
+    Home, CreateNewFolder, CloudUpload, DeleteOutlined,
+    PictureAsPdf, VideoFile, ContentCopy
 } from '@mui/icons-material';
 import AssetViewer from './AssetViewer';
+import { useNotify } from '../context/NotificationContext'; // Assuming you have this
 
 export default function AssetExplorer({ initialTargetAssetId }) {
+    const notify = useNotify();
     const [viewData, setViewData] = useState({ folders: [], assets: [], breadcrumbs: [] });
-    const [currentId, setCurrentId] = useState('root');
+
+    // Initialize currentId from the URL if a user navigated directly via a bookmark
+    const [currentId, setCurrentId] = useState(() => {
+        const params = new URLSearchParams(window.location.search);
+        return params.get('folder') || 'root';
+    });
 
     const [viewMode, setViewMode] = useState('active');
 
@@ -21,22 +28,45 @@ export default function AssetExplorer({ initialTargetAssetId }) {
     const [selectedAsset, setSelectedAsset] = useState(null);
     const [openFolderDialog, setOpenFolderDialog] = useState(false);
     const [newFolderName, setNewFolderName] = useState('');
-
-    // NEW: Bulk Selection States
     const [selectedItems, setSelectedItems] = useState({ folders: [], assets: [] });
 
-    // 🚨 NEW: Listen for routing requests from the Workflow Dashboard
+    // --- BROWSER HISTORY & ROUTING LOGIC ---
+
+    // Centralized navigation function to update state AND the browser URL
+    const handleNavigate = (folderId) => {
+        setCurrentId(folderId);
+
+        const newUrl = folderId === 'root'
+            ? window.location.pathname
+            : `${window.location.pathname}?folder=${folderId}`;
+
+        window.history.pushState({ folderId }, '', newUrl);
+    };
+
+    // Listen for the browser's Back/Forward buttons to keep state synced with the URL
+    useEffect(() => {
+        const handlePopState = () => {
+            const params = new URLSearchParams(window.location.search);
+            setCurrentId(params.get('folder') || 'root');
+        };
+        window.addEventListener('popstate', handlePopState);
+        return () => window.removeEventListener('popstate', handlePopState);
+    }, []);
+
+    const handleCopyPath = () => {
+        navigator.clipboard.writeText(window.location.href)
+            .then(() => notify("Folder location copied to clipboard!", "success"))
+            .catch(() => notify("Failed to copy link.", "error"));
+    };
+
+    // --- DATA LOADING ---
+
     useEffect(() => {
         if (initialTargetAssetId) {
-            // Find the asset in the currently loaded view data
             const targetAsset = viewData.assets?.find(a => a.id === initialTargetAssetId);
-
             if (targetAsset) {
-                // If it's already in the current folder, just open it!
                 setSelectedAsset(targetAsset);
             } else {
-                // Advanced: If it's in a different folder, you would fetch it directly from the API
-                // using /api/v1/assets/${initialTargetAssetId} and then call setSelectedAsset
                 fetch(`/api/v1/assets/${initialTargetAssetId}`)
                     .then(res => res.json())
                     .then(data => setSelectedAsset(data));
@@ -45,52 +75,55 @@ export default function AssetExplorer({ initialTargetAssetId }) {
     }, [initialTargetAssetId, viewData.assets]);
 
     const loadContent = () => {
-        if (viewMode === 'bin') {
-            fetch('/api/v1/bin') // The new endpoint we just made
-                .then(res => res.json())
-                .then(data => {
-                    setViewData(data);
-                    setSelectedItems({ folders: [], assets: [] });
-                });
-        } else {
-            fetch(`/api/v1/folders/${currentId}`)
-                .then(res => res.json())
-                .then(data => {
-                    setViewData(data);
-                    setSelectedItems({ folders: [], assets: [] });
-                });
-        }
+        const endpoint = viewMode === 'bin' ? '/api/v1/bin' : `/api/v1/folders/${currentId}`;
+        fetch(endpoint)
+            .then(res => res.json())
+            .then(data => {
+                setViewData(data);
+                setSelectedItems({ folders: [], assets: [] });
+            });
     };
 
     useEffect(() => { loadContent(); }, [currentId, viewMode]);
 
-    // New action for restoring items
+    // --- ACTIONS ---
+
     const handleRestoreSelected = async () => {
         const csrfToken = document.querySelector('[name="csrf-token"]').content;
         const headers = { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken };
-
         const assetPromises = selectedItems.assets.map(id => fetch(`/api/v1/assets/${id}/restore`, { method: 'POST', headers }));
         const folderPromises = selectedItems.folders.map(id => fetch(`/api/v1/folders/${id}/restore`, { method: 'POST', headers }));
-
         await Promise.all([...assetPromises, ...folderPromises]);
         loadContent();
     };
 
-    // New action for permanent destruction
     const handlePermanentDelete = async () => {
         if (!window.confirm("WARNING: This will permanently delete these files from the server. This cannot be undone!")) return;
-
         const csrfToken = document.querySelector('[name="csrf-token"]').content;
         const headers = { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken };
-
         const assetPromises = selectedItems.assets.map(id => fetch(`/api/v1/assets/${id}/permanent`, { method: 'DELETE', headers }));
         const folderPromises = selectedItems.folders.map(id => fetch(`/api/v1/folders/${id}/permanent`, { method: 'DELETE', headers }));
-
         await Promise.all([...assetPromises, ...folderPromises]);
         loadContent();
     };
 
-    // --- BULK SELECTION LOGIC ---
+    const handleDeleteSelected = async () => {
+        const totalCount = selectedItems.folders.length + selectedItems.assets.length;
+        if (!window.confirm(`Are you sure you want to delete ${totalCount} selected item(s)? This cannot be undone.`)) return;
+
+        try {
+            const csrfToken = document.querySelector('[name="csrf-token"]').content;
+            const headers = { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken };
+            const assetPromises = selectedItems.assets.map(id => fetch(`/api/v1/assets/${id}`, { method: 'DELETE', headers }));
+            const folderPromises = selectedItems.folders.map(id => fetch(`/api/v1/folders/${id}`, { method: 'DELETE', headers }));
+            await Promise.all([...assetPromises, ...folderPromises]);
+            loadContent();
+        } catch (error) {
+            console.error("Bulk delete failed:", error);
+            notify("An error occurred during deletion.", "error");
+        }
+    };
+
     const handleSelectAll = (event) => {
         if (event.target.checked) {
             setSelectedItems({
@@ -103,63 +136,21 @@ export default function AssetExplorer({ initialTargetAssetId }) {
     };
 
     const toggleSelection = (type, id, event) => {
-        event.stopPropagation(); // Prevent opening folders/viewers when clicking the checkbox
+        event.stopPropagation();
         setSelectedItems(prev => {
             const list = prev[type];
-            if (list.includes(id)) {
-                return { ...prev, [type]: list.filter(itemId => itemId !== id) };
-            } else {
-                return { ...prev, [type]: [...list, id] };
-            }
+            return list.includes(id)
+                ? { ...prev, [type]: list.filter(itemId => itemId !== id) }
+                : { ...prev, [type]: [...list, id] };
         });
     };
 
-    const isAllSelected = (viewData.folders?.length > 0 || viewData.assets?.length > 0) &&
-        selectedItems.folders.length === (viewData.folders?.length || 0) &&
-        selectedItems.assets.length === (viewData.assets?.length || 0);
-
-    const hasSelection = selectedItems.folders.length > 0 || selectedItems.assets.length > 0;
-
-    // --- DELETE LOGIC ---
-    const handleDeleteSelected = async () => {
-        const totalCount = selectedItems.folders.length + selectedItems.assets.length;
-        if (!window.confirm(`Are you sure you want to delete ${totalCount} selected item(s)? This cannot be undone.`)) {
-            return;
-        }
-
-        try {
-            const csrfToken = document.querySelector('[name="csrf-token"]').content;
-            const headers = { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken };
-
-            // 1. Delete Selected Assets
-            const assetPromises = selectedItems.assets.map(id =>
-                fetch(`/api/v1/assets/${id}`, { method: 'DELETE', headers })
-            );
-
-            // 2. Delete Selected Folders
-            const folderPromises = selectedItems.folders.map(id =>
-                fetch(`/api/v1/folders/${id}`, { method: 'DELETE', headers })
-            );
-
-            // Wait for all delete requests to finish
-            await Promise.all([...assetPromises, ...folderPromises]);
-
-            // Refresh view
-            loadContent();
-        } catch (error) {
-            console.error("Bulk delete failed:", error);
-            alert("An error occurred during deletion.");
-        }
-    };
-
-    // --- CREATE & UPLOAD LOGIC ---
     const handleCreateFolder = async () => {
         const response = await fetch('/api/v1/folders', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content },
             body: JSON.stringify({ folder: { name: newFolderName, parent_id: currentId === 'root' ? null : currentId } })
         });
-
         if (response.ok) {
             setOpenFolderDialog(false);
             setNewFolderName('');
@@ -170,7 +161,6 @@ export default function AssetExplorer({ initialTargetAssetId }) {
     const handleFileUpload = async (event) => {
         const file = event.target.files[0];
         if (!file) return;
-
         const formData = new FormData();
         formData.append('file', file);
         formData.append('title', file.name);
@@ -183,7 +173,6 @@ export default function AssetExplorer({ initialTargetAssetId }) {
                 headers: { 'Accept': 'application/json', 'X-CSRF-Token': csrfMetaTag.content },
                 body: formData
             });
-
             if (response.ok) loadContent();
         } catch (error) {
             console.error("Upload error:", error);
@@ -192,11 +181,11 @@ export default function AssetExplorer({ initialTargetAssetId }) {
         }
     };
 
-    // --- UI HELPERS ---
-    const formatFileName = (name) => {
-        if (!name) return "Unknown";
-        return name.length > 10 ? `${name.substring(0, 10)}...` : name;
-    };
+    const isAllSelected = (viewData.folders?.length > 0 || viewData.assets?.length > 0) &&
+        selectedItems.folders.length === (viewData.folders?.length || 0) &&
+        selectedItems.assets.length === (viewData.assets?.length || 0);
+    const hasSelection = selectedItems.folders.length > 0 || selectedItems.assets.length > 0;
+    const formatFileName = (name) => (!name ? "Unknown" : name.length > 15 ? `${name.substring(0, 15)}...` : name);
 
     return (
         <Box sx={{ width: '100%', p: 4, bgcolor: '#f8fafc', minHeight: '100vh' }}>
@@ -205,11 +194,11 @@ export default function AssetExplorer({ initialTargetAssetId }) {
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2,
                 width: '100%', mb: 4, pb: 2, borderBottom: '1px solid #e2e8f0'
             }}>
-                <Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Breadcrumbs aria-label="breadcrumb">
                         <Link
                             underline="hover" color={currentId === 'root' ? "text.primary" : "inherit"}
-                            onClick={() => setCurrentId('root')}
+                            onClick={() => handleNavigate('root')}
                             sx={{ cursor: 'pointer', display: 'flex', alignItems: 'center', fontWeight: currentId === 'root' ? 700 : 400 }}
                         >
                             <Home sx={{ mr: 0.5 }} fontSize="small" /> Home
@@ -218,17 +207,23 @@ export default function AssetExplorer({ initialTargetAssetId }) {
                             <Link
                                 key={crumb.id} underline="hover"
                                 color={index === arr.length - 1 ? "text.primary" : "inherit"}
-                                onClick={() => setCurrentId(crumb.id)}
+                                onClick={() => handleNavigate(crumb.id)}
                                 sx={{ cursor: 'pointer', fontWeight: index === arr.length - 1 ? 700 : 400 }}
                             >
                                 {crumb.name}
                             </Link>
                         ))}
                     </Breadcrumbs>
+
+                    {/* Copy URL Button */}
+                    <Tooltip title="Copy Folder Link">
+                        <IconButton size="small" onClick={handleCopyPath} sx={{ ml: 1, color: '#64748b' }}>
+                            <ContentCopy fontSize="small" />
+                        </IconButton>
+                    </Tooltip>
                 </Box>
 
                 <Stack direction="row" spacing={2} alignItems="center">
-                    {/* SELECT ALL CHECKBOX */}
                     {(viewData.folders?.length > 0 || viewData.assets?.length > 0) && (
                         <FormControlLabel
                             control={<Checkbox size="small" checked={isAllSelected} onChange={handleSelectAll} />}
@@ -237,55 +232,39 @@ export default function AssetExplorer({ initialTargetAssetId }) {
                         />
                     )}
 
-                    {/* View Mode Toggle Button */}
                     <Button
                         variant={viewMode === 'bin' ? 'contained' : 'outlined'}
                         color={viewMode === 'bin' ? 'warning' : 'inherit'}
                         onClick={() => {
                             setViewMode(viewMode === 'active' ? 'bin' : 'active');
-                            setCurrentId('root'); // Reset to root when swapping views
+                            handleNavigate('root');
                         }}
                         sx={{ textTransform: 'none', borderRadius: '8px', bgcolor: viewMode === 'active' ? 'white' : '' }}
                     >
                         {viewMode === 'active' ? 'View Trash Bin' : 'Back to Active Files'}
                     </Button>
 
-                    {/* --- DYNAMIC ACTION BUTTONS --- */}
-
-                    {/* ACTIVE MODE: Move to Bin */}
                     {hasSelection && viewMode === 'active' && (
-                        <Button
-                            variant="outlined" color="error" startIcon={<DeleteOutlined />} onClick={handleDeleteSelected}
-                        >
+                        <Button variant="outlined" color="error" startIcon={<DeleteOutlined />} onClick={handleDeleteSelected}>
                             Move to Bin ({selectedItems.folders.length + selectedItems.assets.length})
                         </Button>
                     )}
 
-                    {/* BIN MODE: Restore & Permanent Delete */}
                     {hasSelection && viewMode === 'bin' && (
                         <>
-                            <Button variant="contained" color="success" onClick={handleRestoreSelected}>
-                                Restore
-                            </Button>
+                            <Button variant="contained" color="success" onClick={handleRestoreSelected}>Restore</Button>
                             <Button variant="contained" color="error" startIcon={<DeleteOutlined />} onClick={handlePermanentDelete}>
                                 Delete Forever
                             </Button>
                         </>
                     )}
 
-                    {/* STANDARD CREATION BUTTONS (Only show in Active Mode) */}
                     {viewMode === 'active' && (
                         <>
-                            <Button
-                                variant="outlined" startIcon={<CreateNewFolder />} onClick={() => setOpenFolderDialog(true)}
-                                sx={{ textTransform: 'none', borderRadius: '8px', bgcolor: 'white' }}
-                            >
+                            <Button variant="outlined" startIcon={<CreateNewFolder />} onClick={() => setOpenFolderDialog(true)} sx={{ textTransform: 'none', borderRadius: '8px', bgcolor: 'white' }}>
                                 New Folder
                             </Button>
-                            <Button
-                                variant="contained" startIcon={<CloudUpload />} component="label"
-                                sx={{ textTransform: 'none', borderRadius: '8px', boxShadow: 'none', bgcolor: '#4f46e5', '&:hover': { bgcolor: '#4338ca' } }}
-                            >
+                            <Button variant="contained" startIcon={<CloudUpload />} component="label" sx={{ textTransform: 'none', borderRadius: '8px', boxShadow: 'none', bgcolor: '#4f46e5', '&:hover': { bgcolor: '#4338ca' } }}>
                                 Upload Asset
                                 <input type="file" hidden onChange={handleFileUpload} />
                             </Button>
@@ -305,11 +284,9 @@ export default function AssetExplorer({ initialTargetAssetId }) {
                                     elevation={0}
                                     onClick={(e) => {
                                         if (viewMode === 'bin') {
-                                            // In Bin mode, clicking the card just checks the item
                                             toggleSelection('folders', folder.id, e);
                                         } else {
-                                            // In normal mode, navigate deeper
-                                            setCurrentId(folder.id);
+                                            handleNavigate(folder.id);
                                         }
                                     }}
                                     sx={{
@@ -328,7 +305,7 @@ export default function AssetExplorer({ initialTargetAssetId }) {
                                         onClick={(e) => toggleSelection('folders', folder.id, e)}
                                         sx={{ position: 'absolute', top: 4, right: 4, p: 0.5 }}
                                     />
-                                    <FolderIcon sx={{  fontSize: 48, minWidth: 60, minHeight: 60, color: '#4299e1' }} />
+                                    <FolderIcon sx={{ fontSize: 48, minWidth: 60, minHeight: 60, color: '#4299e1' }} />
                                     <Tooltip title={folder.name} placement="top-start">
                                         <Typography variant="body2" fontWeight="600" sx={{ color: '#1e293b' }}>
                                             {formatFileName(folder.name)}
@@ -353,23 +330,14 @@ export default function AssetExplorer({ initialTargetAssetId }) {
                     <ImageList gap={16} sx={{ mb: 8, gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr)) !important', overflow: 'visible' }}>
                         {viewData.assets.map((asset) => {
                             const displayName = asset.name || asset.title || "Unknown File";
-
                             let metadata = {};
                             if (typeof asset.properties === 'string') {
-                                try {
-                                    metadata = JSON.parse(asset.properties);
-                                } catch (e) {
-                                    console.warn("Could not parse properties string for asset:", asset.id);
-                                }
+                                try { metadata = JSON.parse(asset.properties); } catch (e) {}
                             } else if (asset.properties) {
                                 metadata = asset.properties;
-                            } else if (asset.metadata) {
-                                metadata = asset.metadata; // Fallback
                             }
 
-                            const rawContentType = metadata.content_type || '';
-                            const contentType = typeof rawContentType === 'string' ? rawContentType : '';
-
+                            const contentType = typeof metadata.content_type === 'string' ? metadata.content_type : '';
                             const isImage = contentType.startsWith('image/');
                             const isPdf = contentType === 'application/pdf';
                             const isVideo = contentType.startsWith('video/');
@@ -380,10 +348,8 @@ export default function AssetExplorer({ initialTargetAssetId }) {
                                     key={asset.id}
                                     onClick={(e) => {
                                         if (viewMode === 'bin') {
-                                            // In Bin mode, clicking the card checks the box for bulk actions
                                             toggleSelection('assets', asset.id, e);
                                         } else {
-                                            // In normal mode, it opens the full-screen Asset Viewer
                                             setSelectedAsset(asset);
                                         }
                                     }}
@@ -394,7 +360,6 @@ export default function AssetExplorer({ initialTargetAssetId }) {
                                         '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 12px 24px rgba(0,0,0,0.1)', borderColor: '#4f46e5' }
                                     }}
                                 >
-                                    {/* TOP LEFT ABSOLUTE CHECKBOX */}
                                     <Box sx={{ position: 'absolute', top: 8, left: 8, zIndex: 10 }}>
                                         <Checkbox
                                             size="small"
@@ -410,31 +375,18 @@ export default function AssetExplorer({ initialTargetAssetId }) {
                                     </Box>
 
                                     {isImage && asset.url ? (
-                                        <img
-                                            srcSet={`${asset.url}?w=248&fit=crop&auto=format&dpr=2 2x`}
-                                            src={`${asset.url}?w=248&fit=crop&auto=format`}
-                                            alt={displayName} loading="lazy" style={{ height: '200px', objectFit: 'cover' }}
-                                        />
+                                        <img src={`${asset.url}?w=248&fit=crop&auto=format`} alt={displayName} loading="lazy" style={{ height: '200px', objectFit: 'cover' }} />
                                     ) : (
                                         <Box sx={{ height: '200px', bgcolor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                             {isPdf && <PictureAsPdf sx={{ fontSize: 64, color: '#ef4444' }} />}
                                             {isVideo && <VideoFile sx={{ fontSize: 64, color: '#3b82f6' }} />}
                                             {!isPdf && !isVideo && <InsertDriveFile sx={{ fontSize: 64, color: '#64748b' }} />}
                                         </Box>
-
                                     )}
 
                                     <ImageListItemBar
-                                        title={
-                                            <Tooltip title={displayName} placement="top-start">
-                                                <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>{formatFileName(displayName)}</Typography>
-                                            </Tooltip>
-                                        }
-                                        actionIcon={
-                                            <IconButton sx={{ color: 'rgba(255, 255, 255, 0.7)', '&:hover': { color: '#ffffff' } }} onClick={(e) => { e.stopPropagation(); setSelectedAsset(asset); }}>
-                                                <InfoOutlined />
-                                            </IconButton>
-                                        }
+                                        title={<Tooltip title={displayName} placement="top-start"><Typography variant="subtitle2" sx={{ fontWeight: 600 }}>{formatFileName(displayName)}</Typography></Tooltip>}
+                                        actionIcon={<IconButton sx={{ color: 'rgba(255, 255, 255, 0.7)', '&:hover': { color: '#ffffff' } }} onClick={(e) => { e.stopPropagation(); setSelectedAsset(asset); }}><InfoOutlined /></IconButton>}
                                     />
                                 </ImageListItem>
                             );
@@ -443,7 +395,6 @@ export default function AssetExplorer({ initialTargetAssetId }) {
                 )}
             </Box>
 
-            {/* --- DIALOGS --- */}
             <Dialog open={openFolderDialog} onClose={() => setOpenFolderDialog(false)}>
                 <DialogTitle>Create New Folder</DialogTitle>
                 <DialogContent>

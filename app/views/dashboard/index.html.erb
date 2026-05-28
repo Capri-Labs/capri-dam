@@ -1,7 +1,10 @@
+<%#
+  Notice the single quotes around the data-assets value.
+  This safely injects the JSON string without double-encoding it.
+%>
 <div id="root"
      data-view="dashboard"
      data-user-is-admin="<%= current_user.admin? %>"
      data-search-term="<%= @search_term %>"
-     data-assets='<%= raw @assets_json.to_json %>'
-     data-workflows='<%= raw @workflows_json %>'>
+     data-assets='<%= @assets_json %>'>
 </div>

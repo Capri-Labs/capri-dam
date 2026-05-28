@@ -19,10 +19,12 @@ class Admin::UsersController < ApplicationController
             role: user.role,
             avatar_url: user.avatar_url,
             sso_managed: user.sso_managed?,
+            admin: user.admin,
             provider: user.provider,
             active: user.active,
             created_at: user.created_at.strftime("%Y-%m-%d"),
-            groups: user.user_groups.pluck(:name)
+            groups: user.user_groups.pluck(:name),
+            group_ids: user.user_groups.pluck(:id)
           }
         end
         render json: { users: users }
@@ -33,14 +35,23 @@ class Admin::UsersController < ApplicationController
   # POST /admin/users
   def create
     @user = User.new(user_params)
-    @user.password = SecureRandom.hex(10) # Temporary password for local users
+
+    # Combine first and last name to satisfy the database NOT NULL constraint
+    @user.name = "#{@user.first_name} #{@user.last_name}".strip
+
+    # Generate temporary password
+    temp_password = SecureRandom.base36(12)
+    @user.password = temp_password
+    @user.password_confirmation = temp_password
+
     @user.active = true
+    @user.force_password_change = true
 
     if @user.save
       EmailOrchestrator.trigger(
         'user_created',
         @user.email,
-        { 'user' => { 'first_name' => @user.first_name, 'temp_password' => @user.password } }
+        { 'user' => { 'first_name' => @user.first_name, 'temp_password' => temp_password } }
       )
 
       render json: { success: true, message: "User created successfully." }
@@ -51,6 +62,11 @@ class Admin::UsersController < ApplicationController
 
   # PATCH /admin/users/:id
   def update
+    # 🚨 Enterprise Security: Prevent users from demoting themselves or non-admins from changing admin status
+    if params[:user][:admin].present? && !current_user.admin?
+      return render json: { success: false, errors: ["Unauthorized to modify admin status"] }, status: :forbidden
+    end
+
     if @target_user.sso_managed?
       # Only allow updating local fields (like role/department) if the SSO doesn't manage them,
       # but strictly block email/name changes.
@@ -76,7 +92,7 @@ class Admin::UsersController < ApplicationController
       @target_user.reactivate!
       msg = "User access restored."
     end
-    render json: { success: true, message: msg }
+    render json: { success: true, message: msg, active: @target_user.active }
   end
 
   private
@@ -86,7 +102,7 @@ class Admin::UsersController < ApplicationController
   end
 
   def user_params
-    params.require(:user).permit(:email, :first_name, :last_name, :department, :role)
+    params.require(:user).permit(:email, :first_name, :last_name, :department, :role, :admin, user_group_ids: [])
   end
 
   def ensure_admin!

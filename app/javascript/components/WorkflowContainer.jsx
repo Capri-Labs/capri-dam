@@ -53,7 +53,6 @@ export default function WorkflowContainer(props) {
             <Sidebar activeView={activeView} onNavigate={(v) => v === 'Workflows' ? null : navigateTo('/dashboard')} />
 
             <Box component="main" sx={{ flexGrow: 1 }}>
-                <Toolbar />
                 {renderWorkflowView()}
             </Box>
         </Box>

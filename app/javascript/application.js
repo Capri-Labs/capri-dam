@@ -4,11 +4,10 @@ import "@hotwired/turbo-rails"
 
 // Components
 import Header from './components/Header'; // Import your Header
-import Dashboard from './components/Dashboard';
 import Settings from './components/Settings';
 import SystemAccountShow from "./components/system_accounts/SystemAccountShow";
 import SystemAccountNew from "./components/system_accounts/SystemAccountNew";
-import Login from './components/Login';
+import Login from './components/Login/Login';
 import { NotificationProvider } from './context/NotificationContext';
 import UserGroupsManager from './components/Admin/UserGroupsManager';
 import UsersManager from './components/Admin/UsersManager';
@@ -17,6 +16,10 @@ import App from './components/App';
 import AssetExplorer from "./components/AssetExplorer";
 import WorkflowDashboard from "./components/WorkflowDashboard";
 import WorkflowContainer from "./components/WorkflowContainer";
+import ReportsManager from "./components/Admin/ReportsManager";
+import DashboardManager from "./components/Dashboard/DashboardManager";
+import FoldersManager from "./components/Folders/FoldersManager";
+import BinManager from "./components/Bin/BinManager";
 
 document.addEventListener('turbo:load', () => {
     // --- 1. MOUNT THE HEADER ---
@@ -47,7 +50,9 @@ document.addEventListener('turbo:load', () => {
         );
 
         if (view === 'dashboard') {
-            mainRoot.render(renderWithContext(<Dashboard {...props} />));
+            mainRoot.render(renderWithContext(<DashboardManager {...props} />));
+        } else if (view === 'folders') {
+            mainRoot.render(renderWithContext(<FoldersManager {...props} />));
         } else if (view === 'settings') {
             mainRoot.render(renderWithContext(<Settings {...props} />));
         } else if (view === 'system_account_show') {
@@ -70,6 +75,11 @@ document.addEventListener('turbo:load', () => {
         } else if (view === 'workflow_dashboard') {
             mainRoot.render(renderWithContext(<WorkflowDashboard {...props} />));
 
+        } else if (view === 'reports') {
+            mainRoot.render(renderWithContext(<ReportsManager {...props} />));
+
+        } else if (view === 'bin') {
+            mainRoot.render(renderWithContext(<BinManager {...props} />));
         } else {
             mainRoot.render(renderWithContext(<Login />));
         }

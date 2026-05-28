@@ -1,10 +1,11 @@
 class DashboardController < ApplicationController
-  # This ensures ONLY logged-in users can reach these actions
   before_action :authenticate_user!
 
   def index
-    assets_scope = Asset.all
+    # 1. Base scope: Only search active assets (ignore the recycle bin)
+    assets_scope = Asset.active
 
+    # 2. Apply search filter if present
     if params[:search].present?
       @search_term = params[:search]
       assets_scope = assets_scope.where(
@@ -13,6 +14,7 @@ class DashboardController < ApplicationController
       )
     end
 
+    # 3. Format and encode to a JSON string ONCE
     @assets_json = assets_scope.limit(20).map do |asset|
       {
         id: asset.id,
@@ -23,13 +25,15 @@ class DashboardController < ApplicationController
       }
     end.to_json
 
-    # Force an empty array string if nothing is found
-    @assets_json = "[]" if @assets_json.blank?
+    # Fallback for an empty result set
+    @assets_json = "[]" if @assets_json == "null" || @assets_json.blank?
+  end
 
-    # This line is critical! It fetches the apps from Doorkeeper
-    @system_apps = Doorkeeper::Application.where(owner_id: nil)
+  def bin
+    # Renders app/views/dashboard/bin.html.erb
+  end
 
-    # Optional: if you also want to show backends
-    @backends = StorageBackend.all
+  def folders
+    # Renders app/views/dashboard/folders.html.erb
   end
 end

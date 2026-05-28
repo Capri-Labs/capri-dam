@@ -2,6 +2,8 @@ class Asset < ApplicationRecord
   belongs_to :user
   belongs_to :folder, optional: true
 
+  # 🚨 REMOVED: after_commit :trigger_upload_workflows, on: :create
+
   has_many :workflow_instances, dependent: :destroy
   has_one_attached :file
 
@@ -27,7 +29,6 @@ class Asset < ApplicationRecord
   private
 
   def set_property_defaults
-    # Using 'properties' to match your PG schema
     self.properties ||= {
       description: "",
       usage_terms: "Internal Use Only",

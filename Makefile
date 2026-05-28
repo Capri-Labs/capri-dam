@@ -80,22 +80,24 @@ setup-oauth: ## Install and configure Doorkeeper for OAuth2
 	@echo "--- Applying OAuth Migrations ---"
 	bundle exec rails db:migrate
 
-db-setup: auth-setup seed test-setup ## Create and migrate the database
+db-setup: auth-setup ## Create and migrate the database
 	@echo "--- Setting up Postgres ---"
 	@# Check if Postgres is running via Homebrew
 	@if ! brew services list | grep -q "postgresql@14.*started"; then \
-		echo "Postgres is not running. Starting it..."; \
-		brew services start postgresql@14; \
-		sleep 5; \
+	   echo "Postgres is not running. Starting it..."; \
+	   brew services start postgresql@14; \
+	   sleep 5; \
 	fi
 	@if [ ! -f $(RAILS_EXE) ]; then \
-		echo "\033[31m$(RAILS_EXE) not found. Regenerating Rails structure...\033[0m"; \
-		rails new . --force --database=postgresql --javascript=esbuild --skip-bundle; \
-		chmod +x bin/*; \
+	   echo "\033[31m$(RAILS_EXE) not found. Regenerating Rails structure...\033[0m"; \
+	   rails new . --force --database=postgresql --javascript=esbuild --skip-bundle; \
+	   chmod +x bin/*; \
 	fi
 	@chmod +x bin/rails
 	$(RAILS) db:create
-    $(RAILS) db:prepare
+	$(RAILS) db:prepare
+	$(MAKE) seed
+	$(MAKE) test-setup
 
 setup: install db-setup ## The 'One Command' to rule them all
 	@echo "\033[32m--- Headless DAM Setup Complete ---\033[0m"

@@ -100,3 +100,8 @@ gem "liquid", "~> 5.12"
 gem "mini_magick", "~> 5.3"
 
 gem "marcel", "~> 1.1"
+
+gem 'prawn'
+gem 'prawn-table'
+
+gem 'caxlsx'

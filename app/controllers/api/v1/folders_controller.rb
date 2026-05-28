@@ -3,6 +3,37 @@ module Api
     class FoldersController < ApplicationController
       before_action :authenticate_user!
 
+      def index
+        # 1. Fetch all active folders in ONE query
+        all_folders = Folder.active.to_a
+
+        # 2. Create a fast lookup dictionary (Hash) by ID
+        folder_dict = all_folders.index_by(&:id)
+
+        # 3. Build the full path for each folder in memory
+        formatted_folders = all_folders.map do |folder|
+          path_names = []
+          current = folder
+
+          # Walk up the tree using the dictionary
+          while current
+            path_names.unshift(current.name)
+            current = folder_dict[current.parent_id]
+          end
+
+          # Format for the React frontend
+          {
+            id: folder.id,
+            name: "/" + path_names.join("/") # e.g., "/Marketing/2026/Campaigns"
+          }
+        end
+
+        # 4. Sort alphabetically so child folders naturally group under their parents
+        formatted_folders.sort_by! { |f| f[:name].downcase }
+
+        render json: { folders: formatted_folders }
+      end
+
       def show
         if params[:id] == 'root'
           # Strictly fetch only ACTIVE top-level items
@@ -80,9 +111,17 @@ module Api
       end
 
       def build_breadcrumbs(folder)
-        crumbs = [{ id: 'root', name: 'Home' }]
-        # Simple ancestor loop (adjust based on path/ancestry gem if using one)
-        crumbs << { id: folder.id, name: folder.name }
+        crumbs = []
+        current = folder
+
+        # Walk up the tree until there are no more parents
+        while current
+          crumbs.unshift({ id: current.id, name: current.name })
+          current = Folder.active.find_by(id: current.parent_id)
+        end
+
+        # Prepend the Home root
+        crumbs.unshift({ id: 'root', name: 'Home' })
         crumbs
       end
 

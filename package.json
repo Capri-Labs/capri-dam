@@ -7,6 +7,7 @@
     "@hotwired/turbo-rails": "^8.0.23",
     "@mui/icons-material": "^9.0.1",
     "@mui/material": "^9.0.1",
+    "@mui/x-data-grid": "^9.3.0",
     "@rails/activestorage": "^7.1.0",
     "@rails/request.js": "^0.0.8",
     "@tiptap/extension-image": "^3.23.5",
@@ -16,9 +17,12 @@
     "@tiptap/pm": "^3.23.5",
     "@tiptap/react": "^3.23.5",
     "@tiptap/starter-kit": "^3.23.5",
+    "@xyflow/react": "^12.10.2",
     "esbuild": "^0.20.0",
     "react": "^19.2.5",
-    "react-dom": "^19.2.5"
+    "react-dom": "^19.2.5",
+    "reactflow": "^11.11.4",
+    "recharts": "^3.8.1"
   },
   "scripts": {
     "build": "esbuild app/javascript/*.* --bundle --sourcemap --outdir=app/assets/builds --public-path=/assets --loader:.js=jsx"

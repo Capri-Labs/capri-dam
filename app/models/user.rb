@@ -1,9 +1,12 @@
 class User < ApplicationRecord
+  include Auditable
+
   devise :database_authenticatable, :registerable,
          :recoverable, :rememberable, :validatable,
          :omniauthable, omniauth_providers: %i[keycloak_openid]
 
-  validates :username, presence: true, uniqueness: true
+  #validates :username, presence: true, uniqueness: true
+  validates :email, presence: true, uniqueness: { case_sensitive: false }
 
   def self.from_omniauth(auth)
     # 1. Try to find the user by provider/uid
@@ -67,7 +70,7 @@ class User < ApplicationRecord
 
   # Identity Helpers
   def sso_managed?
-    provider.present?
+    provider.present? && uid.present?
   end
 
   def local_managed?

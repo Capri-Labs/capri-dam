@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <title><%= content_for(:title) || "Headless DAM" %></title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -14,23 +14,55 @@
     <%= javascript_include_tag "application", "data-turbo-track": "reload", defer: true %>
   </head>
 
-  <%# Use flexbox to push the footer to the bottom %>
-  <body style="margin: 0; display: flex; flex-direction: column; min-height: 100vh; background-color: #f8fafc;">
+  <%#
+      BODY STRUCTURE:
+      Using flex-direction: column and min-height: 100vh establishes a strict vertical stack.
+    %>
+  <body style="margin: 0; padding: 0; display: flex; flex-direction: column; min-height: 100vh; background-color: #f4f7fb;">
 
   <%# 1. Global Header %>
-  <%= render "layouts/header" %>
+  <%# flex-shrink: 0 ensures the header never squishes when content gets tall %>
+  <header id="global-header" style="flex-shrink: 0; width: 100%;">
+    <%= render "layouts/header" %>
+  </header>
 
   <%# 2. Main Content Area %>
-  <main style="flex: 1;">
-    <% if notice %>
-      <div style="background: #c6f6d5; color: #22543d; padding: 0.75rem; text-align: center; font-size: 0.9rem;"><%= notice %></div>
+  <%# flex-grow: 1 forces main to take up all remaining space, pushing the footer down %>
+  <main id="main-content" style="flex-grow: 1; display: flex; flex-direction: column; width: 100%;">
+
+    <%# Flash Messages Section %>
+    <% if notice || alert %>
+      <section id="flash-container" style="width: 100%; flex-shrink: 0;">
+        <% if notice %>
+          <div style="background: #e6f4ea; color: #137333; padding: 1rem; text-align: center; border-bottom: 1px solid #ceead6;">
+            <%= notice %>
+          </div>
+        <% end %>
+        <% if alert %>
+          <div style="background: #fce8e6; color: #c5221f; padding: 1rem; text-align: center; border-bottom: 1px solid #fad2cf;">
+            <%= alert %>
+          </div>
+        <% end %>
+      </section>
     <% end %>
 
-    <%= yield %>
+    <%#
+          Yield Wrapper:
+          This section isolates the injected views (like your React root).
+          If your React Header is fixed, add padding-top here (e.g., padding-top: 64px;)
+          to prevent overlap.
+        %>
+    <section id="view-wrapper" style="flex-grow: 1; display: flex; flex-direction: column;">
+      <%= yield %>
+    </section>
+
   </main>
 
   <%# 3. Global Footer %>
-  <%= render "layouts/footer" %>
+  <%# flex-shrink: 0 keeps the footer exactly at its defined height %>
+  <footer id="global-footer" style="flex-shrink: 0; width: 100%;">
+    <%= render "layouts/footer" %>
+  </footer>
 
   </body>
 </html>

@@ -99,13 +99,17 @@ class WorkflowsController < ApplicationController
   end
 
   def workflow_params
-    params.require(:workflow).permit(
+    # Permit all the standard flat attributes and known arrays
+    permitted = params.require(:workflow).permit(
       :name,
       :description,
       :status,
       :trigger_type,
       :fallback_assignee_type,
       :fallback_assignee_id,
+      :folder_scope,
+      target_folder_ids: [],
+      exclude_folder_ids: [],
       workflow_steps_attributes: [
         :id,
         :title,
@@ -119,5 +123,13 @@ class WorkflowsController < ApplicationController
         :_destroy
       ]
     )
+
+    # Safely permit the deeply nested React Flow JSON structure
+    # This stops Rails from silently deleting the nodes and edges arrays.
+    if params.dig(:workflow, :graph_data).present?
+      permitted[:graph_data] = params.require(:workflow).require(:graph_data).permit!
+    end
+
+    permitted
   end
 end

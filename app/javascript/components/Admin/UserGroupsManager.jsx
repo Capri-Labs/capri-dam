@@ -136,7 +136,6 @@ export default function UserGroupsManager() {
             <Sidebar activeView={activeView} onNavigate={(v) => v === 'System' ? null : navigateTo('/dashboard')} />
 
             <Box component="main" sx={{ flexGrow: 1, p: 4 }}>
-                <Toolbar />
                 <Box sx={{
                     display: 'flex',
                     justifyContent: 'space-between',
