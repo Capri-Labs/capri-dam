@@ -1,0 +1,23 @@
+# Headless DAM - AI Context File
+
+## Project Overview
+Headless DAM is an enterprise-grade Digital Asset Management (DAM) system. It decouples the asset storage and management backend from the frontend presentation layer. It features advanced RBAC (Role-Based Access Control), background job processing, automated workflows, and a custom Email Engine.
+
+## Tech Stack
+* Backend: Ruby on Rails 7+
+* Frontend: React 18 (mounted via Turbo/Hotwire in Rails views)
+* UI Library: Material-UI (MUI) v5
+* Background Processing: Sidekiq (with weighted queues) & Redis
+* Database: PostgreSQL
+* Storage: ActiveStorage (Configured for local disk or AWS S3/CDN)
+
+## Core Architectural Concepts
+1. Hybrid Rendering: The app uses Rails to serve HTML shells (via `dashboard_controller.rb` etc.) and uses `data-view` attributes to mount specific React "Manager" components (e.g., `ReportsManager.jsx`, `BinManager.jsx`).
+2. API Layer: A dedicated `/api/v1/` namespace serves JSON to the React frontend.
+3. Queue Topology: Sidekiq is configured with weighted queues (`mailers`, `notifications`, `default`, `workflow`, `metadata`, `reports`, `ingest`) to prevent resource starvation during massive file uploads.
+4. Access Control: Multi-tenant capable architecture with `UserGroups` and `FolderPolicies` restricting access to specific asset collections.
+
+## Key Modules
+* Asset Explorer: A React-based file browser supporting deep-linking via URL parameters and bulk actions (Move to bin, restore, delete).
+* Reports Engine: Asynchronous generation of CSV, PDF, and XLSX exports via Sidekiq, with a React-based Download Center UI.
+* Workflow Engine: Configurable states and tasks attached to specific assets.
