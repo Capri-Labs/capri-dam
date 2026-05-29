@@ -7,14 +7,16 @@ import {
 import {
     Folder as FolderIcon, InsertDriveFile, InfoOutlined,
     Home, CreateNewFolder, CloudUpload, DeleteOutlined,
-    PictureAsPdf, VideoFile, ContentCopy
+    PictureAsPdf, VideoFile, ContentCopy, PlayCircleFilled, Visibility
 } from '@mui/icons-material';
 import AssetViewer from './AssetViewer';
-import { useNotify } from '../context/NotificationContext'; // Assuming you have this
+import AssetFilterBar from './AssetFilterBar';
+import { useNotify } from '../../context/NotificationContext'; // Assuming you have this
 
 export default function AssetExplorer({ initialTargetAssetId }) {
     const notify = useNotify();
     const [viewData, setViewData] = useState({ folders: [], assets: [], breadcrumbs: [] });
+    const [viewLayout, setViewLayout] = useState('grid');
 
     // Initialize currentId from the URL if a user navigated directly via a bookmark
     const [currentId, setCurrentId] = useState(() => {
@@ -192,7 +194,7 @@ export default function AssetExplorer({ initialTargetAssetId }) {
             {/* --- TOP BAR --- */}
             <Box sx={{
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2,
-                width: '100%', mb: 4, pb: 2, borderBottom: '1px solid #e2e8f0'
+                width: '100%', pb: 2
             }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Breadcrumbs aria-label="breadcrumb">
@@ -273,6 +275,15 @@ export default function AssetExplorer({ initialTargetAssetId }) {
                 </Stack>
             </Box>
 
+            {/* INSERT THE NEW FILTER BAR MODULE HERE */}
+            {viewMode === 'active' && (
+                <AssetFilterBar
+                    resultCount={(viewData.folders?.length || 0) + (viewData.assets?.length || 0)}
+                    viewLayout={viewLayout}
+                    setViewLayout={setViewLayout}
+                />
+            )}
+
             {/* --- FOLDERS SECTION --- */}
             {viewData.folders && viewData.folders.length > 0 && (
                 <Box sx={{ mb: 5 }}>
@@ -322,6 +333,11 @@ export default function AssetExplorer({ initialTargetAssetId }) {
 
             {/* --- ASSETS SECTION --- */}
             <Box>
+                {/* In the future, you can use the `viewLayout` state here.
+                    If viewLayout === 'grid', render <ImageList>.
+                    If viewLayout === 'list', render a <DataGrid> or simple vertical list.
+                */}
+
                 {viewData.assets && viewData.assets.length > 0 && (
                     <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', mb: 2 }}>Media & Files</Typography>
                 )}
@@ -356,10 +372,17 @@ export default function AssetExplorer({ initialTargetAssetId }) {
                                     sx={{
                                         cursor: 'pointer', borderRadius: '12px', overflow: 'hidden',
                                         border: isSelected ? '2px solid #4f46e5' : '1px solid #e2e8f0',
-                                        bgcolor: '#ffffff', transition: 'all 0.2s',
-                                        '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 12px 24px rgba(0,0,0,0.1)', borderColor: '#4f46e5' }
+                                        bgcolor: '#ffffff', transition: 'all 0.2s ease-in-out',
+                                        // The parent hover triggers the child class '.media-overlay'
+                                        '&:hover': {
+                                            transform: 'translateY(-4px)',
+                                            boxShadow: '0 12px 24px rgba(0,0,0,0.1)',
+                                            borderColor: '#4f46e5',
+                                            '& .media-overlay': { opacity: 1 }
+                                        }
                                     }}
                                 >
+                                    {/* TOP LEFT ABSOLUTE CHECKBOX */}
                                     <Box sx={{ position: 'absolute', top: 8, left: 8, zIndex: 10 }}>
                                         <Checkbox
                                             size="small"
@@ -374,19 +397,54 @@ export default function AssetExplorer({ initialTargetAssetId }) {
                                         />
                                     </Box>
 
-                                    {isImage && asset.url ? (
-                                        <img src={`${asset.url}?w=248&fit=crop&auto=format`} alt={displayName} loading="lazy" style={{ height: '200px', objectFit: 'cover' }} />
-                                    ) : (
-                                        <Box sx={{ height: '200px', bgcolor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                            {isPdf && <PictureAsPdf sx={{ fontSize: 64, color: '#ef4444' }} />}
-                                            {isVideo && <VideoFile sx={{ fontSize: 64, color: '#3b82f6' }} />}
-                                            {!isPdf && !isVideo && <InsertDriveFile sx={{ fontSize: 64, color: '#64748b' }} />}
+                                    {/* --- MEDIA CONTAINER WITH HOVER OVERLAY --- */}
+                                    <Box sx={{ position: 'relative', width: '100%', height: '200px' }}>
+                                        {isImage && asset.url ? (
+                                            <img
+                                                src={`${asset.url}?w=248&fit=crop&auto=format`}
+                                                alt={displayName}
+                                                loading="lazy"
+                                                style={{ height: '100%', width: '100%', objectFit: 'cover' }}
+                                            />
+                                        ) : (
+                                            <Box sx={{ height: '100%', width: '100%', bgcolor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                {isPdf && <PictureAsPdf sx={{ fontSize: 64, color: '#ef4444' }} />}
+                                                {isVideo && <VideoFile sx={{ fontSize: 64, color: '#3b82f6' }} />}
+                                                {!isPdf && !isVideo && <InsertDriveFile sx={{ fontSize: 64, color: '#64748b' }} />}
+                                            </Box>
+                                        )}
+
+                                        {/* THE HOVER OVERLAY */}
+                                        <Box
+                                            className="media-overlay"
+                                            sx={{
+                                                position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                                                bgcolor: 'rgba(15, 23, 42, 0.4)', // Slate 900 with 40% opacity
+                                                opacity: 0, // Hidden by default
+                                                transition: 'opacity 0.2s ease-in-out',
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                zIndex: 5 // Sits below the checkbox (z-index 10) but above the image
+                                            }}
+                                        >
+                                            {isVideo ? (
+                                                <PlayCircleFilled sx={{ fontSize: 56, color: '#ffffff', filter: 'drop-shadow(0px 2px 4px rgba(0,0,0,0.3))' }} />
+                                            ) : (
+                                                <Visibility sx={{ fontSize: 48, color: '#ffffff', filter: 'drop-shadow(0px 2px 4px rgba(0,0,0,0.3))' }} />
+                                            )}
                                         </Box>
-                                    )}
+                                    </Box>
 
                                     <ImageListItemBar
-                                        title={<Tooltip title={displayName} placement="top-start"><Typography variant="subtitle2" sx={{ fontWeight: 600 }}>{formatFileName(displayName)}</Typography></Tooltip>}
-                                        actionIcon={<IconButton sx={{ color: 'rgba(255, 255, 255, 0.7)', '&:hover': { color: '#ffffff' } }} onClick={(e) => { e.stopPropagation(); setSelectedAsset(asset); }}><InfoOutlined /></IconButton>}
+                                        title={
+                                            <Tooltip title={displayName} placement="top-start">
+                                                <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>{formatFileName(displayName)}</Typography>
+                                            </Tooltip>
+                                        }
+                                        actionIcon={
+                                            <IconButton sx={{ color: 'rgba(255, 255, 255, 0.7)', '&:hover': { color: '#ffffff' } }} onClick={(e) => { e.stopPropagation(); setSelectedAsset(asset); }}>
+                                                <InfoOutlined />
+                                            </IconButton>
+                                        }
                                     />
                                 </ImageListItem>
                             );

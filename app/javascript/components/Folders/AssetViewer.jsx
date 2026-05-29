@@ -4,9 +4,9 @@ import {
     Button, Divider, Chip
 } from '@mui/material';
 import { Close, Edit, Download } from '@mui/icons-material';
-import MetadataEditor from './MetadataEditor'; // Reusing your existing component!
-import ImageEditorDialog from './ImageEditorDialog';
-import WorkflowPanel from './WorkflowPanel';
+import MetadataEditor from '../MetadataEditor'; // Reusing your existing component!
+import ImageEditorDialog from '../ImageEditorDialog';
+import WorkflowPanel from '../WorkflowPanel';
 
 export default function AssetViewer({ asset, open, onClose, onAssetUpdated }) {
     const [editorOpen, setEditorOpen] = useState(false);

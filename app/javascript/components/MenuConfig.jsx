@@ -14,7 +14,7 @@ import {
     GroupWorkOutlined,
     FormatListBulletedOutlined,
     PersonOutlined,
-    SecurityOutlined
+    SecurityOutlined, ContentCopy
 } from '@mui/icons-material';
 
 export const MENU_GROUPS = [
@@ -29,6 +29,7 @@ export const MENU_GROUPS = [
                 icon: <PhotoLibraryOutlined fontSize="small" />,
                 children: [
                     { id: 'All Assets', label: 'All Assets', icon: <FolderOpenOutlined fontSize="small" />, url: '/folders' },
+                    { id: 'Duplicate Manager', label: 'Duplicate Manager', icon: <ContentCopy fontSize="small" />, url: '/duplicates' },
                     { id: 'Bin', label: 'Recycle Bin', icon: <DeleteOutlined fontSize="small" />, url: '/bin' }
                 ]
             },

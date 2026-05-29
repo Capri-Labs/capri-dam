@@ -1,4 +1,5 @@
 Rails.application.routes.draw do
+  get "api_docs/index"
   mount Rswag::Ui::Engine => '/api-docs'
   mount Rswag::Api::Engine => '/api-docs'
 
@@ -18,10 +19,14 @@ Rails.application.routes.draw do
     root to: "home#index", as: :unauthenticated_root
   end
 
+  # The new 100% open-source UI for API documentation
+  get '/developers/api', to: 'api_docs#index'
+
   get '/dashboard', to: 'dashboard#index'
   get '/reports', to: 'admin/reports#index'
   get '/bin', to: 'dashboard#bin'
   get '/folders', to: 'dashboard#folders'
+  get '/duplicates', to: 'dashboard#duplicates'
 
   get "up" => "rails/health#show", as: :rails_health_check
 

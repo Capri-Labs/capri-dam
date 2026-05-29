@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box, CssBaseline, Typography } from '@mui/material';
 import Sidebar from '../Sidebar';
-import AssetExplorer from '../AssetExplorer';
+import AssetExplorer from './AssetExplorer';
 import { navigateTo } from "../../utils/globalutils";
 
 export default function FoldersManager(props) {

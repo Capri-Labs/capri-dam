@@ -103,7 +103,7 @@ setup: install db-setup ## The 'One Command' to rule them all
 	@echo "\033[32m--- Headless DAM Setup Complete ---\033[0m"
 	@echo "Run 'make dev' to start the server, workers, and redis."
 
-swagger: ## Generate Swagger OpenAPI documentation from specs
+swagger-docs: ## Generate Swagger OpenAPI documentation from specs
 	@echo "--- Generating OpenAPI Spec ---"
 	RAILS_ENV=test bundle exec rails rswag:specs:swaggerize
 

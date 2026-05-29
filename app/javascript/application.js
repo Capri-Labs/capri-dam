@@ -13,13 +13,14 @@ import UserGroupsManager from './components/Admin/UserGroupsManager';
 import UsersManager from './components/Admin/UsersManager';
 import EmailEngineManager from './components/Admin/EmailEngineManager';
 import App from './components/App';
-import AssetExplorer from "./components/AssetExplorer";
+import AssetExplorer from "./components/Folders/AssetExplorer";
 import WorkflowDashboard from "./components/WorkflowDashboard";
 import WorkflowContainer from "./components/WorkflowContainer";
 import ReportsManager from "./components/Admin/ReportsManager";
 import DashboardManager from "./components/Dashboard/DashboardManager";
 import FoldersManager from "./components/Folders/FoldersManager";
 import BinManager from "./components/Bin/BinManager";
+import DuplicateManager from "./components/Duplicates/DuplicateManager";
 
 document.addEventListener('turbo:load', () => {
     // --- 1. MOUNT THE HEADER ---
@@ -80,6 +81,9 @@ document.addEventListener('turbo:load', () => {
 
         } else if (view === 'bin') {
             mainRoot.render(renderWithContext(<BinManager {...props} />));
+        } else if (view === 'duplicates') {
+            mainRoot.render(renderWithContext(<DuplicateManager {...props} />));
+
         } else {
             mainRoot.render(renderWithContext(<Login />));
         }

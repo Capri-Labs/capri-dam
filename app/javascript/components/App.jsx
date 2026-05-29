@@ -6,7 +6,7 @@ import {
 import { FolderCopy, Assignment, Settings, Notifications } from '@mui/icons-material';
 
 // Import your existing components
-import AssetExplorer from './AssetExplorer';
+import AssetExplorer from '../components/Folders/AssetExplorer';
 import WorkflowDashboard from './WorkflowDashboard';
 
 const drawerWidth = 260;

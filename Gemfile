@@ -85,10 +85,7 @@ gem "redis"
 # Swagger (OpenAPI) file.
 gem 'rswag-api'
 gem 'rswag-ui'
-
-group :test do
-  gem 'rswag-specs'
-end
+gem 'rswag-specs'
 
 # Add the SSO Engine
 gem 'omniauth-keycloak'

@@ -1,31 +1,639 @@
 ---
 openapi: 3.0.1
 info:
-  title: Headless DAM API V1
+  title: Headless DAM API
   version: v1
-  description: Secure, Cloud-Agnostic Asset Management API
+  description: |
+    An enterprise-grade, cloud-agnostic Digital Asset Management system designed for zero noise operations and high-scale automation.
+
+    ### Core Capabilities
+    * **Asset Lifecycle Management**: Upload, process, and retrieve media assets asynchronously.
+    * **Workflow Automation**: Configurable event-driven state machines for asset approval and metadata pipelines.
+    * **Operational Governance**: Granular role-based access control (RBAC), hierarchical user groups, and comprehensive administrative oversight.
+    * **Cloud-Agnostic Storage**: Plug-and-play architecture supporting AWS S3, Cloudflare R2, Google Cloud Storage, and local environments.
+
+    ### Authentication
+    This API utilizes OAuth 2.0 for secure access. System-to-system integrations should utilize the Client Credentials grant type.
+
+    1. Call `POST /oauth/token` with your `client_id` and `client_secret`.
+    2. Click the **Authorize** button on this page and enter the resulting token.
+  termsOfService: https://github.com/apelluru/headless-dam
+  contact:
+    name: Ashok Pelluru | Operational Governance & Architecture
+    url: https://github.com/apelluru/headless-dam
+  license:
+    name: MIT License
+    url: https://opensource.org/licenses/MIT
 paths:
+  "/admin/email_templates":
+    get:
+      summary: Retrieves a list of all email templates
+      tags:
+      - Admin - Email Templates
+      security:
+      - Bearer: []
+      responses:
+        '200':
+          description: email templates retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  email_templates:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        name:
+                          type: string
+                        event_trigger:
+                          type: string
+                        subject:
+                          type: string
+                        active:
+                          type: boolean
+                        updated_at:
+                          type: string
+    post:
+      summary: Creates a new email template
+      tags:
+      - Admin - Email Templates
+      security:
+      - Bearer: []
+      parameters: []
+      responses:
+        '200':
+          description: validation failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  errors:
+                    type: array
+                    items:
+                      type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email_template:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                      example: Welcome Email
+                    event_trigger:
+                      type: string
+                      example: user_created
+                    subject:
+                      type: string
+                      example: Welcome to Headless DAM
+                    html_body:
+                      type: string
+                      example: "<h1>Welcome {{first_name}}</h1>"
+                    text_body:
+                      type: string
+                      example: Welcome {{first_name}}
+                    active:
+                      type: boolean
+                      example: true
+                  required:
+                  - name
+                  - event_trigger
+                  - subject
+              required:
+              - email_template
+  "/admin/email_templates/{id}":
+    parameters:
+    - name: id
+      in: path
+      description: Email Template ID
+      required: true
+      schema:
+        type: string
+    get:
+      summary: Retrieves details of a specific email template
+      tags:
+      - Admin - Email Templates
+      security:
+      - Bearer: []
+      responses:
+        '200':
+          description: template details retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  email_template:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      name:
+                        type: string
+                      event_trigger:
+                        type: string
+                      subject:
+                        type: string
+                      html_body:
+                        type: string
+                      text_body:
+                        type: string
+                      active:
+                        type: boolean
+                      created_at:
+                        type: string
+                        format: date-time
+                      updated_at:
+                        type: string
+                        format: date-time
+    patch:
+      summary: Updates an existing email template
+      tags:
+      - Admin - Email Templates
+      security:
+      - Bearer: []
+      parameters: []
+      responses:
+        '200':
+          description: update failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  errors:
+                    type: array
+                    items:
+                      type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email_template:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    event_trigger:
+                      type: string
+                    subject:
+                      type: string
+                    html_body:
+                      type: string
+                    text_body:
+                      type: string
+                    active:
+                      type: boolean
+    delete:
+      summary: Deletes an email template
+      tags:
+      - Admin - Email Templates
+      security:
+      - Bearer: []
+      responses:
+        '200':
+          description: deletion failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  errors:
+                    type: array
+                    items:
+                      type: string
+  "/admin/user_groups":
+    get:
+      summary: Retrieves a list of all user groups with their hierarchy
+      tags:
+      - Admin - User Groups
+      security:
+      - Bearer: []
+      responses:
+        '200':
+          description: user groups retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user_groups:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        name:
+                          type: string
+                        description:
+                          type: string
+                          nullable: true
+                        parent_id:
+                          type: integer
+                          nullable: true
+                        member_count:
+                          type: integer
+    post:
+      summary: Creates a new user group
+      tags:
+      - Admin - User Groups
+      security:
+      - Bearer: []
+      parameters: []
+      responses:
+        '201':
+          description: user group created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  group:
+                    type: object
+        '422':
+          description: unprocessable entity
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  errors:
+                    type: array
+                    items:
+                      type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_group:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                      example: Marketing Team
+                    description:
+                      type: string
+                      example: Global marketing and content creators
+                  required:
+                  - name
+                parent_id:
+                  type: integer
+                  nullable: true
+                  description: Optional ID to nest this group under a parent
+              required:
+              - user_group
+  "/admin/user_groups/{id}/add_user":
+    parameters:
+    - name: id
+      in: path
+      description: User Group ID
+      required: true
+      schema:
+        type: string
+    post:
+      summary: Adds a user to the group via email
+      tags:
+      - Admin - User Groups
+      security:
+      - Bearer: []
+      parameters: []
+      responses:
+        '200':
+          description: user added successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        '404':
+          description: user not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  error:
+                    type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  example: employee@example.com
+              required:
+              - email
+  "/admin/user_groups/{id}/remove_user":
+    parameters:
+    - name: id
+      in: path
+      description: User Group ID
+      required: true
+      schema:
+        type: string
+    delete:
+      summary: Removes a user from the group via user ID
+      tags:
+      - Admin - User Groups
+      security:
+      - Bearer: []
+      parameters: []
+      responses:
+        '200':
+          description: user removed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_id:
+                  type: integer
+                  example: 42
+              required:
+              - user_id
+  "/admin/users":
+    get:
+      summary: Retrieves a list of all users
+      tags:
+      - Admin - Users
+      security:
+      - Bearer: []
+      responses:
+        '200':
+          description: users retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  users:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        email:
+                          type: string
+                        display_name:
+                          type: string
+                          nullable: true
+                        first_name:
+                          type: string
+                        last_name:
+                          type: string
+                        department:
+                          type: string
+                          nullable: true
+                        role:
+                          type: string
+                          nullable: true
+                        avatar_url:
+                          type: string
+                          nullable: true
+                        sso_managed:
+                          type: boolean
+                        admin:
+                          type: boolean
+                        provider:
+                          type: string
+                          nullable: true
+                        active:
+                          type: boolean
+                        created_at:
+                          type: string
+                        groups:
+                          type: array
+                          items:
+                            type: string
+                        group_ids:
+                          type: array
+                          items:
+                            type: integer
+    post:
+      summary: Creates a new user
+      tags:
+      - Admin - Users
+      security:
+      - Bearer: []
+      parameters: []
+      responses:
+        '200':
+          description: validation failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  errors:
+                    type: array
+                    items:
+                      type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user:
+                  type: object
+                  properties:
+                    email:
+                      type: string
+                      example: new_hire@example.com
+                    first_name:
+                      type: string
+                      example: Jane
+                    last_name:
+                      type: string
+                      example: Doe
+                    department:
+                      type: string
+                      example: Marketing
+                    role:
+                      type: string
+                      example: Content Creator
+                    admin:
+                      type: boolean
+                      example: false
+                    user_group_ids:
+                      type: array
+                      items:
+                        type: integer
+                      example:
+                      - 1
+                      - 2
+                  required:
+                  - email
+                  - first_name
+                  - last_name
+  "/admin/users/{id}":
+    parameters:
+    - name: id
+      in: path
+      description: User ID
+      required: true
+      schema:
+        type: string
+    patch:
+      summary: Updates an existing user
+      tags:
+      - Admin - Users
+      security:
+      - Bearer: []
+      parameters: []
+      responses:
+        '200':
+          description: user updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        '403':
+          description: forbidden (unauthorized admin modification)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  errors:
+                    type: array
+                    items:
+                      type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user:
+                  type: object
+                  properties:
+                    email:
+                      type: string
+                    first_name:
+                      type: string
+                    last_name:
+                      type: string
+                    department:
+                      type: string
+                    role:
+                      type: string
+                    admin:
+                      type: boolean
+                    user_group_ids:
+                      type: array
+                      items:
+                        type: integer
+  "/admin/users/{id}/toggle_status":
+    parameters:
+    - name: id
+      in: path
+      description: User ID
+      required: true
+      schema:
+        type: string
+    post:
+      summary: Toggles a user between active and suspended states
+      tags:
+      - Admin - Users
+      security:
+      - Bearer: []
+      responses:
+        '200':
+          description: status toggled successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  active:
+                    type: boolean
   "/api/v1/search":
     get:
-      summary: search assets
+      summary: Searches for assets
       tags:
-      - Search
+      - Assets
       security:
-      - bearer_auth: []
+      - Bearer: []
       parameters:
       - name: q
         in: query
-        description: Search query
+        required: false
+        description: Search term for title
         schema:
           type: string
       - name: format
         in: query
-        description: Filter by image format
+        required: false
+        description: Exact format match (e.g., JPEG)
         schema:
           type: string
       responses:
         '200':
-          description: successful
+          description: search results returned
           content:
             application/json:
               schema:
@@ -37,14 +645,1053 @@ paths:
                     type: array
                     items:
                       type: object
+                      properties:
+                        id:
+                          type: string
+                        title:
+                          type: string
+                        metadata:
+                          type: object
+                        url:
+                          type: string
+  "/api/v1/assets":
+    post:
+      summary: Uploads a new asset
+      tags:
+      - Assets
+      security:
+      - Bearer: []
+      parameters: []
+      responses:
+        '202':
+          description: asset accepted for processing
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  status:
+                    type: string
+                    example: processing
+        '422':
+          description: unprocessable entity
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: The file to upload
+                title:
+                  type: string
+                  description: Optional override for the file name
+                folder_id:
+                  type: integer
+                  description: ID of the destination folder
+              required:
+              - file
+  "/api/v1/assets/{id}":
+    parameters:
+    - name: id
+      in: path
+      description: Asset ID
+      required: true
+      schema:
+        type: string
+    delete:
+      summary: Soft deletes an asset (moves to bin)
+      tags:
+      - Assets
+      security:
+      - Bearer: []
+      responses:
+        '200':
+          description: asset moved to bin
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+  "/api/v1/assets/{id}/restore":
+    parameters:
+    - name: id
+      in: path
+      description: Asset ID
+      required: true
+      schema:
+        type: string
+    post:
+      summary: Restores an asset from the bin
+      tags:
+      - Assets
+      security:
+      - Bearer: []
+      responses:
+        '200':
+          description: asset restored
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+  "/api/v1/assets/{id}/permanent":
+    parameters:
+    - name: id
+      in: path
+      description: Asset ID
+      required: true
+      schema:
+        type: string
+    delete:
+      summary: Permanently deletes an asset
+      tags:
+      - Assets
+      security:
+      - Bearer: []
+      responses:
+        '200':
+          description: asset permanently deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+  "/api/v1/assets/{id}/workflow_history":
+    parameters:
+    - name: id
+      in: path
+      description: Asset ID
+      required: true
+      schema:
+        type: string
+    get:
+      summary: Retrieves workflow history for an asset
+      tags:
+      - Assets
+      security:
+      - Bearer: []
+      responses:
+        '200':
+          description: workflow history returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  active:
+                    type: boolean
+                  instance_status:
+                    type: string
+                    nullable: true
+                  started_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  tasks:
+                    type: array
+                    items:
+                      type: object
+  "/api/v1/bin":
+    get:
+      summary: Retrieves all soft-deleted assets and folders
+      tags:
+      - Assets
+      security:
+      - Bearer: []
+      responses:
+        '200':
+          description: bin contents returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  folders:
+                    type: array
+                    items:
+                      type: object
+                  assets:
+                    type: array
+                    items:
+                      type: object
+                  breadcrumbs:
+                    type: array
+                    items:
+                      type: object
+  "/api/v1/folders":
+    get:
+      summary: Retrieves the folder tree
+      tags:
+      - Folders
+      responses:
+        '200':
+          description: folders retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  folders:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          example: 42
+                        name:
+                          type: string
+                          example: "/Marketing/2026"
+                      required:
+                      - id
+                      - name
+    post:
+      summary: Creates a new folder
+      tags:
+      - Folders
+      parameters: []
+      responses:
+        '201':
+          description: folder created
+        '422':
+          description: unprocessable entity
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                folder:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                      example: Q3 Campaigns
+                    parent_id:
+                      type: string
+                      nullable: true
+                      example: root
+                  required:
+                  - name
+              required:
+              - folder
+  "/api/v1/folders/{id}":
+    parameters:
+    - name: id
+      in: path
+      description: Folder ID or "root"
+      required: true
+      schema:
+        type: string
+    get:
+      summary: Retrieves a folder and its contents
+      tags:
+      - Folders
+      responses:
+        '200':
+          description: folder contents found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  folders:
+                    type: array
+                    items:
+                      type: object
+                  assets:
+                    type: array
+                    items:
+                      type: object
+                  breadcrumbs:
+                    type: array
+                    items:
+                      type: object
+  "/api/v1/notifications":
+    get:
+      summary: Retrieves recent unread notifications for the current user
+      tags:
+      - Notifications
+      security:
+      - Bearer: []
+      responses:
+        '200':
+          description: notifications retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    message:
+                      type: string
+                      description: The notification text/content
+                    read_at:
+                      type: string
+                      format: date-time
+                      nullable: true
+                    created_at:
+                      type: string
+                      format: date-time
+  "/api/v1/notifications/mark_all_read":
+    patch:
+      summary: Marks all unread notifications as read
+      tags:
+      - Notifications
+      security:
+      - Bearer: []
+      responses:
+        '200':
+          description: all notifications marked as read successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+  "/api/v1/notifications/{id}/mark_read":
+    parameters:
+    - name: id
+      in: path
+      description: Notification ID
+      required: true
+      schema:
+        type: string
+    patch:
+      summary: Marks a specific notification as read
+      tags:
+      - Notifications
+      security:
+      - Bearer: []
+      responses:
+        '200':
+          description: notification marked as read successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+        '404':
+          description: notification not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+  "/api/v1/workflow_tasks/{id}/submit":
+    parameters:
+    - name: id
+      in: path
+      description: Workflow Task ID
+      required: true
+      schema:
+        type: string
+    post:
+      summary: Submits a decision for a pending workflow task
+      tags:
+      - Workflows & Tasks
+      security:
+      - Bearer: []
+      parameters: []
+      responses:
+        '200':
+          description: decision recorded successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        '403':
+          description: forbidden (user not assigned to this task)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '422':
+          description: unprocessable entity (task already completed or canceled)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                decision:
+                  type: string
+                  enum:
+                  - approved
+                  - rejected
+                  example: approved
+                comment:
+                  type: string
+                  example: Looks good to go. Assets are on brand.
+              required:
+              - decision
+  "/api/v1/workflows/bulk_stop":
+    post:
+      summary: Admin action to forcibly cancel multiple workflow instances
+      tags:
+      - Workflows & Tasks
+      security:
+      - Bearer: []
+      parameters: []
+      responses:
+        '200':
+          description: workflows canceled successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                ids:
+                  type: array
+                  items:
+                    type: integer
+                  example:
+                  - 101
+                  - 102
+                  - 105
+                  description: Array of Workflow Instance IDs to cancel
+              required:
+              - ids
+  "/api/v1/workflows/dashboard":
+    get:
+      summary: Retrieves workflow data for the user dashboard
+      tags:
+      - Workflows & Tasks
+      security:
+      - Bearer: []
+      responses:
+        '200':
+          description: dashboard data retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  my_tasks:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        task_id:
+                          type: integer
+                        step_title:
+                          type: string
+                        asset_id:
+                          type: integer
+                        asset_name:
+                          type: string
+                        asset_thumb:
+                          type: string
+                          nullable: true
+                        assigned_at:
+                          type: string
+                          format: date-time
+                  active_workflows:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        instance_id:
+                          type: integer
+                        workflow_name:
+                          type: string
+                        current_step:
+                          type: string
+                        asset_id:
+                          type: integer
+                        asset_name:
+                          type: string
+                        started_at:
+                          type: string
+                          format: date-time
+                  completed_workflows:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        instance_id:
+                          type: integer
+                        workflow_name:
+                          type: string
+                        asset_id:
+                          type: integer
+                        asset_name:
+                          type: string
+                        status:
+                          type: string
+                        completed_at:
+                          type: string
+                          format: date-time
+  "/oauth/token":
+    post:
+      summary: Requests an OAuth Access Token (Client Credentials Grant)
+      tags:
+      - Authorization (OAuth 2.0)
+      description: "        This is the primary authentication endpoint for System
+        Accounts and external integrations. \n        It converts your **Client ID**
+        and **Client Secret** into a temporary **Bearer Access Token**.\n        \n
+        \       This token must be included in the header of all subsequent API requests
+        as:\n        `Authorization: Bearer <your_access_token>`\n"
+      parameters: []
+      responses:
+        '200':
+          description: access token issued successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                    example: eyJhY2Nlc3NfdG9rZW4iOiJl...
+                  token_type:
+                    type: string
+                    example: Bearer
+                  expires_in:
+                    type: integer
+                    example: 7200
+                    description: Time in seconds until expiration.
+                  scope:
+                    type: string
+                    example: read write
+                  created_at:
+                    type: integer
+                    example: 1716912345
+                required:
+                - access_token
+                - token_type
+                - expires_in
         '401':
-          description: unauthorized
-components:
-  securitySchemes:
-    bearer_auth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
+          description: unauthorized (invalid credentials)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: invalid_client
+                  error_description:
+                    type: string
+                    example: Client authentication failed.
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: string
+        required: true
+        description: Must always be set to `client_credentials` for System Accounts.
+  "/settings/update_storage":
+    patch:
+      summary: Updates cloud storage provider configuration and sets active provider
+      tags:
+      - Infrastructure Settings - Storage
+      security:
+      - Bearer: []
+      parameters: []
+      responses:
+        '200':
+          description: configuration saved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '422':
+          description: unprocessable entity (failed to save)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                storage_config:
+                  type: object
+                  properties:
+                    provider:
+                      type: string
+                      enum:
+                      - aws
+                      - cloudflare
+                      - digitalocean
+                      - google
+                      example: cloudflare
+                    region:
+                      type: string
+                      example: auto
+                    access_key:
+                      type: string
+                      example: KXA01BC2...
+                    secret_key:
+                      type: string
+                      example: "********"
+                      description: Will not overwrite if passed as masking placeholder
+                    bucket:
+                      type: string
+                      example: dam-production-assets
+                    endpoint:
+                      type: string
+                      nullable: true
+                      example: https://<accountid>.r2.cloudflarestorage.com
+                  required:
+                  - provider
+              required:
+              - storage_config
+  "/settings/test_connection":
+    post:
+      summary: Dynamically validates S3 connection credentials using AWS SDK
+      tags:
+      - Infrastructure Settings - Storage
+      security:
+      - Bearer: []
+      parameters: []
+      responses:
+        '200':
+          description: connection successful (Head Bucket)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Connection successful! Found bucket dam-assets
+        '422':
+          description: connection failed (AWS SDK Error)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  error:
+                    type: string
+                    description: The exact error message returned by the storage provider
+                      via SDK
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                storage_config:
+                  type: object
+                  properties:
+                    provider:
+                      type: string
+                      example: aws
+                    region:
+                      type: string
+                      example: us-east-1
+                    access_key:
+                      type: string
+                    secret_key:
+                      type: string
+                      description: Required. Handles masked placeholder by fetching
+                        existing secret.
+                    bucket:
+                      type: string
+                    endpoint:
+                      type: string
+                      nullable: true
+                      description: Required for non-AWS compatible S3 backends
+                  required:
+                  - provider
+                  - region
+                  - access_key
+                  - secret_key
+                  - bucket
+              required:
+              - storage_config
+  "/workflows":
+    get:
+      summary: Retrieves a list of all workflow definitions
+      tags:
+      - Workflow Definitions
+      security:
+      - Bearer: []
+      responses:
+        '200':
+          description: workflows retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    name:
+                      type: string
+                    description:
+                      type: string
+                      nullable: true
+                    status:
+                      type: string
+                      enum:
+                      - active
+                      - inactive
+                    trigger_type:
+                      type: string
+                      enum:
+                      - on_ingest
+                      - manual
+                    graph_data:
+                      type: object
+                      description: Deeply nested React Flow JSON structure
+                    workflow_steps:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          id:
+                            type: integer
+                          title:
+                            type: string
+                          position:
+                            type: integer
+                          step_type:
+                            type: string
+                          assignee_type:
+                            type: string
+    post:
+      summary: Creates a new workflow definition
+      tags:
+      - Workflow Definitions
+      security:
+      - Bearer: []
+      parameters: []
+      responses:
+        '201':
+          description: workflow created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  workflow:
+                    type: object
+        '422':
+          description: validation failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  errors:
+                    type: array
+                    items:
+                      type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                workflow:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                      example: Product Shot Approval
+                    description:
+                      type: string
+                      example: Legal and Art review for new products
+                    trigger_type:
+                      type: string
+                      enum:
+                      - on_ingest
+                      - manual
+                      example: on_ingest
+                    graph_data:
+                      type: object
+                      properties:
+                        nodes:
+                          type: array
+                          items:
+                            type: object
+                        edges:
+                          type: array
+                          items:
+                            type: object
+                        viewport:
+                          type: object
+                    workflow_steps_attributes:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          title:
+                            type: string
+                            example: Legal Review
+                          position:
+                            type: integer
+                            example: 1
+                          step_type:
+                            type: string
+                            enum:
+                            - approval
+                            - task
+                            example: approval
+                          assignee_type:
+                            type: string
+                            enum:
+                            - user
+                            - group
+                            example: group
+                          assignee_id:
+                            type: integer
+                            example: 5
+                        required:
+                        - title
+                        - position
+                        - step_type
+                        - assignee_type
+                        - assignee_id
+                  required:
+                  - name
+                  - trigger_type
+              required:
+              - workflow
+  "/workflows/{id}":
+    parameters:
+    - name: id
+      in: path
+      description: Workflow ID
+      required: true
+      schema:
+        type: string
+    get:
+      summary: Retrieves details of a specific workflow definition
+      tags:
+      - Workflow Definitions
+      security:
+      - Bearer: []
+      responses:
+        '200':
+          description: workflow details retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  name:
+                    type: string
+                  graph_data:
+                    type: object
+                  workflow_steps:
+                    type: array
+                    items:
+                      type: object
+    patch:
+      summary: Updates an existing workflow definition
+      tags:
+      - Workflow Definitions
+      security:
+      - Bearer: []
+      parameters: []
+      responses:
+        '200':
+          description: workflow updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  workflow:
+                    type: object
+                    properties:
+                      workflow_steps:
+                        type: array
+                        items:
+                          type: object
+        '422':
+          description: update failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  errors:
+                    type: array
+                    items:
+                      type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                workflow:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    description:
+                      type: string
+                    graph_data:
+                      type: object
+                    workflow_steps_attributes:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          id:
+                            type: integer
+                            description: Existing step ID for updates
+                          title:
+                            type: string
+                          _destroy:
+                            type: boolean
+                            description: Mark for deletion
+    delete:
+      summary: Deletes a workflow definition
+      tags:
+      - Workflow Definitions
+      security:
+      - Bearer: []
+      responses:
+        '200':
+          description: workflow deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        '408':
+          description: deletion failed (using search_timeout status)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  errors:
+                    type: array
+                    items:
+                      type: string
+  "/workflows/{id}/toggle_status":
+    parameters:
+    - name: id
+      in: path
+      description: Workflow ID
+      required: true
+      schema:
+        type: string
+    patch:
+      summary: Activates or deactivates a workflow definition
+      tags:
+      - Workflow Definitions
+      security:
+      - Bearer: []
+      responses:
+        '200':
+          description: toggle failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  status:
+                    type: string
+                    enum:
+                    - active
+                    - inactive
 servers:
 - url: http://localhost:3000
   description: Local Development Server
+- url: https://api.yourdam.com
+  description: Production Environment
+components:
+  securitySchemes:
+    Bearer:
+      type: http
+      scheme: bearer
+      description: Enter your OAuth 2.0 Bearer token to authenticate requests.

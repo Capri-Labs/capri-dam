@@ -36,4 +36,7 @@ class DashboardController < ApplicationController
   def folders
     # Renders app/views/dashboard/folders.html.erb
   end
+
+  def duplicates
+  end
 end
