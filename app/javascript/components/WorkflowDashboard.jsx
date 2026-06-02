@@ -124,7 +124,6 @@ export default function WorkflowDashboard({ onNavigateToAsset }) {
     return (
         <Box sx={{ display: 'flex', bgcolor: '#f4f7fb', minHeight: '100vh' }}>
             <CssBaseline />
-            <Sidebar activeView={activeView} onNavigate={(v) => v === 'My Tasks' ? null : navigateTo('/dashboard')} />
 
             <Box component="main" sx={{ flexGrow: 1, p: 4, width: '100%' }}>
                 <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>

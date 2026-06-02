@@ -102,3 +102,14 @@ gem 'prawn'
 gem 'prawn-table'
 
 gem 'caxlsx'
+
+gem 'graphql'
+gem "graphiql-rails", group: :development
+
+
+group :production, :development do
+  gem 'opentelemetry-instrumentation-all'
+  gem 'opentelemetry-instrumentation-rails'
+  gem 'opentelemetry-instrumentation-http'
+  gem 'opentelemetry-exporter-otlp' # For sending data to an OTel collector
+end

@@ -4,6 +4,7 @@ class SettingsController < ApplicationController
   before_action :authenticate_user!
 
   def show
+    @active_view = 'System Ops'
     # 1. Determine the sub-view based on the URL path safely
     if request.path.include?('system')
       if current_user.admin?

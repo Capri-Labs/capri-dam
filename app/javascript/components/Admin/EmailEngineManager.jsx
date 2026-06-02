@@ -7,8 +7,6 @@ import {
 import {
     SettingsEthernet, History, Replay, ContentCopy, DeleteOutlined, MailOutlined, AddCircleOutlined
 } from '@mui/icons-material';
-import Sidebar from "../Sidebar";
-import { navigateTo } from '../../utils/globalutils';
 import { useNotify } from '../../context/NotificationContext';
 import RichTextEditor from '../Shared/RichTextEditor';
 
@@ -132,7 +130,6 @@ export default function EmailEngineManager() {
     return (
         <Box sx={{ display: 'flex', bgcolor: '#f4f7fb', minHeight: '100vh' }}>
             <CssBaseline />
-            <Sidebar activeView={activeView} onNavigate={(v) => v === 'System' ? null : navigateTo('/dashboard')} />
             <Box component="main" sx={{ width: '100%', p: 2 }}>
                 <Box sx={{
                     display: 'flex',

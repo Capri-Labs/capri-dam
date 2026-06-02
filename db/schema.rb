@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_05_27_164224) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_02_134823) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -44,6 +44,32 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_27_164224) do
     t.bigint "user_id"
     t.index ["auditable_type", "auditable_id", "ip_address", "user_id"], name: "idx_audit_logs_polymorphic_ip_user"
     t.index ["user_id"], name: "index_audit_logs_on_user_id"
+  end
+
+  create_table "collection_assets", force: :cascade do |t|
+    t.uuid "asset_id", null: false
+    t.bigint "collection_id", null: false
+    t.datetime "created_at", null: false
+    t.integer "position", default: 0
+    t.datetime "updated_at", null: false
+    t.integer "user_id"
+    t.index ["asset_id"], name: "index_collection_assets_on_asset_id"
+    t.index ["collection_id", "asset_id"], name: "index_collection_assets_on_collection_id_and_asset_id", unique: true
+    t.index ["collection_id"], name: "index_collection_assets_on_collection_id"
+  end
+
+  create_table "collections", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.datetime "deleted_at"
+    t.text "description"
+    t.string "name"
+    t.jsonb "properties"
+    t.string "slug"
+    t.datetime "updated_at", null: false
+    t.integer "user_id"
+    t.uuid "uuid"
+    t.index ["slug"], name: "index_collections_on_slug", unique: true
+    t.index ["uuid"], name: "index_collections_on_uuid", unique: true
   end
 
   create_table "daily_metrics", force: :cascade do |t|
@@ -242,6 +268,20 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_27_164224) do
     t.datetime "updated_at", null: false
   end
 
+  create_table "system_configurations", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "data_type", default: "string", null: false
+    t.string "description"
+    t.datetime "expires_at"
+    t.text "fallback_value"
+    t.string "key", null: false
+    t.datetime "updated_at", null: false
+    t.integer "updated_by_id"
+    t.text "value", null: false
+    t.index ["key"], name: "index_system_configurations_on_key", unique: true
+    t.index ["updated_by_id"], name: "index_system_configurations_on_updated_by_id"
+  end
+
   create_table "transformation_presets", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "name"
@@ -389,6 +429,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_27_164224) do
   add_foreign_key "assets", "folders"
   add_foreign_key "assets", "users"
   add_foreign_key "audit_logs", "users"
+  add_foreign_key "collection_assets", "assets"
+  add_foreign_key "collection_assets", "collections"
   add_foreign_key "email_deliveries", "email_templates"
   add_foreign_key "folder_policies", "folders"
   add_foreign_key "folder_policies", "user_groups"

@@ -2,6 +2,7 @@ class DashboardController < ApplicationController
   before_action :authenticate_user!
 
   def index
+    @active_view = 'Overview'
     # 1. Base scope: Only search active assets (ignore the recycle bin)
     assets_scope = Asset.active
 
@@ -38,5 +39,10 @@ class DashboardController < ApplicationController
   end
 
   def duplicates
+  end
+
+  def search
+    # No instance variables needed here!
+    # This just tells Rails to render app/views/dashboard/search.html.erb
   end
 end

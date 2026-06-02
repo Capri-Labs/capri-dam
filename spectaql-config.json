@@ -1,0 +1,32 @@
+{
+  "spectaql": {
+    "themeDir": "default",
+    "displayAllServers": false,
+    "hideUnusedTypes": true
+  },
+  "info": {
+    "title": "Headless DAM GraphQL API",
+    "version": "v1.0.0",
+    "description": "Enterprise-grade schema for automated query federation and metadata retrieval. This unified Graph provides zero-noise data fetching for both the React frontend and the isolated AI Gateway.",
+    "termsOfService": "https://yourdam.com/terms",
+    "contact": {
+      "name": "Platform Engineering Team",
+      "email": "architecture@yourdam.com"
+    },
+    "x-url": "http://localhost:3000/graphql"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000/graphql",
+      "description": "Local Development Engine"
+    },
+    {
+      "url": "https://api.yourdam.com/graphql",
+      "description": "Production Immutable Ledger"
+    }
+  ],
+  "introspection": {
+    "url": "http://localhost:3000/graphql",
+    "metadataFile": "./spectaql-metadata.json"
+  }
+}

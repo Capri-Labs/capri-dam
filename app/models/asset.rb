@@ -7,6 +7,9 @@ class Asset < ApplicationRecord
   has_many :workflow_instances, dependent: :destroy
   has_one_attached :file
 
+  has_many :collection_assets, dependent: :destroy
+  has_many :collections, through: :collection_assets
+
   validates :title, presence: true
 
   enum :status, {

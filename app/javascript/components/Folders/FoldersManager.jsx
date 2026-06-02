@@ -8,7 +8,6 @@ export default function FoldersManager(props) {
     return (
         <Box sx={{ display: 'flex', bgcolor: '#f4f7fb', minHeight: '100vh' }}>
             <CssBaseline />
-            <Sidebar activeView="Collections" onNavigate={(v) => navigateTo(v)} />
 
             <Box component="main" sx={{ flexGrow: 1 }}>
                 <Box sx={{ px: 3, pt: 3, pb: 1 }}>

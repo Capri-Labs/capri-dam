@@ -100,7 +100,6 @@ export default function ReportsManager() {
     return (
         <Box sx={{ display: 'flex', bgcolor: '#f4f7fb', minHeight: '100vh' }}>
             <CssBaseline />
-            <Sidebar activeView="Reports" onNavigate={(v) => navigateTo('/dashboard')} />
             <ReportFilterProvider>
                 <DashboardContent />
             </ReportFilterProvider>

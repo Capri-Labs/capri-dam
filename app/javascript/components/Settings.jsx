@@ -152,7 +152,6 @@ export default function Settings(props) {
     return (
         <Box sx={{ display: 'flex', bgcolor: '#f4f7fb', minHeight: '100vh' }}>
             <CssBaseline />
-            <Sidebar activeView={activeView} onNavigate={(v) => v === 'Settings' ? null : navigateTo('/dashboard')} />
 
             <Box component="main" sx={{ flexGrow: 1, p: 4 }}>
                 {/* ... (Personal Preferences Section stays the same) ... */}

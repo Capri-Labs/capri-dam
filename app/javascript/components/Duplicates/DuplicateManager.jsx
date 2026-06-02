@@ -40,7 +40,6 @@ export default function DuplicateManager() {
     return (
         <Box sx={{ display: 'flex', bgcolor: '#f4f7fb', minHeight: '100vh' }}>
             <CssBaseline />
-            <Sidebar activeView="Duplicate Manager" onNavigate={(v) => navigateTo(v)} />
 
             <Box component="main" sx={{ flexGrow: 1, p: 4 }}>
                 <Box sx={{ mb: 4 }}>

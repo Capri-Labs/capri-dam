@@ -7,6 +7,13 @@ class ApplicationController < ActionController::Base
 
   private
 
+  # CUSTOM AUTH: Check for web login first, then fallback to API token
+  def authenticate_hybrid!
+    return if user_signed_in? # Accept Devise web session
+
+    doorkeeper_authorize! # Enforce OAuth token if not on web
+  end
+
   def set_current_context
     Current.user = current_user
     Current.ip_address = request.remote_ip

@@ -4,6 +4,7 @@ class WorkflowsController < ApplicationController
   before_action :set_workflow, only: [:update, :destroy, :toggle_status]
 
   def index
+    @active_view = 'Workflows'
     respond_to do |format|
       # ---------------------------------------------------------
       # 1. THE API RESPONSE (For React fetch requests)

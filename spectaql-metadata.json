@@ -1,0 +1,19 @@
+{
+  "SCALAR": {
+    "Boolean": { "documentation": { "undocumented": true } },
+    "ID": { "documentation": { "undocumented": true } },
+    "Int": { "documentation": { "undocumented": true } },
+    "String": { "documentation": { "undocumented": true } },
+    "Json": { "documentation": { "undocumented": true } },
+    "ISO8601DateTime": { "documentation": { "undocumented": true } }
+  },
+  "OBJECT": {
+    "PageInfo": { "documentation": { "undocumented": true } },
+    "AssetConnection": { "documentation": { "undocumented": true } },
+    "AssetEdge": { "documentation": { "undocumented": true } },
+    "UpdateAssetMetadataPayload": { "documentation": { "undocumented": true } }
+  },
+  "INPUT_OBJECT": {
+    "UpdateAssetMetadataInput": { "documentation": { "undocumented": true } }
+  }
+}

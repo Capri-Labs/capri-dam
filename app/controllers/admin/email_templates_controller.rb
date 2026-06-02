@@ -5,6 +5,8 @@ class Admin::EmailTemplatesController < ApplicationController
 
   # GET /admin/email_templates
   def index
+    @active_view = 'Email Engine'
+
     respond_to do |format|
       format.html # Renders the React layout
       format.json do

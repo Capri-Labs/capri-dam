@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import "@hotwired/turbo-rails"
 
 // Components
-import Header from './components/Header'; // Import your Header
+import Header from './components/Layout/Header'; // Import your Header
 import Settings from './components/Settings';
 import SystemAccountShow from "./components/system_accounts/SystemAccountShow";
 import SystemAccountNew from "./components/system_accounts/SystemAccountNew";
@@ -21,6 +21,10 @@ import DashboardManager from "./components/Dashboard/DashboardManager";
 import FoldersManager from "./components/Folders/FoldersManager";
 import BinManager from "./components/Bin/BinManager";
 import DuplicateManager from "./components/Duplicates/DuplicateManager";
+import Sidebar from './components/Sidebar';
+import Footer from './components/Layout/Footer';
+import SearchScreen from "./components/Search/SearchScreen";
+import CollectionsWorkspace from './components/Collections/index';
 
 document.addEventListener('turbo:load', () => {
     // --- 1. MOUNT THE HEADER ---
@@ -33,6 +37,32 @@ document.addEventListener('turbo:load', () => {
             isSignedIn: headerContainer.dataset.signedIn === 'true'
         };
         headerRoot.render(<Header {...headerProps} />);
+    }
+
+    const sidebarRootElement = document.getElementById('react-sidebar-root');
+    if (sidebarRootElement) {
+        // Read the active view defined by the Rails Controller
+        const activeView = sidebarRootElement.getAttribute('data-active-view');
+
+        const sidebarRoot = createRoot(sidebarRootElement);
+
+        console.log(activeView)
+
+        sidebarRoot.render(
+            <Sidebar
+                activeView={activeView}
+                onNavigate={(viewId) => {
+                    // Handle global navigation if needed
+                    window.location.href = getUrlForView(viewId);
+                }}
+            />
+        );
+    }
+
+    const footerContainer = document.getElementById('react-footer-root');
+    if (footerContainer && !footerContainer.hasChildNodes()) {
+        const footerRoot = createRoot(footerContainer);
+        footerRoot.render(<Footer />);
     }
 
     // --- 2. MOUNT THE MAIN CONTENT ---
@@ -83,6 +113,12 @@ document.addEventListener('turbo:load', () => {
             mainRoot.render(renderWithContext(<BinManager {...props} />));
         } else if (view === 'duplicates') {
             mainRoot.render(renderWithContext(<DuplicateManager {...props} />));
+
+        } else if (view === 'SearchScreen') {
+            mainRoot.render(renderWithContext(<SearchScreen {...props} />));
+
+        }  else if (view === 'collectionsView') {
+            mainRoot.render(renderWithContext(<CollectionsWorkspace {...props} />));
 
         } else {
             mainRoot.render(renderWithContext(<Login />));

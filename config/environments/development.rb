@@ -77,4 +77,21 @@ Rails.application.configure do
   # config.generators.apply_rubocop_autocorrect_after_generate!
   #
   config.active_record.encryption.support_unencrypted_data = true
+
+  config.after_initialize do
+    # Fetch the stored database level or gracefully default to standard INFO logging
+    begin
+      initial_level_str = SystemConfiguration.get("global_log_level", default: "INFO").to_s.upcase
+      Rails.logger.level = case initial_level_str
+                           when 'DEBUG' then Logger::DEBUG
+                           when 'WARN'  then Logger::WARN
+                           when 'ERROR' then Logger::ERROR
+                           when 'FATAL' then Logger::FATAL
+                           else Logger::INFO
+                           end
+    rescue => e
+      # Safe-guard if the database tables aren't migrated yet during deployment pipelines
+      Rails.logger.level = Logger::INFO
+    end
+  end
 end

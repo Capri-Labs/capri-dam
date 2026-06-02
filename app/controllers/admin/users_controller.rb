@@ -5,6 +5,7 @@ class Admin::UsersController < ApplicationController
 
   # GET /admin/users
   def index
+    @active_view = 'Users'
     respond_to do |format|
       format.html
       format.json do

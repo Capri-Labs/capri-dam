@@ -1,0 +1,11 @@
+<% content_for :title, "Search Results | Headless DAM" %>
+
+<%#
+  This empty div acts as the anchor point.
+  Your app/javascript/application.js will see data-view="SearchScreen"
+  and inject the React SearchScreen component directly into this container.
+
+  Setting height: 100% ensures it stretches to fill the main flex container
+  we established in the global application.html.erb layout.
+%>
+<div id="root" data-view="SearchScreen" style="height: 100%; display: flex; flex-direction: column;"></div>

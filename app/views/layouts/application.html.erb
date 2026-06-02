@@ -1,38 +1,48 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <title><%= content_for(:title) || "Headless DAM" %></title>
-    <meta name="viewport" content="width=device-width,initial-scale=1">
-    <%= csrf_meta_tags %>
-    <%= csp_meta_tag %>
+<head>
+  <title><%= content_for(:title) || "Headless DAM" %></title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <%= csrf_meta_tags %>
+  <%= csp_meta_tag %>
 
-    <%= yield :head %>
+  <%= yield :head %>
 
-    <link rel="icon" href="/icon.png" type="image/png">
+  <link rel="icon" href="/icon.png" type="image/png">
 
-    <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
-    <%= javascript_include_tag "application", "data-turbo-track": "reload", defer: true %>
-  </head>
+  <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
+  <%= javascript_include_tag "application", "data-turbo-track": "reload", defer: true %>
+</head>
 
-  <%#
-      BODY STRUCTURE:
-      Using flex-direction: column and min-height: 100vh establishes a strict vertical stack.
-    %>
-  <body style="margin: 0; padding: 0; display: flex; flex-direction: column; min-height: 100vh; background-color: #f4f7fb;">
+<%#
+    BODY: Prevents global scrolling. We want the inner content to scroll,
+    leaving the Header and Sidebar perfectly fixed.
+  %>
+<body style="margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; background-color: #f4f7fb;">
 
-  <%# 1. Global Header %>
-  <%# flex-shrink: 0 ensures the header never squishes when content gets tall %>
-  <header id="global-header" style="flex-shrink: 0; width: 100%;">
-    <%= render "layouts/header" %>
-  </header>
+<%# 1. Global Header (Fixed at Top) %>
+<header id="global-header" style="flex-shrink: 0; width: 100%; z-index: 20; background: #fff; border-bottom: 1px solid #e2e8f0;">
+  <%= render "layouts/header" %>
+</header>
 
-  <%# 2. Main Content Area %>
-  <%# flex-grow: 1 forces main to take up all remaining space, pushing the footer down %>
-  <main id="main-content" style="flex-grow: 1; display: flex; flex-direction: column; width: 100%;">
+<%# 2. Lower Split: Sidebar + Scrollable Content %>
+<div style="display: flex; flex-grow: 1; overflow: hidden;">
 
-    <%# Flash Messages Section %>
+  <%# 3. Global Sidebar Container (Fixed on Left) %>
+  <%# React will mount the Sidebar component here %>
+  <div
+    id="react-sidebar-root"
+    data-active-view="<%= @active_view || 'Dashboard' %>"
+    style="flex-shrink: 0; height: 100%; overflow-y: auto; background: #fff; border-right: 1px solid #e2e8f0; z-index: 10;"
+  >
+  </div>
+
+  <%# 4. Scrollable Content Area (Right Side) %>
+  <div id="scrollable-content" style="flex-grow: 1; display: flex; flex-direction: column; overflow-y: auto; position: relative;">
+
+    <%# Flash Messages %>
     <% if notice || alert %>
-      <section id="flash-container" style="width: 100%; flex-shrink: 0;">
+      <section id="flash-container" style="flex-shrink: 0;">
         <% if notice %>
           <div style="background: #e6f4ea; color: #137333; padding: 1rem; text-align: center; border-bottom: 1px solid #ceead6;">
             <%= notice %>
@@ -46,23 +56,17 @@
       </section>
     <% end %>
 
-    <%#
-          Yield Wrapper:
-          This section isolates the injected views (like your React root).
-          If your React Header is fixed, add padding-top here (e.g., padding-top: 64px;)
-          to prevent overlap.
-        %>
-    <section id="view-wrapper" style="flex-grow: 1; display: flex; flex-direction: column;">
+    <%# 5. Main View Area %>
+    <%# React page components (AssetExplorer, DuplicateManager) mount inside the yield %>
+    <main id="view-wrapper" style="flex-grow: 1; display: flex; flex-direction: column;">
       <%= yield %>
-    </section>
+    </main>
 
-  </main>
+    <%# 6. Global Footer Container %>
+    <%# Pushed below the main content. React will mount the Footer component here %>
+    <footer id="react-footer-root" style="flex-shrink: 0;"></footer>
 
-  <%# 3. Global Footer %>
-  <%# flex-shrink: 0 keeps the footer exactly at its defined height %>
-  <footer id="global-footer" style="flex-shrink: 0; width: 100%;">
-    <%= render "layouts/footer" %>
-  </footer>
-
-  </body>
+  </div>
+</div>
+</body>
 </html>

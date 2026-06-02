@@ -2,12 +2,23 @@ require_relative "boot"
 
 require "rails/all"
 
+require_relative '../lib/structured_json_formatter'
+
 # Require the gems listed in Gemfile, including any gems
 # you've limited to :test, :development, or :production.
 Bundler.require(*Rails.groups)
 
 module HeadlessDam
   class Application < Rails::Application
+    config.active_record.query_log_tags_enabled = true
+    config.active_record.query_log_tags = [
+      # Rails query log tags:
+      :application, :controller, :action, :job,
+      # GraphQL-Ruby query log tags:
+      current_graphql_operation: -> { GraphQL::Current.operation_name },
+      current_graphql_field: -> { GraphQL::Current.field&.path },
+      current_dataloader_source: -> { GraphQL::Current.dataloader_source_class },
+    ]
     # Initialize configuration defaults for originally generated Rails version.
     config.load_defaults 8.1
 
@@ -17,6 +28,9 @@ module HeadlessDam
     config.autoload_lib(ignore: %w[assets tasks])
 
     config.active_job.queue_adapter = :sidekiq
+
+    # Override the global log formatter
+    config.log_formatter = StructuredJsonFormatter.new
 
     # Configuration for the application, engines, and railties goes here.
     #

@@ -50,7 +50,6 @@ export default function SystemAccountShow(props) {
     return (
         <Box sx={{ display: 'flex', bgcolor: '#f4f7fb', minHeight: '100vh' }}>
             <CssBaseline />
-            <Sidebar activeView="Settings" onNavigate={(v) => window.location.href = v === 'Settings' ? '/settings' : '/dashboard'} />
 
             <Box component="main" sx={{ flexGrow: 1, p: 4 }}>
                 <Toolbar />

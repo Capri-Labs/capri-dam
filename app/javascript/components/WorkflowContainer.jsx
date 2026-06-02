@@ -50,7 +50,6 @@ export default function WorkflowContainer(props) {
             {/* Keep the Sidebar so navigation feels seamless.
                 Hardcode activeView to 'Workflows' so the sidebar highlights the correct menu item.
             */}
-            <Sidebar activeView={activeView} onNavigate={(v) => v === 'Workflows' ? null : navigateTo('/dashboard')} />
 
             <Box component="main" sx={{ flexGrow: 1 }}>
                 {renderWorkflowView()}

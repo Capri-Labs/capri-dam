@@ -7,6 +7,9 @@ class Admin::SystemStatusController < ApplicationController
     @smtp_config = Setting.get('smtp_settings')
     @notification_rules = Setting.get('notification_rules')
 
+    # UI view point
+    @active_view = 'System Operations'
+
     respond_to do |format|
       format.html
       format.json { render json: diagnostic_report }

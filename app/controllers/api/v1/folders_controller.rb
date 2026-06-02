@@ -4,6 +4,7 @@ module Api
       before_action :authenticate_user!
 
       def index
+        @active_view = 'All Assets'
         # 1. Fetch all active folders in ONE query
         all_folders = Folder.active.to_a
 

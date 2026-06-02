@@ -1,4 +1,15 @@
 Rails.application.routes.draw do
+
+  get '/docs/graphql', to: redirect('/graphql-docs/index.html')
+
+  # The actual data engine
+  post "/graphql", to: "graphql#execute"
+
+  # The Interactive Sandbox for your browser (Accepts GET)
+  if Rails.env.development?
+    mount GraphiQL::Rails::Engine, at: "/graphiql", graphql_path: "/graphql"
+  end
+
   get "api_docs/index"
   mount Rswag::Ui::Engine => '/api-docs'
   mount Rswag::Api::Engine => '/api-docs'
@@ -27,13 +38,15 @@ Rails.application.routes.draw do
   get '/bin', to: 'dashboard#bin'
   get '/folders', to: 'dashboard#folders'
   get '/duplicates', to: 'dashboard#duplicates'
+  get '/search', to: 'dashboard#search'
 
+  resources :collections, only: [:index]
   get "up" => "rails/health#show", as: :rails_health_check
 
   # --- API Namespace (Consolidated) ---
   namespace :api do
     namespace :v1 do
-      get 'search', to: 'assets#search'
+      get 'search', to: 'search#index'
       # The global bin endpoint
       get 'bin', to: 'assets#bin'
 
@@ -52,6 +65,14 @@ Rails.application.routes.draw do
         member do
           post :restore
           delete :permanent, to: 'folders#permanent_delete'
+        end
+      end
+
+      resources :collections, only: [:index, :show, :create] do
+        # Use member routes for the join table actions
+        member do
+          post 'assets', to: 'collections#add_asset'
+          delete 'assets/:asset_id', to: 'collections#remove_asset'
         end
       end
     end
@@ -76,6 +97,10 @@ Rails.application.routes.draw do
     post 'system_status/update_smtp', to: 'system_status#update_smtp'
     post 'system_status/test_email', to: 'system_status#test_email'
     post 'system_status/restart_server', to: 'system_status#restart_server'
+
+    #Operational Logging Configuration Routes
+    get 'system_configurations/logging', to: 'system_configurations#logging_status'
+    post 'system_configurations/logging', to: 'system_configurations#update_logging'
   end
 
   # --- Admin Namespace ---

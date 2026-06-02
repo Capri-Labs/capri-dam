@@ -120,23 +120,16 @@ export default function Sidebar({ activeView, onNavigate }) {
     };
 
     return (
-        <Drawer
+        <Box
             variant="permanent"
             sx={{
                 width: open ? expandedWidth : collapsedWidth,
-                flexShrink: 0,
-                whiteSpace: 'nowrap',
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
                 transition: 'width 0.3s ease',
-                '& .MuiDrawer-paper': {
-                    width: open ? expandedWidth : collapsedWidth,
-                    transition: 'width 0.3s ease',
-                    boxSizing: 'border-box',
-                    borderRight: '1px solid #e3e8ef',
-                    bgcolor: '#fff',
-                    overflowX: 'hidden', // Clips text smoothly as drawer shrinks
-                    marginTop: '65px',
-                    height: 'calc(100% - 65px)',
-                },
+                bgcolor: '#fff',
+                overflowX: 'hidden',
             }}
         >
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: open ? 'flex-end' : 'center', p: 1.5 }}>
@@ -202,6 +195,6 @@ export default function Sidebar({ activeView, onNavigate }) {
                     </Box>
                 ))}
             </Box>
-        </Drawer>
+        </Box>
     );
 }

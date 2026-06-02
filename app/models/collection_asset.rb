@@ -1,0 +1,25 @@
+class CollectionAsset < ApplicationRecord
+  # Associations
+  belongs_to :collection
+  belongs_to :asset
+  belongs_to :user, optional: true # Tracks WHO added the asset to the collection
+
+  # Validations
+  validates :asset_id, uniqueness: {
+    scope: :collection_id,
+    message: "is already in this collection"
+  }
+
+  # Callbacks for manual ordering
+  before_create :assign_default_position
+
+  private
+
+  # If a marketing user drags-and-drops assets, the position updates.
+  # By default, we put the newest added asset at the end of the list.
+  def assign_default_position
+    return if position.present? && position > 0
+    max_position = CollectionAsset.where(collection_id: collection_id).maximum(:position) || 0
+    self.position = max_position + 1
+  end
+end

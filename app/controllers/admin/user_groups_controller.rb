@@ -6,6 +6,7 @@ class Admin::UserGroupsController < ApplicationController
 
   # GET /admin/user_groups
   def index
+    @active_view = 'User Groups'
     respond_to do |format|
       # 1. When the browser hits the URL, load the ERB view (which mounts React)
       format.html

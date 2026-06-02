@@ -8,6 +8,7 @@ import { navigateTo } from "../../utils/globalutils";
 
 import UserDrawer from './UserDrawer';
 import GroupAssignmentModal from './GroupAssignmentModal';
+import Footer from "../Layout/Footer";
 
 /**
  * Custom Toolbar to replace the deprecated monolithic GridToolbar
@@ -166,7 +167,6 @@ export default function UsersManager() {
     return (
         <Box sx={{ display: 'flex', bgcolor: '#f4f7fb', minHeight: '100vh' }}>
             <CssBaseline />
-            <Sidebar activeView="Users" onNavigate={(v) => navigateTo('/dashboard')} />
 
             <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>

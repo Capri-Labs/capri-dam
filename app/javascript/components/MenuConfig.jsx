@@ -12,9 +12,9 @@ import {
     DnsOutlined,
     EmailOutlined,
     GroupWorkOutlined,
-    FormatListBulletedOutlined,
     PersonOutlined,
-    SecurityOutlined, ContentCopy
+    SecurityOutlined, ContentCopy,
+    ManageSearchOutlined, CollectionsBookmark, AutoAwesome, Route, QueryStats, CloudSync, BackupTable, HealthAndSafety
 } from '@mui/icons-material';
 
 export const MENU_GROUPS = [
@@ -23,16 +23,27 @@ export const MENU_GROUPS = [
         title: 'Core Application',
         items: [
             { id: 'Overview', label: 'Overview', icon: <DashboardOutlined fontSize="small" />, url: '/dashboard' },
+            { id: 'Search', label: 'Advanced Search', icon: <ManageSearchOutlined fontSize="small" />, url: '/search' },
             {
                 id: 'Assets',
                 label: 'Digital Assets',
                 icon: <PhotoLibraryOutlined fontSize="small" />,
                 children: [
                     { id: 'All Assets', label: 'All Assets', icon: <FolderOpenOutlined fontSize="small" />, url: '/folders' },
+                    { id: 'Collections', label: 'Collections', icon: <CollectionsBookmark fontSize="small" />, url: '/collections' },
                     { id: 'Duplicate Manager', label: 'Duplicate Manager', icon: <ContentCopy fontSize="small" />, url: '/duplicates' },
                     { id: 'Bin', label: 'Recycle Bin', icon: <DeleteOutlined fontSize="small" />, url: '/bin' }
                 ]
             },
+        ]
+    },
+    {
+        id: 'artificial_intelligence',
+        title: 'Intelligence',
+        items: [
+            { id: 'Semantic Search', label: 'Semantic Copilot', icon: <AutoAwesome />, url: '/ai/copilot' },
+            { id: 'Agent Automations', label: 'Agent Workflows', icon: <Route />, url: '/ai/agents' },
+            { id: 'Metadata Extraction', label: 'Batch Processing', icon: <QueryStats />, url: '/ai/batch' }
         ]
     },
     {
@@ -48,6 +59,30 @@ export const MENU_GROUPS = [
         title: 'Insights',
         items: [
             { id: 'Reports', label: 'Reports', icon: <AnalyticsOutlined fontSize="small" />, url: '/reports' }
+        ]
+    },
+    {
+        id: 'data_and_migrations',
+        title: 'Data & Migrations',
+        items: [
+            {
+                id: 'Ingestion Engine',
+                label: 'Batch Ingestion',
+                icon: <CloudSync />,
+                url: '/admin/migrations/ingestion'
+            },
+            {
+                id: 'Legacy Connectors',
+                label: 'System Connectors',
+                icon: <BackupTable />,
+                url: '/admin/migrations/connectors'
+            },
+            {
+                id: 'Data Health',
+                label: 'TDM & Storage Health',
+                icon: <HealthAndSafety />,
+                url: '/admin/migrations/health'
+            }
         ]
     },
     {

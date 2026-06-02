@@ -12,6 +12,7 @@ import {
 import { useNotify } from '../../context/NotificationContext'; // Using our global toast engine
 import Sidebar from "../Sidebar";
 import { navigateTo } from '../../utils/globalutils';
+import Footer from "../Layout/Footer";
 
 export default function UserGroupsManager() {
     const notify = useNotify();
@@ -133,7 +134,6 @@ export default function UserGroupsManager() {
     return (
         <Box sx={{ display: 'flex', bgcolor: '#f4f7fb', minHeight: '100vh' }}>
             <CssBaseline />
-            <Sidebar activeView={activeView} onNavigate={(v) => v === 'System' ? null : navigateTo('/dashboard')} />
 
             <Box component="main" sx={{ flexGrow: 1, p: 4 }}>
                 <Box sx={{
@@ -264,6 +264,7 @@ export default function UserGroupsManager() {
                         </Grid>
                     </Stack>
                 </Paper>
+
             </Box>
 
             {/* Create Group Modal */}
