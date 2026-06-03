@@ -31,18 +31,21 @@ class DashboardController < ApplicationController
   end
 
   def bin
+    @active_view = 'Bin'
     # Renders app/views/dashboard/bin.html.erb
   end
 
   def folders
+    @active_view = 'All Assets'
     # Renders app/views/dashboard/folders.html.erb
   end
 
   def duplicates
+    @active_view = 'Duplicate Manager'
   end
 
   def search
-    # No instance variables needed here!
+    @active_view = 'Search'
     # This just tells Rails to render app/views/dashboard/search.html.erb
   end
 end

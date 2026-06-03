@@ -113,3 +113,6 @@ group :production, :development do
   gem 'opentelemetry-instrumentation-http'
   gem 'opentelemetry-exporter-otlp' # For sending data to an OTel collector
 end
+
+# Vector database support for PostgreSQL pgvector
+gem "neighbor"

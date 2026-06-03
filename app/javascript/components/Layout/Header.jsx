@@ -75,7 +75,7 @@ export default function Header(props) {
 
                 {/* 3. USER ACTIONS & NAVIGATION */}
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    {props.isSignedIn ? (
+                    {props.isSignedIn && (
                         <>
                             {/* Quick Add Menu */}
                             <Tooltip title="Create New...">
@@ -164,15 +164,6 @@ export default function Header(props) {
                                 </MenuItem>
                             </Menu>
                         </>
-                    ) : (
-                        <Button
-                            variant="outlined"
-                            onClick={() => window.location.href = '/users/sign_in'}
-                            startIcon={<Login />}
-                            sx={{ textTransform: 'none', borderRadius: '8px' }}
-                        >
-                            Sign In
-                        </Button>
                     )}
                 </Box>
             </Toolbar>

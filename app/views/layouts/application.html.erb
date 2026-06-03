@@ -30,15 +30,17 @@
 
   <%# 3. Global Sidebar Container (Fixed on Left) %>
   <%# React will mount the Sidebar component here %>
-  <div
-    id="react-sidebar-root"
-    data-active-view="<%= @active_view || 'Dashboard' %>"
-    style="flex-shrink: 0; height: 100%; overflow-y: auto; background: #fff; border-right: 1px solid #e2e8f0; z-index: 10;"
-  >
-  </div>
+  <% if user_signed_in? %>
+    <div
+      id="react-sidebar-root"
+      data-active-view="<%= @active_view || 'Dashboard' %>"
+      style="flex-shrink: 0; height: 100%; overflow-y: auto; background: #fff; border-right: 1px solid #e2e8f0; z-index: 10;"
+    >
+    </div>
+  <% end %>
 
   <%# 4. Scrollable Content Area (Right Side) %>
-  <div id="scrollable-content" style="flex-grow: 1; display: flex; flex-direction: column; overflow-y: auto; position: relative;">
+  <div id="scrollable-content" style="flex-grow: 1; display: flex; flex-direction: column; overflow-y: auto; position: relative">
 
     <%# Flash Messages %>
     <% if notice || alert %>
@@ -58,14 +60,15 @@
 
     <%# 5. Main View Area %>
     <%# React page components (AssetExplorer, DuplicateManager) mount inside the yield %>
-    <main id="view-wrapper" style="flex-grow: 1; display: flex; flex-direction: column;">
+    <main id="view-wrapper" style="flex-grow: 1; display: flex; flex-direction: column; min-height: 870px">
       <%= yield %>
     </main>
 
     <%# 6. Global Footer Container %>
     <%# Pushed below the main content. React will mount the Footer component here %>
-    <footer id="react-footer-root" style="flex-shrink: 0;"></footer>
-
+    <% if user_signed_in? %>
+      <footer id="react-footer-root" style="flex-shrink: 0;"></footer>
+    <% end %>
   </div>
 </div>
 </body>

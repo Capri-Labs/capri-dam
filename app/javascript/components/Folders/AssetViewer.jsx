@@ -4,7 +4,6 @@ import {
     Button, Divider, Chip
 } from '@mui/material';
 import { Close, Edit, Download } from '@mui/icons-material';
-import MetadataEditor from '../MetadataEditor'; // Reusing your existing component!
 import ImageEditorDialog from '../ImageEditorDialog';
 import WorkflowPanel from '../WorkflowPanel';
 
@@ -85,9 +84,6 @@ export default function AssetViewer({ asset, open, onClose, onAssetUpdated }) {
                         />
                     </Box>
                     <Divider sx={{ mb: 3 }} />
-
-                    {/* Inject your existing Metadata Editor right here! */}
-                    <MetadataEditor asset={asset} onClose={() => {}} embedded={true} />
 
                     {/* 🚨 NEW: The Workflow Engine UI */}
                     <WorkflowPanel

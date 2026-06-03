@@ -88,52 +88,38 @@ export default function AssetFilterBar({ resultCount, viewLayout, setViewLayout 
                 </Button>
 
                 {/* Right Side Actions */}
-                <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Button color="inherit" endIcon={<KeyboardArrowDown />} sx={{ textTransform: 'none', color: '#475569' }}>
-                        Saved filters
-                    </Button>
-                    <Checkbox size="small" sx={{ color: '#cbd5e1' }} />
-                </Box>
-            </Box>
-
-            {/* BOTTOM ROW: Results & Layout Controls */}
-            <Box sx={{ display: 'flex', alignItems: 'center', py: 1, px: 1, }}>
-                {/* Results Badge */}
-                <Box sx={{
-                    border: '1px solid #cbd5e1', borderRadius: 1, px: 1.5, py: 0.5,
-                    display: 'flex', alignItems: 'center', bgcolor: 'transparent'
-                }}>
-                    <Typography variant="body2" sx={{ fontWeight: 600, color: '#475569' }}>
-                        {resultCount} <Box component="span" sx={{ fontWeight: 400 }}>Results</Box>
-                    </Typography>
-                </Box>
-
-                {/* Sort Dropdown */}
-                <Button
-                    variant="outlined"
-                    onClick={(e) => setSortAnchor(e.currentTarget)}
-                    endIcon={<Sort fontSize="small" />}
-                    sx={{
-                        textTransform: 'none', color: '#475569', borderColor: '#cbd5e1',
-                        bgcolor: 'transparent', '&:hover': { bgcolor: '#f1f5f9' }
-                    }}
-                >
-                    Order by <Box component="span" sx={{ fontWeight: 700, ml: 0.5 }}>{sortConfig}</Box>
-                </Button>
-                <Menu anchorEl={sortAnchor} open={Boolean(sortAnchor)} onClose={() => setSortAnchor(null)}>
-                    {['Date added', 'Name (A-Z)', 'Size (Largest first)'].map(opt => (
-                        <MenuItem
-                            key={opt}
-                            onClick={() => { setSortConfig(opt); setSortAnchor(null); }}
-                            selected={sortConfig === opt}
-                        >
-                            {opt}
-                        </MenuItem>
-                    ))}
-                </Menu>
-
-                {/* Right Side Tools */}
                 <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Box sx={{
+                        border: '1px solid #cbd5e1', borderRadius: 1, px: 1.5, py: 0.5,
+                        display: 'flex', alignItems: 'center', bgcolor: 'transparent'
+                    }}>
+                        <Typography variant="body2" sx={{ fontWeight: 600, color: '#475569' }}>
+                            {resultCount} <Box component="span" sx={{ fontWeight: 400 }}>Results</Box>
+                        </Typography>
+                    </Box>
+                    {/* Sort Dropdown */}
+                    <Button
+                        variant="outlined"
+                        onClick={(e) => setSortAnchor(e.currentTarget)}
+                        endIcon={<Sort fontSize="small" />}
+                        sx={{
+                            textTransform: 'none', color: '#475569', borderColor: '#cbd5e1',
+                            bgcolor: 'transparent', '&:hover': { bgcolor: '#f1f5f9' }
+                        }}
+                    >
+                        Order by <Box component="span" sx={{ fontWeight: 700, ml: 0.5 }}>{sortConfig}</Box>
+                    </Button>
+                    <Menu anchorEl={sortAnchor} open={Boolean(sortAnchor)} onClose={() => setSortAnchor(null)}>
+                        {['Date added', 'Name (A-Z)', 'Size (Largest first)'].map(opt => (
+                            <MenuItem
+                                key={opt}
+                                onClick={() => { setSortConfig(opt); setSortAnchor(null); }}
+                                selected={sortConfig === opt}
+                            >
+                                {opt}
+                            </MenuItem>
+                        ))}
+                    </Menu>
 
                     <ToggleButtonGroup
                         value={viewLayout}

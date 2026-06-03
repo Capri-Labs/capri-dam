@@ -280,6 +280,8 @@ GEM
     msgpack (1.8.0)
     multi_xml (0.9.1)
       bigdecimal (>= 3.1, < 5)
+    neighbor (1.1.1)
+      activerecord (>= 7.2)
     net-http (0.9.1)
       uri (>= 0.11.1)
     net-imap (0.6.3)
@@ -780,6 +782,7 @@ DEPENDENCIES
   liquid (~> 5.12)
   marcel (~> 1.1)
   mini_magick (~> 5.3)
+  neighbor
   omniauth-keycloak
   omniauth-rails_csrf_protection
   opentelemetry-exporter-otlp
@@ -913,6 +916,7 @@ CHECKSUMS
   minitest (6.0.5) sha256=f007d7246bf4feea549502842cd7c6aba8851cdc9c90ba06de9c476c0d01155c
   msgpack (1.8.0) sha256=e64ce0212000d016809f5048b48eb3a65ffb169db22238fb4b72472fecb2d732
   multi_xml (0.9.1) sha256=7ce766b59c17241ed62976caeae1fae9b2431b263398c35396239a68c4a64e57
+  neighbor (1.1.1) sha256=819180fe053af62738884927b2665764f4a8ed1ac2616c6956679ff2d707f1c7
   net-http (0.9.1) sha256=25ba0b67c63e89df626ed8fac771d0ad24ad151a858af2cc8e6a716ca4336996
   net-imap (0.6.3) sha256=9bab75f876596d09ee7bf911a291da478e0cd6badc54dfb82874855ccc82f2ad
   net-pop (0.1.2) sha256=848b4e982013c15b2f0382792268763b748cce91c9e91e36b0f27ed26420dff3

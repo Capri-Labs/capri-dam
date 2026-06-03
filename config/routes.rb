@@ -49,9 +49,15 @@ Rails.application.routes.draw do
       get 'search', to: 'search#index'
       # The global bin endpoint
       get 'bin', to: 'assets#bin'
+      # The entry point for the React Semantic Copilot UI
+      post 'copilot/search', to: 'copilots#search'
+
 
       resources :folders, only: [:show, :create]
-      resources :assets, only: [:show, :update, :create]
+      resources :assets, only: [:show, :update, :create] do
+        # Explicitly point to the asset_embeddings controller
+        resource :embedding, only: [:update], controller: 'asset_embeddings'
+      end
 
       resources :assets do
         member do
@@ -105,6 +111,11 @@ Rails.application.routes.draw do
 
   # --- Admin Namespace ---
   namespace :admin do
+
+    get 'migrations/ingestion', to: 'migrations#ingestion'
+    get 'migrations/connectors', to: 'migrations#connectors'
+    get 'migrations/health', to: 'migrations#health'
+
     resources :system_accounts, only: [:index, :show, :new, :create, :destroy]
 
     # Group & Membership Management
@@ -147,6 +158,12 @@ Rails.application.routes.draw do
     end
   end
 
+  namespace :ai do
+    get 'copilot', to: 'ui#copilot'
+    get 'agents',  to: 'ui#agents'
+    get 'batch',   to: 'ui#batch'
+  end
+
   # 1. THE FRONTEND ROUTE (Serves the HTML Shell)
   # --- Workflows ---
   get '/workflows', to: 'workflows#index'
@@ -166,6 +183,11 @@ Rails.application.routes.draw do
   # 2. THE API ROUTES (Serves the JSON Data)
   namespace :api do
     namespace :v1 do
+
+      # UI Route for the Ingestion Dashboard
+      resources :ingestion_items, only: [:show, :update]
+      resources :ingestion_batches, only: [:create, :index]
+
       # Add this line to map the dashboard fetch request to your specific controller
       get 'workflows/dashboard', to: 'workflow_tasks#dashboard'
 
@@ -183,7 +205,6 @@ Rails.application.routes.draw do
         end
       end
 
-      # ... assets and folders routes ...
     end
   end
 

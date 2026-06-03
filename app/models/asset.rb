@@ -7,6 +7,12 @@ class Asset < ApplicationRecord
   has_many :workflow_instances, dependent: :destroy
   has_one_attached :file
 
+  # New AI Vector Association
+  has_one :asset_embedding, dependent: :destroy
+
+  # Trigger the asynchronous embedding generation whenever metadata changes
+  after_commit :broadcast_for_embedding, on: [:create, :update]
+
   has_many :collection_assets, dependent: :destroy
   has_many :collections, through: :collection_assets
 
@@ -25,11 +31,32 @@ class Asset < ApplicationRecord
 
   scope :published, -> { where(status: :active) }
 
+  scope :nearest_to_vector, ->(vector) {
+    return none if vector.blank?
+
+    joins(:asset_embedding)
+      .merge(AssetEmbedding.nearest_neighbors(:embedding, vector, distance: "cosine"))
+      .select("assets.*")
+  }
+
   after_initialize :set_property_defaults, if: :new_record?
 
   include SoftDeletable
 
   private
+
+  def broadcast_for_embedding
+    # We only care about embedding assets that have clean, structured properties
+    return if properties.blank?
+
+    payload = {
+      event: 'asset.needs_embedding',
+      asset_uuid: self.id
+    }.to_json
+
+    # Broadcast to the exact same channel the Ingestion Engine uses
+    Redis.current.publish('ai_gateway_events', payload)
+  end
 
   def set_property_defaults
     self.properties ||= {

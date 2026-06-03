@@ -10,10 +10,21 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_02_134823) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_03_084017) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
+  enable_extension "vector"
+
+  create_table "asset_embeddings", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "asset_id", null: false
+    t.datetime "created_at", null: false
+    t.vector "embedding", limit: 1536, null: false
+    t.string "model_name", null: false
+    t.datetime "updated_at", null: false
+    t.index ["asset_id"], name: "index_asset_embeddings_on_asset_id", unique: true
+    t.index ["embedding"], name: "index_asset_embeddings_on_embedding", opclass: :vector_cosine_ops, using: :hnsw
+  end
 
   create_table "assets", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.datetime "created_at", null: false
@@ -158,6 +169,32 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_02_134823) do
     t.index ["notifiable_type", "notifiable_id"], name: "index_in_app_notifications_on_notifiable"
     t.index ["user_id", "read_at"], name: "index_in_app_notifications_on_user_id_and_read_at"
     t.index ["user_id"], name: "index_in_app_notifications_on_user_id"
+  end
+
+  create_table "ingestion_batches", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "name", null: false
+    t.integer "processed_count", default: 0
+    t.string "source_type", null: false
+    t.integer "status", default: 0, null: false
+    t.integer "total_count", default: 0
+    t.datetime "updated_at", null: false
+    t.integer "user_id"
+  end
+
+  create_table "ingestion_items", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.jsonb "clean_properties", default: {}
+    t.datetime "created_at", null: false
+    t.text "error_log"
+    t.string "file_hash"
+    t.bigint "file_size"
+    t.uuid "ingestion_batch_id", null: false
+    t.jsonb "legacy_metadata", default: {}
+    t.string "original_filename", null: false
+    t.integer "status", default: 0, null: false
+    t.datetime "updated_at", null: false
+    t.index ["file_hash"], name: "index_ingestion_items_on_file_hash"
+    t.index ["ingestion_batch_id"], name: "index_ingestion_items_on_ingestion_batch_id"
   end
 
   create_table "notifications", force: :cascade do |t|
@@ -426,6 +463,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_02_134823) do
     t.integer "updated_by_id"
   end
 
+  add_foreign_key "asset_embeddings", "assets"
   add_foreign_key "assets", "folders"
   add_foreign_key "assets", "users"
   add_foreign_key "audit_logs", "users"
@@ -438,6 +476,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_02_134823) do
   add_foreign_key "folders", "users"
   add_foreign_key "in_app_notifications", "users"
   add_foreign_key "in_app_notifications", "users", column: "actor_id"
+  add_foreign_key "ingestion_items", "ingestion_batches"
   add_foreign_key "notifications", "users"
   add_foreign_key "oauth_access_grants", "oauth_applications", column: "application_id"
   add_foreign_key "oauth_access_tokens", "oauth_applications", column: "application_id"
