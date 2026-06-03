@@ -10,7 +10,7 @@ export default function Footer() {
             sx={{
                 bgcolor: '#ffffff',
                 borderTop: '1px solid #e2e8f0',
-                py: 6,
+                py: 4,
                 mt: 'auto', // Pushes footer to the bottom of the flex container
                 width: '100%'
             }}
@@ -21,10 +21,10 @@ export default function Footer() {
                     {/* Branding & Mission */}
                     <Grid item xs={12} md={5}>
                         <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#1e293b', mb: 1.5, letterSpacing: '-0.02em' }}>
-                            Headless DAM Ecosystem
+                            Intelligent Asset Engine
                         </Typography>
                         <Typography variant="body2" sx={{ color: '#64748b', mb: 2, maxWidth: 400, lineHeight: 1.6 }}>
-                            Enterprise-grade digital asset management designed for high-scale automation, rigorous compliance, and zero noise operations.
+                            The operating system for your digital creative life-cycle. Engineered for high-velocity global teams who demand automated compliance, semantic discovery, and infinite scalability.
                         </Typography>
                     </Grid>
 
@@ -72,7 +72,7 @@ export default function Footer() {
                     </Grid>
                 </Grid>
 
-                <Divider sx={{ my: 4, borderColor: '#f1f5f9' }} />
+                <Divider sx={{ my: 2, borderColor: '#f1f5f9' }} />
 
                 {/* Bottom Bar: Copyright and Versioning */}
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}>

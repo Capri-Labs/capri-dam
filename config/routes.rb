@@ -184,6 +184,17 @@ Rails.application.routes.draw do
   namespace :api do
     namespace :v1 do
 
+      resource :ai_configuration, only: [:show, :update]
+
+      resources :system_connectors, only: [:index, :create, :update] do
+        collection do
+          post :test_connection
+          post :pre_flight_analysis # POST /api/v1/system_connectors/:id/pre_flight_analysis
+        end
+      end
+
+      post 'webhooks/connectors/:connector_id/receive', to: 'webhooks#receive'
+
       # UI Route for the Ingestion Dashboard
       resources :ingestion_items, only: [:show, :update]
       resources :ingestion_batches, only: [:create, :index]

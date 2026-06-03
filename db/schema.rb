@@ -10,11 +10,23 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_03_084017) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_03_160008) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
   enable_extension "vector"
+
+  create_table "ai_configurations", force: :cascade do |t|
+    t.string "active_provider"
+    t.datetime "created_at", null: false
+    t.decimal "current_spend_usd"
+    t.string "embedding_model"
+    t.boolean "fallback_to_local"
+    t.string "generation_model"
+    t.decimal "monthly_budget_usd"
+    t.text "system_prompt"
+    t.datetime "updated_at", null: false
+  end
 
   create_table "asset_embeddings", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.uuid "asset_id", null: false
@@ -252,6 +264,16 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_03_084017) do
     t.index ["uid"], name: "index_oauth_applications_on_uid", unique: true
   end
 
+  create_table "quarantined_assets", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.jsonb "original_payload"
+    t.text "rejection_reason"
+    t.string "status"
+    t.bigint "system_connector_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["system_connector_id"], name: "index_quarantined_assets_on_system_connector_id"
+  end
+
   create_table "renditions", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.uuid "asset_id", null: false
     t.string "content_type"
@@ -317,6 +339,20 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_03_084017) do
     t.text "value", null: false
     t.index ["key"], name: "index_system_configurations_on_key", unique: true
     t.index ["updated_by_id"], name: "index_system_configurations_on_updated_by_id"
+  end
+
+  create_table "system_connectors", force: :cascade do |t|
+    t.integer "assets_imported"
+    t.string "auth_token"
+    t.datetime "created_at", null: false
+    t.string "endpoint"
+    t.datetime "last_sync"
+    t.string "name"
+    t.string "provider_type"
+    t.string "status"
+    t.boolean "tdm_sanitation"
+    t.datetime "updated_at", null: false
+    t.string "webhook_secret"
   end
 
   create_table "transformation_presets", force: :cascade do |t|
@@ -480,6 +516,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_03_084017) do
   add_foreign_key "notifications", "users"
   add_foreign_key "oauth_access_grants", "oauth_applications", column: "application_id"
   add_foreign_key "oauth_access_tokens", "oauth_applications", column: "application_id"
+  add_foreign_key "quarantined_assets", "system_connectors"
   add_foreign_key "renditions", "assets"
   add_foreign_key "renditions", "storage_backends"
   add_foreign_key "report_snapshots", "report_definitions"

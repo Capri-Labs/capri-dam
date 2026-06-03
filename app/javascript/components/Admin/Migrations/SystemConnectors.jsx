@@ -1,155 +1,152 @@
-import React, { useState } from 'react';
-import {
-    Box, Typography, Paper, Grid, TextField, Button,
-    MenuItem, Stack, Alert, Divider
-} from '@mui/material';
-import { BackupTable, CloudQueue, Lan, Code, RocketLaunch } from '@mui/icons-material';
+import React, { useState, useEffect } from 'react';
+import { Box, Grid, CircularProgress } from '@mui/material';
+import { useNotify } from '../../../context/NotificationContext';
+import ConnectorsTopBar from './ConnectorsTopBar';
+import ConnectorCard from './ConnectorCard';
+import ConnectorDialog from './ConnectorDialog';
 
 export default function SystemConnectors() {
-    const [loading, setLoading] = useState(false);
-    const [successMessage, setSuccessMessage] = useState('');
+    const notify = useNotify();
+    const [connectors, setConnectors] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-    // Form State
-    const [batchName, setBatchName] = useState('');
-    const [sourceType, setSourceType] = useState('aws_s3');
-    const [credentials, setCredentials] = useState({
-        bucket: '', region: '', accessKey: '', secretKey: '',
-        endpointUrl: '', username: '', password: ''
-    });
+    const [openDialog, setOpenDialog] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+    const [isTesting, setIsTesting] = useState(false);
+    const [testResult, setTestResult] = useState(null);
 
-    const handleCredentialChange = (field, value) => {
-        setCredentials(prev => ({ ...prev, [field]: value }));
-    };
+    const initialFormState = { id: null, provider_type: 'AEM', name: '', endpoint: '', auth_token: '', tdm_sanitation: true, status: 'idle' };
+    const [formData, setFormData] = useState(initialFormState);
 
-    const handleStartMigration = async (e) => {
-        e.preventDefault();
+    useEffect(() => { fetchConnectors(); }, []);
+
+    const fetchConnectors = async () => {
         setLoading(true);
-
-        // Payload matching our Rails API controller
-        const payload = {
-            ingestion_batch: {
-                name: batchName,
-                source_type: sourceType,
-                source_credentials: credentials // In production, these should be encrypted at the database level
-            }
-        };
-
         try {
-            // fetch('/api/v1/ingestion_batches', { method: 'POST', body: JSON.stringify(payload) })
-
-            // Simulating API latency
-            setTimeout(() => {
-                setLoading(false);
-                setSuccessMessage(`Connection established. Sidekiq worker successfully triggered for "${batchName}". Navigate to the Batch Ingestion dashboard to monitor progress.`);
-                setBatchName('');
-            }, 1200);
+            const res = await fetch('/api/v1/system_connectors');
+            const data = await res.json();
+            setConnectors(data);
         } catch (error) {
+            notify("Failed to load connectors.", "error");
+        } finally {
             setLoading(false);
-            alert("Failed to initialize connection.");
         }
     };
 
-    return (
-        <Box sx={{ p: 4, bgcolor: '#f4f7fb', minHeight: '100vh', margin: '0 auto' }}>
-            <Typography variant="h4" sx={{ fontWeight: 700, color: '#121926', mb: 1 }}>
-                System Connectors
-            </Typography>
-            <Typography variant="body2" color="textSecondary" sx={{ mb: 4 }}>
-                Provision secure connections to legacy infrastructure to extract and migrate asset payloads.
-            </Typography>
+    const handleCloseDialog = () => {
+        setOpenDialog(false);
+        setFormData(initialFormState);
+        setTestResult(null);
+    };
 
-            {successMessage && (
-                <Alert severity="success" sx={{ mb: 4, borderRadius: 2 }}>{successMessage}</Alert>
+    const handleOpenEdit = (connector) => {
+        setFormData({ ...connector, auth_token: '' });
+        setTestResult(null);
+        setOpenDialog(true);
+    };
+
+    const handleToggleStatus = async (connector) => {
+        const newStatus = connector.status === 'active' ? 'disabled' : 'active';
+        try {
+            const csrfToken = document.querySelector('[name="csrf-token"]').content;
+            const res = await fetch(`/api/v1/system_connectors/${connector.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
+                body: JSON.stringify({ system_connector: { status: newStatus } })
+            });
+            if (res.ok) {
+                notify(`Connector ${newStatus === 'active' ? 'resumed' : 'paused'}.`, "info");
+                fetchConnectors();
+            }
+        } catch (error) {
+            notify("Failed to toggle connector status.", "error");
+        }
+    };
+
+    const handleTestConnection = async () => {
+        setIsTesting(true);
+        setTestResult(null);
+        try {
+            const csrfToken = document.querySelector('[name="csrf-token"]').content;
+            const res = await fetch('/api/v1/system_connectors/test_connection', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
+                body: JSON.stringify(formData)
+            });
+            const data = await res.json();
+            setTestResult({ type: data.success ? 'success' : 'error', message: data.message });
+        } catch (error) {
+            setTestResult({ type: 'error', message: "Failed to reach server." });
+        } finally {
+            setIsTesting(false);
+        }
+    };
+
+    const handleSaveConnector = async () => {
+        setIsSaving(true);
+        const isEditing = !!formData.id;
+        const url = isEditing ? `/api/v1/system_connectors/${formData.id}` : '/api/v1/system_connectors';
+        const method = isEditing ? 'PUT' : 'POST';
+
+        try {
+            const csrfToken = document.querySelector('[name="csrf-token"]').content;
+            const res = await fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
+                body: JSON.stringify({ system_connector: formData })
+            });
+
+            if (res.ok) {
+                notify(isEditing ? "Connector updated." : "Connector established.", "success");
+                fetchConnectors();
+                handleCloseDialog();
+            } else {
+                notify("Failed to save connector.", "error");
+            }
+        } catch (error) {
+            notify("Network error occurred.", "error");
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const isFormValid = formData.name && formData.endpoint && (formData.id || formData.auth_token);
+
+    return (
+        <Box sx={{ p: 4, bgcolor: '#f8fafc', minHeight: '100vh' }}>
+            <ConnectorsTopBar
+                onAddClick={() => setOpenDialog(true)}
+                onRefresh={fetchConnectors}
+            />
+
+            {loading ? (
+                <CircularProgress sx={{ display: 'block', mx: 'auto', mt: 10 }} />
+            ) : (
+                <Grid container spacing={4}>
+                    {connectors.map((conn) => (
+                        <Grid item xs={12} md={6} lg={4} key={conn.id}>
+                            <ConnectorCard
+                                conn={conn}
+                                onEdit={handleOpenEdit}
+                                onToggleStatus={handleToggleStatus}
+                            />
+                        </Grid>
+                    ))}
+                </Grid>
             )}
 
-            <Paper elevation={0} sx={{ border: '1px solid #e3e8ef', borderRadius: 3 }}>
-                <form onSubmit={handleStartMigration}>
-                    <Box sx={{ p: 4 }}>
-                        <Typography variant="h6" sx={{ fontWeight: 600, mb: 3 }}>1. Batch Configuration</Typography>
-                        <Grid container spacing={3}>
-                            <Grid item xs={12} md={6}>
-                                <TextField
-                                    fullWidth
-                                    label="Migration Batch Name"
-                                    variant="outlined"
-                                    required
-                                    value={batchName}
-                                    onChange={(e) => setBatchName(e.target.value)}
-                                    placeholder="e.g. Q3 EMEA SharePoint Migration"
-                                />
-                            </Grid>
-                            <Grid item xs={12} md={6}>
-                                <TextField
-                                    select
-                                    fullWidth
-                                    label="Legacy Source System"
-                                    required
-                                    value={sourceType}
-                                    onChange={(e) => setSourceType(e.target.value)}
-                                >
-                                    <MenuItem value="aws_s3"><CloudQueue sx={{ mr: 1, fontSize: 18 }} /> Amazon S3 (Legacy)</MenuItem>
-                                    <MenuItem value="azure_blob"><CloudQueue sx={{ mr: 1, fontSize: 18 }} /> Azure Blob Storage</MenuItem>
-                                    <MenuItem value="gcp_bucket"><CloudQueue sx={{ mr: 1, fontSize: 18 }} /> Google Cloud Storage</MenuItem>
-                                    <MenuItem value="aem_api"><Code sx={{ mr: 1, fontSize: 18 }} /> Adobe Experience Manager (AEM)</MenuItem>
-                                    <MenuItem value="ftp"><Lan sx={{ mr: 1, fontSize: 18 }} /> Secure FTP (SFTP)</MenuItem>
-                                </TextField>
-                            </Grid>
-                        </Grid>
-                    </Box>
-
-                    <Divider sx={{ borderColor: '#e3e8ef' }} />
-
-                    <Box sx={{ p: 4 }}>
-                        <Typography variant="h6" sx={{ fontWeight: 600, mb: 3 }}>2. Extraction Credentials</Typography>
-
-                        {/* Dynamic Rendering based on selected Source Type */}
-                        <Grid container spacing={3}>
-                            {(sourceType === 'aws_s3' || sourceType === 'gcp_bucket') && (
-                                <>
-                                    <Grid item xs={12} md={6}>
-                                        <TextField fullWidth required label="Bucket Name" onChange={e => handleCredentialChange('bucket', e.target.value)} />
-                                    </Grid>
-                                    <Grid item xs={12} md={6}>
-                                        <TextField fullWidth required label="Region" onChange={e => handleCredentialChange('region', e.target.value)} />
-                                    </Grid>
-                                    <Grid item xs={12} md={6}>
-                                        <TextField fullWidth required label="Access Key ID" onChange={e => handleCredentialChange('accessKey', e.target.value)} />
-                                    </Grid>
-                                    <Grid item xs={12} md={6}>
-                                        <TextField fullWidth required type="password" label="Secret Access Key" onChange={e => handleCredentialChange('secretKey', e.target.value)} />
-                                    </Grid>
-                                </>
-                            )}
-
-                            {(sourceType === 'aem_api' || sourceType === 'ftp' || sourceType === 'azure_blob') && (
-                                <>
-                                    <Grid item xs={12}>
-                                        <TextField fullWidth required label="Endpoint URL / Host" placeholder="https://legacy-aem.enterprise.com/content/dam.json" onChange={e => handleCredentialChange('endpointUrl', e.target.value)} />
-                                    </Grid>
-                                    <Grid item xs={12} md={6}>
-                                        <TextField fullWidth required label="Username / Access Tier" onChange={e => handleCredentialChange('username', e.target.value)} />
-                                    </Grid>
-                                    <Grid item xs={12} md={6}>
-                                        <TextField fullWidth required type="password" label="Password / API Token" onChange={e => handleCredentialChange('password', e.target.value)} />
-                                    </Grid>
-                                </>
-                            )}
-                        </Grid>
-                    </Box>
-
-                    <Box sx={{ p: 3, bgcolor: '#f8fafc', borderTop: '1px solid #e3e8ef', borderBottomLeftRadius: 12, borderBottomRightRadius: 12, display: 'flex', justifyContent: 'flex-end' }}>
-                        <Button
-                            type="submit"
-                            variant="contained"
-                            disabled={loading}
-                            startIcon={<RocketLaunch />}
-                            sx={{ bgcolor: '#5e35b1', '&:hover': { bgcolor: '#4527a0' }, py: 1.5, px: 4 }}
-                        >
-                            {loading ? 'Initializing Connection...' : 'Initialize Extraction Pipeline'}
-                        </Button>
-                    </Box>
-                </form>
-            </Paper>
+            <ConnectorDialog
+                open={openDialog}
+                onClose={handleCloseDialog}
+                formData={formData}
+                setFormData={setFormData}
+                onSave={handleSaveConnector}
+                onTest={handleTestConnection}
+                isSaving={isSaving}
+                isTesting={isTesting}
+                testResult={testResult}
+                isFormValid={isFormValid}
+            />
         </Box>
     );
 }

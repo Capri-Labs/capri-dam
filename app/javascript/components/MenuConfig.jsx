@@ -145,7 +145,7 @@ export const MENU_GROUPS = [
             },
             {
                 id: 'Legacy Connectors',
-                label: 'System Connectors',
+                label: 'Migration & Legacy',
                 icon: <BackupTable />,
                 url: '/admin/migrations/connectors'
             },
