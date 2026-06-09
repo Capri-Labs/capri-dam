@@ -52,6 +52,25 @@ export default function ConnectorDialog({
                             }
                         />
                     </Box>
+
+                    <Grid container spacing={2}>
+                        <Grid item xs={6}>
+                            <TextField
+                                type="number"
+                                label="Max Concurrent Threads"
+                                value={formData.concurrency_limit || 3}
+                                onChange={(e) => setFormData({ ...formData, concurrency_limit: parseInt(e.target.value) })}
+                            />
+                        </Grid>
+                        <Grid item xs={6}>
+                            <TextField
+                                type="number"
+                                label="Max Requests/Sec"
+                                value={formData.rps_limit || 5}
+                                onChange={(e) => setFormData({ ...formData, rps_limit: parseInt(e.target.value) })}
+                            />
+                        </Grid>
+                    </Grid>
                 </Stack>
             </DialogContent>
             <DialogActions sx={{ p: 3, borderTop: '1px solid #e2e8f0', bgcolor: '#f8fafc', display: 'flex', gap: 1 }}>

@@ -2,24 +2,83 @@ class Api::V1::CollectionsController < ApplicationController
   # Ensure your API controllers skip CSRF if they are using token auth
   skip_before_action :verify_authenticity_token, if: -> { request.format.json? }
 
-  before_action :set_collection, only: [:show, :add_asset, :remove_asset]
+  before_action :set_collection, only: [
+    :show,
+    :update,
+    :destroy,
+    :add_asset,
+    :remove_asset,
+    :toggle_pin,
+    :configure_rule,
+    :purge_cdn
+  ]
 
   # GET /api/v1/collections
   def index
-    collections = Collection.active.order(created_at: :desc)
-    render json: collections, status: :ok
+    # Standard users only see what they are allowed to see via the ABAC rules
+    all_active = Collection.active.order(created_at: :desc)
+
+    # Filter collections in Ruby (or rewrite as a complex SQL JSONB query for scale)
+    allowed_collections = all_active.select { |c| c.accessible_by?(current_user) }
+
+    render json: allowed_collections, status: :ok
+  end
+
+  # PATCH/PUT /api/v1/collections/:slug
+  def update
+    if @collection.update(collection_params)
+      render json: @collection, status: :ok
+    else
+      render json: { errors: @collection.errors.full_messages }, status: :unprocessable_entity
+    end
+  end
+
+  # PATCH /api/v1/collections/bulk_update
+  def bulk_update
+    return render json: { error: 'No IDs provided' }, status: :bad_request if params[:ids].blank?
+
+    collections = Collection.where(id: params[:ids])
+
+    # Extract just the properties payload for the deep merge
+    update_payload = collection_params.to_h
+    new_properties = update_payload.delete(:properties) || {}
+
+    # We iterate because updating JSONB requires merging the existing data
+    # with the new data, otherwise we overwrite properties we didn't intend to change.
+    collections.find_each do |collection|
+      current_properties = collection.properties || {}
+      merged_properties = current_properties.merge(new_properties)
+
+      collection.update!(
+        update_payload.merge(properties: merged_properties)
+      )
+    end
+
+    render json: { message: "Successfully updated #{collections.count} workspaces." }, status: :ok
+  rescue StandardError => e
+    render json: { error: e.message }, status: :internal_server_error
   end
 
   # GET /api/v1/collections/:slug
   def show
-    # Renders the collection and includes the nested asset details
-    render json: @collection.as_json(include: :assets), status: :ok
+    # Renders the collection with its AI rules and nested assets
+    render json: @collection.as_json(
+      include: {
+        collection_rule: {
+          only: [:semantic_prompt, :similarity_threshold, :metadata_filters, :active]
+        },
+        assets: {
+          # Include pivot data (like 'pinned' status) from the CollectionAsset join table
+          methods: [:manually_curated?]
+        }
+      }
+    ), status: :ok
   end
 
   # POST /api/v1/collections
   def create
     collection = Collection.new(collection_params)
-    # collection.user = current_user
+    collection.user = current_user
 
     if collection.save
       render json: collection, status: :created
@@ -54,16 +113,98 @@ class Api::V1::CollectionsController < ApplicationController
     end
   end
 
+  # POST /api/v1/collections/:slug/rule
+  def configure_rule
+    # Ensure the collection is marked as 'smart'
+    @collection.update!(collection_type: 'smart') unless @collection.smart?
+
+    rule = @collection.collection_rule || @collection.build_collection_rule
+
+    # Assign the new parameters
+    rule.semantic_prompt = params[:semantic_prompt]
+    rule.similarity_threshold = params[:similarity_threshold] || 0.800
+    rule.metadata_filters = params[:metadata_filters] || {}
+    rule.active = params[:active].nil? ? true : params[:active]
+
+    if rule.save
+      render json: {
+        message: 'Smart routing rules updated successfully.',
+        collection: @collection.as_json(include: :collection_rule)
+      }, status: :ok
+    else
+      render json: { errors: rule.errors.full_messages }, status: :unprocessable_entity
+    end
+  end
+
+  # PATCH /api/v1/collections/:slug/assets/:asset_id/pin
+  def toggle_pin
+    join_record = CollectionAsset.find_by(collection: @collection, asset_id: params[:asset_id])
+
+    return render json: { error: 'Asset not in collection' }, status: :not_found unless join_record
+
+    # Toggle the boolean state
+    join_record.update!(pinned: !join_record.pinned)
+
+    status_message = join_record.pinned ? 'Asset pinned manually.' : 'Asset unpinned. AI will manage routing.'
+    render json: { message: status_message, pinned: join_record.pinned }, status: :ok
+  end
+
+  # DELETE /api/v1/collections/:slug
+  def destroy
+    # Soft delete to maintain audit trails
+    if @collection.update(deleted_at: Time.current)
+      render json: { message: 'Workspace archived successfully.' }, status: :ok
+    else
+      render json: { error: 'Failed to archive workspace.' }, status: :unprocessable_entity
+    end
+  end
+
+  # DELETE /api/v1/collections/bulk_delete
+  def bulk_delete
+    # Verify we received an array of IDs
+    return render json: { error: 'No IDs provided' }, status: :bad_request if params[:ids].blank?
+
+    collections = Collection.where(id: params[:ids])
+
+    # Soft delete all matched records in a single query
+    deleted_count = collections.update_all(deleted_at: Time.current)
+
+    render json: { message: "Successfully archived #{deleted_count} workspaces." }, status: :ok
+  end
+
+  # POST /api/v1/collections/:slug/purge_cdn
+  def purge_cdn
+    # In production, this would trigger a Sidekiq worker to hit the CloudFront/Akamai API
+    # CdnPurgeWorker.perform_async(@collection.id)
+
+    render json: { message: "CDN Cache invalidation initiated for #{@collection.name}." }, status: :ok
+  end
+
   private
 
   def set_collection
-    @collection = Collection.active.find_by!(slug: params[:id])
+    @collection = Collection.active.find_by!(slug: params[:slug])
+
+    # Enforce Security on the detailed view
+    unless @collection.accessible_by?(current_user)
+      render json: { error: 'Unauthorized Access: You do not have clearance for this workspace.' }, status: :forbidden
+    end
   rescue ActiveRecord::RecordNotFound
     render json: { error: 'Collection not found' }, status: :not_found
   end
 
   def collection_params
-    # Permit properties for future AI prompt injection
-    params.require(:collection).permit(:name, :description, properties: {})
+    # We explicitly permit the nested JSON keys for strict parameters
+    params.require(:collection).permit(
+      :name,
+      :description,
+      :collection_type,
+      :expires_at,
+      properties: [
+        tags: [],
+        allowed_groups: [],
+        denied_groups: []
+      ]
+    )
   end
 end

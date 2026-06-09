@@ -14,6 +14,7 @@
   # Medium Priority (System Processing)
   - [workflow, 2]      # Transitioning states, creating audit logs
   - [metadata, 2]      # AI tagging, EXIF extraction
+  - [smartai, 2]      # AI tagging, EXIF extraction
 
   # Low Priority (Heavy CPU/Memory, Background Tasks)
   - [reports, 1]       # PDF/Excel generation

@@ -2,7 +2,8 @@ class CollectionAsset < ApplicationRecord
   # Associations
   belongs_to :collection
   belongs_to :asset
-  belongs_to :user, optional: true # Tracks WHO added the asset to the collection
+  belongs_to :user, optional: true # Tracks WHO manually added the asset
+  belongs_to :collection_rule, optional: true # Tracks WHICH AI rule added the asset
 
   # Validations
   validates :asset_id, uniqueness: {
@@ -10,8 +11,12 @@ class CollectionAsset < ApplicationRecord
     message: "is already in this collection"
   }
 
-  # Callbacks for manual ordering
+  # Callbacks
   before_create :assign_default_position
+
+  def manually_curated?
+    collection_rule_id.nil? || pinned?
+  end
 
   private
 

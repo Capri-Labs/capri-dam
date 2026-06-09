@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_03_160008) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_08_150535) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -72,19 +72,36 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_03_160008) do
   create_table "collection_assets", force: :cascade do |t|
     t.uuid "asset_id", null: false
     t.bigint "collection_id", null: false
+    t.bigint "collection_rule_id"
     t.datetime "created_at", null: false
+    t.boolean "pinned", default: false, null: false
     t.integer "position", default: 0
     t.datetime "updated_at", null: false
     t.integer "user_id"
     t.index ["asset_id"], name: "index_collection_assets_on_asset_id"
     t.index ["collection_id", "asset_id"], name: "index_collection_assets_on_collection_id_and_asset_id", unique: true
     t.index ["collection_id"], name: "index_collection_assets_on_collection_id"
+    t.index ["collection_rule_id"], name: "index_collection_assets_on_collection_rule_id"
+  end
+
+  create_table "collection_rules", force: :cascade do |t|
+    t.boolean "active", default: true, null: false
+    t.bigint "collection_id", null: false
+    t.datetime "created_at", null: false
+    t.jsonb "metadata_filters", default: {}
+    t.text "semantic_prompt", null: false
+    t.decimal "similarity_threshold", precision: 4, scale: 3, default: "0.8"
+    t.datetime "updated_at", null: false
+    t.index ["collection_id"], name: "index_collection_rules_on_collection_id"
+    t.index ["metadata_filters"], name: "index_collection_rules_on_metadata_filters", using: :gin
   end
 
   create_table "collections", force: :cascade do |t|
+    t.string "collection_type", default: "manual", null: false
     t.datetime "created_at", null: false
     t.datetime "deleted_at"
     t.text "description"
+    t.datetime "expires_at"
     t.string "name"
     t.jsonb "properties"
     t.string "slug"
@@ -344,11 +361,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_03_160008) do
   create_table "system_connectors", force: :cascade do |t|
     t.integer "assets_imported"
     t.string "auth_token"
+    t.integer "concurrency_limit"
     t.datetime "created_at", null: false
     t.string "endpoint"
     t.datetime "last_sync"
     t.string "name"
     t.string "provider_type"
+    t.integer "rps_limit"
     t.string "status"
     t.boolean "tdm_sanitation"
     t.datetime "updated_at", null: false
@@ -504,7 +523,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_03_160008) do
   add_foreign_key "assets", "users"
   add_foreign_key "audit_logs", "users"
   add_foreign_key "collection_assets", "assets"
+  add_foreign_key "collection_assets", "collection_rules"
   add_foreign_key "collection_assets", "collections"
+  add_foreign_key "collection_rules", "collections"
   add_foreign_key "email_deliveries", "email_templates"
   add_foreign_key "folder_policies", "folders"
   add_foreign_key "folder_policies", "user_groups"

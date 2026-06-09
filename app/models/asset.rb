@@ -13,6 +13,9 @@ class Asset < ApplicationRecord
   # Trigger the asynchronous embedding generation whenever metadata changes
   after_commit :broadcast_for_embedding, on: [:create, :update]
 
+  # After the vector embedding is saved, alert the Smart Router
+  after_commit :trigger_smart_routing, on: [:create, :update], if: :saved_change_to_vector_embedding?
+
   has_many :collection_assets, dependent: :destroy
   has_many :collections, through: :collection_assets
 
@@ -44,6 +47,10 @@ class Asset < ApplicationRecord
   include SoftDeletable
 
   private
+
+  def trigger_smart_routing
+    SmartCollectionRouterWorker.perform_async(self.id)
+  end
 
   def broadcast_for_embedding
     # We only care about embedding assets that have clean, structured properties

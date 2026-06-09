@@ -80,6 +80,7 @@ end
 gem "doorkeeper", "~> 5.9"
 
 gem "sidekiq"
+gem "sidekiq-throttled", "~> 2.0"
 gem "redis"
 
 # Swagger (OpenAPI) file.

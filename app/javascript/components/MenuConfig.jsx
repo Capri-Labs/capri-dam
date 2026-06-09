@@ -202,7 +202,14 @@ export const MENU_GROUPS = [
                         id: 'System Ops',
                         label: 'System Operations',
                         icon: <DnsOutlined fontSize="small" />,
-                        url: '/settings/system' }
+                        url: '/settings/system' },
+                    {
+                        id: 'Queues',
+                        label: 'Sidekiq Queues',
+                        icon: <DnsOutlined />,
+                        url: '/admin/queues',
+                        external: true
+                    }
                 ]
             }
         ]

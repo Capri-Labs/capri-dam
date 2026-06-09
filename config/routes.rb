@@ -1,4 +1,12 @@
+require 'sidekiq/web'
+require 'sidekiq/throttled/web' # Adds the "Throttled" tab to your Sidekiq UI
+
 Rails.application.routes.draw do
+
+  # The exact routing constraint depends on authentication system.
+  authenticate :user, ->(user) { user.admin? } do
+    mount Sidekiq::Web => '/admin/queues'
+  end
 
   get '/docs/graphql', to: redirect('/graphql-docs/index.html')
 
@@ -39,9 +47,9 @@ Rails.application.routes.draw do
   get '/folders', to: 'dashboard#folders'
   get '/duplicates', to: 'dashboard#duplicates'
   get '/search', to: 'dashboard#search'
+  get "up" => "rails/health#show", as: :rails_health_check
 
   resources :collections, only: [:index]
-  get "up" => "rails/health#show", as: :rails_health_check
 
   # --- API Namespace (Consolidated) ---
   namespace :api do
@@ -59,6 +67,26 @@ Rails.application.routes.draw do
         resource :embedding, only: [:update], controller: 'asset_embeddings'
       end
 
+      resources :collections, param: :slug do
+        # Batch/Bulk Operations
+        collection do
+          delete :bulk_delete
+          patch :bulk_update
+        end
+
+        # Single Item & Member Operations
+        member do
+          post :rule, to: 'collections#configure_rule'
+          post 'purge_cdn', to: 'collections#purge_cdn'
+
+          # Asset Join Table Operations
+          post 'assets', to: 'collections#add_asset'            # Add via URL payload or body
+          post 'assets/:asset_id', to: 'collections#add_asset'  # Add specific asset
+          delete 'assets/:asset_id', to: 'collections#remove_asset'
+          patch 'assets/:asset_id/pin', to: 'collections#toggle_pin'
+        end
+      end
+
       resources :assets do
         member do
           post :restore
@@ -74,13 +102,6 @@ Rails.application.routes.draw do
         end
       end
 
-      resources :collections, only: [:index, :show, :create] do
-        # Use member routes for the join table actions
-        member do
-          post 'assets', to: 'collections#add_asset'
-          delete 'assets/:asset_id', to: 'collections#remove_asset'
-        end
-      end
     end
   end
 
