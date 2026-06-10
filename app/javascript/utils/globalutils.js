@@ -1,5 +1,8 @@
 import { Turbo } from "@hotwired/turbo-rails"
 
+// Check environment
+const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+
 /**
  * Global navigation helper that integrates seamlessly with Hotwire Turbo.
  * Falls back to standard window navigation if Turbo isn't initialized.
@@ -16,4 +19,16 @@ export const navigateTo = (url, options = {}) => {
         // Keeps transitions ultra-fast without a full page white-flash reload
         Turbo.visit(url, options);
     }
+};
+
+/**
+ * Returns the correct base URL for asset access.
+ * Usage: getAssetUrl(asset.uuid)
+ */
+export const getAssetUrl = (uuid, params = "") => {
+    if (isProduction) {
+        return `https://cdn.yourdam.com/assets/${uuid}${params}`;
+    }
+    // In local dev, point to your Rails API's local serving endpoint
+    return `/api/v1/assets/${uuid}/serve${params}`;
 };

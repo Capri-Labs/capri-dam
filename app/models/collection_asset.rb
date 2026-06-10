@@ -18,6 +18,10 @@ class CollectionAsset < ApplicationRecord
     collection_rule_id.nil? || pinned?
   end
 
+  def pinned
+    self.read_attribute(:pinned)
+  end
+
   private
 
   # If a marketing user drags-and-drops assets, the position updates.

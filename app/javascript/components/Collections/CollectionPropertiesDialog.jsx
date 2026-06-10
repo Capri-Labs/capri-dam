@@ -43,9 +43,9 @@ export default function CollectionPropertiesDialog({ open, onClose, selectedColl
                 name: col.name || '',
                 description: col.description || '',
                 ttl_days: col.expires_at ? 'custom' : 'never', // Simplified for UI
-                tags: props.tags || [],
-                allowed_groups: props.allowed_groups || [],
-                denied_groups: props.denied_groups || []
+                tags: Array.isArray(props.tags) ? props.tags : [],
+                allowed_groups: Array.isArray(props.allowed_groups) ? props.allowed_groups : [],
+                denied_groups: Array.isArray(props.denied_groups) ? props.denied_groups : []
             });
         } else if (open && isBulk) {
             // Reset for clean bulk edit slate
@@ -144,8 +144,8 @@ export default function CollectionPropertiesDialog({ open, onClose, selectedColl
                             disabled={isBulk && !modifyFlags.tags}
                             options={SUGGESTED_TAGS}
                             freeSolo
-                            value={formData.tags}
-                            onChange={(e, newValue) => setFormData({...formData, tags: newValue})}
+                            value={formData.tags || []}
+                            onChange={(e, newValue) => setFormData({...formData, tags: newValue || []})}
                             renderTags={(value, getTagProps) =>
                                 value.map((option, index) => (
                                     <Chip variant="outlined" label={option} {...getTagProps({ index })} size="small" sx={{ borderColor: '#5e35b1', color: '#5e35b1' }} />

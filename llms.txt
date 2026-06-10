@@ -1,23 +1,24 @@
-# Headless DAM - AI Context File
+# Headless DAM: AI-Driven Enterprise MarTech Workspace
 
-## Project Overview
-Headless DAM is an enterprise-grade Digital Asset Management (DAM) system. It decouples the asset storage and management backend from the frontend presentation layer. It features advanced RBAC (Role-Based Access Control), background job processing, automated workflows, and a custom Email Engine.
+## System Purpose
+An enterprise-grade Headless Digital Asset Management (DAM) system engineered for strict operational governance, technical debt management (TDM), and zero-noise operations. It transcends standard folder structures by utilizing AI-driven semantic routing to autonomously map assets to marketing campaign buckets based on vector embeddings and attribute-based access controls (ABAC).
 
-## Tech Stack
-* Backend: Ruby on Rails 7+
-* Frontend: React 18 (mounted via Turbo/Hotwire in Rails views)
-* UI Library: Material-UI (MUI) v5
-* Background Processing: Sidekiq (with weighted queues) & Redis
-* Database: PostgreSQL
-* Storage: ActiveStorage (Configured for local disk or AWS S3/CDN)
+## Architectural Stack
+* **Backend:** Ruby on Rails (API Only)
+* **Database:** PostgreSQL (Leveraging JSONB for ABAC and Metadata, pgvector/Ruby math for embeddings)
+* **Background Processing:** Redis + Sidekiq (Event-driven pipelines, throttled queues)
+* **Frontend:** React 18 + React Router + Material UI (MUI)
+* **AI Layer:** Python FastAPI Gateway (TDM Evaluation, 1536-dimensional Vector Embeddings, LLM Taxonomy Synthesis)
 
-## Core Architectural Concepts
-1. Hybrid Rendering: The app uses Rails to serve HTML shells (via `dashboard_controller.rb` etc.) and uses `data-view` attributes to mount specific React "Manager" components (e.g., `ReportsManager.jsx`, `BinManager.jsx`).
-2. API Layer: A dedicated `/api/v1/` namespace serves JSON to the React frontend.
-3. Queue Topology: Sidekiq is configured with weighted queues (`mailers`, `notifications`, `default`, `workflow`, `metadata`, `reports`, `ingest`) to prevent resource starvation during massive file uploads.
-4. Access Control: Multi-tenant capable architecture with `UserGroups` and `FolderPolicies` restricting access to specific asset collections.
+## Core Concepts & Design Patterns
 
-## Key Modules
-* Asset Explorer: A React-based file browser supporting deep-linking via URL parameters and bulk actions (Move to bin, restore, delete).
-* Reports Engine: Asynchronous generation of CSV, PDF, and XLSX exports via Sidekiq, with a React-based Download Center UI.
-* Workflow Engine: Configurable states and tasks attached to specific assets.
+1.  **Smart Collections (Semantic Routing):** Collections operate as either `manual` or `smart`. Smart collections utilize a `CollectionRule` containing a human-readable NLP prompt and a Cosine Similarity threshold. A Sidekiq worker (`SmartCollectionRouterWorker`) evaluates incoming asset vectors against these rules to autonomously populate workspaces.
+2.  **Operational Governance (Zero-Noise):** Enforced via strict Time-To-Live (TTL) expiration dates (`expires_at`) on collections to automatically archive legacy campaigns. Human curators retain ultimate control via an asset `pinned` boolean, overriding AI routing.
+3.  **JSONB Attribute-Based Access Control (ABAC):** Security (Whitelists/Blacklists) and taxonomy (Tags) are stored within a unified `properties` JSONB column on the Collection model, accessed via Rails `store_accessor` for O(1) read performance without complex joins. Explicit Deny overrides Allow.
+4.  **TDM Ingestion Pipeline:** `IngestionWorker` dynamically throttles legacy system connectors. Assets pass through an AI Gateway for compliance scanning before being vectorized and committed to the database.
+
+## Key Terminology
+* **TDM:** Technical Debt Management.
+* **TTL:** Time-To-Live (Campaign lifecycle expiration).
+* **ABAC:** Attribute-Based Access Control (`allowed_groups`, `denied_groups`).
+* **Pinned:** A manual override preventing the AI from removing an asset.

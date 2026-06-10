@@ -1,6 +1,7 @@
 module Api
   module V1
     class SearchController < ApplicationController
+      include AssetUrlHelper
       before_action :authenticate_user!
 
       def index
@@ -52,7 +53,7 @@ module Api
             title: asset.title || "Untitled Asset",
             type: asset.properties&.dig('content_type') || 'Unknown',
             size: asset.properties&.dig('size_human') || '0 KB',
-            thumb_url: asset.properties['storage_path'] ? "https://cdn.yourdam.com/assets/#{asset.uuid}?w=400" : nil
+            thumb_url: asset_url_for(asset)
           }
         end
 

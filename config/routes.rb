@@ -13,6 +13,9 @@ Rails.application.routes.draw do
   # The actual data engine
   post "/graphql", to: "graphql#execute"
 
+  # Route to serve local storage files during development
+  get '/api/v1/assets/local/:uuid', to: 'api/v1/assets#serve_local', as: :serve_local_asset
+
   # The Interactive Sandbox for your browser (Accepts GET)
   if Rails.env.development?
     mount GraphiQL::Rails::Engine, at: "/graphiql", graphql_path: "/graphql"
@@ -72,10 +75,13 @@ Rails.application.routes.draw do
         collection do
           delete :bulk_delete
           patch :bulk_update
+          post :simulate_rule
         end
 
         # Single Item & Member Operations
         member do
+          get :cluster_map # 🚀 The Semantic Visualization Endpoint
+
           post :rule, to: 'collections#configure_rule'
           post 'purge_cdn', to: 'collections#purge_cdn'
 
@@ -90,6 +96,7 @@ Rails.application.routes.draw do
       resources :assets do
         member do
           post :restore
+          post :process_image
           delete :permanent, to: 'assets#permanent_delete'
           get :workflow_history
         end

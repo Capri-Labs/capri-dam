@@ -1,8 +1,8 @@
 import React from 'react';
-import { TableContainer, Table, TableHead, TableRow, TableCell, TableBody, Checkbox, Box, Typography, IconButton, Paper } from '@mui/material';
-import { InsertPhoto, PictureAsPdf, VideoFile, InsertDriveFile, InfoOutlined } from '@mui/icons-material';
+import { TableContainer, Table, TableHead, TableRow, TableCell, TableBody, Checkbox, Box, Typography, IconButton, Paper, Tooltip, Stack } from '@mui/material';
+import { InsertPhoto, PictureAsPdf, VideoFile, InsertDriveFile, InfoOutlined, PushPinOutlined } from '@mui/icons-material';
 
-export default function AssetList({ assets, viewMode, selectedItems, toggleSelection, setSelectedAsset }) {
+export default function AssetList({ assets, viewMode, selectedItems, toggleSelection, setSelectedAsset, onPinClick }) {
 
     const getFileIcon = (contentType) => {
         if (!contentType) return <InsertDriveFile sx={{ color: '#64748b' }} />;
@@ -36,13 +36,16 @@ export default function AssetList({ assets, viewMode, selectedItems, toggleSelec
                                 key={asset.id}
                                 hover
                                 selected={isSelected}
-                                onClick={(e) => viewMode === 'bin' ? toggleSelection('assets', asset.id, e) : setSelectedAsset(asset)}
                                 sx={{ cursor: 'pointer', '&.Mui-selected': { bgcolor: '#eef2ff' } }}
                             >
                                 <TableCell padding="checkbox">
-                                    <Checkbox size="small" checked={isSelected} onClick={(e) => toggleSelection('assets', asset.id, e)} />
+                                    <Checkbox
+                                        size="small"
+                                        checked={isSelected}
+                                        onClick={(e) => { e.stopPropagation(); toggleSelection('assets', asset.id, e); }}
+                                    />
                                 </TableCell>
-                                <TableCell>
+                                <TableCell onClick={() => viewMode !== 'bin' && setSelectedAsset(asset)} sx={{ cursor: 'pointer' }}>
                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                                         {getFileIcon(metadata.content_type)}
                                         <Typography variant="body2" sx={{ fontWeight: 500 }}>{displayName}</Typography>
@@ -51,9 +54,32 @@ export default function AssetList({ assets, viewMode, selectedItems, toggleSelec
                                 <TableCell sx={{ color: '#64748b' }}>{metadata.content_type || 'Unknown'}</TableCell>
                                 <TableCell sx={{ color: '#64748b' }}>{new Date(asset.created_at).toLocaleDateString()}</TableCell>
                                 <TableCell align="right">
-                                    <IconButton size="small" onClick={(e) => { e.stopPropagation(); setSelectedAsset(asset); }}>
-                                        <InfoOutlined fontSize="small" />
-                                    </IconButton>
+                                    <Stack direction="row" spacing={0.5} justifyContent="flex-end">
+                                        <Tooltip title="Pin to Collection">
+                                            <IconButton
+                                                size="small"
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    onPinClick(asset, e);
+                                                }}
+                                            >
+                                                <PushPinOutlined fontSize="small" sx={{ color: '#475569' }} />
+                                            </IconButton>
+                                        </Tooltip>
+                                        <Tooltip title="View Details">
+                                            <IconButton
+                                                size="small"
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    setSelectedAsset(asset);
+                                                }}
+                                            >
+                                                <InfoOutlined fontSize="small" sx={{ color: '#475569' }} />
+                                            </IconButton>
+                                        </Tooltip>
+                                    </Stack>
                                 </TableCell>
                             </TableRow>
                         );

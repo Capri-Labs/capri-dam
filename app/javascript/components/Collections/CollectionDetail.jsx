@@ -2,23 +2,29 @@ import React, { useState, useEffect } from 'react';
 import {
     Box, Typography, Button, Grid, Card, CardContent,
     IconButton, Chip, Stack, CircularProgress, Menu, MenuItem, Paper,
-    Dialog, DialogTitle, DialogContent, DialogActions, TextField, Slider, Divider
+    Dialog, DialogTitle, DialogContent, DialogActions, TextField, Slider, Divider, ImageListItemBar, ImageListItem,
+    ImageList
 } from '@mui/material';
 import {
     ArrowBack, Share, MoreVert, SettingsSuggest,
-    AutoAwesome, Image as ImageIcon, CloudDownload, DeleteOutlined, PushPin, Analytics
+    AutoAwesome, Image as ImageIcon, CloudDownload, DeleteOutlined, PushPin, Analytics, PlayArrow,
+    Shield, WarningAmber, AutoFixHigh
 } from '@mui/icons-material';
 import { useNotify } from '../../context/NotificationContext';
 import { useCollections } from './CollectionContext';
+import SemanticClusterMap from './SemanticClusterMap';
 
 export default function CollectionDetail({ slug, onBack }) {
     const notify = useNotify();
-    const { updateSmartRule, toggleAssetPin } = useCollections();
+    const { updateSmartRule, toggleAssetPin, simulateSmartRule, temporalDate } = useCollections();
     const [collection, setCollection] = useState(null);
     const [loading, setLoading] = useState(true);
 
     const [openRuleDialog, setOpenRuleDialog] = useState(false);
     const [ruleForm, setRuleForm] = useState({ semantic_prompt: '', similarity_threshold: 0.8 });
+
+    const [simulating, setSimulating] = useState(false);
+    const [simulationResults, setSimulationResults] = useState(null);
 
     const [anchorEl, setAnchorEl] = useState(null);
     const [selectedAsset, setSelectedAsset] = useState(null);
@@ -28,11 +34,14 @@ export default function CollectionDetail({ slug, onBack }) {
     const [aiInsights, setAiInsights] = useState(null);
     const [analyzing, setAnalyzing] = useState(false);
 
+    const [mapDialogOpen, setMapDialogOpen] = useState(false);
+
     useEffect(() => {
         const fetchCollectionDetail = async () => {
             setLoading(true);
             try {
-                const res = await fetch(`/api/v1/collections/${slug}`);
+                const queryParam = temporalDate ? `?as_of=${temporalDate}` : '';
+                const res = await fetch(`/api/v1/collections/${slug}${queryParam}`);
                 if (res.ok) {
                     const data = await res.json();
                     setCollection(data);
@@ -48,7 +57,7 @@ export default function CollectionDetail({ slug, onBack }) {
         };
 
         fetchCollectionDetail();
-    }, [slug, notify, onBack]);
+    }, [slug, notify, onBack, temporalDate]);
 
     const handleMenuOpen = (event, asset) => {
         setAnchorEl(event.currentTarget);
@@ -84,9 +93,18 @@ export default function CollectionDetail({ slug, onBack }) {
     const openConfigurator = () => {
         setRuleForm({
             semantic_prompt: collection.collection_rule?.semantic_prompt || '',
-            similarity_threshold: collection.collection_rule?.similarity_threshold || 0.8
+            similarity_threshold: parseFloat(collection.collection_rule?.similarity_threshold) || 0.8
         });
+        setSimulationResults(null); // Reset sandbox on open
         setOpenRuleDialog(true);
+    };
+
+    const handleSimulate = async () => {
+        if (!ruleForm.semantic_prompt) return;
+        setSimulating(true);
+        const results = await simulateSmartRule(ruleForm.semantic_prompt, ruleForm.similarity_threshold);
+        setSimulationResults(results || []);
+        setSimulating(false);
     };
 
     const runAiAnalysis = () => {
@@ -115,7 +133,7 @@ export default function CollectionDetail({ slug, onBack }) {
     if (!collection) return null;
 
     const isSmart = collection.collection_type === 'smart';
-    const assets = collection.assets || [];
+    const assets = collection.collection_assets || [];
 
     return (
         <Box>
@@ -149,6 +167,15 @@ export default function CollectionDetail({ slug, onBack }) {
                     </Box>
 
                     <Stack direction="row" spacing={2}>
+                        {/* 🚀 Trigger AI Map */}
+                        <Button variant="outlined" startIcon={<AutoFixHigh />} onClick={() => setMapDialogOpen(true)} sx={{ borderColor: '#e3e8ef', color: '#0ea5e9' }}>
+                            View AI Map
+                        </Button>
+                        {/* Existing Configurator Button */}
+                        <Button variant="outlined" startIcon={<SettingsSuggest />} onClick={openConfigurator} sx={{ borderColor: '#e3e8ef', color: '#5e35b1' }}>
+                            {isSmart ? 'Configure Rules' : 'Upgrade to Smart Collection'}
+                        </Button>
+
                         {/* Trigger AI Insights */}
                         <Button variant="outlined" startIcon={<AutoAwesome />} onClick={runAiAnalysis} sx={{ borderColor: '#e3e8ef', color: '#5e35b1' }}>
                             Ask AI about this Collection
@@ -166,6 +193,28 @@ export default function CollectionDetail({ slug, onBack }) {
                     </Stack>
                 </Box>
             </Paper>
+
+            {/* 🚀 Automated TDM Compliance Sweep Display */}
+            {collection.compliance_violations && collection.compliance_violations.length > 0 && (
+                <Paper elevation={0} sx={{ p: 2, mb: 4, borderRadius: 2, bgcolor: '#fef2f2', border: '1px solid #fca5a5', display: 'flex', alignItems: 'flex-start' }}>
+                    <Shield sx={{ color: '#ef4444', mr: 2, mt: 0.5 }} />
+                    <Box>
+                        <Typography variant="subtitle2" sx={{ color: '#b91c1c', fontWeight: 700, mb: 0.5 }}>
+                            Governance & Usage Violations Detected ({collection.compliance_violations.length})
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: '#991b1b', mb: 1 }}>
+                            The following assets conflict with this workspace's legal or temporal boundaries. Resolve these before exporting to downstream CMS systems.
+                        </Typography>
+                        <ul style={{ margin: 0, paddingLeft: '20px', color: '#991b1b', fontSize: '0.875rem' }}>
+                            {collection.compliance_violations.map((violation, idx) => (
+                                <li key={idx} style={{ marginBottom: '4px' }}>
+                                    <strong>{violation.title}:</strong> {violation.reason}
+                                </li>
+                            ))}
+                        </ul>
+                    </Box>
+                </Paper>
+            )}
 
             <Typography variant="h6" sx={{ fontWeight: 600, mb: 3 }}>Curated Assets ({assets.length})</Typography>
 
@@ -252,40 +301,119 @@ export default function CollectionDetail({ slug, onBack }) {
                 </DialogActions>
             </Dialog>
 
-            {/* Smart Rule Configurator Dialog */}
-            <Dialog open={openRuleDialog} onClose={() => setOpenRuleDialog(false)} maxWidth="sm" fullWidth>
-                <DialogTitle sx={{ fontWeight: 700, borderBottom: '1px solid #e2e8f0', pb: 2 }}>Configure Smart Routing</DialogTitle>
-                <DialogContent sx={{ p: 3, mt: 2 }}>
-                    <Typography variant="body2" color="textSecondary" sx={{ mb: 3 }}>
-                        Define the semantic properties of this campaign. The AI Gateway will autonomously route matching assets here as they are ingested.
-                    </Typography>
+            {/* Smart Rule Configurator & Sandbox Dialog */}
+            <Dialog open={openRuleDialog} onClose={() => setOpenRuleDialog(false)} maxWidth="md" fullWidth>
+                <DialogTitle sx={{ fontWeight: 700, borderBottom: '1px solid #e2e8f0', pb: 2, display: 'flex', alignItems: 'center' }}>
+                    <AutoAwesome sx={{ color: '#8e24aa', mr: 1.5 }} /> Smart Rule Engine Sandbox
+                </DialogTitle>
 
-                    <TextField
-                        fullWidth multiline rows={3} label="Semantic AI Prompt"
-                        placeholder="e.g., High resolution outdoor lifestyle shots involving snow"
-                        value={ruleForm.semantic_prompt}
-                        onChange={(e) => setRuleForm({...ruleForm, semantic_prompt: e.target.value})}
-                        sx={{ mb: 4 }}
-                    />
+                <DialogContent sx={{ p: 0, display: 'flex', flexDirection: 'column', minHeight: 400 }}>
+                    <Grid container sx={{ flexGrow: 1 }}>
 
-                    <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>Cosine Similarity Threshold</Typography>
-                    <Box sx={{ px: 2 }}>
-                        <Slider
-                            value={ruleForm.similarity_threshold}
-                            min={0.5} max={1.0} step={0.05}
-                            valueLabelDisplay="auto"
-                            onChange={(e, val) => setRuleForm({...ruleForm, similarity_threshold: val})}
-                        />
-                    </Box>
-                    <Typography variant="caption" color="textSecondary">
-                        A higher threshold ({'>'} 0.85) ensures strict matching, reducing false positives and maintaining zero-noise operations.
-                    </Typography>
+                        {/* LEFT COLUMN: The Configurator */}
+                        <Grid item xs={12} md={5} sx={{ p: 3, borderRight: { md: '1px solid #e2e8f0' }, bgcolor: '#f8fafc' }}>
+                            <Typography variant="body2" color="textSecondary" sx={{ mb: 3 }}>
+                                Define semantic boundaries. Assets meeting the Cosine Similarity threshold will be autonomously routed here.
+                            </Typography>
+
+                            <TextField
+                                fullWidth multiline rows={4} label="Semantic AI Prompt"
+                                placeholder="e.g., High resolution outdoor lifestyle shots involving snow"
+                                value={ruleForm.semantic_prompt}
+                                onChange={(e) => setRuleForm({...ruleForm, semantic_prompt: e.target.value})}
+                                sx={{ mb: 4, bgcolor: '#fff' }}
+                            />
+
+                            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>Cosine Similarity Threshold</Typography>
+                            <Box sx={{ px: 2, mb: 2 }}>
+                                <Slider
+                                    value={Number(ruleForm.similarity_threshold) || 0.8}
+                                    min={0.5} max={0.99} step={0.01}
+                                    valueLabelDisplay="auto"
+                                    onChange={(e, val) => setRuleForm({...ruleForm, similarity_threshold: val})}
+                                    sx={{ color: '#5e35b1' }}
+                                />
+                            </Box>
+                            <Typography variant="caption" color="textSecondary">
+                                Currently set to <strong>{ruleForm.similarity_threshold}</strong>. Higher values require stricter semantic matching.
+                            </Typography>
+
+                            <Button
+                                fullWidth
+                                variant="outlined"
+                                startIcon={simulating ? <CircularProgress size={16} /> : <PlayArrow />}
+                                onClick={handleSimulate}
+                                disabled={!ruleForm.semantic_prompt || simulating}
+                                sx={{ mt: 4, borderColor: '#5e35b1', color: '#5e35b1', bgcolor: '#fff' }}
+                            >
+                                {simulating ? 'Vectorizing...' : 'Run Dry-Run Simulation'}
+                            </Button>
+                        </Grid>
+
+                        {/* RIGHT COLUMN: The Sandbox Results */}
+                        <Grid item xs={12} md={7} sx={{ p: 3, display: 'flex', flexDirection: 'column' }}>
+                            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2, display: 'flex', justifyContent: 'space-between' }}>
+                                Sandbox Preview
+                                {simulationResults && (
+                                    <Chip size="small" label={`${simulationResults.length} theoretical matches`} color="success" variant="outlined" />
+                                )}
+                            </Typography>
+
+                            {simulating ? (
+                                <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                                    <CircularProgress size={30} sx={{ color: '#8e24aa', mb: 2 }} />
+                                    <Typography variant="body2" color="textSecondary">Scanning vector database...</Typography>
+                                </Box>
+                            ) : !simulationResults ? (
+                                <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', border: '1px dashed #cbd5e1', borderRadius: 2, bgcolor: '#f1f5f9' }}>
+                                    <AutoAwesome sx={{ fontSize: 40, color: '#cbd5e1', mb: 1 }} />
+                                    <Typography variant="body2" color="textSecondary">Run a simulation to see predicted assets.</Typography>
+                                </Box>
+                            ) : simulationResults.length === 0 ? (
+                                <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', border: '1px dashed #fca5a5', borderRadius: 2, bgcolor: '#fef2f2' }}>
+                                    <Typography variant="body2" color="error">No assets met the threshold.</Typography>
+                                    <Typography variant="caption" color="textSecondary">Try lowering the similarity score.</Typography>
+                                </Box>
+                            ) : (
+                                <Box sx={{ overflowY: 'auto', maxHeight: 350, pr: 1 }}>
+                                    <ImageList cols={2} gap={12}>
+                                        {simulationResults.map((asset) => (
+                                            <ImageListItem key={asset.id} sx={{ border: '1px solid #e2e8f0', borderRadius: 2, overflow: 'hidden' }}>
+                                                {/* Fallback image block if real image URL isn't present in mock */}
+                                                <Box sx={{ height: 120, bgcolor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                    {asset.url ? (
+                                                        <img src={asset.url} alt={asset.title} style={{ height: '100%', width: '100%', objectFit: 'cover' }} />
+                                                    ) : (
+                                                        <ImageIcon sx={{ color: '#cbd5e1', fontSize: 32 }} />
+                                                    )}
+                                                </Box>
+                                                <ImageListItemBar
+                                                    title={<Typography variant="caption" sx={{ fontWeight: 600 }}>{asset.title || 'Asset'}</Typography>}
+                                                    subtitle={<Typography variant="caption" sx={{ color: '#a7f3d0' }}>Match: {asset.mock_match_score || 0.88}</Typography>}
+                                                    sx={{ bgcolor: 'rgba(15, 23, 42, 0.8)' }}
+                                                />
+                                            </ImageListItem>
+                                        ))}
+                                    </ImageList>
+                                </Box>
+                            )}
+                        </Grid>
+                    </Grid>
                 </DialogContent>
-                <DialogActions sx={{ p: 3, pt: 0 }}>
+
+                <DialogActions sx={{ p: 2, borderTop: '1px solid #e2e8f0', bgcolor: '#f8fafc' }}>
                     <Button onClick={() => setOpenRuleDialog(false)} color="inherit">Cancel</Button>
-                    <Button onClick={handleSaveRule} variant="contained" sx={{ bgcolor: '#5e35b1' }}>Save & Activate Rules</Button>
+                    <Button onClick={handleSaveRule} variant="contained" sx={{ bgcolor: '#5e35b1', '&:hover': { bgcolor: '#4527a0' } }}>
+                        Activate Rule in Production
+                    </Button>
                 </DialogActions>
             </Dialog>
+
+            <SemanticClusterMap
+                open={mapDialogOpen}
+                onClose={() => setMapDialogOpen(false)}
+                slug={slug}
+            />
         </Box>
     );
 }

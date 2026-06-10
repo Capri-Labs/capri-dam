@@ -13,9 +13,6 @@ class Asset < ApplicationRecord
   # Trigger the asynchronous embedding generation whenever metadata changes
   after_commit :broadcast_for_embedding, on: [:create, :update]
 
-  # After the vector embedding is saved, alert the Smart Router
-  after_commit :trigger_smart_routing, on: [:create, :update], if: :saved_change_to_vector_embedding?
-
   has_many :collection_assets, dependent: :destroy
   has_many :collections, through: :collection_assets
 
@@ -53,7 +50,6 @@ class Asset < ApplicationRecord
   end
 
   def broadcast_for_embedding
-    # We only care about embedding assets that have clean, structured properties
     return if properties.blank?
 
     payload = {
@@ -61,8 +57,10 @@ class Asset < ApplicationRecord
       asset_uuid: self.id
     }.to_json
 
-    # Broadcast to the exact same channel the Ingestion Engine uses
-    Redis.current.publish('ai_gateway_events', payload)
+    # 🚀 FIX: Initialize connection locally or use a central initializer
+    # You should have a config/initializers/redis.rb, but this will stop the crash:
+    redis = Redis.new(url: ENV.fetch("REDIS_URL", "redis://localhost:6379/0"))
+    redis.publish('ai_gateway_events', payload)
   end
 
   def set_property_defaults

@@ -55,6 +55,46 @@ class Collection < ApplicationRecord
     true
   end
 
+  # Expose the asset count for the JSON serializer
+  def assets_count
+    collection_assets.count
+  end
+
+  # Automated Usage Rights Compliance Sweep
+  def compliance_violations
+    violations = []
+
+    # Define what constitutes a "Public" or "External" workspace
+    is_externally_accessible = Array(allowed_groups).empty? || Array(allowed_groups).include?("External Agencies")
+
+    assets.find_each do |asset|
+      props = asset.properties || {}
+      usage = props['usage_terms'] || 'Internal Use Only'
+
+      # Rule 1: Internal assets inside external workspaces
+      if is_externally_accessible && usage == 'Internal Use Only'
+        violations << {
+          asset_id: asset.id,
+          title: asset.title || asset.original_filename,
+          reason: "Asset is restricted to 'Internal Use Only' but workspace allows external access."
+        }
+      end
+
+      # Rule 2: Temporal Expiration (Asset license expires before campaign ends)
+      if props['license_expires_at'].present? && self.expires_at.present?
+        if Time.zone.parse(props['license_expires_at']) < self.expires_at
+          violations << {
+            asset_id: asset.id,
+            title: asset.title || asset.original_filename,
+            reason: "Asset license expires before the campaign workspace TTL finishes."
+          }
+        end
+      end
+    end
+
+    violations
+  end
+
   private
 
   def set_default_properties

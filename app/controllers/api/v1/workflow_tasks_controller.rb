@@ -1,6 +1,7 @@
 module Api
   module V1
     class WorkflowTasksController < ApplicationController
+      include AssetUrlHelper
       before_action :authenticate_hybrid!
 
       # POST /api/v1/workflow_tasks/:id/submit
@@ -106,7 +107,7 @@ module Api
           step_title: task.workflow_step.title,
           asset_id: asset.id,
           asset_name: asset.title,
-          asset_thumb: asset.properties['storage_path'] ? "https://cdn.yourdam.com/assets/#{asset.uuid}?w=100" : nil,
+          asset_thumb: asset_url_for(asset),
           assigned_at: task.created_at
         }
       end

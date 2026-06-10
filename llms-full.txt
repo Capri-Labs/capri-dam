@@ -1,0 +1,34 @@
+# Headless DAM: Comprehensive System Architecture & Codebase Context
+
+This document contains the core implementations for the Headless DAM's Collection Workspace module.
+
+## 1. Database Schema & Migrations
+
+**Upgrade Collections (TTL & Type):**
+```ruby
+class UpgradeCollectionsForSmartRouting < ActiveRecord::Migration[7.0]
+  def change
+    add_column :collections, :collection_type, :string, default: 'manual', null: false
+    add_column :collections, :expires_at, :datetime
+    add_reference :collection_assets, :collection_rule, null: true, foreign_key: true
+    add_column :collection_assets, :pinned, :boolean, default: false, null: false
+  end
+end
+```
+
+**Create Collection Rules (AI Semantic Brain):**
+```ruby
+class CreateCollectionRules < ActiveRecord::Migration[7.0]
+  def change
+    create_table :collection_rules do |t|
+      t.references :collection, null: false, foreign_key: true
+      t.text :semantic_prompt, null: false
+      t.decimal :similarity_threshold, precision: 4, scale: 3, default: 0.800
+      t.jsonb :metadata_filters, default: {}
+      t.boolean :active, default: true, null: false
+      t.timestamps
+    end
+    add_index :collection_rules, :metadata_filters, using: :gin
+  end
+end
+```

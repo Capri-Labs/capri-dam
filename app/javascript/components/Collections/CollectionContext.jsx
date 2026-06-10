@@ -8,11 +8,14 @@ export function CollectionProvider({ children }) {
     const [collections, setCollections] = useState([]);
     const [loadingCollections, setLoadingCollections] = useState(false);
 
+    const [temporalDate, setTemporalDate] = useState('');
+
     // Fetch all active collections for the Board
     const fetchCollections = useCallback(async () => {
         setLoadingCollections(true);
         try {
-            const res = await fetch('/api/v1/collections');
+            const queryParam = temporalDate ? `?as_of=${temporalDate}` : '';
+            const res = await fetch(`/api/v1/collections${queryParam}`);
             const data = await res.json();
             setCollections(data);
         } catch (error) {
@@ -20,7 +23,7 @@ export function CollectionProvider({ children }) {
         } finally {
             setLoadingCollections(false);
         }
-    }, [notify]);
+    }, [notify, temporalDate]);
 
     const createCollection = async (payload) => {
         try {
@@ -171,6 +174,30 @@ export function CollectionProvider({ children }) {
         }
     };
 
+    const simulateSmartRule = async (prompt, threshold) => {
+        try {
+            const csrfToken = document.querySelector('[name="csrf-token"]').content;
+            const res = await fetch('/api/v1/collections/simulate_rule', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
+                body: JSON.stringify({
+                    semantic_prompt: prompt,
+                    similarity_threshold: threshold
+                })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                return data.matches;
+            } else {
+                notify(data.error || "Simulation failed.", "error");
+                return null;
+            }
+        } catch (error) {
+            notify("Network error during simulation.", "error");
+            return null;
+        }
+    };
+
     const bulkUpdateCollections = async (ids, payload) => {
         try {
             const csrfToken = document.querySelector('[name="csrf-token"]').content;
@@ -203,7 +230,10 @@ export function CollectionProvider({ children }) {
             deleteCollection,
             bulkDeleteCollections,
             purgeCdnCache,
-            updateCollection, bulkUpdateCollections
+            updateCollection, bulkUpdateCollections,
+            simulateSmartRule,
+            temporalDate,
+            setTemporalDate
         }}>
             {children}
         </CollectionContext.Provider>

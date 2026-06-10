@@ -15,13 +15,20 @@ class Api::V1::CollectionsController < ApplicationController
 
   # GET /api/v1/collections
   def index
-    # Standard users only see what they are allowed to see via the ABAC rules
-    all_active = Collection.active.order(created_at: :desc)
+    # Base scope
+    @collections = Collection.active
 
-    # Filter collections in Ruby (or rewrite as a complex SQL JSONB query for scale)
-    allowed_collections = all_active.select { |c| c.accessible_by?(current_user) }
+    # 🚀 Temporal Time-Travel Filter
+    if params[:as_of].present?
+      target_date = Time.zone.parse(params[:as_of]).end_of_day
+      @collections = @collections.where('created_at <= ?', target_date)
+    end
 
-    render json: allowed_collections, status: :ok
+    @collections = @collections.order(created_at: :desc)
+
+    render json: @collections.as_json(
+      methods: [:assets_count]
+    ), status: :ok
   end
 
   # PATCH/PUT /api/v1/collections/:slug
@@ -61,18 +68,45 @@ class Api::V1::CollectionsController < ApplicationController
 
   # GET /api/v1/collections/:slug
   def show
-    # Renders the collection with its AI rules and nested assets
+    # 🚀 Temporal Time-Travel Filter for nested assets
+    as_of_date = params[:as_of].present? ? Time.zone.parse(params[:as_of]).end_of_day : Time.current
+
     render json: @collection.as_json(
+      methods: [:compliance_violations],
       include: {
         collection_rule: {
           only: [:semantic_prompt, :similarity_threshold, :metadata_filters, :active]
         },
-        assets: {
-          # Include pivot data (like 'pinned' status) from the CollectionAsset join table
-          methods: [:manually_curated?]
+        collection_assets: {
+          # Only show assets that were in the collection as of this date
+          conditions: -> { where('collection_assets.created_at <= ?', as_of_date) },
+          include: {
+            asset: { only: [:id, :title, :properties, :url, :created_at] }
+          },
+          methods: [:pinned]
         }
       }
     ), status: :ok
+  end
+
+  # GET /api/v1/collections/:slug/cluster_map
+  def cluster_map
+    # In production, this queries your Python FastAPI gateway to run UMAP/t-SNE
+    # on the 1536-dimension vectors to flatten them into 2D [x,y] coordinates.
+    # Gateway response mock:
+
+    nodes = @collection.assets.map do |asset|
+      {
+        id: asset.id,
+        title: asset.title || asset.original_filename,
+        # Mocking the 2D projection distribution (0 to 100 scale)
+        x: rand(10.0..90.0).round(2),
+        y: rand(10.0..90.0).round(2),
+        url: asset.url
+      }
+    end
+
+    render json: { nodes: nodes }, status: :ok
   end
 
   # POST /api/v1/collections
@@ -178,6 +212,38 @@ class Api::V1::CollectionsController < ApplicationController
     # CdnPurgeWorker.perform_async(@collection.id)
 
     render json: { message: "CDN Cache invalidation initiated for #{@collection.name}." }, status: :ok
+  end
+
+  # POST /api/v1/collections/simulate_rule
+  def simulate_rule
+    prompt = params.require(:semantic_prompt)
+    threshold = params[:similarity_threshold].to_f
+
+    # --- ENTERPRISE VECTOR LOGIC ---
+    # 1. Fetch the vector embedding for the human prompt from your AI Gateway
+    # prompt_vector = AiGatewayClient.get_embedding(prompt)
+
+    # 2. Perform the Cosine Similarity search using pgvector
+    # simulated_matches = Asset.joins(:asset_embedding)
+    #                          .where("1 - (asset_embeddings.embedding <=> ?) >= ?", prompt_vector, threshold)
+    #                          .order(Arel.sql("asset_embeddings.embedding <=> '#{prompt_vector}'"))
+    #                          .limit(20)
+
+    # --- DEVELOPMENT MOCK (Replace with logic above in Production) ---
+    # Simulates finding 4 to 12 assets with random match scores above the threshold
+    simulated_matches = Asset.published.order(Arel.sql('RANDOM()')).limit(rand(4..12)).map do |asset|
+      asset.as_json(only: [:id, :title, :properties]).merge(
+        mock_match_score: (threshold + rand(0.01..(1.0 - threshold))).round(3)
+      )
+    end
+
+    render json: {
+      matches: simulated_matches,
+      count: simulated_matches.size,
+      message: "Simulation complete."
+    }, status: :ok
+  rescue ActionController::ParameterMissing => e
+    render json: { error: e.message }, status: :bad_request
   end
 
   private

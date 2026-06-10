@@ -1,7 +1,27 @@
 import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route, useNavigate, useParams, useLocation } from 'react-router-dom';
-import { Box, Typography, Button, CssBaseline, Breadcrumbs, Link, Menu, MenuItem, Divider, Checkbox } from '@mui/material';
-import { Add, CollectionsBookmark, AutoAwesome, SettingsSuggest, RuleFolder } from '@mui/icons-material';
+import {
+    Box,
+    Typography,
+    Button,
+    CssBaseline,
+    Breadcrumbs,
+    Link,
+    Menu,
+    MenuItem,
+    Divider,
+    Checkbox,
+    TextField,
+    Tooltip
+} from '@mui/material';
+import {
+    Add,
+    CollectionsBookmark,
+    AutoAwesome,
+    SettingsSuggest,
+    RuleFolder,
+    HistoryToggleOff
+} from '@mui/icons-material';
 import CollectionsBoard from './CollectionsBoard';
 import CollectionDetail from './CollectionDetail';
 import CollectionCreateDialog from './CollectionCreateDialog';
@@ -18,7 +38,7 @@ function CollectionDetailWrapper() {
 function WorkspaceApp() {
     const navigate = useNavigate();
     const location = useLocation();
-    const { collections } = useCollections(); // Now accessible because Provider is higher up
+    const { collections, temporalDate, setTemporalDate } = useCollections(); // Now accessible because Provider is higher up
 
     // Application States
     const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -43,9 +63,24 @@ function WorkspaceApp() {
     const isAllSelected = collections.length > 0 && selectedIds.length === collections.length;
     const isIndeterminate = selectedIds.length > 0 && selectedIds.length < collections.length;
 
+    // Helper to clear the temporal filter
+    const clearTemporalFilter = () => setTemporalDate('');
+
     return (
         <Box sx={{ p: 4, bgcolor: '#f4f7fb', minHeight: '100vh' }}>
             <CssBaseline />
+            {/* Temporal Audit Banner */}
+            {temporalDate && (
+                <Box sx={{ mb: 3, p: 1.5, bgcolor: '#fef2f2', border: '1px solid #fca5a5', borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <HistoryToggleOff sx={{ color: '#ef4444', mr: 1 }} />
+                    <Typography variant="body2" sx={{ color: '#b91c1c', fontWeight: 600 }}>
+                        Audit Mode Active: Viewing workspace state exactly as it was on {temporalDate}.
+                    </Typography>
+                    <Button size="small" onClick={clearTemporalFilter} sx={{ ml: 2, textTransform: 'none', color: '#b91c1c', border: '1px solid #fca5a5' }}>
+                        Return to Present
+                    </Button>
+                </Box>
+            )}
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 4 }}>
                 <Box>
                     <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 1 }}>
@@ -87,6 +122,26 @@ function WorkspaceApp() {
                                 Select All
                             </Typography>
                         </Box>
+
+                        {/* 🚀 Temporal Time-Travel Picker */}
+                        <Tooltip title="Time-Travel Audit Viewer: See workspace exactly as it was on this date">
+                            <TextField
+                                type="date"
+                                size="small"
+                                value={temporalDate}
+                                onChange={(e) => setTemporalDate(e.target.value)}
+                                InputLabelProps={{ shrink: true }}
+                                sx={{
+                                    width: 170, // Force a width so it doesn't disappear
+                                    bgcolor: temporalDate ? '#fff1f2' : '#fff',
+                                    borderRadius: 1,
+                                    '& .MuiOutlinedInput-root': { height: 40 }
+                                }}
+                                InputProps={{
+                                    startAdornment: <HistoryToggleOff sx={{ color: temporalDate ? '#ef4444' : '#94a3b8', mr: 1, fontSize: 20 }} />
+                                }}
+                            />
+                        </Tooltip>
 
                         <Button variant="outlined" startIcon={<AutoAwesome />} onClick={(e) => setAiMenuAnchor(e.currentTarget)} sx={{ borderColor: '#e3e8ef', color: '#5e35b1', bgcolor: '#fff' }}>
                             AI Operations

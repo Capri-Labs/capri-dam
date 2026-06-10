@@ -1,114 +1,263 @@
 import React, { useState } from 'react';
 import {
     Dialog, AppBar, Toolbar, IconButton, Typography, Box, Grid,
-    Button, Divider, Chip
+    Button, Divider, Chip, Tabs, Tab, Paper, List, ListItem,
+    ListItemText, Tooltip
 } from '@mui/material';
-import { Close, Edit, Download } from '@mui/icons-material';
-import ImageEditorDialog from '../ImageEditorDialog';
+import {
+    Close,
+    Edit,
+    Download,
+    InfoOutlined,
+    History,
+    AnalyticsOutlined,
+    AccountTreeOutlined,
+    AutoAwesome,
+    LocalOffer,
+    ChevronRight,
+    ContentCopy, PushPin, Share, PolicyOutlined
+} from '@mui/icons-material';
+import ImageEditorDialog from './ImageEditorDialog';
 import WorkflowPanel from '../WorkflowPanel';
+import AssetTagsEditor from './AssetTagsEditor'; // 🚀 Import the new component
+import PinToCollectionDialog from './PinToCollectionDialog';
+import { useNotify } from '../../context/NotificationContext';
+
+import AssetVersionsTab from './AssetVersionsTab';
+import AssetStatisticsTab from './AssetStatisticsTab';
+import AssetAuditTab from './AssetAuditTab';
+
+function TabPanel(props) {
+    const { children, value, index, ...other } = props;
+    return (
+        <div role="tabpanel" hidden={value !== index} style={{ height: '100%', overflowY: 'auto' }} {...other}>
+            {value === index && <Box sx={{ pt: 3 }}>{children}</Box>}
+        </div>
+    );
+}
 
 export default function AssetViewer({ asset, open, onClose, onAssetUpdated }) {
+    const notify = useNotify();
     const [editorOpen, setEditorOpen] = useState(false);
+    const [tagsEditorOpen, setTagsEditorOpen] = useState(false); // 🚀 State for Tags Editor
+    const [pinOpen, setPinOpen] = useState(false);
+    const [activeTab, setActiveTab] = useState(0);
 
     if (!asset) return null;
 
+    const handleTabChange = (event, newValue) => setActiveTab(newValue);
+
+    const handleCopyUrl = () => {
+        navigator.clipboard.writeText(asset.url);
+        notify("Asset URL copied to clipboard!", "success");
+    };
+
+    const handleDownload = async () => {
+        try {
+            // Fetch the image to trigger a programmatic browser download
+            const response = await fetch(asset.url);
+            const blob = await response.blob();
+            const blobUrl = window.URL.createObjectURL(blob);
+
+            const link = document.createElement('a');
+            link.href = blobUrl;
+            link.download = asset.properties?.original_filename || asset.title || 'download';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(blobUrl);
+
+            notify("Download started", "info");
+        } catch (error) {
+            // Fallback
+            window.open(asset.url, '_blank');
+        }
+    };
+
     const isImage = asset.properties?.content_type?.startsWith('image/');
     const displayName = asset.title || asset.name || "Unknown File";
+    const fileSize = asset.properties?.file_size || "Unknown Size";
+
+    const editorState = asset.properties?.editor_state || {};
+    const adjustments = editorState.adjustments || {};
+    const geometry = editorState.geometry || {};
+
+    // Safely extract tags to show the count
+    const props = typeof asset.properties === 'string' ? JSON.parse(asset.properties) : (asset.properties || {});
+    const totalTagsCount = (props.tags?.length || 0) + (props.ai_tags?.faces?.length || 0) + (props.ai_tags?.text?.length || 0);
+
+    const liveFilterStyle = `
+        brightness(${100 + (adjustments.brightness || 0)}%) 
+        contrast(${100 + (adjustments.contrast || 0)}%) 
+        saturate(${100 + (adjustments.saturation || 0)}%) 
+        sepia(${adjustments.warmth > 0 ? adjustments.warmth / 2 : 0}%) 
+        hue-rotate(${adjustments.tint || 0}deg)
+    `;
 
     return (
         <Dialog fullScreen open={open} onClose={onClose}>
-            {/* TOP NAVIGATION BAR */}
             <AppBar sx={{ position: 'relative', bgcolor: '#1e293b', boxShadow: 'none' }}>
                 <Toolbar>
-                    <IconButton edge="start" color="inherit" onClick={onClose} aria-label="close">
-                        <Close />
-                    </IconButton>
-                    <Typography sx={{ ml: 2, flex: 1 }} variant="h6" component="div" noWrap>
-                        {displayName}
-                    </Typography>
+                    <IconButton edge="start" color="inherit" onClick={onClose} aria-label="close"><Close /></IconButton>
+                    <Typography sx={{ ml: 2, flex: 1 }} variant="h6" component="div" noWrap>{displayName}</Typography>
 
-                    {/* Action Buttons */}
-                    <Button color="inherit" startIcon={<Download />} sx={{ mr: 2 }}>
+                    <Tooltip title="Pin to Collection">
+                        <IconButton color="inherit" onClick={() => setPinOpen(true)}><PushPin fontSize="small" /></IconButton>
+                    </Tooltip>
+
+                    <Tooltip title="Share Asset">
+                        <IconButton color="inherit" onClick={() => notify("Share dialog coming soon", "info")}><Share fontSize="small" /></IconButton>
+                    </Tooltip>
+
+                    <Tooltip title="Copy Image URL">
+                        <IconButton color="inherit" onClick={handleCopyUrl}><ContentCopy fontSize="small" /></IconButton>
+                    </Tooltip>
+
+                    <Divider orientation="vertical" variant="middle" flexItem sx={{ borderColor: 'rgba(255,255,255,0.2)', mx: 1 }} />
+
+                    <Button
+                        variant="contained"
+                        startIcon={<Download />}
+                        onClick={handleDownload}
+                        sx={{ bgcolor: '#4f46e5', '&:hover': { bgcolor: '#4338ca' }, textTransform: 'none' }}
+                    >
                         Download Original
                     </Button>
-                    {isImage && (
-                        <Button
-                            variant="contained"
-                            color="primary"
-                            startIcon={<Edit />}
-                            onClick={() => setEditorOpen(true)}
-                        >
-                            Edit Image
-                        </Button>
-                    )}
                 </Toolbar>
             </AppBar>
 
-            {/* SPLIT SCREEN WORKSPACE */}
             <Grid container sx={{ height: 'calc(100vh - 64px)' }}>
-
-                {/* LEFT PANE: Media Preview */}
-                <Grid item xs={12} md={8} sx={{
-                    bgcolor: '#f1f5f9',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    p: 4,
-                    borderRight: '1px solid #cbd5e1'
-                }}>
+                {/* LEFT PANE: 60% Image Preview */}
+                <Grid item sx={{ width: '65%', bgcolor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', p: 4, borderRight: '1px solid #cbd5e1' }}>
                     {isImage && asset.url ? (
-                        <Box
-                            component="img"
-                            src={asset.url}
-                            alt={displayName}
-                            sx={{
-                                maxWidth: '100%',
-                                maxHeight: '100%',
-                                objectFit: 'contain',
-                                boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
-                            }}
-                        />
+                        <Box component="img"
+                             src={asset.url}
+                             alt={displayName}
+                             sx={{
+                                 maxWidth: '100%',
+                                 maxHeight: '100%',
+                                 objectFit: 'contain',
+                                 boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                                 filter: liveFilterStyle,
+                                 transform: `scaleX(${geometry.flip_horizontal ? -1 : 1}) rotate(${geometry.rotate || 0}deg)`
+                        }} />
                     ) : (
                         <Typography color="textSecondary">Preview not available for this file type.</Typography>
                     )}
                 </Grid>
 
-                {/* RIGHT PANE: Metadata & Status */}
-                <Grid item xs={12} md={4} sx={{ bgcolor: '#ffffff', overflowY: 'auto', p: 3 }}>
-                    <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <Typography variant="h6" fontWeight="bold">Asset Details</Typography>
-                        <Chip
-                            label={asset.status || 'Pending'}
-                            color={asset.status === 'approved' ? 'success' : 'warning'}
-                            size="small"
-                        />
+                {/* RIGHT PANE: 40% Tabbed Inspector */}
+                <Grid item sx={{ width: '35%', bgcolor: '#ffffff', display: 'flex', flexDirection: 'column' }}>
+                    <Box sx={{ borderBottom: 1, borderColor: 'divider', px: 2, pt: 1 }}>
+                        <Tabs value={activeTab} onChange={handleTabChange} variant="scrollable" scrollButtons="auto" sx={{ '& .MuiTab-root': { textTransform: 'none', minWidth: 'auto', px: 2 } }}>
+                            <Tab icon={<InfoOutlined fontSize="small" />} iconPosition="start" label="Info" />
+                            <Tab icon={<Edit fontSize="small" />} iconPosition="start" label="Edit" />
+                            <Tab icon={<History fontSize="small" />} iconPosition="start" label="Versions" />
+                            <Tab icon={<AnalyticsOutlined fontSize="small" />} iconPosition="start" label="Statistics" />
+                            <Tab icon={<PolicyOutlined fontSize="small" />} iconPosition="start" label="Audit" />
+                            <Tab icon={<AccountTreeOutlined fontSize="small" />} iconPosition="start" label="Workflows" />
+                            <Tab icon={<AutoAwesome fontSize="small" />} iconPosition="start" label="AI Engine" />
+                        </Tabs>
                     </Box>
-                    <Divider sx={{ mb: 3 }} />
 
-                    {/* 🚨 NEW: The Workflow Engine UI */}
-                    <WorkflowPanel
-                        assetId={asset.id}
-                        onWorkflowUpdate={() => {
-                            // If you passed a refresh function down from AssetExplorer, trigger it here
-                            // so the asset's overall status (in_review -> approved) updates in real time
-                            if (onAssetUpdated) onAssetUpdated(asset);
-                        }}
-                    />
+                    <Box sx={{ flexGrow: 1, overflow: 'hidden', px: 3 }}>
+
+                        {/* TAB 0: INFO */}
+                        <TabPanel value={activeTab} index={0}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+                                <Typography variant="subtitle1" fontWeight="700">General Metadata</Typography>
+                                <Chip label={asset.status || 'Pending'} color={asset.status === 'approved' ? 'success' : 'warning'} size="small" />
+                            </Box>
+
+                            {/* 🚀 NEW: The Tags Entry Point matching your UI mock */}
+                            <Paper
+                                onClick={() => setTagsEditorOpen(true)}
+                                elevation={0}
+                                sx={{ p: 2, mb: 4, display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 2, cursor: 'pointer', transition: 'all 0.2s', '&:hover': { borderColor: '#4f46e5', bgcolor: '#eef2ff' } }}
+                            >
+                                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                    <LocalOffer sx={{ color: '#475569', mr: 2 }} />
+                                    <Box>
+                                        <Typography variant="body2" fontWeight="700" color="textPrimary">{totalTagsCount} tags</Typography>
+                                        <Typography variant="caption" color="textSecondary">AI-recognized & Manual</Typography>
+                                    </Box>
+                                </Box>
+                                <IconButton size="small" sx={{ bgcolor: '#4f46e5', color: '#fff', '&:hover': { bgcolor: '#4338ca' } }}>
+                                    <ChevronRight fontSize="small" />
+                                </IconButton>
+                            </Paper>
+
+                            <List dense disablePadding sx={{ mb: 4 }}>
+                                <ListItem disableGutters><ListItemText primary="File Name" secondary={displayName} /></ListItem>
+                                <ListItem disableGutters><ListItemText primary="Date Added" secondary={new Date(asset.created_at).toLocaleString()} /></ListItem>
+                                <ListItem disableGutters><ListItemText primary="Resolution" secondary={asset.properties?.resolution || "Unknown"} /></ListItem>
+                                <ListItem disableGutters><ListItemText primary="File Size" secondary={fileSize} /></ListItem>
+                            </List>
+
+                            <Divider sx={{ mb: 3 }} />
+
+                            <Typography variant="subtitle2" fontWeight="700" sx={{ mb: 2 }}>EXIF / IPTC Data</Typography>
+                            <Paper elevation={0} sx={{ p: 2, bgcolor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 2 }}>
+                                <Typography variant="caption" color="textSecondary" sx={{ fontFamily: 'monospace' }}>
+                                    {asset.properties?.exif_data ? JSON.stringify(asset.properties.exif_data, null, 2) : "No EXIF data extracted yet."}
+                                </Typography>
+                            </Paper>
+                        </TabPanel>
+
+                        {/* ... Other tabs remain unchanged ... */}
+                        <TabPanel value={activeTab} index={1}>
+                            <Typography variant="subtitle1" fontWeight="700" sx={{ mb: 2 }}>Image Manipulation</Typography>
+                            {isImage ? (
+                                <Button variant="contained" color="primary" startIcon={<Edit />} onClick={() => setEditorOpen(true)}>Launch Image Editor</Button>
+                            ) : (
+                                <Typography variant="body2" color="error">Editing is only available for image formats.</Typography>
+                            )}
+                        </TabPanel>
+                        {/* 🚀 TAB 2, 3, 4: New Modularized Components */}
+                        <TabPanel value={activeTab} index={2}><AssetVersionsTab asset={asset} /></TabPanel>
+                        <TabPanel value={activeTab} index={3}><AssetStatisticsTab asset={asset} /></TabPanel>
+                        <TabPanel value={activeTab} index={4}><AssetAuditTab asset={asset} /></TabPanel>
+                        {/* TAB 5: WORKFLOWS */}
+                        <TabPanel value={activeTab} index={5}>
+                            <WorkflowPanel assetId={asset.id} onWorkflowUpdate={() => { if (onAssetUpdated) onAssetUpdated(asset); }} />
+                        </TabPanel>
+                        {/* TAB 5: AI */}
+                        <TabPanel value={activeTab} index={6}>
+                            <Typography variant="subtitle1" fontWeight="700" sx={{ mb: 2 }}>Semantic & Vision Analysis</Typography>
+                        </TabPanel>
+
+                    </Box>
                 </Grid>
             </Grid>
 
-            {/* IMAGE EDITOR MODAL */}
+            {/* OVERLAYS */}
             {isImage && (
                 <ImageEditorDialog
                     asset={asset}
                     open={editorOpen}
                     onClose={() => setEditorOpen(false)}
                     onSave={(updatedAsset) => {
-                        setEditorOpen(false);
-                        onAssetUpdated(updatedAsset);
-                    }}
-                />
+                        // 🚀 ONLY update the state to re-render the background. DO NOT setEditorOpen(false)
+                        if (onAssetUpdated) onAssetUpdated(updatedAsset);
+                    }} />
             )}
+
+            {/* 🚀 Tags Editor Overlay */}
+            <AssetTagsEditor
+                asset={asset}
+                open={tagsEditorOpen}
+                onClose={() => setTagsEditorOpen(false)}
+                onSave={(updatedAsset) => {
+                    setTagsEditorOpen(false);
+                    if (onAssetUpdated) onAssetUpdated(updatedAsset);
+                }}
+            />
+
+            <PinToCollectionDialog
+                open={pinOpen}
+                onClose={() => setPinOpen(false)}
+                assetIds={[asset.id]} // Wrap single ID in array if your PinToCollectionDialog expects bulk IDs
+            />
         </Dialog>
     );
 }

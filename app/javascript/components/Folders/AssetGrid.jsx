@@ -1,8 +1,8 @@
 import React from 'react';
-import { Box, ImageList, ImageListItem, ImageListItemBar, Checkbox, IconButton, Tooltip, Typography } from '@mui/material';
-import { PictureAsPdf, VideoFile, InsertDriveFile, PlayCircleFilled, Visibility, InfoOutlined } from '@mui/icons-material';
+import { Box, ImageList, ImageListItem, ImageListItemBar, Checkbox, IconButton, Tooltip, Typography, Stack } from '@mui/material';
+import { PictureAsPdf, VideoFile, InsertDriveFile, PlayCircleFilled, Visibility, InfoOutlined, PushPinOutlined } from '@mui/icons-material';
 
-export default function AssetGrid({ assets, viewMode, selectedItems, toggleSelection, setSelectedAsset }) {
+export default function AssetGrid({ assets, viewMode, selectedItems, toggleSelection, setSelectedAsset, onPinClick }) {
     const formatFileName = (name) => (!name ? "Unknown" : name.length > 15 ? `${name.substring(0, 15)}...` : name);
 
     return (
@@ -21,16 +21,26 @@ export default function AssetGrid({ assets, viewMode, selectedItems, toggleSelec
                 return (
                     <ImageListItem
                         key={asset.id}
-                        onClick={(e) => viewMode === 'bin' ? toggleSelection('assets', asset.id, e) : setSelectedAsset(asset)}
                         sx={{
-                            cursor: 'pointer', borderRadius: '12px', overflow: 'hidden', border: isSelected ? '2px solid #4f46e5' : '1px solid #e2e8f0', bgcolor: '#ffffff', transition: 'all 0.2s ease-in-out',
-                            '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 12px 24px rgba(0,0,0,0.1)', borderColor: '#4f46e5', '& .media-overlay': { opacity: 1 } }
+                            borderRadius: '12px', overflow: 'hidden', border: isSelected ? '2px solid #4f46e5' : '1px solid #e2e8f0', bgcolor: '#ffffff', transition: 'all 0.2s ease-in-out'
                         }}
                     >
                         <Box sx={{ position: 'absolute', top: 8, left: 8, zIndex: 10 }}>
-                            <Checkbox size="small" checked={isSelected} onClick={(e) => toggleSelection('assets', asset.id, e)} sx={{ color: 'rgba(255,255,255,0.8)', bgcolor: isSelected ? 'rgba(255,255,255,0.9)' : 'rgba(0,0,0,0.2)', borderRadius: '4px', p: 0.5, '&:hover': { bgcolor: 'rgba(255,255,255,0.9)' } }} />
+                            <Checkbox
+                                size="small"
+                                checked={isSelected}
+                                onClick={(e) => { e.stopPropagation(); toggleSelection('assets', asset.id, e); }}
+                                sx={{ color: 'rgba(255,255,255,0.8)', bgcolor: isSelected ? 'rgba(255,255,255,0.9)' : 'rgba(0,0,0,0.2)', borderRadius: '4px', p: 0.5, '&:hover': { bgcolor: 'rgba(255,255,255,0.9)' } }}
+                            />
                         </Box>
-                        <Box sx={{ position: 'relative', width: '100%', height: '200px' }}>
+
+                        <Box
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                viewMode === 'bin' ? toggleSelection('assets', asset.id, e) : setSelectedAsset(asset);
+                            }}
+                            sx={{ position: 'relative', width: '100%', height: '200px', cursor: 'pointer' }}
+                        >
                             {isImage && asset.url ? (
                                 <img src={`${asset.url}?w=248&fit=crop&auto=format`} alt={displayName} loading="lazy" style={{ height: '100%', width: '100%', objectFit: 'cover' }} />
                             ) : (
@@ -40,13 +50,38 @@ export default function AssetGrid({ assets, viewMode, selectedItems, toggleSelec
                                     {!isPdf && !isVideo && <InsertDriveFile sx={{ fontSize: 64, color: '#64748b' }} />}
                                 </Box>
                             )}
-                            <Box className="media-overlay" sx={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, bgcolor: 'rgba(15, 23, 42, 0.4)', opacity: 0, transition: 'opacity 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 5 }}>
-                                {isVideo ? <PlayCircleFilled sx={{ fontSize: 56, color: '#ffffff' }} /> : <Visibility sx={{ fontSize: 48, color: '#ffffff' }} />}
-                            </Box>
                         </Box>
+
                         <ImageListItemBar
                             title={<Tooltip title={displayName} placement="top-start"><Typography variant="subtitle2" sx={{ fontWeight: 600 }}>{formatFileName(displayName)}</Typography></Tooltip>}
-                            actionIcon={<IconButton sx={{ color: 'rgba(255, 255, 255, 0.7)', '&:hover': { color: '#ffffff' } }} onClick={(e) => { e.stopPropagation(); setSelectedAsset(asset); }}><InfoOutlined /></IconButton>}
+                            actionIcon={
+                                <Stack direction="row" spacing={0} sx={{ pr: 1 }}>
+                                    <Tooltip title="Pin to Collection">
+                                        <IconButton
+                                            size="small"
+                                            sx={{ color: 'rgba(255, 255, 255, 0.7)', '&:hover': { color: '#ffffff' } }}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onPinClick(asset, e);
+                                            }}
+                                        >
+                                            <PushPinOutlined fontSize="small" />
+                                        </IconButton>
+                                    </Tooltip>
+                                    <Tooltip title="View Details">
+                                        <IconButton
+                                            size="small"
+                                            sx={{ color: 'rgba(255, 255, 255, 0.7)', '&:hover': { color: '#ffffff' } }}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setSelectedAsset(asset);
+                                            }}
+                                        >
+                                            <InfoOutlined fontSize="small" />
+                                        </IconButton>
+                                    </Tooltip>
+                                </Stack>
+                            }
                         />
                     </ImageListItem>
                 );

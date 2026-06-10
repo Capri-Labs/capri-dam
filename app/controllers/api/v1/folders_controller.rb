@@ -1,6 +1,7 @@
 module Api
   module V1
     class FoldersController < ApplicationController
+      include AssetUrlHelper
       before_action :authenticate_user!
 
       def index
@@ -106,8 +107,7 @@ module Api
           name: asset.title,
           status: asset.status,
           properties: asset.properties,
-          # Replace with actual ActiveStorage or CDN URL generation helper
-          url: asset.properties['storage_path'] ? "https://cdn.yourdam.com/assets/#{asset.uuid}" : nil
+          url: asset_url_for(asset)
         }
       end
 

@@ -9,6 +9,7 @@ import ExplorerTopBar from './ExplorerTopBar';
 import FolderGrid from './FolderGrid';
 import AssetGrid from './AssetGrid';
 import AssetList from './AssetList';
+import PinToCollectionDialog from './PinToCollectionDialog';
 
 export default function AssetExplorer({ initialTargetAssetId }) {
     const notify = useNotify();
@@ -25,6 +26,14 @@ export default function AssetExplorer({ initialTargetAssetId }) {
     const [openFolderDialog, setOpenFolderDialog] = useState(false);
     const [newFolderName, setNewFolderName] = useState('');
     const [selectedItems, setSelectedItems] = useState({ folders: [], assets: [] });
+    const [pinDialogOpen, setPinDialogOpen] = useState(false);
+    const [assetToPin, setAssetToPin] = useState(null);
+
+    const handlePinClick = (asset, event) => {
+        if (event) event.stopPropagation();
+        setAssetToPin(asset);
+        setPinDialogOpen(true);
+    };
 
     // --- BROWSER HISTORY & ROUTING LOGIC ---
     const handleNavigate = (folderId) => {
@@ -202,11 +211,13 @@ export default function AssetExplorer({ initialTargetAssetId }) {
                         <AssetGrid
                             assets={viewData.assets} viewMode={viewMode}
                             selectedItems={selectedItems} toggleSelection={toggleSelection} setSelectedAsset={setSelectedAsset}
+                            onPinClick={handlePinClick}
                         />
                     ) : (
                         <AssetList
                             assets={viewData.assets} viewMode={viewMode}
                             selectedItems={selectedItems} toggleSelection={toggleSelection} setSelectedAsset={setSelectedAsset}
+                            onPinClick={handlePinClick}
                         />
                     )}
                 </Box>
@@ -224,6 +235,12 @@ export default function AssetExplorer({ initialTargetAssetId }) {
             </Dialog>
 
             <AssetViewer asset={selectedAsset} open={Boolean(selectedAsset)} onClose={() => setSelectedAsset(null)} onAssetUpdated={(updatedAsset) => { setSelectedAsset(updatedAsset); loadContent(); }} />
+
+            <PinToCollectionDialog
+                open={pinDialogOpen}
+                onClose={() => setPinDialogOpen(false)}
+                asset={assetToPin}
+            />
         </Box>
     );
 }
