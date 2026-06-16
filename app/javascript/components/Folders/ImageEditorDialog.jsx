@@ -1,15 +1,15 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useState, useRef} from 'react';
 import {
     Dialog, AppBar, Toolbar, IconButton, Typography, Box, Grid,
     Button, Stack, Radio, RadioGroup, FormControlLabel, FormControl,
     Divider, Slider, Tabs, Tab, Tooltip, CircularProgress, Paper, Chip,
-    Accordion, AccordionSummary, AccordionDetails
+    Accordion, AccordionSummary, AccordionDetails, Select, MenuItem, Autocomplete, TextField
 } from '@mui/material';
 import {
     Close, RotateRight, CheckCircle, Tune, AutoFixHigh,
     History, AutoAwesome, Flip, ExpandMore, WbSunnyOutlined,
     ContrastOutlined, ColorLensOutlined, BlurOn, Crop,
-    FilterBAndW, ViewInAr, HighQuality, Wallpaper, Architecture
+    FilterBAndW, ViewInAr, HighQuality, Wallpaper, FolderOpen, Architecture
 } from '@mui/icons-material';
 
 import { useNotify } from '../../context/NotificationContext';
@@ -30,6 +30,10 @@ export default function ImageEditorDialog({ asset, open, onClose, onSave }) {
     const [isSaving, setIsSaving] = useState(false);
     const [activeTab, setActiveTab] = useState(0);
 
+    const [targetFolder, setTargetFolder] = useState(null);
+    const [folderOptions, setFolderOptions] = useState([]);
+    const [isFetchingFolders, setIsFetchingFolders] = useState(false);
+
     const [aiProcessing, setAiProcessing] = useState(false);
     const [aiMessage, setAiMessage] = useState("");
 
@@ -38,6 +42,12 @@ export default function ImageEditorDialog({ asset, open, onClose, onSave }) {
     const [activeFilter, setActiveFilter] = useState('None');
     const [rotation, setRotation] = useState(0);
     const [flipH, setFlipH] = useState(false);
+
+    const [focalPoint, setFocalPoint] = useState({ x: 50, y: 50 });
+    const [isDraggingFocal, setIsDraggingFocal] = useState(false);
+    const [isTargetingFocal, setIsTargetingFocal] = useState(false);
+    const imageContainerRef = useRef(null);
+    const [customCli, setCustomCli] = useState('');
 
     // This runs every time the dialog opens or the selected asset changes
     useEffect(() => {
@@ -62,6 +72,30 @@ export default function ImageEditorDialog({ asset, open, onClose, onSave }) {
         }
     }, [open, asset]);
 
+    useEffect(() => {
+        if (saveMode === 'new' && folderOptions.length === 0) {
+            fetchFolders();
+        }
+    }, [saveMode]);
+
+    const fetchFolders = async () => {
+        setIsFetchingFolders(true);
+
+        try {
+            const res = await fetch('/api/v1/folders')
+                .then(res => res.json())
+                .then(data => {
+                    const fetchedFolders = data.folders || data || [];
+                    setFolderOptions(fetchedFolders);
+                })
+                .catch(() => notify("Failed to load folders", "error"));
+        } catch (error) {
+            notify("Failed to load folders.", "error");
+        } finally {
+            setIsFetchingFolders(false);
+        }
+    };
+
     const handleTabChange = (event, newValue) => setActiveTab(newValue);
 
     const handleRotate = () => {
@@ -70,6 +104,29 @@ export default function ImageEditorDialog({ asset, open, onClose, onSave }) {
 
     const handleFlip = () => {
         setFlipH((prev) => !prev);
+    };
+
+    const handleFocalDragStart = (e) => {
+        e.preventDefault(); // Prevents the browser's default image drag behavior
+        setIsDraggingFocal(true);
+    };
+
+    const handleFocalDrag = (e) => {
+        if (!isDraggingFocal || !imageContainerRef.current) return;
+
+        const rect = imageContainerRef.current.getBoundingClientRect();
+        let x = ((e.clientX - rect.left) / rect.width) * 100;
+        let y = ((e.clientY - rect.top) / rect.height) * 100;
+
+        // Clamp the values so the pin can't be dragged outside the image
+        x = Math.max(0, Math.min(100, x));
+        y = Math.max(0, Math.min(100, y));
+
+        setFocalPoint({ x, y });
+    };
+
+    const handleFocalDragEnd = () => {
+        setIsDraggingFocal(false);
     };
 
     const handleAdjustmentChange = (prop) => (event, newValue) => {
@@ -120,11 +177,17 @@ export default function ImageEditorDialog({ asset, open, onClose, onSave }) {
     const handleSave = async () => {
         setIsSaving(true);
         const payload = {
-            save_mode: saveMode,
-            adjustments, crop_aspect:
-            cropAspect,
+            save_mode: saveMode, // 'version', 'overwrite', or 'new'
+            target_folder_id: targetFolder?.id, // 🚀 Pass the selected folder ID
+            adjustments,
+            crop_aspect: cropAspect,
             filter: activeFilter,
-            geometry: { rotate: rotation, flip_horizontal: flipH }
+            geometry: {
+                rotate: rotation,
+                flip_horizontal: flipH,
+                focal_point: focalPoint
+            },
+            custom_cli: customCli
         };
 
         try {
@@ -137,8 +200,25 @@ export default function ImageEditorDialog({ asset, open, onClose, onSave }) {
 
             if (response.ok) {
                 const updatedAsset = await response.json();
-                onSave(updatedAsset);
-                notify("Image edits applied successfully.", "success");
+
+                // 🚀 Safely get the folder name for the toast message
+                const targetFolderName = targetFolder?.name || 'current folder';
+
+                // 🚀 Dynamic Notifications based on mode
+                if (saveMode === 'new') {
+                    notify(`Saved as copy to ${targetFolderName}.`, "success");
+                } else if (saveMode === 'overwrite') {
+                    notify("Current version forcefully overwritten.", "warning");
+                } else {
+                    if (targetFolder) {
+                        notify(`New version saved and moved to ${targetFolderName}.`, "success");
+                    } else {
+                        notify("New immutable version saved successfully.", "success");
+                    }
+                }
+
+                onSave(updatedAsset); // Tell parent to refresh state
+                onClose();            // Close the dialog cleanly
             } else {
                 notify("Failed to apply edits.", "error");
             }
@@ -181,11 +261,18 @@ export default function ImageEditorDialog({ asset, open, onClose, onSave }) {
                     display: 'flex', alignItems: 'center', justifyContent: 'center', p: 4,
                     backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'20\' height=\'20\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath d=\'M0 0h10v10H0zm10 10h10v10H10z\' fill=\'%231e293b\' fill-opacity=\'0.4\' fill-rule=\'evenodd\'/%3E%3C/svg%3E")'
                 }}>
-                    <Box sx={{ position: 'relative', maxWidth: '100%', maxHeight: '100%' }}>
+                    <Box
+                        ref={imageContainerRef}
+                        onMouseMove={handleFocalDrag}
+                        onMouseUp={handleFocalDragEnd}
+                        onMouseLeave={handleFocalDragEnd}
+                        sx={{ position: 'relative', display: 'inline-block', maxWidth: '100%', maxHeight: '100%' }}
+                    >
                         <Box
                             component="img"
-                            src={asset.url}
+                            src={`${asset.url}?v=${asset.version || Date.now()}`}
                             alt="Editor Canvas"
+                            draggable={false} // Disable native drag
                             sx={{
                                 maxWidth: '100%', maxHeight: '80vh', objectFit: 'contain',
                                 boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
@@ -194,6 +281,34 @@ export default function ImageEditorDialog({ asset, open, onClose, onSave }) {
                                 transition: 'filter 0.1s ease-out, transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
                             }}
                         />
+
+                        {/* 🚀 The Visual Focal Point Reticle */}
+                        <Box
+                            onMouseDown={handleFocalDragStart}
+                            sx={{
+                                position: 'absolute',
+                                top: `${focalPoint.y}%`,
+                                left: `${focalPoint.x}%`,
+                                transform: 'translate(-50%, -50%)',
+                                width: 32, height: 32, // Made slightly larger for easier grabbing
+                                border: '3px solid #fff',
+                                borderRadius: '50%',
+                                boxShadow: '0 0 10px rgba(0,0,0,0.5)',
+                                cursor: isDraggingFocal ? 'grabbing' : 'grab',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                '&::after': { content: '""', width: 6, height: 6, bgcolor: '#ef4444', borderRadius: '50%' }
+                            }}
+                        />
+
+
+                        {/* 🚀 Targeting Overlay Instructions */}
+                        {isTargetingFocal && (
+                            <Box sx={{ position: 'absolute', inset: 0, bgcolor: 'rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', borderRadius: 1 }}>
+                                <Typography variant="h6" color="#fff" fontWeight="700" sx={{ textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>
+                                    Click anywhere to set the focal point
+                                </Typography>
+                            </Box>
+                        )}
 
                         <Box sx={{
                             position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, pointerEvents: 'none',
@@ -262,20 +377,60 @@ export default function ImageEditorDialog({ asset, open, onClose, onSave }) {
                                     <Typography variant="body2" fontWeight="600" sx={{ display: 'flex', alignItems: 'center' }}><Crop fontSize="small" sx={{ mr: 1 }} /> Crop & Geometry</Typography>
                                 </AccordionSummary>
                                 <AccordionDetails sx={{ pt: 0, pb: 2, px: 2 }}>
-                                    <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ mb: 2 }}>
-                                        {['Free', 'Original', 'Square', '16:9', '4:3', '3:2'].map(ratio => (
-                                            <Chip
-                                                key={ratio} label={ratio}
-                                                onClick={() => setCropAspect(ratio)}
-                                                variant={cropAspect === ratio ? 'filled' : 'outlined'}
-                                                color={cropAspect === ratio ? 'primary' : 'default'}
-                                                sx={{ borderRadius: 1, mb: 1 }} clickable size="small"
-                                            />
-                                        ))}
-                                    </Stack>
-                                    <Button variant="outlined" size="small" fullWidth startIcon={<Architecture />}>Set Focal Point</Button>
+                                    <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mb: 1 }}>Aspect Ratio</Typography>
+                                    <Select fullWidth size="small" value={cropAspect} onChange={(e) => setCropAspect(e.target.value)} sx={{ mb: 3 }}>
+                                        <MenuItem value="free">Freeform</MenuItem>
+                                        <MenuItem value="1:1">1:1 Square</MenuItem>
+                                        <MenuItem value="16:9">16:9 Widescreen</MenuItem>
+                                        <MenuItem value="4:3">4:3 Standard</MenuItem>
+                                    </Select>
+
+                                    <Divider sx={{ my: 2 }} />
+
+                                    {/* 🚀 NEW: Manual Focal Point Sliders */}
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                                        <Typography variant="caption" color="textSecondary">Focal Point X</Typography>
+                                        <Typography variant="caption" fontWeight="700">{Math.round(focalPoint.x)}%</Typography>
+                                    </Box>
+                                    <Slider
+                                        size="small" min={0} max={100} value={focalPoint.x}
+                                        onChange={(e, val) => setFocalPoint(prev => ({...prev, x: val}))}
+                                    />
+
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5, mt: 1 }}>
+                                        <Typography variant="caption" color="textSecondary">Focal Point Y</Typography>
+                                        <Typography variant="caption" fontWeight="700">{Math.round(focalPoint.y)}%</Typography>
+                                    </Box>
+                                    <Slider
+                                        size="small" min={0} max={100} value={focalPoint.y}
+                                        onChange={(e, val) => setFocalPoint(prev => ({...prev, y: val}))}
+                                    />
+                                    <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mt: 1, lineHeight: 1.2 }}>
+                                        Drag the pin on the image or use sliders. This ensures the subject remains visible when cropped for mobile devices.
+                                    </Typography>
                                 </AccordionDetails>
                             </Accordion>
+
+                            <Divider sx={{ my: 3 }} />
+                            <Accordion disableGutters elevation={0} sx={{ '&:before': { display: 'none' }, border: '1px solid #e2e8f0', borderRadius: 1 }}>
+                                <AccordionSummary expandIcon={<ExpandMore />}>
+                                    <Typography variant="body2" fontWeight="600" sx={{ display: 'flex', alignItems: 'center' }}><Architecture fontSize="small" sx={{ mr: 1 }} /> Advanced CLI (ImageMagick)</Typography>
+                                </AccordionSummary>
+                                <AccordionDetails sx={{ pt: 0, pb: 2, px: 2 }}>
+                                    <Typography variant="caption" color="textSecondary" display="block" sx={{ mb: 1 }}>
+                                        Inject raw ImageMagick operators. (e.g., <span style={{ fontFamily: 'monospace' }}>-monochrome -charcoal 2</span>)
+                                    </Typography>
+                                    <TextField
+                                        fullWidth size="small" variant="outlined"
+                                        placeholder="-blur 0x8"
+                                        value={customCli}
+                                        onChange={(e) => setCustomCli(e.target.value)}
+                                        sx={{ fontFamily: 'monospace' }}
+                                    />
+                                </AccordionDetails>
+                            </Accordion>
+
+                            <Divider sx={{ my: 3 }} />
 
                             <Accordion disableGutters elevation={0} sx={{ '&:before': { display: 'none' }, border: '1px solid #e2e8f0', mb: 1, borderRadius: 1 }}>
                                 <AccordionSummary expandIcon={<ExpandMore />}>
@@ -436,6 +591,12 @@ export default function ImageEditorDialog({ asset, open, onClose, onSave }) {
                                     label={<Typography variant="body2" fontWeight="500">Save as New Version</Typography>}
                                     sx={{ m: 0, p: 0.5, mb: 0.5, border: '1px solid', borderColor: saveMode === 'version' ? '#4f46e5' : 'transparent', borderRadius: 1, bgcolor: saveMode === 'version' ? '#eef2ff' : 'transparent' }}
                                 />
+                                {/* 🚀 NEW: Overwrite Current Mode */}
+                                <FormControlLabel
+                                    value="overwrite" control={<Radio size="small" color="error" />}
+                                    label={<Typography variant="body2" fontWeight="500" color="error">Overwrite Current</Typography>}
+                                    sx={{ m: 0, p: 0.5, mb: 0.5, border: '1px solid', borderColor: saveMode === 'overwrite' ? '#ef4444' : 'transparent', borderRadius: 1, bgcolor: saveMode === 'overwrite' ? '#fef2f2' : 'transparent' }}
+                                />
                                 <FormControlLabel
                                     value="new" control={<Radio size="small" />}
                                     label={<Typography variant="body2" fontWeight="500">Save as Copy</Typography>}
@@ -443,6 +604,43 @@ export default function ImageEditorDialog({ asset, open, onClose, onSave }) {
                                 />
                             </RadioGroup>
                         </FormControl>
+
+                        {/* 🚀 Target Folder Selector (Appears for both Copy and New Version) */}
+                        {(saveMode === 'new' || saveMode === 'version') && (
+                            <Box sx={{ mt: 2 }}>
+                                <Autocomplete
+                                    size="small"
+                                    options={folderOptions}
+                                    getOptionLabel={(option) => option.name || ''}
+                                    isOptionEqualToValue={(option, value) => option.id === value.id}
+                                    loading={isFetchingFolders}
+                                    value={targetFolder}
+                                    onChange={(event, newValue) => setTargetFolder(newValue)}
+                                    renderInput={(params) => (
+                                        <TextField
+                                            {...params}
+                                            placeholder="Target Folder (Defaults to current)"
+                                            InputProps={{
+                                                ...params.InputProps,
+                                                startAdornment: (
+                                                    <React.Fragment>
+                                                        <FolderOpen fontSize="small" sx={{ color: '#94a3b8', ml: 1, mr: 0.5 }} />
+                                                        {params.InputProps?.startAdornment}
+                                                    </React.Fragment>
+                                                ),
+                                                endAdornment: (
+                                                    <React.Fragment>
+                                                        {isFetchingFolders ? <CircularProgress color="inherit" size={20} /> : null}
+                                                        {params.InputProps?.endAdornment}
+                                                    </React.Fragment>
+                                                ),
+                                            }}
+                                            sx={{ bgcolor: '#fff', borderRadius: 1 }}
+                                        />
+                                    )}
+                                />
+                            </Box>
+                        )}
                     </Box>
                 </Grid>
             </Grid>

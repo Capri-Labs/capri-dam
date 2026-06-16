@@ -32,3 +32,15 @@ export const getAssetUrl = (uuid, params = "") => {
     // In local dev, point to your Rails API's local serving endpoint
     return `/api/v1/assets/${uuid}/serve${params}`;
 };
+
+/**
+ * Calculates the SHA-256 hash of a File object natively in the browser.
+ * @param {File} file
+ * @returns {Promise<string>} Hex string of the hash
+ */
+export const calculateFileHash = async (file) => {
+    const buffer = await file.arrayBuffer();
+    const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+};

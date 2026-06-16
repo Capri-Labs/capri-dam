@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_10_100804) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_11_155813) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -66,7 +66,21 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_10_100804) do
     t.index ["embedding"], name: "index_asset_embeddings_on_embedding", opclass: :vector_cosine_ops, using: :hnsw
   end
 
+  create_table "asset_versions", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.string "action_type", default: "initial_upload"
+    t.uuid "asset_id", null: false
+    t.datetime "created_at", null: false
+    t.bigint "created_by_id"
+    t.jsonb "properties", default: {}
+    t.datetime "updated_at", null: false
+    t.integer "version_number", default: 1, null: false
+    t.index ["asset_id", "version_number"], name: "index_asset_versions_on_asset_id_and_version_number", unique: true
+    t.index ["asset_id"], name: "index_asset_versions_on_asset_id"
+    t.index ["created_by_id"], name: "index_asset_versions_on_created_by_id"
+  end
+
   create_table "assets", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "active_version_id"
     t.datetime "created_at", null: false
     t.datetime "deleted_at"
     t.uuid "folder_id"
@@ -76,6 +90,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_10_100804) do
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
     t.string "uuid", null: false
+    t.index ["active_version_id"], name: "index_assets_on_active_version_id"
     t.index ["deleted_at"], name: "index_assets_on_deleted_at"
     t.index ["folder_id"], name: "index_assets_on_folder_id"
     t.index ["properties"], name: "index_assets_on_properties", using: :gin
@@ -549,6 +564,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_10_100804) do
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "asset_embeddings", "assets"
+  add_foreign_key "asset_versions", "assets"
+  add_foreign_key "asset_versions", "users", column: "created_by_id"
+  add_foreign_key "assets", "asset_versions", column: "active_version_id"
   add_foreign_key "assets", "folders"
   add_foreign_key "assets", "users"
   add_foreign_key "audit_logs", "users"

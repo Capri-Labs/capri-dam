@@ -1,6 +1,40 @@
 import React from 'react';
-import { Box, ImageList, ImageListItem, ImageListItemBar, Checkbox, IconButton, Tooltip, Typography, Stack } from '@mui/material';
-import { PictureAsPdf, VideoFile, InsertDriveFile, PlayCircleFilled, Visibility, InfoOutlined, PushPinOutlined } from '@mui/icons-material';
+import {
+    Box,
+    ImageList,
+    ImageListItem,
+    ImageListItemBar,
+    Checkbox,
+    IconButton,
+    Tooltip,
+    Typography,
+    Stack,
+    Chip
+} from '@mui/material';
+import {
+    PictureAsPdf, VideoFile, InsertDriveFile, PlayCircleFilled, Visibility, InfoOutlined, PushPinOutlined,
+    CheckCircle, HourglassEmpty, Autorenew, EditNote
+} from '@mui/icons-material';
+import * as PropTypes from "prop-types";
+
+function ErrorOutline(props) {
+    return null;
+}
+
+ErrorOutline.propTypes = {fontSize: PropTypes.string};
+// 🚀 Helper to map your database enums to UI colors and icons
+const getStatusConfig = (status) => {
+    switch (status) {
+        case 'approved': return { color: 'success', icon: <CheckCircle fontSize="small" />, label: 'Approved' };
+        case 'in_review': return { color: 'warning', icon: <HourglassEmpty fontSize="small" />, label: 'In Review' };
+        case 'pending': return { color: 'warning', icon: <HourglassEmpty fontSize="small" />, label: 'Pending' };
+        case 'processing': return { color: 'info', icon: <Autorenew fontSize="small" sx={{ animation: 'spin 2s linear infinite' }} />, label: 'Processing' };
+        case 'rejected': return { color: 'error', icon: <ErrorOutline fontSize="small" />, label: 'Rejected' };
+        case 'failed': return { color: 'error', icon: <ErrorOutline fontSize="small" />, label: 'Failed' };
+        case 'draft': return { color: 'default', icon: <EditNote fontSize="small" />, label: 'Draft' };
+        default: return null; // 'ready' or null will just show nothing to keep the UI clean
+    }
+};
 
 export default function AssetGrid({ assets, viewMode, selectedItems, toggleSelection, setSelectedAsset, onPinClick }) {
     const formatFileName = (name) => (!name ? "Unknown" : name.length > 15 ? `${name.substring(0, 15)}...` : name);
@@ -18,6 +52,8 @@ export default function AssetGrid({ assets, viewMode, selectedItems, toggleSelec
                 const isVideo = contentType.startsWith('video/');
                 const isSelected = selectedItems.assets.includes(asset.id);
 
+                const statusConfig = getStatusConfig(asset.status);
+
                 return (
                     <ImageListItem
                         key={asset.id}
@@ -33,6 +69,27 @@ export default function AssetGrid({ assets, viewMode, selectedItems, toggleSelec
                                 sx={{ color: 'rgba(255,255,255,0.8)', bgcolor: isSelected ? 'rgba(255,255,255,0.9)' : 'rgba(0,0,0,0.2)', borderRadius: '4px', p: 0.5, '&:hover': { bgcolor: 'rgba(255,255,255,0.9)' } }}
                             />
                         </Box>
+
+                        {/* 🚀 Status Badge (Top Right) */}
+                        {statusConfig && (
+                            <Box sx={{ position: 'absolute', top: 8, right: 8, zIndex: 10 }}>
+                                <Chip
+                                    icon={statusConfig.icon}
+                                    label={statusConfig.label}
+                                    color={statusConfig.color}
+                                    size="small"
+                                    sx={{
+                                        fontWeight: 600,
+                                        backdropFilter: 'blur(4px)',
+                                        bgcolor: (theme) =>
+                                            theme.palette[statusConfig.color]?.light || theme.palette.grey[100],
+                                        color: (theme) =>
+                                            theme.palette[statusConfig.color]?.dark || theme.palette.grey[800],
+                                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                    }}
+                                />
+                            </Box>
+                        )}
 
                         <Box
                             onClick={(e) => {

@@ -39,5 +39,8 @@ module HeadlessDam
     #
     # config.time_zone = "Central Time (US & Canada)"
     # config.eager_load_paths << Rails.root.join("extras")
+
+    # Force ActiveStorage to use ImageMagick instead of Vips
+    config.active_storage.variant_processor = :mini_magick
   end
 end

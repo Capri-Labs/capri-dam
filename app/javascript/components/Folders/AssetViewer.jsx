@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import {
     Dialog, AppBar, Toolbar, IconButton, Typography, Box, Grid,
     Button, Divider, Chip, Tabs, Tab, Paper, List, ListItem,
-    ListItemText, Tooltip
+    ListItemText, Tooltip, Menu, MenuItem
 } from '@mui/material';
 import {
     Close,
@@ -19,7 +19,7 @@ import {
 } from '@mui/icons-material';
 import ImageEditorDialog from './ImageEditorDialog';
 import WorkflowPanel from '../WorkflowPanel';
-import AssetTagsEditor from './AssetTagsEditor'; // 🚀 Import the new component
+import AssetTagsEditor from './AssetTagsEditor';
 import PinToCollectionDialog from './PinToCollectionDialog';
 import { useNotify } from '../../context/NotificationContext';
 
@@ -36,12 +36,19 @@ function TabPanel(props) {
     );
 }
 
-export default function AssetViewer({ asset, open, onClose, onAssetUpdated }) {
+export default function AssetViewer({ asset: initialAsset, open, onClose, onAssetUpdated }) {
     const notify = useNotify();
+    const [asset, setAsset] = useState(initialAsset);
     const [editorOpen, setEditorOpen] = useState(false);
     const [tagsEditorOpen, setTagsEditorOpen] = useState(false); // 🚀 State for Tags Editor
     const [pinOpen, setPinOpen] = useState(false);
     const [activeTab, setActiveTab] = useState(0);
+    const [downloadMenuAnchor, setDownloadMenuAnchor] = useState(null);
+
+    // Keep it synced if the parent explicitly passes a new asset
+    useEffect(() => {
+        setAsset(initialAsset);
+    }, [initialAsset]);
 
     if (!asset) return null;
 
@@ -50,6 +57,14 @@ export default function AssetViewer({ asset, open, onClose, onAssetUpdated }) {
     const handleCopyUrl = () => {
         navigator.clipboard.writeText(asset.url);
         notify("Asset URL copied to clipboard!", "success");
+    };
+
+    const handleDownloadWatermarked = () => {
+        setDownloadMenuAnchor(null);
+        notify("Generating secure watermarked proxy...", "info");
+
+        // Use standard browser navigation to trigger the Rails send_data stream
+        window.location.href = `/api/v1/assets/${asset.id}/watermarked`;
     };
 
     const handleDownload = async () => {
@@ -115,14 +130,44 @@ export default function AssetViewer({ asset, open, onClose, onAssetUpdated }) {
 
                     <Divider orientation="vertical" variant="middle" flexItem sx={{ borderColor: 'rgba(255,255,255,0.2)', mx: 1 }} />
 
+                    {/* 🚀 MOVED: Launch Image Editor Button */}
+                    {isImage && (
+                        <Button
+                            variant="outlined"
+                            startIcon={<Edit />}
+                            onClick={() => setEditorOpen(true)}
+                            sx={{ color: '#fff', borderColor: 'rgba(255,255,255,0.5)', '&:hover': { borderColor: '#fff' }, mr: 1, textTransform: 'none' }}
+                        >
+                            Edit Image
+                        </Button>
+                    )}
+
                     <Button
                         variant="contained"
                         startIcon={<Download />}
-                        onClick={handleDownload}
+                        onClick={(e) => setDownloadMenuAnchor(e.currentTarget)}
                         sx={{ bgcolor: '#4f46e5', '&:hover': { bgcolor: '#4338ca' }, textTransform: 'none' }}
                     >
-                        Download Original
+                        Download Options
                     </Button>
+                    <Menu
+                        anchorEl={downloadMenuAnchor}
+                        open={Boolean(downloadMenuAnchor)}
+                        onClose={() => setDownloadMenuAnchor(null)}
+                        PaperProps={{ elevation: 3, sx: { mt: 1, minWidth: 200, borderRadius: 2 } }}
+                    >
+                        <MenuItem onClick={() => { setDownloadMenuAnchor(null); handleDownload(); }}>
+                            <ListItemText primary="Download Original" secondary="High-resolution source file" />
+                        </MenuItem>
+                        <Divider />
+                        <MenuItem onClick={handleDownloadWatermarked}>
+                            <ListItemText
+                                primary="Download Secure Proxy"
+                                secondary="Includes unremovable watermark"
+                                primaryTypographyProps={{ color: 'error', fontWeight: 600 }}
+                            />
+                        </MenuItem>
+                    </Menu>
                 </Toolbar>
             </AppBar>
 
@@ -131,7 +176,7 @@ export default function AssetViewer({ asset, open, onClose, onAssetUpdated }) {
                 <Grid item sx={{ width: '65%', bgcolor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', p: 4, borderRight: '1px solid #cbd5e1' }}>
                     {isImage && asset.url ? (
                         <Box component="img"
-                             src={asset.url}
+                             src={`${asset.url}?v=${asset.version || Date.now()}`}
                              alt={displayName}
                              sx={{
                                  maxWidth: '100%',
@@ -151,7 +196,6 @@ export default function AssetViewer({ asset, open, onClose, onAssetUpdated }) {
                     <Box sx={{ borderBottom: 1, borderColor: 'divider', px: 2, pt: 1 }}>
                         <Tabs value={activeTab} onChange={handleTabChange} variant="scrollable" scrollButtons="auto" sx={{ '& .MuiTab-root': { textTransform: 'none', minWidth: 'auto', px: 2 } }}>
                             <Tab icon={<InfoOutlined fontSize="small" />} iconPosition="start" label="Info" />
-                            <Tab icon={<Edit fontSize="small" />} iconPosition="start" label="Edit" />
                             <Tab icon={<History fontSize="small" />} iconPosition="start" label="Versions" />
                             <Tab icon={<AnalyticsOutlined fontSize="small" />} iconPosition="start" label="Statistics" />
                             <Tab icon={<PolicyOutlined fontSize="small" />} iconPosition="start" label="Audit" />
@@ -194,6 +238,29 @@ export default function AssetViewer({ asset, open, onClose, onAssetUpdated }) {
                                 <ListItem disableGutters><ListItemText primary="File Size" secondary={fileSize} /></ListItem>
                             </List>
 
+                            {/* Extract the palette from properties, defaulting to empty array */}
+                            {asset.properties?.color_palette && asset.properties.color_palette.length > 0 && (
+                                <Box sx={{ mb: 4 }}>
+                                    <Typography variant="caption" sx={{ color: '#475569', mb: 1, display: 'block', fontWeight: 600 }}>
+                                        Dominant Palette
+                                    </Typography>
+                                    <Box sx={{ display: 'flex', gap: 1 }}>
+                                        {asset.properties.color_palette.map((hex, index) => (
+                                            <Tooltip title={hex.toUpperCase()} key={index}>
+                                                <Box
+                                                    sx={{
+                                                        width: 32, height: 32, borderRadius: '50%',
+                                                        bgcolor: hex,
+                                                        border: '1px solid rgba(0,0,0,0.1)',
+                                                        boxShadow: 'inset 0 2px 4px rgba(255,255,255,0.2)'
+                                                    }}
+                                                />
+                                            </Tooltip>
+                                        ))}
+                                    </Box>
+                                </Box>
+                            )}
+
                             <Divider sx={{ mb: 3 }} />
 
                             <Typography variant="subtitle2" fontWeight="700" sx={{ mb: 2 }}>EXIF / IPTC Data</Typography>
@@ -204,25 +271,21 @@ export default function AssetViewer({ asset, open, onClose, onAssetUpdated }) {
                             </Paper>
                         </TabPanel>
 
-                        {/* ... Other tabs remain unchanged ... */}
+                        {/* 🚀 TAB 2 */}
                         <TabPanel value={activeTab} index={1}>
-                            <Typography variant="subtitle1" fontWeight="700" sx={{ mb: 2 }}>Image Manipulation</Typography>
-                            {isImage ? (
-                                <Button variant="contained" color="primary" startIcon={<Edit />} onClick={() => setEditorOpen(true)}>Launch Image Editor</Button>
-                            ) : (
-                                <Typography variant="body2" color="error">Editing is only available for image formats.</Typography>
-                            )}
+                            <AssetVersionsTab asset={asset}
+                                              onAssetUpdated={onAssetUpdated} />
                         </TabPanel>
-                        {/* 🚀 TAB 2, 3, 4: New Modularized Components */}
-                        <TabPanel value={activeTab} index={2}><AssetVersionsTab asset={asset} /></TabPanel>
-                        <TabPanel value={activeTab} index={3}><AssetStatisticsTab asset={asset} /></TabPanel>
-                        <TabPanel value={activeTab} index={4}><AssetAuditTab asset={asset} /></TabPanel>
+                        {/* 🚀 TAB 3 */}
+                        <TabPanel value={activeTab} index={2}><AssetStatisticsTab asset={asset} /></TabPanel>
+                        {/* 🚀 TAB 4 */}
+                        <TabPanel value={activeTab} index={3}><AssetAuditTab asset={asset} /></TabPanel>
                         {/* TAB 5: WORKFLOWS */}
-                        <TabPanel value={activeTab} index={5}>
+                        <TabPanel value={activeTab} index={4}>
                             <WorkflowPanel assetId={asset.id} onWorkflowUpdate={() => { if (onAssetUpdated) onAssetUpdated(asset); }} />
                         </TabPanel>
                         {/* TAB 5: AI */}
-                        <TabPanel value={activeTab} index={6}>
+                        <TabPanel value={activeTab} index={5}>
                             <Typography variant="subtitle1" fontWeight="700" sx={{ mb: 2 }}>Semantic & Vision Analysis</Typography>
                         </TabPanel>
 
@@ -237,9 +300,13 @@ export default function AssetViewer({ asset, open, onClose, onAssetUpdated }) {
                     open={editorOpen}
                     onClose={() => setEditorOpen(false)}
                     onSave={(updatedAsset) => {
-                        // 🚀 ONLY update the state to re-render the background. DO NOT setEditorOpen(false)
+                        // 🚀 1. Update the local view instantly (Dialog stays open!)
+                        setAsset(updatedAsset);
+
+                        // 🚀 2. Quietly notify the parent to update the background grid
                         if (onAssetUpdated) onAssetUpdated(updatedAsset);
-                    }} />
+                    }}
+                />
             )}
 
             {/* 🚀 Tags Editor Overlay */}

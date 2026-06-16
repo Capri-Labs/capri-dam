@@ -2,7 +2,10 @@ class Asset < ApplicationRecord
   belongs_to :user
   belongs_to :folder, optional: true
 
-  # 🚨 REMOVED: after_commit :trigger_upload_workflows, on: :create
+  # REMOVED: after_commit :trigger_upload_workflows, on: :create
+  has_many :asset_versions, dependent: :destroy
+  # The pointer to the currently active version
+  belongs_to :active_version, class_name: 'AssetVersion', optional: true
 
   has_many :workflow_instances, dependent: :destroy
   has_one_attached :file
@@ -27,7 +30,7 @@ class Asset < ApplicationRecord
     approved: 5,
     rejected: 6,
     failed: 7
-  }
+  }, default: :draft
 
   scope :published, -> { where(status: :active) }
 
@@ -42,6 +45,16 @@ class Asset < ApplicationRecord
   after_initialize :set_property_defaults, if: :new_record?
 
   include SoftDeletable
+
+  # Helper method to easily access the active file
+  def current_file
+    active_version&.file
+  end
+
+  # Helper method to get the latest version number
+  def next_version_number
+    (asset_versions.maximum(:version_number) || 0) + 1
+  end
 
   private
 

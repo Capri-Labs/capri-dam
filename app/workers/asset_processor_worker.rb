@@ -6,20 +6,22 @@ class AssetProcessorWorker
 
   # Safety net for complete failures
   sidekiq_retries_exhausted do |msg, exception|
-    asset_id = msg['args'].first
+    version_id = msg['args'].first
     staging_path = msg['args'][1]
 
-    asset = Asset.find_by(id: asset_id)
-    asset&.update!(status: 'failed')
+    version = AssetVersion.find_by(id: version_id)
+    version.asset.update!(status: 'failed') if version&.asset
 
     File.delete(staging_path) if staging_path && File.exist?(staging_path)
-    Rails.logger.error "💥 Asset #{asset_id} permanently failed: #{exception.message}"
+    Rails.logger.error "💥 AssetVersion #{version_id} permanently failed: #{exception.message}"
   end
 
-  def perform(asset_id, staging_path = nil)
-    asset = Asset.find_by(id: asset_id)
-    return unless asset
+  def perform(version_id, staging_path = nil)
+    # 🚀 ARCHITECTURE FIX: We process the Version, not the Parent Asset
+    version = AssetVersion.find_by(id: version_id)
+    return unless version
 
+    asset = version.asset
     asset.update!(status: 'processing')
 
     begin
@@ -34,7 +36,7 @@ class AssetProcessorWorker
         extracted_meta[:size] = File.size(staging_path)
         extracted_meta[:checksum_sha256] = Digest::SHA256.file(staging_path).hexdigest
 
-        # Use Marcel (Rails native) to deeply inspect the file bytes, ignoring fake extensions
+        # Use Marcel to deeply inspect the file bytes
         file_stream = File.open(staging_path)
         mime_type = Marcel::MimeType.for(file_stream, name: File.basename(staging_path))
         extracted_meta[:content_type] = mime_type
@@ -43,49 +45,51 @@ class AssetProcessorWorker
         # --- TYPE-SPECIFIC METADATA ---
         if mime_type.start_with?('image/')
           extract_image_metadata(staging_path, extracted_meta)
+          # 🚀 NEW: Extract all visible text
+          extract_text_from_image(staging_path, extracted_meta)
         elsif mime_type == 'application/pdf'
           extract_pdf_metadata(staging_path, extracted_meta)
         elsif mime_type.start_with?('video/')
-          extracted_meta[:format] = 'Video Media' # Placeholder for FFmpeg extraction
+          extracted_meta[:format] = 'Video Media'
         end
 
         # --- DYNAMIC STORAGE PATH ---
-        # Get the safest extension based on the actual MIME type
         safe_ext = Marcel::Magic.new(mime_type)&.extensions&.first || "bin"
-        file_path = "#{asset.uuid}/original.#{safe_ext}"
+        # 🚀 FIX: Path now includes version number to prevent overwriting
+        file_path = "#{asset.uuid}/v#{version.version_number}_#{SecureRandom.hex(4)}.#{safe_ext}"
 
         # --- EXECUTE STORAGE ---
         File.open(staging_path, 'rb') do |file|
           storage.store(file, file_path)
         end
 
-        File.delete(staging_path) # Clean up temp file
+        File.delete(staging_path)
       else
-        # Mock logic for tests
-        file_path = "#{asset.uuid}/original.bin"
+        file_path = "#{asset.uuid}/v#{version.version_number}_mock.bin"
         storage.store(StringIO.new("Mock data"), file_path)
         extracted_meta[:content_type] = 'application/octet-stream'
       end
 
       # --- SAVE & MERGE ---
-      # Safely handle the existing properties hash
-      current_props = asset.properties.is_a?(Hash) ? asset.properties : {}
+      current_props = version.properties.is_a?(Hash) ? version.properties : {}
 
-      asset.update!(
-        status: 'ready',
-        # We merge the original properties (like original_filename) with our deep extraction
+      # 🚀 ARCHITECTURE FIX: Save the physical properties to the VERSION
+      version.update!(
         properties: current_props.merge(extracted_meta).merge(
           storage_path: file_path,
           processed_at: Time.current
         )
       )
-      # Announce to the event stream that a new asset was just ingested
-      AssetWorkflowTriggerWorker.perform_async(asset.id, 'on_upload')
 
-      Rails.logger.info "✅ Asset #{asset.uuid} processed and stored as #{file_path}"
+      # Mark the PARENT as ready
+      asset.update!(status: 'ready')
+
+      AssetWorkflowTriggerWorker.perform_async(asset.id, 'on_upload') if defined?(AssetWorkflowTriggerWorker)
+
+      Rails.logger.info "✅ AssetVersion #{version.id} processed and stored as #{file_path}"
 
     rescue StandardError => e
-      Rails.logger.warn "⚠️ Worker failed for Asset #{asset.uuid}: #{e.message}"
+      Rails.logger.warn "⚠️ Worker failed for AssetVersion #{version.id}: #{e.message}"
       raise e
     end
   end
@@ -93,9 +97,7 @@ class AssetProcessorWorker
   private
 
   def extract_image_metadata(path, meta)
-    # Using MiniMagick (standard in Rails ActiveStorage) to read image headers safely
     require 'mini_magick'
-
     image = MiniMagick::Image.open(path)
 
     meta[:width] = image.width
@@ -104,7 +106,8 @@ class AssetProcessorWorker
     meta[:resolution] = "#{image.width} x #{image.height}"
     meta[:color_space] = image.colorspace
 
-    # Extract EXIF data if the photographer left it in the file
+    extract_color_palette(path, meta)
+
     exif = image.exif
     if exif.any?
       meta[:camera_make] = exif['Make']&.strip
@@ -116,14 +119,41 @@ class AssetProcessorWorker
     meta[:image_analysis_status] = "failed"
   end
 
+  def extract_color_palette(path, meta)
+    # Pass 'false' (whiny: false) to prevent the argument error in newer MiniMagick versions
+    output = MiniMagick::Tool::Convert.new(false) do |convert|
+      convert << path
+      convert << "-format" << "%c"
+      convert << "-colors" << "5"
+      convert << "-depth" << "8"
+      convert << "histogram:info:-"
+    end
+
+    hex_codes = output.scan(/#[0-9A-Fa-f]{6}/).uniq
+    meta[:color_palette] = hex_codes
+  rescue StandardError => e
+    Rails.logger.error "Color palette extraction failed: #{e.message}"
+    meta[:color_palette] = []
+  end
+
+  # 🚀 NEW: OCR Text Extraction Block
+  def extract_text_from_image(path, meta)
+    require 'rtesseract'
+
+    # Process the image with Tesseract to find readable characters
+    image = RTesseract.new(path)
+    extracted_text = image.to_s.strip
+
+    if extracted_text.present?
+      # Store the text block in the metadata for semantic search later
+      meta[:extracted_text] = extracted_text
+      Rails.logger.info "📝 OCR Extracted #{extracted_text.length} characters."
+    end
+  rescue StandardError => e
+    Rails.logger.error "OCR extraction failed: #{e.message}"
+  end
+
   def extract_pdf_metadata(path, meta)
-    # If you add `gem 'pdf-reader'` to your Gemfile in the future, you can uncomment this:
-    # require 'pdf-reader'
-    # reader = PDF::Reader.new(path)
-    # meta[:page_count] = reader.page_count
-    # meta[:pdf_version] = reader.pdf_version
     meta[:document_type] = 'PDF'
-  rescue StandardError
-    # Silently pass if gem is missing
   end
 end

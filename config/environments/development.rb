@@ -94,4 +94,7 @@ Rails.application.configure do
       Rails.logger.level = Logger::INFO
     end
   end
+
+  # Silence OpenTelemetry export errors in local dev
+  ENV['OTEL_TRACES_EXPORTER'] = 'none'
 end

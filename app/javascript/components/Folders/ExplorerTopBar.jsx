@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import {
     Box, Breadcrumbs, Link, Stack, Button, IconButton,
     Tooltip, Checkbox, FormControlLabel, Typography,
-    Menu, MenuItem, ListItemIcon, ListItemText, Divider
+    Menu, MenuItem, ListItemIcon, ListItemText, Divider, Dialog
 } from '@mui/material';
 import {
     Home, ContentCopy, DeleteOutlined, CreateNewFolder,
@@ -11,39 +11,42 @@ import {
 } from '@mui/icons-material';
 import { useNotify } from '../../context/NotificationContext';
 
+// 🚀 Import the new Upload Workspace
+import UploadWorkspace from './UploadWorkspace';
+
 export default function ExplorerTopBar({
                                            currentId, viewData, viewMode, setViewMode, handleNavigate, handleCopyPath,
                                            isAllSelected, handleSelectAll, hasSelection, handleDeleteSelected,
-                                           handleRestoreSelected, handlePermanentDelete, setOpenFolderDialog, handleFileUpload
+                                           handleRestoreSelected, handlePermanentDelete, setOpenFolderDialog,
+                                           onUploadSuccess // Renamed from handleFileUpload for clarity
                                        }) {
     const notify = useNotify();
+
+    // 🚀 State for the Upload Workspace Overlay
+    const [uploadWorkspaceOpen, setUploadWorkspaceOpen] = useState(false);
 
     // Dropdown Anchors
     const [smartMenuAnchor, setSmartMenuAnchor] = useState(null);
     const [workflowMenuAnchor, setWorkflowMenuAnchor] = useState(null);
     const [collectionMenuAnchor, setCollectionMenuAnchor] = useState(null);
 
-    // Placeholder handlers for the new AI features
     const [aiMenuAnchor, setAiMenuAnchor] = useState(null);
-    const openAiMenu = Boolean(aiMenuAnchor);
     const handleAiMenuClick = (event) => setAiMenuAnchor(event.currentTarget);
     const handleAiMenuClose = () => setAiMenuAnchor(null);
+
     const handleAutoEnrich = () => {
         handleAiMenuClose();
         notify("Assets queued for LangChain semantic enrichment.", "info");
-        // API call to POST /api/v1/ai/batch with selected asset IDs
     };
 
     const handleTdmScan = () => {
         handleAiMenuClose();
         notify("Scanning for visual and cryptographic duplicates...", "warning");
-        // API call to POST /api/v1/data_health/scan
     };
 
     const handleSmartOrganize = () => {
         handleAiMenuClose();
         notify("AI is analyzing vectors to cluster items into sub-folders.", "info");
-        // API call to trigger a LangChain agent to group assets
     };
 
     return (
@@ -71,7 +74,6 @@ export default function ExplorerTopBar({
             {/* Right Side: Actions */}
             <Stack direction="row" spacing={1.5} alignItems="center">
 
-                {/* Select All Toggle */}
                 {(viewData.folders?.length > 0 || viewData.assets?.length > 0) && (
                     <FormControlLabel
                         control={<Checkbox size="small" checked={isAllSelected} onChange={handleSelectAll} />}
@@ -89,10 +91,8 @@ export default function ExplorerTopBar({
                     {viewMode === 'active' ? 'View Trash Bin' : 'Back to Active Files'}
                 </Button>
 
-                {/* --- CONTEXTUAL SELECTION ACTIONS --- */}
                 {hasSelection && viewMode === 'active' && (
                     <>
-                        {/* 1. AI WORKFLOWS DROP DOWN */}
                         <Button
                             variant="outlined"
                             onClick={(e) => setWorkflowMenuAnchor(e.currentTarget)}
@@ -117,7 +117,6 @@ export default function ExplorerTopBar({
                             </MenuItem>
                         </Menu>
 
-                        {/* 2. SMART COLLECTIONS DROP DOWN */}
                         <Button
                             variant="outlined"
                             onClick={(e) => setCollectionMenuAnchor(e.currentTarget)}
@@ -142,7 +141,6 @@ export default function ExplorerTopBar({
                             </MenuItem>
                         </Menu>
 
-                        {/* 3. CORE AI ACTIONS BUTTON */}
                         <Button
                             variant="contained"
                             onClick={(e) => setSmartMenuAnchor(e.currentTarget)}
@@ -153,7 +151,6 @@ export default function ExplorerTopBar({
                         </Button>
                         <Menu
                             anchorEl={smartMenuAnchor}
-                            onClick={handleAiMenuClick}
                             open={Boolean(smartMenuAnchor)}
                             onClose={() => setSmartMenuAnchor(null)}
                             PaperProps={{ elevation: 3, sx: { mt: 1, minWidth: 220, borderRadius: 2 } }}
@@ -179,7 +176,6 @@ export default function ExplorerTopBar({
                     </>
                 )}
 
-                {/* TRASH BIN ACTIONS (Visible when in Bin mode and items selected) */}
                 {hasSelection && viewMode === 'bin' && (
                     <>
                         <Button variant="contained" color="success" onClick={handleRestoreSelected}>Restore</Button>
@@ -187,19 +183,40 @@ export default function ExplorerTopBar({
                     </>
                 )}
 
-                {/* --- DEFAULT ROOT FOLDER ACTIONS --- */}
                 {!hasSelection && viewMode === 'active' && (
                     <>
                         <Button variant="outlined" startIcon={<CreateNewFolder />} onClick={() => setOpenFolderDialog(true)} sx={{ textTransform: 'none', borderRadius: '8px', bgcolor: 'white' }}>
                             New Folder
                         </Button>
-                        <Button variant="contained" startIcon={<CloudUpload />} component="label" sx={{ textTransform: 'none', borderRadius: '8px', boxShadow: 'none', bgcolor: '#4f46e5', '&:hover': { bgcolor: '#4338ca' } }}>
+
+                        {/* 🚀 Updated Upload Button to open the Workspace instead of raw input */}
+                        <Button
+                            variant="contained"
+                            startIcon={<CloudUpload />}
+                            onClick={() => setUploadWorkspaceOpen(true)}
+                            sx={{ textTransform: 'none', borderRadius: '8px', boxShadow: 'none', bgcolor: '#4f46e5', '&:hover': { bgcolor: '#4338ca' } }}
+                        >
                             Upload Asset
-                            <input type="file" hidden onChange={handleFileUpload} />
                         </Button>
                     </>
                 )}
             </Stack>
+
+            {/* 🚀 Render the Upload Workspace as a full-screen Dialog */}
+            <Dialog
+                fullScreen
+                open={uploadWorkspaceOpen}
+                onClose={() => setUploadWorkspaceOpen(false)}
+            >
+                <UploadWorkspace
+                    folderId={currentId === 'root' ? null : currentId}
+                    onClose={() => setUploadWorkspaceOpen(false)}
+                    onUploadComplete={() => {
+                        setUploadWorkspaceOpen(false);
+                        if (onUploadSuccess) onUploadSuccess();
+                    }}
+                />
+            </Dialog>
         </Box>
     );
 }

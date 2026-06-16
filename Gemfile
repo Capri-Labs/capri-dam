@@ -117,3 +117,6 @@ end
 
 # Vector database support for PostgreSQL pgvector
 gem "neighbor"
+
+
+gem "rtesseract", "~> 3.1"

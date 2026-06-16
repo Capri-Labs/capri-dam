@@ -40,7 +40,9 @@ module Api
         if params[:id] == 'root'
           # Strictly fetch only ACTIVE top-level items
           @folders = Folder.active.where(parent_id: nil)
-          @assets = Asset.active.where(folder_id: nil)
+
+          # 🚀 FIX 1: Eager load the active_version to prevent database N+1 performance issues
+          @assets = Asset.active.where(folder_id: nil).includes(:active_version)
 
           breadcrumbs = [{ id: 'root', name: 'Home' }]
         else
@@ -49,7 +51,9 @@ module Api
 
           # Filter subfolders and assets by active scope
           @folders = Folder.active.where(parent_id: current_folder.id)
-          @assets = Asset.active.where(folder_id: current_folder.id)
+
+          # 🚀 FIX 1: Eager load the active_version
+          @assets = Asset.active.where(folder_id: current_folder.id).includes(:active_version)
 
           breadcrumbs = build_breadcrumbs(current_folder)
         end
@@ -101,12 +105,18 @@ module Api
 
       # Helper to standardize the asset payload structure for React
       def format_asset_payload(asset)
+        active_v = asset.active_version
+
         {
-          id: asset.id,
+          id: asset.id, # Using the primary DB ID to match your editor fix
+          uuid: asset.uuid,
           title: asset.title,
           name: asset.title,
-          status: asset.status,
-          properties: asset.properties,
+          status: asset.status || 'draft',
+          version: active_v&.version_number || 1,
+
+          properties: asset.properties.merge(active_v&.properties || {}),
+
           url: asset_url_for(asset)
         }
       end

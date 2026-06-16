@@ -33,32 +33,33 @@ export default function SemanticCopilot() {
         setIsSearching(true);
 
         try {
-            // Simulated API call to our Rails CopilotsController
-            // const response = await fetch('/api/v1/copilot/search', {
-            //     method: 'POST',
-            //     headers: { 'Content-Type': 'application/json' },
-            //     body: JSON.stringify({ query: userQuery })
-            // });
-            // const data = await response.json();
+            const csrfToken = document.querySelector('[name="csrf-token"]')?.content;
 
-            // Mock Data representing advanced semantic matches
-            setTimeout(() => {
-                const mockAssets = [
-                    { id: '1', filename: 'summer_lifestyle_01.jpg', url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400&q=80', properties: { title: 'Beach Action', campaign: 'Summer Q3', tags: ['sand', 'ocean', 'active'] }, match_confidence: '98%' },
-                    { id: '2', filename: 'urban_skate_hero.jpg', url: 'https://images.unsplash.com/photo-1564982752979-3f7ba9748cb6?w=400&q=80', properties: { title: 'City Skate', campaign: 'Urban Youth', tags: ['street', 'skate', 'concrete'] }, match_confidence: '92%' },
-                    { id: '3', filename: 'mountain_hike_wide.jpg', url: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=400&q=80', properties: { title: 'Summit Reach', tags: ['mountain', 'hike', 'sky'] }, match_confidence: '85%' },
-                ];
-                setResults(mockAssets);
+            // 🚀 WIRED TO RAILS BACKEND
+            const response = await fetch('/api/v1/copilot/search', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': csrfToken
+                },
+                body: JSON.stringify({ query: userQuery })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                setResults(data.results || []);
                 setMessages(prev => [...prev, {
                     sender: 'ai',
-                    text: `I found ${mockAssets.length} highly relevant assets based on the semantic vectors of your request. I prioritized high-contrast outdoor imagery.`
+                    text: `I found ${data.results.length} highly relevant assets traversing the local vector space.`
                 }]);
-                setIsSearching(false);
-            }, 1200);
-
+            } else {
+                throw new Error(data.error || 'Search failed');
+            }
         } catch (error) {
+            setMessages(prev => [...prev, { sender: 'ai', text: 'Error connecting to the local vector database.' }]);
+        } finally {
             setIsSearching(false);
-            setMessages(prev => [...prev, { sender: 'ai', text: 'Error connecting to the vector database.' }]);
         }
     };
 
@@ -71,7 +72,8 @@ export default function SemanticCopilot() {
                     <AutoAwesome sx={{ color: '#8e24aa', mr: 1.5 }} />
                     <Box>
                         <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>Semantic Copilot</Typography>
-                        <Typography variant="caption" color="textSecondary">Powered by text-embedding-3-small</Typography>
+                        {/* 🚀 UPDATED MODEL LABEL */}
+                        <Typography variant="caption" color="textSecondary">Powered by HuggingFace all-MiniLM-L6-v2</Typography>
                     </Box>
                 </Box>
 
@@ -142,27 +144,23 @@ export default function SemanticCopilot() {
                             <Grid item xs={12} sm={6} md={4} xl={3} key={asset.id}>
                                 <Card elevation={0} sx={{ border: '1px solid #e2e8f0', borderRadius: 3, transition: 'all 0.2s', '&:hover': { borderColor: '#8e24aa', transform: 'translateY(-2px)', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' } }}>
                                     <Box sx={{ position: 'relative' }}>
-                                        <CardMedia component="img" height="180" image={asset.url} alt={asset.properties.title} sx={{ objectFit: 'cover' }} />
-                                        <Chip
-                                            label={`${asset.match_confidence} Match`}
-                                            size="small"
-                                            sx={{ position: 'absolute', top: 12, right: 12, bgcolor: 'rgba(255,255,255,0.9)', color: '#1e293b', fontWeight: 600, backdropFilter: 'blur(4px)' }}
-                                        />
+                                        {/* 🚀 WIRED TO RAILS file_url */}
+                                        <CardMedia component="img" height="180" image={asset.file_url} alt={asset.properties?.title || asset.original_filename} sx={{ objectFit: 'cover' }} />
                                     </Box>
                                     <CardContent sx={{ p: 2, pb: 1 }}>
-                                        <Typography variant="subtitle2" sx={{ fontWeight: 600, noWrap: true }}>{asset.properties.title || asset.filename}</Typography>
+                                        <Typography variant="subtitle2" sx={{ fontWeight: 600, noWrap: true }}>{asset.properties?.title || asset.original_filename}</Typography>
                                         <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mb: 1.5 }}>
-                                            {asset.properties.campaign ? `Campaign: ${asset.properties.campaign}` : 'Unassigned Campaign'}
+                                            {asset.properties?.campaign ? `Campaign: ${asset.properties.campaign}` : 'Unassigned Campaign'}
                                         </Typography>
                                         <Stack direction="row" spacing={0.5} flexWrap="wrap" sx={{ gap: 0.5 }}>
-                                            {asset.properties.tags?.slice(0, 3).map((tag, idx) => (
+                                            {asset.properties?.tags?.slice(0, 3).map((tag, idx) => (
                                                 <Chip key={idx} label={tag} size="small" sx={{ height: 20, fontSize: '0.7rem', bgcolor: '#f1f5f9' }} />
                                             ))}
                                         </Stack>
                                     </CardContent>
                                     <CardActions sx={{ p: 2, pt: 0, justifyContent: 'space-between' }}>
                                         <Tooltip title="Copy Public URL">
-                                            <IconButton size="small"><ContentCopy fontSize="small" /></IconButton>
+                                            <IconButton size="small" onClick={() => navigator.clipboard.writeText(asset.file_url)}><ContentCopy fontSize="small" /></IconButton>
                                         </Tooltip>
                                         <Button size="small" variant="outlined" startIcon={<AutoGraph />} sx={{ borderColor: '#cbd5e1', color: '#475569', textTransform: 'none' }}>
                                             Reuse in Workspace

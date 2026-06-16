@@ -6,7 +6,10 @@ module AssetUrlHelper
   end
 
   def asset_url_for(asset)
-    return nil unless asset.properties['storage_path'].present?
+    active_v = asset.active_version
+    storage_path = active_v&.properties&.fetch('storage_path', nil) || asset.properties['storage_path']
+
+    return nil unless storage_path.present?
 
     if Rails.env.production?
       "https://cdn.yourdam.com/assets/#{asset.uuid}"
