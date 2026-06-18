@@ -12,7 +12,7 @@ export default function DuplicateResolverDialog({ open, onClose, fileData, onRes
 
     if (!fileData || !fileData.duplicateData) return null;
 
-    // 🚀 duplicateData is now an ARRAY of matches
+    //  duplicateData is now an ARRAY of matches
     const existingAssets = fileData.duplicateData;
     const primaryAsset = existingAssets[0]; // We use the first one for the image preview
 
@@ -45,7 +45,7 @@ export default function DuplicateResolverDialog({ open, onClose, fileData, onRes
                             </Box>
                             <Typography variant="body2" fontWeight="700" noWrap>Title: {primaryAsset.title}</Typography>
 
-                            {/* 🚀 List all locations where this file exists */}
+                            {/*  List all locations where this file exists */}
                             <Box sx={{ mt: 1.5 }}>
                                 <Typography variant="caption" color="textSecondary" display="block" sx={{ mb: 0.5 }}>Locations:</Typography>
                                 {existingAssets.map((asset, idx) => (

@@ -1,0 +1,18 @@
+production:
+  # 🚀 The Master Switch: Set this in your server environment to toggle CDNs instantly
+  # Accepts: 'fastly', 'cloudflare', or 'akamai'
+  active_provider: <%= ENV.fetch('CDN_PROVIDER', 'fastly') %>
+
+  fastly:
+    service_id: <%= ENV['FASTLY_SERVICE_ID'] %>
+    api_key: <%= ENV['FASTLY_API_KEY'] %>
+
+  cloudflare:
+    zone_id: <%= ENV['CLOUDFLARE_ZONE_ID'] %>
+    api_token: <%= ENV['CLOUDFLARE_API_TOKEN'] %>
+
+  akamai:
+    host: <%= ENV['AKAMAI_HOST'] %>
+    client_token: <%= ENV['AKAMAI_CLIENT_TOKEN'] %>
+    client_secret: <%= ENV['AKAMAI_CLIENT_SECRET'] %>
+    access_token: <%= ENV['AKAMAI_ACCESS_TOKEN'] %>

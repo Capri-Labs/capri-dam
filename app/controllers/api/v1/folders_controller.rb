@@ -41,7 +41,7 @@ module Api
           # Strictly fetch only ACTIVE top-level items
           @folders = Folder.active.where(parent_id: nil)
 
-          # 🚀 FIX 1: Eager load the active_version to prevent database N+1 performance issues
+          #  FIX 1: Eager load the active_version to prevent database N+1 performance issues
           @assets = Asset.active.where(folder_id: nil).includes(:active_version)
 
           breadcrumbs = [{ id: 'root', name: 'Home' }]
@@ -52,7 +52,7 @@ module Api
           # Filter subfolders and assets by active scope
           @folders = Folder.active.where(parent_id: current_folder.id)
 
-          # 🚀 FIX 1: Eager load the active_version
+          #  FIX 1: Eager load the active_version
           @assets = Asset.active.where(folder_id: current_folder.id).includes(:active_version)
 
           breadcrumbs = build_breadcrumbs(current_folder)
@@ -77,10 +77,19 @@ module Api
         end
       end
 
+      # POST /api/v1/folders/:id/purge_cdn
+      def purge_folder_cdn
+        CdnInvalidationWorker.perform_async('folder', params[:id])
+        render json: { message: "Folder CDN purge initiated." }, status: :ok
+      end
+
       # DELETE /api/v1/folders/:id (Soft Delete)
       def destroy
         @folder = Folder.find(params[:id])
         @folder.soft_delete
+
+        # Auto-purge CDN: Instantly drop deprecated assets from edge nodes
+        CdnInvalidationWorker.perform_async('folder', @folder.id)
         render json: { success: true, message: "Folder moved to bin" }
       end
 
@@ -94,6 +103,9 @@ module Api
       # DELETE /api/v1/folders/:id/permanent
       def permanent_delete
         @folder = Folder.trashed.find(params[:id])
+
+        # Auto-purge CDN: Ensure edge nodes drop these files permanently
+        CdnInvalidationWorker.perform_async('folder', @folder.id)
 
         # Note: If deleting a folder should also permanently delete all assets inside it,
         # you need `dependent: :destroy` on your Folder model's `has_many :assets` association.

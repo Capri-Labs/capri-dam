@@ -18,7 +18,7 @@ class Api::V1::CollectionsController < ApplicationController
     # Base scope
     @collections = Collection.active
 
-    # 🚀 Temporal Time-Travel Filter
+    #  Temporal Time-Travel Filter
     if params[:as_of].present?
       target_date = Time.zone.parse(params[:as_of]).end_of_day
       @collections = @collections.where('created_at <= ?', target_date)
@@ -68,7 +68,7 @@ class Api::V1::CollectionsController < ApplicationController
 
   # GET /api/v1/collections/:slug
   def show
-    # 🚀 Temporal Time-Travel Filter for nested assets
+    #  Temporal Time-Travel Filter for nested assets
     as_of_date = params[:as_of].present? ? Time.zone.parse(params[:as_of]).end_of_day : Time.current
 
     render json: @collection.as_json(

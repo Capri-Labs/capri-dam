@@ -63,7 +63,7 @@ class Admin::UsersController < ApplicationController
 
   # PATCH /admin/users/:id
   def update
-    # 🚨 Enterprise Security: Prevent users from demoting themselves or non-admins from changing admin status
+    #  Enterprise Security: Prevent users from demoting themselves or non-admins from changing admin status
     if params[:user][:admin].present? && !current_user.admin?
       return render json: { success: false, errors: ["Unauthorized to modify admin status"] }, status: :forbidden
     end

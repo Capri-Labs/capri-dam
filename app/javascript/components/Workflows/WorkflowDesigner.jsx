@@ -34,7 +34,7 @@ export default function WorkflowDesigner({ initialData, onSave, onCancel }) {
     const [folders, setFolders] = useState([]);
     const [status, setStatus] = useState({ loading: false });
 
-    // 🚨 FIX PART 1: Fetch dictionaries ONLY ONCE on mount
+    //  FIX PART 1: Fetch dictionaries ONLY ONCE on mount
     useEffect(() => {
         fetch('/admin/users.json')
             .then(res => res.json())
@@ -57,7 +57,7 @@ export default function WorkflowDesigner({ initialData, onSave, onCancel }) {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    // 🚨 FIX PART 2: Hydrate UI only after folders are loaded
+    //  FIX PART 2: Hydrate UI only after folders are loaded
     useEffect(() => {
         if (!initialData) {
             setNodes([

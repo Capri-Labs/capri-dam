@@ -68,8 +68,7 @@ module Api
 
             @version.update!(properties: @version.properties.merge('storage_path' => staging_path.to_s))
 
-            # Trigger the worker (Ensure your worker updates the version's storage_path when done)
-            AssetProcessorWorker.perform_async(@version.id, staging_path.to_s)
+            dispatch_asset_workers(@asset, @version, staging_path)
           end
 
           render json: { id: @asset.uuid, status: 'processing' }, status: :accepted
@@ -80,7 +79,7 @@ module Api
 
       # GET /api/v1/assets/:id/versions
       def versions
-        # 🚀 FIX: Use find_by!(uuid: params[:id]) instead of find()
+        #  FIX: Use find_by!(uuid: params[:id]) instead of find()
         @asset = Asset.includes(asset_versions: :created_by).find(params[:id])
 
         history = @asset.asset_versions.order(version_number: :desc).map do |v|
@@ -96,6 +95,30 @@ module Api
         end
 
         render json: { versions: history }, status: :ok
+      end
+
+      # GET /api/v1/assets/:id/audit_trail
+      def audit_trail
+        @asset = Asset.find(params[:id])
+        # Fetch versions in descending order for the timeline
+        versions = @asset.asset_versions.order(version_number: :desc)
+
+        render json: {
+          audit_trail: versions.map do |v|
+            {
+              id: v.id,
+              version_number: v.version_number,
+              action_type: v.action_type,
+              created_at: v.created_at,
+              # Depending on your user setup, you might want to map this to a real name later
+              created_by_id: v.created_by_id,
+              # 🚀 THE FIX: Explicitly expose the properties hash for delta calculations
+              properties: v.properties
+            }
+          end
+        }, status: :ok
+      rescue ActiveRecord::RecordNotFound
+        render json: { error: 'Asset not found' }, status: :not_found
       end
 
       # POST /api/v1/assets/:id/versions/:version_id/restore
@@ -136,11 +159,11 @@ module Api
         }
 
         # ==========================================
-        # 🚀 PHYSICAL IMAGE BAKING PIPELINE
+        #  PHYSICAL IMAGE BAKING PIPELINE
         # ==========================================
         source_path = base_properties['storage_path'].to_s
 
-        # 🚀 SMART PATH RESOLUTION:
+        #  SMART PATH RESOLUTION:
         # Check if it's already a valid absolute path first (like a tmp file).
         # If not, assume it's a relative path from the DAM root.
         file_path = if File.exist?(source_path)
@@ -173,7 +196,7 @@ module Api
           s = editor_state[:adjustments][:saturation].to_i
           cmd.modulate "100,#{100 + s},100" if s != 0
 
-          # 🚀 3. FULL POWER: Inject raw ImageMagick commands
+          #  3. FULL POWER: Inject raw ImageMagick commands
           if editor_state[:custom_cli].present?
             # Splits commands like "-monochrome -charcoal 2" and injects them
             editor_state[:custom_cli].scan(/-[a-z]+[^-]*/).each do |arg|
@@ -198,7 +221,7 @@ module Api
 
           case params[:save_mode]
           when 'new'
-            # 🚀 MODE 1: FORK (Save as Copy from UI)
+            #  MODE 1: FORK (Save as Copy from UI)
             # BEHAVIOR: Original stays at V5 in Folder A. New Copy is created at V5 in Folder B.
             folder_id_for_copy = params[:target_folder_id].present? ? target_folder_id : @asset.folder_id
 
@@ -222,16 +245,19 @@ module Api
             )
 
             @new_asset.update!(active_version_id: @new_version.id)
-            AssetProcessorWorker.perform_async(@new_version.id, new_file_tmp_path.to_s) if defined?(AssetProcessorWorker)
+
+            dispatch_asset_workers(@new_asset, @new_version, new_file_tmp_path)
 
             render json: format_asset(@new_asset), status: :created
 
           when 'overwrite'
-            # 🚀 MODE 2: DESTRUCTIVE (Overwrite Current)
+            #  MODE 2: DESTRUCTIVE (Overwrite Current)
             # BEHAVIOR: Bakes new file into the existing version row.
             if active_v.present?
               active_v.update!(properties: new_version_props)
               AssetProcessorWorker.perform_async(active_v.id, new_file_tmp_path.to_s) if defined?(AssetProcessorWorker)
+              # Dispatch the background purge to the CDN
+              CdnInvalidationWorker.perform_async('asset', @asset.uuid)
             else
               @new_version = @asset.asset_versions.create!(
                 version_number: 1,
@@ -240,7 +266,7 @@ module Api
                 properties: new_version_props
               )
               @asset.update!(active_version_id: @new_version.id)
-              AssetProcessorWorker.perform_async(@new_version.id, new_file_tmp_path.to_s) if defined?(AssetProcessorWorker)
+              dispatch_asset_workers(@asset, @new_version, new_file_tmp_path)
             end
 
             # If a folder was selected during an overwrite, move the existing asset
@@ -249,7 +275,7 @@ module Api
             render json: format_asset(@asset), status: :ok
 
           when 'version'
-            # 🚀 MODE 3: BRANCH (Save as New Version from UI)
+            #  MODE 3: BRANCH (Save as New Version from UI)
             new_version_num = @asset.next_version_number
 
             if is_moving
@@ -271,7 +297,7 @@ module Api
               )
 
               @new_asset.update!(active_version_id: @new_version.id)
-              AssetProcessorWorker.perform_async(@new_version.id, new_file_tmp_path.to_s) if defined?(AssetProcessorWorker)
+              dispatch_asset_workers(@new_asset, @new_version, new_file_tmp_path)
 
               render json: format_asset(@new_asset), status: :created
             else
@@ -284,12 +310,19 @@ module Api
               )
 
               @asset.update!(active_version_id: @new_version.id)
-              AssetProcessorWorker.perform_async(@new_version.id, new_file_tmp_path.to_s) if defined?(AssetProcessorWorker)
+              dispatch_asset_workers(@asset, @new_version, new_file_tmp_path)
 
               render json: format_asset(@asset), status: :ok
             end
           end
         end
+      end
+
+      # POST /api/v1/assets/:id/purge_cdn
+      def purge_cdn
+        @asset = Asset.find(params[:id])
+        CdnInvalidationWorker.perform_async('asset', @asset.uuid)
+        render json: { message: "CDN purge initiated." }, status: :ok
       end
 
       # DELETE /api/v1/assets/:id
@@ -461,6 +494,18 @@ module Api
       end
 
       private
+
+      #Centralized worker dispatch for "Zero-Noise" post-processing
+      def dispatch_asset_workers(target_asset, target_version, file_path)
+        # 1. Process the physical image binary
+        AssetProcessorWorker.perform_async(target_version.id, file_path.to_s) if defined?(AssetProcessorWorker)
+
+        # 2. Invalidate the edge cache for the CDN URL
+        CdnInvalidationWorker.perform_async('asset', target_asset.uuid) if defined?(CdnInvalidationWorker)
+
+        # 3. Sync the latest relational metadata to the Edge KV store
+        EdgeMetadataSyncWorker.perform_async(target_asset.uuid) if defined?(EdgeMetadataSyncWorker)
+      end
 
       def authenticate_hybrid!
         return if user_signed_in?

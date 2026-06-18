@@ -16,7 +16,7 @@ class Users::SessionsController < Devise::SessionsController
     # 2. Check if the user exists and the password is correct
     if resource&.valid_password?(params[:user][:password])
 
-      # 🚨 PHASE 1: Intercept if forced password change is required
+      #  PHASE 1: Intercept if forced password change is required
       if resource.try(:force_password_change?)
         render json: {
           success: true,
@@ -40,7 +40,7 @@ class Users::SessionsController < Devise::SessionsController
     end
   end
 
-  # 🚨 NEW: Endpoint to process the mandatory password change
+  #   Endpoint to process the mandatory password change
   def force_password_update
     resource = User.find_by(email: params[:email])
 

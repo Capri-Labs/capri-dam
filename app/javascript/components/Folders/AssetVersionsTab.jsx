@@ -6,13 +6,13 @@ import {
 import { Restore, FolderZip } from '@mui/icons-material';
 import { useNotify } from '../../context/NotificationContext';
 
-// 🚀 Removed isVisible from props
+//  Removed isVisible from props
 export default function AssetVersionsTab({ asset, onAssetUpdated }) {
     const notify = useNotify();
     const [versions, setVersions] = useState([]);
     const [isLoadingVersions, setIsLoadingVersions] = useState(false);
 
-    // 🚀 Fetch versions automatically when the component mounts
+    //  Fetch versions automatically when the component mounts
     useEffect(() => {
         if (asset) {
             fetchVersions();
@@ -56,7 +56,7 @@ export default function AssetVersionsTab({ asset, onAssetUpdated }) {
         }
     };
 
-    // 🚀 Removed the early return for isVisible
+    //  Removed the early return for isVisible
 
     return (
         <Box sx={{ p: 4 }}>

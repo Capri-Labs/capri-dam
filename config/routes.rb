@@ -96,10 +96,14 @@ Rails.application.routes.draw do
       get 'search', to: 'search#index'
       post 'copilot/search', to: 'copilots#search'
 
+      # Dynamic CDN Configuration Routes
+      get 'cdn_configurations', to: 'cdn_configurations#index'
+      put 'cdn_configurations', to: 'cdn_configurations#update'
+
       # The global bin endpoint
       get 'bin', to: 'assets#bin'
 
-      # 🚀 THE FIXED ASSETS BLOCK
+      #  THE FIXED ASSETS BLOCK
       resources :assets do
         collection do
           post :check_hashes # Now correctly responds to POST /api/v1/assets/check_hashes
@@ -113,6 +117,7 @@ Rails.application.routes.draw do
 
           # Versioning Endpoints
           get :versions
+          get :audit_trail
           post 'versions/:version_id/restore', to: 'assets#restore_version', as: :restore_version
         end
         # AI Embedding specific to this asset

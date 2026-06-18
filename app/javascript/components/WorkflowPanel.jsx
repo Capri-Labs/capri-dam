@@ -96,7 +96,7 @@ export default function WorkflowPanel({ assetId, assetThumb, onClose, onWorkflow
     const myPendingTask = history.tasks?.find(t => t.is_pending && t.is_current_user);
 
     return (
-        <Box sx={{ bgcolor: '#f8fafc', height: '100%', display: 'flex', flexDirection: 'column', marginTop: '4rem' }}>
+        <Box sx={{ bgcolor: '#f8fafc', height: '100%', display: 'flex', flexDirection: 'column' }}>
 
             {/* FIXED HEADER */}
             <Box sx={{ p: 3, bgcolor: '#ffffff', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

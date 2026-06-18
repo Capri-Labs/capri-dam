@@ -16,13 +16,13 @@ RSpec.describe 'Settings', type: :request do
           storage_config: {
             type: :object,
             properties: {
-              # 🚨 CRITICAL: The required discriminator
+              #  CRITICAL: The required discriminator
               provider: { type: :string, enum: ['aws', 'cloudflare', 'digitalocean', 'google'], example: 'cloudflare' },
 
               # Provider-specific credentials
               region: { type: :string, example: 'auto' },
               access_key: { type: :string, example: 'KXA01BC2...' },
-              # 🚨 Handle masked placeholder
+              #  Handle masked placeholder
               secret_key: { type: :string, example: '********', description: 'Will not overwrite if passed as masking placeholder' },
               bucket: { type: :string, example: 'dam-production-assets' },
               endpoint: { type: :string, nullable: true, example: 'https://<accountid>.r2.cloudflarestorage.com' }

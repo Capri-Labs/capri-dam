@@ -2,7 +2,7 @@ class AssetVersion < ApplicationRecord
   belongs_to :asset
   belongs_to :created_by, class_name: 'User', optional: true
 
-  # 🚀 The physical file is now attached HERE, making versions immutable
+  #  The physical file is now attached HERE, making versions immutable
   has_one_attached :file
 
   validates :version_number, presence: true, uniqueness: { scope: :asset_id }

@@ -17,7 +17,7 @@ class WorkflowEvaluatorService
       if should_trigger?(workflow)
         Rails.logger.info "🎯 MATCH: Asset #{@asset.id} passed folder rules for Workflow '#{workflow.name}'"
 
-        # 🚨 Hand off to the Initiator Worker, explicitly passing the exact Workflow ID
+        #  Hand off to the Initiator Worker, explicitly passing the exact Workflow ID
         WorkflowInitiatorWorker.perform_async(@asset.id, workflow.id)
       else
         Rails.logger.info "⏭️ SKIP: Asset #{@asset.id} excluded from Workflow '#{workflow.name}' by folder rules."

@@ -8,7 +8,7 @@ module Types
     field :properties, Types::JsonType, null: true, description: "Raw JSONB custom attributes (Campaign, Region, etc)."
     field :created_at, GraphQL::Types::ISO8601DateTime, null: false
 
-    # 🚨 TEMPORARILY REMOVE OR COMMENT OUT THESE TWO LINES:
+    #  TEMPORARILY REMOVE OR COMMENT OUT THESE TWO LINES:
     # field :parent_folder, Types::FolderType, null: true, complexity: 5
     # field :active_workflows, [Types::WorkflowType], null: false, complexity: 10
 

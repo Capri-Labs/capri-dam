@@ -17,7 +17,7 @@ class AssetProcessorWorker
   end
 
   def perform(version_id, staging_path = nil)
-    # 🚀 ARCHITECTURE FIX: We process the Version, not the Parent Asset
+    #  ARCHITECTURE FIX: We process the Version, not the Parent Asset
     version = AssetVersion.find_by(id: version_id)
     return unless version
 
@@ -45,7 +45,7 @@ class AssetProcessorWorker
         # --- TYPE-SPECIFIC METADATA ---
         if mime_type.start_with?('image/')
           extract_image_metadata(staging_path, extracted_meta)
-          # 🚀 NEW: Extract all visible text
+          #   Extract all visible text
           extract_text_from_image(staging_path, extracted_meta)
         elsif mime_type == 'application/pdf'
           extract_pdf_metadata(staging_path, extracted_meta)
@@ -55,7 +55,7 @@ class AssetProcessorWorker
 
         # --- DYNAMIC STORAGE PATH ---
         safe_ext = Marcel::Magic.new(mime_type)&.extensions&.first || "bin"
-        # 🚀 FIX: Path now includes version number to prevent overwriting
+        #  FIX: Path now includes version number to prevent overwriting
         file_path = "#{asset.uuid}/v#{version.version_number}_#{SecureRandom.hex(4)}.#{safe_ext}"
 
         # --- EXECUTE STORAGE ---
@@ -73,7 +73,7 @@ class AssetProcessorWorker
       # --- SAVE & MERGE ---
       current_props = version.properties.is_a?(Hash) ? version.properties : {}
 
-      # 🚀 ARCHITECTURE FIX: Save the physical properties to the VERSION
+      #  ARCHITECTURE FIX: Save the physical properties to the VERSION
       version.update!(
         properties: current_props.merge(extracted_meta).merge(
           storage_path: file_path,
@@ -136,7 +136,7 @@ class AssetProcessorWorker
     meta[:color_palette] = []
   end
 
-  # 🚀 NEW: OCR Text Extraction Block
+  #   OCR Text Extraction Block
   def extract_text_from_image(path, meta)
     require 'rtesseract'
 

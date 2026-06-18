@@ -167,7 +167,7 @@ export default function CollectionDetail({ slug, onBack }) {
                     </Box>
 
                     <Stack direction="row" spacing={2}>
-                        {/* 🚀 Trigger AI Map */}
+                        {/*  Trigger AI Map */}
                         <Button variant="outlined" startIcon={<AutoFixHigh />} onClick={() => setMapDialogOpen(true)} sx={{ borderColor: '#e3e8ef', color: '#0ea5e9' }}>
                             View AI Map
                         </Button>
@@ -194,7 +194,7 @@ export default function CollectionDetail({ slug, onBack }) {
                 </Box>
             </Paper>
 
-            {/* 🚀 Automated TDM Compliance Sweep Display */}
+            {/*  Automated TDM Compliance Sweep Display */}
             {collection.compliance_violations && collection.compliance_violations.length > 0 && (
                 <Paper elevation={0} sx={{ p: 2, mb: 4, borderRadius: 2, bgcolor: '#fef2f2', border: '1px solid #fca5a5', display: 'flex', alignItems: 'flex-start' }}>
                     <Shield sx={{ color: '#ef4444', mr: 2, mt: 0.5 }} />

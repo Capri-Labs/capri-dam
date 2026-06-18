@@ -40,7 +40,7 @@ export default function AssetViewer({ asset: initialAsset, open, onClose, onAsse
     const notify = useNotify();
     const [asset, setAsset] = useState(initialAsset);
     const [editorOpen, setEditorOpen] = useState(false);
-    const [tagsEditorOpen, setTagsEditorOpen] = useState(false); // 🚀 State for Tags Editor
+    const [tagsEditorOpen, setTagsEditorOpen] = useState(false); //  State for Tags Editor
     const [pinOpen, setPinOpen] = useState(false);
     const [activeTab, setActiveTab] = useState(0);
     const [downloadMenuAnchor, setDownloadMenuAnchor] = useState(null);
@@ -130,7 +130,7 @@ export default function AssetViewer({ asset: initialAsset, open, onClose, onAsse
 
                     <Divider orientation="vertical" variant="middle" flexItem sx={{ borderColor: 'rgba(255,255,255,0.2)', mx: 1 }} />
 
-                    {/* 🚀 MOVED: Launch Image Editor Button */}
+                    {/*  MOVED: Launch Image Editor Button */}
                     {isImage && (
                         <Button
                             variant="outlined"
@@ -213,7 +213,7 @@ export default function AssetViewer({ asset: initialAsset, open, onClose, onAsse
                                 <Chip label={asset.status || 'Pending'} color={asset.status === 'approved' ? 'success' : 'warning'} size="small" />
                             </Box>
 
-                            {/* 🚀 NEW: The Tags Entry Point matching your UI mock */}
+                            {/*   The Tags Entry Point matching your UI mock */}
                             <Paper
                                 onClick={() => setTagsEditorOpen(true)}
                                 elevation={0}
@@ -271,14 +271,14 @@ export default function AssetViewer({ asset: initialAsset, open, onClose, onAsse
                             </Paper>
                         </TabPanel>
 
-                        {/* 🚀 TAB 2 */}
+                        {/*  TAB 2 */}
                         <TabPanel value={activeTab} index={1}>
                             <AssetVersionsTab asset={asset}
                                               onAssetUpdated={onAssetUpdated} />
                         </TabPanel>
-                        {/* 🚀 TAB 3 */}
+                        {/*  TAB 3 */}
                         <TabPanel value={activeTab} index={2}><AssetStatisticsTab asset={asset} /></TabPanel>
-                        {/* 🚀 TAB 4 */}
+                        {/*  TAB 4 */}
                         <TabPanel value={activeTab} index={3}><AssetAuditTab asset={asset} /></TabPanel>
                         {/* TAB 5: WORKFLOWS */}
                         <TabPanel value={activeTab} index={4}>
@@ -300,16 +300,16 @@ export default function AssetViewer({ asset: initialAsset, open, onClose, onAsse
                     open={editorOpen}
                     onClose={() => setEditorOpen(false)}
                     onSave={(updatedAsset) => {
-                        // 🚀 1. Update the local view instantly (Dialog stays open!)
+                        //  1. Update the local view instantly (Dialog stays open!)
                         setAsset(updatedAsset);
 
-                        // 🚀 2. Quietly notify the parent to update the background grid
+                        //  2. Quietly notify the parent to update the background grid
                         if (onAssetUpdated) onAssetUpdated(updatedAsset);
                     }}
                 />
             )}
 
-            {/* 🚀 Tags Editor Overlay */}
+            {/*  Tags Editor Overlay */}
             <AssetTagsEditor
                 asset={asset}
                 open={tagsEditorOpen}

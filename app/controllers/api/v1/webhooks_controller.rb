@@ -40,7 +40,7 @@ class Api::V1::WebhooksController < ApplicationController
 
     # SecureCompare mitigates timing attacks
     unless ActiveSupport::SecurityUtils.secure_compare(signature_header, expected_signature)
-      Rails.logger.warn("🚨 Security Alert: Invalid webhook signature attempt on connector #{connector.id}")
+      Rails.logger.warn(" Security Alert: Invalid webhook signature attempt on connector #{connector.id}")
       head :unauthorized
     end
   end

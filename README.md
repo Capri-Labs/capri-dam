@@ -1,4 +1,4 @@
-# Headless DAM (Digital Asset Management)
+# Capri DAM (Digital Asset Management)
 
 A modern, high-performance Headless DAM built with a decoupled architecture. This platform utilizes **Ruby on Rails** for 
 the management engine and **React** for a dynamic, responsive user interface.
@@ -15,7 +15,7 @@ the management engine and **React** for a dynamic, responsive user interface.
 
 ---
 
-## 🚀 Getting Started
+##  Getting Started
 
 The project uses a `Makefile` to automate system dependencies and application configuration. Follow these steps in order.
 
@@ -36,7 +36,7 @@ make setup
 Run the following to start the Rails server and the React compiler simultaneously:
 
 ```bash
-make dev
+yarn build && make dev 
 ```
 ### Available CommandsCommand
 
@@ -44,7 +44,7 @@ make dev
 
 `make setup`	Installs dependencies and prepares the database.
 
-`make dev`	Starts the application and JS watcher.
+`yarn build && make dev`	Starts the application and JS watcher.
 
 `make db-setup`	Specifically repairs or resets the PostgreSQL database.
 

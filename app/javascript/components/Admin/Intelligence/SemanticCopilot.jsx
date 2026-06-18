@@ -35,7 +35,7 @@ export default function SemanticCopilot() {
         try {
             const csrfToken = document.querySelector('[name="csrf-token"]')?.content;
 
-            // 🚀 WIRED TO RAILS BACKEND
+            //  WIRED TO RAILS BACKEND
             const response = await fetch('/api/v1/copilot/search', {
                 method: 'POST',
                 headers: {
@@ -72,7 +72,7 @@ export default function SemanticCopilot() {
                     <AutoAwesome sx={{ color: '#8e24aa', mr: 1.5 }} />
                     <Box>
                         <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>Semantic Copilot</Typography>
-                        {/* 🚀 UPDATED MODEL LABEL */}
+                        {/*  UPDATED MODEL LABEL */}
                         <Typography variant="caption" color="textSecondary">Powered by HuggingFace all-MiniLM-L6-v2</Typography>
                     </Box>
                 </Box>
@@ -144,7 +144,7 @@ export default function SemanticCopilot() {
                             <Grid item xs={12} sm={6} md={4} xl={3} key={asset.id}>
                                 <Card elevation={0} sx={{ border: '1px solid #e2e8f0', borderRadius: 3, transition: 'all 0.2s', '&:hover': { borderColor: '#8e24aa', transform: 'translateY(-2px)', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' } }}>
                                     <Box sx={{ position: 'relative' }}>
-                                        {/* 🚀 WIRED TO RAILS file_url */}
+                                        {/*  WIRED TO RAILS file_url */}
                                         <CardMedia component="img" height="180" image={asset.file_url} alt={asset.properties?.title || asset.original_filename} sx={{ objectFit: 'cover' }} />
                                     </Box>
                                     <CardContent sx={{ p: 2, pb: 1 }}>

@@ -46,7 +46,7 @@ class IngestionWorker
   def rate_limited?(connector)
     key = "throttle:connector:#{connector.id}"
 
-    # 🚀 REFINEMENT 1: Use Sidekiq's thread-safe Redis pool
+    #  REFINEMENT 1: Use Sidekiq's thread-safe Redis pool
     is_limited = false
 
     Sidekiq.redis do |redis|
@@ -78,7 +78,7 @@ class IngestionWorker
     { 'approved' => false, 'reason' => 'AI Gateway Timeout/Error' }
   end
 
-  # 🚀 REFINEMENT 2: Fetch the vector embedding for Semantic Routing
+  #  REFINEMENT 2: Fetch the vector embedding for Semantic Routing
   def fetch_vector_embedding(text_to_embed)
     uri = URI.parse("http://localhost:8000/api/embed_query")
     request = Net::HTTP::Post.new(uri, 'Content-Type' => 'application/json')
@@ -110,7 +110,7 @@ class IngestionWorker
       connector.increment!(:assets_imported)
       connector.update!(last_sync: Time.current)
 
-      # 🚀 REFINEMENT 3: Hand off to the Smart Router
+      #  REFINEMENT 3: Hand off to the Smart Router
       if asset.vector_embedding.present?
         SmartCollectionRouterWorker.perform_async(asset.id)
       end

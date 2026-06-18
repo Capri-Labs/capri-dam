@@ -2,7 +2,7 @@ class WorkflowInitiatorWorker
   include Sidekiq::Worker
   sidekiq_options queue: 'workflow', retry: 3
 
-  # 🚨 CHANGED: Now accepts workflow_id instead of trigger_event
+  #  CHANGED: Now accepts workflow_id instead of trigger_event
   def perform(asset_id, workflow_id)
     Rails.logger.info "🕵️ WorkflowInitiator started | Asset: #{asset_id} | Blueprint: #{workflow_id}"
 
@@ -12,7 +12,7 @@ class WorkflowInitiatorWorker
       return
     end
 
-    # 🚨 Fetch the exact blueprint passed by the Evaluator Service
+    #  Fetch the exact blueprint passed by the Evaluator Service
     workflow = Workflow.find_by(id: workflow_id, status: 'active')
     if workflow.nil?
       Rails.logger.warn "⚠️ ABORT: Blueprint #{workflow_id} is missing or inactive."
@@ -38,7 +38,7 @@ class WorkflowInitiatorWorker
       if first_step
         instance.update!(current_step_id: first_step.id)
         generate_tasks_for_step(instance, first_step)
-        Rails.logger.info "🚀 Workflow #{workflow.name} initiated successfully for Asset #{asset.id}"
+        Rails.logger.info " Workflow #{workflow.name} initiated successfully for Asset #{asset.id}"
       else
         # Safety Valve: Workflow has no steps
         instance.update!(status: 'completed', completed_at: Time.current)

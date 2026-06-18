@@ -178,7 +178,7 @@ export default function ImageEditorDialog({ asset, open, onClose, onSave }) {
         setIsSaving(true);
         const payload = {
             save_mode: saveMode, // 'version', 'overwrite', or 'new'
-            target_folder_id: targetFolder?.id, // 🚀 Pass the selected folder ID
+            target_folder_id: targetFolder?.id, //  Pass the selected folder ID
             adjustments,
             crop_aspect: cropAspect,
             filter: activeFilter,
@@ -201,10 +201,10 @@ export default function ImageEditorDialog({ asset, open, onClose, onSave }) {
             if (response.ok) {
                 const updatedAsset = await response.json();
 
-                // 🚀 Safely get the folder name for the toast message
+                //  Safely get the folder name for the toast message
                 const targetFolderName = targetFolder?.name || 'current folder';
 
-                // 🚀 Dynamic Notifications based on mode
+                //  Dynamic Notifications based on mode
                 if (saveMode === 'new') {
                     notify(`Saved as copy to ${targetFolderName}.`, "success");
                 } else if (saveMode === 'overwrite') {
@@ -282,7 +282,7 @@ export default function ImageEditorDialog({ asset, open, onClose, onSave }) {
                             }}
                         />
 
-                        {/* 🚀 The Visual Focal Point Reticle */}
+                        {/*  The Visual Focal Point Reticle */}
                         <Box
                             onMouseDown={handleFocalDragStart}
                             sx={{
@@ -301,7 +301,7 @@ export default function ImageEditorDialog({ asset, open, onClose, onSave }) {
                         />
 
 
-                        {/* 🚀 Targeting Overlay Instructions */}
+                        {/*  Targeting Overlay Instructions */}
                         {isTargetingFocal && (
                             <Box sx={{ position: 'absolute', inset: 0, bgcolor: 'rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', borderRadius: 1 }}>
                                 <Typography variant="h6" color="#fff" fontWeight="700" sx={{ textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>
@@ -387,7 +387,7 @@ export default function ImageEditorDialog({ asset, open, onClose, onSave }) {
 
                                     <Divider sx={{ my: 2 }} />
 
-                                    {/* 🚀 NEW: Manual Focal Point Sliders */}
+                                    {/*   Manual Focal Point Sliders */}
                                     <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
                                         <Typography variant="caption" color="textSecondary">Focal Point X</Typography>
                                         <Typography variant="caption" fontWeight="700">{Math.round(focalPoint.x)}%</Typography>
@@ -591,7 +591,7 @@ export default function ImageEditorDialog({ asset, open, onClose, onSave }) {
                                     label={<Typography variant="body2" fontWeight="500">Save as New Version</Typography>}
                                     sx={{ m: 0, p: 0.5, mb: 0.5, border: '1px solid', borderColor: saveMode === 'version' ? '#4f46e5' : 'transparent', borderRadius: 1, bgcolor: saveMode === 'version' ? '#eef2ff' : 'transparent' }}
                                 />
-                                {/* 🚀 NEW: Overwrite Current Mode */}
+                                {/*   Overwrite Current Mode */}
                                 <FormControlLabel
                                     value="overwrite" control={<Radio size="small" color="error" />}
                                     label={<Typography variant="body2" fontWeight="500" color="error">Overwrite Current</Typography>}
@@ -605,7 +605,7 @@ export default function ImageEditorDialog({ asset, open, onClose, onSave }) {
                             </RadioGroup>
                         </FormControl>
 
-                        {/* 🚀 Target Folder Selector (Appears for both Copy and New Version) */}
+                        {/*  Target Folder Selector (Appears for both Copy and New Version) */}
                         {(saveMode === 'new' || saveMode === 'version') && (
                             <Box sx={{ mt: 2 }}>
                                 <Autocomplete

@@ -7,7 +7,7 @@ import {
 import { ExpandMore, Person, Shield } from '@mui/icons-material';
 
 export default function ApprovalNode({ data, isConnectable }) {
-    // 🚨 We expect the parent canvas to pass 'users' and 'groups' into the data object!
+    //  We expect the parent canvas to pass 'users' and 'groups' into the data object!
     const { step = {}, updateNodeData, users = [], groups = [] } = data;
     const [advancedOpen, setAdvancedOpen] = useState(false);
 

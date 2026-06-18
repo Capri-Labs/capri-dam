@@ -7,22 +7,20 @@ import {
 import {
     Home, ContentCopy, DeleteOutlined, CreateNewFolder,
     CloudUpload, AutoAwesome, AccountTree, CollectionsBookmark,
-    Psychology, DynamicFeed, Translate, Security, Difference, Style
+    Psychology, DynamicFeed, Translate, Security, Difference, Style,
+    CloudSync, Publish, DeleteSweep // 🚀 NEW ICONS FOR EDGE OPS
 } from '@mui/icons-material';
 import { useNotify } from '../../context/NotificationContext';
-
-// 🚀 Import the new Upload Workspace
 import UploadWorkspace from './UploadWorkspace';
 
 export default function ExplorerTopBar({
                                            currentId, viewData, viewMode, setViewMode, handleNavigate, handleCopyPath,
                                            isAllSelected, handleSelectAll, hasSelection, handleDeleteSelected,
                                            handleRestoreSelected, handlePermanentDelete, setOpenFolderDialog,
-                                           onUploadSuccess // Renamed from handleFileUpload for clarity
+                                           onUploadSuccess
                                        }) {
     const notify = useNotify();
 
-    // 🚀 State for the Upload Workspace Overlay
     const [uploadWorkspaceOpen, setUploadWorkspaceOpen] = useState(false);
 
     // Dropdown Anchors
@@ -30,23 +28,27 @@ export default function ExplorerTopBar({
     const [workflowMenuAnchor, setWorkflowMenuAnchor] = useState(null);
     const [collectionMenuAnchor, setCollectionMenuAnchor] = useState(null);
 
-    const [aiMenuAnchor, setAiMenuAnchor] = useState(null);
-    const handleAiMenuClick = (event) => setAiMenuAnchor(event.currentTarget);
-    const handleAiMenuClose = () => setAiMenuAnchor(null);
+    // Edge Operations Menu Anchor
+    const [edgeMenuAnchor, setEdgeMenuAnchor] = useState(null);
 
-    const handleAutoEnrich = () => {
-        handleAiMenuClose();
-        notify("Assets queued for LangChain semantic enrichment.", "info");
+    // AI Handlers
+    const handleAiMenuClose = () => setSmartMenuAnchor(null);
+    const handleAutoEnrich = () => { handleAiMenuClose(); notify("Assets queued for LangChain semantic enrichment.", "info"); };
+    const handleTdmScan = () => { handleAiMenuClose(); notify("Scanning for visual and cryptographic duplicates...", "warning"); };
+    const handleSmartOrganize = () => { handleAiMenuClose(); notify("AI is analyzing vectors to cluster items into sub-folders.", "info"); };
+
+    //  Edge Operations Handlers
+    const handleEdgeMenuClose = () => setEdgeMenuAnchor(null);
+
+    const handleForceSync = () => {
+        handleEdgeMenuClose();
+        // In reality, this will POST the selectedItems to your Rails backend
+        notify("Metadata force-sync to Edge KV initiated.", "success");
     };
 
-    const handleTdmScan = () => {
-        handleAiMenuClose();
-        notify("Scanning for visual and cryptographic duplicates...", "warning");
-    };
-
-    const handleSmartOrganize = () => {
-        handleAiMenuClose();
-        notify("AI is analyzing vectors to cluster items into sub-folders.", "info");
+    const handleForcePurge = () => {
+        handleEdgeMenuClose();
+        notify("Edge cache invalidation queued for selected items.", "warning");
     };
 
     return (
@@ -93,13 +95,40 @@ export default function ExplorerTopBar({
 
                 {hasSelection && viewMode === 'active' && (
                     <>
+                        {/* 🚀 NEW: Edge Operations Button & Menu */}
+                        <Button
+                            variant="outlined"
+                            onClick={(e) => setEdgeMenuAnchor(e.currentTarget)}
+                            startIcon={<CloudSync />}
+                            sx={{ textTransform: 'none', borderRadius: '8px', color: '#059669', borderColor: '#a7f3d0', bgcolor: '#ecfdf5', '&:hover': { bgcolor: '#d1fae5' } }}
+                        >
+                            Edge CDN Ops
+                        </Button>
+                        <Menu
+                            anchorEl={edgeMenuAnchor}
+                            open={Boolean(edgeMenuAnchor)}
+                            onClose={handleEdgeMenuClose}
+                            PaperProps={{ elevation: 3, sx: { mt: 1, minWidth: 260, borderRadius: 2 } }}
+                        >
+                            <MenuItem onClick={handleForceSync}>
+                                <ListItemIcon><Publish fontSize="small" sx={{ color: '#059669' }} /></ListItemIcon>
+                                <ListItemText primary="Sync Metadata to CDN" secondary="Force push JSON to Edge KV" />
+                            </MenuItem>
+                            <Divider />
+                            <MenuItem onClick={handleForcePurge}>
+                                <ListItemIcon><DeleteSweep fontSize="small" sx={{ color: '#ea580c' }} /></ListItemIcon>
+                                <ListItemText primary="Purge Edge Cache" secondary="Invalidate delivery nodes globally" />
+                            </MenuItem>
+                        </Menu>
+
+                        {/* Existing Workflow Menu */}
                         <Button
                             variant="outlined"
                             onClick={(e) => setWorkflowMenuAnchor(e.currentTarget)}
                             startIcon={<Psychology />}
                             sx={{ textTransform: 'none', borderRadius: '8px', color: '#4f46e5', borderColor: '#c7d2fe' }}
                         >
-                            Trigger Workflow
+                            Workflow
                         </Button>
                         <Menu
                             anchorEl={workflowMenuAnchor}
@@ -109,38 +138,15 @@ export default function ExplorerTopBar({
                         >
                             <MenuItem onClick={() => { setWorkflowMenuAnchor(null); notify("Localization agent triggered.", "info"); }}>
                                 <ListItemIcon><Translate fontSize="small" color="primary" /></ListItemIcon>
-                                <ListItemText primary="Global Localization Pipeline" secondary="Auto-translate copy & metadata" />
+                                <ListItemText primary="Global Localization" secondary="Auto-translate copy & metadata" />
                             </MenuItem>
                             <MenuItem onClick={() => { setWorkflowMenuAnchor(null); notify("Brand safety check initialized.", "warning"); }}>
                                 <ListItemIcon><Security fontSize="small" sx={{ color: '#10b981' }} /></ListItemIcon>
-                                <ListItemText primary="Brand & License Guard" secondary="Validate usage terms & watermark signatures" />
+                                <ListItemText primary="Brand & License Guard" secondary="Validate usage terms & signatures" />
                             </MenuItem>
                         </Menu>
 
-                        <Button
-                            variant="outlined"
-                            onClick={(e) => setCollectionMenuAnchor(e.currentTarget)}
-                            startIcon={<CollectionsBookmark />}
-                            sx={{ textTransform: 'none', borderRadius: '8px', color: '#0ea5e9', borderColor: '#bae6fd' }}
-                        >
-                            Collections
-                        </Button>
-                        <Menu
-                            anchorEl={collectionMenuAnchor}
-                            open={Boolean(collectionMenuAnchor)}
-                            onClose={() => setCollectionMenuAnchor(null)}
-                            PaperProps={{ elevation: 3, sx: { mt: 1, minWidth: 260, borderRadius: 2 } }}
-                        >
-                            <MenuItem onClick={() => { setCollectionMenuAnchor(null); notify("Staged assets compiled into new collection.", "success"); }}>
-                                <ListItemIcon><CollectionsBookmark fontSize="small" sx={{ color: '#0ea5e9' }} /></ListItemIcon>
-                                <ListItemText primary="Add to Collection" secondary="Assign to static workspace bucket" />
-                            </MenuItem>
-                            <MenuItem onClick={() => { setCollectionMenuAnchor(null); notify("Smart vector sync tracking enabled.", "success"); }}>
-                                <ListItemIcon><DynamicFeed fontSize="small" sx={{ color: '#8b5cf6' }} /></ListItemIcon>
-                                <ListItemText primary="Create Dynamic Smart Collection" secondary="Auto-compile using vector similarity" />
-                            </MenuItem>
-                        </Menu>
-
+                        {/* Existing Smart Actions Menu */}
                         <Button
                             variant="contained"
                             onClick={(e) => setSmartMenuAnchor(e.currentTarget)}
@@ -152,7 +158,7 @@ export default function ExplorerTopBar({
                         <Menu
                             anchorEl={smartMenuAnchor}
                             open={Boolean(smartMenuAnchor)}
-                            onClose={() => setSmartMenuAnchor(null)}
+                            onClose={handleAiMenuClose}
                             PaperProps={{ elevation: 3, sx: { mt: 1, minWidth: 220, borderRadius: 2 } }}
                         >
                             <MenuItem onClick={handleAutoEnrich}>
@@ -188,8 +194,6 @@ export default function ExplorerTopBar({
                         <Button variant="outlined" startIcon={<CreateNewFolder />} onClick={() => setOpenFolderDialog(true)} sx={{ textTransform: 'none', borderRadius: '8px', bgcolor: 'white' }}>
                             New Folder
                         </Button>
-
-                        {/* 🚀 Updated Upload Button to open the Workspace instead of raw input */}
                         <Button
                             variant="contained"
                             startIcon={<CloudUpload />}
@@ -202,12 +206,7 @@ export default function ExplorerTopBar({
                 )}
             </Stack>
 
-            {/* 🚀 Render the Upload Workspace as a full-screen Dialog */}
-            <Dialog
-                fullScreen
-                open={uploadWorkspaceOpen}
-                onClose={() => setUploadWorkspaceOpen(false)}
-            >
+            <Dialog fullScreen open={uploadWorkspaceOpen} onClose={() => setUploadWorkspaceOpen(false)}>
                 <UploadWorkspace
                     folderId={currentId === 'root' ? null : currentId}
                     onClose={() => setUploadWorkspaceOpen(false)}

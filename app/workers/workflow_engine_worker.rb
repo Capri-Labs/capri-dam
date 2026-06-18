@@ -15,7 +15,7 @@ class WorkflowEngineWorker
       # SCENARIO A: The user REJECTED the asset.
       # -------------------------------------------------------------
       if task.status == 'rejected'
-        # 🚨 Changed 'failed' to 'rejected' so the Dashboard API picks it up
+        #  Changed 'failed' to 'rejected' so the Dashboard API picks it up
         instance.update!(status: 'rejected', completed_at: Time.current)
 
         # Update the asset status
@@ -92,7 +92,7 @@ class WorkflowEngineWorker
   def generate_tasks_for_step(instance, step)
     users = resolve_assignees(step) || []
 
-    # 🚨 Restored the Failsafe if primary assignees are missing
+    #  Restored the Failsafe if primary assignees are missing
     if users.empty?
       Rails.logger.warn "⚠️ No valid assignees found for step '#{step.title}'. Using workflow fallback."
       workflow = instance.workflow
@@ -120,13 +120,13 @@ class WorkflowEngineWorker
         status: 'pending'
       )
 
-      # 🚨 Trigger the Email/In-App Notification Dispatcher
+      #  Trigger the Email/In-App Notification Dispatcher
       TaskNotificationWorker.perform_async(task.id)
     end
   end
 
   def resolve_assignees(step)
-    # 🚨 Changed 'User' to 'user' to match the database payload
+    #  Changed 'User' to 'user' to match the database payload
     if step.assignee_type == 'user'
       [User.find_by(id: step.assignee_id)].compact
     elsif step.assignee_type == 'group'

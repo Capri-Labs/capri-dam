@@ -123,7 +123,7 @@ function WorkspaceApp() {
                             </Typography>
                         </Box>
 
-                        {/* 🚀 Temporal Time-Travel Picker */}
+                        {/*  Temporal Time-Travel Picker */}
                         <Tooltip title="Time-Travel Audit Viewer: See workspace exactly as it was on this date">
                             <TextField
                                 type="date"

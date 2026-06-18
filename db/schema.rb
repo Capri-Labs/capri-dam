@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_11_155813) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_16_165408) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -110,6 +110,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_11_155813) do
     t.bigint "user_id"
     t.index ["auditable_type", "auditable_id", "ip_address", "user_id"], name: "idx_audit_logs_polymorphic_ip_user"
     t.index ["user_id"], name: "index_audit_logs_on_user_id"
+  end
+
+  create_table "cdn_configurations", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.boolean "is_active"
+    t.string "provider"
+    t.text "settings"
+    t.datetime "updated_at", null: false
   end
 
   create_table "collection_assets", force: :cascade do |t|

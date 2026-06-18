@@ -55,7 +55,7 @@ RSpec.describe 'Workflows', type: :request do
               description: { type: :string, example: 'Legal and Art review for new products' },
               trigger_type: { type: :string, enum: ['on_ingest', 'manual'], example: 'on_ingest' },
 
-              # 🚨 CRITICAL: Documenting the nested graph data from React Flow
+              #  CRITICAL: Documenting the nested graph data from React Flow
               graph_data: {
                 type: :object,
                 properties: {
@@ -65,7 +65,7 @@ RSpec.describe 'Workflows', type: :request do
                 }
               },
 
-              # 🚨 CRITICAL: Documenting standard Rails nested attributes
+              #  CRITICAL: Documenting standard Rails nested attributes
               workflow_steps_attributes: {
                 type: :array,
                 items: {

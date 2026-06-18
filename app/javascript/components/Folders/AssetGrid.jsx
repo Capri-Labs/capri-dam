@@ -12,27 +12,31 @@ import {
     Chip
 } from '@mui/material';
 import {
-    PictureAsPdf, VideoFile, InsertDriveFile, PlayCircleFilled, Visibility, InfoOutlined, PushPinOutlined,
-    CheckCircle, HourglassEmpty, Autorenew, EditNote
+    PictureAsPdf,
+    VideoFile,
+    InsertDriveFile,
+    InfoOutlined,
+    PushPinOutlined,
+    CheckCircle,
+    HourglassEmpty,
+    Autorenew,
+    EditNote,
+    ErrorOutlined,          // Properly imported Error icon
+    ImageSearchOutlined,   // Find Duplicates / Similar
+    AutoAwesomeOutlined    // AI Actions / Smart Tags
 } from '@mui/icons-material';
-import * as PropTypes from "prop-types";
 
-function ErrorOutline(props) {
-    return null;
-}
-
-ErrorOutline.propTypes = {fontSize: PropTypes.string};
-// 🚀 Helper to map your database enums to UI colors and icons
+// Helper to map your database enums to UI colors and icons
 const getStatusConfig = (status) => {
     switch (status) {
         case 'approved': return { color: 'success', icon: <CheckCircle fontSize="small" />, label: 'Approved' };
         case 'in_review': return { color: 'warning', icon: <HourglassEmpty fontSize="small" />, label: 'In Review' };
         case 'pending': return { color: 'warning', icon: <HourglassEmpty fontSize="small" />, label: 'Pending' };
         case 'processing': return { color: 'info', icon: <Autorenew fontSize="small" sx={{ animation: 'spin 2s linear infinite' }} />, label: 'Processing' };
-        case 'rejected': return { color: 'error', icon: <ErrorOutline fontSize="small" />, label: 'Rejected' };
-        case 'failed': return { color: 'error', icon: <ErrorOutline fontSize="small" />, label: 'Failed' };
+        case 'rejected': return { color: 'error', icon: <ErrorOutlined fontSize="small" />, label: 'Rejected' };
+        case 'failed': return { color: 'error', icon: <ErrorOutlined fontSize="small" />, label: 'Failed' };
         case 'draft': return { color: 'default', icon: <EditNote fontSize="small" />, label: 'Draft' };
-        default: return null; // 'ready' or null will just show nothing to keep the UI clean
+        default: return null;
     }
 };
 
@@ -40,7 +44,7 @@ export default function AssetGrid({ assets, viewMode, selectedItems, toggleSelec
     const formatFileName = (name) => (!name ? "Unknown" : name.length > 15 ? `${name.substring(0, 15)}...` : name);
 
     return (
-        <ImageList gap={16} sx={{ mb: 8, gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr)) !important', overflow: 'visible' }}>
+        <ImageList gap={16} variant="quilted" sx={{ mb: 8, gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr)) !important', overflow: 'visible' }}>
             {assets.map((asset) => {
                 const displayName = asset.name || asset.title || "Unknown File";
                 let metadata = {};
@@ -70,7 +74,7 @@ export default function AssetGrid({ assets, viewMode, selectedItems, toggleSelec
                             />
                         </Box>
 
-                        {/* 🚀 Status Badge (Top Right) */}
+                        {/* Status Badge (Top Right) */}
                         {statusConfig && (
                             <Box sx={{ position: 'absolute', top: 8, right: 8, zIndex: 10 }}>
                                 <Chip
@@ -110,9 +114,46 @@ export default function AssetGrid({ assets, viewMode, selectedItems, toggleSelec
                         </Box>
 
                         <ImageListItemBar
-                            title={<Tooltip title={displayName} placement="top-start"><Typography variant="subtitle2" sx={{ fontWeight: 600 }}>{formatFileName(displayName)}</Typography></Tooltip>}
+                            title={
+                            <Tooltip title={displayName} placement="top-start">
+                                <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                                    {formatFileName(displayName)}
+                                </Typography>
+                            </Tooltip>}
                             actionIcon={
                                 <Stack direction="row" spacing={0} sx={{ pr: 1 }}>
+
+                                    {/* AI Actions */}
+                                    <Tooltip title="AI Analysis">
+                                        <IconButton
+                                            size="small"
+                                            sx={{ color: 'rgba(255, 255, 255, 0.7)', '&:hover': { color: '#ffffff' } }}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                console.log("Trigger AI Analysis for:", asset.id);
+                                                // Trigger your LangChain/FastAPI workflow here
+                                            }}
+                                        >
+                                            <AutoAwesomeOutlined fontSize="small" />
+                                        </IconButton>
+                                    </Tooltip>
+
+                                    {/* Find Duplicates */}
+                                    <Tooltip title="Find Similar Assets">
+                                        <IconButton
+                                            size="small"
+                                            sx={{ color: 'rgba(255, 255, 255, 0.7)', '&:hover': { color: '#ffffff' } }}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                console.log("Find duplicates for:", asset.id);
+                                                // Trigger semantic or hash-based duplicate search here
+                                            }}
+                                        >
+                                            <ImageSearchOutlined fontSize="small" />
+                                        </IconButton>
+                                    </Tooltip>
+
+                                    {/* Existing: Pin */}
                                     <Tooltip title="Pin to Collection">
                                         <IconButton
                                             size="small"
@@ -125,6 +166,8 @@ export default function AssetGrid({ assets, viewMode, selectedItems, toggleSelec
                                             <PushPinOutlined fontSize="small" />
                                         </IconButton>
                                     </Tooltip>
+
+                                    {/* Existing: Details */}
                                     <Tooltip title="View Details">
                                         <IconButton
                                             size="small"
@@ -137,6 +180,7 @@ export default function AssetGrid({ assets, viewMode, selectedItems, toggleSelec
                                             <InfoOutlined fontSize="small" />
                                         </IconButton>
                                     </Tooltip>
+
                                 </Stack>
                             }
                         />

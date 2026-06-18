@@ -70,7 +70,7 @@ class Asset < ApplicationRecord
       asset_uuid: self.id
     }.to_json
 
-    # 🚀 FIX: Initialize connection locally or use a central initializer
+    #  FIX: Initialize connection locally or use a central initializer
     # You should have a config/initializers/redis.rb, but this will stop the crash:
     redis = Redis.new(url: ENV.fetch("REDIS_URL", "redis://localhost:6379/0"))
     redis.publish('ai_gateway_events', payload)

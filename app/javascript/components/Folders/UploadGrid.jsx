@@ -62,7 +62,7 @@ export default function UploadGrid({
                                             icon={<WarningAmber fontSize="small" />}
                                             label="Duplicate Found"
                                             size="small"
-                                            onClick={() => onOpenDuplicate(fData)} // 🚀 Trigger Overlay
+                                            onClick={() => onOpenDuplicate(fData)} //  Trigger Overlay
                                             sx={{ bgcolor: '#fef3c7', color: '#d97706', fontWeight: 700, mb: 1.5, cursor: 'pointer', '&:hover': { bgcolor: '#fde68a' } }}
                                         />
                                     )}

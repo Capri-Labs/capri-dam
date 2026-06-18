@@ -95,7 +95,7 @@ export default function ConnectorCard({ conn, onEdit, onToggleStatus }) {
 
             <Divider sx={{ my: 2 }} />
 
-            {/* 🚀 NEW WEBHOOK CONFIGURATION SECTION */}
+            {/*  NEW WEBHOOK CONFIGURATION SECTION */}
             <Box sx={{ p: 2, bgcolor: '#f8fafc', borderRadius: 2, border: '1px dashed #cbd5e1', mb: 2 }}>
                 <Typography variant="caption" sx={{ fontWeight: 700, color: '#475569', display: 'flex', alignItems: 'center', gap: 0.5, mb: 1.5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     <Webhook fontSize="small" /> Event Webhook Link
