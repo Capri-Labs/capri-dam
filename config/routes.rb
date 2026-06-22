@@ -103,6 +103,10 @@ Rails.application.routes.draw do
       # The global bin endpoint
       get 'bin', to: 'assets#bin'
 
+      # Edge Operations
+      post 'edge_operations/sync', to: 'edge_operations#sync'
+      post 'edge_operations/purge', to: 'edge_operations#purge'
+
       #  THE FIXED ASSETS BLOCK
       resources :assets do
         collection do
@@ -158,11 +162,20 @@ Rails.application.routes.draw do
           post :test_connection
           post :pre_flight_analysis
         end
+        member do
+          post :start_migration
+        end
       end
       post 'webhooks/connectors/:connector_id/receive', to: 'webhooks#receive'
 
-      resources :ingestion_items, only: [:show, :update]
-      resources :ingestion_batches, only: [:create, :index]
+      resources :ingestion_items, only: [:show, :update, :index]
+      resources :ingestion_batches, only: [:create, :index, :show] do
+        member do
+          post :commit
+          post :abort
+          get  :report
+        end
+      end
 
       # Workflows API
       get 'workflows/dashboard', to: 'workflow_tasks#dashboard'

@@ -110,6 +110,25 @@ export default function SystemConnectors() {
         }
     };
 
+    const handleStartMigration = async (connector) => {
+        if (!window.confirm(`Start migration from ${connector.name}? This will pull assets from the source system.`)) return;
+        try {
+            const csrfToken = document.querySelector('[name="csrf-token"]').content;
+            const res = await fetch(`/api/v1/system_connectors/${connector.id}/start_migration`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken }
+            });
+            const data = await res.json();
+            if (res.ok) {
+                notify(`Migration started: ${data.batch?.name}. Track progress in the Pipeline tab.`, 'success');
+            } else {
+                notify(data.error || 'Failed to start migration.', 'error');
+            }
+        } catch {
+            notify('Network error.', 'error');
+        }
+    };
+
     const isFormValid = formData.name && formData.endpoint && (formData.id || formData.auth_token);
 
     return (
@@ -129,6 +148,7 @@ export default function SystemConnectors() {
                                 conn={conn}
                                 onEdit={handleOpenEdit}
                                 onToggleStatus={handleToggleStatus}
+                                onStartMigration={handleStartMigration}
                             />
                         </Grid>
                     ))}

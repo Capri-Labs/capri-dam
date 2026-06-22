@@ -2,51 +2,243 @@ import React from 'react';
 import {
     Dialog, DialogTitle, DialogContent, DialogActions,
     TextField, Switch, FormControlLabel, MenuItem,
-    CircularProgress, Alert, IconButton, Box, Typography, Stack, Button, Grid
+    CircularProgress, Alert, IconButton, Box, Typography,
+    Stack, Button, Grid, Divider
 } from '@mui/material';
-import { Close, CheckCircleOutlined, ErrorOutlined, AutoFixHigh } from '@mui/icons-material';
+import { Close, CheckCircleOutlined, ErrorOutlined, AutoFixHigh, Info } from '@mui/icons-material';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Provider Definitions — drives the dropdown and per-provider field rendering
+// ─────────────────────────────────────────────────────────────────────────────
+const DAM_PROVIDERS = {
+    aem: {
+        label: 'Adobe Experience Manager (AEM)',
+        category: 'Enterprise DAM',
+        fields: [
+            { key: 'endpoint', label: 'AEM Author Instance URL', placeholder: 'https://author.yourdomain.com', required: true },
+            { key: 'auth_token', label: 'Bearer / Service Account Token', type: 'password', required: true },
+        ],
+        hint: 'Use the AEM Assets API. Ensure the service user has /api/assets read access.'
+    },
+    bynder: {
+        label: 'Bynder',
+        category: 'Enterprise DAM',
+        fields: [
+            { key: 'endpoint', label: 'Bynder Portal URL', placeholder: 'https://yourcompany.bynder.com', required: true },
+            { key: 'auth_token', label: 'OAuth2 Access Token', type: 'password', required: true },
+        ],
+        hint: 'Generate an access token in Bynder → Settings → API Tokens.'
+    },
+    widen: {
+        label: 'Acquia DAM (Widen)',
+        category: 'Enterprise DAM',
+        fields: [
+            { key: 'endpoint', label: 'Widen API Base URL', placeholder: 'https://api.widencollective.com', required: true },
+            { key: 'auth_token', label: 'Widen API Key', type: 'password', required: true },
+        ],
+        hint: 'Found in Widen Admin → API Keys.'
+    },
+    canto: {
+        label: 'Canto',
+        category: 'Mid-Market DAM',
+        fields: [
+            { key: 'endpoint', label: 'Canto Instance URL', placeholder: 'https://yourco.canto.com', required: true },
+            { key: 'auth_token', label: 'JWT Bearer Token', type: 'password', required: true },
+        ],
+        hint: 'Use Canto OAuth2 to generate a JWT access token.'
+    },
+    mediavalet: {
+        label: 'MediaValet',
+        category: 'Enterprise DAM',
+        fields: [
+            { key: 'endpoint', label: 'MediaValet API URL', placeholder: 'https://api.mediavalet.com', required: true },
+            { key: 'auth_token', label: 'Azure AD OAuth2 Bearer Token', type: 'password', required: true },
+        ],
+        hint: 'Register an app in Azure AD, grant DAM permissions, and use the access token.'
+    },
+    brandfolder: {
+        label: 'Brandfolder',
+        category: 'Mid-Market DAM',
+        fields: [
+            { key: 'endpoint', label: 'Brandfolder API URL', placeholder: 'https://brandfolder.com', required: true },
+            { key: 'auth_token', label: 'API Key', type: 'password', required: true },
+            { key: 'brandfolder_key', label: 'Brandfolder Slug', placeholder: 'my-brand', required: true, helperText: 'The URL slug of your Brandfolder' },
+        ],
+        hint: 'Find your API key in Account Settings → API Keys.'
+    },
+    cloudinary: {
+        label: 'Cloudinary',
+        category: 'Media Platform',
+        fields: [
+            { key: 'cloud_name', label: 'Cloud Name', placeholder: 'my-cloud', required: true },
+            { key: 'access_key', label: 'API Key', required: true },
+            { key: 'secret_key', label: 'API Secret', type: 'password', required: true },
+        ],
+        hint: 'Found in Cloudinary Console → Settings → Access Keys.'
+    },
+    nuxeo: {
+        label: 'Nuxeo Platform',
+        category: 'Enterprise DAM',
+        fields: [
+            { key: 'endpoint', label: 'Nuxeo Server URL', placeholder: 'https://your-nuxeo.cloud.nuxeo.com/nuxeo', required: true },
+            { key: 'auth_token', label: 'Bearer Token', type: 'password', helperText: 'Leave blank to use username/password below' },
+            { key: 'username', label: 'Username (alt. to token)', helperText: 'Used for Basic auth if no token provided' },
+            { key: 'password', label: 'Password', type: 'password' },
+        ],
+        hint: 'Supports both Bearer token and username/password (Basic auth) for older instances.'
+    },
+    aprimo: {
+        label: 'Aprimo DAM',
+        category: 'Enterprise DAM',
+        fields: [
+            { key: 'endpoint', label: 'Aprimo API URL', placeholder: 'https://yourco.aprimo.com', required: true },
+            { key: 'auth_token', label: 'OAuth2 Bearer Token', type: 'password', required: true },
+        ],
+        hint: 'Use Aprimo → Settings → API Configuration to generate an OAuth token.'
+    },
+    extensis: {
+        label: 'Extensis Portfolio',
+        category: 'Mid-Market DAM',
+        fields: [
+            { key: 'endpoint', label: 'Portfolio Server URL', placeholder: 'https://portfolio.yourcompany.com', required: true },
+            { key: 'auth_token', label: 'Session Token / API Key', type: 'password', required: true },
+        ],
+        hint: 'Authenticate via Portfolio Server API and use the session token.'
+    },
+    sharepoint: {
+        label: 'Microsoft SharePoint / OneDrive',
+        category: 'File Repository',
+        fields: [
+            { key: 'endpoint', label: 'Microsoft Graph Drive URL', placeholder: 'https://graph.microsoft.com/v1.0/drives/{driveId}', required: true },
+            { key: 'auth_token', label: 'Azure AD Bearer Token', type: 'password', required: true },
+            { key: 'folder_path', label: 'Root Folder Path', placeholder: 'root/Marketing Assets', helperText: 'Relative path inside the drive (leave blank for root)' },
+        ],
+        hint: 'Register an app in Azure AD with Files.Read.All permission and use the access token.'
+    },
+    legacy_s3: {
+        label: 'AWS S3 Bucket',
+        category: 'Cloud Storage',
+        fields: [
+            { key: 'endpoint', label: 'S3 Endpoint (leave blank for AWS)', placeholder: 'https://s3.amazonaws.com' },
+            { key: 'auth_token', label: 'Secret Access Key', type: 'password', required: true, helperText: 'Use access_key as the token field here' },
+            { key: 'region', label: 'Region', placeholder: 'us-east-1', required: true },
+            { key: 'bucket', label: 'Bucket Name', required: true },
+        ],
+        hint: 'For migrating a legacy S3 bucket. Ensure the IAM role has s3:GetObject and s3:ListBucket.'
+    },
+    ftp: {
+        label: 'FTP / SFTP Server',
+        category: 'Legacy Server',
+        fields: [
+            { key: 'host', label: 'Host / IP Address', placeholder: 'ftp.yourcompany.com', required: true },
+            { key: 'port', label: 'Port', placeholder: '21' },
+            { key: 'username', label: 'Username', required: true },
+            { key: 'password', label: 'Password', type: 'password', required: true },
+            { key: 'remote_path', label: 'Remote Path', placeholder: '/assets/marketing', helperText: 'Root directory to scan for assets' },
+        ],
+        hint: 'Use FTP for legacy on-premises DAM exports. SFTP support requires configuration.'
+    },
+};
+
+const CATEGORIES = [...new Set(Object.values(DAM_PROVIDERS).map(p => p.category))];
 
 export default function ConnectorDialog({
-                                            open, onClose, formData, setFormData, onSave, onTest,
-                                            isSaving, isTesting, testResult, isFormValid
-                                        }) {
+    open, onClose, formData, setFormData, onSave, onTest,
+    isSaving, isTesting, testResult, isFormValid
+}) {
+    const providerDef = DAM_PROVIDERS[formData.provider_type?.toLowerCase()] || null;
+
+    const updateExtra = (key, value) => {
+        setFormData(prev => ({ ...prev, [key]: value }));
+    };
+
     return (
-        <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+        <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
             <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: 700, borderBottom: '1px solid #e2e8f0', pb: 2, pt: 3, px: 3 }}>
                 {formData.id ? 'Configure System Connector' : 'Establish System Connector'}
                 <IconButton onClick={onClose} size="small"><Close /></IconButton>
             </DialogTitle>
-            <DialogContent sx={{ p: 3 }}>
 
+            <DialogContent sx={{ p: 3 }}>
                 {testResult && (
-                    <Alert severity={testResult.type} sx={{ mb: 3, borderRadius: 2 }} icon={testResult.type === 'success' ? <CheckCircleOutlined /> : <ErrorOutlined />}>
+                    <Alert severity={testResult.type} sx={{ mb: 2, borderRadius: 2 }}
+                        icon={testResult.type === 'success' ? <CheckCircleOutlined /> : <ErrorOutlined />}>
                         {testResult.message}
                     </Alert>
                 )}
 
-                <Stack spacing={3} sx={{ mt: 1 }}>
-                    <TextField select fullWidth label="Source System Provider" value={formData.provider_type} onChange={(e) => setFormData({ ...formData, provider_type: e.target.value })}>
-                        <MenuItem value="AEM">Adobe Experience Manager (Assets API)</MenuItem>
-                        <MenuItem value="S3">AWS S3 Bucket</MenuItem>
-                        <MenuItem value="SHAREPOINT">Microsoft SharePoint</MenuItem>
+                <Stack spacing={2.5}>
+                    {/* Provider Selector — grouped by category */}
+                    <TextField select fullWidth label="Source System / DAM Provider"
+                        value={formData.provider_type || ''}
+                        onChange={(e) => setFormData({ ...formData, provider_type: e.target.value })}>
+                        {CATEGORIES.map(cat => [
+                            <MenuItem key={`cat-${cat}`} disabled sx={{ opacity: 0.6, fontWeight: 700, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.08em', pt: 1 }}>
+                                ── {cat}
+                            </MenuItem>,
+                            ...Object.entries(DAM_PROVIDERS)
+                                .filter(([, def]) => def.category === cat)
+                                .map(([key, def]) => (
+                                    <MenuItem key={key} value={key.toUpperCase()} sx={{ pl: 3 }}>
+                                        {def.label}
+                                    </MenuItem>
+                                ))
+                        ])}
                     </TextField>
 
-                    <TextField fullWidth label="Connection Name" placeholder="e.g., Global Marketing AEM" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
+                    {/* Provider hint */}
+                    {providerDef?.hint && (
+                        <Alert severity="info" icon={<Info fontSize="small" />} sx={{ py: 0.5, borderRadius: 2 }}>
+                            {providerDef.hint}
+                        </Alert>
+                    )}
 
-                    <TextField fullWidth label="API Endpoint / URI" placeholder="https://author-instance.adobecqms.net/api/assets" value={formData.endpoint} onChange={(e) => setFormData({ ...formData, endpoint: e.target.value })} />
+                    <TextField fullWidth label="Connection Name"
+                        placeholder={`e.g., Global Marketing ${providerDef?.label || 'DAM'}`}
+                        value={formData.name || ''}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
 
-                    <TextField fullWidth type="password" label="Authentication Token (Leave blank to keep existing)" value={formData.auth_token} onChange={(e) => setFormData({ ...formData, auth_token: e.target.value })} helperText={formData.id ? "Only enter a token if you need to update the credentials." : ""} />
+                    {/* Provider-specific credential fields */}
+                    {providerDef && (
+                        <Box sx={{ p: 2, bgcolor: '#f8fafc', borderRadius: 2, border: '1px solid #e2e8f0' }}>
+                            <Typography variant="caption" sx={{ fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', mb: 1.5 }}>
+                                Credentials
+                            </Typography>
+                            <Grid container spacing={2}>
+                                {providerDef.fields.map(field => (
+                                    <Grid item xs={12} md={field.key === 'auth_token' || field.key.includes('url') || field.key.includes('endpoint') ? 12 : 6} key={field.key}>
+                                        <TextField
+                                            fullWidth
+                                            label={field.label}
+                                            placeholder={field.placeholder}
+                                            type={field.type || 'text'}
+                                            required={field.required}
+                                            helperText={field.helperText}
+                                            value={formData[field.key] || ''}
+                                            onChange={(e) => updateExtra(field.key, e.target.value)}
+                                            sx={{ bgcolor: 'white' }}
+                                        />
+                                    </Grid>
+                                ))}
+                            </Grid>
+                        </Box>
+                    )}
 
+                    <Divider />
+
+                    {/* TDM + Rate Limits */}
                     <Box sx={{ p: 2, bgcolor: '#f8fafc', borderRadius: 2, border: '1px solid #e2e8f0' }}>
                         <FormControlLabel
-                            control={<Switch checked={formData.tdm_sanitation} onChange={(e) => setFormData({ ...formData, tdm_sanitation: e.target.checked })} color="secondary" />}
+                            control={<Switch checked={formData.tdm_sanitation ?? true}
+                                onChange={(e) => setFormData({ ...formData, tdm_sanitation: e.target.checked })}
+                                color="secondary" />}
                             label={
                                 <Box>
                                     <Typography variant="subtitle2" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                        <AutoFixHigh fontSize="small" sx={{ color: '#8b5cf6' }} /> Apply TDM Sanitization
+                                        <AutoFixHigh fontSize="small" sx={{ color: '#8b5cf6' }} /> Apply AI / TDM Sanitization
                                     </Typography>
                                     <Typography variant="caption" color="textSecondary">
-                                        Route incoming assets through the AI Gateway to extract standard schemas.
+                                        Route each asset through the AI Gateway for metadata normalization and compliance scanning.
                                     </Typography>
                                 </Box>
                             }
@@ -55,51 +247,39 @@ export default function ConnectorDialog({
 
                     <Grid container spacing={2}>
                         <Grid item xs={6}>
-                            <TextField
-                                type="number"
-                                label="Max Concurrent Threads"
+                            <TextField type="number" fullWidth label="Max Concurrent Threads"
                                 value={formData.concurrency_limit || 3}
                                 onChange={(e) => setFormData({ ...formData, concurrency_limit: parseInt(e.target.value) })}
-                            />
+                                helperText="Parallel download threads" />
                         </Grid>
                         <Grid item xs={6}>
-                            <TextField
-                                type="number"
-                                label="Max Requests/Sec"
+                            <TextField type="number" fullWidth label="Max Requests/Sec (Rate Limit)"
                                 value={formData.rps_limit || 5}
                                 onChange={(e) => setFormData({ ...formData, rps_limit: parseInt(e.target.value) })}
-                            />
+                                helperText="Source system throttle" />
                         </Grid>
                     </Grid>
                 </Stack>
             </DialogContent>
+
             <DialogActions sx={{ p: 3, borderTop: '1px solid #e2e8f0', bgcolor: '#f8fafc', display: 'flex', gap: 1 }}>
-                <Button
-                    onClick={onTest}
-                    variant="outlined"
+                <Button onClick={onTest} variant="outlined"
                     disabled={!isFormValid || isTesting}
                     startIcon={isTesting ? <CircularProgress size={16} /> : null}
-                    sx={{ textTransform: 'none', borderRadius: '8px', color: '#475569', borderColor: '#cbd5e1', bgcolor: '#ffffff' }}
-                >
+                    sx={{ textTransform: 'none', borderRadius: '8px' }}>
                     {isTesting ? 'Pinging...' : 'Test Connection'}
                 </Button>
                 <Box sx={{ flexGrow: 1 }} />
-                <Button
-                    onClick={onClose}
-                    sx={{ textTransform: 'none', color: '#475569', fontWeight: 600 }}
-                >
-                    Cancel
-                </Button>
-                <Button
-                    onClick={onSave}
-                    variant="contained"
+                <Button onClick={onClose} sx={{ textTransform: 'none', color: '#475569', fontWeight: 600 }}>Cancel</Button>
+                <Button onClick={onSave} variant="contained"
                     disabled={!isFormValid || isSaving}
                     startIcon={isSaving ? <CircularProgress size={16} color="inherit" /> : null}
-                    sx={{ textTransform: 'none', borderRadius: '8px', boxShadow: 'none', bgcolor: '#0ea5e9', '&:hover': { bgcolor: '#0284c7' } }}
-                >
+                    sx={{ textTransform: 'none', borderRadius: '8px', boxShadow: 'none', bgcolor: '#0ea5e9', '&:hover': { bgcolor: '#0284c7' } }}>
                     {isSaving ? 'Saving...' : (formData.id ? 'Save Configuration' : 'Initialize Connection')}
                 </Button>
             </DialogActions>
         </Dialog>
     );
 }
+
+export { DAM_PROVIDERS };

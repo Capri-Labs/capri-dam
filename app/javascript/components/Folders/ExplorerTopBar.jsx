@@ -40,15 +40,45 @@ export default function ExplorerTopBar({
     //  Edge Operations Handlers
     const handleEdgeMenuClose = () => setEdgeMenuAnchor(null);
 
+    // Inside ExplorerTopBar.jsx
+
     const handleForceSync = () => {
         handleEdgeMenuClose();
-        // In reality, this will POST the selectedItems to your Rails backend
-        notify("Metadata force-sync to Edge KV initiated.", "success");
+
+        fetch('/api/v1/edge_operations/sync', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            // Assuming your React context tracks selection in this shape
+            body: JSON.stringify({
+                folders: viewData.selectedItems?.folders || [],
+                assets: viewData.selectedItems?.assets || []
+            })
+        })
+            .then(res => res.json())
+            .then(data => {
+                if(data.success) {
+                    notify("Metadata force-sync to Edge KV initiated.", "success");
+                }
+            });
     };
 
     const handleForcePurge = () => {
         handleEdgeMenuClose();
-        notify("Edge cache invalidation queued for selected items.", "warning");
+
+        fetch('/api/v1/edge_operations/purge', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                folders: viewData.selectedItems?.folders || [],
+                assets: viewData.selectedItems?.assets || []
+            })
+        })
+            .then(res => res.json())
+            .then(data => {
+                if(data.success) {
+                    notify("Edge cache invalidation queued for selected items.", "warning");
+                }
+            });
     };
 
     return (

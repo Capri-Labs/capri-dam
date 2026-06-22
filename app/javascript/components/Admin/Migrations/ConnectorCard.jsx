@@ -4,35 +4,32 @@ import {
     Chip, Divider, Stack, Switch, Tooltip, Button, IconButton
 } from '@mui/material';
 import {
-    AccountTree,
-    Storage,
-    CloudSync,
-    AutoFixHigh,
-    SettingsInputComponent,
-    ContentCopy,
-    Webhook,
-    QueryStats
+    AccountTree, Storage, CloudSync, AutoFixHigh,
+    SettingsInputComponent, ContentCopy, Webhook, QueryStats, RocketLaunch
 } from '@mui/icons-material';
-import {useNotify} from "../../../context/NotificationContext";
+import { useNotify } from "../../../context/NotificationContext";
+import { DAM_PROVIDERS } from './ConnectorDialog';
 
-const PROVIDER_LABELS = {
-    'AEM': 'Adobe Experience Manager',
-    'S3': 'AWS S3 Bucket',
-    'SHAREPOINT': 'Microsoft SharePoint'
+const getProviderLabel = (type) =>
+    DAM_PROVIDERS[type?.toLowerCase()]?.label || type || 'Unknown Provider';
+
+const getSystemIcon = (type) => {
+    const t = type?.toLowerCase();
+    if (t === 'aem')          return <AccountTree sx={{ color: '#ef4444', fontSize: 32 }} />;
+    if (t === 'legacy_s3')    return <Storage sx={{ color: '#f59e0b', fontSize: 32 }} />;
+    if (t === 'bynder')       return <CloudSync sx={{ color: '#0ea5e9', fontSize: 32 }} />;
+    if (t === 'widen')        return <CloudSync sx={{ color: '#7c3aed', fontSize: 32 }} />;
+    if (t === 'cloudinary')   return <Storage sx={{ color: '#3b82f6', fontSize: 32 }} />;
+    if (t === 'sharepoint')   return <Storage sx={{ color: '#0078D4', fontSize: 32 }} />;
+    return <CloudSync sx={{ color: '#3b82f6', fontSize: 32 }} />;
 };
 
-export default function ConnectorCard({ conn, onEdit, onToggleStatus }) {
+export default function ConnectorCard({ conn, onEdit, onToggleStatus, onStartMigration }) {
     const notify = useNotify();
 
     const copyToClipboard = (text, label) => {
         navigator.clipboard.writeText(text);
         notify(`${label} copied to clipboard`, 'success');
-    };
-
-    const getSystemIcon = (type) => {
-        if (type === 'AEM') return <AccountTree sx={{ color: '#ef4444', fontSize: 32 }} />;
-        if (type === 'S3') return <Storage sx={{ color: '#f59e0b', fontSize: 32 }} />;
-        return <CloudSync sx={{ color: '#3b82f6', fontSize: 32 }} />;
     };
 
     return (
@@ -45,7 +42,7 @@ export default function ConnectorCard({ conn, onEdit, onToggleStatus }) {
                         </Box>
                         <Box>
                             <Typography variant="overline" sx={{ fontWeight: 700, color: '#64748b', lineHeight: 1 }}>
-                                {PROVIDER_LABELS[conn.provider_type] || conn.provider_type}
+                                {getProviderLabel(conn.provider_type)}
                             </Typography>
                             <Typography variant="h6" sx={{ fontWeight: 600, lineHeight: 1.2 }}>{conn.name}</Typography>
                         </Box>
@@ -58,7 +55,7 @@ export default function ConnectorCard({ conn, onEdit, onToggleStatus }) {
 
                 <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
                     <Chip
-                        label={conn.status.toUpperCase()} size="small"
+                        label={conn.status?.toUpperCase()} size="small"
                         color={conn.status === 'active' ? 'success' : conn.status === 'disabled' ? 'error' : 'warning'}
                         sx={{ height: 20, fontSize: '0.65rem', fontWeight: 700 }}
                     />
@@ -72,7 +69,7 @@ export default function ConnectorCard({ conn, onEdit, onToggleStatus }) {
                 <Stack spacing={1.5}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                         <Typography variant="body2" color="textSecondary">Assets Imported:</Typography>
-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>{conn.assets_imported?.toLocaleString()}</Typography>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>{conn.assets_imported?.toLocaleString() ?? '—'}</Typography>
                     </Box>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <Typography variant="body2" color="textSecondary">AI TDM Pipeline:</Typography>
@@ -93,20 +90,18 @@ export default function ConnectorCard({ conn, onEdit, onToggleStatus }) {
                 )}
             </CardContent>
 
-            <Divider sx={{ my: 2 }} />
+            <Divider />
 
-            {/*  NEW WEBHOOK CONFIGURATION SECTION */}
-            <Box sx={{ p: 2, bgcolor: '#f8fafc', borderRadius: 2, border: '1px dashed #cbd5e1', mb: 2 }}>
+            {/* Webhook Section */}
+            <Box sx={{ p: 2, bgcolor: '#f8fafc', borderRadius: 2, border: '1px dashed #cbd5e1', m: 2, mb: 0 }}>
                 <Typography variant="caption" sx={{ fontWeight: 700, color: '#475569', display: 'flex', alignItems: 'center', gap: 0.5, mb: 1.5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    <Webhook fontSize="small" /> Event Webhook Link
+                    <Webhook fontSize="small" /> Event Webhook
                 </Typography>
-
                 <Stack spacing={1}>
-                    {/* Webhook Endpoint */}
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <Box sx={{ overflow: 'hidden' }}>
                             <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mb: 0.2 }}>Endpoint URL</Typography>
-                            <Typography variant="body2" sx={{ fontFamily: 'monospace', fontWeight: 600, color: '#0ea5e9', noWrap: true }}>
+                            <Typography variant="body2" sx={{ fontFamily: 'monospace', fontWeight: 600, color: '#0ea5e9' }}>
                                 {`${window.location.origin}/api/v1/webhooks/connectors/${conn.id}/receive`}
                             </Typography>
                         </Box>
@@ -114,49 +109,34 @@ export default function ConnectorCard({ conn, onEdit, onToggleStatus }) {
                             <ContentCopy fontSize="small" sx={{ color: '#64748b' }} />
                         </IconButton>
                     </Box>
-
-                    {/* Webhook Secret */}
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <Box sx={{ overflow: 'hidden' }}>
+                        <Box>
                             <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mb: 0.2 }}>HMAC Secret</Typography>
                             <Typography variant="body2" sx={{ fontFamily: 'monospace', fontWeight: 600, color: '#1e293b' }}>
                                 ••••••••••••••••••••••••••••
                             </Typography>
                         </Box>
-                        <IconButton size="small" onClick={() => copyToClipboard(conn.webhook_secret, 'HMAC Secret')}>
+                        <IconButton size="small" onClick={() => copyToClipboard(conn.webhook_secret || '', 'HMAC Secret')}>
                             <ContentCopy fontSize="small" sx={{ color: '#64748b' }} />
                         </IconButton>
                     </Box>
                 </Stack>
             </Box>
 
-            <CardActions sx={{ p: 2, pt: 0, borderTop: '1px solid #f1f5f9', bgcolor: '#f8fafc', display: 'flex', gap: 1 }}>
-                <Button
-                    variant="outlined"
-                    size="small"
-                    startIcon={<SettingsInputComponent />}
-                    onClick={() => onEdit(conn)}
-                    sx={{ textTransform: 'none', borderRadius: '6px', color: '#475569', borderColor: '#cbd5e1', bgcolor: '#ffffff' }}
-                >
+            <CardActions sx={{ p: 2, borderTop: '1px solid #f1f5f9', bgcolor: '#f8fafc', display: 'flex', gap: 1, mt: 2 }}>
+                <Button variant="outlined" size="small" startIcon={<SettingsInputComponent />} onClick={() => onEdit(conn)}
+                    sx={{ textTransform: 'none', borderRadius: '6px', color: '#475569', borderColor: '#cbd5e1', bgcolor: '#ffffff' }}>
                     Configure
                 </Button>
-                <Button
-                    variant="contained"
-                    size="small"
-                    startIcon={<CloudSync />}
-                    disabled={conn.status !== 'active'}
-                    sx={{ textTransform: 'none', borderRadius: '6px', boxShadow: 'none', ml: 'auto', bgcolor: '#3b82f6' }}
-                >
-                    Force Sync
+                <Button variant="text" size="small" startIcon={<QueryStats />}
+                    sx={{ textTransform: 'none', color: '#64748b' }}>
+                    Pre-Flight
                 </Button>
-                <Button
-                    variant="text"
-                    size="small"
-                    startIcon={<QueryStats />}
-                    onClick={() => handleRunAnalysis(conn.id)}
-                    sx={{ textTransform: 'none', color: '#64748b' }}
-                >
-                    Pre-Flight Scan
+                <Button variant="contained" size="small" startIcon={<RocketLaunch />}
+                    disabled={conn.status !== 'active'}
+                    onClick={() => onStartMigration && onStartMigration(conn)}
+                    sx={{ textTransform: 'none', borderRadius: '6px', boxShadow: 'none', ml: 'auto', bgcolor: '#5e35b1', '&:hover': { bgcolor: '#4527a0' } }}>
+                    Start Migration
                 </Button>
             </CardActions>
         </Card>

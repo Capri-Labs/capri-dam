@@ -93,6 +93,8 @@ gem 'omniauth-keycloak'
 gem 'omniauth-rails_csrf_protection' # Crucial for security
 
 gem 'aws-sdk-s3', '~> 1'
+gem 'google-cloud-storage', '~> 1.0'
+gem 'azure-storage-blob', '~> 2.0'
 gem "liquid", "~> 5.12"
 
 gem "mini_magick", "~> 5.3"

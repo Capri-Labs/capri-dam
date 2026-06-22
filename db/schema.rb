@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_16_165408) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_22_000001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -252,14 +252,25 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_16_165408) do
   end
 
   create_table "ingestion_batches", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.integer "committed_count", default: 0
+    t.datetime "completed_at"
+    t.bigint "connector_id"
     t.datetime "created_at", null: false
+    t.integer "duplicate_count", default: 0
+    t.integer "error_count", default: 0
+    t.bigint "initiated_by_id"
     t.string "name", null: false
+    t.text "notes"
     t.integer "processed_count", default: 0
+    t.bigint "report_snapshot_id"
+    t.jsonb "source_credentials", default: {}
     t.string "source_type", null: false
+    t.datetime "started_at"
     t.integer "status", default: 0, null: false
     t.integer "total_count", default: 0
     t.datetime "updated_at", null: false
     t.integer "user_id"
+    t.index ["connector_id"], name: "index_ingestion_batches_on_connector_id"
   end
 
   create_table "ingestion_items", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -589,6 +600,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_16_165408) do
   add_foreign_key "folders", "users"
   add_foreign_key "in_app_notifications", "users"
   add_foreign_key "in_app_notifications", "users", column: "actor_id"
+  add_foreign_key "ingestion_batches", "system_connectors", column: "connector_id", on_delete: :nullify
   add_foreign_key "ingestion_items", "ingestion_batches"
   add_foreign_key "notifications", "users"
   add_foreign_key "oauth_access_grants", "oauth_applications", column: "application_id"

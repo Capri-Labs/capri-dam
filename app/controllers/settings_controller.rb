@@ -31,23 +31,17 @@ class SettingsController < ApplicationController
     @active_provider = Setting.get('active_storage_provider') || 'local'
 
     @all_configs = {}
-    ['aws', 'cloudflare', 'backblaze', 'wasabi', 'digitalocean', 'google'].each do |p|
-      # Resilient check: handle both legacy JSON string and modern YAML serialized hashes
+    StorageManager::ADAPTERS.keys.reject { |p| p == 'local' }.each do |p|
       raw_val = Setting.get("storage_config_#{p}")
       raw = if raw_val.is_a?(Hash)
-              raw_val
+              raw_val.transform_keys(&:to_s)
             elsif raw_val.is_a?(String)
-              begin
-                JSON.parse(raw_val)
-              rescue JSON::ParserError
-                {}
-              end
+              begin JSON.parse(raw_val) rescue {} end
             else
               {}
             end
-
-      # Mask storage secrets before sending to React view state
-      raw['secret_key'] = '********' if raw['secret_key'].present?
+      # Mask all secret-like keys before sending to React
+      raw.each_key { |k| raw[k] = '********' if k.to_s.downcase.match?(/secret|key|password|token|credentials/) && raw[k].present? }
       @all_configs[p] = raw
     end
 
@@ -74,58 +68,97 @@ class SettingsController < ApplicationController
 
   def update_storage
     provider = params[:storage_config][:provider]
-    new_data = params[:storage_config].except(:provider)
+    new_data  = params[:storage_config].except(:provider).to_h
 
-    # 1. Fetch existing data from DB
+    # 1. Load existing config from DB
     existing_raw = Setting.get("storage_config_#{provider}")
-    existing_data = JSON.parse(existing_raw || "{}")
+    existing_data = if existing_raw.is_a?(Hash)
+                      existing_raw.transform_keys(&:to_s)
+                    elsif existing_raw.is_a?(String)
+                      JSON.parse(existing_raw) rescue {}
+                    else
+                      {}
+                    end
 
-    # 2. Merge data, but ignore masked placeholders
+    # 2. Merge new values, skipping masked placeholders and blank values
     new_data.each do |key, value|
-      unless value == "********" || value.blank?
-        existing_data[key] = value
-      end
+      existing_data[key.to_s] = value unless value.to_s.strip == '********' || value.blank?
     end
 
-    # 3. Save the specific provider config AND set it as active
+    # 3. Persist and set as active provider
     Setting.set("active_storage_provider", provider)
     Setting.set("storage_config_#{provider}", existing_data.to_json)
 
-    render json: { message: "Configuration for #{provider} updated!" }, status: :ok
+    # 4. Sync to StorageBackend model so workers using adapter_for() pick up changes
+    sync_to_storage_backend!(provider, existing_data)
+
+    # 5. Bust the cached active adapter so the next request re-reads from DB
+    StorageManager.reset_active_adapter!
+
+    render json: { message: "Configuration for #{provider.upcase} saved and activated!" }, status: :ok
   rescue => e
     render json: { error: "Failed to save settings: #{e.message}" }, status: :unprocessable_entity
   end
 
   def test_connection
-    config = params[:storage_config]
+    config   = params[:storage_config].to_h.transform_keys(&:to_s)
+    provider = config['provider'].to_s
 
-    # 1. Handle masked secrets
-    # If they didn't change the secret, pull the real one from the DB
-    secret = config[:secret_key]
-    if secret == "********"
-      stored_config = JSON.parse(Setting.get("storage_config_#{config[:provider]}") || "{}")
-      secret = stored_config['secret_key']
+    # Unmask secrets: if user sent '********', pull the real value from DB
+    unmask_secrets!(provider, config)
+
+    result = case provider
+             when 'local'
+               StorageAdapters::LocalStorageAdapter.new({}).test_connection
+             when 'google'
+               StorageAdapters::GcsAdapter.new(config).test_connection
+             when 'azure'
+               StorageAdapters::AzureAdapter.new(config).test_connection
+             else
+               # All S3-compatible providers share the same test logic
+               adapter_klass = StorageManager::ADAPTERS[provider]&.constantize
+               if adapter_klass
+                 adapter_klass.new(config).test_connection
+               else
+                 { success: false, error: "Unknown provider: #{provider}" }
+               end
+             end
+
+    if result[:success]
+      render json: { success: true, message: result[:message] }
+    else
+      render json: { success: false, error: result[:error] }, status: :unprocessable_entity
     end
+  rescue => e
+    render json: { success: false, error: e.message }, status: :unprocessable_entity
+  end
 
-    # 2. Initialize a temporary S3 Client
-    s3_options = {
-      region: config[:region],
-      access_key_id: config[:access_key],
-      secret_access_key: secret,
-      force_path_style: true # Required for R2, Wasabi, etc.
-    }
+  private
 
-    # Add custom endpoint if provided (R2, Wasabi, etc.)
-    s3_options[:endpoint] = config[:endpoint] if config[:endpoint].present?
+  # Replace masked placeholder values with stored real values before running tests
+  def unmask_secrets!(provider, config)
+    return if provider == 'local'
+    stored_raw = Setting.get("storage_config_#{provider}")
+    stored = stored_raw.is_a?(Hash) ? stored_raw.transform_keys(&:to_s) : (JSON.parse(stored_raw) rescue {})
 
-    begin
-      s3 = Aws::S3::Client.new(s3_options)
-      # 3. Attempt to 'touch' the bucket
-      s3.head_bucket(bucket: config[:bucket])
-
-      render json: { success: true, message: "Connection successful! Found bucket '#{config[:bucket]}'." }
-    rescue => e
-      render json: { success: false, error: e.message }, status: :unprocessable_entity
+    config.each_key do |k|
+      if config[k].to_s.strip == '********'
+        config[k] = stored[k.to_s]
+      end
     end
+  end
+
+  # Keep StorageBackend model in sync so workers using adapter_for(backend) work correctly
+  def sync_to_storage_backend!(provider, config)
+    backend = StorageBackend.find_or_initialize_by(provider_type: provider)
+    # Deactivate all other backends first
+    StorageBackend.where.not(provider_type: provider).update_all(active: false)
+
+    backend.name          = provider.humanize
+    backend.configuration = config
+    backend.active        = true
+    backend.save!
+  rescue => e
+    Rails.logger.warn("[SettingsController] StorageBackend sync failed: #{e.message}")
   end
 end
