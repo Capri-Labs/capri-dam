@@ -1,34 +1,991 @@
-# Headless DAM: Comprehensive System Architecture & Codebase Context
+# Capri DAM — Comprehensive System Architecture & Codebase Reference
 
-This document contains the core implementations for the Headless DAM's Collection Workspace module.
+> Full implementation context for LLM agents and code-generation tools.
+> See `llms.txt` for a concise summary.
+> Last updated: 2026-06-22
 
-## 1. Database Schema & Migrations
+---
 
-**Upgrade Collections (TTL & Type):**
+## 1. Project Identity
+
+- **Product Name:** Capri DAM
+- **Type:** Headless Digital Asset Management Platform
+- **Rails Version:** 8.1.3
+- **Ruby Version:** 4.0.3
+- **Schema Version:** 2026_06_16_165408
+
+---
+
+## 2. Database Schema (PostgreSQL)
+
+All tables use either `bigint` (default Rails) or `uuid` primary keys (assets, folders, collections, renditions, etc).
+
+### assets
+```
+id: uuid (PK, gen_random_uuid())
+title: string (NOT NULL)
+uuid: string (NOT NULL, UNIQUE)
+status: string (default: "draft")
+folder_id: uuid (FK → folders, optional)
+user_id: bigint (FK → users, NOT NULL)
+active_version_id: uuid (FK → asset_versions, optional)
+properties: jsonb (default: {}, NOT NULL)
+deleted_at: datetime (soft delete)
+created_at / updated_at: datetime
+```
+Indexes: `folder_id`, `user_id`, `active_version_id`, `deleted_at`, `uuid` (unique), `properties` (GIN)
+
+### asset_versions
+```
+id: uuid (PK)
+asset_id: uuid (FK → assets, NOT NULL)
+version_number: integer (NOT NULL, default: 1)
+action_type: string (default: "initial_upload")
+properties: jsonb (default: {})
+created_by_id: bigint (FK → users)
+created_at / updated_at: datetime
+```
+Unique index on `(asset_id, version_number)`
+
+### asset_embeddings
+```
+id: uuid (PK)
+asset_id: uuid (FK → assets, UNIQUE)
+embedding: vector(1536) (NOT NULL)
+model_name: string (NOT NULL)
+created_at / updated_at: datetime
+```
+HNSW index on `embedding` using `vector_cosine_ops`
+
+### folders
+```
+id: uuid (PK)
+uuid: uuid (NOT NULL, UNIQUE)
+name: string (NOT NULL)
+slug: string
+path: string
+parent_id: uuid (FK → folders, self-referential)
+user_id: bigint (FK → users, NOT NULL)
+properties: jsonb (default: {})
+deleted_at: datetime
+created_at / updated_at: datetime
+```
+
+### folder_policies
+```
+id: bigint (PK)
+folder_id: uuid (FK → folders, NOT NULL)
+user_group_id: bigint (FK → user_groups, NOT NULL)
+read_access: boolean (default: false)
+write_access: boolean (default: false)
+delete_access: boolean (default: false)
+manage_access: boolean (default: false)
+approval_flow: boolean (default: false)
+explicit_deny: boolean (default: false)
+created_at / updated_at: datetime
+```
+Unique index on `(folder_id, user_group_id)`
+
+### collections
+```
+id: bigint (PK)
+uuid: uuid (UNIQUE)
+slug: string (UNIQUE)
+name: string
+description: text
+collection_type: string (NOT NULL, default: "manual")
+expires_at: datetime
+properties: jsonb (stores tags[], allowed_groups[], denied_groups[])
+user_id: integer
+deleted_at: datetime
+created_at / updated_at: datetime
+```
+
+### collection_rules
+```
+id: bigint (PK)
+collection_id: bigint (FK → collections, NOT NULL)
+semantic_prompt: text (NOT NULL)
+similarity_threshold: decimal(4,3) (default: 0.8)
+metadata_filters: jsonb (default: {})
+active: boolean (NOT NULL, default: true)
+created_at / updated_at: datetime
+```
+GIN index on `metadata_filters`
+
+### collection_assets (join table)
+```
+id: bigint (PK)
+collection_id: bigint (FK → collections)
+asset_id: uuid (FK → assets)
+collection_rule_id: bigint (FK → collection_rules, nullable — null = manually added)
+pinned: boolean (NOT NULL, default: false)
+position: integer (default: 0)
+user_id: integer
+created_at / updated_at: datetime
+```
+Unique index on `(collection_id, asset_id)`
+
+### users
+```
+id: bigint (PK)
+email: string (NOT NULL, UNIQUE)
+name: string (NOT NULL)
+first_name: string
+last_name: string
+username: string (UNIQUE)
+department: string
+role: string (default: "viewer")  -- values: viewer, editor, admin
+admin: boolean (NOT NULL, default: false)
+active: boolean (default: true)
+avatar_url: string
+provider: string  -- OmniAuth provider name
+uid: string       -- OmniAuth UID
+force_password_change: boolean (default: false)
+encrypted_password: string
+reset_password_token: string
+remember_created_at: datetime
+preferences: jsonb (default: {})
+created_at / updated_at: datetime
+```
+
+### user_groups
+```
+id: bigint (PK)
+name: string (NOT NULL, UNIQUE)
+description: string
+created_at / updated_at: datetime
+```
+
+### user_group_memberships
+```
+id: bigint (PK)
+user_id: bigint (FK → users)
+user_group_id: bigint (FK → user_groups)
+created_at / updated_at: datetime
+```
+Unique index on `(user_id, user_group_id)`
+
+### user_group_closures (closure table, no PK)
+```
+ancestor_id: bigint (NOT NULL)
+descendant_id: bigint (NOT NULL)
+distance: integer (NOT NULL)
+```
+Unique index on `(ancestor_id, descendant_id)`
+
+### workflows
+```
+id: bigint (PK)
+name: string
+description: text
+trigger_type: string  -- e.g., "on_upload"
+status: integer  -- enum: inactive(0), active(1), draft(2)
+folder_scope: string (default: "all")  -- "all" | "specific"
+target_folder_ids: string[] (default: [])
+exclude_folder_ids: string[] (default: [])
+graph_data: jsonb (default: {})
+metadata: jsonb
+fallback_assignee_id: string
+fallback_assignee_type: string
+created_by_id: integer
+updated_by_id: integer
+created_at / updated_at: datetime
+```
+
+### workflow_steps
+```
+id: bigint (PK)
+workflow_id: bigint (FK → workflows)
+title: string
+description: text
+step_type: string
+logic: string
+position: integer
+deadline_days: integer
+assignee_id: integer
+assignee_type: string
+configuration: jsonb
+updated_by_id: integer
+created_at / updated_at: datetime
+```
+
+### workflow_instances
+```
+id: bigint (PK)
+workflow_id: bigint (FK → workflows)
+asset_id: uuid (FK → assets)
+status: string
+current_step_id: integer
+blueprint_snapshot: jsonb (default: {})  -- snapshot of steps at time of trigger
+audit_log: jsonb
+started_at: datetime
+completed_at: datetime
+last_action_by_id: integer
+created_at / updated_at: datetime
+```
+
+### workflow_tasks
+```
+id: bigint (PK)
+workflow_instance_id: bigint (FK → workflow_instances)
+workflow_step_id: bigint (FK → workflow_steps)
+user_id: bigint (FK → users)
+status: string (NOT NULL, default: "pending")  -- "pending" | "approved" | "rejected"
+comment: text
+completed_at: datetime
+created_at / updated_at: datetime
+```
+
+### ingestion_batches
+```
+id: uuid (PK)
+name: string (NOT NULL)
+source_type: string (NOT NULL)
+status: integer (NOT NULL, default: 0)
+total_count: integer (default: 0)
+processed_count: integer (default: 0)
+user_id: integer
+created_at / updated_at: datetime
+```
+
+### ingestion_items
+```
+id: uuid (PK)
+ingestion_batch_id: uuid (FK → ingestion_batches)
+original_filename: string (NOT NULL)
+file_hash: string
+file_size: bigint
+status: integer (default: 0)
+legacy_metadata: jsonb (default: {})
+clean_properties: jsonb (default: {})
+error_log: text
+created_at / updated_at: datetime
+```
+
+### renditions
+```
+id: uuid (PK)
+asset_id: uuid (FK → assets)
+storage_backend_id: uuid (FK → storage_backends)
+kind: string (NOT NULL)  -- e.g., "thumbnail", "web", "print"
+storage_key: string (NOT NULL)
+content_type: string
+width: integer
+height: integer
+file_size: bigint
+metadata: jsonb (default: {})
+created_at / updated_at: datetime
+```
+
+### storage_backends
+```
+id: uuid (PK)
+name: string (NOT NULL)
+provider_type: string (NOT NULL)  -- "local" | "aws_s3" | etc.
+configuration: jsonb (NOT NULL, default: {})
+active: boolean (default: true)
+created_at / updated_at: datetime
+```
+
+### email_templates
+```
+id: bigint (PK)
+name: string (NOT NULL)
+event_trigger: string (NOT NULL, UNIQUE)  -- e.g., "user_created", "workflow_approved"
+subject: string (NOT NULL)
+html_body: text   -- Liquid template
+text_body: text   -- Liquid template
+active: boolean (NOT NULL, default: true)
+created_at / updated_at: datetime
+```
+
+### email_deliveries
+```
+id: bigint (PK)
+email_template_id: bigint (FK → email_templates)
+recipient_email: string (NOT NULL)
+payload: jsonb (NOT NULL, default: {})  -- Liquid context variables
+status: string (NOT NULL, default: "pending")  -- "pending" | "sent" | "failed"
+retry_count: integer (NOT NULL, default: 0)
+error_log: text
+created_at / updated_at: datetime
+```
+
+### audit_logs
+```
+id: bigint (PK)
+user_id: bigint (FK → users)
+action: string
+auditable_type: string
+auditable_id: integer
+changes_data: jsonb
+ip_address: string
+user_agent: string
+created_at / updated_at: datetime
+```
+
+### system_configurations
+```
+id: bigint (PK)
+key: string (NOT NULL, UNIQUE)
+value: text (NOT NULL)
+data_type: string (NOT NULL, default: "string")
+description: string
+fallback_value: text
+expires_at: datetime
+updated_by_id: integer
+created_at / updated_at: datetime
+```
+
+### system_connectors
+```
+id: bigint (PK)
+name: string
+provider_type: string
+endpoint: string
+auth_token: string
+status: string
+concurrency_limit: integer
+rps_limit: integer
+last_sync: datetime
+assets_imported: integer
+tdm_sanitation: boolean
+webhook_secret: string
+created_at / updated_at: datetime
+```
+
+### ai_configurations
+```
+id: bigint (PK)
+active_provider: string
+generation_model: string
+embedding_model: string
+system_prompt: text
+monthly_budget_usd: decimal
+current_spend_usd: decimal
+fallback_to_local: boolean
+created_at / updated_at: datetime
+```
+
+### notifications / in_app_notifications
+```
+notifications: user_id, title, message, action_url, read_at
+in_app_notifications: user_id, actor_id, notifiable_type, notifiable_id, action_type, message, read_at
+```
+
+### daily_metrics
+```
+metric_date: date (NOT NULL)
+metric_name: string (NOT NULL)
+metric_value: integer (default: 0)
+metadata: jsonb (default: {})
+```
+Unique index on `(metric_date, metric_name)`
+
+---
+
+## 3. Model Implementations
+
+### Asset (app/models/asset.rb)
 ```ruby
-class UpgradeCollectionsForSmartRouting < ActiveRecord::Migration[7.0]
-  def change
-    add_column :collections, :collection_type, :string, default: 'manual', null: false
-    add_column :collections, :expires_at, :datetime
-    add_reference :collection_assets, :collection_rule, null: true, foreign_key: true
-    add_column :collection_assets, :pinned, :boolean, default: false, null: false
+class Asset < ApplicationRecord
+  belongs_to :user
+  belongs_to :folder, optional: true
+  has_many :asset_versions, dependent: :destroy
+  belongs_to :active_version, class_name: 'AssetVersion', optional: true
+  has_many :workflow_instances, dependent: :destroy
+  has_one_attached :file
+  has_one :asset_embedding, dependent: :destroy
+  has_many :collection_assets, dependent: :destroy
+  has_many :collections, through: :collection_assets
+
+  after_commit :broadcast_for_embedding, on: [:create, :update]
+
+  validates :title, presence: true
+
+  enum :status, {
+    draft: 0, pending: 1, processing: 2, ready: 3,
+    in_review: 4, approved: 5, rejected: 6, failed: 7
+  }, default: :draft
+
+  scope :nearest_to_vector, ->(vector) {
+    joins(:asset_embedding)
+      .merge(AssetEmbedding.nearest_neighbors(:embedding, vector, distance: "cosine"))
+      .select("assets.*")
+  }
+
+  include SoftDeletable
+
+  def next_version_number
+    (asset_versions.maximum(:version_number) || 0) + 1
+  end
+
+  private
+
+  def broadcast_for_embedding
+    return if properties.blank?
+    redis = Redis.new(url: ENV.fetch("REDIS_URL", "redis://localhost:6379/0"))
+    redis.publish('ai_gateway_events', { event: 'asset.needs_embedding', asset_uuid: self.id }.to_json)
+  end
+
+  def set_property_defaults
+    self.properties ||= { description: "", usage_terms: "Internal Use Only", alt_text: "", tags: [] }
   end
 end
 ```
 
-**Create Collection Rules (AI Semantic Brain):**
+### User (app/models/user.rb)
 ```ruby
-class CreateCollectionRules < ActiveRecord::Migration[7.0]
-  def change
-    create_table :collection_rules do |t|
-      t.references :collection, null: false, foreign_key: true
-      t.text :semantic_prompt, null: false
-      t.decimal :similarity_threshold, precision: 4, scale: 3, default: 0.800
-      t.jsonb :metadata_filters, default: {}
-      t.boolean :active, default: true, null: false
-      t.timestamps
+class User < ApplicationRecord
+  include Auditable
+  devise :database_authenticatable, :registerable, :recoverable, :rememberable,
+         :validatable, :omniauthable, omniauth_providers: %i[keycloak_openid]
+
+  has_many :folders, :assets, :user_group_memberships, :notifications, dependent: :destroy
+  has_many :user_groups, through: :user_group_memberships
+
+  def permissions_for(folder)
+    return { read: true, write: true, delete: true, manage: true, approve: true } if admin?
+    policies = FolderPolicy.where(folder_id: folder.id, user_group_id: effective_group_ids)
+    return { read: false, write: false, delete: false, manage: false, approve: false } if policies.any?(&:explicit_deny)
+    {
+      read:    policies.any?(&:read_access),
+      write:   policies.any?(&:write_access),
+      delete:  policies.any?(&:delete_access),
+      manage:  policies.any?(&:manage_access),
+      approve: policies.any?(&:approval_flow)
+    }
+  end
+
+  def effective_group_ids
+    direct_ids = user_groups.select(:id)
+    UserGroupClosure.where(descendant_id: direct_ids).select(:ancestor_id)
+  end
+
+  def active_for_authentication?
+    super && active?
+  end
+end
+```
+
+### Collection (app/models/collection.rb)
+```ruby
+class Collection < ApplicationRecord
+  store_accessor :properties, :tags, :allowed_groups, :denied_groups
+  belongs_to :user
+  has_many :collection_assets, dependent: :destroy
+  has_one :collection_rule, dependent: :destroy
+  has_many :assets, through: :collection_assets
+
+  validates :collection_type, inclusion: { in: %w[manual smart] }
+  scope :active, -> { where(deleted_at: nil).where('expires_at IS NULL OR expires_at > ?', Time.current) }
+
+  def accessible_by?(user)
+    return true if user.admin? || user.id == self.user_id
+    user_group_names = user.user_groups.pluck(:name)
+    return false if denied_groups.present? && (denied_groups & user_group_names).any?
+    return (allowed_groups & user_group_names).any? if allowed_groups.present? && allowed_groups.any?
+    true
+  end
+
+  def compliance_violations
+    # Detects: (1) Internal assets in external-facing collections
+    # (2) Asset license expiry before collection TTL
+    violations = []
+    is_externally_accessible = Array(allowed_groups).empty? || Array(allowed_groups).include?("External Agencies")
+    assets.find_each do |asset|
+      props = asset.properties || {}
+      if is_externally_accessible && props['usage_terms'] == 'Internal Use Only'
+        violations << { asset_id: asset.id, reason: "Internal Use Only in external workspace" }
+      end
+      if props['license_expires_at'].present? && self.expires_at.present?
+        violations << { asset_id: asset.id, reason: "License expires before campaign TTL" } if Time.zone.parse(props['license_expires_at']) < self.expires_at
+      end
     end
-    add_index :collection_rules, :metadata_filters, using: :gin
+    violations
   end
 end
 ```
+
+### SoftDeletable concern (app/models/concerns/soft_deletable.rb)
+```ruby
+module SoftDeletable
+  extend ActiveSupport::Concern
+  included do
+    scope :active, -> { where(deleted_at: nil) }
+    scope :trashed, -> { where.not(deleted_at: nil) }
+  end
+  def soft_delete = update(deleted_at: Time.current)
+  def restore = update(deleted_at: nil)
+  def trashed? = deleted_at.present?
+end
+```
+
+---
+
+## 4. Key Services
+
+### WorkflowEvaluatorService (app/services/workflow_evaluator_service.rb)
+Called after an asset is processed (`on_upload`). Checks all active workflows against the asset's folder.
+```ruby
+WorkflowEvaluatorService.call(asset, trigger_event: 'on_upload')
+```
+Logic:
+- `folder_scope: 'specific'` → asset.folder_id must be in `workflow.target_folder_ids`
+- `folder_scope: 'all'` → asset.folder_id must NOT be in `workflow.exclude_folder_ids`
+- If match → `WorkflowInitiatorWorker.perform_async(asset.id, workflow.id)`
+
+### EmailOrchestrator (app/services/email_orchestrator.rb)
+```ruby
+EmailOrchestrator.trigger('user_created', 'user@example.com', { 'user' => { 'first_name' => 'Jane' } })
+```
+1. Finds active `EmailTemplate` by `event_trigger`
+2. Creates `EmailDelivery` record (status: pending)
+3. Enqueues `EmailDispatcherWorker`
+4. Worker renders Liquid template with payload and sends email
+
+### StorageManager (app/services/storage_manager.rb)
+```ruby
+backend = StorageBackend.find_by(active: true)
+storage = StorageManager.adapter_for(backend)
+storage.store(file_io, "path/to/file.jpg")
+storage.delete("path/to/file.jpg")
+```
+Adapters: `StorageAdapters::LocalStorageAdapter` (dev), S3 adapter (TODO)
+
+---
+
+## 5. Background Workers
+
+### AssetProcessorWorker (queue: `ingest`, retry: 3)
+Called with `(version_id, staging_path)` after file upload.
+1. Opens staging file, extracts universal metadata (size, SHA256 checksum, MIME type via Marcel)
+2. For images: MiniMagick extracts width/height/aspect_ratio/colorspace/EXIF/color_palette; RTesseract performs OCR
+3. For PDFs: sets `document_type: 'PDF'`
+4. Stores physical file to `StorageBackend` at path `"<asset_uuid>/v<N>_<hex>.<ext>"`
+5. Merges all extracted metadata into `AssetVersion.properties`
+6. Sets `Asset.status = 'ready'`
+7. Enqueues `AssetWorkflowTriggerWorker`
+
+### SmartCollectionRouterWorker (queue: `smartai`, retry: 3)
+Called with `(asset_id)` after `AssetEmbedding` is created/updated.
+1. Loads asset's `vector_embedding`
+2. Iterates all active `CollectionRule` records
+3. Skips expired collections (TTL check)
+4. Checks `metadata_filters` hard guardrails against `asset.properties`
+5. Computes cosine similarity via `VectorCalculator.cosine_similarity`
+6. If `similarity >= rule.similarity_threshold` → `CollectionAsset.find_or_create_by!` with `collection_rule` reference
+
+### Asset Upload Pipeline (full sequence)
+```
+POST /api/v1/assets
+  → Asset.create! (status: pending)
+  → AssetVersion.create! (version_number: 1, action_type: initial_upload)
+  → File copied to tmp/uploads/ (staging)
+  → Asset.update!(active_version_id: version.id)
+  → AssetProcessorWorker.perform_async(version.id, staging_path)
+  → (worker) extracts metadata, stores file in StorageBackend
+  → (worker) Asset.update!(status: ready)
+  → (worker) AssetWorkflowTriggerWorker.perform_async(asset.id, 'on_upload')
+  → (worker) WorkflowEvaluatorService evaluates Workflow matches
+  → (worker) WorkflowInitiatorWorker creates WorkflowInstance + WorkflowTasks
+  → Asset.after_commit → broadcasts to Redis 'ai_gateway_events'
+  → Python AI Gateway generates 1536-dim embedding
+  → PATCH /api/v1/assets/:id/embedding → AssetEmbedding.upsert
+  → AssetEmbedding.after_commit → SmartCollectionRouterWorker.perform_async
+```
+
+---
+
+## 6. Image Editor Pipeline (POST /api/v1/assets/:id/process_image)
+
+Three save modes:
+- **`new`** (Fork/Clone): Creates a brand new `Asset` + copies current version number. Original untouched.
+- **`overwrite`** (Destructive): Bakes into existing version row. Triggers CDN invalidation.
+- **`version`** (Branch): Creates new `AssetVersion` with bumped `version_number`. If `target_folder_id` differs, creates a new `Asset` in that folder.
+
+MiniMagick operations available:
+- `geometry.flip_horizontal` → `.flop`
+- `geometry.rotate` → `.rotate(degrees)`
+- `adjustments.brightness` / `adjustments.contrast` → `.brightness_contrast`
+- `adjustments.saturation` → `.modulate`
+- `custom_cli` → raw ImageMagick flags injected (e.g., `-monochrome -charcoal 2`)
+
+Post-bake workers dispatched:
+1. `AssetProcessorWorker` — re-processes the baked file
+2. `CdnInvalidationWorker` — purges CDN
+3. `EdgeMetadataSyncWorker` — syncs metadata to edge
+
+---
+
+## 7. Authentication & Authorization
+
+### Hybrid Auth (`authenticate_hybrid!`)
+```ruby
+def authenticate_hybrid!
+  return if user_signed_in?          # Devise session (browser)
+  doorkeeper_authorize!              # OAuth2 Bearer token (API clients)
+end
+```
+
+### RBAC Resolution (User#permissions_for)
+```ruby
+user.permissions_for(folder)
+# => { read: true, write: true, delete: false, manage: false, approve: false }
+```
+Logic:
+1. Admin? → full permissions
+2. Fetch FolderPolicies for `(folder_id, user.effective_group_ids)`
+3. Any policy has `explicit_deny: true`? → all false (short-circuit)
+4. OR-aggregate each permission boolean across all policies
+
+### ABAC on Collections (Collection#accessible_by?)
+1. Admin or owner? → true
+2. `denied_groups` ∩ user_groups → false (explicit deny)
+3. `allowed_groups` present + `allowed_groups` ∩ user_groups → true/false
+4. No whitelist → true (public)
+
+### SSO (OmniAuth Keycloak)
+- Callback: `User.from_omniauth(auth)` → `find_or_create_by(provider:, uid:)`
+- Auto-generates username as `<email_prefix>_sso`
+
+---
+
+## 8. GraphQL API
+
+Schema: `HeadlessDamSchema` at `app/graphql/headless_dam_schema.rb`
+
+### Queries
+```graphql
+query {
+  assetDetail(uuid: "abc-123") {
+    id uuid title properties createdAt
+  }
+  searchAssets(query: "beach", mode: "images", metadataFilters: { region: "EMEA" }) {
+    nodes { id uuid title properties createdAt }
+  }
+  collections {
+    id name slug collectionType expiresAt assetsCount
+  }
+  collection(slug: "summer-2026") {
+    id name collectionRule { semanticPrompt similarityThreshold }
+  }
+}
+```
+
+### Types
+- `AssetType`: id, uuid, title, properties (JsonType), createdAt
+- `CollectionType`: standard collection fields + collection_rule
+- `JsonType`: arbitrary JSONB pass-through scalar
+
+### Authorization
+`AssetType.authorized?` requires `context[:current_user]` to be present.
+
+---
+
+## 9. React Frontend Components
+
+### Mount Pattern
+Components are registered in `app/javascript/components/Registry.jsx` and mounted via `data-view` attributes.
+
+### Key Components
+| Component | Route | Purpose |
+|-----------|-------|---------|
+| `DashboardManager` | `/dashboard` | Overview stats and recent activity |
+| `FoldersManager` | `/folders` | Folder tree sidebar + asset browser |
+| `AssetExplorer` | (embedded in FoldersManager) | Grid/list view of assets in a folder |
+| `AssetViewer` | (modal/drawer) | Full asset detail with tabs |
+| `AssetVersionsTab` | (tab in AssetViewer) | Version history timeline |
+| `AssetAuditTab` | (tab in AssetViewer) | Audit trail diff viewer |
+| `AssetTagsEditor` | (tab in AssetViewer) | JSONB metadata editor |
+| `AssetStatisticsTab` | (tab in AssetViewer) | Storage/usage stats |
+| `ImageEditorDialog` | (modal) | Canvas editor → POST process_image |
+| `UploadWorkspace` | (drawer) | Drag-and-drop uploader with hash dedup |
+| `DuplicateResolverDialog` | (modal) | Resolves duplicate hash conflicts |
+| `PinToCollectionDialog` | (modal) | Adds asset to a collection |
+| `ExplorerTopBar` | (toolbar) | Search, filter, view toggle |
+| `AssetFilterBar` | (sidebar) | Dynamic JSONB facet filters |
+| `BinManager` | `/bin` | Trashed assets/folders with restore/purge |
+| `CollectionsManager` | `/collections` | Collection board |
+| `SearchManager` | `/search` | Global search with facets |
+| `WorkflowContainer` | `/workflows` | Workflow designer (graph editor) |
+| `WorkflowDashboard` | `/workflows/dashboard` | Pending tasks per user |
+| `UsersManager` | (admin) | User CRUD + activate/deactivate |
+| `UserGroupsManager` | (admin) | Group hierarchy + folder policy management |
+| `ReportsManager` | (admin) | Report builder + export |
+| `EmailEngineManager` | (admin) | Email template CRUD with Liquid preview |
+| `SystemStatus` | (admin) | Health checks, SMTP config |
+| `Settings` | `/settings` | Storage backend + CDN configuration |
+
+---
+
+## 10. REST API Reference
+
+### Authentication
+All `/api/v1/` endpoints use `authenticate_hybrid!`:
+- Browser: Devise session cookie
+- API clients: `Authorization: Bearer <doorkeeper_token>`
+
+### Assets
+```
+POST   /api/v1/assets                          # Upload (multipart/form-data: file, title, folder_id)
+GET    /api/v1/assets/:id                      # Show
+PATCH  /api/v1/assets/:id                      # Update metadata
+DELETE /api/v1/assets/:id                      # Soft delete → bin
+POST   /api/v1/assets/:id/restore              # Restore from bin
+DELETE /api/v1/assets/:id/permanent            # Permanent delete
+GET    /api/v1/assets/:id/versions             # Version history
+GET    /api/v1/assets/:id/audit_trail          # Audit trail
+POST   /api/v1/assets/:id/versions/:vid/restore # Restore to version
+POST   /api/v1/assets/:id/process_image        # Bake image edits
+GET    /api/v1/assets/:id/watermarked          # Download watermarked copy
+GET    /api/v1/assets/:id/workflow_history     # Active workflow tasks
+PATCH  /api/v1/assets/:id/embedding            # Upsert pgvector embedding
+GET    /api/v1/bin                             # Trashed assets + folders
+POST   /api/v1/assets/check_hashes            # { hashes: ["sha256..."] } → duplicates map
+GET    /api/v1/assets/local/:uuid              # Serve local file (dev only)
+```
+
+### Folders
+```
+GET    /api/v1/folders           # List (with RBAC filtering)
+GET    /api/v1/folders/:id       # Show with breadcrumbs + policies
+POST   /api/v1/folders           # Create
+POST   /api/v1/folders/:id/restore
+DELETE /api/v1/folders/:id/permanent
+```
+
+### Collections
+```
+GET    /api/v1/collections                          # List active
+POST   /api/v1/collections                          # Create
+GET    /api/v1/collections/:slug                    # Show (with compliance violations)
+PATCH  /api/v1/collections/:slug                    # Update
+DELETE /api/v1/collections/:slug                    # Soft delete
+DELETE /api/v1/collections/bulk_delete             # { ids: [...] }
+PATCH  /api/v1/collections/bulk_update             # { ids: [...], collection: {...} }
+POST   /api/v1/collections/simulate_rule           # { semantic_prompt:, similarity_threshold: }
+POST   /api/v1/collections/:slug/rule              # Configure smart rule
+GET    /api/v1/collections/:slug/cluster_map       # 2D UMAP data
+POST   /api/v1/collections/:slug/assets            # Add asset
+DELETE /api/v1/collections/:slug/assets/:asset_id  # Remove asset
+PATCH  /api/v1/collections/:slug/assets/:asset_id/pin # Toggle pin
+POST   /api/v1/collections/:slug/purge_cdn         # Trigger CDN purge
+```
+
+### Search
+```
+GET /api/v1/search?q=beach&mode=images&region=EMEA
+# Returns: { meta: { query, mode, total_found, facets }, results: [...] }
+```
+
+### Semantic Search (Copilot)
+```
+POST /api/v1/copilot/search
+Body: { query: "warm summer beach photography" }
+# Calls Python AI Gateway → pgvector HNSW → top 20 assets
+```
+
+### Workflows
+```
+GET  /api/v1/workflows/dashboard     # Pending tasks for current user
+POST /api/v1/workflow_tasks/:id/submit  # { status: "approved"|"rejected", comment: "..." }
+```
+
+### Notifications
+```
+GET   /api/v1/notifications
+PATCH /api/v1/notifications/mark_all_read
+PATCH /api/v1/notifications/:id/mark_read
+```
+
+### Ingestion
+```
+POST /api/v1/ingestion_batches         # Start bulk import batch
+GET  /api/v1/ingestion_batches         # List batches
+GET  /api/v1/ingestion_items/:id       # Item status
+PATCH /api/v1/ingestion_items/:id      # Update item
+POST /api/v1/webhooks/connectors/:connector_id/receive  # Webhook receiver
+```
+
+---
+
+## 11. Admin API Reference
+
+Namespace: `/admin/` — restricted to `admin?` users.
+
+```
+GET  /admin/system_status
+POST /admin/system_status/update_smtp
+POST /admin/system_status/test_email
+POST /admin/system_status/restart_server
+
+GET  /admin/users
+POST /admin/users
+PATCH /admin/users/:id
+POST /admin/users/:id/toggle_status
+
+GET    /admin/user_groups
+POST   /admin/user_groups
+PATCH  /admin/user_groups/:id
+DELETE /admin/user_groups/:id
+POST   /admin/user_groups/:id/add_user     # { user_id: }
+DELETE /admin/user_groups/:id/remove_user  # { user_id: }
+
+GET    /admin/folders/:id/folder_policies           # RBAC policies for folder
+POST   /admin/folders/:id/folder_policies           # Create policy
+DELETE /admin/folders/:id/folder_policies/:group_id # Remove policy
+
+GET    /admin/email_templates
+POST   /admin/email_templates
+PATCH  /admin/email_templates/:id
+DELETE /admin/email_templates/:id
+
+GET  /admin/email_deliveries
+POST /admin/email_deliveries/:id/retry
+
+GET  /admin/reports
+GET  /admin/reports/:id
+POST /admin/reports/:id/generate
+
+GET /admin/report_snapshots
+GET /admin/report_snapshots/:id/download
+
+GET /admin/migrations/ingestion
+GET /admin/migrations/connectors
+GET /admin/migrations/health
+
+GET /admin/system_configurations/logging
+POST /admin/system_configurations/logging
+```
+
+---
+
+## 12. Asset Properties JSONB Schema
+
+The `properties` JSONB column on both `Asset` and `AssetVersion` is the central metadata store. Common keys:
+
+```json
+{
+  "original_filename": "hero-banner.jpg",
+  "content_type": "image/jpeg",
+  "size": 2048576,
+  "size_human": "1.95 MB",
+  "checksum_sha256": "abc123...",
+  "storage_path": "uuid/v1_ab12.jpg",
+  "width": 3840,
+  "height": 2160,
+  "aspect_ratio": 1.78,
+  "resolution": "3840 x 2160",
+  "color_space": "sRGB",
+  "color_palette": ["#FF5733", "#C70039", "#900C3F"],
+  "camera_make": "Canon",
+  "camera_model": "EOS R5",
+  "extracted_text": "SALE 50% OFF",
+  "alt_text": "Hero banner for summer campaign",
+  "description": "Product launch visual",
+  "usage_terms": "Internal Use Only",
+  "license_expires_at": "2026-12-31T00:00:00Z",
+  "tags": ["summer", "campaign", "hero"],
+  "region": "EMEA",
+  "brand": "CapriMark",
+  "processed_at": "2026-06-22T10:30:00Z",
+  "editor_state": {
+    "adjustments": { "brightness": 10, "contrast": 5, "saturation": -10 },
+    "crop_aspect": "16:9",
+    "filter": "Warm",
+    "geometry": { "rotate": 0, "flip_horizontal": false, "focal_point": { "x": 50, "y": 30 } }
+  }
+}
+```
+
+---
+
+## 13. Environment & Configuration
+
+### Environment Variables
+```
+DATABASE_URL              PostgreSQL connection string
+REDIS_URL                 Redis connection (default: redis://localhost:6379/0)
+AWS_ACCESS_KEY_ID         S3 credentials
+AWS_SECRET_ACCESS_KEY
+AWS_REGION
+S3_BUCKET_NAME
+SMTP_HOST / SMTP_PORT / SMTP_USERNAME / SMTP_PASSWORD
+AI_GATEWAY_URL            Python FastAPI base URL (default: http://localhost:8000)
+CDN_BASE_URL              Public CDN hostname
+KEYCLOAK_SITE             Keycloak server URL for SSO
+KEYCLOAK_REALM
+KEYCLOAK_CLIENT_ID
+KEYCLOAK_CLIENT_SECRET
+```
+
+### Sidekiq Queue Config (config/sidekiq.yml)
+Priority order (highest → lowest):
+1. `mailers`
+2. `notifications`
+3. `default`
+4. `workflow`
+5. `metadata`
+6. `reports`
+7. `ingest`
+8. `smartai`
+
+### Storage Backends (StorageBackend model)
+Active backend selected by `StorageBackend.find_by(active: true)`.
+`provider_type`:
+- `"local"` → files stored at `Rails.root/storage/dam/<path>`
+- `"aws_s3"` → S3 adapter (configuration: `{ bucket:, region:, ... }`)
+
+---
+
+## 14. Key File Paths
+
+```
+app/models/asset.rb                    # Core asset model
+app/models/collection.rb               # Collection + ABAC logic
+app/models/user.rb                     # RBAC + SSO
+app/models/concerns/soft_deletable.rb  # Soft delete pattern
+app/models/concerns/auditable.rb       # Audit tracking
+app/controllers/api/v1/assets_controller.rb     # Full asset CRUD + image editor
+app/controllers/api/v1/collections_controller.rb # Collections + smart routing
+app/controllers/api/v1/search_controller.rb     # Lexical + faceted search
+app/controllers/api/v1/copilots_controller.rb   # Semantic (vector) search
+app/workers/asset_processor_worker.rb           # Core ingestion pipeline
+app/workers/smart_collection_router_worker.rb   # AI routing engine
+app/services/workflow_evaluator_service.rb      # Workflow trigger logic
+app/services/email_orchestrator.rb              # Email dispatch
+app/services/storage_manager.rb                 # Storage adapter factory
+app/graphql/headless_dam_schema.rb              # GraphQL schema root
+app/graphql/types/query_type.rb                 # GraphQL queries
+app/javascript/components/Registry.jsx          # React component registry
+app/javascript/application.js                   # React mount logic
+config/routes.rb                                # All routes
+config/sidekiq.yml                              # Queue config
+db/schema.rb                                    # Full database schema
+```
+
+---
+
+## 15. Testing
+
+Framework: RSpec (`spec/`) with FactoryBot and Faker.
+Swagger specs: `spec/requests/` with rswag.
+Legacy Minitest tests in `test/` directory (controllers, models, integration, mailers).
+
+---
+
+## 16. Deployment
+
+- **Containerization:** Docker (`Dockerfile` + `docker-entrypoint`)
+- **Orchestration:** Kamal (`bin/kamal`)
+- **Dev Procfile:** `Procfile.dev` — starts Rails + JS watcher simultaneously
+- **Asset Pipeline:** Propshaft (not Sprockets) + jsbundling-rails (esbuild)
+- **Scheduled Jobs:** `config/schedule.rb` (whenever gem)
+- **Health Check:** `GET /up` → `rails/health#show`
+- **Admin Queues:** `GET /admin/queues` → Sidekiq Web UI (admin-only)
+- **GraphQL Explorer:** `GET /graphiql` (development only)
+- **API Docs (REST):** `GET /api-docs` → Swagger UI
+- **API Docs (GraphQL):** `GET /docs/graphql` → redirects to `/graphql-docs/index.html`
+

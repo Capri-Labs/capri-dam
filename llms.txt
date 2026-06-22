@@ -1,24 +1,181 @@
-# Headless DAM: AI-Driven Enterprise MarTech Workspace
+# Capri DAM — Headless Digital Asset Management Platform
 
-## System Purpose
-An enterprise-grade Headless Digital Asset Management (DAM) system engineered for strict operational governance, technical debt management (TDM), and zero-noise operations. It transcends standard folder structures by utilizing AI-driven semantic routing to autonomously map assets to marketing campaign buckets based on vector embeddings and attribute-based access controls (ABAC).
+> Concise summary for LLM agents. For full implementation details, see `llms-full.txt`.
 
-## Architectural Stack
-* **Backend:** Ruby on Rails (API Only)
-* **Database:** PostgreSQL (Leveraging JSONB for ABAC and Metadata, pgvector/Ruby math for embeddings)
-* **Background Processing:** Redis + Sidekiq (Event-driven pipelines, throttled queues)
-* **Frontend:** React 18 + React Router + Material UI (MUI)
-* **AI Layer:** Python FastAPI Gateway (TDM Evaluation, 1536-dimensional Vector Embeddings, LLM Taxonomy Synthesis)
+## What This System Is
+Capri DAM is an enterprise-grade **Headless Digital Asset Management (DAM)** platform built as a Ruby on Rails + React hybrid monolith. It manages the full lifecycle of digital assets (images, video, documents) for enterprise marketing operations — from ingestion and metadata enrichment to approval workflows, smart collection routing via AI vectors, and CDN delivery.
 
-## Core Concepts & Design Patterns
+---
 
-1.  **Smart Collections (Semantic Routing):** Collections operate as either `manual` or `smart`. Smart collections utilize a `CollectionRule` containing a human-readable NLP prompt and a Cosine Similarity threshold. A Sidekiq worker (`SmartCollectionRouterWorker`) evaluates incoming asset vectors against these rules to autonomously populate workspaces.
-2.  **Operational Governance (Zero-Noise):** Enforced via strict Time-To-Live (TTL) expiration dates (`expires_at`) on collections to automatically archive legacy campaigns. Human curators retain ultimate control via an asset `pinned` boolean, overriding AI routing.
-3.  **JSONB Attribute-Based Access Control (ABAC):** Security (Whitelists/Blacklists) and taxonomy (Tags) are stored within a unified `properties` JSONB column on the Collection model, accessed via Rails `store_accessor` for O(1) read performance without complex joins. Explicit Deny overrides Allow.
-4.  **TDM Ingestion Pipeline:** `IngestionWorker` dynamically throttles legacy system connectors. Assets pass through an AI Gateway for compliance scanning before being vectorized and committed to the database.
+## Tech Stack (Authoritative)
+- **Backend:** Ruby on Rails 8.1 (not API-only — hybrid monolith serving HTML shells + JSON API)
+- **Language:** Ruby 4.0.3
+- **Frontend:** React 19 + Material UI v9 + Emotion 11 (mounted via `data-view` DOM attributes)
+- **Database:** PostgreSQL 14+ with `pgvector` (1536-dim HNSW index) and `pgcrypto` extensions
+- **Background Jobs:** Sidekiq + Redis (strict queue weighting)
+- **Auth:** Devise (session) + Doorkeeper (OAuth2) + OmniAuth Keycloak (SSO)
+- **Storage:** ActiveStorage abstraction → Local disk (dev) / AWS S3 (prod)
+- **AI:** pgvector `neighbor` gem for cosine similarity semantic search; Python FastAPI gateway for embedding generation (`http://localhost:8000/api/embed_query`)
+- **Image Processing:** MiniMagick (ImageMagick wrapper) + RTesseract (OCR)
+- **Email:** Liquid-templated email engine via `EmailTemplate` model + `EmailDispatcherWorker`
+- **GraphQL:** `graphql` gem with schema at `/graphql` (dev explorer: `/graphiql`)
+- **REST API:** `/api/v1/` documented via rswag/Swagger at `/api-docs`
+- **CDN:** Pluggable CDN adapters (Akamai EdgeGrid included); invalidation via `CdnInvalidationWorker`
+- **Reports:** Prawn (PDF) + caxlsx (Excel)
 
-## Key Terminology
-* **TDM:** Technical Debt Management.
-* **TTL:** Time-To-Live (Campaign lifecycle expiration).
-* **ABAC:** Attribute-Based Access Control (`allowed_groups`, `denied_groups`).
-* **Pinned:** A manual override preventing the AI from removing an asset.
+---
+
+## Architecture Pattern
+**Hybrid Monolith** — Rails handles routing and serves standard HTML views. React 19 components are mounted into specific DOM nodes identified by `data-view` attributes in `application.js`. No separate SPA repo. All code lives in one repository.
+
+**Route Namespaces:**
+- `/api/v1/` — Core REST API consumed by React (assets, folders, collections, search, workflows, notifications)
+- `/graphql` — GraphQL endpoint (queries: `assetDetail`, `searchAssets`, `collections`, `collection`)
+- `/admin/` — System operations (users, groups, reports, email templates, system status)
+- `/ai/` — AI Copilot, Agents, Batch UIs
+
+---
+
+## Core Domain Models
+
+### Asset
+- UUID primary key (`uuid` column, also has `id` bigint)
+- `status` enum: `draft(0)`, `pending(1)`, `processing(2)`, `ready(3)`, `in_review(4)`, `approved(5)`, `rejected(6)`, `failed(7)`
+- `properties` JSONB: stores `original_filename`, `content_type`, `size`, `checksum_sha256`, `width`, `height`, `color_palette`, `extracted_text`, `usage_terms`, `alt_text`, `tags`, `editor_state`, `storage_path`, etc.
+- Soft-deletable via `deleted_at` (SoftDeletable concern)
+- After commit: publishes `asset.needs_embedding` event to Redis channel `ai_gateway_events`
+- Belongs to: `User`, `Folder` (optional), `AssetVersion` (active_version pointer)
+- Has many: `AssetVersions`, `WorkflowInstances`, `CollectionAssets`, `Collections`
+- Has one: `AssetEmbedding` (pgvector, 1536-dim)
+
+### AssetVersion
+- Immutable snapshot per save/edit
+- `action_type`: `initial_upload`, `image_edit`, `cloned_edit`, `branched_edit`
+- `properties` JSONB: `storage_path`, `content_type`, `size`, `checksum_sha256`, `width`, `height`, `color_palette`, `extracted_text`, `processed_at`, `editor_state`
+- Physical file via ActiveStorage (`has_one_attached :file`)
+
+### Folder
+- Self-referential hierarchy (`parent_id`)
+- `path_hierarchy` method returns breadcrumb array for React
+- Soft-deletable; slug auto-generated from name
+- `governing_groups` returns UserGroups with FolderPolicies attached
+
+### FolderPolicy (RBAC)
+- Per-folder, per-UserGroup access rules
+- Boolean columns: `read_access`, `write_access`, `delete_access`, `manage_access`, `approval_flow`, `explicit_deny`
+- `explicit_deny = true` overrides all other grants (short-circuit deny)
+- Users inherit permissions from parent groups via `UserGroupClosure` closure table (zero-recursion query)
+
+### Collection (Workspace)
+- `collection_type`: `manual` | `smart`
+- `expires_at` — TTL for campaign lifecycle auto-archival
+- `properties` JSONB (via `store_accessor`): `tags[]`, `allowed_groups[]`, `denied_groups[]`
+- ABAC: `denied_groups` checked first (explicit deny), then `allowed_groups` whitelist
+- `accessible_by?(user)` enforces group-based access
+- `compliance_violations` detects `Internal Use Only` assets in external collections and license expiry mismatches
+
+### CollectionRule (Smart Routing Brain)
+- Belongs to a `smart` Collection
+- `semantic_prompt` — natural language description (e.g., "Summer campaign beach assets")
+- `similarity_threshold` — cosine similarity cutoff (0–1, default 0.800)
+- `metadata_filters` JSONB — hard guardrails (e.g., `{"status": "approved"}`)
+- Processed asynchronously by `SmartCollectionRouterWorker`
+
+### User
+- Roles: `viewer` (default), `editor`, `admin`
+- Devise auth + OmniAuth Keycloak SSO (`provider`/`uid`)
+- `permissions_for(folder)` — returns `{read, write, delete, manage, approve}` hash
+- `effective_group_ids` — resolves inherited groups via closure table in one query
+- `active_for_authentication?` — blocks deactivated users
+
+### Workflow
+- `trigger_type`: `on_upload` (and others)
+- `folder_scope`: `all` | `specific`; `target_folder_ids[]`, `exclude_folder_ids[]`
+- `status` enum: `inactive(0)`, `active(1)`, `draft(2)`
+- Active workflows require at least one `WorkflowStep`
+
+---
+
+## Key Background Workers (Sidekiq)
+| Worker | Queue | Purpose |
+|--------|-------|---------|
+| `AssetProcessorWorker` | `ingest` | Extracts metadata (MIME, dimensions, SHA256, OCR, color palette), stores physical file, marks asset `ready`, triggers workflow |
+| `SmartCollectionRouterWorker` | `smartai` | Cosine similarity matching against active CollectionRules via pgvector |
+| `AssetWorkflowTriggerWorker` | `workflow` | Evaluates which Workflows apply to a newly processed asset |
+| `WorkflowInitiatorWorker` | `workflow` | Creates WorkflowInstance + WorkflowTask records |
+| `WorkflowEngineWorker` | `workflow` | Advances workflow state on task submission |
+| `CdnInvalidationWorker` | `default` | Purges CDN edge cache |
+| `EdgeMetadataSyncWorker` | `default` | Syncs asset metadata to CDN edge KV store |
+| `EmailDispatcherWorker` | `mailers` | Renders Liquid template + delivers email |
+| `TaskNotificationWorker` | `notifications` | Creates in-app notifications for workflow tasks |
+| `TrashCleanupWorker` | `ingest` | Permanently purges soft-deleted assets after TTL |
+| `IngestionWorker` | `ingest` | Processes IngestionItem records from bulk imports |
+| `PreFlightAnalysisWorker` | `ingest` | Duplicate/compliance check before bulk ingestion |
+
+**Queue Priority:** `mailers` > `notifications` > `default` > `workflow` > `metadata` > `reports` > `ingest` > `smartai`
+
+---
+
+## Key API Endpoints
+
+### Assets (`/api/v1/assets`)
+- `POST /` — Upload → creates Asset + AssetVersion V1 → dispatches workers
+- `DELETE /:id` — Soft delete (moves to bin)
+- `POST /:id/restore` — Restore from bin
+- `DELETE /:id/permanent` — Permanently delete all versions + physical files
+- `GET /bin` — List trashed assets and folders
+- `POST /:id/process_image` — Image editor: modes `new` (fork), `overwrite`, `version` (branch)
+- `GET /:id/versions` — Version history
+- `GET /:id/audit_trail` — Audit trail
+- `POST /:id/versions/:version_id/restore` — Restore a specific version
+- `GET /:id/watermarked` — Returns watermarked image blob
+- `GET /local/:uuid` — Serve local development file
+- `POST /check_hashes` — Duplicate detection via SHA256 checksums
+- `GET /:id/workflow_history` — Active workflow tasks
+
+### Collections (`/api/v1/collections/:slug`)
+- CRUD + bulk operations
+- `POST /:slug/rule` — Configure smart routing rule
+- `POST /simulate_rule` — Preview rule matches
+- `GET /:slug/cluster_map` — 2D UMAP projection of asset embeddings
+- Asset membership and pin management
+
+### Search (`/api/v1/search`)
+- Lexical on `title` + `original_filename`
+- Mode filter: `images` | `files`
+- Dynamic JSONB property filters via extra query params
+- Returns facets for React UI
+
+### Copilot (`/api/v1/copilot/search`)
+- POST `query` text → Python AI Gateway → pgvector HNSW search → top 20 assets
+
+### GraphQL (`/graphql`)
+- `assetDetail(uuid)`, `searchAssets(query, mode, metadataFilters)`, `collections`, `collection(slug)`
+
+---
+
+## Design Patterns
+1. **SoftDeletable concern** — `deleted_at` column; `.active` and `.trashed` scopes on Asset and Folder
+2. **Auditable concern** — Audit tracking on User model
+3. **JSONB properties** — All flexible metadata in `properties` JSONB (not separate columns)
+4. **Closure table** — `UserGroupClosure` for O(1) ancestor group resolution
+5. **Hybrid auth** — `authenticate_hybrid!` accepts Devise session OR Doorkeeper Bearer token
+6. **AssetUrlHelper** — Resolves correct asset URL (local vs CDN) based on environment
+7. **Liquid templating** — Email templates use Shopify Liquid; payload deeply stringified before render
+
+---
+
+## Terminology Reference
+| Term | Meaning |
+|------|---------|
+| DAM | Digital Asset Management |
+| TDM | Technical Debt Management (ingestion compliance scanning) |
+| TTL | Time-To-Live (`expires_at` on collections — campaign lifecycle) |
+| ABAC | Attribute-Based Access Control (allowed_groups / denied_groups on Collections) |
+| RBAC | Role-Based Access Control (FolderPolicies per UserGroup) |
+| Pinned | `collection_assets.pinned = true` — manual override, AI won't remove this asset |
+| Smart Collection | Collection with a `CollectionRule` (NLP prompt + pgvector cosine similarity) |
+| Bin | Soft-deleted recycle bin for assets and folders |
+| Baking | MiniMagick physically writes image edits to a new file at save time |
+| Versioning | Immutable `AssetVersion` rows; `Asset.active_version_id` is the current pointer |
+| Edge KV | CDN edge key-value metadata store synced by `EdgeMetadataSyncWorker` |
