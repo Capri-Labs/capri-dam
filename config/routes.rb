@@ -98,6 +98,7 @@ Rails.application.routes.draw do
   namespace :tools do
     resources :metadata_schemas, only: [:index]
     resources :metadata_exports, only: [:index]
+    resources :metadata_imports, only: [:index]
   end
 
   # ==========================================
@@ -232,6 +233,16 @@ Rails.application.routes.draw do
       resources :metadata_exports, only: [:index, :show, :create, :destroy] do
         collection do
           get :properties
+        end
+        member do
+          get :download
+        end
+      end
+
+      # Metadata Import (async CSV import / bulk metadata update)
+      resources :metadata_imports, only: [:index, :show, :create, :destroy] do
+        collection do
+          get :template
         end
         member do
           get :download

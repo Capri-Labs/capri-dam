@@ -23,6 +23,7 @@ import AgentWorkflows from "./Admin/Intelligence/AgentWorkflows";
 import BatchProcessing from "./Admin/Intelligence/BatchProcessing";
 import MetadataSchemasManager from "./Tools/MetadataSchemas";
 import MetadataExportManager from "./Tools/MetadataExport";
+import MetadataImportManager from "./Tools/MetadataImport";
 
 export const COMPONENT_REGISTRY = {
     'dashboard': DashboardManager,
@@ -50,4 +51,5 @@ export const COMPONENT_REGISTRY = {
     'ai-batch-processing-screen': BatchProcessing,
     'metadata-schemas-screen': MetadataSchemasManager,
     'metadata-exports-screen': MetadataExportManager,
+    'metadata-imports-screen': MetadataImportManager,
 };

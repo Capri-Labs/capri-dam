@@ -6,3 +6,9 @@ end
 every 1.day, at: '2:00 am' do
   runner "MetadataExportCleanupWorker.perform_async"
 end
+
+# Purge metadata import artifacts (source + results CSVs) older than 30 days.
+every 1.day, at: '2:15 am' do
+  runner "MetadataImportCleanupWorker.perform_async"
+end
+

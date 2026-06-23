@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_23_120000) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_23_130000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -307,6 +307,29 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_23_120000) do
     t.index ["folder_id"], name: "index_metadata_exports_on_folder_id"
     t.index ["status"], name: "index_metadata_exports_on_status"
     t.index ["user_id"], name: "index_metadata_exports_on_user_id"
+  end
+
+  create_table "metadata_imports", force: :cascade do |t|
+    t.string "asset_path_column", default: "asset_path", null: false
+    t.integer "batch_size", default: 50, null: false
+    t.datetime "created_at", null: false
+    t.text "error_message"
+    t.datetime "expires_at"
+    t.integer "failure_count", default: 0, null: false
+    t.string "field_separator", default: ",", null: false
+    t.jsonb "ignored_columns", default: [], null: false
+    t.boolean "launch_workflows", default: false, null: false
+    t.string "multi_value_delimiter", default: "|", null: false
+    t.string "name", null: false
+    t.datetime "scheduled_at"
+    t.integer "status", default: 0, null: false
+    t.integer "success_count", default: 0, null: false
+    t.integer "total_rows", default: 0, null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["expires_at"], name: "index_metadata_imports_on_expires_at"
+    t.index ["status"], name: "index_metadata_imports_on_status"
+    t.index ["user_id"], name: "index_metadata_imports_on_user_id"
   end
 
   create_table "metadata_schema_folder_assignments", force: :cascade do |t|
@@ -656,6 +679,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_23_120000) do
   add_foreign_key "ingestion_batches", "system_connectors", column: "connector_id", on_delete: :nullify
   add_foreign_key "ingestion_items", "ingestion_batches"
   add_foreign_key "metadata_exports", "users"
+  add_foreign_key "metadata_imports", "users"
   add_foreign_key "metadata_schema_folder_assignments", "metadata_schemas"
   add_foreign_key "metadata_schemas", "metadata_schemas", column: "parent_id"
   add_foreign_key "notifications", "users"

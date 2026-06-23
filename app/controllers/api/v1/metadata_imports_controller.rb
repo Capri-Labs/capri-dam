@@ -1,0 +1,135 @@
+require "csv"
+
+module Api
+  module V1
+    class MetadataImportsController < ApplicationController
+      include Rails.application.routes.url_helpers
+      before_action :authenticate_user!
+      before_action :set_import, only: [:show, :download, :destroy]
+
+      # GET /api/v1/metadata_imports
+      def index
+        imports = current_user.metadata_imports.not_expired.recent.limit(100)
+        render json: imports.map { |i| serialize(i) }
+      end
+
+      # GET /api/v1/metadata_imports/:id
+      def show
+        render json: serialize(@import)
+      end
+
+      # GET /api/v1/metadata_imports/template
+      # Downloads the fixed starter template so users begin with the right columns.
+      def template
+        csv = CSV.generate do |out|
+          out << MetadataImport::TEMPLATE_COLUMNS
+          out << ["/Adventures/Cycling/bike.jpg", "Mountain Bike", "Trail ready", "WKND Site", "Internal Use Only", "Cyclist on a trail", "bike|outdoor|sport"]
+        end
+        send_data csv,
+                  filename: "metadata_import_template.csv",
+                  type: "text/csv",
+                  disposition: "attachment"
+      end
+
+      # POST /api/v1/metadata_imports  (multipart/form-data)
+      def create
+        unless params.dig(:metadata_import, :source_file).present?
+          return render json: { errors: ["Please select a CSV file."] }, status: :unprocessable_entity
+        end
+
+        import = current_user.metadata_imports.new(import_params)
+        import.name   = import.name.presence || import.source_file.filename.to_s
+        import.status = :pending
+
+        if import.save
+          enqueue(import)
+          render json: serialize(import), status: :accepted
+        else
+          render json: { errors: import.errors.full_messages }, status: :unprocessable_entity
+        end
+      end
+
+      # GET /api/v1/metadata_imports/:id/download?type=source|result
+      def download
+        attachment = params[:type].to_s == "result" ? @import.result_file : @import.source_file
+
+        unless attachment.attached?
+          return render json: { error: "File not available." }, status: :not_found
+        end
+
+        redirect_to rails_blob_path(attachment, disposition: "attachment"), allow_other_host: false
+      end
+
+      # DELETE /api/v1/metadata_imports/:id
+      def destroy
+        @import.source_file.purge if @import.source_file.attached?
+        @import.result_file.purge if @import.result_file.attached?
+        @import.destroy
+        render json: { success: true }
+      end
+
+      private
+
+      def set_import
+        @import = current_user.metadata_imports.find(params[:id])
+      end
+
+      def import_params
+        permitted = params.require(:metadata_import).permit(
+          :name, :source_file, :batch_size, :field_separator, :multi_value_delimiter,
+          :launch_workflows, :asset_path_column, :scheduled_at, ignored_columns: []
+        )
+
+        # FormData sends ignored_columns as a comma-joined string when not an array.
+        if permitted[:ignored_columns].is_a?(String)
+          permitted[:ignored_columns] = permitted[:ignored_columns].split(",").map(&:strip).reject(&:blank?)
+        end
+        permitted
+      end
+
+      def enqueue(import)
+        if import.scheduled_at.present? && import.scheduled_at > Time.current
+          MetadataImportWorker.perform_at(import.scheduled_at, import.id)
+        else
+          MetadataImportWorker.perform_async(import.id)
+        end
+      end
+
+      def serialize(import)
+        {
+          id:                    import.id,
+          name:                  import.name,
+          status:                import.status,
+          batch_size:            import.batch_size,
+          field_separator:       import.field_separator,
+          multi_value_delimiter: import.multi_value_delimiter,
+          launch_workflows:      import.launch_workflows,
+          asset_path_column:     import.asset_path_column,
+          ignored_columns:       import.ignored_columns,
+          total_rows:            import.total_rows,
+          success_count:         import.success_count,
+          failure_count:         import.failure_count,
+          error_message:         import.error_message,
+          created_by:            import.user&.name || import.user&.email,
+          created_at:            import.created_at&.strftime("%b %d, %Y at %H:%M"),
+          scheduled_at:          import.scheduled_at&.strftime("%b %d, %Y at %H:%M"),
+          expires_at:            import.expires_at&.strftime("%b %d, %Y"),
+          source_file:           file_meta(import, :source),
+          result_file:           file_meta(import, :result)
+        }
+      end
+
+      def file_meta(import, type)
+        attachment = type == :result ? import.result_file : import.source_file
+        return nil unless attachment.attached?
+
+        {
+          filename:     attachment.blob.filename.to_s,
+          byte_size:    attachment.blob.byte_size,
+          download_url: download_api_v1_metadata_import_path(import, type: type)
+        }
+      end
+    end
+  end
+end
+
