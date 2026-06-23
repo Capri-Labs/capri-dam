@@ -1,7 +1,7 @@
 FactoryBot.define do
   factory :cdn_configuration do
-    provider { "MyString" }
+    sequence(:provider) { |n| "provider_\#{n}" }
     is_active { false }
-    settings { "MyText" }
+    settings { { "api_key" => "abc123" } }
   end
 end

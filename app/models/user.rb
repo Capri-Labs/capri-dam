@@ -5,7 +5,7 @@ class User < ApplicationRecord
          :recoverable, :rememberable, :validatable,
          :omniauthable, omniauth_providers: %i[keycloak_openid]
 
-  #validates :username, presence: true, uniqueness: true
+  # Username is optional — email is the canonical identity for login & uniqueness.
   validates :email, presence: true, uniqueness: { case_sensitive: false }
 
   def self.from_omniauth(auth)

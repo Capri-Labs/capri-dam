@@ -74,6 +74,10 @@ class Asset < ApplicationRecord
     # You should have a config/initializers/redis.rb, but this will stop the crash:
     redis = Redis.new(url: ENV.fetch("REDIS_URL", "redis://localhost:6379/0"))
     redis.publish('ai_gateway_events', payload)
+  rescue StandardError => e
+    # The AI gateway is best-effort. A downed Redis must never roll back or
+    # crash a metadata save — just log and move on.
+    Rails.logger.warn("[Asset##{id}] embedding broadcast skipped: #{e.message}")
   end
 
   def set_property_defaults

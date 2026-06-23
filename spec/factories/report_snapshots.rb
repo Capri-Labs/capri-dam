@@ -1,9 +1,8 @@
 FactoryBot.define do
   factory :report_snapshot do
-    report_definition { nil }
+    association :report_definition
     status { 1 }
-    format { "MyString" }
-    parameters { "" }
-    error_message { "MyText" }
+    format { "csv" }
+    parameters { {} }
   end
 end

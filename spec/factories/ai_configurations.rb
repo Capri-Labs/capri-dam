@@ -1,11 +1,11 @@
 FactoryBot.define do
   factory :ai_configuration do
-    active_provider { "MyString" }
-    generation_model { "MyString" }
-    embedding_model { "MyString" }
-    monthly_budget_usd { "9.99" }
-    current_spend_usd { "9.99" }
-    system_prompt { "MyText" }
-    fallback_to_local { false }
+    active_provider { "openai" }
+    generation_model { "gpt-4o" }
+    embedding_model { "text-embedding-3-small" }
+    monthly_budget_usd { 100.0 }
+    current_spend_usd { 0.0 }
+    system_prompt { "You are an enterprise data steward." }
+    fallback_to_local { true }
   end
 end

@@ -1,11 +1,11 @@
 FactoryBot.define do
   factory :audit_log do
-    user { nil }
-    action { "MyString" }
-    auditable_type { "MyString" }
+    association :user
+    action { "update" }
+    auditable_type { "Asset" }
     auditable_id { 1 }
-    changes_data { "" }
-    ip_address { "MyString" }
-    user_agent { "MyString" }
+    changes_data { { "title" => ["old", "new"] } }
+    ip_address { "127.0.0.1" }
+    user_agent { "RSpec" }
   end
 end

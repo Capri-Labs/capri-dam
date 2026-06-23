@@ -26,6 +26,12 @@ module Auditable
   def create_audit_log(action, data)
     # We need to access the current_user. In Rails, we usually store this
     # in Current.user via a middleware.
+    #
+    # Skip audit logging for user-less (system) contexts — seeds, background
+    # jobs, rake tasks and tests — so a missing Current.user never rolls back
+    # or crashes the underlying business operation.
+    return if Current.user.nil?
+
     AuditLog.create!(
       user: Current.user,
       action: action,

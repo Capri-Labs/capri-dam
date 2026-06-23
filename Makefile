@@ -7,7 +7,7 @@ RUBY_VERSION = 4.0.3
 .PHONY: help bootstrap check-system install db-setup setup dev
 
 help: ## Show this help message
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
+	@grep -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
 bootstrap: ## Force install system dependencies (macOS/Homebrew only)
 	@echo "--- 1. Bootstrapping System Packages ---"
@@ -108,12 +108,79 @@ swagger-docs: ## Generate Swagger OpenAPI documentation from specs
 	RAILS_ENV=test bundle exec rails rswag:specs:swaggerize
 
 dev: ## Start the full engine (Server + Ingest Workers)
+	@echo "--- Switching to development environment ---"
 	@echo "--- Launching Headless DAM Ecosystem ---"
-	./bin/dev
+	RAILS_ENV=development ./bin/dev
 
 all-tests: ## Run all RSpec tests
 	@echo "--- Running Tests ---"
 	bundle exec rspec
+
+# ===========================================================================
+# TEST & COVERAGE
+# ===========================================================================
+# Quick reference:
+#   make test                 -> full backend RSpec suite (unit + integration + system)
+#   make test-frontend        -> Jest unit/component tests
+#   make coverage-backend     -> Backend coverage (RSpec + SimpleCov)
+#   make coverage-frontend    -> Frontend coverage (Jest + Istanbul)
+#   make e2e-backend          -> Backend E2E coverage (Coverband, runtime)
+#   make e2e-frontend         -> Frontend E2E coverage (Playwright + Istanbul)
+#   make coverage             -> backend + frontend unit/integration coverage
+#   make e2e                  -> backend + frontend E2E coverage
+#   make test-all             -> everything
+
+.PHONY: test test-frontend coverage-backend coverage-frontend e2e-backend \
+        e2e-frontend coverage e2e test-all playwright-install test-api-docs
+
+test: ## Run the full backend RSpec suite (models, requests, system)
+	@echo "--- Preparing test database ---"
+	RAILS_ENV=test bundle exec rails db:test:prepare
+	@echo "--- Backend: RSpec suite ---"
+	bundle exec rspec
+
+test-api-docs: ## Run the rswag OpenAPI/Swagger doc specs (excluded from the default run)
+	@echo "--- Preparing test database ---"
+	RAILS_ENV=test bundle exec rails db:test:prepare
+	@echo "--- Backend: rswag API-doc specs ---"
+	RUN_API_DOCS=1 bundle exec rspec spec/requests --format progress 2>&1
+
+test-frontend: ## Run the frontend Jest unit & component tests
+	@echo "--- Frontend: Jest ---"
+	$(YARN) jest
+
+coverage-backend: ## Backend coverage (RSpec + SimpleCov) -> coverage/backend/index.html
+	@echo "--- Preparing test database ---"
+	RAILS_ENV=test bundle exec rails db:test:prepare
+	@echo "--- Backend coverage (RSpec + SimpleCov) ---"
+	COVERAGE=true bundle exec rspec
+	@echo "\033[32mHTML:\033[0m coverage/backend/index.html  \033[32mXML:\033[0m coverage/backend/coverage.xml"
+
+coverage-frontend: ## Frontend coverage (Jest + Istanbul) -> coverage-frontend/unit/index.html
+	@echo "--- Frontend coverage (Jest + Istanbul) ---"
+	$(YARN) jest --coverage
+	@echo "\033[32mHTML:\033[0m coverage-frontend/unit/index.html"
+
+playwright-install: ## Install the Playwright browser binaries (one-time)
+	$(YARN) playwright install --with-deps chromium
+
+e2e-frontend: ## Frontend E2E coverage (Playwright + Istanbul) -> coverage-frontend/e2e
+	@echo "--- Frontend E2E (Playwright + Istanbul) ---"
+	@echo "Requires a running server (make dev) and browsers (make playwright-install)."
+	$(YARN) playwright test
+	@echo "\033[32mIstanbul report:\033[0m coverage-frontend/e2e/index.html"
+
+e2e-backend: ## Backend E2E coverage (Coverband runtime) -> /admin/coverband
+	@echo "--- Backend E2E (Coverband runtime) ---"
+	@echo "Exercise the running server (e.g. 'make e2e-frontend'), then summarise:"
+	RAILS_ENV=development bundle exec rake coverband:report
+	@echo "\033[32mDashboard:\033[0m http://localhost:3000/admin/coverband (admin login)"
+
+coverage: coverage-backend coverage-frontend ## Run backend + frontend unit/integration coverage
+
+e2e: e2e-frontend e2e-backend ## Run frontend + backend E2E coverage (server must be running)
+
+test-all: coverage e2e ## Run the entire test + coverage matrix
 
 clean: ## Remove logs, temp files and compiled assets
 	$(RAILS) log:clear tmp:clear

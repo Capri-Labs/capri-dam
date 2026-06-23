@@ -1,9 +1,8 @@
 FactoryBot.define do
   factory :collection_rule do
-    collection { nil }
-    semantic_prompt { "MyText" }
-    similarity_threshold { "9.99" }
-    metadata_filters { "" }
-    active { false }
+    association :collection
+    semantic_prompt { "Find all beach photos" }
+    similarity_threshold { 0.8 }
+    active { true }
   end
 end

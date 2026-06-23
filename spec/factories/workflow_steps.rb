@@ -1,11 +1,11 @@
 FactoryBot.define do
   factory :workflow_step do
-    workflow { nil }
+    association :workflow
     position { 1 }
-    step_type { "MyString" }
-    assignee_type { "MyString" }
+    step_type { "approval" }
+    assignee_type { "User" }
     assignee_id { 1 }
-    configuration { "" }
-    updated_by_id { 1 }
+    logic { "any" }
+    title { "Brand Review" }
   end
 end

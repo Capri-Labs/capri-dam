@@ -1,11 +1,8 @@
 FactoryBot.define do
   factory :workflow do
-    name { "MyString" }
-    description { "MyText" }
-    status { 1 }
-    trigger_type { "MyString" }
-    metadata { "" }
-    created_by_id { 1 }
-    updated_by_id { 1 }
+    sequence(:name) { |n| "Workflow \#{n}" }
+    description { "Test workflow" }
+    status { :draft }
+    trigger_type { "manual" }
   end
 end

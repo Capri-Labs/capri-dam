@@ -8,6 +8,11 @@ Rails.application.routes.draw do
   # ==========================================
   authenticate :user, ->(user) { user.admin? } do
     mount Sidekiq::Web => '/admin/queues'
+
+    # Coverband runtime/E2E coverage dashboard (development & production only).
+    if defined?(Coverband)
+      mount Coverband::Reporters::Web.new, at: '/admin/coverband'
+    end
   end
 
   if Rails.env.development?

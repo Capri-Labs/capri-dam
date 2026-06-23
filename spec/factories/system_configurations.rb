@@ -1,11 +1,8 @@
 FactoryBot.define do
   factory :system_configuration do
-    key { "MyString" }
-    data_type { "MyString" }
-    value { "MyText" }
-    fallback_value { "MyText" }
-    expires_at { "2026-06-02 11:27:55" }
-    description { "MyString" }
-    updated_by_id { 1 }
+    sequence(:key) { |n| "config_key_\#{n}" }
+    data_type { "string" }
+    value { "some-value" }
+    description { "A test configuration" }
   end
 end

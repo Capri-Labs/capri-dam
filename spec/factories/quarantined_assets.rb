@@ -1,8 +1,8 @@
 FactoryBot.define do
   factory :quarantined_asset do
-    system_connector { nil }
-    original_payload { "" }
-    rejection_reason { "MyText" }
-    status { "MyString" }
+    association :system_connector
+    original_payload { { "filename" => "test.jpg" } }
+    rejection_reason { "Duplicate detected" }
+    status { "pending_review" }
   end
 end

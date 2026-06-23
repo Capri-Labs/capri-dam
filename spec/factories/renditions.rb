@@ -1,13 +1,12 @@
 FactoryBot.define do
   factory :rendition do
-    asset { nil }
-    storage_backend { nil }
-    storage_key { "MyString" }
-    kind { "MyString" }
-    width { 1 }
-    height { 1 }
-    file_size { "" }
-    content_type { "MyString" }
-    metadata { "" }
+    association :asset
+    association :storage_backend
+    sequence(:storage_key) { |n| "renditions/\#{n}.jpg" }
+    kind { "thumbnail" }
+    width { 200 }
+    height { 200 }
+    file_size { 1024 }
+    content_type { "image/jpeg" }
   end
 end

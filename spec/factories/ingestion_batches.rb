@@ -1,10 +1,9 @@
 FactoryBot.define do
   factory :ingestion_batch do
-    name { "MyString" }
-    source_type { "MyString" }
-    status { 1 }
-    total_count { 1 }
-    processed_count { 1 }
-    user_id { 1 }
+    sequence(:name) { |n| "Batch \#{n}" }
+    source_type { "aem" }
+    status { :initializing }
+    total_count { 0 }
+    processed_count { 0 }
   end
 end

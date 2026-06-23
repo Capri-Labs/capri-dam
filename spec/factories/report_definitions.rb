@@ -1,8 +1,8 @@
 FactoryBot.define do
   factory :report_definition do
-    name { "MyString" }
-    report_type { "MyString" }
-    query_config { "" }
-    active { false }
+    sequence(:name) { |n| "Report \#{n}" }
+    report_type { "asset_inventory" }
+    query_config { {} }
+    active { true }
   end
 end

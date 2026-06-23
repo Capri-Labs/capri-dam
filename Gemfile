@@ -76,12 +76,24 @@ group :development, :test do
   gem 'rspec-rails'
   gem 'factory_bot_rails'
   gem 'faker' # Optional: generates random data for tests
+
+  # Restores `assigns(...)` / `assert_template` helpers in request & controller specs
+  gem 'rails-controller-testing'
+
+  # Code coverage for the RSpec suite (unit + integration/request specs)
+  gem 'simplecov', require: false
+  gem 'simplecov-cobertura', require: false # CI-friendly XML report
 end
 gem "doorkeeper", "~> 5.9"
 
 gem "sidekiq"
 gem "sidekiq-throttled", "~> 2.0"
 gem "redis"
+
+# Runtime (production-grade) code coverage for E2E / live traffic.
+# Captures which lines actually execute during real requests & E2E flows.
+# Scoped away from :test so it doesn't clash with SimpleCov's Coverage hook.
+gem "coverband", groups: [:development, :production]
 
 # Swagger (OpenAPI) file.
 gem 'rswag-api'

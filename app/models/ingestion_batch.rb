@@ -5,6 +5,9 @@ class IngestionBatch < ApplicationRecord
   validates :name, :source_type, presence: true
 
   # ── State Machine ─────────────────────────────────────────────────────────
+  # `instance_methods: false` avoids a clash between the `committed` state and
+  # ActiveRecord's internal `committed!` transaction callback. We re-add the
+  # read-only `?` predicates (the unused `!` bang setters are what collided).
   enum :status, {
     initializing:  0,
     extracting:    1,
@@ -12,7 +15,11 @@ class IngestionBatch < ApplicationRecord
     review_needed: 3,
     committed:     4,
     failed:        5
-  }
+  }, instance_methods: false
+
+  statuses.each_key do |state|
+    define_method("#{state}?") { status == state }
+  end
 
   # ── Progress ──────────────────────────────────────────────────────────────
   def calculate_progress!

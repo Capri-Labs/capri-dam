@@ -1,9 +1,8 @@
 FactoryBot.define do
   factory :storage_backend do
-    name { "MyString" }
-    provider_type { "MyString" }
-    configuration { "" }
-    encrypted_credentials { "MyText" }
+    sequence(:name) { |n| "Backend \#{n}" }
+    provider_type { "local" }
+    configuration { { "root" => "storage/" } }
     active { false }
   end
 end

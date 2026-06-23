@@ -1,8 +1,13 @@
 FactoryBot.define do
   factory :folder do
-    name { "MyString" }
+    sequence(:name) { |n| "Folder #{n}" }
+    user { create(:user) }
     parent { nil }
-    path { "MyString" }
-    slug { "MyString" }
+    path { nil }
+    deleted_at { nil }
+
+    trait :trashed do
+      deleted_at { Time.current }
+    end
   end
 end

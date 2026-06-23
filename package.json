@@ -26,7 +26,57 @@
     "reactflow": "^11.11.4",
     "recharts": "^3.8.1"
   },
+  "devDependencies": {
+    "@babel/core": "^7.24.0",
+    "@babel/preset-env": "^7.24.0",
+    "@babel/preset-react": "^7.24.0",
+    "@playwright/test": "^1.45.0",
+    "@testing-library/dom": "^10.4.0",
+    "@testing-library/jest-dom": "^6.4.2",
+    "@testing-library/react": "^16.0.0",
+    "@testing-library/user-event": "^14.5.2",
+    "babel-jest": "^29.7.0",
+    "babel-plugin-istanbul": "^6.1.1",
+    "identity-obj-proxy": "^3.0.0",
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
+    "monocart-coverage-reports": "^2.8.4",
+    "nyc": "^15.1.0"
+  },
   "scripts": {
-    "build": "esbuild app/javascript/*.* --bundle --sourcemap --outdir=app/assets/builds --public-path=/assets --loader:.js=jsx"
+    "build": "esbuild app/javascript/*.* --bundle --sourcemap --outdir=app/assets/builds --public-path=/assets --loader:.js=jsx",
+    "dev": "yarn build && RAILS_ENV=development make dev",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:e2e": "playwright test",
+    "test:e2e:report": "nyc report --reporter=text --reporter=html --report-dir=coverage-frontend/e2e"
+  },
+  "jest": {
+    "testEnvironment": "jsdom",
+    "roots": [
+      "<rootDir>/app/javascript",
+      "<rootDir>/spec/javascript"
+    ],
+    "testMatch": [
+      "**/?(*.)+(spec|test).[jt]s?(x)"
+    ],
+    "moduleNameMapper": {
+      "\\.(css|less|scss)$": "identity-obj-proxy"
+    },
+    "setupFilesAfterEnv": [
+      "<rootDir>/spec/javascript/setup.js"
+    ],
+    "collectCoverageFrom": [
+      "app/javascript/**/*.{js,jsx}",
+      "!app/javascript/application.js",
+      "!app/javascript/**/*.test.{js,jsx}"
+    ],
+    "coverageDirectory": "coverage-frontend/unit",
+    "coverageReporters": [
+      "text",
+      "html",
+      "cobertura"
+    ]
   }
 }

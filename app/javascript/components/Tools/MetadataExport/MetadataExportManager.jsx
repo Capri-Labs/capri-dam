@@ -12,6 +12,7 @@ import {
     CheckCircleOutlined, ErrorOutlined, HourglassEmptyOutlined, MoreVertOutlined
 } from '@mui/icons-material';
 import { useNotify } from '../../../context/NotificationContext';
+import { humanFileSize, csrfToken } from '../../../utils/format';
 
 const STATUS_META = {
     pending:    { label: 'Queued',     color: '#f59e0b', icon: <HourglassEmptyOutlined sx={{ fontSize: 16 }} /> },
@@ -20,16 +21,8 @@ const STATUS_META = {
     failed:     { label: 'Failed',     color: '#dc2626', icon: <ErrorOutlined sx={{ fontSize: 16 }} /> },
 };
 
-function csrfToken() {
-    return document.querySelector('meta[name="csrf-token"]')?.content;
-}
-
 function humanSize(bytes) {
-    if (!bytes && bytes !== 0) return '';
-    const units = ['B', 'KB', 'MB', 'GB'];
-    let value = bytes, i = 0;
-    while (value >= 1024 && i < units.length - 1) { value /= 1024; i++; }
-    return `${value.toFixed(value < 10 && i > 0 ? 1 : 0)} ${units[i]}`;
+    return humanFileSize(bytes);
 }
 
 // ── New / Edit dialog ──────────────────────────────────────────────────────────

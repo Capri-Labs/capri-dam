@@ -1,9 +1,13 @@
 FactoryBot.define do
   factory :notification do
-    user { nil }
-    title { "MyString" }
-    message { "MyString" }
-    action_url { "MyString" }
-    read_at { "2026-05-21 17:06:07" }
+    association :user
+    title { "New task assigned" }
+    message { "Please review the asset" }
+    action_url { "/workflows/dashboard" }
+    read_at { nil }
+
+    trait :read do
+      read_at { Time.current }
+    end
   end
 end

@@ -24,7 +24,10 @@ class AiConfiguration < ApplicationRecord
       config: self.as_json
     }.to_json
 
-    # Python LangChain agent will listen to this and swap models on the fly
-    Redis.current.publish('ai_gateway_events', payload)
+    # Python LangChain agent will listen to this and swap models on the fly.
+    # Best-effort: a downed/unavailable Redis must never roll back a config save.
+    Sidekiq.redis { |conn| conn.publish('ai_gateway_events', payload) }
+  rescue StandardError => e
+    Rails.logger.warn("[AiConfiguration##{id}] config broadcast skipped: #{e.message}")
   end
 end

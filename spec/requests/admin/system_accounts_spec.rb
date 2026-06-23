@@ -1,8 +1,8 @@
 require 'rails_helper' # Notice we use rails_helper here, not swagger_helper
 
 RSpec.describe 'Admin::SystemAccounts', type: :request do
-  # Set up a mock admin user (adjust attributes based on your User model)
-  let(:admin_user) { User.create!(email: 'admin@example.com', password: 'password', admin: true) }
+  # Set up an admin user via the factory (ensures required attrs like `name`).
+  let(:admin_user) { create(:user, email: 'admin@example.com', admin: true) }
 
   before do
     # Assuming you are using Devise for web session authentication

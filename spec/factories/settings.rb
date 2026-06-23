@@ -1,6 +1,6 @@
 FactoryBot.define do
   factory :setting do
-    key { "MyString" }
-    value { "MyText" }
+    sequence(:key) { |n| "setting_\#{n}" }
+    value { { "enabled" => true } }
   end
 end

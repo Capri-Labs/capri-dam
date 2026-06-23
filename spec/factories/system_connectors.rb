@@ -1,12 +1,16 @@
 FactoryBot.define do
   factory :system_connector do
-    name { "MyString" }
-    provider_type { "MyString" }
-    endpoint { "MyString" }
-    auth_token { "MyString" }
+    sequence(:name) { |n| "Connector \#{n}" }
+    provider_type { "aem" }
+    endpoint { "https://dam.example.com" }
+    auth_token { "secret-token" }
     tdm_sanitation { false }
-    status { "MyString" }
-    last_sync { "2026-06-03 17:02:35" }
-    assets_imported { 1 }
+    status { "active" }
+    assets_imported { 0 }
+
+    trait :ftp do
+      provider_type { "ftp" }
+      endpoint { "ftp.example.com" }
+    end
   end
 end

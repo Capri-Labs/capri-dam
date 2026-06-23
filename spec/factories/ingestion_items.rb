@@ -1,12 +1,9 @@
 FactoryBot.define do
   factory :ingestion_item do
-    ingestion_batch { nil }
-    original_filename { "MyString" }
-    file_hash { "MyString" }
-    file_size { 1 }
-    status { 1 }
-    legacy_metadata { "" }
-    clean_properties { "" }
-    error_log { "MyText" }
+    association :ingestion_batch
+    sequence(:original_filename) { |n| "file_\#{n}.jpg" }
+    sequence(:file_hash) { |n| "sha256_\#{n}" }
+    file_size { 1024 }
+    status { :pending }
   end
 end

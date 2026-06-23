@@ -11,5 +11,7 @@ require 'rails_helper'
 #   end
 # end
 RSpec.describe ApiDocsHelper, type: :helper do
-  pending "add some examples to (or delete) #{__FILE__}"
+  it 'is an empty module with no public methods' do
+    expect(ApiDocsHelper.instance_methods(false)).to be_empty
+  end
 end

@@ -96,6 +96,14 @@ package-lock.json
 jsdoc/
 **/tmp/rubocop_cache/**
 
+# Test & coverage artifacts
+/coverage/
+/.nyc_output/
+/test-results/
+/playwright-report/
+/blob-report/
+/spec/examples.txt
+
 AGENTS.local.md
 CLAUDE.local.md
 /OpenCode.md

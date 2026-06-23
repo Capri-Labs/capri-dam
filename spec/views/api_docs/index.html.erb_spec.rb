@@ -1,5 +1,8 @@
 require 'rails_helper'
 
 RSpec.describe "api_docs/index.html.erb", type: :view do
-  pending "add some examples to (or delete) #{__FILE__}"
+  it 'renders without raising' do
+    assign(:spec_data, {})
+    expect { render }.not_to raise_error
+  end
 end
