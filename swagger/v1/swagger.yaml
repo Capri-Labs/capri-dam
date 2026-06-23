@@ -3200,6 +3200,241 @@ paths:
                       type: object
                       description: Sanitized/enriched metadata ready for import into
                         DAM
+  "/api/v1/metadata_schemas":
+    get:
+      summary: List all root metadata schemas (with children)
+      tags:
+      - Metadata Schemas
+      security:
+      - Bearer: []
+      description: |
+        Returns all active root-level metadata schemas, each fully populated with
+        their type and subtype children. Schemas are ordered: built-in first, then
+        alphabetically by name.
+      responses:
+        '200':
+          description: Schemas returned
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  "$ref": "#/components/schemas/MetadataSchema"
+        '401':
+          description: Unauthorized
+    post:
+      summary: Create a new metadata schema
+      tags:
+      - Metadata Schemas
+      security:
+      - Bearer: []
+      parameters: []
+      responses:
+        '201':
+          description: Schema created
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/MetadataSchema"
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                metadata_schema:
+                  type: object
+                  required:
+                  - name
+                  - level
+                  properties:
+                    name:
+                      type: string
+                      example: Magazine Assets
+                    description:
+                      type: string
+                      example: Schema for magazine photography
+                    level:
+                      type: string
+                      example: root
+                      enum:
+                      - root
+                      - type
+                      - subtype
+                    parent_id:
+                      type: integer
+                      nullable: true
+                    mime_segment:
+                      type: string
+                      nullable: true
+                      example: image
+                    tabs:
+                      type: array
+                      items:
+                        type: object
+  "/api/v1/metadata_schemas/{id}":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      description: Metadata schema ID
+      schema:
+        type: integer
+    get:
+      summary: Retrieve a single metadata schema
+      tags:
+      - Metadata Schemas
+      security:
+      - Bearer: []
+      description: Returns the schema including `resolved_tabs` which merges inherited
+        tabs from the parent chain.
+      responses:
+        '200':
+          description: Schema returned
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/MetadataSchema"
+        '404':
+          description: Not found
+    patch:
+      summary: Update a metadata schema
+      tags:
+      - Metadata Schemas
+      security:
+      - Bearer: []
+      parameters: []
+      responses:
+        '200':
+          description: Schema updated
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/MetadataSchema"
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/ErrorResponse"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                metadata_schema:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    description:
+                      type: string
+                    tabs:
+                      type: array
+                      items:
+                        type: object
+    delete:
+      summary: Soft-delete a metadata schema
+      tags:
+      - Metadata Schemas
+      security:
+      - Bearer: []
+      description: Soft-deletes the schema and all its child schemas. Built-in schemas
+        cannot be deleted.
+      responses:
+        '204':
+          description: Deleted
+        '403':
+          description: Forbidden — built-in schema
+  "/api/v1/metadata_schemas/{id}/duplicate":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+    post:
+      summary: Deep-duplicate a schema tree
+      tags:
+      - Metadata Schemas
+      security:
+      - Bearer: []
+      description: |
+        Creates a deep copy of the schema and all its children. The copy is
+        non-builtin and named "Copy of <original name>". This is the recommended
+        way to start a new custom schema based on an existing one.
+      responses:
+        '201':
+          description: Duplicate created
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/MetadataSchema"
+  "/api/v1/metadata_schemas/{id}/apply_to_folder":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+    post:
+      summary: Apply a root schema to a folder
+      tags:
+      - Metadata Schemas
+      security:
+      - Bearer: []
+      parameters: []
+      responses:
+        '201':
+          description: Assignment created
+        '400':
+          description: folder_id missing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - folder_id
+              properties:
+                folder_id:
+                  type: string
+                  format: uuid
+  "/api/v1/metadata_schemas/{id}/remove_from_folder":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+    delete:
+      summary: Remove a schema from a folder
+      tags:
+      - Metadata Schemas
+      security:
+      - Bearer: []
+      parameters: []
+      responses:
+        '204':
+          description: Removed
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - folder_id
+              properties:
+                folder_id:
+                  type: string
+                  format: uuid
   "/api/v1/notifications":
     get:
       summary: Retrieves recent unread notifications for the current user

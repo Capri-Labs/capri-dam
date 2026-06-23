@@ -15,7 +15,7 @@ import {
     AutoAwesome,
     LocalOffer,
     ChevronRight,
-    ContentCopy, PushPin, Share, PolicyOutlined
+    ContentCopy, PushPin, Share, PolicyOutlined, SchemaOutlined
 } from '@mui/icons-material';
 import ImageEditorDialog from './ImageEditorDialog';
 import WorkflowPanel from '../WorkflowPanel';
@@ -26,6 +26,7 @@ import { useNotify } from '../../context/NotificationContext';
 import AssetVersionsTab from './AssetVersionsTab';
 import AssetStatisticsTab from './AssetStatisticsTab';
 import AssetAuditTab from './AssetAuditTab';
+import AssetMetadataPanel from './AssetMetadataPanel';
 
 function TabPanel(props) {
     const { children, value, index, ...other } = props;
@@ -196,6 +197,7 @@ export default function AssetViewer({ asset: initialAsset, open, onClose, onAsse
                     <Box sx={{ borderBottom: 1, borderColor: 'divider', px: 2, pt: 1 }}>
                         <Tabs value={activeTab} onChange={handleTabChange} variant="scrollable" scrollButtons="auto" sx={{ '& .MuiTab-root': { textTransform: 'none', minWidth: 'auto', px: 2 } }}>
                             <Tab icon={<InfoOutlined fontSize="small" />} iconPosition="start" label="Info" />
+                            <Tab icon={<SchemaOutlined fontSize="small" />} iconPosition="start" label="Metadata" />
                             <Tab icon={<History fontSize="small" />} iconPosition="start" label="Versions" />
                             <Tab icon={<AnalyticsOutlined fontSize="small" />} iconPosition="start" label="Statistics" />
                             <Tab icon={<PolicyOutlined fontSize="small" />} iconPosition="start" label="Audit" />
@@ -271,21 +273,31 @@ export default function AssetViewer({ asset: initialAsset, open, onClose, onAsse
                             </Paper>
                         </TabPanel>
 
-                        {/*  TAB 2 */}
+                        {/* TAB 1: METADATA SCHEMA */}
                         <TabPanel value={activeTab} index={1}>
-                            <AssetVersionsTab asset={asset}
-                                              onAssetUpdated={onAssetUpdated} />
+                            <AssetMetadataPanel
+                                asset={asset}
+                                onAssetUpdated={(updated) => {
+                                    setAsset(updated);
+                                    if (onAssetUpdated) onAssetUpdated(updated);
+                                }}
+                            />
                         </TabPanel>
-                        {/*  TAB 3 */}
-                        <TabPanel value={activeTab} index={2}><AssetStatisticsTab asset={asset} /></TabPanel>
-                        {/*  TAB 4 */}
-                        <TabPanel value={activeTab} index={3}><AssetAuditTab asset={asset} /></TabPanel>
+
+                        {/* TAB 2: VERSIONS */}
+                        <TabPanel value={activeTab} index={2}>
+                            <AssetVersionsTab asset={asset} onAssetUpdated={onAssetUpdated} />
+                        </TabPanel>
+                        {/* TAB 3: STATS */}
+                        <TabPanel value={activeTab} index={3}><AssetStatisticsTab asset={asset} /></TabPanel>
+                        {/* TAB 4: AUDIT */}
+                        <TabPanel value={activeTab} index={4}><AssetAuditTab asset={asset} /></TabPanel>
                         {/* TAB 5: WORKFLOWS */}
-                        <TabPanel value={activeTab} index={4}>
+                        <TabPanel value={activeTab} index={5}>
                             <WorkflowPanel assetId={asset.id} onWorkflowUpdate={() => { if (onAssetUpdated) onAssetUpdated(asset); }} />
                         </TabPanel>
-                        {/* TAB 5: AI */}
-                        <TabPanel value={activeTab} index={5}>
+                        {/* TAB 6: AI */}
+                        <TabPanel value={activeTab} index={6}>
                             <Typography variant="subtitle1" fontWeight="700" sx={{ mb: 2 }}>Semantic & Vision Analysis</Typography>
                         </TabPanel>
 

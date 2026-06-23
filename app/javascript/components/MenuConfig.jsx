@@ -14,7 +14,8 @@ import {
     GroupWorkOutlined,
     PersonOutlined,
     SecurityOutlined, ContentCopy,
-    ManageSearchOutlined, CollectionsBookmark, AutoAwesome, Route, QueryStats, CloudSync, BackupTable, HealthAndSafety
+    ManageSearchOutlined, CollectionsBookmark, AutoAwesome, Route, QueryStats, CloudSync, BackupTable, HealthAndSafety,
+    BuildOutlined, SchemaOutlined
 } from '@mui/icons-material';
 
 export const MENU_GROUPS = [
@@ -131,6 +132,25 @@ export const MENU_GROUPS = [
                 label: 'Reports',
                 icon: <AnalyticsOutlined fontSize="small" />,
                 url: '/reports' }
+        ]
+    },
+    {
+        id: 'tools',
+        title: 'Tools',
+        items: [
+            {
+                id: 'Tools_Assets',
+                label: 'Assets',
+                icon: <BuildOutlined fontSize="small" />,
+                children: [
+                    {
+                        id: 'MetadataSchemas',
+                        label: 'Metadata Schemas',
+                        icon: <SchemaOutlined fontSize="small" />,
+                        url: '/tools/metadata_schemas'
+                    }
+                ]
+            }
         ]
     },
     {

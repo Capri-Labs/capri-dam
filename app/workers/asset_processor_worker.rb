@@ -31,6 +31,12 @@ class AssetProcessorWorker
       # 1. Initialize the enriched metadata hash
       extracted_meta = {}
 
+      # Parse naming-convention metadata from original filename, if present.
+      # Format: ProductID-LanguageCode-AssetTypeCode.ext (e.g. 012993112028-en-FR01.jpg)
+      original_name = asset.properties&.dig('original_filename').to_s
+      name_meta = parse_product_filename(original_name)
+      extracted_meta.merge!(name_meta) if name_meta
+
       if staging_path && File.exist?(staging_path)
         # --- UNIVERSAL METADATA ---
         extracted_meta[:size] = File.size(staging_path)
@@ -95,6 +101,26 @@ class AssetProcessorWorker
   end
 
   private
+
+  def parse_product_filename(filename)
+    return nil if filename.blank?
+
+    base = File.basename(filename, File.extname(filename))
+    parts = base.split('-')
+    return nil if parts.length < 3
+
+    asset_type_code = parts.last.to_s.upcase
+    language_code   = parts[-2].to_s.downcase
+    product_id      = parts[0...-2].join('-')
+
+    return nil unless asset_type_code.match?(/\A[A-Z]{2}\d{2}\z/)
+
+    {
+      'dam:product_id' => product_id,
+      'dam:language_code' => language_code,
+      'dam:asset_type' => asset_type_code
+    }
+  end
 
   def extract_image_metadata(path, meta)
     require 'mini_magick'

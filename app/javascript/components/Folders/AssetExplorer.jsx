@@ -186,6 +186,9 @@ export default function AssetExplorer({ initialTargetAssetId }) {
                 handleSelectAll={handleSelectAll} hasSelection={hasSelection} handleDeleteSelected={handleDeleteSelected}
                 handleRestoreSelected={handleRestoreSelected} handlePermanentDelete={handlePermanentDelete}
                 setOpenFolderDialog={setOpenFolderDialog} handleFileUpload={handleFileUpload}
+                selectedItems={selectedItems}
+                onSchemaApplied={() => loadContent()}
+                onUploadSuccess={() => loadContent()}
             />
 
             {viewMode === 'active' && (

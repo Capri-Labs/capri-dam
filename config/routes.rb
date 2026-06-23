@@ -93,6 +93,13 @@ Rails.application.routes.draw do
   end
 
   # ==========================================
+  # 4b. TOOLS (HTML pages)
+  # ==========================================
+  namespace :tools do
+    resources :metadata_schemas, only: [:index]
+  end
+
+  # ==========================================
   # 5. CORE API (v1)
   # ==========================================
   # Route to serve local storage files during development
@@ -132,6 +139,9 @@ Rails.application.routes.draw do
           get :versions
           get :audit_trail
           post 'versions/:version_id/restore', to: 'assets#restore_version', as: :restore_version
+
+          # Schema-driven metadata update
+          patch :metadata, to: 'assets#update_metadata'
         end
         # AI Embedding specific to this asset
         resource :embedding, only: [:update], controller: 'asset_embeddings'
@@ -142,6 +152,10 @@ Rails.application.routes.draw do
         member do
           post :restore
           delete :permanent, to: 'folders#permanent_delete'
+          # Metadata schema management
+          get    :schema,        to: 'folders#schema'
+          post   :apply_schema,  to: 'folders#apply_schema'
+          delete :remove_schema, to: 'folders#remove_schema'
         end
       end
 
@@ -200,6 +214,16 @@ Rails.application.routes.draw do
         end
         member do
           patch :mark_read
+        end
+      end
+
+      # Metadata Schemas
+      resources :metadata_schemas, only: [:index, :show, :create, :update, :destroy] do
+        member do
+          post  :duplicate
+          post  :apply_to_folder
+          delete :remove_from_folder
+          get   :folders
         end
       end
 

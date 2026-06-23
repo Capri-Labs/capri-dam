@@ -33,24 +33,60 @@ module Api
 
         if file.respond_to?(:path)
           ActiveRecord::Base.transaction do
+            # Parse product filename convention: ProductID-LanguageCode-AssetTypeCode.(ext)
+            parsed = parse_product_filename(file.original_filename)
+
+            # Base properties merged with any parsed filename metadata
+            base_props = { original_filename: file.original_filename }
+            base_props.merge!(parsed) if parsed
+
+            # Apply schema_id if provided
+            if params[:schema_id].present?
+              schema = MetadataSchema.active.find_by(id: params[:schema_id])
+              if schema
+                base_props['applied_schema_id']   = schema.id
+                base_props['applied_schema_slug']  = schema.slug
+                base_props['applied_schema_name']  = schema.name
+              end
+            end
+
+            # Merge any additional inline metadata fields submitted with the form
+            if params[:metadata].present?
+              metadata_fields =
+                case params[:metadata]
+                when ActionController::Parameters
+                  params[:metadata].to_unsafe_h
+                when String
+                  JSON.parse(params[:metadata]) rescue {}
+                when Hash
+                  params[:metadata]
+                else
+                  {}
+                end
+
+              # Remove blank values so filename-derived values are not overwritten with empty strings
+              metadata_fields = metadata_fields.reject { |_k, v| v.blank? }
+              base_props.merge!(metadata_fields)
+            end
+
             # 1. Create the Parent Asset
             @asset = Asset.create!(
-              user: active_resource_owner,
-              folder: target_folder,
-              title: params[:title] || file.original_filename,
-              status: 'pending',
-              uuid: SecureRandom.uuid,
-              properties: { original_filename: file.original_filename }
+              user:       active_resource_owner,
+              folder:     target_folder,
+              title:      params[:title] || file.original_filename,
+              status:     'pending',
+              uuid:       SecureRandom.uuid,
+              properties: base_props
             )
 
             # 2. Create the Initial Immutable Version (V1)
             @version = @asset.asset_versions.build(
               version_number: 1,
-              action_type: 'initial_upload',
-              created_by_id: active_resource_owner&.id,
+              action_type:    'initial_upload',
+              created_by_id:  active_resource_owner&.id,
               properties: {
                 content_type: file.content_type,
-                size: file.size
+                size:         file.size
               }
             )
 
@@ -332,6 +368,42 @@ module Api
         render json: { success: true, message: "Moved to bin" }
       end
 
+      # PATCH /api/v1/assets/:id/metadata
+      # Updates schema-driven metadata fields stored in asset properties.
+      # Creates a new asset version to preserve history.
+      def update_metadata
+        @asset = Asset.active.find(params[:id])
+        metadata_fields = params[:metadata] || {}
+        schema_id       = params[:schema_id]
+
+        # Deep-merge new metadata fields into existing properties
+        merged_props = @asset.properties.merge(metadata_fields.to_unsafe_h).merge(
+          'applied_schema_id' => schema_id.present? ? schema_id.to_i : @asset.properties['applied_schema_id']
+        )
+
+        # Create a new immutable version snapshot for auditing
+        active_v = @asset.active_version
+        new_version_num = (@asset.asset_versions.maximum(:version_number) || 0) + 1
+
+        new_version = @asset.asset_versions.create!(
+          version_number: new_version_num,
+          action_type:    'metadata_update',
+          created_by_id:  active_resource_owner&.id,
+          properties:     (active_v&.properties || {}).merge('metadata_snapshot' => metadata_fields.to_unsafe_h)
+        )
+
+        @asset.update!(
+          properties:        merged_props,
+          active_version_id: new_version.id
+        )
+
+        render json: format_asset(@asset), status: :ok
+      rescue ActiveRecord::RecordNotFound
+        render json: { error: 'Asset not found' }, status: :not_found
+      rescue StandardError => e
+        render json: { error: e.message }, status: :unprocessable_entity
+      end
+
       # POST /api/v1/assets/:id/restore
       def restore
         @asset = Asset.trashed.find(params[:id])
@@ -494,6 +566,30 @@ module Api
       end
 
       private
+
+      # Extracts naming-convention metadata from filenames like:
+      # ProductID-LanguageCode-AssetTypeCode.ext
+      # Example: 012993112028-en-FR01.jpg
+      def parse_product_filename(filename)
+        return nil if filename.blank?
+
+        base = File.basename(filename.to_s, File.extname(filename.to_s))
+        parts = base.split('-')
+        return nil if parts.length < 3
+
+        asset_type_code = parts.last.to_s.upcase
+        language_code   = parts[-2].to_s.downcase
+        product_id      = parts[0...-2].join('-')
+
+        # Asset type must match two letters + two digits (FR01, BK02, SD01, etc.)
+        return nil unless asset_type_code.match?(/\A[A-Z]{2}\d{2}\z/)
+
+        {
+          'dam:product_id'    => product_id,
+          'dam:language_code' => language_code,
+          'dam:asset_type'    => asset_type_code
+        }
+      end
 
       #Centralized worker dispatch for "Zero-Noise" post-processing
       def dispatch_asset_workers(target_asset, target_version, file_path)

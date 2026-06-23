@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_22_000001) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_23_000002) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -286,6 +286,38 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_22_000001) do
     t.datetime "updated_at", null: false
     t.index ["file_hash"], name: "index_ingestion_items_on_file_hash"
     t.index ["ingestion_batch_id"], name: "index_ingestion_items_on_ingestion_batch_id"
+  end
+
+  create_table "metadata_schema_folder_assignments", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "folder_id", null: false
+    t.bigint "metadata_schema_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["folder_id"], name: "idx_schema_folder_on_folder_id"
+    t.index ["metadata_schema_id", "folder_id"], name: "idx_schema_folder_unique", unique: true
+  end
+
+  create_table "metadata_schemas", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.datetime "deleted_at"
+    t.text "description"
+    t.boolean "is_builtin", default: false, null: false
+    t.string "level", default: "root", null: false
+    t.string "mime_segment"
+    t.string "name", null: false
+    t.bigint "parent_id"
+    t.jsonb "properties", default: {}, null: false
+    t.string "slug", null: false
+    t.jsonb "tabs", default: [], null: false
+    t.datetime "updated_at", null: false
+    t.string "uuid", null: false
+    t.index ["deleted_at"], name: "index_metadata_schemas_on_deleted_at"
+    t.index ["is_builtin"], name: "index_metadata_schemas_on_is_builtin"
+    t.index ["level"], name: "index_metadata_schemas_on_level"
+    t.index ["parent_id", "mime_segment"], name: "idx_metadata_schemas_parent_mime_unique", unique: true, where: "((deleted_at IS NULL) AND (mime_segment IS NOT NULL))"
+    t.index ["parent_id"], name: "index_metadata_schemas_on_parent_id"
+    t.index ["slug"], name: "index_metadata_schemas_on_slug", unique: true, where: "(deleted_at IS NULL)"
+    t.index ["uuid"], name: "index_metadata_schemas_on_uuid", unique: true
   end
 
   create_table "notifications", force: :cascade do |t|
@@ -602,6 +634,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_22_000001) do
   add_foreign_key "in_app_notifications", "users", column: "actor_id"
   add_foreign_key "ingestion_batches", "system_connectors", column: "connector_id", on_delete: :nullify
   add_foreign_key "ingestion_items", "ingestion_batches"
+  add_foreign_key "metadata_schema_folder_assignments", "metadata_schemas"
+  add_foreign_key "metadata_schemas", "metadata_schemas", column: "parent_id"
   add_foreign_key "notifications", "users"
   add_foreign_key "oauth_access_grants", "oauth_applications", column: "application_id"
   add_foreign_key "oauth_access_tokens", "oauth_applications", column: "application_id"

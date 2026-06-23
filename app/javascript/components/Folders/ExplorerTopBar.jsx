@@ -6,80 +6,96 @@ import {
 } from '@mui/material';
 import {
     Home, ContentCopy, DeleteOutlined, CreateNewFolder,
-    CloudUpload, AutoAwesome, AccountTree, CollectionsBookmark,
-    Psychology, DynamicFeed, Translate, Security, Difference, Style,
-    CloudSync, Publish, DeleteSweep // 🚀 NEW ICONS FOR EDGE OPS
+    CloudUpload, AutoAwesome, AccountTree,
+    Psychology, Translate, Security, Difference, Style,
+    CloudSync, Publish, DeleteSweep, BuildOutlined, SchemaOutlined
 } from '@mui/icons-material';
 import { useNotify } from '../../context/NotificationContext';
 import UploadWorkspace from './UploadWorkspace';
+import ApplySchemaDialog from './ApplySchemaDialog';
 
 export default function ExplorerTopBar({
                                            currentId, viewData, viewMode, setViewMode, handleNavigate, handleCopyPath,
                                            isAllSelected, handleSelectAll, hasSelection, handleDeleteSelected,
                                            handleRestoreSelected, handlePermanentDelete, setOpenFolderDialog,
-                                           onUploadSuccess
+                                           onUploadSuccess, selectedItems, onSchemaApplied
                                        }) {
     const notify = useNotify();
 
     const [uploadWorkspaceOpen, setUploadWorkspaceOpen] = useState(false);
 
     // Dropdown Anchors
-    const [smartMenuAnchor, setSmartMenuAnchor] = useState(null);
+    const [smartMenuAnchor,    setSmartMenuAnchor]    = useState(null);
     const [workflowMenuAnchor, setWorkflowMenuAnchor] = useState(null);
-    const [collectionMenuAnchor, setCollectionMenuAnchor] = useState(null);
+    const [toolsMenuAnchor,    setToolsMenuAnchor]    = useState(null);
+    const [edgeMenuAnchor,     setEdgeMenuAnchor]     = useState(null);
 
-    // Edge Operations Menu Anchor
-    const [edgeMenuAnchor, setEdgeMenuAnchor] = useState(null);
+    // Schema dialog
+    const [schemaDialogOpen,  setSchemaDialogOpen]  = useState(false);
+    const [schemaTargetType,  setSchemaTargetType]  = useState('folder');
+    const [schemaTargetIds,   setSchemaTargetIds]   = useState([]);
+    const [schemaTargetNames, setSchemaTargetNames] = useState([]);
 
     // AI Handlers
     const handleAiMenuClose = () => setSmartMenuAnchor(null);
-    const handleAutoEnrich = () => { handleAiMenuClose(); notify("Assets queued for LangChain semantic enrichment.", "info"); };
-    const handleTdmScan = () => { handleAiMenuClose(); notify("Scanning for visual and cryptographic duplicates...", "warning"); };
+    const handleAutoEnrich  = () => { handleAiMenuClose(); notify("Assets queued for LangChain semantic enrichment.", "info"); };
+    const handleTdmScan     = () => { handleAiMenuClose(); notify("Scanning for visual and cryptographic duplicates...", "warning"); };
     const handleSmartOrganize = () => { handleAiMenuClose(); notify("AI is analyzing vectors to cluster items into sub-folders.", "info"); };
 
-    //  Edge Operations Handlers
+    // Edge Operations Handlers
     const handleEdgeMenuClose = () => setEdgeMenuAnchor(null);
-
-    // Inside ExplorerTopBar.jsx
 
     const handleForceSync = () => {
         handleEdgeMenuClose();
-
         fetch('/api/v1/edge_operations/sync', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            // Assuming your React context tracks selection in this shape
             body: JSON.stringify({
                 folders: viewData.selectedItems?.folders || [],
-                assets: viewData.selectedItems?.assets || []
+                assets:  viewData.selectedItems?.assets  || []
             })
         })
             .then(res => res.json())
-            .then(data => {
-                if(data.success) {
-                    notify("Metadata force-sync to Edge KV initiated.", "success");
-                }
-            });
+            .then(data => { if (data.success) notify("Metadata force-sync to Edge KV initiated.", "success"); });
     };
 
     const handleForcePurge = () => {
         handleEdgeMenuClose();
-
         fetch('/api/v1/edge_operations/purge', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 folders: viewData.selectedItems?.folders || [],
-                assets: viewData.selectedItems?.assets || []
+                assets:  viewData.selectedItems?.assets  || []
             })
         })
             .then(res => res.json())
-            .then(data => {
-                if(data.success) {
-                    notify("Edge cache invalidation queued for selected items.", "warning");
-                }
-            });
+            .then(data => { if (data.success) notify("Edge cache invalidation queued for selected items.", "warning"); });
     };
+
+    // ── Schema application helpers ──────────────────────────────────────────
+    const openSchemaForFolders = () => {
+        setToolsMenuAnchor(null);
+        const ids   = selectedItems?.folders ?? [];
+        const names = (viewData.folders ?? []).filter(f => ids.includes(f.id)).map(f => f.name);
+        setSchemaTargetType('folder');
+        setSchemaTargetIds(ids.length > 0 ? ids : [currentId]);
+        setSchemaTargetNames(names.length > 0 ? names : [viewData.breadcrumbs?.slice(-1)[0]?.name ?? 'Current Folder']);
+        setSchemaDialogOpen(true);
+    };
+
+    const openSchemaForAssets = () => {
+        setToolsMenuAnchor(null);
+        const ids   = selectedItems?.assets ?? [];
+        const names = (viewData.assets ?? []).filter(a => ids.includes(a.id)).map(a => a.title ?? a.name);
+        setSchemaTargetType('assets');
+        setSchemaTargetIds(ids);
+        setSchemaTargetNames(names);
+        setSchemaDialogOpen(true);
+    };
+
+    const hasFolderSelection = (selectedItems?.folders?.length ?? 0) > 0;
+    const hasAssetSelection  = (selectedItems?.assets?.length  ?? 0) > 0;
 
     return (
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2, width: '100%', pb: 2 }}>
@@ -125,7 +141,52 @@ export default function ExplorerTopBar({
 
                 {hasSelection && viewMode === 'active' && (
                     <>
-                        {/* 🚀 NEW: Edge Operations Button & Menu */}
+                        {/* ── Tools Menu (always visible on selection) ── */}
+                        <Button
+                            variant="outlined"
+                            onClick={(e) => setToolsMenuAnchor(e.currentTarget)}
+                            startIcon={<BuildOutlined />}
+                            sx={{ textTransform: 'none', borderRadius: '8px', color: '#7c3aed',
+                                 borderColor: '#ddd6fe', bgcolor: '#faf5ff',
+                                 '&:hover': { bgcolor: '#f5f3ff' } }}
+                        >
+                            Tools
+                        </Button>
+                        <Menu
+                            anchorEl={toolsMenuAnchor}
+                            open={Boolean(toolsMenuAnchor)}
+                            onClose={() => setToolsMenuAnchor(null)}
+                            PaperProps={{ elevation: 3, sx: { mt: 1, minWidth: 260, borderRadius: 2 } }}
+                        >
+                            <MenuItem disabled sx={{ opacity: 1 }}>
+                                <Typography variant="caption" fontWeight={700} sx={{ color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                                    Metadata Schema
+                                </Typography>
+                            </MenuItem>
+                            <MenuItem
+                                onClick={openSchemaForFolders}
+                                disabled={!hasFolderSelection && currentId === 'root'}
+                            >
+                                <ListItemIcon><SchemaOutlined fontSize="small" sx={{ color: '#7c3aed' }} /></ListItemIcon>
+                                <ListItemText
+                                    primary="Apply Schema to Folder"
+                                    secondary={hasFolderSelection
+                                        ? `${selectedItems.folders.length} folder${selectedItems.folders.length > 1 ? 's' : ''} selected`
+                                        : "Apply to current folder"}
+                                />
+                            </MenuItem>
+                            {hasAssetSelection && (
+                                <MenuItem onClick={openSchemaForAssets}>
+                                    <ListItemIcon><SchemaOutlined fontSize="small" sx={{ color: '#7c3aed' }} /></ListItemIcon>
+                                    <ListItemText
+                                        primary="Apply Schema to Assets"
+                                        secondary={`${selectedItems.assets.length} asset${selectedItems.assets.length > 1 ? 's' : ''} selected`}
+                                    />
+                                </MenuItem>
+                            )}
+                        </Menu>
+
+                        {/* Edge CDN Ops */}
                         <Button
                             variant="outlined"
                             onClick={(e) => setEdgeMenuAnchor(e.currentTarget)}
@@ -151,7 +212,7 @@ export default function ExplorerTopBar({
                             </MenuItem>
                         </Menu>
 
-                        {/* Existing Workflow Menu */}
+                        {/* Workflow Menu */}
                         <Button
                             variant="outlined"
                             onClick={(e) => setWorkflowMenuAnchor(e.currentTarget)}
@@ -176,7 +237,7 @@ export default function ExplorerTopBar({
                             </MenuItem>
                         </Menu>
 
-                        {/* Existing Smart Actions Menu */}
+                        {/* Smart Actions */}
                         <Button
                             variant="contained"
                             onClick={(e) => setSmartMenuAnchor(e.currentTarget)}
@@ -221,6 +282,33 @@ export default function ExplorerTopBar({
 
                 {!hasSelection && viewMode === 'active' && (
                     <>
+                        {/* Tools button even without selection — for current folder */}
+                        {currentId !== 'root' && (
+                            <>
+                                <Button
+                                    variant="outlined"
+                                    onClick={(e) => setToolsMenuAnchor(e.currentTarget)}
+                                    startIcon={<BuildOutlined />}
+                                    sx={{ textTransform: 'none', borderRadius: '8px', color: '#7c3aed',
+                                         borderColor: '#ddd6fe', bgcolor: '#faf5ff',
+                                         '&:hover': { bgcolor: '#f5f3ff' } }}
+                                >
+                                    Tools
+                                </Button>
+                                <Menu
+                                    anchorEl={toolsMenuAnchor}
+                                    open={Boolean(toolsMenuAnchor)}
+                                    onClose={() => setToolsMenuAnchor(null)}
+                                    PaperProps={{ elevation: 3, sx: { mt: 1, minWidth: 260, borderRadius: 2 } }}
+                                >
+                                    <MenuItem onClick={openSchemaForFolders}>
+                                        <ListItemIcon><SchemaOutlined fontSize="small" sx={{ color: '#7c3aed' }} /></ListItemIcon>
+                                        <ListItemText primary="Apply Metadata Schema" secondary="Set schema for this folder" />
+                                    </MenuItem>
+                                </Menu>
+                            </>
+                        )}
+
                         <Button variant="outlined" startIcon={<CreateNewFolder />} onClick={() => setOpenFolderDialog(true)} sx={{ textTransform: 'none', borderRadius: '8px', bgcolor: 'white' }}>
                             New Folder
                         </Button>
@@ -246,6 +334,19 @@ export default function ExplorerTopBar({
                     }}
                 />
             </Dialog>
+
+            {/* ── Apply Schema Dialog ── */}
+            <ApplySchemaDialog
+                open={schemaDialogOpen}
+                onClose={(needsRefresh) => {
+                    setSchemaDialogOpen(false);
+                    if (needsRefresh && onSchemaApplied) onSchemaApplied();
+                }}
+                targetType={schemaTargetType}
+                targetIds={schemaTargetIds}
+                targetNames={schemaTargetNames}
+                currentFolderId={currentId}
+            />
         </Box>
     );
 }
