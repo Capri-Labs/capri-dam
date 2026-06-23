@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Headless DAM — REST API Reference</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      /* Reset */
+      *, *::before, *::after { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: #fafafa;
+      }
+
+      /* ── Top nav bar ── */
+      .api-nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 24px;
+        height: 56px;
+        background: #1e1b4b;
+        box-shadow: 0 1px 4px rgba(0,0,0,.3);
+        position: sticky;
+        top: 0;
+        z-index: 100;
+      }
+
+      .api-nav__brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        text-decoration: none;
+      }
+
+      .api-nav__logo {
+        width: 32px;
+        height: 32px;
+        background: linear-gradient(135deg, #4f46e5, #7c3aed);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        font-weight: 700;
+        color: #fff;
+        flex-shrink: 0;
+      }
+
+      .api-nav__title {
+        color: #e0e7ff;
+        font-size: 15px;
+        font-weight: 600;
+        white-space: nowrap;
+      }
+
+      .api-nav__links {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .api-nav__link {
+        padding: 6px 14px;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 500;
+        text-decoration: none;
+        transition: background 0.15s;
+        color: #c7d2fe;
+      }
+
+      .api-nav__link:hover {
+        background: rgba(255,255,255,.08);
+        color: #fff;
+      }
+
+      .api-nav__link--active {
+        background: #4f46e5;
+        color: #fff;
+      }
+
+      .api-nav__link--active:hover {
+        background: #4338ca;
+      }
+
+      /* ── Redoc wrapper ── */
+      #redoc-container {
+        /* Give Redoc the full remaining viewport */
+        min-height: calc(100vh - 56px);
+      }
+
+      /* Minor Redoc brand overrides */
+      redoc {
+        --theme-colors-primary-main: #4f46e5;
+        --theme-typography-fontFamily: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      }
+    </style>
+  </head>
+
+  <body>
+    <!-- ── Navigation bar ── -->
+    <nav class="api-nav">
+      <a href="/" class="api-nav__brand">
+        <div class="api-nav__logo">D</div>
+        <span class="api-nav__title">Headless DAM</span>
+      </a>
+
+      <div class="api-nav__links">
+        <a href="/api/rest"    class="api-nav__link api-nav__link--active">REST API</a>
+        <a href="/api/graphql" class="api-nav__link">GraphQL API</a>
+      </div>
+    </nav>
+
+    <!-- ── Redoc renders here ── -->
+    <div id="redoc-container">
+      <redoc spec-url="/api-docs/v1/swagger.yaml"
+             expand-responses="200,201"
+             hide-download-button="false"
+             sort-props-alphabetically="true"
+             required-props-first="true"
+             no-auto-auth="false">
+      </redoc>
+    </div>
+
+    <script src="/redoc.standalone.js"></script>
+  </body>
+</html>
+

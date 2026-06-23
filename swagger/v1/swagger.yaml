@@ -611,72 +611,218 @@ paths:
                     type: string
                   active:
                     type: boolean
-  "/api/v1/search":
+  "/api/v1/ai_configuration":
     get:
-      summary: Searches for assets
+      summary: Retrieve the current AI Gateway configuration
       tags:
-      - Assets
+      - CDN & Settings
       security:
       - Bearer: []
-      parameters:
-      - name: q
-        in: query
-        required: false
-        description: Search term for title
-        schema:
-          type: string
-      - name: format
-        in: query
-        required: false
-        description: Exact format match (e.g., JPEG)
-        schema:
-          type: string
+      description: |
+        Returns the singleton `AiConfiguration` record. This controls which
+        provider and model the AI Gateway uses for text generation and embedding.
       responses:
         '200':
-          description: search results returned
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  total:
-                    type: integer
-                  results:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        id:
-                          type: string
-                        title:
-                          type: string
-                        metadata:
-                          type: object
-                        url:
-                          type: string
-  "/api/v1/assets":
-    post:
-      summary: Uploads a new asset
-      tags:
-      - Assets
-      security:
-      - Bearer: []
-      parameters: []
-      responses:
-        '202':
-          description: asset accepted for processing
+          description: AI configuration returned
           content:
             application/json:
               schema:
                 type: object
                 properties:
                   id:
+                    type: integer
+                  active_provider:
                     type: string
+                    example: openai
+                    description: openai | anthropic | local
+                  generation_model:
+                    type: string
+                    example: gpt-4o
+                  embedding_model:
+                    type: string
+                    example: text-embedding-ada-002
+                  monthly_budget_usd:
+                    type: number
+                    example: 200.0
+                  system_prompt:
+                    type: string
+                    nullable: true
+                  fallback_to_local:
+                    type: boolean
+                    example: false
+    patch:
+      summary: Update the AI Gateway configuration
+      tags:
+      - CDN & Settings
+      security:
+      - Bearer: []
+      description: |
+        Updates the singleton AI configuration. Changes take effect immediately
+        for all subsequent AI Gateway calls. Set `fallback_to_local: true` to
+        use a locally-hosted LLM when the primary provider is unavailable.
+      parameters: []
+      responses:
+        '200':
+          description: AI Gateway configuration synchronized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  config:
+                    type: object
+        '422':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - ai_configuration
+              properties:
+                ai_configuration:
+                  type: object
+                  properties:
+                    active_provider:
+                      type: string
+                      example: openai
+                    generation_model:
+                      type: string
+                      example: gpt-4o
+                    embedding_model:
+                      type: string
+                      example: text-embedding-ada-002
+                    monthly_budget_usd:
+                      type: number
+                      example: 500.0
+                    system_prompt:
+                      type: string
+                      nullable: true
+                    fallback_to_local:
+                      type: boolean
+  "/api/v1/search":
+    get:
+      summary: Search assets (lexical + dynamic metadata facets)
+      tags:
+      - Assets
+      security:
+      - Bearer: []
+      description: |
+        Performs full-text lexical search against asset titles and original filenames.
+        Supports dynamic metadata filtering via arbitrary query params (e.g. `?region=EMEA`).
+        Returns facet data alongside results so UIs can build filter panels without extra calls.
+      parameters:
+      - name: q
+        in: query
+        required: false
+        description: Full-text term matched against title and original_filename
+        schema:
+          type: string
+      - name: mode
+        in: query
+        required: false
+        description: 'Filter by type: `images` (default), `files`, or omit for all'
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Search results with facets returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    type: object
+                    properties:
+                      query:
+                        type: string
+                        nullable: true
+                        example: brand logo
+                      mode:
+                        type: string
+                        example: images
+                      total_found:
+                        type: integer
+                        example: 47
+                      facets:
+                        type: object
+                        properties:
+                          content_type:
+                            type: array
+                            items:
+                              type: string
+                            example:
+                            - image/jpeg
+                            - image/png
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          example: 1
+                        uuid:
+                          type: string
+                          format: uuid
+                        title:
+                          type: string
+                          example: Brand Logo Final
+                        type:
+                          type: string
+                          example: image/png
+                        size:
+                          type: string
+                          example: 2.4 MB
+                        thumb_url:
+                          type: string
+                          nullable: true
+  "/api/v1/assets":
+    post:
+      summary: Upload a new asset (multipart)
+      tags:
+      - Assets
+      security:
+      - Bearer: []
+      description: |
+        Accepts a multipart file and immediately queues async processing
+        (`AssetProcessorWorker`, `CdnInvalidationWorker`, `EdgeMetadataSyncWorker`).
+
+        **Lifecycle**: `status: pending` → background workers → `status: ready`.
+        Poll `GET /api/v1/assets/{id}/versions` to monitor progress.
+      parameters: []
+      responses:
+        '202':
+          description: Asset accepted and queued for processing
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - id
+                - status
+                properties:
+                  id:
+                    type: string
+                    format: uuid
                   status:
                     type: string
                     example: processing
         '422':
-          description: unprocessable entity
+          description: No file provided
           content:
             application/json:
               schema:
@@ -688,37 +834,28 @@ paths:
         content:
           multipart/form-data:
             schema:
-              type: object
-              properties:
-                file:
-                  type: string
-                  format: binary
-                  description: The file to upload
-                title:
-                  type: string
-                  description: Optional override for the file name
-                folder_id:
-                  type: integer
-                  description: ID of the destination folder
-              required:
-              - file
+              type: string
+        required: true
+        description: Binary file to upload
   "/api/v1/assets/{id}":
     parameters:
     - name: id
       in: path
-      description: Asset ID
       required: true
+      description: Asset database ID (integer primary key)
       schema:
         type: string
     delete:
-      summary: Soft deletes an asset (moves to bin)
+      summary: Soft-delete an asset (move to Recycle Bin)
       tags:
       - Assets
       security:
       - Bearer: []
+      description: Sets `deleted_at`. Recoverable via restore or permanently via permanent
+        delete.
       responses:
         '200':
-          description: asset moved to bin
+          description: Asset moved to bin
           content:
             application/json:
               schema:
@@ -726,25 +863,36 @@ paths:
                 properties:
                   success:
                     type: boolean
+                    example: true
                   message:
+                    type: string
+                    example: Moved to bin
+        '404':
+          description: Asset not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
                     type: string
   "/api/v1/assets/{id}/restore":
     parameters:
     - name: id
       in: path
-      description: Asset ID
       required: true
+      description: Asset ID
       schema:
         type: string
     post:
-      summary: Restores an asset from the bin
+      summary: Restore a soft-deleted asset from the Recycle Bin
       tags:
       - Assets
       security:
       - Bearer: []
       responses:
         '200':
-          description: asset restored
+          description: Asset restored to active state
           content:
             application/json:
               schema:
@@ -752,25 +900,40 @@ paths:
                 properties:
                   success:
                     type: boolean
+                    example: true
                   message:
+                    type: string
+                    example: Asset restored
+        '404':
+          description: Asset not found in the bin
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
                     type: string
   "/api/v1/assets/{id}/permanent":
     parameters:
     - name: id
       in: path
-      description: Asset ID
       required: true
+      description: Asset ID
       schema:
         type: string
     delete:
-      summary: Permanently deletes an asset
+      summary: Permanently delete an asset and all its storage versions
       tags:
       - Assets
       security:
       - Bearer: []
+      description: |
+        **Irreversible.** Purges all physical files from the active storage backend
+        for every version and destroys the database record. Also triggers an edge
+        CDN purge so stale URLs return 404 immediately.
       responses:
         '200':
-          description: asset permanently deleted
+          description: Asset permanently deleted
           content:
             application/json:
               schema:
@@ -778,25 +941,350 @@ paths:
                 properties:
                   success:
                     type: boolean
+                    example: true
                   message:
                     type: string
+                    example: Permanently deleted all versions
+        '404':
+          description: Asset not found in the bin
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+  "/api/v1/assets/{id}/versions":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      description: Asset ID
+      schema:
+        type: string
+    get:
+      summary: List all immutable versions of an asset
+      tags:
+      - Assets
+      security:
+      - Bearer: []
+      description: |
+        Returns the full version chain in descending order. `is_active: true` marks
+        the currently published version. To promote a prior version, call
+        `POST /api/v1/assets/{id}/versions/{version_id}/restore`.
+      responses:
+        '200':
+          description: Version history returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  versions:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        version_number:
+                          type: integer
+                          example: 3
+                        action_type:
+                          type: string
+                          example: Image Edit
+                        created_at:
+                          type: string
+                          example: Jun 21, 2026 at 03:15 PM
+                        created_by:
+                          type: string
+                          example: ashok@example.com
+                        is_active:
+                          type: boolean
+                        size:
+                          type: string
+                          example: 4.20 MB
+        '404':
+          description: Asset not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+  "/api/v1/assets/{id}/audit_trail":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      description: Asset ID
+      schema:
+        type: string
+    get:
+      summary: Retrieve the compliance audit trail for an asset
+      tags:
+      - Assets
+      security:
+      - Bearer: []
+      description: |
+        Returns every version with its raw `properties` JSONB payload for
+        compliance audits and delta-diff calculations — exposing full metadata state
+        at each point in time.
+      responses:
+        '200':
+          description: Audit trail returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  audit_trail:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        version_number:
+                          type: integer
+                        action_type:
+                          type: string
+                        created_at:
+                          type: string
+                          format: date-time
+                        created_by_id:
+                          type: integer
+                          nullable: true
+                        properties:
+                          type: object
+                          description: Raw JSONB metadata snapshot at this version
+        '404':
+          description: Asset not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+  "/api/v1/assets/{id}/versions/{version_id}/restore":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      description: Asset ID
+      schema:
+        type: string
+    - name: version_id
+      in: path
+      required: true
+      description: AssetVersion database ID to promote as active
+      schema:
+        type: string
+    post:
+      summary: Promote a previous version to the active/published state
+      tags:
+      - Assets
+      security:
+      - Bearer: []
+      description: |
+        Non-destructive promotion — only updates the `active_version_id` pointer.
+        No data is mutated. The CDN URL will serve the restored version on the next
+        request (or immediately after a CDN purge).
+      responses:
+        '200':
+          description: Version promoted to active
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  uuid:
+                    type: string
+                    format: uuid
+                  title:
+                    type: string
+                  version:
+                    type: integer
+                    example: 2
+                  metadata:
+                    type: object
+                  url:
+                    type: string
+                    nullable: true
+        '404':
+          description: Asset or version not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+  "/api/v1/assets/{id}/process_image":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      description: Asset ID
+      schema:
+        type: string
+    post:
+      summary: Apply non-destructive image edits via the baking pipeline
+      tags:
+      - Assets
+      security:
+      - Bearer: []
+      description: |
+        Runs the **Image Baking Pipeline** (ImageMagick/MiniMagick).
+
+        **Save Modes**:
+        - `version` — creates a new immutable version on the same asset (default)
+        - `overwrite` — replaces the active version in-place (**destructive**)
+        - `new` — forks the asset as an independent copy (`title (Copy)`)
+
+        When `target_folder_id` differs from the current folder and `save_mode` is
+        `version` or `new`, the result is placed in that target folder.
+      parameters: []
+      responses:
+        '200':
+          description: Image baked — overwrite or in-place version save
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  uuid:
+                    type: string
+                    format: uuid
+                  title:
+                    type: string
+                  version:
+                    type: integer
+                  metadata:
+                    type: object
+                  url:
+                    type: string
+                    nullable: true
+        '201':
+          description: Fork created — new asset or branch to target folder
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  uuid:
+                    type: string
+                    format: uuid
+                  title:
+                    type: string
+                    example: Brand Logo Final (Copy)
+                  version:
+                    type: integer
+                  metadata:
+                    type: object
+                  url:
+                    type: string
+                    nullable: true
+        '422':
+          description: Source file missing from disk
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '404':
+          description: Asset not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                save_mode:
+                  type: string
+                  enum:
+                  - version
+                  - overwrite
+                  - new
+                  example: version
+                target_folder_id:
+                  type: string
+                  nullable: true
+                  example: '42'
+                  description: Destination folder ID, or "root"
+                adjustments:
+                  type: object
+                  properties:
+                    brightness:
+                      type: integer
+                      example: 10
+                    contrast:
+                      type: integer
+                      example: 5
+                    saturation:
+                      type: integer
+                      example: -20
+                geometry:
+                  type: object
+                  properties:
+                    rotate:
+                      type: integer
+                      example: 90
+                    flip_horizontal:
+                      type: boolean
+                      example: false
+                    focal_point:
+                      type: object
+                      properties:
+                        x:
+                          type: number
+                          example: 50.0
+                        "y":
+                          type: number
+                          example: 50.0
+                filter:
+                  type: string
+                  nullable: true
+                  example: None
+                custom_cli:
+                  type: string
+                  nullable: true
+                  example: "-monochrome -charcoal 2"
+                  description: Raw ImageMagick CLI flags. Use with caution.
   "/api/v1/assets/{id}/workflow_history":
     parameters:
     - name: id
       in: path
-      description: Asset ID
       required: true
+      description: Asset ID
       schema:
         type: string
     get:
-      summary: Retrieves workflow history for an asset
+      summary: Retrieve the active workflow instance and task timeline for an asset
       tags:
       - Assets
       security:
       - Bearer: []
       responses:
         '200':
-          description: workflow history returned
+          description: Workflow history returned (active or inactive)
           content:
             application/json:
               schema:
@@ -804,9 +1292,11 @@ paths:
                 properties:
                   active:
                     type: boolean
+                    example: true
                   instance_status:
                     type: string
                     nullable: true
+                    example: in_progress
                   started_at:
                     type: string
                     format: date-time
@@ -815,41 +1305,146 @@ paths:
                     type: array
                     items:
                       type: object
+                      properties:
+                        id:
+                          type: integer
+                        step_name:
+                          type: string
+                          example: Brand Review
+                        user_name:
+                          type: string
+                          example: reviewer@example.com
+                        status:
+                          type: string
+                          example: pending
+                        comment:
+                          type: string
+                          nullable: true
+                        completed_at:
+                          type: string
+                          format: date-time
+                          nullable: true
+                        is_current_user:
+                          type: boolean
+                        is_pending:
+                          type: boolean
+        '404':
+          description: Asset not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+  "/api/v1/assets/{id}/watermarked":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      description: Asset ID
+      schema:
+        type: string
+    get:
+      summary: Download a watermarked secure proxy of an image asset
+      tags:
+      - Assets
+      security:
+      - Bearer: []
+      description: |
+        Returns the active image version with a diagonal `CONFIDENTIAL` watermark
+        at 40% opacity as a downloadable JPEG attachment.
+        Only supported for `image/*` content types.
+      responses:
+        '200':
+          description: Watermarked image binary returned as attachment
+        '422':
+          description: Asset is not an image type
+          content:
+            image/jpeg:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '500':
+          description: Image processing pipeline failed (MiniMagick error)
+          content:
+            image/jpeg:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+  "/api/v1/assets/check_hashes":
+    post:
+      summary: Pre-upload duplicate detection via SHA-256 checksums
+      tags:
+      - Assets
+      security:
+      - Bearer: []
+      description: |
+        Compute SHA-256 checksums client-side **before** uploading, then call this
+        endpoint to detect existing duplicates. Returns matching asset details so
+        the UI can warn the user before creating redundant copies.
+      parameters: []
+      responses:
+        '200':
+          description: Duplicate check complete (empty `duplicates` object when none
+            found)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  duplicates:
+                    type: object
+                    description: Key = SHA-256 hash; value = array of matching asset
+                      records
+                    additionalProperties:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            format: uuid
+                          title:
+                            type: string
+                          version:
+                            type: integer
+                          url:
+                            type: string
+                            nullable: true
+                          folderName:
+                            type: string
+                            example: "/Marketing/Campaigns"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - hashes
+              properties:
+                hashes:
+                  type: array
+                  items:
+                    type: string
+                  example:
+                  - a1b2c3d4e5f6...
+                  - e5f6g7h8i9j0...
+                  description: Array of SHA-256 hex strings to check
   "/api/v1/bin":
     get:
-      summary: Retrieves all soft-deleted assets and folders
+      summary: List all soft-deleted assets and folders in the Recycle Bin
       tags:
       - Assets
       security:
       - Bearer: []
       responses:
         '200':
-          description: bin contents returned
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  folders:
-                    type: array
-                    items:
-                      type: object
-                  assets:
-                    type: array
-                    items:
-                      type: object
-                  breadcrumbs:
-                    type: array
-                    items:
-                      type: object
-  "/api/v1/folders":
-    get:
-      summary: Retrieves the folder tree
-      tags:
-      - Folders
-      responses:
-        '200':
-          description: folders retrieved successfully
+          description: Recycle bin contents returned
           content:
             application/json:
               schema:
@@ -862,58 +1457,1069 @@ paths:
                       properties:
                         id:
                           type: integer
-                          example: 42
                         name:
                           type: string
-                          example: "/Marketing/2026"
-                      required:
-                      - id
-                      - name
-    post:
-      summary: Creates a new folder
+                        deleted_at:
+                          type: string
+                          format: date-time
+                  assets:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        title:
+                          type: string
+                        status:
+                          type: string
+                        deleted_at:
+                          type: string
+                          format: date-time
+                        properties:
+                          type: object
+                        url:
+                          type: string
+                          nullable: true
+                  breadcrumbs:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          example: bin
+                        name:
+                          type: string
+                          example: Trash Bin
+  "/api/v1/assets/local/{uuid}":
+    parameters:
+    - name: uuid
+      in: path
+      format: uuid
+      required: true
+      description: Asset UUID (not the integer primary key)
+      schema:
+        type: string
+    get:
+      summary: Stream the active version file from local/staging storage
       tags:
-      - Folders
+      - Assets
+      security:
+      - Bearer: []
+      description: |
+        **Development & staging use only.** Streams the physical file from disk with
+        the correct `Content-Type`. In production, assets are served via CDN URL.
+        Falls back through two path resolution strategies:
+        1. `storage/dam/<relative_path>` (DAM root)
+        2. Direct absolute path (e.g., `tmp/uploads/...`)
+      responses:
+        '200':
+          description: File streamed inline
+        '302':
+          description: Redirected to ActiveStorage URL (when AS attachment present)
+        '404':
+          description: File not found on disk
+          content:
+            "*/*":
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  looked_at:
+                    type: string
+                    nullable: true
+  "/api/v1/assets/{asset_id}/embedding":
+    parameters:
+    - name: asset_id
+      in: path
+      required: true
+      description: Asset ID
+      schema:
+        type: string
+    put:
+      summary: Upsert pgvector embedding for an asset (AI Gateway callback)
+      tags:
+      - Assets
+      description: |
+        **Internal microservice endpoint.** Called by the Python AI Gateway after
+        computing the vector embedding. Stores the result in `asset_embeddings`
+        for HNSW nearest-neighbour semantic search via pgvector.
+      parameters: []
+      responses:
+        '200':
+          description: Vector spatial index updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - asset_embedding
+              properties:
+                asset_embedding:
+                  type: object
+                  required:
+                  - embedding
+                  - model_name
+                  properties:
+                    embedding:
+                      type: array
+                      items:
+                        type: number
+                      example:
+                      - 0.023
+                      - -0.114
+                      - 0.987
+                      description: 1536-dimension float vector
+                    model_name:
+                      type: string
+                      example: text-embedding-ada-002
+  "/api/v1/cdn_configurations":
+    get:
+      summary: Retrieve CDN configuration for all supported providers
+      tags:
+      - CDN & Settings
+      security:
+      - Bearer: []
+      description: |
+        Returns the active CDN configuration for Fastly, Cloudflare, and Akamai.
+        **Secrets are masked** in the response — only the last 4 characters of
+        each secret value are visible (e.g. `••••••••k9Xz`). To update a
+        provider, use `PUT /api/v1/cdn_configurations`.
+      responses:
+        '200':
+          description: CDN configurations returned (secrets masked)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  fastly:
+                    type: object
+                    properties:
+                      is_active:
+                        type: boolean
+                      settings:
+                        type: object
+                        description: Provider-specific settings with secrets masked
+                  cloudflare:
+                    type: object
+                    properties:
+                      is_active:
+                        type: boolean
+                      settings:
+                        type: object
+                  akamai:
+                    type: object
+                    properties:
+                      is_active:
+                        type: boolean
+                      settings:
+                        type: object
+    put:
+      summary: Update CDN configuration for a provider
+      tags:
+      - CDN & Settings
+      security:
+      - Bearer: []
+      description: |
+        Creates or updates the `CdnConfiguration` for the specified `provider`.
+        Values containing `••••` (the masking sentinel) are automatically
+        excluded from the update to prevent overwriting stored secrets with
+        masked placeholder values returned by the GET endpoint.
+      parameters: []
+      responses:
+        '200':
+          description: CDN configuration updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                    example: Fastly configuration updated.
+        '422':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - provider
+              properties:
+                provider:
+                  type: string
+                  example: fastly
+                  description: fastly | cloudflare | akamai
+                is_active:
+                  type: boolean
+                  example: true
+                settings:
+                  type: object
+                  description: Provider-specific key-value settings (e.g. service_id,
+                    api_key)
+                  example:
+                    service_id: svc_abc123
+                    api_key: sk_live_xyz
+  "/api/v1/collections":
+    get:
+      summary: List all active collections / workspaces
+      tags:
+      - Collections
+      security:
+      - Bearer: []
+      description: |
+        Returns all active (non-archived) collections ordered by `created_at DESC`.
+        Supports **temporal time-travel** via `as_of`: pass an ISO-8601 timestamp
+        to see what collections existed at that point in time.
+      parameters:
+      - name: as_of
+        in: query
+        required: false
+        description: ISO-8601 datetime for temporal filtering (e.g. `2025-01-15T00:00:00Z`)
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Collections returned
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    name:
+                      type: string
+                      example: Q3 Brand Campaign
+                    slug:
+                      type: string
+                      example: q3-brand-campaign
+                    description:
+                      type: string
+                      nullable: true
+                    collection_type:
+                      type: string
+                      example: smart
+                      description: manual | smart
+                    assets_count:
+                      type: integer
+                      example: 24
+                    expires_at:
+                      type: string
+                      format: date-time
+                      nullable: true
+                    created_at:
+                      type: string
+                      format: date-time
+    post:
+      summary: Create a new collection / workspace
+      tags:
+      - Collections
+      security:
+      - Bearer: []
       parameters: []
       responses:
         '201':
-          description: folder created
+          description: Collection created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  slug:
+                    type: string
         '422':
-          description: unprocessable entity
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - collection
+              properties:
+                collection:
+                  type: object
+                  required:
+                  - name
+                  properties:
+                    name:
+                      type: string
+                      example: Q3 Brand Campaign
+                    description:
+                      type: string
+                      nullable: true
+                    collection_type:
+                      type: string
+                      example: manual
+                      description: manual | smart
+                    expires_at:
+                      type: string
+                      format: date-time
+                      nullable: true
+                    properties:
+                      type: object
+                      properties:
+                        tags:
+                          type: array
+                          items:
+                            type: string
+                          example:
+                          - brand
+                          - social
+                        allowed_groups:
+                          type: array
+                          items:
+                            type: string
+                          example:
+                          - marketing
+                        denied_groups:
+                          type: array
+                          items:
+                            type: string
+  "/api/v1/collections/bulk_delete":
+    delete:
+      summary: Bulk soft-delete (archive) multiple collections
+      tags:
+      - Collections
+      security:
+      - Bearer: []
+      parameters: []
+      responses:
+        '200':
+          description: Collections archived
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '400':
+          description: No IDs provided
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - ids
+              properties:
+                ids:
+                  type: array
+                  items:
+                    type: integer
+                  example:
+                  - 1
+                  - 2
+                  - 3
+  "/api/v1/collections/bulk_update":
+    patch:
+      summary: Bulk update metadata/properties across multiple collections
+      tags:
+      - Collections
+      security:
+      - Bearer: []
+      description: |
+        Deep-merges the provided `properties` into each matching collection's
+        existing JSONB properties. Top-level scalar fields (e.g. `expires_at`)
+        are overwritten directly.
+      parameters: []
+      responses:
+        '200':
+          description: Collections updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '400':
+          description: No IDs provided
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - ids
+              properties:
+                ids:
+                  type: array
+                  items:
+                    type: integer
+                  example:
+                  - 1
+                  - 2
+                expires_at:
+                  type: string
+                  format: date-time
+                  nullable: true
+                properties:
+                  type: object
+                  properties:
+                    tags:
+                      type: array
+                      items:
+                        type: string
+  "/api/v1/collections/simulate_rule":
+    post:
+      summary: Simulate a smart-collection rule without saving it
+      tags:
+      - Collections
+      security:
+      - Bearer: []
+      description: |
+        Runs a pgvector cosine-similarity search against a semantic prompt and
+        returns matching assets with mock match scores. Use this to preview the
+        results of a smart-collection rule **before** committing it.
+      parameters: []
+      responses:
+        '200':
+          description: Simulation results returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  matches:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        title:
+                          type: string
+                        properties:
+                          type: object
+                        mock_match_score:
+                          type: number
+                          example: 0.923
+                  count:
+                    type: integer
+                  message:
+                    type: string
+                    example: Simulation complete.
+        '400':
+          description: Missing required `semantic_prompt` parameter
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - semantic_prompt
+              properties:
+                semantic_prompt:
+                  type: string
+                  example: outdoor lifestyle photography autumn
+                similarity_threshold:
+                  type: number
+                  example: 0.8
+                  description: Cosine similarity floor (0.0–1.0)
+  "/api/v1/collections/{slug}":
+    parameters:
+    - name: slug
+      in: path
+      required: true
+      description: URL-safe slug identifier for the collection
+      schema:
+        type: string
+    get:
+      summary: Retrieve a collection with its assets and smart-rule config
+      tags:
+      - Collections
+      security:
+      - Bearer: []
+      description: |
+        Returns full collection details including nested assets (respecting
+        `as_of` time-travel), the `collection_rule` config, and any compliance
+        violations detected on asset metadata.
+      parameters:
+      - name: as_of
+        in: query
+        required: false
+        description: ISO-8601 datetime — only show assets that were in the collection
+          at this point
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Collection details returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  name:
+                    type: string
+                  slug:
+                    type: string
+                  collection_type:
+                    type: string
+                  compliance_violations:
+                    type: array
+                    items:
+                      type: object
+                  collection_rule:
+                    type: object
+                    nullable: true
+                    properties:
+                      semantic_prompt:
+                        type: string
+                      similarity_threshold:
+                        type: number
+                      metadata_filters:
+                        type: object
+                      active:
+                        type: boolean
+                  collection_assets:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        pinned:
+                          type: boolean
+                        asset:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                            title:
+                              type: string
+                            properties:
+                              type: object
+                            created_at:
+                              type: string
+                              format: date-time
+        '403':
+          description: Unauthorized — user does not have clearance for this workspace
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '404':
+          description: Collection not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+    patch:
+      summary: Update a collection
+      tags:
+      - Collections
+      security:
+      - Bearer: []
+      parameters: []
+      responses:
+        '200':
+          description: Collection updated
+        '404':
+          description: Collection not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '422':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - collection
+              properties:
+                collection:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    description:
+                      type: string
+                      nullable: true
+                    expires_at:
+                      type: string
+                      format: date-time
+                      nullable: true
+                    properties:
+                      type: object
+                      properties:
+                        tags:
+                          type: array
+                          items:
+                            type: string
+                        allowed_groups:
+                          type: array
+                          items:
+                            type: string
+                        denied_groups:
+                          type: array
+                          items:
+                            type: string
+    delete:
+      summary: Archive (soft-delete) a collection
+      tags:
+      - Collections
+      security:
+      - Bearer: []
+      description: Sets `deleted_at` on the collection to preserve audit trails.
+      responses:
+        '200':
+          description: Collection archived
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '404':
+          description: Collection not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+  "/api/v1/collections/{slug}/cluster_map":
+    parameters:
+    - name: slug
+      in: path
+      required: true
+      description: Collection slug
+      schema:
+        type: string
+    get:
+      summary: Retrieve 2D UMAP/t-SNE cluster coordinates for collection assets
+      tags:
+      - Collections
+      security:
+      - Bearer: []
+      description: |
+        Returns 2D `[x, y]` projections for each asset in the collection for
+        cluster-map visualisation. In production, coordinates are generated by a
+        Python FastAPI gateway running UMAP/t-SNE on 1536-dim pgvector embeddings.
+      responses:
+        '200':
+          description: Cluster map nodes returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  nodes:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        title:
+                          type: string
+                        x:
+                          type: number
+                          example: 42.73
+                        "y":
+                          type: number
+                          example: 18.56
+                        url:
+                          type: string
+                          nullable: true
+  "/api/v1/collections/{slug}/rule":
+    parameters:
+    - name: slug
+      in: path
+      required: true
+      description: Collection slug
+      schema:
+        type: string
+    post:
+      summary: Configure or update the smart-routing rule for a collection
+      tags:
+      - Collections
+      security:
+      - Bearer: []
+      description: |
+        Upserts the `CollectionRule` for this workspace. Setting `active: true`
+        causes the system to automatically route assets that match the semantic
+        prompt and metadata filters into this collection. Also marks the
+        collection as `collection_type: smart`.
+      parameters: []
+      responses:
+        '200':
+          description: Smart rule updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  collection:
+                    type: object
+        '422':
+          description: Rule validation failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
       requestBody:
         content:
           application/json:
             schema:
               type: object
               properties:
-                folder:
+                semantic_prompt:
+                  type: string
+                  example: outdoor lifestyle photography
+                similarity_threshold:
+                  type: number
+                  example: 0.8
+                metadata_filters:
                   type: object
-                  properties:
-                    name:
-                      type: string
-                      example: Q3 Campaigns
-                    parent_id:
-                      type: string
-                      nullable: true
-                      example: root
-                  required:
-                  - name
-              required:
-              - folder
-  "/api/v1/folders/{id}":
+                  example:
+                    region: EMEA
+                active:
+                  type: boolean
+                  example: true
+  "/api/v1/collections/{slug}/purge_cdn":
     parameters:
-    - name: id
+    - name: slug
       in: path
-      description: Folder ID or "root"
       required: true
+      description: Collection slug
       schema:
         type: string
-    get:
-      summary: Retrieves a folder and its contents
+    post:
+      summary: Trigger a CDN cache invalidation for all assets in this collection
       tags:
-      - Folders
+      - Collections
+      security:
+      - Bearer: []
       responses:
         '200':
-          description: folder contents found
+          description: CDN invalidation initiated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+  "/api/v1/collections/{slug}/assets":
+    parameters:
+    - name: slug
+      in: path
+      required: true
+      description: Collection slug
+      schema:
+        type: string
+    post:
+      summary: Add an asset to a collection
+      tags:
+      - Collections
+      security:
+      - Bearer: []
+      parameters: []
+      responses:
+        '200':
+          description: Asset added to collection
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  collection:
+                    type: object
+        '404':
+          description: Asset not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '422':
+          description: Asset already in collection or validation error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - asset_id
+              properties:
+                asset_id:
+                  type: integer
+                  example: 99
+  "/api/v1/collections/{slug}/assets/{asset_id}":
+    parameters:
+    - name: slug
+      in: path
+      required: true
+      description: Collection slug
+      schema:
+        type: string
+    - name: asset_id
+      in: path
+      required: true
+      description: Asset ID
+      schema:
+        type: integer
+    delete:
+      summary: Remove an asset from a collection
+      tags:
+      - Collections
+      security:
+      - Bearer: []
+      responses:
+        '200':
+          description: Asset removed from collection
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '404':
+          description: Asset not found in this collection
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+    patch:
+      summary: Toggle the pinned state of an asset within a collection
+      tags:
+      - Collections
+      security:
+      - Bearer: []
+      description: |
+        Toggles `pinned` on the `CollectionAsset` join record. Pinned assets are
+        always shown at the top of the collection view. Unpinned assets are
+        dynamically positioned by the AI routing engine.
+      responses:
+        '200':
+          description: Pin state toggled
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Asset pinned manually.
+                  pinned:
+                    type: boolean
+        '404':
+          description: Asset not in collection
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+  "/api/v1/copilot/search":
+    post:
+      summary: Semantic (vector) search powered by the AI Gateway
+      tags:
+      - AI Copilot
+      security:
+      - Bearer: []
+      description: |
+        Translates a natural-language query into a 1536-dimension vector via the
+        Python AI Gateway (`POST /api/embed_query`) and performs an HNSW nearest-
+        neighbour search using pgvector. Returns the top 20 most semantically
+        similar assets regardless of filename or metadata text.
+
+        **Requires the Python AI Gateway to be running** (default: `localhost:8000`).
+        Falls back gracefully with a 500 response if the gateway is unavailable.
+
+        Use this endpoint to power "find me something like…" search experiences
+        in your product.
+      parameters: []
+      responses:
+        '200':
+          description: Semantic search results returned (may be empty array)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        original_filename:
+                          type: string
+                        file_url:
+                          type: string
+                          nullable: true
+                        properties:
+                          type: object
+        '500':
+          description: AI Gateway is unreachable or returned an error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Failed to process semantic query.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - query
+              properties:
+                query:
+                  type: string
+                  example: outdoor lifestyle photography with warm autumn tones
+                  description: Natural language description of the assets you are
+                    looking for
+  "/api/v1/folders":
+    get:
+      summary: Retrieve the full folder tree (flat list with paths)
+      tags:
+      - Folders
+      security:
+      - Bearer: []
+      description: |
+        Returns every active folder as a flat sorted list with fully-qualified
+        path names (e.g. `/Marketing/2026/Campaigns`). Used to populate folder-
+        picker dropdowns across the UI. Built in O(n) using a single query + in-
+        memory tree traversal — safe for large folder structures.
+      responses:
+        '200':
+          description: Folders retrieved successfully
           content:
             application/json:
               schema:
@@ -923,14 +2529,677 @@ paths:
                     type: array
                     items:
                       type: object
+                      required:
+                      - id
+                      - name
+                      properties:
+                        id:
+                          type: integer
+                          example: 42
+                        name:
+                          type: string
+                          example: "/Marketing/2026"
+    post:
+      summary: Create a new folder
+      tags:
+      - Folders
+      security:
+      - Bearer: []
+      parameters: []
+      responses:
+        '201':
+          description: Folder created successfully
+        '422':
+          description: Validation failed (e.g., blank name)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - folder
+              properties:
+                folder:
+                  type: object
+                  required:
+                  - name
+                  properties:
+                    name:
+                      type: string
+                      example: Q3 Campaigns
+                    parent_id:
+                      type: string
+                      nullable: true
+                      example: root
+                      description: Parent folder ID or "root" to create at top level
+  "/api/v1/folders/{id}":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      description: Folder ID or the string `"root"` to browse the top level
+      schema:
+        type: string
+    get:
+      summary: Retrieve a folder and its direct child contents
+      tags:
+      - Folders
+      security:
+      - Bearer: []
+      description: |
+        Returns immediate sub-folders, assets in this folder, and the breadcrumb
+        trail back to root. Pass `id=root` to list all top-level items.
+        Only active (non-trashed) items are returned.
+      responses:
+        '200':
+          description: Folder contents returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  folders:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        name:
+                          type: string
                   assets:
                     type: array
                     items:
                       type: object
+                      properties:
+                        id:
+                          type: integer
+                        uuid:
+                          type: string
+                          format: uuid
+                        title:
+                          type: string
+                        status:
+                          type: string
+                          example: ready
+                        version:
+                          type: integer
+                        properties:
+                          type: object
+                        url:
+                          type: string
+                          nullable: true
                   breadcrumbs:
                     type: array
                     items:
                       type: object
+                      properties:
+                        id:
+                          type: string
+                        name:
+                          type: string
+        '404':
+          description: Folder not found or has been deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+  "/api/v1/folders/{id}/restore":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      description: Folder ID
+      schema:
+        type: string
+    post:
+      summary: Restore a soft-deleted folder from the Recycle Bin
+      tags:
+      - Folders
+      security:
+      - Bearer: []
+      responses:
+        '200':
+          description: Folder restored to active state
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Folder restored
+        '404':
+          description: Folder not found in the bin
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+  "/api/v1/folders/{id}/permanent":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      description: Folder ID
+      schema:
+        type: string
+    delete:
+      summary: Permanently delete a folder from the Recycle Bin
+      tags:
+      - Folders
+      security:
+      - Bearer: []
+      description: |
+        **Irreversible.** Destroys the folder database record. Also dispatches a
+        CDN invalidation job to drop any cached assets under this folder from
+        edge nodes. Assets inside the folder should be permanently deleted
+        separately (or handled by `dependent: :destroy` on the model association).
+      responses:
+        '200':
+          description: Folder permanently deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Folder permanently deleted
+        '404':
+          description: Folder not found in the bin
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+  "/api/v1/ingestion_batches":
+    get:
+      summary: List the 50 most recent migration batches
+      tags:
+      - Ingestion & Migration
+      security:
+      - Bearer: []
+      description: |
+        Returns summary records for the 50 most recent ingestion batches ordered
+        by `created_at DESC`. Use this to build the batch monitoring dashboard.
+      responses:
+        '200':
+          description: Batch list returned
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    name:
+                      type: string
+                      example: Cloudinary Migration — 2026-06-20 14:30
+                    source_type:
+                      type: string
+                      example: cloudinary
+                    status:
+                      type: string
+                      example: review_needed
+                      description: initializing | extracting | transforming | review_needed
+                        | committed | failed
+                    started_at:
+                      type: string
+                      format: date-time
+                    completed_at:
+                      type: string
+                      format: date-time
+                      nullable: true
+    post:
+      summary: Initialize a new migration batch
+      tags:
+      - Ingestion & Migration
+      security:
+      - Bearer: []
+      description: |
+        Creates a new `IngestionBatch` record and immediately fires the
+        `ExtractionWorker` Sidekiq job. The batch progresses through these states:
+
+        `initializing` → `extracting` → `transforming` → `review_needed`
+
+        Once in `review_needed`, a human operator reviews the batch in the
+        BatchReviewWorkspace and calls `POST /commit` to approve it.
+      parameters: []
+      responses:
+        '201':
+          description: Batch created and extraction pipeline started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  batch:
+                    type: object
+        '422':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - ingestion_batch
+              properties:
+                ingestion_batch:
+                  type: object
+                  required:
+                  - name
+                  - source_type
+                  properties:
+                    name:
+                      type: string
+                      example: Cloudinary Legacy Import
+                    source_type:
+                      type: string
+                      example: cloudinary
+                      description: cloudinary | brandfolder | bynder | ftp | http_api
+                    connector_id:
+                      type: integer
+                      nullable: true
+                      description: ID of the SystemConnector to use for credentials
+                    notes:
+                      type: string
+                      nullable: true
+                    source_credentials:
+                      type: object
+                      description: Provider-specific credentials map (stored encrypted).
+                        Prefer using connector_id.
+                      example:
+                        endpoint: https://api.cloudinary.com/v1_1/mycloud
+                        auth_token: sk_test_abc
+  "/api/v1/ingestion_batches/{id}":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      description: IngestionBatch database ID
+      schema:
+        type: integer
+    get:
+      summary: Retrieve a batch with its paginated ingestion items
+      tags:
+      - Ingestion & Migration
+      security:
+      - Bearer: []
+      parameters:
+      - name: status
+        in: query
+        required: false
+        description: Filter items by status (pending | ai_processing | review_needed
+          | committed | failed)
+        schema:
+          type: string
+      - name: page
+        in: query
+        required: false
+        description: 'Page number (default: 1, 50 items per page)'
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: Batch details and items returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  batch:
+                    type: object
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        original_filename:
+                          type: string
+                        file_hash:
+                          type: string
+                          description: SHA-256 hash
+                        file_size:
+                          type: integer
+                        status:
+                          type: string
+                        error_log:
+                          type: string
+                          nullable: true
+                        legacy_metadata:
+                          type: object
+                          nullable: true
+                        clean_properties:
+                          type: object
+                          nullable: true
+                        created_at:
+                          type: string
+                          format: date-time
+                  meta:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                      page:
+                        type: integer
+                      per_page:
+                        type: integer
+                        example: 50
+        '404':
+          description: Batch not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+  "/api/v1/ingestion_batches/{id}/commit":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      description: IngestionBatch ID
+      schema:
+        type: integer
+    post:
+      summary: Human-approve and commit a batch to the DAM
+      tags:
+      - Ingestion & Migration
+      security:
+      - Bearer: []
+      description: |
+        Transitions the batch from `review_needed` to `committed` and fires the
+        `MigrationCommitWorker` to physically import all approved assets.
+        Can only be called when `status == review_needed`. You will receive
+        an email notification when the import is complete.
+      responses:
+        '200':
+          description: Commit pipeline started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  batch:
+                    type: object
+        '422':
+          description: Batch is not in review_needed state
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '404':
+          description: Batch not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+  "/api/v1/ingestion_batches/{id}/abort":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      description: IngestionBatch ID
+      schema:
+        type: integer
+    post:
+      summary: Abort a migration batch without committing
+      tags:
+      - Ingestion & Migration
+      security:
+      - Bearer: []
+      description: Sets the batch status to `failed`. Cannot be called on already-committed
+        batches.
+      responses:
+        '200':
+          description: Batch aborted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  batch:
+                    type: object
+        '422':
+          description: Cannot abort a committed batch
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '404':
+          description: Batch not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+  "/api/v1/ingestion_batches/{id}/report":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      description: IngestionBatch ID
+      schema:
+        type: integer
+    get:
+      summary: Retrieve or generate the migration statistics report for a batch
+      tags:
+      - Ingestion & Migration
+      security:
+      - Bearer: []
+      description: |
+        Returns pre-computed migration stats (success count, failure count, TDM
+        quality scores, duplicate rates). If the report has not been generated yet
+        on a committed batch, a `202 Accepted` is returned and report generation
+        is queued in the background via `MigrationReportWorker`.
+      responses:
+        '200':
+          description: Report returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  batch:
+                    type: object
+                  report:
+                    type: object
+                    description: Migration statistics snapshot
+        '202':
+          description: Report is being generated — check back shortly
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '404':
+          description: Batch not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+  "/api/v1/ingestion_items/{id}":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      description: IngestionItem database ID
+      schema:
+        type: integer
+    get:
+      summary: Retrieve a single ingestion item
+      tags:
+      - Ingestion & Migration
+      description: |
+        **Internal microservice endpoint.** Called by the TDM sanitation and AI
+        enrichment workers to fetch the raw item data for processing.
+      responses:
+        '200':
+          description: Ingestion item returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  ingestion_batch_id:
+                    type: integer
+                  original_filename:
+                    type: string
+                  file_hash:
+                    type: string
+                  file_size:
+                    type: integer
+                  status:
+                    type: string
+                    example: pending
+                  error_log:
+                    type: string
+                    nullable: true
+                  legacy_metadata:
+                    type: object
+                    nullable: true
+                  clean_properties:
+                    type: object
+                    nullable: true
+                  created_at:
+                    type: string
+                    format: date-time
+        '404':
+          description: Item not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+    patch:
+      summary: Update the status and clean properties of an ingestion item
+      tags:
+      - Ingestion & Migration
+      description: |
+        **Internal microservice endpoint.** Called by the AI enrichment worker
+        to update `status` (e.g. from `ai_processing` to `review_needed`) and to
+        write the sanitized `clean_properties` back to the database.
+
+        When all items in a batch transition out of `pending`/`ai_processing`,
+        the system automatically sets `batch.status = review_needed`.
+      parameters: []
+      responses:
+        '200':
+          description: Item updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '422':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
+        '404':
+          description: Item not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - ingestion_item
+              properties:
+                ingestion_item:
+                  type: object
+                  properties:
+                    status:
+                      type: string
+                      example: review_needed
+                      description: pending | ai_processing | review_needed | committed
+                        | failed
+                    error_log:
+                      type: string
+                      nullable: true
+                    clean_properties:
+                      type: object
+                      description: Sanitized/enriched metadata ready for import into
+                        DAM
   "/api/v1/notifications":
     get:
       summary: Retrieves recent unread notifications for the current user
@@ -1010,6 +3279,437 @@ paths:
                 properties:
                   error:
                     type: string
+  "/api/v1/system_connectors":
+    get:
+      summary: List all system connectors (ingestion bridges)
+      tags:
+      - System Connectors
+      security:
+      - Bearer: []
+      description: |
+        Returns all configured system connectors ordered by `created_at DESC`.
+        A connector is a named integration bridge to an external DAM/storage
+        provider (Cloudinary, Brandfolder, Bynder, FTP, HTTP API, etc.).
+      responses:
+        '200':
+          description: Connectors returned
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    name:
+                      type: string
+                      example: Cloudinary Production
+                    provider_type:
+                      type: string
+                      example: cloudinary
+                    provider_label:
+                      type: string
+                      example: Cloudinary
+                    endpoint:
+                      type: string
+                      nullable: true
+                    status:
+                      type: string
+                      example: active
+                      description: idle | active | error
+                    assets_imported:
+                      type: integer
+                      example: 0
+                    concurrency_limit:
+                      type: integer
+                      nullable: true
+                    rps_limit:
+                      type: integer
+                      nullable: true
+                    created_at:
+                      type: string
+                      format: date-time
+    post:
+      summary: Create a new system connector
+      tags:
+      - System Connectors
+      security:
+      - Bearer: []
+      parameters: []
+      responses:
+        '201':
+          description: Connector created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  name:
+                    type: string
+                  provider_label:
+                    type: string
+        '422':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - system_connector
+              properties:
+                system_connector:
+                  type: object
+                  required:
+                  - name
+                  - provider_type
+                  properties:
+                    name:
+                      type: string
+                      example: Cloudinary Production
+                    provider_type:
+                      type: string
+                      example: cloudinary
+                      description: cloudinary | brandfolder | bynder | ftp | http_api
+                    endpoint:
+                      type: string
+                      nullable: true
+                      example: https://api.cloudinary.com/v1_1/mycloud
+                    auth_token:
+                      type: string
+                      nullable: true
+                      description: API key / Bearer token for the external system
+                    concurrency_limit:
+                      type: integer
+                      nullable: true
+                      example: 5
+                    rps_limit:
+                      type: integer
+                      nullable: true
+                      example: 10
+                    tdm_sanitation:
+                      type: boolean
+                      example: true
+                      description: Whether to run TDM sanitation on imported metadata
+  "/api/v1/system_connectors/{id}":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      description: System connector ID
+      schema:
+        type: integer
+    patch:
+      summary: Update a system connector
+      tags:
+      - System Connectors
+      security:
+      - Bearer: []
+      description: Blank `auth_token` values are ignored so they do not overwrite
+        the stored secret.
+      parameters: []
+      responses:
+        '200':
+          description: Connector updated
+        '404':
+          description: Connector not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '422':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - system_connector
+              properties:
+                system_connector:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    endpoint:
+                      type: string
+                      nullable: true
+                    auth_token:
+                      type: string
+                      nullable: true
+                      description: Leave blank to keep the existing secret
+                    status:
+                      type: string
+                      example: active
+                    concurrency_limit:
+                      type: integer
+                      nullable: true
+                    rps_limit:
+                      type: integer
+                      nullable: true
+  "/api/v1/system_connectors/test_connection":
+    post:
+      summary: Test connector credentials before saving
+      tags:
+      - System Connectors
+      security:
+      - Bearer: []
+      description: |
+        Validates a set of credentials against the target provider **without
+        saving them**. Use this in the connector setup wizard to verify the
+        connection is working before committing the configuration.
+      parameters: []
+      responses:
+        '200':
+          description: Connection successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Successfully connected to Cloudinary.
+        '422':
+          description: Connection failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Invalid API key.
+        '400':
+          description: Missing required fields
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - provider_type
+              properties:
+                provider_type:
+                  type: string
+                  example: cloudinary
+                endpoint:
+                  type: string
+                  nullable: true
+                auth_token:
+                  type: string
+                  nullable: true
+                cloud_name:
+                  type: string
+                  nullable: true
+                  description: Required for Cloudinary
+                brandfolder_key:
+                  type: string
+                  nullable: true
+                username:
+                  type: string
+                  nullable: true
+                  description: FTP username
+                password:
+                  type: string
+                  nullable: true
+                  description: FTP password
+                remote_path:
+                  type: string
+                  nullable: true
+                  description: FTP remote directory path
+  "/api/v1/system_connectors/pre_flight_analysis":
+    post:
+      summary: Kick off a pre-flight analysis on a connector (async)
+      tags:
+      - System Connectors
+      security:
+      - Bearer: []
+      description: |
+        Queues a `PreFlightAnalysisWorker` job that scans the source system to
+        estimate asset count, total size, metadata quality score, and expected
+        migration duration — without importing any assets.
+      parameters: []
+      responses:
+        '202':
+          description: Pre-flight analysis started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - id
+              properties:
+                id:
+                  type: integer
+                  description: SystemConnector ID to analyse
+  "/api/v1/system_connectors/{id}/start_migration":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      description: SystemConnector ID
+      schema:
+        type: integer
+    post:
+      summary: Start a full migration from a connector source
+      tags:
+      - System Connectors
+      security:
+      - Bearer: []
+      description: |
+        Creates a new `IngestionBatch` pre-populated with the connector's
+        credentials and immediately fires `ExtractionWorker`. The connector
+        must be in `status: active` to start a migration.
+
+        Monitor progress via `GET /api/v1/ingestion_batches/{batch_id}`.
+      responses:
+        '202':
+          description: Migration started — batch summary returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Migration started.
+                  batch:
+                    type: object
+        '422':
+          description: Connector is not in active status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '404':
+          description: Connector not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+  "/api/v1/webhooks/connectors/{connector_id}/receive":
+    parameters:
+    - name: connector_id
+      in: path
+      required: true
+      description: ID of the SystemConnector this webhook is bound to
+      schema:
+        type: integer
+    post:
+      summary: Receive an inbound webhook event from an external system
+      tags:
+      - Webhooks
+      description: |
+        **Machine-to-machine endpoint.** CSRF verification is disabled; all
+        requests must include a valid HMAC-SHA256 signature header instead.
+
+        **Signature Verification**:
+        1. The body is hashed using `HMAC-SHA256` with the connector's stored `webhook_secret`.
+        2. The result must be provided in one of:
+           - `x-adobe-signature` (Adobe I/O events)
+           - `x-hub-signature-256` (GitHub-style webhooks)
+
+        Payloads are **not processed synchronously** — they are immediately handed
+        to `IngestionWorker` via Sidekiq to keep web thread latency near zero.
+        Always return `200 OK` from your webhook source system after this responds.
+      parameters:
+      - name: x-hub-signature-256
+        in: header
+        required: false
+        description: HMAC-SHA256 signature for generic webhook providers
+        schema:
+          type: string
+      - name: x-adobe-signature
+        in: header
+        required: false
+        description: HMAC-SHA256 signature for Adobe I/O events
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Event accepted and queued for async processing
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: accepted
+        '401':
+          description: Invalid or missing webhook signature
+        '404':
+          description: Connector not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Provider-specific event payload (arbitrary JSON — passed
+                through to IngestionWorker)
   "/api/v1/workflow_tasks/{id}/submit":
     parameters:
     - name: id

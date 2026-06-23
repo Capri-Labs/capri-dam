@@ -1,156 +1,693 @@
+# frozen_string_literal: true
+
 require 'swagger_helper'
 
 RSpec.describe 'Api::V1::Assets', type: :request do
-  # --- SEARCH ENDPOINT ---
+
+  # ===========================================================================
+  # SEARCH — GET /api/v1/search
+  # Routed to SearchController#index (lexical + dynamic metadata filters + facets)
+  # ===========================================================================
   path '/api/v1/search' do
-    get 'Searches for assets' do
+    get 'Search assets (lexical + dynamic metadata facets)' do
       tags 'Assets'
       produces 'application/json'
       security [Bearer: []]
+      description <<~DESC
+        Performs full-text lexical search against asset titles and original filenames.
+        Supports dynamic metadata filtering via arbitrary query params (e.g. `?region=EMEA`).
+        Returns facet data alongside results so UIs can build filter panels without extra calls.
+      DESC
 
-      parameter name: :q, in: :query, type: :string, required: false, description: 'Search term for title'
-      parameter name: :format, in: :query, type: :string, required: false, description: 'Exact format match (e.g., JPEG)'
+      parameter name: :q,    in: :query, type: :string, required: false,
+                description: 'Full-text term matched against title and original_filename'
+      parameter name: :mode, in: :query, type: :string, required: false,
+                description: 'Filter by type: `images` (default), `files`, or omit for all'
 
-      response '200', 'search results returned' do
+      response '200', 'Search results with facets returned' do
         schema type: :object,
                properties: {
-                 total: { type: :integer },
+                 meta: {
+                   type: :object,
+                   properties: {
+                     query:       { type: :string, nullable: true, example: 'brand logo' },
+                     mode:        { type: :string, example: 'images' },
+                     total_found: { type: :integer, example: 47 },
+                     facets: {
+                       type: :object,
+                       properties: {
+                         content_type: {
+                           type: :array, items: { type: :string },
+                           example: ['image/jpeg', 'image/png']
+                         }
+                       }
+                     }
+                   }
+                 },
                  results: {
                    type: :array,
                    items: {
                      type: :object,
                      properties: {
-                       id: { type: :string },
-                       title: { type: :string },
-                       metadata: { type: :object },
-                       url: { type: :string }
+                       id:        { type: :integer, example: 1 },
+                       uuid:      { type: :string, format: :uuid },
+                       title:     { type: :string, example: 'Brand Logo Final' },
+                       type:      { type: :string, example: 'image/png' },
+                       size:      { type: :string, example: '2.4 MB' },
+                       thumb_url: { type: :string, nullable: true }
                      }
                    }
                  }
                }
-
         run_test!
       end
     end
   end
 
-  # --- ASSET CREATION (MULTIPART UPLOAD) ---
+  # ===========================================================================
+  # ASSET CREATION — POST /api/v1/assets
+  # ===========================================================================
   path '/api/v1/assets' do
-    post 'Uploads a new asset' do
+    post 'Upload a new asset (multipart)' do
       tags 'Assets'
       consumes 'multipart/form-data'
       produces 'application/json'
       security [Bearer: []]
+      description <<~DESC
+        Accepts a multipart file and immediately queues async processing
+        (`AssetProcessorWorker`, `CdnInvalidationWorker`, `EdgeMetadataSyncWorker`).
 
-      parameter name: :asset_payload, in: :formData, schema: {
-        type: :object,
-        properties: {
-          file: { type: :string, format: :binary, description: 'The file to upload' },
-          title: { type: :string, description: 'Optional override for the file name' },
-          folder_id: { type: :integer, description: 'ID of the destination folder' }
-        },
-        required: ['file']
-      }
+        **Lifecycle**: `status: pending` → background workers → `status: ready`.
+        Poll `GET /api/v1/assets/{id}/versions` to monitor progress.
+      DESC
 
-      response '202', 'asset accepted for processing' do
+      parameter name: :file,      in: :formData, type: :string,  format: :binary, required: true,
+                description: 'Binary file to upload'
+      parameter name: :title,     in: :formData, type: :string,  required: false,
+                description: 'Human-readable title; defaults to original filename'
+      parameter name: :folder_id, in: :formData, type: :integer, required: false,
+                description: 'Destination folder ID; omit to place at root'
+
+      response '202', 'Asset accepted and queued for processing' do
         schema type: :object,
+               required: ['id', 'status'],
                properties: {
-                 id: { type: :string },
+                 id:     { type: :string, format: :uuid },
                  status: { type: :string, example: 'processing' }
                }
         run_test!
       end
 
-      response '422', 'unprocessable entity' do
+      response '422', 'No file provided' do
         schema type: :object, properties: { error: { type: :string } }
         run_test!
       end
     end
   end
 
-  # --- ASSET MEMBER ENDPOINTS ---
+  # ===========================================================================
+  # ASSET MEMBER — DELETE /api/v1/assets/{id}  (soft delete)
+  # ===========================================================================
   path '/api/v1/assets/{id}' do
-    parameter name: :id, in: :path, type: :string, description: 'Asset ID'
+    parameter name: :id, in: :path, type: :string, required: true,
+              description: 'Asset database ID (integer primary key)'
 
-    delete 'Soft deletes an asset (moves to bin)' do
+    delete 'Soft-delete an asset (move to Recycle Bin)' do
       tags 'Assets'
       produces 'application/json'
       security [Bearer: []]
+      description 'Sets `deleted_at`. Recoverable via restore or permanently via permanent delete.'
 
-      response '200', 'asset moved to bin' do
-        schema type: :object, properties: { success: { type: :boolean }, message: { type: :string } }
+      response '200', 'Asset moved to bin' do
+        schema type: :object,
+               properties: {
+                 success: { type: :boolean, example: true },
+                 message: { type: :string, example: 'Moved to bin' }
+               }
+        run_test!
+      end
+
+      response '404', 'Asset not found' do
+        schema type: :object, properties: { error: { type: :string } }
         run_test!
       end
     end
   end
 
+  # ===========================================================================
+  # RESTORE — POST /api/v1/assets/{id}/restore
+  # ===========================================================================
   path '/api/v1/assets/{id}/restore' do
-    parameter name: :id, in: :path, type: :string, description: 'Asset ID'
+    parameter name: :id, in: :path, type: :string, required: true, description: 'Asset ID'
 
-    post 'Restores an asset from the bin' do
+    post 'Restore a soft-deleted asset from the Recycle Bin' do
       tags 'Assets'
       produces 'application/json'
       security [Bearer: []]
 
-      response '200', 'asset restored' do
-        schema type: :object, properties: { success: { type: :boolean }, message: { type: :string } }
+      response '200', 'Asset restored to active state' do
+        schema type: :object,
+               properties: {
+                 success: { type: :boolean, example: true },
+                 message: { type: :string, example: 'Asset restored' }
+               }
+        run_test!
+      end
+
+      response '404', 'Asset not found in the bin' do
+        schema type: :object, properties: { error: { type: :string } }
         run_test!
       end
     end
   end
 
+  # ===========================================================================
+  # PERMANENT DELETE — DELETE /api/v1/assets/{id}/permanent
+  # ===========================================================================
   path '/api/v1/assets/{id}/permanent' do
-    parameter name: :id, in: :path, type: :string, description: 'Asset ID'
+    parameter name: :id, in: :path, type: :string, required: true, description: 'Asset ID'
 
-    delete 'Permanently deletes an asset' do
+    delete 'Permanently delete an asset and all its storage versions' do
       tags 'Assets'
       produces 'application/json'
       security [Bearer: []]
+      description <<~DESC
+        **Irreversible.** Purges all physical files from the active storage backend
+        for every version and destroys the database record. Also triggers an edge
+        CDN purge so stale URLs return 404 immediately.
+      DESC
 
-      response '200', 'asset permanently deleted' do
-        schema type: :object, properties: { success: { type: :boolean }, message: { type: :string } }
+      response '200', 'Asset permanently deleted' do
+        schema type: :object,
+               properties: {
+                 success: { type: :boolean, example: true },
+                 message: { type: :string, example: 'Permanently deleted all versions' }
+               }
+        run_test!
+      end
+
+      response '404', 'Asset not found in the bin' do
+        schema type: :object, properties: { error: { type: :string } }
         run_test!
       end
     end
   end
 
+  # ===========================================================================
+  # VERSIONS — GET /api/v1/assets/{id}/versions
+  # ===========================================================================
+  path '/api/v1/assets/{id}/versions' do
+    parameter name: :id, in: :path, type: :string, required: true, description: 'Asset ID'
+
+    get 'List all immutable versions of an asset' do
+      tags 'Assets'
+      produces 'application/json'
+      security [Bearer: []]
+      description <<~DESC
+        Returns the full version chain in descending order. `is_active: true` marks
+        the currently published version. To promote a prior version, call
+        `POST /api/v1/assets/{id}/versions/{version_id}/restore`.
+      DESC
+
+      response '200', 'Version history returned' do
+        schema type: :object,
+               properties: {
+                 versions: {
+                   type: :array,
+                   items: {
+                     type: :object,
+                     properties: {
+                       id:             { type: :integer },
+                       version_number: { type: :integer, example: 3 },
+                       action_type:    { type: :string, example: 'Image Edit' },
+                       created_at:     { type: :string, example: 'Jun 21, 2026 at 03:15 PM' },
+                       created_by:     { type: :string, example: 'ashok@example.com' },
+                       is_active:      { type: :boolean },
+                       size:           { type: :string, example: '4.20 MB' }
+                     }
+                   }
+                 }
+               }
+        run_test!
+      end
+
+      response '404', 'Asset not found' do
+        schema type: :object, properties: { error: { type: :string } }
+        run_test!
+      end
+    end
+  end
+
+  # ===========================================================================
+  # AUDIT TRAIL — GET /api/v1/assets/{id}/audit_trail
+  # ===========================================================================
+  path '/api/v1/assets/{id}/audit_trail' do
+    parameter name: :id, in: :path, type: :string, required: true, description: 'Asset ID'
+
+    get 'Retrieve the compliance audit trail for an asset' do
+      tags 'Assets'
+      produces 'application/json'
+      security [Bearer: []]
+      description <<~DESC
+        Returns every version with its raw `properties` JSONB payload for
+        compliance audits and delta-diff calculations — exposing full metadata state
+        at each point in time.
+      DESC
+
+      response '200', 'Audit trail returned' do
+        schema type: :object,
+               properties: {
+                 audit_trail: {
+                   type: :array,
+                   items: {
+                     type: :object,
+                     properties: {
+                       id:             { type: :integer },
+                       version_number: { type: :integer },
+                       action_type:    { type: :string },
+                       created_at:     { type: :string, format: 'date-time' },
+                       created_by_id:  { type: :integer, nullable: true },
+                       properties:     { type: :object,
+                                         description: 'Raw JSONB metadata snapshot at this version' }
+                     }
+                   }
+                 }
+               }
+        run_test!
+      end
+
+      response '404', 'Asset not found' do
+        schema type: :object, properties: { error: { type: :string } }
+        run_test!
+      end
+    end
+  end
+
+  # ===========================================================================
+  # RESTORE VERSION — POST /api/v1/assets/{id}/versions/{version_id}/restore
+  # ===========================================================================
+  path '/api/v1/assets/{id}/versions/{version_id}/restore' do
+    parameter name: :id,         in: :path, type: :string, required: true, description: 'Asset ID'
+    parameter name: :version_id, in: :path, type: :string, required: true,
+              description: 'AssetVersion database ID to promote as active'
+
+    post 'Promote a previous version to the active/published state' do
+      tags 'Assets'
+      produces 'application/json'
+      security [Bearer: []]
+      description <<~DESC
+        Non-destructive promotion — only updates the `active_version_id` pointer.
+        No data is mutated. The CDN URL will serve the restored version on the next
+        request (or immediately after a CDN purge).
+      DESC
+
+      response '200', 'Version promoted to active' do
+        schema type: :object,
+               properties: {
+                 id:       { type: :integer },
+                 uuid:     { type: :string, format: :uuid },
+                 title:    { type: :string },
+                 version:  { type: :integer, example: 2 },
+                 metadata: { type: :object },
+                 url:      { type: :string, nullable: true }
+               }
+        run_test!
+      end
+
+      response '404', 'Asset or version not found' do
+        schema type: :object, properties: { error: { type: :string } }
+        run_test!
+      end
+    end
+  end
+
+  # ===========================================================================
+  # PROCESS IMAGE — POST /api/v1/assets/{id}/process_image
+  # ===========================================================================
+  path '/api/v1/assets/{id}/process_image' do
+    parameter name: :id, in: :path, type: :string, required: true, description: 'Asset ID'
+
+    post 'Apply non-destructive image edits via the baking pipeline' do
+      tags 'Assets'
+      consumes 'application/json'
+      produces 'application/json'
+      security [Bearer: []]
+      description <<~DESC
+        Runs the **Image Baking Pipeline** (ImageMagick/MiniMagick).
+
+        **Save Modes**:
+        - `version` — creates a new immutable version on the same asset (default)
+        - `overwrite` — replaces the active version in-place (**destructive**)
+        - `new` — forks the asset as an independent copy (`title (Copy)`)
+
+        When `target_folder_id` differs from the current folder and `save_mode` is
+        `version` or `new`, the result is placed in that target folder.
+      DESC
+
+      parameter name: :payload, in: :body, schema: {
+        type: :object,
+        properties: {
+          save_mode: {
+            type: :string,
+            enum: ['version', 'overwrite', 'new'],
+            example: 'version'
+          },
+          target_folder_id: {
+            type: :string, nullable: true, example: '42',
+            description: 'Destination folder ID, or "root"'
+          },
+          adjustments: {
+            type: :object,
+            properties: {
+              brightness: { type: :integer, example: 10 },
+              contrast:   { type: :integer, example: 5 },
+              saturation: { type: :integer, example: -20 }
+            }
+          },
+          geometry: {
+            type: :object,
+            properties: {
+              rotate:          { type: :integer, example: 90 },
+              flip_horizontal: { type: :boolean, example: false },
+              focal_point: {
+                type: :object,
+                properties: {
+                  x: { type: :number, example: 50.0 },
+                  y: { type: :number, example: 50.0 }
+                }
+              }
+            }
+          },
+          filter:     { type: :string, nullable: true, example: 'None' },
+          custom_cli: {
+            type: :string, nullable: true,
+            example: '-monochrome -charcoal 2',
+            description: 'Raw ImageMagick CLI flags. Use with caution.'
+          }
+        }
+      }
+
+      response '200', 'Image baked — overwrite or in-place version save' do
+        schema type: :object,
+               properties: {
+                 id: { type: :integer }, uuid: { type: :string, format: :uuid },
+                 title: { type: :string }, version: { type: :integer },
+                 metadata: { type: :object }, url: { type: :string, nullable: true }
+               }
+        run_test!
+      end
+
+      response '201', 'Fork created — new asset or branch to target folder' do
+        schema type: :object,
+               properties: {
+                 id: { type: :integer }, uuid: { type: :string, format: :uuid },
+                 title: { type: :string, example: 'Brand Logo Final (Copy)' },
+                 version: { type: :integer }, metadata: { type: :object },
+                 url: { type: :string, nullable: true }
+               }
+        run_test!
+      end
+
+      response '422', 'Source file missing from disk' do
+        schema type: :object, properties: { error: { type: :string } }
+        run_test!
+      end
+
+      response '404', 'Asset not found' do
+        schema type: :object, properties: { error: { type: :string } }
+        run_test!
+      end
+    end
+  end
+
+  # ===========================================================================
+  # WORKFLOW HISTORY — GET /api/v1/assets/{id}/workflow_history
+  # ===========================================================================
   path '/api/v1/assets/{id}/workflow_history' do
-    parameter name: :id, in: :path, type: :string, description: 'Asset ID'
+    parameter name: :id, in: :path, type: :string, required: true, description: 'Asset ID'
 
-    get 'Retrieves workflow history for an asset' do
+    get 'Retrieve the active workflow instance and task timeline for an asset' do
       tags 'Assets'
       produces 'application/json'
       security [Bearer: []]
 
-      response '200', 'workflow history returned' do
+      response '200', 'Workflow history returned (active or inactive)' do
         schema type: :object,
                properties: {
-                 active: { type: :boolean },
-                 instance_status: { type: :string, nullable: true },
-                 started_at: { type: :string, format: 'date-time', nullable: true },
-                 tasks: { type: :array, items: { type: :object } }
+                 active:          { type: :boolean, example: true },
+                 instance_status: { type: :string, nullable: true, example: 'in_progress' },
+                 started_at:      { type: :string, format: 'date-time', nullable: true },
+                 tasks: {
+                   type: :array,
+                   items: {
+                     type: :object,
+                     properties: {
+                       id:              { type: :integer },
+                       step_name:       { type: :string, example: 'Brand Review' },
+                       user_name:       { type: :string, example: 'reviewer@example.com' },
+                       status:          { type: :string, example: 'pending' },
+                       comment:         { type: :string, nullable: true },
+                       completed_at:    { type: :string, format: 'date-time', nullable: true },
+                       is_current_user: { type: :boolean },
+                       is_pending:      { type: :boolean }
+                     }
+                   }
+                 }
+               }
+        run_test!
+      end
+
+      response '404', 'Asset not found' do
+        schema type: :object, properties: { error: { type: :string } }
+        run_test!
+      end
+    end
+  end
+
+  # ===========================================================================
+  # WATERMARKED PROXY — GET /api/v1/assets/{id}/watermarked
+  # ===========================================================================
+  path '/api/v1/assets/{id}/watermarked' do
+    parameter name: :id, in: :path, type: :string, required: true, description: 'Asset ID'
+
+    get 'Download a watermarked secure proxy of an image asset' do
+      tags 'Assets'
+      produces 'image/jpeg'
+      security [Bearer: []]
+      description <<~DESC
+        Returns the active image version with a diagonal `CONFIDENTIAL` watermark
+        at 40% opacity as a downloadable JPEG attachment.
+        Only supported for `image/*` content types.
+      DESC
+
+      response '200', 'Watermarked image binary returned as attachment' do
+        run_test!
+      end
+
+      response '422', 'Asset is not an image type' do
+        schema type: :object, properties: { error: { type: :string } }
+        run_test!
+      end
+
+      response '500', 'Image processing pipeline failed (MiniMagick error)' do
+        schema type: :object, properties: { error: { type: :string } }
+        run_test!
+      end
+    end
+  end
+
+  # ===========================================================================
+  # CHECK HASHES — POST /api/v1/assets/check_hashes
+  # ===========================================================================
+  path '/api/v1/assets/check_hashes' do
+    post 'Pre-upload duplicate detection via SHA-256 checksums' do
+      tags 'Assets'
+      consumes 'application/json'
+      produces 'application/json'
+      security [Bearer: []]
+      description <<~DESC
+        Compute SHA-256 checksums client-side **before** uploading, then call this
+        endpoint to detect existing duplicates. Returns matching asset details so
+        the UI can warn the user before creating redundant copies.
+      DESC
+
+      parameter name: :payload, in: :body, schema: {
+        type: :object,
+        required: ['hashes'],
+        properties: {
+          hashes: {
+            type: :array,
+            items: { type: :string },
+            example: ['a1b2c3d4e5f6...', 'e5f6g7h8i9j0...'],
+            description: 'Array of SHA-256 hex strings to check'
+          }
+        }
+      }
+
+      response '200', 'Duplicate check complete (empty `duplicates` object when none found)' do
+        schema type: :object,
+               properties: {
+                 duplicates: {
+                   type: :object,
+                   description: 'Key = SHA-256 hash; value = array of matching asset records',
+                   additionalProperties: {
+                     type: :array,
+                     items: {
+                       type: :object,
+                       properties: {
+                         id:         { type: :string, format: :uuid },
+                         title:      { type: :string },
+                         version:    { type: :integer },
+                         url:        { type: :string, nullable: true },
+                         folderName: { type: :string, example: '/Marketing/Campaigns' }
+                       }
+                     }
+                   }
+                 }
                }
         run_test!
       end
     end
   end
 
-  # --- THE RECYCLE BIN ---
+  # ===========================================================================
+  # RECYCLE BIN — GET /api/v1/bin
+  # ===========================================================================
   path '/api/v1/bin' do
-    get 'Retrieves all soft-deleted assets and folders' do
+    get 'List all soft-deleted assets and folders in the Recycle Bin' do
       tags 'Assets'
       produces 'application/json'
       security [Bearer: []]
 
-      response '200', 'bin contents returned' do
+      response '200', 'Recycle bin contents returned' do
         schema type: :object,
                properties: {
-                 folders: { type: :array, items: { type: :object } },
-                 assets: { type: :array, items: { type: :object } },
-                 breadcrumbs: { type: :array, items: { type: :object } }
+                 folders: {
+                   type: :array,
+                   items: {
+                     type: :object,
+                     properties: {
+                       id:         { type: :integer },
+                       name:       { type: :string },
+                       deleted_at: { type: :string, format: 'date-time' }
+                     }
+                   }
+                 },
+                 assets: {
+                   type: :array,
+                   items: {
+                     type: :object,
+                     properties: {
+                       id:         { type: :integer },
+                       title:      { type: :string },
+                       status:     { type: :string },
+                       deleted_at: { type: :string, format: 'date-time' },
+                       properties: { type: :object },
+                       url:        { type: :string, nullable: true }
+                     }
+                   }
+                 },
+                 breadcrumbs: {
+                   type: :array,
+                   items: {
+                     type: :object,
+                     properties: {
+                       id:   { type: :string, example: 'bin' },
+                       name: { type: :string, example: 'Trash Bin' }
+                     }
+                   }
+                 }
                }
         run_test!
       end
     end
   end
+
+  # ===========================================================================
+  # SERVE LOCAL FILE — GET /api/v1/assets/local/{uuid}
+  # ===========================================================================
+  path '/api/v1/assets/local/{uuid}' do
+    parameter name: :uuid, in: :path, type: :string, format: :uuid, required: true,
+              description: 'Asset UUID (not the integer primary key)'
+
+    get 'Stream the active version file from local/staging storage' do
+      tags 'Assets'
+      produces '*/*'
+      security [Bearer: []]
+      description <<~DESC
+        **Development & staging use only.** Streams the physical file from disk with
+        the correct `Content-Type`. In production, assets are served via CDN URL.
+        Falls back through two path resolution strategies:
+        1. `storage/dam/<relative_path>` (DAM root)
+        2. Direct absolute path (e.g., `tmp/uploads/...`)
+      DESC
+
+      response '200', 'File streamed inline' do
+        run_test!
+      end
+
+      response '302', 'Redirected to ActiveStorage URL (when AS attachment present)' do
+        run_test!
+      end
+
+      response '404', 'File not found on disk' do
+        schema type: :object,
+               properties: {
+                 error:     { type: :string },
+                 looked_at: { type: :string, nullable: true }
+               }
+        run_test!
+      end
+    end
+  end
+
+  # ===========================================================================
+  # VECTOR EMBEDDING — PUT /api/v1/assets/{asset_id}/embedding
+  # (Internal AI Gateway callback — called by Python microservice)
+  # ===========================================================================
+  path '/api/v1/assets/{asset_id}/embedding' do
+    parameter name: :asset_id, in: :path, type: :string, required: true, description: 'Asset ID'
+
+    put 'Upsert pgvector embedding for an asset (AI Gateway callback)' do
+      tags 'Assets'
+      consumes 'application/json'
+      produces 'application/json'
+      description <<~DESC
+        **Internal microservice endpoint.** Called by the Python AI Gateway after
+        computing the vector embedding. Stores the result in `asset_embeddings`
+        for HNSW nearest-neighbour semantic search via pgvector.
+      DESC
+
+      parameter name: :payload, in: :body, schema: {
+        type: :object,
+        required: ['asset_embedding'],
+        properties: {
+          asset_embedding: {
+            type: :object,
+            required: ['embedding', 'model_name'],
+            properties: {
+              embedding:  {
+                type: :array, items: { type: :number },
+                example: [0.023, -0.114, 0.987],
+                description: '1536-dimension float vector'
+              },
+              model_name: { type: :string, example: 'text-embedding-ada-002' }
+            }
+          }
+        }
+      }
+
+      response '200', 'Vector spatial index updated' do
+        schema type: :object, properties: { message: { type: :string } }
+        run_test!
+      end
+
+      response '422', 'Validation error' do
+        schema type: :object,
+               properties: { errors: { type: :array, items: { type: :string } } }
+        run_test!
+      end
+    end
+  end
+
 end

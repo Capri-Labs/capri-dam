@@ -14,10 +14,19 @@ Rails.application.routes.draw do
     mount GraphiQL::Rails::Engine, at: "/graphiql", graphql_path: "/graphql"
   end
 
-  get '/docs/graphql', to: redirect('/graphql-docs/index.html')
-  get "api_docs/index"
-  get '/developers/api', to: 'api_docs#index'
+  # ==========================================
+  # UNIFIED API DOCUMENTATION PORTAL
+  # ==========================================
+  # Primary docs URLs
+  get '/api/rest',    to: 'api/docs#rest'
+  get '/api/graphql', to: 'api/docs#graphql'
 
+  # Legacy redirects — keep old bookmarks working
+  get '/docs/graphql',   to: redirect('/api/graphql')
+  get '/api_docs/index', to: redirect('/api/rest')
+  get '/developers/api', to: redirect('/api/rest')
+
+  # Rswag engines (still needed to serve /api-docs/v1/swagger.yaml)
   mount Rswag::Ui::Engine => '/api-docs'
   mount Rswag::Api::Engine => '/api-docs'
 
@@ -245,7 +254,12 @@ Rails.application.routes.draw do
 
     # Reporting
     resources :reports, only: [:index, :show] do
-      post :generate, on: :member
+      collection do
+        get :analytics   # GET /admin/reports/analytics?range=last_30_days
+      end
+      member do
+        post :generate
+      end
     end
 
     resources :report_snapshots, only: [:index] do
