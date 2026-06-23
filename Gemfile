@@ -101,6 +101,9 @@ gem "mini_magick", "~> 5.3"
 
 gem "marcel", "~> 1.1"
 
+# CSV generation (removed from Ruby's default gems in 3.4+)
+gem "csv"
+
 gem 'prawn'
 gem 'prawn-table'
 

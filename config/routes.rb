@@ -97,6 +97,7 @@ Rails.application.routes.draw do
   # ==========================================
   namespace :tools do
     resources :metadata_schemas, only: [:index]
+    resources :metadata_exports, only: [:index]
   end
 
   # ==========================================
@@ -227,9 +228,18 @@ Rails.application.routes.draw do
         end
       end
 
+      # Metadata Export (async CSV export of asset metadata)
+      resources :metadata_exports, only: [:index, :show, :create, :destroy] do
+        collection do
+          get :properties
+        end
+        member do
+          get :download
+        end
+      end
+
     end
   end
-
   # ==========================================
   # 6. ADMIN & SYSTEM OPERATIONS
   # ==========================================

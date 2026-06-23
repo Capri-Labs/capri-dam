@@ -22,6 +22,7 @@ import SemanticCopilot from "./Admin/Intelligence/SemanticCopilot";
 import AgentWorkflows from "./Admin/Intelligence/AgentWorkflows";
 import BatchProcessing from "./Admin/Intelligence/BatchProcessing";
 import MetadataSchemasManager from "./Tools/MetadataSchemas";
+import MetadataExportManager from "./Tools/MetadataExport";
 
 export const COMPONENT_REGISTRY = {
     'dashboard': DashboardManager,
@@ -48,4 +49,5 @@ export const COMPONENT_REGISTRY = {
     'ai-automations-screen': AgentWorkflows,
     'ai-batch-processing-screen': BatchProcessing,
     'metadata-schemas-screen': MetadataSchemasManager,
+    'metadata-exports-screen': MetadataExportManager,
 };

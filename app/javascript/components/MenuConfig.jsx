@@ -15,7 +15,7 @@ import {
     PersonOutlined,
     SecurityOutlined, ContentCopy,
     ManageSearchOutlined, CollectionsBookmark, AutoAwesome, Route, QueryStats, CloudSync, BackupTable, HealthAndSafety,
-    BuildOutlined, SchemaOutlined
+    BuildOutlined, SchemaOutlined, FileDownloadOutlined
 } from '@mui/icons-material';
 
 export const MENU_GROUPS = [
@@ -148,6 +148,12 @@ export const MENU_GROUPS = [
                         label: 'Metadata Schemas',
                         icon: <SchemaOutlined fontSize="small" />,
                         url: '/tools/metadata_schemas'
+                    },
+                    {
+                        id: 'MetadataExport',
+                        label: 'Metadata Export',
+                        icon: <FileDownloadOutlined fontSize="small" />,
+                        url: '/tools/metadata_exports'
                     }
                 ]
             }

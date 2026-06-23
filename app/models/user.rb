@@ -104,4 +104,5 @@ class User < ApplicationRecord
   has_many :user_group_memberships, dependent: :destroy
   has_many :user_groups, through: :user_group_memberships
   has_many :notifications, dependent: :destroy
+  has_many :metadata_exports, dependent: :destroy
 end

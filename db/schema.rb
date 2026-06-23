@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_23_000002) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_23_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -286,6 +286,27 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_23_000002) do
     t.datetime "updated_at", null: false
     t.index ["file_hash"], name: "index_ingestion_items_on_file_hash"
     t.index ["ingestion_batch_id"], name: "index_ingestion_items_on_ingestion_batch_id"
+  end
+
+  create_table "metadata_exports", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.text "error_message"
+    t.datetime "expires_at"
+    t.integer "file_count", default: 0, null: false
+    t.uuid "folder_id"
+    t.boolean "include_subfolders", default: false, null: false
+    t.string "name", null: false
+    t.string "property_mode", default: "all", null: false
+    t.datetime "scheduled_at"
+    t.jsonb "selected_properties", default: [], null: false
+    t.integer "status", default: 0, null: false
+    t.integer "total_assets", default: 0, null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["expires_at"], name: "index_metadata_exports_on_expires_at"
+    t.index ["folder_id"], name: "index_metadata_exports_on_folder_id"
+    t.index ["status"], name: "index_metadata_exports_on_status"
+    t.index ["user_id"], name: "index_metadata_exports_on_user_id"
   end
 
   create_table "metadata_schema_folder_assignments", force: :cascade do |t|
@@ -634,6 +655,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_23_000002) do
   add_foreign_key "in_app_notifications", "users", column: "actor_id"
   add_foreign_key "ingestion_batches", "system_connectors", column: "connector_id", on_delete: :nullify
   add_foreign_key "ingestion_items", "ingestion_batches"
+  add_foreign_key "metadata_exports", "users"
   add_foreign_key "metadata_schema_folder_assignments", "metadata_schemas"
   add_foreign_key "metadata_schemas", "metadata_schemas", column: "parent_id"
   add_foreign_key "notifications", "users"
