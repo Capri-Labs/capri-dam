@@ -24,6 +24,7 @@ import BatchProcessing from "./Admin/Intelligence/BatchProcessing";
 import MetadataSchemasManager from "./Tools/MetadataSchemas";
 import MetadataExportManager from "./Tools/MetadataExport";
 import MetadataImportManager from "./Tools/MetadataImport";
+import AssetConfigurationsManager from "./Tools/AssetConfigurations";
 
 export const COMPONENT_REGISTRY = {
     'dashboard': DashboardManager,
@@ -52,4 +53,5 @@ export const COMPONENT_REGISTRY = {
     'metadata-schemas-screen': MetadataSchemasManager,
     'metadata-exports-screen': MetadataExportManager,
     'metadata-imports-screen': MetadataImportManager,
+    'asset-configurations-screen': AssetConfigurationsManager,
 };

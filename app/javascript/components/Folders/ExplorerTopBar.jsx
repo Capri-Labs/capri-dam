@@ -8,11 +8,12 @@ import {
     Home, ContentCopy, DeleteOutlined, CreateNewFolder,
     CloudUpload, AutoAwesome, AccountTree,
     Psychology, Translate, Security, Difference, Style,
-    CloudSync, Publish, DeleteSweep, BuildOutlined, SchemaOutlined
+    CloudSync, Publish, DeleteSweep, BuildOutlined, SchemaOutlined, ImageOutlined
 } from '@mui/icons-material';
 import { useNotify } from '../../context/NotificationContext';
 import UploadWorkspace from './UploadWorkspace';
 import ApplySchemaDialog from './ApplySchemaDialog';
+import { ApplyImageProfileDialog } from '../Tools/AssetConfigurations/ImageProfiles';
 
 export default function ExplorerTopBar({
                                            currentId, viewData, viewMode, setViewMode, handleNavigate, handleCopyPath,
@@ -35,6 +36,9 @@ export default function ExplorerTopBar({
     const [schemaTargetType,  setSchemaTargetType]  = useState('folder');
     const [schemaTargetIds,   setSchemaTargetIds]   = useState([]);
     const [schemaTargetNames, setSchemaTargetNames] = useState([]);
+
+    // Image Profile dialog
+    const [profileDialogOpen, setProfileDialogOpen] = useState(false);
 
     // AI Handlers
     const handleAiMenuClose = () => setSmartMenuAnchor(null);
@@ -184,6 +188,22 @@ export default function ExplorerTopBar({
                                     />
                                 </MenuItem>
                             )}
+                            <Divider />
+                            <MenuItem disabled sx={{ opacity: 1 }}>
+                                <Typography variant="caption" fontWeight={700} sx={{ color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                                    Image Processing
+                                </Typography>
+                            </MenuItem>
+                            <MenuItem
+                                onClick={() => { setToolsMenuAnchor(null); setProfileDialogOpen(true); }}
+                                disabled={currentId === 'root'}
+                            >
+                                <ListItemIcon><ImageOutlined fontSize="small" sx={{ color: '#7c3aed' }} /></ListItemIcon>
+                                <ListItemText
+                                    primary="Apply Image Profile"
+                                    secondary="Set processing profile for this folder"
+                                />
+                            </MenuItem>
                         </Menu>
 
                         {/* Edge CDN Ops */}
@@ -305,6 +325,11 @@ export default function ExplorerTopBar({
                                         <ListItemIcon><SchemaOutlined fontSize="small" sx={{ color: '#7c3aed' }} /></ListItemIcon>
                                         <ListItemText primary="Apply Metadata Schema" secondary="Set schema for this folder" />
                                     </MenuItem>
+                                    <Divider />
+                                    <MenuItem onClick={() => { setToolsMenuAnchor(null); setProfileDialogOpen(true); }}>
+                                        <ListItemIcon><ImageOutlined fontSize="small" sx={{ color: '#7c3aed' }} /></ListItemIcon>
+                                        <ListItemText primary="Apply Image Profile" secondary="Set processing profile for this folder" />
+                                    </MenuItem>
                                 </Menu>
                             </>
                         )}
@@ -346,6 +371,17 @@ export default function ExplorerTopBar({
                 targetIds={schemaTargetIds}
                 targetNames={schemaTargetNames}
                 currentFolderId={currentId}
+            />
+
+            {/* ── Apply Image Profile Dialog ── */}
+            <ApplyImageProfileDialog
+                open={profileDialogOpen}
+                onClose={(needsRefresh) => {
+                    setProfileDialogOpen(false);
+                    if (needsRefresh && onSchemaApplied) onSchemaApplied();
+                }}
+                folderId={currentId}
+                folderName={viewData.breadcrumbs?.slice(-1)[0]?.name ?? 'Current Folder'}
             />
         </Box>
     );

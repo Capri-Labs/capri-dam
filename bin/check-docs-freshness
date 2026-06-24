@@ -1,0 +1,92 @@
+#!/usr/bin/env bash
+# bin/check-docs-freshness
+#
+# Called by the git pre-commit hook (installed at .git/hooks/pre-commit).
+# Warns when staged changes to controllers or GraphQL schema files are not
+# accompanied by updated API documentation.
+#
+# Exit 0 = OK to commit   Exit 1 = block commit (stale docs detected)
+
+set -euo pipefail
+
+RED='\033[0;31m'
+YELLOW='\033[1;33m'
+GREEN='\033[0;32m'
+NC='\033[0m' # No Colour
+
+warn_only="${DOCS_WARN_ONLY:-0}"  # Set DOCS_WARN_ONLY=1 to warn but not block
+
+staged_files() {
+  git diff --cached --name-only --diff-filter=ACM 2>/dev/null || true
+}
+
+STAGED=$(staged_files)
+BLOCKED=0
+
+# ─── 1. REST / Swagger guard ──────────────────────────────────────────────────
+# Trigger: any app/controllers/api/v1/ file changed
+# Expectation: swagger/v1/swagger.yaml was also staged
+
+REST_CTRL_CHANGED=$(echo "$STAGED" | grep -E '^app/controllers/api/v1/.*\.rb$' || true)
+
+if [[ -n "$REST_CTRL_CHANGED" ]]; then
+  SWAGGER_STAGED=$(echo "$STAGED" | grep -E '^swagger/v1/swagger\.yaml$' || true)
+
+  if [[ -z "$SWAGGER_STAGED" ]]; then
+    echo -e "${YELLOW}⚠  REST DOCS OUT OF DATE${NC}"
+    echo "   The following REST controllers were changed but swagger/v1/swagger.yaml was NOT updated:"
+    echo "$REST_CTRL_CHANGED" | sed 's/^/     • /'
+    echo ""
+    echo "   Run:  make swagger-docs"
+    echo "   Then: git add swagger/v1/swagger.yaml"
+    echo ""
+    BLOCKED=1
+  else
+    echo -e "${GREEN}✓ REST docs are up to date.${NC}"
+  fi
+fi
+
+# ─── 2. GraphQL guard ─────────────────────────────────────────────────────────
+# Trigger: any app/graphql/ file or graphql_controller.rb changed
+# Expectation: swagger/graphql/schema.graphql AND public/graphql-docs/index.html staged
+
+GQL_SRC_CHANGED=$(echo "$STAGED" | grep -E '^(app/graphql/|app/controllers/graphql_controller\.rb)' || true)
+
+if [[ -n "$GQL_SRC_CHANGED" ]]; then
+  SDL_STAGED=$(echo "$STAGED"  | grep -E '^swagger/graphql/schema\.graphql$'    || true)
+  HTML_STAGED=$(echo "$STAGED" | grep -E '^public/graphql-docs/index\.html$'    || true)
+
+  MISSING_ARTIFACTS=""
+  [[ -z "$SDL_STAGED"  ]] && MISSING_ARTIFACTS="$MISSING_ARTIFACTS swagger/graphql/schema.graphql"
+  [[ -z "$HTML_STAGED" ]] && MISSING_ARTIFACTS="$MISSING_ARTIFACTS public/graphql-docs/index.html"
+
+  if [[ -n "$MISSING_ARTIFACTS" ]]; then
+    echo -e "${YELLOW}⚠  GRAPHQL DOCS OUT OF DATE${NC}"
+    echo "   The following GraphQL source files were changed:"
+    echo "$GQL_SRC_CHANGED" | sed 's/^/     • /'
+    echo ""
+    echo "   Missing staged artifacts:$MISSING_ARTIFACTS"
+    echo ""
+    echo "   Run:  make graphql-docs"
+    echo "   Then: git add swagger/graphql/schema.graphql public/graphql-docs/index.html"
+    echo ""
+    BLOCKED=1
+  else
+    echo -e "${GREEN}✓ GraphQL docs are up to date.${NC}"
+  fi
+fi
+
+# ─── Result ───────────────────────────────────────────────────────────────────
+if [[ "$BLOCKED" -eq 1 ]]; then
+  if [[ "$warn_only" -eq 1 ]]; then
+    echo -e "${YELLOW}DOCS_WARN_ONLY=1 — commit allowed despite stale docs.${NC}"
+    exit 0
+  else
+    echo -e "${RED}Commit blocked: regenerate API docs before committing.${NC}"
+    echo "   To bypass (not recommended): DOCS_WARN_ONLY=1 git commit ..."
+    exit 1
+  fi
+fi
+
+exit 0
+

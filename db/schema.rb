@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_23_130000) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_24_000002) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -233,6 +233,32 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_23_130000) do
     t.index ["slug"], name: "index_folders_on_slug"
     t.index ["user_id"], name: "index_folders_on_user_id"
     t.index ["uuid"], name: "index_folders_on_uuid", unique: true
+  end
+
+  create_table "image_profile_folder_assignments", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.uuid "folder_id", null: false
+    t.bigint "image_profile_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["folder_id"], name: "index_image_profile_folder_assignments_on_folder_id"
+    t.index ["image_profile_id", "folder_id"], name: "idx_image_profile_folder_assignments_unique", unique: true
+    t.index ["image_profile_id"], name: "index_image_profile_folder_assignments_on_image_profile_id"
+  end
+
+  create_table "image_profiles", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "crop_type", default: "none", null: false
+    t.datetime "deleted_at"
+    t.string "name", null: false
+    t.boolean "responsive_crop_enabled", default: false, null: false
+    t.jsonb "responsive_crops", default: [], null: false
+    t.boolean "swatch_enabled", default: false, null: false
+    t.integer "swatch_height", default: 100
+    t.integer "swatch_width", default: 100
+    t.jsonb "unsharp_mask", default: {"amount" => 1.75, "radius" => 0.2, "threshold" => 2}, null: false
+    t.datetime "updated_at", null: false
+    t.index ["deleted_at"], name: "index_image_profiles_on_deleted_at"
+    t.index ["name"], name: "index_image_profiles_on_name"
   end
 
   create_table "in_app_notifications", force: :cascade do |t|
@@ -674,6 +700,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_23_130000) do
   add_foreign_key "folder_policies", "user_groups"
   add_foreign_key "folders", "folders", column: "parent_id"
   add_foreign_key "folders", "users"
+  add_foreign_key "image_profile_folder_assignments", "image_profiles"
   add_foreign_key "in_app_notifications", "users"
   add_foreign_key "in_app_notifications", "users", column: "actor_id"
   add_foreign_key "ingestion_batches", "system_connectors", column: "connector_id", on_delete: :nullify

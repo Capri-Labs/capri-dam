@@ -47,6 +47,7 @@ RSpec.configure do |config|
     define_method(:payload)       { {} }
     define_method(:q)             { nil }
     define_method(:mode)          { nil }
+    define_method(:schema_id)     { nil }
     define_method(:type)          { nil }
     define_method(:file)          { nil }
     define_method(:reject)        { 'false' }

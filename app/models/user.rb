@@ -99,6 +99,13 @@ class User < ApplicationRecord
     name.presence || [first_name, last_name].compact.join(' ').presence || email.split('@').first
   end
 
+  # Role predicate helper — used by GraphQL mutations and authorization guards.
+  # Admins are treated as having every role.
+  # Example: user.role?(:manager)  # => true when role == "manager" OR admin?
+  def role?(required_role)
+    admin? || role.to_s == required_role.to_s
+  end
+
   has_many :folders, dependent: :destroy
   has_many :assets, dependent: :destroy
   has_many :user_group_memberships, dependent: :destroy

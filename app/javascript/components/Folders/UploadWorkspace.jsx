@@ -9,6 +9,25 @@ import UploadSidebar from './UploadSidebar';
 import UploadGrid from './UploadGrid';
 import DuplicateResolverDialog from './DuplicateResolverDialog';
 
+/**
+ * Returns true if the given MIME type is permitted by the allowedMimes list.
+ * Supports exact matches (e.g. "image/jpeg") and wildcard type patterns (e.g. "image/*").
+ * If allowedMimes is empty the function returns true (no restrictions).
+ */
+function isMimeAllowed(mimeType, allowedMimes) {
+    if (!allowedMimes || allowedMimes.length === 0) return true;
+    const mime = (mimeType || '').toLowerCase();
+    return allowedMimes.some(pattern => {
+        const p = pattern.trim().toLowerCase();
+        if (p.endsWith('/*')) {
+            // wildcard: "image/*" matches "image/jpeg", "image/png", etc.
+            const prefix = p.slice(0, -1); // "image/"
+            return mime.startsWith(prefix);
+        }
+        return mime === p;
+    });
+}
+
 export default function UploadWorkspace({ folderId, onClose, onUploadComplete }) {
     const notify = useNotify();
     const [filesData, setFilesData] = useState([]);
@@ -18,6 +37,9 @@ export default function UploadWorkspace({ folderId, onClose, onUploadComplete })
 
     // Available collections for upload-time assignment
     const [collectionOptions, setCollectionOptions] = useState([]);
+
+    // Allowed MIME types (empty = allow all)
+    const [allowedMimes, setAllowedMimes] = useState([]);
 
     // Global & UI States
     const [globalMeta, setGlobalMeta] = useState({
@@ -49,6 +71,21 @@ export default function UploadWorkspace({ folderId, onClose, onUploadComplete })
             }
         };
         loadSchemas();
+    }, []);
+
+    // Load upload restrictions once
+    useEffect(() => {
+        const loadRestrictions = async () => {
+            try {
+                const res = await fetch('/api/v1/upload_restrictions');
+                if (!res.ok) return;
+                const data = await res.json();
+                setAllowedMimes(Array.isArray(data.allowed_mime_types) ? data.allowed_mime_types : []);
+            } catch (_) {
+                // non-blocking — if the request fails, default to allowing all
+            }
+        };
+        loadRestrictions();
     }, []);
 
     // Load existing collections once
@@ -88,7 +125,22 @@ export default function UploadWorkspace({ folderId, onClose, onUploadComplete })
     }, [schemaOptions]);
 
     const onDrop = useCallback(async (acceptedFiles) => {
-        const newFilesPromises = acceptedFiles.map(async (file) => {
+        // ── MIME restriction check ──────────────────────────────────────────────
+        const rejected = acceptedFiles.filter(f => !isMimeAllowed(f.type, allowedMimes));
+        const permitted = acceptedFiles.filter(f => isMimeAllowed(f.type, allowedMimes));
+
+        if (rejected.length > 0) {
+            const names = rejected.map(f => `"${f.name}" (${f.type || 'unknown type'})`).join(', ');
+            notify(
+                `Upload not allowed: ${names}. Only the following MIME types are permitted: ${allowedMimes.join(', ')}.`,
+                'error'
+            );
+        }
+
+        if (permitted.length === 0) return;
+        // ───────────────────────────────────────────────────────────────────────
+
+        const newFilesPromises = permitted.map(async (file) => {
             const previewUrl = URL.createObjectURL(file);
             const dimensions = await new Promise((resolve) => {
                 if (file.type.startsWith('image/')) {
@@ -141,7 +193,7 @@ export default function UploadWorkspace({ folderId, onClose, onUploadComplete })
         }));
 
         checkDuplicates(hashedFiles);
-    }, [schemaOptions]);
+    }, [schemaOptions, allowedMimes]);
 
     const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop });
 

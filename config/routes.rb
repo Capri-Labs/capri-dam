@@ -104,6 +104,7 @@ Rails.application.routes.draw do
     resources :metadata_schemas, only: [:index]
     resources :metadata_exports, only: [:index]
     resources :metadata_imports, only: [:index]
+    resources :asset_configurations, only: [:index]
   end
 
   # ==========================================
@@ -215,6 +216,16 @@ Rails.application.routes.draw do
 
       # Notifications
       resource :ai_configuration, only: [:show, :update]
+      resource :upload_restrictions, only: [:show, :update]
+
+      # Image Profiles (asset upload processing configuration)
+      resources :image_profiles, only: [:index, :show, :create, :update, :destroy] do
+        member do
+          post  :apply_to_folder
+          delete :remove_from_folder
+          get   :folders
+        end
+      end
       resources :notifications, only: [:index] do
         collection do
           patch :mark_all_read

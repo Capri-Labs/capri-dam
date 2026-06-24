@@ -1,19 +1,31 @@
 {
   "SCALAR": {
     "Boolean": { "documentation": { "undocumented": true } },
-    "ID": { "documentation": { "undocumented": true } },
-    "Int": { "documentation": { "undocumented": true } },
-    "String": { "documentation": { "undocumented": true } },
-    "Json": { "documentation": { "undocumented": true } },
-    "ISO8601DateTime": { "documentation": { "undocumented": true } }
+    "ID":      { "documentation": { "undocumented": true } },
+    "Int":     { "documentation": { "undocumented": true } },
+    "String":  { "documentation": { "undocumented": true } },
+    "Json":    { "documentation": { "undocumented": true } },
+    "ISO8601DateTime": { "documentation": { "undocumented": true } },
+    "Float":   { "documentation": { "undocumented": true } }
   },
   "OBJECT": {
-    "PageInfo": { "documentation": { "undocumented": true } },
-    "AssetConnection": { "documentation": { "undocumented": true } },
-    "AssetEdge": { "documentation": { "undocumented": true } },
-    "UpdateAssetMetadataPayload": { "documentation": { "undocumented": true } }
+    "PageInfo":                    { "documentation": { "undocumented": true } },
+    "AssetConnection":             { "documentation": { "undocumented": true } },
+    "AssetEdge":                   { "documentation": { "undocumented": true } },
+
+    "UpdateAssetMetadataPayload":  { "documentation": { "undocumented": true } },
+    "CreateCollectionPayload":     { "documentation": { "undocumented": true } },
+    "AddAssetToCollectionPayload": { "documentation": { "undocumented": true } },
+    "RemoveAssetFromCollectionPayload": { "documentation": { "undocumented": true } },
+    "CreateImageProfilePayload":   { "documentation": { "undocumented": true } },
+    "UpdateImageProfilePayload":   { "documentation": { "undocumented": true } }
   },
   "INPUT_OBJECT": {
-    "UpdateAssetMetadataInput": { "documentation": { "undocumented": true } }
+    "UpdateAssetMetadataInput":    { "documentation": { "undocumented": true } },
+    "CreateCollectionInput":       { "documentation": { "undocumented": true } },
+    "AddAssetToCollectionInput":   { "documentation": { "undocumented": true } },
+    "RemoveAssetFromCollectionInput": { "documentation": { "undocumented": true } },
+    "CreateImageProfileInput":     { "documentation": { "undocumented": true } },
+    "UpdateImageProfileInput":     { "documentation": { "undocumented": true } }
   }
 }

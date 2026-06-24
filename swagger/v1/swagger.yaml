@@ -1,7 +1,7 @@
 ---
 openapi: 3.0.1
 info:
-  title: Headless DAM API
+  title: Capri DAM API
   version: v1
   description: |
     An enterprise-grade, cloud-agnostic Digital Asset Management system designed for zero noise operations and high-scale automation.
@@ -17,10 +17,10 @@ info:
 
     1. Call `POST /oauth/token` with your `client_id` and `client_secret`.
     2. Click the **Authorize** button on this page and enter the resulting token.
-  termsOfService: https://github.com/apelluru/headless-dam
+  termsOfService: https://github.com/Capri-Labs/capri-dam
   contact:
     name: Ashok Pelluru | Operational Governance & Architecture
-    url: https://github.com/apelluru/headless-dam
+    url: https://github.com/Capri-Labs/capri-dam
   license:
     name: MIT License
     url: https://opensource.org/licenses/MIT
@@ -712,33 +712,137 @@ paths:
                       nullable: true
                     fallback_to_local:
                       type: boolean
-  "/api/v1/search":
-    get:
-      summary: Search assets (lexical + dynamic metadata facets)
+  "/api/v1/assets/{asset_id}/embedding":
+    put:
+      summary: Upsert pgvector embedding for an asset (AI Gateway callback)
       tags:
       - Assets
       security:
       - Bearer: []
       description: |
-        Performs full-text lexical search against asset titles and original filenames.
-        Supports dynamic metadata filtering via arbitrary query params (e.g. `?region=EMEA`).
-        Returns facet data alongside results so UIs can build filter panels without extra calls.
+        **Internal microservice endpoint.** Called by the Python AI Gateway after
+        computing the vector embedding. Stores the result in `asset_embeddings`
+        for HNSW nearest-neighbour semantic search via pgvector.
+      parameters: []
+      responses:
+        '200':
+          description: Vector spatial index updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Vector spatial index updated
+                required:
+                - message
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
+                    example:
+                    - Embedding can't be blank
+                required:
+                - errors
+        '404':
+          description: Asset not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Record not found
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - asset_embedding
+              properties:
+                asset_embedding:
+                  type: object
+                  required:
+                  - embedding
+                  - model_name
+                  properties:
+                    embedding:
+                      type: array
+                      items:
+                        type: number
+                      example:
+                      - 0.023
+                      - -0.114
+                      - 0.987
+                      description: 1536-dimension float vector
+                    model_name:
+                      type: string
+                      example: text-embedding-ada-002
+    parameters:
+    - name: asset_id
+      in: path
+      required: true
+      description: Asset ID
+      schema:
+        type: string
+  "/api/v1/search":
+    get:
+      summary: Full-text and faceted asset search
+      tags:
+      - Search
+      security:
+      - Bearer: []
+      description: |
+        Performs lexical full-text search across asset `title`, `original_filename`,
+        and **all JSONB metadata properties**. Supports mode filtering, schema filtering,
+        and arbitrary dynamic metadata filters via query params.
+
+        Returns facets alongside results so UIs can render live filter panels with
+        a single request.
+
+        ### Dynamic metadata filtering
+        Any query param not in the reserved list (`q`, `mode`, `schema_id`) is
+        treated as a JSONB property filter:
+        ```
+        GET /api/v1/search?brand=Nike&campaign=Summer2026
+        ```
       parameters:
       - name: q
         in: query
         required: false
-        description: Full-text term matched against title and original_filename
+        description: Full-text search term matched against title, filename, and all
+          metadata values
         schema:
           type: string
       - name: mode
         in: query
+        type: string
         required: false
-        description: 'Filter by type: `images` (default), `files`, or omit for all'
         schema:
-          type: string
+          enum:
+          - images
+          - files
+        description: "`images` — image/* types only (default). `files` — non-image
+          types only. Omit for all."
+      - name: schema_id
+        in: query
+        required: false
+        description: Filter to assets that have this metadata schema applied
+        schema:
+          type: integer
       responses:
         '200':
-          description: Search results with facets returned
+          description: search results with facets
           content:
             application/json:
               schema:
@@ -767,6 +871,13 @@ paths:
                             example:
                             - image/jpeg
                             - image/png
+                          applied_schema:
+                            type: array
+                            items:
+                              type: string
+                            example:
+                            - Product Images
+                            - Marketing Assets
                   results:
                     type: array
                     items:
@@ -790,6 +901,49 @@ paths:
                         thumb_url:
                           type: string
                           nullable: true
+                        folder_id:
+                          type: string
+                          nullable: true
+                        schema_name:
+                          type: string
+                          nullable: true
+                        schema_id:
+                          type: integer
+                          nullable: true
+                        metadata:
+                          type: object
+                          description: Schema-driven metadata fields surfaced in search
+                            results
+                          properties:
+                            creator:
+                              type: string
+                              nullable: true
+                            title_meta:
+                              type: string
+                              nullable: true
+                            description:
+                              type: string
+                              nullable: true
+                            sku:
+                              type: string
+                              nullable: true
+                            brand:
+                              type: string
+                              nullable: true
+                            asset_type:
+                              type: string
+                              nullable: true
+                            product_id:
+                              type: string
+                              nullable: true
+                            language:
+                              type: string
+                              nullable: true
+                            tags:
+                              type: array
+                              items:
+                                type: string
+                              nullable: true
   "/api/v1/assets":
     post:
       summary: Upload a new asset (multipart)
@@ -1530,70 +1684,6 @@ paths:
                   looked_at:
                     type: string
                     nullable: true
-  "/api/v1/assets/{asset_id}/embedding":
-    parameters:
-    - name: asset_id
-      in: path
-      required: true
-      description: Asset ID
-      schema:
-        type: string
-    put:
-      summary: Upsert pgvector embedding for an asset (AI Gateway callback)
-      tags:
-      - Assets
-      description: |
-        **Internal microservice endpoint.** Called by the Python AI Gateway after
-        computing the vector embedding. Stores the result in `asset_embeddings`
-        for HNSW nearest-neighbour semantic search via pgvector.
-      parameters: []
-      responses:
-        '200':
-          description: Vector spatial index updated
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-        '422':
-          description: Validation error
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  errors:
-                    type: array
-                    items:
-                      type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-              - asset_embedding
-              properties:
-                asset_embedding:
-                  type: object
-                  required:
-                  - embedding
-                  - model_name
-                  properties:
-                    embedding:
-                      type: array
-                      items:
-                        type: number
-                      example:
-                      - 0.023
-                      - -0.114
-                      - 0.987
-                      description: 1536-dimension float vector
-                    model_name:
-                      type: string
-                      example: text-embedding-ada-002
   "/api/v1/cdn_configurations":
     get:
       summary: Retrieve CDN configuration for all supported providers
@@ -2505,6 +2595,166 @@ paths:
                   example: outdoor lifestyle photography with warm autumn tones
                   description: Natural language description of the assets you are
                     looking for
+  "/api/v1/data_health/metrics":
+    get:
+      summary: Retrieve TDM storage health and technical-debt metrics
+      tags:
+      - Data & Migrations - Health
+      security:
+      - Bearer: []
+      description: |
+        Returns storage utilisation figures and a prioritised list of technical-debt
+        flags (orphaned assets, missing usage rights, stale media) that require
+        remediation action.
+
+        **Note:** In high-volume environments these metrics are cached in Redis and
+        refreshed nightly to prevent excessive DB load.
+      responses:
+        '200':
+          description: health metrics returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  storage:
+                    type: object
+                    properties:
+                      total_allocated_tb:
+                        type: number
+                        example: 20.0
+                      active_used_tb:
+                        type: number
+                        example: 4.32
+                      orphaned_wasted_tb:
+                        type: number
+                        example: 0.12
+                      duplicates_prevented_tb:
+                        type: number
+                        example: 0.85
+                  debt_flags:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          example: d1
+                        type:
+                          type: string
+                          example: orphaned
+                        title:
+                          type: string
+                          example: Orphaned Legacy Assets
+                        count:
+                          type: integer
+                          example: 142
+                        impact:
+                          type: string
+                          enum:
+                          - Critical
+                          - High
+                          - Medium
+                          - Low
+                          example: High
+  "/api/v1/edge_operations/sync":
+    post:
+      summary: Sync metadata to Edge KV for selected folders and assets
+      tags:
+      - Edge CDN Operations
+      security:
+      - Bearer: []
+      description: |
+        Dispatches `FolderMetadataSyncWorker` (per folder) and `EdgeMetadataSyncWorker`
+        (per asset) to push fresh JSON metadata to the Cloudflare / CDN edge KV store.
+
+        Call this after bulk metadata updates to ensure edge nodes serve current data
+        without waiting for the next cache TTL expiry.
+      parameters: []
+      responses:
+        '202':
+          description: sync workers enqueued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Metadata sync initiated for 2 folders and 1 assets.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                folders:
+                  type: array
+                  items:
+                    type: string
+                  description: Folder IDs (UUID strings) to sync
+                  example:
+                  - abc123
+                  - def456
+                assets:
+                  type: array
+                  items:
+                    type: string
+                  description: Asset UUIDs to sync
+                  example:
+                  - 3fa85f64-5717-4562-b3fc-2c963f66afa6
+  "/api/v1/edge_operations/purge":
+    post:
+      summary: Purge CDN edge cache for selected folders and assets
+      tags:
+      - Edge CDN Operations
+      security:
+      - Bearer: []
+      description: |
+        Dispatches `CdnInvalidationWorker` to invalidate cache tags at the delivery
+        edge for each supplied folder or asset UUID. After purge, the next request
+        for those URLs fetches fresh content from origin.
+
+        Use this after publishing new asset versions, updating metadata, or moving
+        assets between folders.
+      parameters: []
+      responses:
+        '202':
+          description: purge workers enqueued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Cache purge initiated for 1 folders and 1 assets.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                folders:
+                  type: array
+                  items:
+                    type: string
+                  description: Folder IDs whose cache tags should be invalidated
+                  example:
+                  - abc123
+                assets:
+                  type: array
+                  items:
+                    type: string
+                  description: Asset UUIDs whose delivery URLs should be purged
+                  example:
+                  - 3fa85f64-5717-4562-b3fc-2c963f66afa6
   "/api/v1/folders":
     get:
       summary: Retrieve the full folder tree (flat list with paths)
@@ -2735,6 +2985,387 @@ paths:
                 properties:
                   error:
                     type: string
+  "/api/v1/image_profiles":
+    get:
+      summary: Lists all active Image Profiles
+      tags:
+      - Tools - Image Profiles
+      security:
+      - Bearer: []
+      responses:
+        '200':
+          description: profiles retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    name:
+                      type: string
+                    crop_type:
+                      type: string
+                      enum:
+                      - none
+                      - smart_crop
+                    responsive_crop_enabled:
+                      type: boolean
+                    responsive_crops:
+                      type: array
+                      items:
+                        type: object
+                    swatch_enabled:
+                      type: boolean
+                    swatch_width:
+                      type: integer
+                      nullable: true
+                    swatch_height:
+                      type: integer
+                      nullable: true
+                    folder_count:
+                      type: integer
+                    unsharp_mask:
+                      type: object
+                      properties:
+                        amount:
+                          type: number
+                          description: 'Range: 0–5. Default: 1.75'
+                        radius:
+                          type: number
+                          description: 'Range: 0–250. Default: 0.2'
+                        threshold:
+                          type: integer
+                          description: 'Range: 0–255. Default: 2'
+                    created_at:
+                      type: string
+                      format: date-time
+                    updated_at:
+                      type: string
+                      format: date-time
+    post:
+      summary: Creates a new Image Profile
+      tags:
+      - Tools - Image Profiles
+      security:
+      - Bearer: []
+      parameters: []
+      responses:
+        '201':
+          description: profile created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  name:
+                    type: string
+        '403':
+          description: forbidden – admin only
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '422':
+          description: validation failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - image_profile
+              properties:
+                image_profile:
+                  type: object
+                  required:
+                  - name
+                  properties:
+                    name:
+                      type: string
+                      example: My Profile
+                    crop_type:
+                      type: string
+                      enum:
+                      - none
+                      - smart_crop
+                      example: smart_crop
+                    responsive_crop_enabled:
+                      type: boolean
+                      example: true
+                    responsive_crops:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          name:
+                            type: string
+                            example: Large
+                          width:
+                            type: integer
+                            example: 1260
+                          height:
+                            type: integer
+                            example: 720
+                    swatch_enabled:
+                      type: boolean
+                      example: true
+                    swatch_width:
+                      type: integer
+                      example: 100
+                    swatch_height:
+                      type: integer
+                      example: 100
+                    unsharp_mask:
+                      type: object
+                      properties:
+                        amount:
+                          type: number
+                          example: 1.75
+                        radius:
+                          type: number
+                          example: 0.2
+                        threshold:
+                          type: integer
+                          example: 2
+  "/api/v1/image_profiles/{id}":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+    get:
+      summary: Retrieves a single Image Profile
+      tags:
+      - Tools - Image Profiles
+      security:
+      - Bearer: []
+      responses:
+        '200':
+          description: profile found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  name:
+                    type: string
+                  folders:
+                    type: array
+                    items:
+                      type: object
+        '404':
+          description: not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+    patch:
+      summary: Updates an Image Profile
+      tags:
+      - Tools - Image Profiles
+      security:
+      - Bearer: []
+      parameters: []
+      responses:
+        '200':
+          description: profile updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  name:
+                    type: string
+        '403':
+          description: forbidden – admin only
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                image_profile:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    crop_type:
+                      type: string
+                      enum:
+                      - none
+                      - smart_crop
+    delete:
+      summary: Soft-deletes an Image Profile
+      tags:
+      - Tools - Image Profiles
+      security:
+      - Bearer: []
+      responses:
+        '204':
+          description: deleted (no content)
+        '403':
+          description: forbidden – admin only
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+  "/api/v1/image_profiles/{id}/apply_to_folder":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+    post:
+      summary: Applies an Image Profile to a folder
+      tags:
+      - Tools - Image Profiles
+      security:
+      - Bearer: []
+      parameters: []
+      responses:
+        '201':
+          description: profile applied to folder
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  profile_id:
+                    type: integer
+                  folder_id:
+                    type: string
+        '400':
+          description: missing folder_id
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '403':
+          description: forbidden – admin only
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - folder_id
+              properties:
+                folder_id:
+                  type: string
+                  format: uuid
+                  example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
+  "/api/v1/image_profiles/{id}/remove_from_folder":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+    delete:
+      summary: Removes an Image Profile from a folder
+      tags:
+      - Tools - Image Profiles
+      security:
+      - Bearer: []
+      parameters: []
+      responses:
+        '204':
+          description: removed (no content)
+        '400':
+          description: missing folder_id
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - folder_id
+              properties:
+                folder_id:
+                  type: string
+                  format: uuid
+  "/api/v1/image_profiles/{id}/folders":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+    get:
+      summary: Lists folders the Image Profile is applied to
+      tags:
+      - Tools - Image Profiles
+      security:
+      - Bearer: []
+      responses:
+        '200':
+          description: folders listed
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                    name:
+                      type: string
+                    path:
+                      type: string
   "/api/v1/ingestion_batches":
     get:
       summary: List the 50 most recent migration batches
@@ -3878,6 +4509,103 @@ paths:
                 properties:
                   error:
                     type: string
+  "/api/v1/upload_restrictions":
+    get:
+      summary: Retrieve the current upload MIME-type restriction list
+      tags:
+      - Tools - Upload Restrictions
+      security:
+      - Bearer: []
+      description: |
+        Returns the configured list of allowed MIME types for asset uploads.
+        An empty array means **all file types are permitted** (no restrictions active).
+        Supports wildcards, e.g. `image/*` to allow all image formats.
+      responses:
+        '200':
+          description: restriction list returned
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - allowed_mime_types
+                properties:
+                  allowed_mime_types:
+                    type: array
+                    items:
+                      type: string
+                    example:
+                    - image/*
+                    - application/pdf
+                    description: Active allowlist. Empty = unrestricted.
+    put:
+      summary: Update the upload MIME-type restriction list (admin only)
+      tags:
+      - Tools - Upload Restrictions
+      security:
+      - Bearer: []
+      description: |
+        Persists a new MIME-type allowlist to the system settings store.
+        Passing an empty array **disables all restrictions** so every file type is accepted.
+
+        **Requires administrator privileges.**
+
+        | Pattern | Effect |
+        |---------|--------|
+        | `image/*` | All image types (JPEG, PNG, WebP, …) |
+        | `image/jpeg` | Only JPEG files |
+        | `application/pdf` | Only PDF files |
+      parameters: []
+      responses:
+        '200':
+          description: restrictions saved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  allowed_mime_types:
+                    type: array
+                    items:
+                      type: string
+                  message:
+                    type: string
+                    example: Upload restrictions saved successfully.
+        '403':
+          description: forbidden – admin privileges required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Administrator privileges required.
+        '422':
+          description: unprocessable entity
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - allowed_mime_types
+              properties:
+                allowed_mime_types:
+                  type: array
+                  items:
+                    type: string
+                  example:
+                  - image/*
+                  - application/pdf
+                  description: New allowlist. Pass [] to remove all restrictions.
   "/api/v1/webhooks/connectors/{connector_id}/receive":
     parameters:
     - name: connector_id

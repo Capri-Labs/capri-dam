@@ -44,7 +44,7 @@ This is the core "Dynamic Media Alternative" flow. It shows how a high-res maste
 @startuml
 actor "End User Browser" as Browser
 participant "Fastly Edge" as Fastly
-participant "Headless DAM API" as API
+participant "Capri DAM API" as API
 database "Object Storage" as S3
 
 Browser -> Fastly : GET /shoes.jpg?width=400&crop=face

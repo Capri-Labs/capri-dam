@@ -3,7 +3,7 @@
 > **Headless DAM — Customer Guide**  
 > Version: v1 API · Last updated: June 2026
 
-This guide covers the most common issues encountered when integrating with the Headless DAM API, along with step-by-step resolution paths.
+This guide covers the most common issues encountered when integrating with the Capri DAM API, along with step-by-step resolution paths.
 
 ---
 

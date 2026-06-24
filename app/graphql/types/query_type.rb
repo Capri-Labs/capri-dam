@@ -54,5 +54,23 @@ module Types
     def collection(slug:)
       Collection.active.find_by(slug: slug)
     end
+
+    # Image Profiles
+    field :image_profiles, [Types::ImageProfileType], null: false do
+      description "List all active Image Processing Profiles"
+    end
+
+    def image_profiles
+      ImageProfile.active.order(name: :asc)
+    end
+
+    field :image_profile, Types::ImageProfileType, null: true do
+      description "Find an Image Processing Profile by ID"
+      argument :id, ID, required: true
+    end
+
+    def image_profile(id:)
+      ImageProfile.active.find_by(id: id)
+    end
   end
 end

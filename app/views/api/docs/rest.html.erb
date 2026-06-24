@@ -1,132 +1,159 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <title>Headless DAM — REST API Reference</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- Swagger UI stylesheet — served locally, no CDN dependency -->
+    <link rel="stylesheet" type="text/css" href="/swagger-ui.css" />
+
     <style>
-      /* Reset */
       *, *::before, *::after { box-sizing: border-box; }
+      html, body { margin: 0; padding: 0; height: 100%; background: #fafafa;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
 
-      body {
-        margin: 0;
-        padding: 0;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        background: #fafafa;
-      }
-
-      /* ── Top nav bar ── */
+      /* ── Top nav ── */
       .api-nav {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 0 24px;
-        height: 56px;
-        background: #1e1b4b;
-        box-shadow: 0 1px 4px rgba(0,0,0,.3);
-        position: sticky;
-        top: 0;
-        z-index: 100;
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 0 24px; height: 52px; background: #1e1b4b;
+        box-shadow: 0 1px 6px rgba(0,0,0,.35);
+        position: sticky; top: 0; z-index: 9999;
       }
-
-      .api-nav__brand {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        text-decoration: none;
-      }
-
+      .api-nav__brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
       .api-nav__logo {
-        width: 32px;
-        height: 32px;
+        width: 30px; height: 30px;
         background: linear-gradient(135deg, #4f46e5, #7c3aed);
-        border-radius: 8px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 16px;
-        font-weight: 700;
-        color: #fff;
-        flex-shrink: 0;
+        border-radius: 7px; display: flex; align-items: center; justify-content: center;
+        font-size: 15px; font-weight: 700; color: #fff;
       }
-
-      .api-nav__title {
-        color: #e0e7ff;
-        font-size: 15px;
-        font-weight: 600;
-        white-space: nowrap;
-      }
-
-      .api-nav__links {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-
+      .api-nav__title { color: #e0e7ff; font-size: 14px; font-weight: 600; }
+      .api-nav__links { display: flex; align-items: center; gap: 6px; }
       .api-nav__link {
-        padding: 6px 14px;
-        border-radius: 6px;
-        font-size: 13px;
-        font-weight: 500;
-        text-decoration: none;
-        transition: background 0.15s;
-        color: #c7d2fe;
+        padding: 5px 14px; border-radius: 6px; font-size: 12px; font-weight: 500;
+        text-decoration: none; color: #c7d2fe; transition: background 0.15s;
       }
+      .api-nav__link:hover { background: rgba(255,255,255,.1); color: #fff; }
+      .api-nav__link--active { background: #4f46e5 !important; color: #fff !important; }
+      .api-nav__link--download { border: 1px solid rgba(255,255,255,.2); }
 
-      .api-nav__link:hover {
-        background: rgba(255,255,255,.08);
-        color: #fff;
+      /* ── Swagger UI overrides ── */
+      #swagger-ui { max-width: 100%; }
+      .swagger-ui .topbar { display: none !important; }
+      .swagger-ui .btn.execute          { background: #4f46e5; border-color: #4f46e5; }
+      .swagger-ui .btn.execute:hover    { background: #4338ca; border-color: #4338ca; }
+
+      /* ── Loading spinner ── */
+      #loading-overlay {
+        position: fixed; inset: 52px 0 0 0; background: #fff;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        gap: 16px; z-index: 999; transition: opacity 0.3s;
       }
-
-      .api-nav__link--active {
-        background: #4f46e5;
-        color: #fff;
+      #loading-overlay.hidden { opacity: 0; pointer-events: none; }
+      .spinner {
+        width: 44px; height: 44px;
+        border: 4px solid #e0e7ff; border-top-color: #4f46e5;
+        border-radius: 50%; animation: spin 0.8s linear infinite;
       }
+      @keyframes spin { to { transform: rotate(360deg); } }
+      #loading-overlay p { color: #64748b; font-size: 14px; margin: 0; }
 
-      .api-nav__link--active:hover {
-        background: #4338ca;
-      }
-
-      /* ── Redoc wrapper ── */
-      #redoc-container {
-        /* Give Redoc the full remaining viewport */
-        min-height: calc(100vh - 56px);
-      }
-
-      /* Minor Redoc brand overrides */
-      redoc {
-        --theme-colors-primary-main: #4f46e5;
-        --theme-typography-fontFamily: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      /* ── Error banner ── */
+      #error-banner {
+        display: none; margin: 24px; padding: 16px 20px;
+        background: #fef2f2; border: 1px solid #fecaca;
+        border-radius: 8px; color: #991b1b; font-size: 14px;
       }
     </style>
   </head>
 
   <body>
-    <!-- ── Navigation bar ── -->
+    <!-- Navigation -->
     <nav class="api-nav">
       <a href="/" class="api-nav__brand">
         <div class="api-nav__logo">D</div>
         <span class="api-nav__title">Headless DAM</span>
       </a>
-
       <div class="api-nav__links">
         <a href="/api/rest"    class="api-nav__link api-nav__link--active">REST API</a>
         <a href="/api/graphql" class="api-nav__link">GraphQL API</a>
+        <a href="/api-docs/v1/swagger.yaml"
+           class="api-nav__link api-nav__link--download"
+           download="swagger.yaml">↓ Download Spec</a>
       </div>
     </nav>
 
-    <!-- ── Redoc renders here ── -->
-    <div id="redoc-container">
-      <redoc spec-url="/api-docs/v1/swagger.yaml"
-             expand-responses="200,201"
-             hide-download-button="false"
-             sort-props-alphabetically="true"
-             required-props-first="true"
-             no-auto-auth="false">
-      </redoc>
+    <!-- Loading overlay -->
+    <div id="loading-overlay">
+      <div class="spinner"></div>
+      <p>Loading API Reference…</p>
     </div>
 
-    <script src="/redoc.standalone.js"></script>
+    <!-- Error banner (only shown if spec fails to load) -->
+    <div id="error-banner">
+      ⚠️ <strong>Could not load the API spec.</strong>
+      <span id="error-detail"></span>
+      &nbsp;–&nbsp;
+      <a href="/api-docs/v1/swagger.yaml" style="color:#991b1b">View raw YAML</a>
+    </div>
+
+    <!-- Swagger UI renders here -->
+    <div id="swagger-ui"></div>
+
+    <!-- Swagger UI JS bundle — served locally -->
+    <script src="/swagger-ui-bundle.js"></script>
+    <script>
+      window.addEventListener('DOMContentLoaded', function () {
+        var loadingEl = document.getElementById('loading-overlay');
+        var errorEl   = document.getElementById('error-banner');
+        var detailEl  = document.getElementById('error-detail');
+
+        if (typeof SwaggerUIBundle === 'undefined') {
+          loadingEl.classList.add('hidden');
+          detailEl.textContent = ' — swagger-ui-bundle.js failed to load.';
+          errorEl.style.display = 'block';
+          return;
+        }
+
+        try {
+          window.ui = SwaggerUIBundle({
+            url:                    '/api-docs/v1/swagger.yaml',
+            dom_id:                 '#swagger-ui',
+            presets:                [SwaggerUIBundle.presets.apis],
+            layout:                 'BaseLayout',
+            deepLinking:            true,
+            displayRequestDuration: true,
+            docExpansion:           'none',
+            filter:                 true,
+            showExtensions:         true,
+            showCommonExtensions:   true,
+            tryItOutEnabled:        true,
+            persistAuthorization:   true,
+
+            onComplete: function () {
+              loadingEl.classList.add('hidden');
+            },
+
+            onFailure: function (err) {
+              loadingEl.classList.add('hidden');
+              detailEl.textContent = err ? (' — ' + String(err)) : '';
+              errorEl.style.display = 'block';
+            },
+
+            // Inject CSRF token so "Try it out" calls work against the same origin
+            requestInterceptor: function (req) {
+              var meta = document.querySelector('meta[name="csrf-token"]');
+              if (meta) req.headers['X-CSRF-Token'] = meta.getAttribute('content');
+              return req;
+            }
+          });
+        } catch (e) {
+          loadingEl.classList.add('hidden');
+          detailEl.textContent = ' — ' + e.message;
+          errorEl.style.display = 'block';
+        }
+      });
+    </script>
   </body>
 </html>
 

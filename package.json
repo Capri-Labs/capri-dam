@@ -41,7 +41,8 @@
     "jest": "^29.7.0",
     "jest-environment-jsdom": "^29.7.0",
     "monocart-coverage-reports": "^2.8.4",
-    "nyc": "^15.1.0"
+    "nyc": "^15.1.0",
+    "spectaql": "^3.0.9"
   },
   "scripts": {
     "build": "esbuild app/javascript/*.* --bundle --sourcemap --outdir=app/assets/builds --public-path=/assets --loader:.js=jsx",
@@ -50,7 +51,8 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:e2e": "playwright test",
-    "test:e2e:report": "nyc report --reporter=text --reporter=html --report-dir=coverage-frontend/e2e"
+    "test:e2e:report": "nyc report --reporter=text --reporter=html --report-dir=coverage-frontend/e2e",
+    "graphql-docs": "spectaql spectaql-config.json"
   },
   "jest": {
     "testEnvironment": "jsdom",

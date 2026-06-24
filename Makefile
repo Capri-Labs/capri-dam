@@ -4,7 +4,9 @@ BUNDLE = bundle
 YARN = yarn
 RUBY_VERSION = 4.0.3
 
-.PHONY: help bootstrap check-system install db-setup setup dev
+.PHONY: help bootstrap check-system install db-setup setup dev \
+        swagger-docs graphql-schema graphql-docs api-docs \
+        install-hooks check-api-specs check-graphql-docs
 
 help: ## Show this help message
 	@grep -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -103,9 +105,70 @@ setup: install db-setup ## The 'One Command' to rule them all
 	@echo "\033[32m--- Headless DAM Setup Complete ---\033[0m"
 	@echo "Run 'make dev' to start the server, workers, and redis."
 
-swagger-docs: ## Generate Swagger OpenAPI documentation from specs
-	@echo "--- Generating OpenAPI Spec ---"
-	RAILS_ENV=test bundle exec rails rswag:specs:swaggerize
+swagger-docs: ## Generate Swagger/OpenAPI REST docs (spec/requests/api → swagger/v1/swagger.yaml)
+	@echo "--- Preparing test database ---"
+	RAILS_ENV=test bundle exec rails db:test:prepare
+	@echo "--- Generating OpenAPI Spec (spec/requests/api/**/*_spec.rb → swagger/v1/swagger.yaml) ---"
+	RAILS_ENV=test RUN_API_DOCS=1 RSWAG_DRY_RUN=0 bundle exec rails rswag:specs:swaggerize
+	@echo "\033[32mDone. View at: http://localhost:3000/api/rest\033[0m"
+
+graphql-schema: ## Dump the live GraphQL SDL to swagger/graphql/schema.graphql
+	@echo "--- Dumping GraphQL SDL schema ---"
+	@mkdir -p swagger/graphql
+	RAILS_ENV=development bundle exec rails graphql:schema:dump
+	@echo "\033[32mSDL written to swagger/graphql/schema.graphql\033[0m"
+
+graphql-docs: graphql-schema ## Generate SpectaQL HTML docs → public/graphql-docs/index.html
+	@echo "--- Generating GraphQL HTML docs (SpectaQL) ---"
+	@mkdir -p public/graphql-docs
+	./node_modules/.bin/spectaql spectaql-config.json
+	@echo "\033[32mDone. View at: http://localhost:3000/api/graphql\033[0m"
+
+api-docs: swagger-docs graphql-docs ## Regenerate BOTH REST (Swagger) and GraphQL (SpectaQL) docs
+
+install-hooks: ## Install the stale-docs pre-commit git hook
+	@echo "--- Installing pre-commit hook ---"
+	@chmod +x bin/check-docs-freshness
+	@cp bin/check-docs-freshness .git/hooks/pre-commit
+	@chmod +x .git/hooks/pre-commit
+	@echo "\033[32mPre-commit hook installed. Commits that change controllers or GraphQL\033[0m"
+	@echo "\033[32msource without regenerating docs will be blocked.\033[0m"
+
+check-graphql-docs: ## Verify swagger/graphql/schema.graphql and public/graphql-docs/index.html exist
+	@echo "--- Checking for generated GraphQL docs ---"
+	@missing=0; \
+	if [ ! -f "swagger/graphql/schema.graphql" ]; then \
+	  echo "\033[31mMISSING: swagger/graphql/schema.graphql — run: make graphql-schema\033[0m"; \
+	  missing=$$((missing+1)); \
+	fi; \
+	if [ ! -f "public/graphql-docs/index.html" ]; then \
+	  echo "\033[31mMISSING: public/graphql-docs/index.html — run: make graphql-docs\033[0m"; \
+	  missing=$$((missing+1)); \
+	fi; \
+	if [ $$missing -gt 0 ]; then \
+	  echo "\033[31m$$missing GraphQL doc artifact(s) missing. Run: make graphql-docs\033[0m"; \
+	  exit 1; \
+	else \
+	  echo "\033[32mGraphQL docs are present and up to date.\033[0m"; \
+	fi
+
+check-api-specs: ## Verify every app/controllers/api/v1/*_controller.rb has a matching spec
+	@echo "--- Checking for missing API request specs ---"
+	@missing=0; \
+	for ctrl in app/controllers/api/v1/*_controller.rb; do \
+	  base=$$(basename $$ctrl _controller.rb); \
+	  spec="spec/requests/api/v1/$${base}_spec.rb"; \
+	  if [ ! -f "$$spec" ]; then \
+	    echo "\033[31mMISSING spec: $$spec\033[0m"; \
+	    missing=$$((missing+1)); \
+	  fi; \
+	done; \
+	if [ $$missing -gt 0 ]; then \
+	  echo "\033[31m$$missing controller(s) are missing request specs. Run: make swagger-docs\033[0m"; \
+	  exit 1; \
+	else \
+	  echo "\033[32mAll API controllers have request specs.\033[0m"; \
+	fi
 
 dev: ## Start the full engine (Server + Ingest Workers)
 	@echo "--- Switching to development environment ---"
@@ -130,7 +193,7 @@ all-tests: ## Run all RSpec tests
 #   make e2e                  -> backend + frontend E2E coverage
 #   make test-all             -> everything
 
-.PHONY: test test-frontend coverage-backend coverage-frontend e2e-backend \
+.PHONY: test test-frontend test-graphql coverage-backend coverage-frontend e2e-backend \
         e2e-frontend coverage e2e test-all playwright-install test-api-docs
 
 test: ## Run the full backend RSpec suite (models, requests, system)
@@ -144,6 +207,12 @@ test-api-docs: ## Run the rswag OpenAPI/Swagger doc specs (excluded from the def
 	RAILS_ENV=test bundle exec rails db:test:prepare
 	@echo "--- Backend: rswag API-doc specs ---"
 	RUN_API_DOCS=1 bundle exec rspec spec/requests --format progress 2>&1
+
+test-graphql: ## Run the GraphQL endpoint request specs
+	@echo "--- Preparing test database ---"
+	RAILS_ENV=test bundle exec rails db:test:prepare
+	@echo "--- Backend: GraphQL request specs ---"
+	bundle exec rspec spec/requests/graphql_spec.rb --format documentation 2>&1
 
 test-frontend: ## Run the frontend Jest unit & component tests
 	@echo "--- Frontend: Jest ---"

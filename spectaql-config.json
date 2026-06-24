@@ -2,15 +2,18 @@
   "spectaql": {
     "themeDir": "default",
     "displayAllServers": false,
-    "hideUnusedTypes": true
+    "hideUnusedTypes": true,
+    "targetDir": "./public/graphql-docs",
+    "targetFile": "index.html",
+    "oneFile": true
   },
   "info": {
-    "title": "Headless DAM GraphQL API",
+    "title": "Capri DAM — GraphQL API",
     "version": "v1.0.0",
-    "description": "Enterprise-grade schema for automated query federation and metadata retrieval. This unified Graph provides zero-noise data fetching for both the React frontend and the isolated AI Gateway.",
+    "description": "Enterprise-grade schema for automated query federation and metadata retrieval. This unified Graph provides zero-noise data fetching for both the React frontend and the isolated AI Gateway.\n\n### Authentication\nAll queries and mutations (except schema introspection in development) require a valid OAuth 2.0 Bearer token obtained from `POST /oauth/token`.\n\n### Queries\nUse queries to **read** assets, collections, and image-processing profiles.\n\n### Mutations\nUse mutations to **write** — patch asset metadata, manage collections, and configure image profiles.",
     "termsOfService": "https://yourdam.com/terms",
     "contact": {
-      "name": "Platform Engineering Team",
+      "name": "Platform Engineering",
       "email": "architecture@yourdam.com"
     },
     "x-url": "http://localhost:3000/graphql"
@@ -22,11 +25,12 @@
     },
     {
       "url": "https://api.yourdam.com/graphql",
-      "description": "Production Immutable Ledger"
+      "description": "Production Environment"
     }
   ],
   "introspection": {
-    "url": "http://localhost:3000/graphql",
-    "metadataFile": "./spectaql-metadata.json"
+    "schemaFile": "./swagger/graphql/schema.graphql",
+    "metadataFile": "./spectaql-metadata.json",
+    "removeTrailingPeriodFromDescriptions": false
   }
 }
