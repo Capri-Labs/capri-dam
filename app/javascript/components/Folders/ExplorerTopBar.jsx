@@ -8,12 +8,13 @@ import {
     Home, ContentCopy, DeleteOutlined, CreateNewFolder,
     CloudUpload, AutoAwesome, AccountTree,
     Psychology, Translate, Security, Difference, Style,
-    CloudSync, Publish, DeleteSweep, BuildOutlined, SchemaOutlined, ImageOutlined
+    CloudSync, Publish, DeleteSweep, BuildOutlined, SchemaOutlined, ImageOutlined, VideoFileOutlined
 } from '@mui/icons-material';
 import { useNotify } from '../../context/NotificationContext';
 import UploadWorkspace from './UploadWorkspace';
 import ApplySchemaDialog from './ApplySchemaDialog';
 import { ApplyImageProfileDialog } from '../Tools/AssetConfigurations/ImageProfiles';
+import { ApplyVideoProfileDialog } from '../Tools/AssetConfigurations/VideoProfiles';
 
 export default function ExplorerTopBar({
                                            currentId, viewData, viewMode, setViewMode, handleNavigate, handleCopyPath,
@@ -39,6 +40,8 @@ export default function ExplorerTopBar({
 
     // Image Profile dialog
     const [profileDialogOpen, setProfileDialogOpen] = useState(false);
+    // Video Profile dialog
+    const [videoProfileDialogOpen, setVideoProfileDialogOpen] = useState(false);
 
     // AI Handlers
     const handleAiMenuClose = () => setSmartMenuAnchor(null);
@@ -204,6 +207,16 @@ export default function ExplorerTopBar({
                                     secondary="Set processing profile for this folder"
                                 />
                             </MenuItem>
+                            <MenuItem
+                                onClick={() => { setToolsMenuAnchor(null); setVideoProfileDialogOpen(true); }}
+                                disabled={currentId === 'root'}
+                            >
+                                <ListItemIcon><VideoFileOutlined fontSize="small" sx={{ color: '#7c3aed' }} /></ListItemIcon>
+                                <ListItemText
+                                    primary="Apply Video Profile"
+                                    secondary="Set video encoding profile for this folder"
+                                />
+                            </MenuItem>
                         </Menu>
 
                         {/* Edge CDN Ops */}
@@ -330,6 +343,10 @@ export default function ExplorerTopBar({
                                         <ListItemIcon><ImageOutlined fontSize="small" sx={{ color: '#7c3aed' }} /></ListItemIcon>
                                         <ListItemText primary="Apply Image Profile" secondary="Set processing profile for this folder" />
                                     </MenuItem>
+                                    <MenuItem onClick={() => { setToolsMenuAnchor(null); setVideoProfileDialogOpen(true); }}>
+                                        <ListItemIcon><VideoFileOutlined fontSize="small" sx={{ color: '#7c3aed' }} /></ListItemIcon>
+                                        <ListItemText primary="Apply Video Profile" secondary="Set video encoding profile for this folder" />
+                                    </MenuItem>
                                 </Menu>
                             </>
                         )}
@@ -378,6 +395,17 @@ export default function ExplorerTopBar({
                 open={profileDialogOpen}
                 onClose={(needsRefresh) => {
                     setProfileDialogOpen(false);
+                    if (needsRefresh && onSchemaApplied) onSchemaApplied();
+                }}
+                folderId={currentId}
+                folderName={viewData.breadcrumbs?.slice(-1)[0]?.name ?? 'Current Folder'}
+            />
+
+            {/* ── Apply Video Profile Dialog ── */}
+            <ApplyVideoProfileDialog
+                open={videoProfileDialogOpen}
+                onClose={(needsRefresh) => {
+                    setVideoProfileDialogOpen(false);
                     if (needsRefresh && onSchemaApplied) onSchemaApplied();
                 }}
                 folderId={currentId}

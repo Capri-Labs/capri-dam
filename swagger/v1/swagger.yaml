@@ -25,193 +25,52 @@ info:
     name: MIT License
     url: https://opensource.org/licenses/MIT
 paths:
-  "/api/v1/video_profiles":
+  "/api/v1/folders":
     get:
-      summary: Lists all active Video Profiles
+      summary: Retrieve the full folder tree (flat list with paths)
       tags:
-      - Tools - Video Profiles
+      - Folders
       security:
       - Bearer: []
+      description: |
+        Returns every active folder as a flat sorted list with fully-qualified
+        path names (e.g. `/Marketing/2026/Campaigns`). Used to populate folder-
+        picker dropdowns across the UI. Built in O(n) using a single query + in-
+        memory tree traversal — safe for large folder structures.
       responses:
         '200':
-          description: profiles retrieved
+          description: Folders retrieved successfully
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    id:
-                      type: integer
-                    name:
-                      type: string
-                    description:
-                      type: string
-                      nullable: true
-                    encode_for_adaptive_streaming:
-                      type: boolean
-                    smart_crop_ratios:
-                      type: array
-                      items:
-                        type: object
-                        properties:
-                          name:
-                            type: string
-                            example: '16:9'
-                          crop_ratio:
-                            type: string
-                            example: '16:9'
-                    adaptive_streaming_warnings:
-                      type: array
-                      items:
-                        type: string
-                    folder_count:
-                      type: integer
-                    created_at:
-                      type: string
-                      format: date-time
-                    updated_at:
-                      type: string
-                      format: date-time
+                type: object
+                properties:
+                  folders:
+                    type: array
+                    items:
+                      type: object
+                      required:
+                      - id
+                      - name
+                      properties:
+                        id:
+                          type: integer
+                          example: 42
+                        name:
+                          type: string
+                          example: "/Marketing/2026"
     post:
-      summary: Creates a new Video Profile
+      summary: Create a new folder
       tags:
-      - Tools - Video Profiles
+      - Folders
       security:
       - Bearer: []
       parameters: []
       responses:
         '201':
-          description: profile created
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  id:
-                    type: integer
-                  name:
-                    type: string
-                  description:
-                    type: string
-                    nullable: true
-                  encode_for_adaptive_streaming:
-                    type: boolean
-                  smart_crop_ratios:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        name:
-                          type: string
-                          example: '16:9'
-                        crop_ratio:
-                          type: string
-                          example: '16:9'
-                  adaptive_streaming_warnings:
-                    type: array
-                    items:
-                      type: string
-                  folder_count:
-                    type: integer
-                  created_at:
-                    type: string
-                    format: date-time
-                  updated_at:
-                    type: string
-                    format: date-time
-                  encoding_presets:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        id:
-                          type: integer
-                        name:
-                          type: string
-                        video_format_codec:
-                          type: string
-                          enum:
-                          - h264
-                        width:
-                          type: integer
-                          nullable: true
-                          description: null = auto
-                        height:
-                          type: integer
-                        keep_aspect_ratio:
-                          type: boolean
-                        video_bitrate_kbps:
-                          type: integer
-                        frame_rate_fps:
-                          type: integer
-                        audio_codec:
-                          type: string
-                          enum:
-                          - he_aac
-                          - aac
-                          - mp3
-                        audio_bitrate_kbps:
-                          type: integer
-                        two_pass_encoding:
-                          type: boolean
-                        constant_bitrate:
-                          type: boolean
-                        h264_profile:
-                          type: string
-                          nullable: true
-                          enum:
-                          - baseline
-                          - main
-                          - high
-                        audio_sampling_rate:
-                          type: integer
-                          nullable: true
-                        advanced_params:
-                          type: object
-                          description: 'Custom encoding params: h264Level, keyframe,
-                            minBitrate, maxBitrate, audioBitrateCustom'
-                          properties:
-                            h264Level:
-                              type: string
-                              description: 10 * h264 level, e.g. "30" for 3.0
-                            keyframe:
-                              type: string
-                              description: 'Target keyframe interval in frames (recommended:
-                                60–300)'
-                            minBitrate:
-                              type: string
-                              description: Min bitrate in Kbps for VBR encodings
-                            maxBitrate:
-                              type: string
-                              description: 'Max bitrate in Kbps (recommended: 2x encoding
-                                bitrate)'
-                            audioBitrateCustom:
-                              type: string
-                              description: '"true"/"false" — force constant audio
-                                bitrate'
-                        position:
-                          type: integer
-                        size_label:
-                          type: string
-                        created_at:
-                          type: string
-                          format: date-time
-                        updated_at:
-                          type: string
-                          format: date-time
-        '403':
-          description: forbidden – admin only
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
+          description: Folder created successfully
         '422':
-          description: validation failed
+          description: Validation failed (e.g., blank name)
           content:
             application/json:
               schema:
@@ -227,212 +86,151 @@ paths:
             schema:
               type: object
               required:
-              - video_profile
+              - folder
               properties:
-                video_profile:
+                folder:
                   type: object
                   required:
                   - name
                   properties:
                     name:
                       type: string
-                      example: Adaptive HD
-                    description:
+                      example: Q3 Campaigns
+                    parent_id:
                       type: string
-                      example: Adaptive HLS for desktop and mobile
-                    encode_for_adaptive_streaming:
-                      type: boolean
-                      example: true
-                    smart_crop_ratios:
-                      type: array
-                      items:
-                        type: object
-                        properties:
-                          name:
-                            type: string
-                            example: '16:9'
-                          crop_ratio:
-                            type: string
-                            example: '16:9'
-                    encoding_presets_attributes:
-                      type: array
-                      items:
-                        type: object
-                        required:
-                        - name
-                        - height
-                        - video_bitrate_kbps
-                        properties:
-                          name:
-                            type: string
-                            example: 720p
-                          video_format_codec:
-                            type: string
-                            example: h264
-                          width:
-                            type: integer
-                            nullable: true
-                            example:
-                          height:
-                            type: integer
-                            example: 720
-                          keep_aspect_ratio:
-                            type: boolean
-                            example: true
-                          video_bitrate_kbps:
-                            type: integer
-                            example: 3000
-                          frame_rate_fps:
-                            type: integer
-                            example: 30
-                          audio_codec:
-                            type: string
-                            example: he_aac
-                          audio_bitrate_kbps:
-                            type: integer
-                            example: 128
-                          position:
-                            type: integer
-                            example: 0
-  "/api/v1/video_profiles/{id}":
+                      nullable: true
+                      example: root
+                      description: Parent folder ID or "root" to create at top level
+  "/api/v1/folders/{id}":
     parameters:
     - name: id
       in: path
       required: true
+      description: Folder ID or the string `"root"` to browse the top level
       schema:
-        type: integer
+        type: string
+    - name: sort
+      in: query
+      required: false
+      enum:
+      - name
+      - created_at
+      - updated_at
+      - size
+      - type
+      description: Field to sort folders & assets by. Defaults to `name`. `size` and
+        `type` apply to assets only (folders fall back to `name`).
+      schema:
+        type: string
+    - name: direction
+      in: query
+      required: false
+      enum:
+      - asc
+      - desc
+      description: Sort direction. Defaults to `asc`.
+      schema:
+        type: string
     get:
-      summary: Retrieves a single Video Profile with its encoding presets
+      summary: Retrieve a folder and its direct child contents
       tags:
-      - Tools - Video Profiles
+      - Folders
       security:
       - Bearer: []
+      description: |
+        Returns immediate sub-folders, assets in this folder, and the breadcrumb
+        trail back to root. Pass `id=root` to list all top-level items.
+        Only active (non-trashed) items are returned.
+
+        Results can be ordered with the `sort` and `direction` query parameters.
+        Supported sort fields: `name`, `created_at`, `updated_at`, `size`, `type`.
+        Note that `size` and `type` are asset-only fields — folders fall back to
+        `name` ordering for those values.
       responses:
         '200':
-          description: profile found
+          description: Folder contents returned
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  id:
-                    type: integer
-                  name:
-                    type: string
-                  description:
-                    type: string
-                    nullable: true
-                  encode_for_adaptive_streaming:
-                    type: boolean
-                  smart_crop_ratios:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        name:
-                          type: string
-                          example: '16:9'
-                        crop_ratio:
-                          type: string
-                          example: '16:9'
-                  adaptive_streaming_warnings:
-                    type: array
-                    items:
-                      type: string
-                  folder_count:
-                    type: integer
-                  created_at:
-                    type: string
-                    format: date-time
-                  updated_at:
-                    type: string
-                    format: date-time
-                  encoding_presets:
+                  folders:
                     type: array
                     items:
                       type: object
                       properties:
                         id:
-                          type: integer
+                          type: string
+                          format: uuid
                         name:
                           type: string
-                        video_format_codec:
-                          type: string
-                          enum:
-                          - h264
-                        width:
-                          type: integer
-                          nullable: true
-                          description: null = auto
-                        height:
-                          type: integer
-                        keep_aspect_ratio:
-                          type: boolean
-                        video_bitrate_kbps:
-                          type: integer
-                        frame_rate_fps:
-                          type: integer
-                        audio_codec:
-                          type: string
-                          enum:
-                          - he_aac
-                          - aac
-                          - mp3
-                        audio_bitrate_kbps:
-                          type: integer
-                        two_pass_encoding:
-                          type: boolean
-                        constant_bitrate:
-                          type: boolean
-                        h264_profile:
+                        slug:
                           type: string
                           nullable: true
-                          enum:
-                          - baseline
-                          - main
-                          - high
-                        audio_sampling_rate:
-                          type: integer
-                          nullable: true
-                        advanced_params:
-                          type: object
-                          description: 'Custom encoding params: h264Level, keyframe,
-                            minBitrate, maxBitrate, audioBitrateCustom'
-                          properties:
-                            h264Level:
-                              type: string
-                              description: 10 * h264 level, e.g. "30" for 3.0
-                            keyframe:
-                              type: string
-                              description: 'Target keyframe interval in frames (recommended:
-                                60–300)'
-                            minBitrate:
-                              type: string
-                              description: Min bitrate in Kbps for VBR encodings
-                            maxBitrate:
-                              type: string
-                              description: 'Max bitrate in Kbps (recommended: 2x encoding
-                                bitrate)'
-                            audioBitrateCustom:
-                              type: string
-                              description: '"true"/"false" — force constant audio
-                                bitrate'
-                        position:
-                          type: integer
-                        size_label:
+                        description:
                           type: string
+                          nullable: true
                         created_at:
                           type: string
                           format: date-time
                         updated_at:
                           type: string
                           format: date-time
-                  folders:
+                  assets:
                     type: array
                     items:
                       type: object
+                      properties:
+                        id:
+                          type: integer
+                        uuid:
+                          type: string
+                          format: uuid
+                        title:
+                          type: string
+                        status:
+                          type: string
+                          example: ready
+                        version:
+                          type: integer
+                        properties:
+                          type: object
+                        size:
+                          type: integer
+                          description: File size in bytes (from active version)
+                        content_type:
+                          type: string
+                          nullable: true
+                          example: image/jpeg
+                        created_at:
+                          type: string
+                          format: date-time
+                        updated_at:
+                          type: string
+                          format: date-time
+                        url:
+                          type: string
+                          nullable: true
+                  breadcrumbs:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        name:
+                          type: string
+                  sort:
+                    type: object
+                    properties:
+                      field:
+                        type: string
+                        example: name
+                      direction:
+                        type: string
+                        example: asc
         '404':
-          description: not found
+          description: Folder not found or has been deleted
           content:
             application/json:
               schema:
@@ -441,54 +239,39 @@ paths:
                   error:
                     type: string
     patch:
-      summary: Updates a Video Profile
+      summary: Rename a folder and/or update its description
       tags:
-      - Tools - Video Profiles
+      - Folders
       security:
       - Bearer: []
+      description: |
+        Updates the folder `name` (rename) and/or `description`. The URL-safe
+        `slug` is regenerated automatically when the name changes.
       parameters: []
       responses:
         '200':
-          description: profile updated
+          description: Folder updated successfully
           content:
             application/json:
               schema:
                 type: object
                 properties:
                   id:
-                    type: integer
+                    type: string
+                    format: uuid
                   name:
                     type: string
                   description:
                     type: string
                     nullable: true
-                  encode_for_adaptive_streaming:
-                    type: boolean
-                  smart_crop_ratios:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        name:
-                          type: string
-                          example: '16:9'
-                        crop_ratio:
-                          type: string
-                          example: '16:9'
-                  adaptive_streaming_warnings:
-                    type: array
-                    items:
-                      type: string
-                  folder_count:
-                    type: integer
-                  created_at:
+                  slug:
                     type: string
-                    format: date-time
+                    nullable: true
                   updated_at:
                     type: string
                     format: date-time
-        '403':
-          description: forbidden – admin only
+        '404':
+          description: Folder not found
           content:
             application/json:
               schema:
@@ -497,7 +280,7 @@ paths:
                   error:
                     type: string
         '422':
-          description: validation failed
+          description: Validation failed (e.g., blank name)
           content:
             application/json:
               schema:
@@ -512,301 +295,219 @@ paths:
           application/json:
             schema:
               type: object
+              required:
+              - folder
               properties:
-                video_profile:
+                folder:
                   type: object
                   properties:
                     name:
                       type: string
+                      example: Q4 Campaigns
                     description:
                       type: string
-                    encode_for_adaptive_streaming:
-                      type: boolean
+                      example: All creative assets for the Q4 push
     delete:
-      summary: Soft-deletes a Video Profile
+      summary: Move a folder to the Recycle Bin (soft delete)
       tags:
-      - Tools - Video Profiles
+      - Folders
       security:
       - Bearer: []
+      description: |
+        Soft-deletes the folder by stamping `deleted_at`. A CDN invalidation job
+        is dispatched to drop any cached assets under this folder from edge nodes.
+        Use `POST /api/v1/folders/{id}/restore` to recover it.
       responses:
-        '204':
-          description: deleted (no content)
-        '403':
-          description: forbidden – admin only
-  "/api/v1/video_profiles/{id}/copy":
-    parameters:
-    - name: id
-      in: path
-      required: true
-      schema:
-        type: integer
-    post:
-      summary: Copies a Video Profile under a new name
-      tags:
-      - Tools - Video Profiles
-      security:
-      - Bearer: []
-      parameters: []
-      responses:
-        '201':
-          description: profile copied
+        '200':
+          description: Folder moved to bin
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  id:
-                    type: integer
-                  name:
-                    type: string
-                  description:
-                    type: string
-                    nullable: true
-                  encode_for_adaptive_streaming:
+                  success:
                     type: boolean
-                  smart_crop_ratios:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        name:
-                          type: string
-                          example: '16:9'
-                        crop_ratio:
-                          type: string
-                          example: '16:9'
-                  adaptive_streaming_warnings:
-                    type: array
-                    items:
-                      type: string
-                  folder_count:
-                    type: integer
-                  created_at:
+                    example: true
+                  message:
                     type: string
-                    format: date-time
-                  updated_at:
-                    type: string
-                    format: date-time
-                  encoding_presets:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        id:
-                          type: integer
-                        name:
-                          type: string
-                        video_format_codec:
-                          type: string
-                          enum:
-                          - h264
-                        width:
-                          type: integer
-                          nullable: true
-                          description: null = auto
-                        height:
-                          type: integer
-                        keep_aspect_ratio:
-                          type: boolean
-                        video_bitrate_kbps:
-                          type: integer
-                        frame_rate_fps:
-                          type: integer
-                        audio_codec:
-                          type: string
-                          enum:
-                          - he_aac
-                          - aac
-                          - mp3
-                        audio_bitrate_kbps:
-                          type: integer
-                        two_pass_encoding:
-                          type: boolean
-                        constant_bitrate:
-                          type: boolean
-                        h264_profile:
-                          type: string
-                          nullable: true
-                          enum:
-                          - baseline
-                          - main
-                          - high
-                        audio_sampling_rate:
-                          type: integer
-                          nullable: true
-                        advanced_params:
-                          type: object
-                          description: 'Custom encoding params: h264Level, keyframe,
-                            minBitrate, maxBitrate, audioBitrateCustom'
-                          properties:
-                            h264Level:
-                              type: string
-                              description: 10 * h264 level, e.g. "30" for 3.0
-                            keyframe:
-                              type: string
-                              description: 'Target keyframe interval in frames (recommended:
-                                60–300)'
-                            minBitrate:
-                              type: string
-                              description: Min bitrate in Kbps for VBR encodings
-                            maxBitrate:
-                              type: string
-                              description: 'Max bitrate in Kbps (recommended: 2x encoding
-                                bitrate)'
-                            audioBitrateCustom:
-                              type: string
-                              description: '"true"/"false" — force constant audio
-                                bitrate'
-                        position:
-                          type: integer
-                        size_label:
-                          type: string
-                        created_at:
-                          type: string
-                          format: date-time
-                        updated_at:
-                          type: string
-                          format: date-time
-        '403':
-          description: forbidden – admin only
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                name:
-                  type: string
-                  example: Adaptive HD (copy)
-  "/api/v1/video_profiles/{id}/apply_to_folder":
+                    example: Folder moved to bin
+  "/api/v1/folders/{id}/profiles":
     parameters:
     - name: id
       in: path
       required: true
+      description: Folder ID
       schema:
-        type: integer
-    post:
-      summary: Applies a Video Profile to a folder
-      tags:
-      - Tools - Video Profiles
-      security:
-      - Bearer: []
-      parameters: []
-      responses:
-        '201':
-          description: profile applied to folder
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  profile_id:
-                    type: integer
-                  folder_id:
-                    type: string
-        '400':
-          description: missing folder_id
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-        '403':
-          description: forbidden – admin only
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-              - folder_id
-              properties:
-                folder_id:
-                  type: string
-                  format: uuid
-                  example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
-  "/api/v1/video_profiles/{id}/remove_from_folder":
-    parameters:
-    - name: id
-      in: path
-      required: true
-      schema:
-        type: integer
-    delete:
-      summary: Removes a Video Profile from a folder
-      tags:
-      - Tools - Video Profiles
-      security:
-      - Bearer: []
-      parameters: []
-      responses:
-        '204':
-          description: removed (no content)
-        '400':
-          description: missing folder_id
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-              - folder_id
-              properties:
-                folder_id:
-                  type: string
-                  format: uuid
-  "/api/v1/video_profiles/{id}/folders":
-    parameters:
-    - name: id
-      in: path
-      required: true
-      schema:
-        type: integer
+        type: string
     get:
-      summary: Lists folders the Video Profile is applied to
+      summary: Retrieve all configuration profiles assigned to a folder
       tags:
-      - Tools - Video Profiles
+      - Folders
+      security:
+      - Bearer: []
+      description: |
+        Returns the image processing profile, video encoding profile, metadata
+        schema (direct or inherited), and access-control policies assigned to a
+        folder. Powers the folder "Info" properties drawer. Any unassigned
+        section returns `null`.
+      responses:
+        '200':
+          description: Folder profiles returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  image_profile:
+                    type: object
+                    nullable: true
+                    properties:
+                      id:
+                        type: integer
+                      name:
+                        type: string
+                      crop_type:
+                        type: string
+                      unsharp_mask:
+                        type: object
+                        nullable: true
+                      responsive_crop_enabled:
+                        type: boolean
+                      swatch_enabled:
+                        type: boolean
+                  video_profile:
+                    type: object
+                    nullable: true
+                    properties:
+                      id:
+                        type: integer
+                      name:
+                        type: string
+                      description:
+                        type: string
+                        nullable: true
+                      encode_for_adaptive_streaming:
+                        type: boolean
+                      preset_count:
+                        type: integer
+                  metadata_schema:
+                    type: object
+                    nullable: true
+                    properties:
+                      id:
+                        type: integer
+                      name:
+                        type: string
+                      source:
+                        type: string
+                        enum:
+                        - direct
+                        - inherited
+                        description: Whether the schema is set on this folder or inherited
+                          from an ancestor
+                      tabs:
+                        type: array
+                        items:
+                          type: object
+                  policies:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        group_id:
+                          type: integer
+                        group_name:
+                          type: string
+                          nullable: true
+                        read:
+                          type: boolean
+                        write:
+                          type: boolean
+                        delete:
+                          type: boolean
+                        manage:
+                          type: boolean
+                        deny:
+                          type: boolean
+  "/api/v1/folders/{id}/restore":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      description: Folder ID
+      schema:
+        type: string
+    post:
+      summary: Restore a soft-deleted folder from the Recycle Bin
+      tags:
+      - Folders
       security:
       - Bearer: []
       responses:
         '200':
-          description: folders listed
+          description: Folder restored to active state
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    id:
-                      type: string
-                    name:
-                      type: string
-                    path:
-                      type: string
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Folder restored
+        '404':
+          description: Folder not found in the bin
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+  "/api/v1/folders/{id}/permanent":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      description: Folder ID
+      schema:
+        type: string
+    delete:
+      summary: Permanently delete a folder from the Recycle Bin
+      tags:
+      - Folders
+      security:
+      - Bearer: []
+      description: |
+        **Irreversible.** Destroys the folder database record. Also dispatches a
+        CDN invalidation job to drop any cached assets under this folder from
+        edge nodes. Assets inside the folder should be permanently deleted
+        separately (or handled by `dependent: :destroy` on the model association).
+      responses:
+        '200':
+          description: Folder permanently deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Folder permanently deleted
+        '404':
+          description: Folder not found in the bin
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
 servers:
 - url: http://localhost:3000
   description: Local Development Server

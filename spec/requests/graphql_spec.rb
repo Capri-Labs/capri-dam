@@ -134,7 +134,7 @@ RSpec.describe "GraphQL endpoint", type: :request do
     let(:query) do
       <<~GQL
         query SearchAssets($query: String, $mode: String) {
-          searchAssets(query: $query, mode: $mode) {
+          searchAssets(query: $query, mode: $mode, first: 25) {
             edges {
               node { id uuid title }
             }
@@ -163,6 +163,50 @@ RSpec.describe "GraphQL endpoint", type: :request do
                  user: viewer_user)
         expect(response).to have_http_status(:ok)
         expect(json.dig("data", "searchAssets", "edges")).to be_an(Array)
+      end
+    end
+
+    context "with sorting" do
+      let(:sorted_query) do
+        <<~GQL
+          query SearchAssets($mode: String, $sortBy: String, $sortDirection: String) {
+            searchAssets(mode: $mode, sortBy: $sortBy, sortDirection: $sortDirection, first: 25) {
+              edges { node { title } }
+            }
+          }
+        GQL
+      end
+
+      before do
+        create(:asset, title: "Zebra", status: :ready)
+        create(:asset, title: "Apple", status: :ready)
+        create(:asset, title: "Mango", status: :ready)
+      end
+
+      it "sorts by name ascending" do
+        gql_post(query: sorted_query,
+                 variables: { mode: "all", sortBy: "name", sortDirection: "asc" },
+                 user: viewer_user)
+        titles = json.dig("data", "searchAssets", "edges").map { |e| e.dig("node", "title") }
+        expect(titles).to eq(%w[Apple Mango Zebra])
+      end
+
+      it "sorts by name descending" do
+        gql_post(query: sorted_query,
+                 variables: { mode: "all", sortBy: "name", sortDirection: "desc" },
+                 user: viewer_user)
+        titles = json.dig("data", "searchAssets", "edges").map { |e| e.dig("node", "title") }
+        expect(titles).to eq(%w[Zebra Mango Apple])
+      end
+
+      it "accepts created_at, size, and type sort fields without error" do
+        %w[created_at updated_at size type].each do |field|
+          gql_post(query: sorted_query,
+                   variables: { mode: "all", sortBy: field, sortDirection: "desc" },
+                   user: viewer_user)
+          expect(response).to have_http_status(:ok)
+          expect(json["errors"]).to be_nil
+        end
       end
     end
   end

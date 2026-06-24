@@ -51,6 +51,8 @@ RSpec.configure do |config|
     define_method(:type)          { nil }
     define_method(:file)          { nil }
     define_method(:reject)        { 'false' }
+    define_method(:sort)          { nil }
+    define_method(:direction)     { nil }
     define_method(:grant_type)    { 'client_credentials' }
     define_method(:client_id)     { 'placeholder-client-id' }
     define_method(:client_secret) { 'placeholder-client-secret' }

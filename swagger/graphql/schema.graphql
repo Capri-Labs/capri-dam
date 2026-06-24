@@ -396,6 +396,16 @@ type Query {
     metadataFilters: Json
     mode: String = "images"
     query: String
+
+    """
+    Sort field: name, created_at, updated_at, size, or type.
+    """
+    sortBy: String = "name"
+
+    """
+    Sort direction: asc or desc.
+    """
+    sortDirection: String = "asc"
   ): AssetConnection!
 
   """

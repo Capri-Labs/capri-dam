@@ -156,7 +156,7 @@ Rails.application.routes.draw do
       end
 
       # Folders
-      resources :folders, only: [:index, :show, :create] do
+      resources :folders, only: [:index, :show, :create, :update, :destroy] do
         member do
           post :restore
           delete :permanent, to: 'folders#permanent_delete'
@@ -164,6 +164,8 @@ Rails.application.routes.draw do
           get    :schema,        to: 'folders#schema'
           post   :apply_schema,  to: 'folders#apply_schema'
           delete :remove_schema, to: 'folders#remove_schema'
+          # Profile assignments (info panel)
+          get    :profiles,      to: 'folders#profiles'
         end
       end
 

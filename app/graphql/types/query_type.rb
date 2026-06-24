@@ -20,6 +20,8 @@
 #   pass any other value to search all asset types.
 # * +metadataFilters+ — a free-form JSON key-value map applied as exact-match
 #   JSONB property filters (e.g. +{ "dam:language_code": "en" }+).
+# * +sortBy+ — +name+ (default), +created_at+, +updated_at+, +size+, or +type+.
+# * +sortDirection+ — +asc+ (default) or +desc+.
 #
 # @see Types::AssetType
 # @see Types::CollectionType
@@ -41,19 +43,37 @@ module Types
     # @param query   [String, nil]  case-insensitive title substring
     # @param mode    [String]       +"images"+ (default) or any string to search all types
     # @param metadata_filters [Hash, nil] JSONB property key→value strict-match map
+    # @param sort_by [String] field to order results by: +name+, +created_at+,
+    #   +updated_at+, +size+, or +type+ (default +name+)
+    # @param sort_direction [String] +asc+ (default) or +desc+
     # @return [GraphQL::Pagination::Connection<Types::AssetType>]
     field :search_assets, Types::AssetType.connection_type, null: false do
       argument :query,            String,         required: false
       argument :mode,             String,         required: false, default_value: 'images'
       argument :metadata_filters, Types::JsonType, required: false,
                description: "Key-value map for strict JSONB matching."
+      argument :sort_by, String, required: false, default_value: 'name',
+               description: "Sort field: name, created_at, updated_at, size, or type."
+      argument :sort_direction, String, required: false, default_value: 'asc',
+               description: "Sort direction: asc or desc."
     end
 
     def asset_detail(uuid:)
       Asset.active.find_by(uuid: uuid)
     end
 
-    def search_assets(query: nil, mode: 'images', metadata_filters: nil)
+    # Allowed sort fields mapped to SQL ordering expressions.
+    ASSET_SORT_COLUMNS = {
+      'name'       => 'title',
+      'created_at' => 'created_at',
+      'updated_at' => 'updated_at',
+      # size & type live in the JSONB properties column
+      'size'       => "(properties->>'size')::bigint",
+      'type'       => "properties->>'content_type'"
+    }.freeze
+
+    def search_assets(query: nil, mode: 'images', metadata_filters: nil,
+                      sort_by: 'name', sort_direction: 'asc')
       scope = Asset.active
       scope = scope.where("title ILIKE ?", "%#{query}%") if query.present?
       scope = scope.where("properties->>'content_type' ILIKE 'image/%'") if mode == 'images'
@@ -64,7 +84,9 @@ module Types
         end
       end
 
-      scope
+      column    = ASSET_SORT_COLUMNS[sort_by.to_s] || ASSET_SORT_COLUMNS['name']
+      direction = sort_direction.to_s == 'desc' ? 'DESC' : 'ASC'
+      scope.order(Arel.sql("#{column} #{direction} NULLS LAST"))
     end
 
     # Returns all active, non-expired collections ordered newest-first.

@@ -55,9 +55,32 @@ const FilterDropdown = ({ label, options }) => {
     );
 };
 
-export default function AssetFilterBar({ resultCount, viewLayout, setViewLayout }) {
+export default function AssetFilterBar({ resultCount, viewLayout, setViewLayout, sort, onSortChange }) {
     const [sortAnchor, setSortAnchor] = useState(null);
-    const [sortConfig, setSortConfig] = useState('Date added');
+
+    // Sort options map UI labels to { field, direction } sent to the API.
+    const SORT_OPTIONS = [
+        { label: 'Name (A–Z)',            field: 'name',       direction: 'asc'  },
+        { label: 'Name (Z–A)',            field: 'name',       direction: 'desc' },
+        { label: 'Date added (Newest)',   field: 'created_at', direction: 'desc' },
+        { label: 'Date added (Oldest)',   field: 'created_at', direction: 'asc'  },
+        { label: 'Date modified (Newest)', field: 'updated_at', direction: 'desc' },
+        { label: 'Date modified (Oldest)', field: 'updated_at', direction: 'asc'  },
+        { label: 'Size (Largest first)',  field: 'size',       direction: 'desc' },
+        { label: 'Size (Smallest first)', field: 'size',       direction: 'asc'  },
+        { label: 'Type (A–Z)',            field: 'type',       direction: 'asc'  },
+    ];
+
+    // Fallback to the first option when no sort prop is provided.
+    const activeSort = sort || { field: 'name', direction: 'asc' };
+    const activeLabel = SORT_OPTIONS.find(
+        o => o.field === activeSort.field && o.direction === activeSort.direction
+    )?.label || 'Name (A–Z)';
+
+    const handleSelectSort = (opt) => {
+        setSortAnchor(null);
+        if (onSortChange) onSortChange({ field: opt.field, direction: opt.direction });
+    };
 
     return (
         <Box sx={{
@@ -107,18 +130,24 @@ export default function AssetFilterBar({ resultCount, viewLayout, setViewLayout 
                             bgcolor: 'transparent', '&:hover': { bgcolor: '#f1f5f9' }
                         }}
                     >
-                        Order by <Box component="span" sx={{ fontWeight: 700, ml: 0.5 }}>{sortConfig}</Box>
+                        Order by <Box component="span" sx={{ fontWeight: 700, ml: 0.5 }}>{activeLabel}</Box>
                     </Button>
-                    <Menu anchorEl={sortAnchor} open={Boolean(sortAnchor)} onClose={() => setSortAnchor(null)}>
-                        {['Date added', 'Name (A-Z)', 'Size (Largest first)'].map(opt => (
-                            <MenuItem
-                                key={opt}
-                                onClick={() => { setSortConfig(opt); setSortAnchor(null); }}
-                                selected={sortConfig === opt}
-                            >
-                                {opt}
-                            </MenuItem>
-                        ))}
+                    <Menu anchorEl={sortAnchor} open={Boolean(sortAnchor)} onClose={() => setSortAnchor(null)}
+                          PaperProps={{ elevation: 3, sx: { mt: 1, minWidth: 220, borderRadius: 2 } }}>
+                        {SORT_OPTIONS.map((opt, i) => {
+                            const isActive = opt.field === activeSort.field && opt.direction === activeSort.direction;
+                            const showDivider = i > 0 && SORT_OPTIONS[i - 1].field !== opt.field;
+                            return [
+                                showDivider && <Divider key={`d-${i}`} sx={{ my: 0.5 }} />,
+                                <MenuItem
+                                    key={opt.label}
+                                    onClick={() => handleSelectSort(opt)}
+                                    selected={isActive}
+                                >
+                                    {opt.label}
+                                </MenuItem>
+                            ];
+                        })}
                     </Menu>
 
                     <ToggleButtonGroup

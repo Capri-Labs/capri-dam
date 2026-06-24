@@ -10,6 +10,7 @@ import FolderGrid from './FolderGrid';
 import AssetGrid from './AssetGrid';
 import AssetList from './AssetList';
 import PinToCollectionDialog from './PinToCollectionDialog';
+import FolderInfoPanel from './FolderInfoPanel';
 
 export default function AssetExplorer({ initialTargetAssetId }) {
     const notify = useNotify();
@@ -28,6 +29,18 @@ export default function AssetExplorer({ initialTargetAssetId }) {
     const [selectedItems, setSelectedItems] = useState({ folders: [], assets: [] });
     const [pinDialogOpen, setPinDialogOpen] = useState(false);
     const [assetToPin, setAssetToPin] = useState(null);
+
+    // Sorting (field + direction) — sent to the folder API as query params
+    const [sort, setSort] = useState({ field: 'name', direction: 'asc' });
+
+    // Folder info panel
+    const [infoFolder,    setInfoFolder]    = useState(null);
+    const [infoPanelOpen, setInfoPanelOpen] = useState(false);
+
+    const handleFolderInfo = (folder) => {
+        setInfoFolder(folder);
+        setInfoPanelOpen(true);
+    };
 
     const handlePinClick = (asset, event) => {
         if (event) event.stopPropagation();
@@ -63,14 +76,17 @@ export default function AssetExplorer({ initialTargetAssetId }) {
     }, [initialTargetAssetId, viewData.assets]);
 
     const loadContent = () => {
-        const endpoint = viewMode === 'bin' ? '/api/v1/bin' : `/api/v1/folders/${currentId}`;
+        const sortQuery = `sort=${sort.field}&direction=${sort.direction}`;
+        const endpoint = viewMode === 'bin'
+            ? '/api/v1/bin'
+            : `/api/v1/folders/${currentId}?${sortQuery}`;
         fetch(endpoint).then(res => res.json()).then(data => {
             setViewData(data);
             setSelectedItems({ folders: [], assets: [] });
         });
     };
 
-    useEffect(() => { loadContent(); }, [currentId, viewMode]);
+    useEffect(() => { loadContent(); }, [currentId, viewMode, sort]);
 
     // --- ACTIONS ---
     const handleCopyPath = () => {
@@ -195,12 +211,15 @@ export default function AssetExplorer({ initialTargetAssetId }) {
                 <AssetFilterBar
                     resultCount={(viewData.folders?.length || 0) + (viewData.assets?.length || 0)}
                     viewLayout={viewLayout} setViewLayout={setViewLayout}
+                    sort={sort} onSortChange={setSort}
                 />
             )}
 
             <FolderGrid
                 folders={viewData.folders} viewMode={viewMode}
-                selectedItems={selectedItems} toggleSelection={toggleSelection} handleNavigate={handleNavigate}
+                selectedItems={selectedItems} toggleSelection={toggleSelection}
+                handleNavigate={handleNavigate}
+                onFolderInfo={handleFolderInfo}
             />
 
             {viewData.folders?.length > 0 && viewData.assets?.length > 0 && <Divider sx={{ my: 4, borderColor: '#e2e8f0' }} />}
@@ -243,6 +262,19 @@ export default function AssetExplorer({ initialTargetAssetId }) {
                 open={pinDialogOpen}
                 onClose={() => setPinDialogOpen(false)}
                 asset={assetToPin}
+            />
+
+            {/* Folder info drawer */}
+            <FolderInfoPanel
+                folder={infoFolder}
+                open={infoPanelOpen}
+                onClose={() => setInfoPanelOpen(false)}
+                onFolderUpdated={(updated) => {
+                    // Refresh folder list so the renamed folder appears immediately
+                    loadContent();
+                    // Keep the panel open with updated data
+                    setInfoFolder(prev => prev ? { ...prev, ...updated } : prev);
+                }}
             />
         </Box>
     );

@@ -58,10 +58,15 @@ module Api
           breadcrumbs = build_breadcrumbs(current_folder)
         end
 
+        # Apply optional sorting (sort + direction query params)
+        folders_payload = sort_folders(@folders.map { |f| format_folder_payload(f) })
+        assets_payload  = sort_assets(@assets.map { |asset| format_asset_payload(asset) })
+
         render json: {
-          folders: @folders,
-          assets: @assets.map { |asset| format_asset_payload(asset) },
-          breadcrumbs: breadcrumbs
+          folders: folders_payload,
+          assets: assets_payload,
+          breadcrumbs: breadcrumbs,
+          sort: { field: sort_field, direction: sort_direction }
         }
       end
 
@@ -77,7 +82,72 @@ module Api
         end
       end
 
-      # POST /api/v1/folders/:id/purge_cdn
+      # PATCH /api/v1/folders/:id (rename + description)
+      def update
+        @folder = Folder.active.find(params[:id])
+        if @folder.update(folder_params)
+          render json: {
+            id:          @folder.id,
+            name:        @folder.name,
+            description: @folder.description,
+            slug:        @folder.slug,
+            updated_at:  @folder.updated_at
+          }
+        else
+          render json: { errors: @folder.errors.full_messages }, status: :unprocessable_entity
+        end
+      rescue ActiveRecord::RecordNotFound
+        render json: { error: 'Folder not found' }, status: :not_found
+      end
+
+      # GET /api/v1/folders/:id/profiles
+      # Returns the image profile, video profile, and metadata schema assigned to a folder.
+      def profiles
+        folder_id = params[:id]
+
+        # Image profile
+        img_assignment = ImageProfileFolderAssignment.find_by(folder_id: folder_id)
+        image_profile  = img_assignment ? ImageProfile.active.find_by(id: img_assignment.image_profile_id) : nil
+
+        # Video profile
+        vid_assignment = VideoProfileFolderAssignment.find_by(folder_id: folder_id)
+        video_profile  = vid_assignment ? VideoProfile.active.find_by(id: vid_assignment.video_profile_id) : nil
+
+        # Metadata schema (direct or inherited)
+        schema_assignment = find_schema_assignment(folder_id)
+        schema = schema_assignment ? MetadataSchema.active.find_by(id: schema_assignment.metadata_schema_id) : nil
+
+        # Folder policies (access)
+        policies = FolderPolicy.where(folder_id: folder_id).includes(:user_group)
+
+        render json: {
+          image_profile: image_profile ? {
+            id: image_profile.id, name: image_profile.name,
+            crop_type: image_profile.crop_type,
+            unsharp_mask: image_profile.effective_unsharp_mask,
+            responsive_crop_enabled: image_profile.responsive_crop_enabled,
+            swatch_enabled: image_profile.swatch_enabled
+          } : nil,
+          video_profile: video_profile ? {
+            id: video_profile.id, name: video_profile.name,
+            description: video_profile.description,
+            encode_for_adaptive_streaming: video_profile.encode_for_adaptive_streaming,
+            preset_count: video_profile.encoding_presets.size
+          } : nil,
+          metadata_schema: schema ? serialize_schema(schema).merge(source: assignment_source(folder_id, schema_assignment)) : nil,
+          policies: policies.map { |p|
+            {
+              group_id:   p.user_group_id,
+              group_name: p.user_group&.name,
+              read:       p.read_access,
+              write:      p.write_access,
+              delete:     p.delete_access,
+              manage:     p.manage_access,
+              deny:       p.explicit_deny
+            }
+          }
+        }
+      end
       def purge_folder_cdn
         CdnInvalidationWorker.perform_async('folder', params[:id])
         render json: { message: "Folder CDN purge initiated." }, status: :ok
@@ -166,6 +236,8 @@ module Api
       def format_asset_payload(asset)
         active_v = asset.active_version
 
+        merged_props = asset.properties.merge(active_v&.properties || {})
+
         {
           id: asset.id, # Using the primary DB ID to match your editor fix
           uuid: asset.uuid,
@@ -174,10 +246,72 @@ module Api
           status: asset.status || 'draft',
           version: active_v&.version_number || 1,
 
-          properties: asset.properties.merge(active_v&.properties || {}),
+          properties: merged_props,
+
+          # Sortable metadata surfaced at the top level for the UI
+          size:         merged_props['size'] || merged_props['file_size'] || 0,
+          content_type: merged_props['content_type'],
+          created_at:   asset.created_at,
+          updated_at:   asset.updated_at,
 
           url: asset_url_for(asset)
         }
+      end
+
+      # Standardised folder payload (also exposes sortable timestamps).
+      def format_folder_payload(folder)
+        {
+          id:          folder.id,
+          name:        folder.name,
+          slug:        folder.slug,
+          description: folder.description,
+          created_at:  folder.created_at,
+          updated_at:  folder.updated_at
+        }
+      end
+
+      # ── Sorting helpers ─────────────────────────────────────────────────────
+      ALLOWED_SORT_FIELDS = %w[name created_at updated_at size type].freeze
+
+      def sort_field
+        field = params[:sort].to_s
+        ALLOWED_SORT_FIELDS.include?(field) ? field : 'name'
+      end
+
+      def sort_direction
+        params[:direction].to_s == 'desc' ? 'desc' : 'asc'
+      end
+
+      # Folders only support name/created_at/updated_at sorting (no size/type).
+      def sort_folders(folders)
+        field = sort_field
+        field = 'name' if %w[size type].include?(field) # folders have no size/type
+
+        sorted = folders.sort_by do |f|
+          case field
+          when 'created_at' then f[:created_at] || Time.at(0)
+          when 'updated_at' then f[:updated_at] || Time.at(0)
+          else f[:name].to_s.downcase
+          end
+        end
+
+        sort_direction == 'desc' ? sorted.reverse : sorted
+      end
+
+      def sort_assets(assets)
+        field = sort_field
+
+        sorted = assets.sort_by do |a|
+          case field
+          when 'created_at' then a[:created_at] || Time.at(0)
+          when 'updated_at' then a[:updated_at] || Time.at(0)
+          when 'size'       then a[:size].to_i
+          when 'type'       then a[:content_type].to_s.downcase
+          else a[:title].to_s.downcase
+          end
+        end
+
+        sort_direction == 'desc' ? sorted.reverse : sorted
       end
 
       def build_breadcrumbs(folder)
@@ -196,7 +330,7 @@ module Api
       end
 
       def folder_params
-        params.require(:folder).permit(:name, :parent_id)
+        params.require(:folder).permit(:name, :parent_id, :description)
       end
 
       # ── Schema helpers ──────────────────────────────────────────────────────
