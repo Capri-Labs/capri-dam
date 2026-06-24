@@ -226,6 +226,16 @@ Rails.application.routes.draw do
           get   :folders
         end
       end
+
+      # Video Profiles (video transcoding configuration)
+      resources :video_profiles, only: [:index, :show, :create, :update, :destroy] do
+        member do
+          post   :copy
+          post   :apply_to_folder
+          delete :remove_from_folder
+          get    :folders
+        end
+      end
       resources :notifications, only: [:index] do
         collection do
           patch :mark_all_read

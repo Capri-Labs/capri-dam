@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Box, Typography, Chip } from '@mui/material';
-import { SettingsOutlined, SecurityOutlined, BlockOutlined, ImageOutlined } from '@mui/icons-material';
+import { SettingsOutlined, SecurityOutlined, BlockOutlined, ImageOutlined, VideoFileOutlined } from '@mui/icons-material';
 import UploadRestrictionsPanel from './UploadRestrictions';
 import ImageProfilesManager from './ImageProfiles';
+import VideoProfilesManager from './VideoProfiles';
 
 const NAV_ITEMS = [
     {
@@ -16,6 +17,12 @@ const NAV_ITEMS = [
         label: 'Image Profiles',
         icon: <ImageOutlined sx={{ fontSize: 18 }} />,
         description: 'Automatic crop & sharpening on upload',
+    },
+    {
+        id: 'video_profiles',
+        label: 'Video Profiles',
+        icon: <VideoFileOutlined sx={{ fontSize: 18 }} />,
+        description: 'Adaptive & progressive video encoding',
     },
 ];
 
@@ -88,6 +95,7 @@ export default function AssetConfigurationsManager() {
                 <Box sx={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
                     {activeSection === 'upload_restrictions' && <UploadRestrictionsPanel />}
                     {activeSection === 'image_profiles'      && <ImageProfilesManager />}
+                    {activeSection === 'video_profiles'      && <VideoProfilesManager />}
                 </Box>
             </Box>
         </Box>

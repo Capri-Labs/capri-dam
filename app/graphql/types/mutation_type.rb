@@ -11,5 +11,9 @@ module Types
     # Image Profiles
     field :create_image_profile, mutation: Mutations::CreateImageProfile
     field :update_image_profile, mutation: Mutations::UpdateImageProfile
+
+    # Video Profiles
+    field :create_video_profile, mutation: Mutations::CreateVideoProfile
+    field :update_video_profile, mutation: Mutations::UpdateVideoProfile
   end
 end

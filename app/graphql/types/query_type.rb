@@ -10,6 +10,8 @@
 # | +collection(slug: String!)+ | {Types::CollectionType} | Single collection by URL slug |
 # | +imageProfiles+ | [{Types::ImageProfileType}] | All active image processing profiles |
 # | +imageProfile(id: ID!)+ | {Types::ImageProfileType} | Single image profile by database ID |
+# | +videoProfiles+ | [{Types::VideoProfileType}] | All active video processing profiles |
+# | +videoProfile(id: ID!)+ | {Types::VideoProfileType} | Single video profile by database ID |
 #
 # == Search behaviour (+searchAssets+)
 #
@@ -111,6 +113,30 @@ module Types
 
     def image_profile(id:)
       ImageProfile.active.find_by(id: id)
+    end
+
+    # Returns all active video processing profiles sorted alphabetically.
+    #
+    # @return [Array<Types::VideoProfileType>]
+    field :video_profiles, [Types::VideoProfileType], null: false do
+      description "List all active Video Processing Profiles"
+    end
+
+    def video_profiles
+      VideoProfile.active.order(name: :asc)
+    end
+
+    # Finds an active video processing profile by its database ID.
+    #
+    # @param id [ID] the profile's database primary key
+    # @return [Types::VideoProfileType, nil]
+    field :video_profile, Types::VideoProfileType, null: true do
+      description "Find a Video Processing Profile by ID"
+      argument :id, ID, required: true
+    end
+
+    def video_profile(id:)
+      VideoProfile.active.find_by(id: id)
     end
   end
 end

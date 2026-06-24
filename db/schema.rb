@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_24_000002) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_24_100003) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -614,6 +614,50 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_24_000002) do
     t.index ["username"], name: "index_users_on_username", unique: true
   end
 
+  create_table "video_encoding_presets", force: :cascade do |t|
+    t.jsonb "advanced_params", default: {}, null: false
+    t.integer "audio_bitrate_kbps", default: 128, null: false
+    t.string "audio_codec", default: "he_aac", null: false
+    t.integer "audio_sampling_rate"
+    t.boolean "constant_bitrate", default: false, null: false
+    t.datetime "created_at", null: false
+    t.integer "frame_rate_fps", default: 30, null: false
+    t.string "h264_profile"
+    t.integer "height", null: false
+    t.boolean "keep_aspect_ratio", default: true, null: false
+    t.string "name", null: false
+    t.integer "position", default: 0, null: false
+    t.boolean "two_pass_encoding", default: false, null: false
+    t.datetime "updated_at", null: false
+    t.integer "video_bitrate_kbps", null: false
+    t.string "video_format_codec", default: "h264", null: false, comment: "mp4 h.264 = h264"
+    t.bigint "video_profile_id", null: false
+    t.integer "width"
+    t.index ["video_profile_id"], name: "index_video_encoding_presets_on_video_profile_id"
+  end
+
+  create_table "video_profile_folder_assignments", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.uuid "folder_id", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "video_profile_id", null: false
+    t.index ["folder_id"], name: "index_video_profile_folder_assignments_on_folder_id"
+    t.index ["video_profile_id", "folder_id"], name: "idx_video_profile_folder_assignments_unique", unique: true
+    t.index ["video_profile_id"], name: "index_video_profile_folder_assignments_on_video_profile_id"
+  end
+
+  create_table "video_profiles", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.datetime "deleted_at"
+    t.text "description"
+    t.boolean "encode_for_adaptive_streaming", default: true, null: false
+    t.string "name", null: false
+    t.jsonb "smart_crop_ratios", default: [], null: false
+    t.datetime "updated_at", null: false
+    t.index ["deleted_at"], name: "index_video_profiles_on_deleted_at"
+    t.index ["name"], name: "index_video_profiles_on_name"
+  end
+
   create_table "workflow_instances", force: :cascade do |t|
     t.uuid "asset_id", null: false
     t.jsonb "audit_log"
@@ -719,6 +763,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_24_000002) do
   add_foreign_key "user_group_memberships", "user_groups"
   add_foreign_key "user_group_memberships", "users"
   add_foreign_key "user_preferences", "users"
+  add_foreign_key "video_encoding_presets", "video_profiles"
+  add_foreign_key "video_profile_folder_assignments", "video_profiles"
   add_foreign_key "workflow_instances", "assets"
   add_foreign_key "workflow_instances", "workflows"
   add_foreign_key "workflow_steps", "workflows"
