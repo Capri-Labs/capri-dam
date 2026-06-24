@@ -1,3 +1,15 @@
+# Automatically writes an {AuditLog} entry after every create, update, and
+# destroy of the including model.
+#
+# Log entries are only created when a {Current.user} is set in the request
+# context.  System-level operations (seeds, background jobs, rake tasks, tests)
+# that run without a current user are silently skipped so that a missing user
+# never causes a transaction rollback.
+#
+# @example Include in a model
+#   class User < ApplicationRecord
+#     include Auditable
+#   end
 module Auditable
   extend ActiveSupport::Concern
 
@@ -33,11 +45,11 @@ module Auditable
     return if Current.user.nil?
 
     AuditLog.create!(
-      user: Current.user,
-      action: action,
-      auditable_type: self.class.name,
-      auditable_id: self.id,
-      changes_data: data
+      user:            Current.user,
+      action:          action,
+      auditable_type:  self.class.name,
+      auditable_id:    self.id,
+      changes_data:    data
     )
   end
 end

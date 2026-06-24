@@ -1,3 +1,32 @@
+# Sidekiq worker that ingests an asset payload received from an external
+# {SystemConnector} (migration source or webhook).
+#
+# == Processing pipeline
+#
+# 1. **Rate limiting** — a per-connector Redis counter enforces the connector's
+#    +rps_limit+.  Jobs that exceed the limit re-schedule themselves 5 seconds
+#    later rather than blocking a thread.
+#
+# 2. **TDM sanitation** (when +connector.tdm_sanitation?+ is true) — the asset
+#    is evaluated by the AI gateway (+POST /api/tdm/evaluate+).  Approved assets
+#    continue to ingestion; rejected assets are quarantined in
+#    {QuarantinedAsset}.
+#
+# 3. **Clean ingest** — a vector embedding is generated for the asset's
+#    filename + metadata text.  The {Asset} row is created inside a transaction
+#    and {SmartCollectionRouterWorker} is enqueued to route it into the
+#    appropriate smart collections.
+#
+# == Queue & throttle policy
+#
+# * Queue:      +ingestion+
+# * Retries:    3
+# * Concurrency ceiling: 10 simultaneous jobs (via +Sidekiq::Throttled+)
+# * Per-connector rate: configurable via +connector.rps_limit+ (default 5 RPS)
+#
+# @see SystemConnector
+# @see QuarantinedAsset
+# @see SmartCollectionRouterWorker
 require 'net/http'
 require 'uri'
 
@@ -7,12 +36,15 @@ class IngestionWorker
 
   sidekiq_options retry: 3, queue: 'ingestion'
 
-  # We keep the base gem throttle as a hard ceiling,
-  # while the dynamic Redis logic below handles per-connector limits.
-  sidekiq_throttle(
-    concurrency: { limit: 10 }
-  )
+  # Hard concurrency ceiling shared across all instances of this worker.
+  sidekiq_throttle(concurrency: { limit: 10 })
 
+  # Ingests a single asset payload from the specified connector.
+  #
+  # @param connector_id  [Integer] the database ID of the {SystemConnector}
+  # @param payload_json  [String]  JSON-encoded asset payload with at least
+  #   +asset.name+ and optionally +asset.properties+
+  # @return [void]
   def perform(connector_id, payload_json)
     connector = SystemConnector.find_by(id: connector_id)
     return unless connector && connector.status == 'active'
@@ -22,8 +54,7 @@ class IngestionWorker
       return
     end
 
-    payload = JSON.parse(payload_json)
-
+    payload  = JSON.parse(payload_json)
     filename = payload.dig('asset', 'name') || "unknown_file_#{Time.now.to_i}"
     metadata = payload.dig('asset', 'properties') || {}
 
@@ -36,17 +67,21 @@ class IngestionWorker
         quarantine_dirty_asset!(connector, payload, evaluation['reason'])
       end
     else
-      # TDM bypassed, but we still need a vector for Smart Collections
       ingest_clean_asset!(connector, filename, metadata, payload)
     end
   end
 
   private
 
+  # Returns +true+ when the connector has exceeded its per-second rate limit.
+  #
+  # Uses a Redis counter with a 1-second TTL.  The check and increment are
+  # wrapped in a +MULTI/EXEC+ block to be thread-safe.
+  #
+  # @param connector [SystemConnector]
+  # @return [Boolean]
   def rate_limited?(connector)
-    key = "throttle:connector:#{connector.id}"
-
-    #  REFINEMENT 1: Use Sidekiq's thread-safe Redis pool
+    key        = "throttle:connector:#{connector.id}"
     is_limited = false
 
     Sidekiq.redis do |redis|
@@ -64,8 +99,18 @@ class IngestionWorker
     is_limited
   end
 
+  # Calls the external AI gateway to determine whether an asset is safe to ingest.
+  #
+  # Returns an approval hash with at minimum an +'approved'+ boolean and a
+  # +'reason'+ string.  Falls back to a +false+ approval on network errors so
+  # that gateway unavailability quarantines assets rather than crashing.
+  #
+  # @param filename [String]
+  # @param metadata [Hash]
+  # @return [Hash] e.g. +{ 'approved' => true }+ or
+  #   +{ 'approved' => false, 'reason' => '...' }+
   def evaluate_via_ai_gateway(filename, metadata)
-    uri = URI.parse("http://localhost:8000/api/tdm/evaluate")
+    uri     = URI.parse("http://localhost:8000/api/tdm/evaluate")
     request = Net::HTTP::Post.new(uri, 'Content-Type' => 'application/json')
     request.body = { filename: filename, metadata: metadata }.to_json
 
@@ -78,9 +123,12 @@ class IngestionWorker
     { 'approved' => false, 'reason' => 'AI Gateway Timeout/Error' }
   end
 
-  #  REFINEMENT 2: Fetch the vector embedding for Semantic Routing
+  # Fetches a vector embedding for the given text from the AI gateway.
+  #
+  # @param text_to_embed [String] the concatenated semantic string
+  # @return [Array<Float>, nil] the embedding vector, or +nil+ on failure
   def fetch_vector_embedding(text_to_embed)
-    uri = URI.parse("http://localhost:8000/api/embed_query")
+    uri     = URI.parse("http://localhost:8000/api/embed_query")
     request = Net::HTTP::Post.new(uri, 'Content-Type' => 'application/json')
     request.body = { text: text_to_embed }.to_json
 
@@ -93,30 +141,40 @@ class IngestionWorker
     nil
   end
 
+  # Creates an {Asset} row for a TDM-approved payload, generates a vector
+  # embedding, and enqueues smart-collection routing.
+  #
+  # All database writes are wrapped in a transaction for consistency.
+  #
+  # @param connector    [SystemConnector]
+  # @param filename     [String]
+  # @param metadata     [Hash]
+  # @param full_payload [Hash] the raw parsed payload (stored for reference)
+  # @return [void]
   def ingest_clean_asset!(connector, filename, metadata, full_payload)
-    # Generate the vector based on filename + rich metadata
     semantic_string = "#{filename} " + metadata.values.join(" ")
-    vector_array = fetch_vector_embedding(semantic_string)
+    vector_array    = fetch_vector_embedding(semantic_string)
 
-    # Wrap in a transaction to ensure database consistency
     ActiveRecord::Base.transaction do
       asset = Asset.create!(
         original_filename: filename,
-        properties: metadata,
-        vector_embedding: vector_array
-      # Map other critical fields like URL, file_size, etc.
+        properties:        metadata,
+        vector_embedding:  vector_array
       )
 
       connector.increment!(:assets_imported)
       connector.update!(last_sync: Time.current)
 
-      #  REFINEMENT 3: Hand off to the Smart Router
-      if asset.vector_embedding.present?
-        SmartCollectionRouterWorker.perform_async(asset.id)
-      end
+      SmartCollectionRouterWorker.perform_async(asset.id) if asset.vector_embedding.present?
     end
   end
 
+  # Creates a {QuarantinedAsset} record for a TDM-rejected payload.
+  #
+  # @param connector    [SystemConnector]
+  # @param full_payload [Hash]   the raw parsed payload
+  # @param reason       [String] the rejection reason from the AI gateway
+  # @return [void]
   def quarantine_dirty_asset!(connector, full_payload, reason)
     QuarantinedAsset.create!(
       system_connector: connector,

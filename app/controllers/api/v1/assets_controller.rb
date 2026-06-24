@@ -1,13 +1,69 @@
+# REST API controller for the core {Asset} resource (v1).
+#
+# == Endpoint summary
+#
+# | Method | Path | Action | Description |
+# |--------|------|--------|-------------|
+# | GET    | /api/v1/search | {#search} | Full-text + faceted asset search |
+# | POST   | /api/v1/assets | {#create} | Upload a new asset with optional schema metadata |
+# | GET    | /api/v1/assets/:id/versions | {#versions} | Version history for an asset |
+# | GET    | /api/v1/assets/:id/audit_trail | {#audit_trail} | Full audit trail |
+# | POST   | /api/v1/assets/:id/versions/:version_id/restore | {#restore_version} | Restore a prior version |
+# | POST   | /api/v1/assets/:id/process_image | {#process_image} | Bake image edits (MiniMagick) |
+# | POST   | /api/v1/assets/:id/purge_cdn | {#purge_cdn} | Invalidate CDN edge cache |
+# | DELETE | /api/v1/assets/:id | {#destroy} | Soft-delete an asset |
+# | PATCH  | /api/v1/assets/:id/metadata | {#update_metadata} | Schema-driven metadata update |
+# | POST   | /api/v1/assets/:id/restore | {#restore} | Recover a soft-deleted asset |
+# | DELETE | /api/v1/assets/:id/permanent | {#permanent_delete} | Permanently destroy asset + files |
+# | GET    | /api/v1/bin | {#bin} | Trashed assets & folders |
+# | GET    | /api/v1/assets/:id/workflow_history | {#workflow_history} | Workflow task history |
+# | POST   | /api/v1/assets/check_hashes | {#check_hashes} | Duplicate-detection via SHA-256 |
+# | GET    | /api/v1/assets/:id/watermarked | {#watermarked} | Download a watermarked image |
+# | GET    | /api/v1/assets/local/:uuid | {#serve_local} | Serve local-storage file |
+#
+# == Authentication
+#
+# All actions require either a Devise session or a Doorkeeper OAuth bearer
+# token (enforced by {#authenticate_hybrid!}).
+#
+# == Image processing pipeline
+#
+# {#process_image} pipes the active version's physical file through MiniMagick
+# with a "bake" model: adjustments, crop, filter, geometry, and optional raw
+# ImageMagick CLI flags.  The result is written to +tmp/+ then handed off to
+# {AssetProcessorWorker} for final storage.  Three save modes are supported:
+#
+# * +new+       — Fork: create a brand-new asset.
+# * +overwrite+ — Destructive: update the current version in-place.
+# * +version+   — Branch: append a new version while preserving history.
+#
+# == Filename convention parsing
+#
+# Filenames following the pattern +ProductID-LanguageCode-AssetTypeCode.ext+
+# (e.g. +012993112028-en-FR01.jpg+) are automatically decomposed and stored as
+# structured metadata keys (+dam:product_id+, +dam:language_code+,
+# +dam:asset_type+).
+#
+# @see Asset
+# @see AssetProcessorWorker
+# @see StorageManager
 module Api
   module V1
     class AssetsController < ApplicationController
       include AssetUrlHelper
       wrap_parameters format: []
 
-      protect_from_forgery with: :null_session, if: -> { request.format.json? || doorkeeper_token.present? }
+      protect_from_forgery with: :null_session,
+                           if: -> { request.format.json? || doorkeeper_token.present? }
       before_action :authenticate_hybrid!
 
-      # GET /api/v1/search
+      # Full-text and faceted search over ready assets.
+      #
+      # Supports the following query parameters:
+      # * +q+      — ILIKE title search
+      # * +format+ — filter by the +format+ property stored in JSONB
+      #
+      # @return [void] renders JSON +{ total: Integer, results: Array<Hash> }+
       def search
         @assets = Asset.where(status: 'ready').includes(:active_version)
 
@@ -26,7 +82,23 @@ module Api
         }
       end
 
-      # POST /api/v1/assets
+      # Creates a new asset from a multipart file upload.
+      #
+      # Accepted parameters:
+      # * +file+       — the binary upload (required)
+      # * +title+      — display name (falls back to filename)
+      # * +folder_id+  — target folder (optional; defaults to root)
+      # * +schema_id+  — active {MetadataSchema} to stamp on the asset
+      # * +metadata+   — JSON string, Hash, or nested form params with extra fields
+      #
+      # The upload is processed asynchronously:
+      # 1. The asset row and an initial {AssetVersion} are created inside a
+      #    transaction.
+      # 2. The file is staged under +tmp/uploads/+.
+      # 3. Three background workers are dispatched: {AssetProcessorWorker},
+      #    {CdnInvalidationWorker}, and {EdgeMetadataSyncWorker}.
+      #
+      # @return [void] renders +202 Accepted+ with +{ id, status: "processing" }+
       def create
         file = params[:file]
         target_folder = params[:folder_id].present? ? Folder.find_by(id: params[:folder_id]) : nil
@@ -113,7 +185,9 @@ module Api
         end
       end
 
-      # GET /api/v1/assets/:id/versions
+      # Returns the full version history for an asset in descending order.
+      #
+      # @return [void] renders +200 OK+ with +{ versions: Array<Hash> }+
       def versions
         #  FIX: Use find_by!(uuid: params[:id]) instead of find()
         @asset = Asset.includes(asset_versions: :created_by).find(params[:id])
@@ -133,7 +207,10 @@ module Api
         render json: { versions: history }, status: :ok
       end
 
-      # GET /api/v1/assets/:id/audit_trail
+      # Returns the raw audit trail with property snapshots for delta calculations.
+      #
+      # @return [void] renders +200 OK+ with +{ audit_trail: Array<Hash> }+
+      # @return [void] renders +404+ when the asset UUID is not found
       def audit_trail
         @asset = Asset.find(params[:id])
         # Fetch versions in descending order for the timeline
@@ -157,7 +234,9 @@ module Api
         render json: { error: 'Asset not found' }, status: :not_found
       end
 
-      # POST /api/v1/assets/:id/versions/:version_id/restore
+      # Restores a specific historical version as the new active version.
+      #
+      # @return [void] renders +200 OK+ with the serialised asset
       def restore_version
         @asset = Asset.find(params[:id])
 
@@ -169,7 +248,22 @@ module Api
         render json: format_asset(@asset), status: :ok
       end
 
-      # POST /api/v1/assets/:id/process_image
+      # Bakes image adjustments (brightness, contrast, saturation, rotation,
+      # flip, filter, raw CLI) into a new physical file using MiniMagick.
+      #
+      # Accepted parameters:
+      # * +adjustments+       — Hash of +brightness+, +contrast+, +saturation+
+      # * +crop_aspect+       — aspect ratio string (e.g. +"16:9"+)
+      # * +filter+            — named filter (e.g. +"Grayscale"+)
+      # * +geometry[rotate]+  — degrees to rotate
+      # * +geometry[flip_horizontal]+ — boolean
+      # * +geometry[focal_point]+     — +{ x, y }+ for CDN transforms
+      # * +custom_cli+        — raw ImageMagick flags injected into the pipeline
+      # * +save_mode+         — one of +new+, +overwrite+, +version+
+      # * +target_folder_id+  — move the output to a different folder
+      #
+      # @return [void] renders +201 Created+ (mode: +new+/+version+) or
+      #   +200 OK+ (mode: +overwrite+) with the serialised asset
       def process_image
         @asset = Asset.find(params[:id])
         return render json: { error: "Asset not found." }, status: :not_found if @asset.nil?
@@ -354,23 +448,34 @@ module Api
         end
       end
 
-      # POST /api/v1/assets/:id/purge_cdn
+      # Enqueues a CDN cache invalidation for the asset's public URL.
+      #
+      # @return [void] renders +200 OK+ with +{ message }+
       def purge_cdn
         @asset = Asset.find(params[:id])
         CdnInvalidationWorker.perform_async('asset', @asset.uuid)
         render json: { message: "CDN purge initiated." }, status: :ok
       end
 
-      # DELETE /api/v1/assets/:id
+      # Soft-deletes an asset, moving it to the Trash Bin.
+      #
+      # @return [void] renders +200 OK+ with +{ success, message }+
       def destroy
         @asset = Asset.find(params[:id])
         @asset.soft_delete
         render json: { success: true, message: "Moved to bin" }
       end
 
-      # PATCH /api/v1/assets/:id/metadata
-      # Updates schema-driven metadata fields stored in asset properties.
-      # Creates a new asset version to preserve history.
+      # Updates schema-driven metadata fields and creates a new version snapshot
+      # for auditing.
+      #
+      # Accepted parameters:
+      # * +metadata+   — Hash of field-key → value pairs
+      # * +schema_id+  — optional schema to stamp
+      #
+      # @return [void] renders +200 OK+ with the serialised asset
+      # @return [void] renders +404+ when the asset is not found
+      # @return [void] renders +422+ on validation failure
       def update_metadata
         @asset = Asset.active.find(params[:id])
         metadata_fields = params[:metadata] || {}
@@ -404,14 +509,23 @@ module Api
         render json: { error: e.message }, status: :unprocessable_entity
       end
 
-      # POST /api/v1/assets/:id/restore
+      # Recovers a soft-deleted asset from the Trash Bin.
+      #
+      # @return [void] renders +200 OK+ with +{ success, message }+
       def restore
         @asset = Asset.trashed.find(params[:id])
         @asset.restore
         render json: { success: true, message: "Asset restored" }
       end
 
-      # DELETE /api/v1/assets/:id/permanent
+      # Permanently deletes an asset and all its physical files.
+      #
+      # For each {AssetVersion}:
+      # 1. The physical file is deleted from the active {StorageBackend}.
+      # 2. Any ActiveStorage attachment is purged.
+      # Finally, the database row is hard-deleted (cascades to versions).
+      #
+      # @return [void] renders +200 OK+ with +{ success, message }+
       def permanent_delete
         @asset = Asset.trashed.includes(:asset_versions).find(params[:id])
 
@@ -432,7 +546,9 @@ module Api
         render json: { success: true, message: "Permanently deleted all versions" }
       end
 
-      # GET /api/v1/bin
+      # Returns all soft-deleted assets and folders for the Trash Bin UI.
+      #
+      # @return [void] renders +200 OK+ with +{ folders, assets, breadcrumbs }+
       def bin
         trashed_folders = Folder.trashed.map { |f| { id: f.id, name: f.name, deleted_at: f.deleted_at } }
 
@@ -451,7 +567,10 @@ module Api
         render json: { folders: trashed_folders, assets: trashed_assets, breadcrumbs: [{ id: 'bin', name: 'Trash Bin' }] }
       end
 
-      # GET /api/v1/assets/:id/workflow_history
+      # Returns the workflow task history for the most recent {WorkflowInstance}
+      # on this asset.
+      #
+      # @return [void] renders +200 OK+ with +{ active, instance_status, started_at, tasks }+
       def workflow_history
         @asset = Asset.find(params[:id])
         instance = @asset.workflow_instances.order(created_at: :desc).first
@@ -476,7 +595,10 @@ module Api
         end
       end
 
-      # POST /api/v1/assets/check_hashes
+      # Accepts an array of SHA-256 checksums and returns any matching
+      # duplicates already stored in the DAM.
+      #
+      # @return [void] renders +200 OK+ with +{ duplicates: Hash<checksum, Array<Hash>> }+
       def check_hashes
         hashes = params[:hashes] || []
 
@@ -500,7 +622,15 @@ module Api
         render json: { duplicates: duplicates }, status: :ok
       end
 
-      # GET /api/v1/assets/:id/watermarked
+      # Streams a watermarked version of an image asset.
+      #
+      # Applies a 45° diagonal +CONFIDENTIAL+ annotation via MiniMagick and
+      # sends the result as an attachment download.  Only supported for
+      # +image/*+ content types.
+      #
+      # @return [void] renders +200 OK+ with the binary image data as an attachment
+      # @return [void] renders +422+ for non-image assets
+      # @return [void] renders +500+ on MiniMagick failure
       def watermarked
         @asset = Asset.includes(:active_version).find(params[:id])
         active_v = @asset.active_version
@@ -538,7 +668,14 @@ module Api
         end
       end
 
-      # GET /api/v1/assets/local/:uuid
+      # Serves a file directly from local storage during development.
+      #
+      # Redirects to the ActiveStorage URL when the version has an attachment.
+      # Otherwise resolves the physical path under +storage/dam/+ and uses
+      # +send_file+.
+      #
+      # @return [void] redirects or streams the file inline
+      # @return [void] renders +404+ when the file cannot be located on disk
       def serve_local
         asset = Asset.includes(:active_version).find_by!(uuid: params[:uuid])
         active_v = asset.active_version
@@ -567,9 +704,18 @@ module Api
 
       private
 
-      # Extracts naming-convention metadata from filenames like:
-      # ProductID-LanguageCode-AssetTypeCode.ext
-      # Example: 012993112028-en-FR01.jpg
+      # Parses the DAM filename naming convention and extracts structured metadata.
+      #
+      # Expected format: +ProductID-LanguageCode-AssetTypeCode.ext+
+      # Example:         +012993112028-en-FR01.jpg+
+      #
+      # Returns +nil+ for filenames that do not match the convention (fewer
+      # than three dash-delimited segments, or an asset-type code that does not
+      # match +[A-Z]{2}\\d{2}+).
+      #
+      # @param filename [String] the original upload filename
+      # @return [Hash, nil] keys: +'dam:product_id'+, +'dam:language_code'+,
+      #   +'dam:asset_type'+; or +nil+ on no match
       def parse_product_filename(filename)
         return nil if filename.blank?
 
@@ -591,7 +737,19 @@ module Api
         }
       end
 
-      #Centralized worker dispatch for "Zero-Noise" post-processing
+      # Dispatches the three standard post-processing background jobs for a
+      # newly created or edited asset version.
+      #
+      # 1. {AssetProcessorWorker}    — extracts metadata, stores to active backend.
+      # 2. {CdnInvalidationWorker}   — purges the edge cache.
+      # 3. {EdgeMetadataSyncWorker}  — syncs relational data to the edge KV store.
+      #
+      # All three workers are idempotent; calling this on an overwrite is safe.
+      #
+      # @param target_asset   [Asset]       the parent asset record
+      # @param target_version [AssetVersion] the newly created version
+      # @param file_path      [Pathname, String] staging path of the raw binary
+      # @return [void]
       def dispatch_asset_workers(target_asset, target_version, file_path)
         # 1. Process the physical image binary
         AssetProcessorWorker.perform_async(target_version.id, file_path.to_s) if defined?(AssetProcessorWorker)
@@ -603,11 +761,17 @@ module Api
         EdgeMetadataSyncWorker.perform_async(target_asset.uuid) if defined?(EdgeMetadataSyncWorker)
       end
 
+      # Authenticates via Devise session or Doorkeeper OAuth token.
+      # @return [void]
       def authenticate_hybrid!
         return if user_signed_in?
         doorkeeper_authorize!
       end
 
+      # Returns the currently acting {User}, resolving from Devise session,
+      # OAuth token, or falling back to the first user (development only).
+      #
+      # @return [User]
       def active_resource_owner
         if user_signed_in?
           current_user
@@ -618,6 +782,13 @@ module Api
         end
       end
 
+      # Serialises an {Asset} into the standard API response hash, merging
+      # parent +properties+ with the active-version properties so the React
+      # frontend always sees a flat metadata map.
+      #
+      # @param asset [Asset]
+      # @return [Hash] with keys +:id+, +:uuid+, +:title+, +:version+,
+      #   +:metadata+, +:url+
       def format_asset(asset)
         active_v = asset.active_version
         {

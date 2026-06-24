@@ -1,34 +1,86 @@
+# Hierarchical folder model that organises {Asset}s inside the DAM.
+#
+# Folders form an **n-ary tree** via the self-referential +parent_id+ / +children+
+# association.  They also carry ABAC access-control data through associated
+# {FolderPolicy} records that attach permission bits to {UserGroup}s.
+#
+# == Naming & slugging
+#
+# * +name+ must be unique within the same parent folder and user.
+# * A URL-safe +slug+ is auto-generated from +name+ on create/rename.
+# * A stable +uuid+ is generated on create and used as the external identifier.
+#
+# == Soft deletion
+#
+# Folders inherit {SoftDeletable}; deleting a folder stamps +deleted_at+ rather
+# than cascading a hard-delete.  Child folders and assets are soft-deleted
+# separately by the controller.
+#
+# @see Asset
+# @see FolderPolicy
+# @see SoftDeletable
 class Folder < ApplicationRecord
-  # Ownership & Governance
+  # ---------------------------------------------------------------------------
+  # Associations
+  # ---------------------------------------------------------------------------
+
+  # @!attribute [r] user
+  #   @return [User] the user who created / owns this folder
   belongs_to :user
 
-  # Ensure a UUID is generated if not provided by the database
-  before_validation :ensure_uuid, on: :create
-
-  # Hierarchical structure
+  # @!attribute [r] parent
+  #   @return [Folder, nil] direct parent in the hierarchy; +nil+ for root folders
   belongs_to :parent, class_name: 'Folder', optional: true
+
+  # @!attribute [r] children
+  #   @return [ActiveRecord::Associations::CollectionProxy<Folder>]
+  #     immediate child folders; cascade-destroyed when parent is destroyed
   has_many :children, class_name: 'Folder', foreign_key: 'parent_id', dependent: :destroy
 
-  # Asset relationship
+  # @!attribute [r] assets
+  #   @return [ActiveRecord::Associations::CollectionProxy<Asset>]
   has_many :assets, dependent: :destroy
 
+  # @!attribute [r] folder_policies
+  #   @return [ActiveRecord::Associations::CollectionProxy<FolderPolicy>]
   has_many :folder_policies, dependent: :destroy
 
+  # ---------------------------------------------------------------------------
   # Validations
+  # ---------------------------------------------------------------------------
+
   validates :name, presence: true
   validates :user_id, presence: true
+  validates :name,
+            uniqueness: { scope: [:parent_id, :user_id],
+                          message: "already exists in this location" }
 
-  # Ensure folder names are unique within the same parent folder
-  validates :name, uniqueness: { scope: [:parent_id, :user_id], message: "already exists in this location" }
+  # ---------------------------------------------------------------------------
+  # Callbacks
+  # ---------------------------------------------------------------------------
 
+  before_validation :ensure_uuid, on: :create
   before_validation :generate_slug, if: -> { name.present? && (name_changed? || slug.blank?) }
 
   include SoftDeletable
 
-  # Helper for the React Breadcrumbs
-  # Returns an array of hashes: [{id: 1, name: 'Root'}, {id: 5, name: 'Sub'}]
+  # ---------------------------------------------------------------------------
+  # Instance methods
+  # ---------------------------------------------------------------------------
+
+  # Walks up the ancestor chain and returns the full breadcrumb path as an
+  # ordered array of hashes.  Useful for the React breadcrumb component.
+  #
+  # @example
+  #   folder.path_hierarchy
+  #   # => [{ id: 1, name: "Root", slug: "root" },
+  #   #     { id: 5, name: "Marketing", slug: "marketing" },
+  #   #     { id: 9, name: "EMEA", slug: "emea" }]
+  #
+  # @return [Array<Hash>] ordered from root to self, each entry containing
+  #   +:id+, +:name+, and +:slug+
   def path_hierarchy
-    path = []
+    path    = []
     current = self
     while current
       path.unshift({ id: current.id, name: current.name, slug: current.slug })
@@ -37,17 +89,24 @@ class Folder < ApplicationRecord
     path
   end
 
-  # Quick helper to see which groups govern this specific folder
+  # Returns the {UserGroup}s that have at least one {FolderPolicy} governing
+  # this specific folder.
+  #
+  # @return [ActiveRecord::Relation<UserGroup>]
   def governing_groups
     UserGroup.joins(:folder_policies).where(folder_policies: { folder_id: id })
   end
 
   private
 
+  # Generates a URL-safe slug from +name+ using Rails' +parameterize+.
+  # @api private
   def generate_slug
     self.slug = name.parameterize
   end
 
+  # Ensures a UUID is present before validation on create.
+  # @api private
   def ensure_uuid
     self.uuid ||= SecureRandom.uuid
   end
