@@ -3,9 +3,9 @@
  *
  * Tabs:
  *  0 – Properties  : name, description, slug
- *  1 – Members     : user members (with search autocomplete) + child sub-groups
+ *  1 – Members     : user members (with search autocomplete)
  *  2 – Permissions : folder ACL matrix
- *  3 – Groups      : parent group(s) this group is nested inside
+ *  3 – Groups      : child groups (add/remove) + parent group (read-only)
  *
  * Security:
  *  - 'everyone'          : fully read-only
@@ -31,6 +31,7 @@ import {
 import {
   Close, DeleteOutlined, Shield, LockOutlined,
   GroupWorkOutlined, SubdirectoryArrowRight, AddOutlined, CreateNewFolderOutlined,
+  AccountTreeOutlined,
 } from '@mui/icons-material';
 import { apiFetch, groupPermissions, isSystemGroup, SYSTEM_SLUGS, isSelfPromotion } from '../../utils/adminUtils';
 import AclMatrix    from './AclMatrix';
@@ -50,7 +51,7 @@ export default function GroupOverlay({
   const [form, setForm]     = useState({ name: '', description: '' });
   const [saving, setSaving] = useState(false);
 
-  // Members
+  // Members + child groups (shared between tab 1 and tab 3)
   const [members, setMembers]             = useState([]);
   const [childGroups, setChildGroups]     = useState([]);
   const [membersLoading, setMembersLoading] = useState(false);
@@ -62,11 +63,14 @@ export default function GroupOverlay({
     if (open && group) {
       setTab(0);
       setForm({ name: group.name || '', description: group.description || '' });
+      setMembers([]);
+      setChildGroups([]);
     }
   }, [open, group?.id]);
 
+  // Fetch members + child groups when on Members tab (1) or Groups tab (3)
   useEffect(() => {
-    if (open && group?.id && tab === 1) fetchMembers();
+    if (open && group?.id && (tab === 1 || tab === 3)) fetchMembers();
   }, [tab, open, group?.id]);
 
   const fetchMembers = async () => {
@@ -113,8 +117,8 @@ export default function GroupOverlay({
     else notify(data.error || 'Failed.', 'error');
   };
 
-  // Add a child group (group-in-group)
-  const handleAddSubGroup = async (childGroup) => {
+  // Add a child group (group-in-group) — available from the Groups tab
+  const handleAddChildGroup = async (childGroup) => {
     if (childGroup.id === group.id) {
       notify('A group cannot be nested inside itself.', 'error');
       return;
@@ -127,7 +131,7 @@ export default function GroupOverlay({
     else notify(data.error || 'Failed.', 'error');
   };
 
-  const handleRemoveSubGroup = async (childGroupId) => {
+  const handleRemoveChildGroup = async (childGroupId) => {
     const data = await apiFetch(`/admin/user_groups/${group.id}/remove_group_member`, {
       method: 'DELETE',
       body: JSON.stringify({ child_group_id: childGroupId })
@@ -154,14 +158,21 @@ export default function GroupOverlay({
   const isEveryone   = group.slug === SYSTEM_SLUGS.EVERYONE;
   const isSystemGrp  = isSystemGroup(group);
 
-  // IDs already in this group (to exclude from search results)
-  const existingMemberIds  = members.map(u => u.id);
-  const existingChildIds   = childGroups.map(g => g.id);
+  // IDs already in this group (for search filtering)
+  const existingMemberIds = members.map(u => u.id);
+  const existingChildIds  = childGroups.map(g => g.id);
 
-  // Groups that can be chosen as sub-groups (exclude self, ancestors, and system)
-  const availableForNesting = (allGroups || []).filter(g =>
+  // Parent group (for Groups tab read-only section)
+  const parentGroup = group.parent_id
+    ? (allGroups || []).find(g => g.id === group.parent_id)
+    : null;
+
+  // All groups eligible to appear in the child-group search:
+  //  - exclude self
+  //  - exclude the 'everyone' system group (can't nest inside as child)
+  // Groups already added show as disabled (grayed), not hidden
+  const groupsForChildSearch = (allGroups || []).filter(g =>
     g.id !== group.id &&
-    !existingChildIds.includes(g.id) &&
     g.slug !== SYSTEM_SLUGS.EVERYONE
   );
 
@@ -220,7 +231,7 @@ export default function GroupOverlay({
             <Tab label="Properties" />
             <Tab label={`Members (${group.member_count})`} />
             <Tab label="Permissions" />
-            <Tab label="Groups" />
+            <Tab label={`Groups (${childGroups.length})`} />
           </Tabs>
         </Box>
 
@@ -264,10 +275,9 @@ export default function GroupOverlay({
             </Stack>
           )}
 
-          {/* Tab 1: Members */}
+          {/* Tab 1: Members (user members only) */}
           {tab === 1 && (
             <Stack spacing={2.5}>
-              {/* ── Section A: User Members ── */}
               <Box>
                 <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5 }}>
                   User Members
@@ -332,72 +342,6 @@ export default function GroupOverlay({
                   </List>
                 )}
               </Box>
-
-              <Divider />
-
-              {/* ── Section B: Sub-Groups (group-in-group) ── */}
-              <Box>
-                <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1.5 }}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                    Sub-Groups (nested groups)
-                  </Typography>
-                  {!isEveryone && (
-                    <Tooltip title="Create a new sub-group under this group">
-                      <Button size="small" variant="outlined" startIcon={<CreateNewFolderOutlined />}
-                        onClick={() => onCreateSubGroup?.(group.id)}>
-                        Create Sub-Group
-                      </Button>
-                    </Tooltip>
-                  )}
-                </Stack>
-
-                {/* Add existing group as child */}
-                {!isEveryone && isAdmin && availableForNesting.length > 0 && (
-                  <Stack direction="row" gap={1} sx={{ mb: 2 }}>
-                    <GroupSearch
-                      groups={availableForNesting}
-                      placeholder="Add existing group as sub-group…"
-                      excludeIds={[group.id, ...existingChildIds]}
-                      onSelect={handleAddSubGroup}
-                    />
-                  </Stack>
-                )}
-
-                {membersLoading ? null : childGroups.length === 0 ? (
-                  <Typography variant="body2" color="text.secondary">
-                    No sub-groups nested here. Use the search above or "Create Sub-Group" to add one.
-                  </Typography>
-                ) : (
-                  <List dense sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
-                    {childGroups.map((cg, idx) => (
-                      <React.Fragment key={cg.id}>
-                        {idx > 0 && <Divider />}
-                        <ListItem>
-                          <ListItemAvatar>
-                            <SubdirectoryArrowRight fontSize="small" color="primary" />
-                          </ListItemAvatar>
-                          <ListItemText
-                            primary={cg.name}
-                            secondary={cg.slug || 'custom group'}
-                            primaryTypographyProps={{ variant: 'body2', fontWeight: 600 }}
-                            secondaryTypographyProps={{ variant: 'caption' }}
-                          />
-                          {isAdmin && (
-                            <ListItemSecondaryAction>
-                              <Tooltip title="Remove from this group">
-                                <IconButton size="small" color="error"
-                                  onClick={() => handleRemoveSubGroup(cg.id)}>
-                                  <DeleteOutlined fontSize="small" />
-                                </IconButton>
-                              </Tooltip>
-                            </ListItemSecondaryAction>
-                          )}
-                        </ListItem>
-                      </React.Fragment>
-                    ))}
-                  </List>
-                )}
-              </Box>
             </Stack>
           )}
 
@@ -410,29 +354,139 @@ export default function GroupOverlay({
             />
           )}
 
-          {/* Tab 3: Groups (parent groups) */}
+          {/* Tab 3: Groups — child groups (manageable) + parent group (read-only) */}
           {tab === 3 && (
-            <Stack spacing={2}>
-              <Typography variant="body2" color="text.secondary">
-                This group is nested inside the following parent groups.
-                Permissions and membership cascade from parent to child.
-              </Typography>
-              {group.parent_id ? (
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                  {(allGroups || [])
-                    .filter(g => g.id === group.parent_id)
-                    .map(g => (
-                      <Chip key={g.id} label={g.name} size="small" variant="outlined"
-                        icon={isSystemGroup(g) ? <Shield sx={{ fontSize: 12 }} /> : undefined}
-                        color={isSystemGroup(g) ? 'warning' : 'default'} />
-                    ))
-                  }
+            <Stack spacing={3}>
+
+              {/* ── Section A: Child Groups (this group's direct children) ── */}
+              <Box>
+                <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1.5 }}>
+                  <Box>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                      Child Groups
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Groups nested directly inside <strong>{group.name}</strong>.
+                      Members of child groups inherit this group's permissions.
+                    </Typography>
+                  </Box>
+                  {!isEveryone && (
+                    <Tooltip title="Create a new sub-group under this group">
+                      <Button size="small" variant="outlined" startIcon={<CreateNewFolderOutlined />}
+                        onClick={() => onCreateSubGroup?.(group.id)}>
+                        New Sub-Group
+                      </Button>
+                    </Tooltip>
+                  )}
+                </Stack>
+
+                {/* Search to add existing group as child — already-added ones are grayed out */}
+                {!isEveryone && isAdmin && (
+                  <Box sx={{ mb: 2 }}>
+                    <GroupSearch
+                      groups={groupsForChildSearch}
+                      placeholder="Search and add an existing group as child…"
+                      excludeIds={[group.id]}
+                      disabledIds={existingChildIds}
+                      onSelect={handleAddChildGroup}
+                    />
+                  </Box>
+                )}
+
+                {membersLoading ? (
+                  <CircularProgress size={22} sx={{ display: 'block', mx: 'auto', mt: 2 }} />
+                ) : childGroups.length === 0 ? (
+                  <Alert severity="info" sx={{ borderRadius: 2 }}>
+                    No child groups yet. Use the search above or "New Sub-Group" to add one.
+                  </Alert>
+                ) : (
+                  <List dense sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+                    {childGroups.map((cg, idx) => (
+                      <React.Fragment key={cg.id}>
+                        {idx > 0 && <Divider />}
+                        <ListItem>
+                          <ListItemAvatar>
+                            <SubdirectoryArrowRight fontSize="small" color="primary" />
+                          </ListItemAvatar>
+                          <ListItemText
+                            primary={
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                                <Typography variant="body2" fontWeight={600}>{cg.name}</Typography>
+                                {isSystemGroup(cg) && (
+                                  <Chip label="system" size="small" color="warning" variant="outlined"
+                                    icon={<Shield sx={{ fontSize: 10 }} />}
+                                    sx={{ height: 16, fontSize: '0.6rem' }} />
+                                )}
+                              </Box>
+                            }
+                            secondary={cg.description || cg.slug || 'custom group'}
+                            secondaryTypographyProps={{ variant: 'caption' }}
+                          />
+                          {isAdmin && (
+                            <ListItemSecondaryAction>
+                              <Tooltip title="Remove this child group">
+                                <IconButton size="small" color="error"
+                                  onClick={() => handleRemoveChildGroup(cg.id)}>
+                                  <DeleteOutlined fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            </ListItemSecondaryAction>
+                          )}
+                        </ListItem>
+                      </React.Fragment>
+                    ))}
+                  </List>
+                )}
+              </Box>
+
+              <Divider />
+
+              {/* ── Section B: Parent Group (read-only — cannot remove from child) ── */}
+              <Box>
+                <Box sx={{ mb: 1.5 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                    Parent Group
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    The group this group is nested inside. Parent relationships can only
+                    be changed from the parent group's Groups tab.
+                  </Typography>
                 </Box>
-              ) : (
-                <Alert severity="info" sx={{ borderRadius: 2 }}>
-                  This is a root-level group with no parent.
-                </Alert>
-              )}
+
+                {parentGroup ? (
+                  <List dense sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+                    <ListItem>
+                      <ListItemAvatar>
+                        <AccountTreeOutlined fontSize="small" color="action" />
+                      </ListItemAvatar>
+                      <ListItemText
+                        primary={
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                            <Typography variant="body2" fontWeight={600}>{parentGroup.name}</Typography>
+                            {isSystemGroup(parentGroup) && (
+                              <Chip label="system" size="small" color="warning" variant="outlined"
+                                icon={<Shield sx={{ fontSize: 10 }} />}
+                                sx={{ height: 16, fontSize: '0.6rem' }} />
+                            )}
+                          </Box>
+                        }
+                        secondary={parentGroup.description || parentGroup.slug || 'custom group'}
+                        secondaryTypographyProps={{ variant: 'caption' }}
+                      />
+                      <ListItemSecondaryAction>
+                        <Tooltip title="Parent cannot be removed from the child group — open the parent group to manage its children">
+                          <LockOutlined sx={{ fontSize: 16, color: 'text.disabled' }} />
+                        </Tooltip>
+                      </ListItemSecondaryAction>
+                    </ListItem>
+                  </List>
+                ) : (
+                  <Alert severity="info" sx={{ borderRadius: 2 }}>
+                    This is a root-level group with no parent.
+                  </Alert>
+                )}
+              </Box>
+
             </Stack>
           )}
         </Box>
