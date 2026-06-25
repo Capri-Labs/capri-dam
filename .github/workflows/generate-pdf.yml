@@ -1,45 +1,127 @@
-name: Generate arc42 PDF with Diagrams
+# ─────────────────────────────────────────────────────────────────────────────
+# Headless DAM — Architecture Docs (arc42 HTML + PDF)
+#
+# Triggered when docs/** changes on main/master.
+#
+# Outputs:
+#   • headless-dam-architecture.pdf    (uploaded as artifact)
+#   • docs/architecture/output/        (HTML with arc42 theme)
+#   • Publishes to GitHub Pages        (https://<org>.github.io/<repo>/)
+# ─────────────────────────────────────────────────────────────────────────────
+name: Architecture Docs
 
 on:
   push:
-    branches:
-      - main
+    branches: [main, master]
     paths:
-      - 'docs/**'
+      - "docs/**"
+      - ".github/workflows/generate-pdf.yml"
   workflow_dispatch:
 
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
 jobs:
-  build:
+  build-docs:
+    name: Build HTML + PDF docs
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v6
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Set up Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: '3.2'
-          bundler-cache: true
-
-      - name: Install System Dependencies
+      - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y graphviz default-jre plantuml  asciidoctor
+          sudo apt-get install -y --no-install-recommends \
+            default-jre \
+            plantuml \
+            graphviz
 
-      - name: Install Asciidoctor Gems
+      - name: Install Asciidoctor + plugins
         run: |
-          gem install asciidoctor-diagram asciidoctor-diagram-plantuml asciidoctor-pdf rouge --no-document
+          gem install \
+            asciidoctor \
+            asciidoctor-diagram \
+            asciidoctor-pdf \
+            rouge \
+            --no-document
 
-      - name: Generate PDF
+      - name: Create output directory
+        run: mkdir -p docs/architecture/output
+
+      # ── HTML (arc42 theme) ──────────────────────────────────────────────────
+      - name: Generate HTML documentation
+        run: |
+          asciidoctor \
+            -r asciidoctor-diagram \
+            -b html5 \
+            -a toc=left \
+            -a toclevels=4 \
+            -a sectnums \
+            -a icons=font \
+            -a source-highlighter=rouge \
+            -a rouge-style=github \
+            -a allow-uri-read \
+            -a imagesoutdir=docs/architecture/output/images \
+            -a stylesdir=docs/architecture/theme \
+            -a stylesheet=arc42.css \
+            -a docinfodir=docs/architecture \
+            -a docinfo=shared \
+            -D docs/architecture/output \
+            -o index.html \
+            docs/architecture/index.adoc
+
+      # ── PDF ────────────────────────────────────────────────────────────────
+      - name: Generate PDF documentation
         run: |
           asciidoctor-pdf \
             -r asciidoctor-diagram \
             -a allow-uri-read \
+            -a pdf-themesdir=docs/architecture/theme \
+            -a pdf-theme=arc42 \
             -o headless-dam-architecture.pdf \
             docs/architecture/index.adoc
 
-      - name: Upload PDF Artifact
-        uses: actions/upload-artifact@v7
+      - name: Upload PDF artifact
+        uses: actions/upload-artifact@v4
         with:
           name: architecture-pdf
           path: headless-dam-architecture.pdf
+
+      - name: Upload HTML artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: architecture-html
+          path: docs/architecture/output/
+
+      # ── GitHub Pages ────────────────────────────────────────────────────────
+      - name: Copy PDF into HTML output for Pages
+        run: cp headless-dam-architecture.pdf docs/architecture/output/
+
+      - name: Setup GitHub Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/architecture/output/
+
+  deploy-pages:
+    name: Deploy to GitHub Pages
+    runs-on: ubuntu-latest
+    needs: build-docs
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

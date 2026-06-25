@@ -2,60 +2,121 @@
 == Building Block View
 
 === Whitebox Overall System (Level 1)
-The following diagram shows the decomposition of the Headless DAM into its primary building blocks and their relationships to external infrastructure.
+
+The following diagram shows the decomposition of the Headless DAM into its primary
+building blocks and their relationships to external infrastructure.
 
 [plantuml, target="level-1-overview", format="svg"]
 ....
 @startuml
-package "Headless DAM System" {
-    component [Admin Portal] as GUI <<React>>
-    component [Core API] as API <<Node.js/Go>>
-    database [Metadata Store] as DB <<PostgreSQL>>
+skinparam backgroundColor #FAFAFA
+skinparam componentStyle rectangle
+skinparam defaultFontName Helvetica
+
+package "Headless DAM System" #EEF3FB {
+    component [Admin Portal\n(React + MUI)] as GUI <<React>>
+    component [Rails Application\n(API + Background Workers)] as API <<Ruby on Rails>>
+    database  [Metadata Store\n& RBAC] as DB <<PostgreSQL 14>>
     component [Search Index] as Search <<Typesense>>
+    component [Background Workers\n(Sidekiq)] as Workers <<Redis>>
+    component [CDN Config Service] as CDN <<Fastly Config>>
 }
 
-cloud "Fastly Edge" as Fastly
-cloud "Object Storage" as Storage <<S3/Azure/GCP>>
+cloud "Fastly Edge\n(IO + CDN)" as Fastly #D5E8D4
+cloud "Object Storage\n(S3 / Azure / GCP)" as Storage #DAE8FC
 
-GUI <--> API : "REST/JSON"
-API <--> DB : "SQL"
-API --> Search : "Index Update"
-API <--> Storage : "Upload/Sign"
-Fastly --> Storage : "Fetch Master"
-Fastly <-- API : "Purge/Config"
+GUI    <--> API     : REST / JSON\nGraphQL
+API    <--> DB      : ActiveRecord\n(SQL)
+API    --> Search   : Index Update\n(async)
+API    <--> Storage : Upload / Sign
+API    --> Workers  : Sidekiq jobs
+Workers --> DB      : Metadata updates
+CDN    <--> Fastly  : Fastly API
+Fastly --> Storage  : Fetch master\nasset
 @enduml
 ....
 
 ==== Contained Building Blocks
+
 [cols="1,3", options="header"]
 |===
 | Component | Responsibility
-| **Admin Portal** | Web-based GUI for asset management, tagging, and visual focal-point selection.
-| **Core API** | The orchestrator. Manages business logic, security (URL signing), and cloud provider handshakes.
-| **Metadata Store** | Relational database for persistent storage of asset technical data and business tags.
-| **Search Index** | High-performance index for "search-as-you-type" functionality across the asset library.
+
+| **Admin Portal (React)**
+| Web-based management UI for asset management, folder browsing, user & group
+  administration, image/video profiles, metadata schemas, and ACL policies.
+  Built with React 19 and Material UI v9.
+
+| **Rails Application**
+| The core orchestrator. Handles business logic, REST & GraphQL APIs, URL
+  signing, permission evaluation, and cloud provider handshakes.
+  Built with Ruby on Rails 8.1 / Ruby 4.0.3.
+
+| **Metadata Store (PostgreSQL 14)**
+| Relational database for persistent storage of asset records, technical
+  metadata, RBAC (users, groups, folder policies), workflow state, and
+  audit logs.
+
+| **Search Index (Typesense)**
+| High-performance search index for sub-second "search-as-you-type"
+  discovery across the asset library without taxing PostgreSQL.
+
+| **Background Workers (Sidekiq)**
+| Asynchronous queue for heavy or time-sensitive operations: media ingestion,
+  metadata extraction, CDN purging, email delivery, and reports.
+  Uses Redis as the queue backend.
+
+| **CDN Config Service**
+| Manages Fastly service configuration (VCL snippets, backends, surrogate
+  key purge rules) via the Fastly API.
 |===
 
-=== Level 2: Core API (Whitebox)
-Zooming into the **Core API** to show how it handles the "Headless" logic.
+---
 
-[plantuml, target="level-2-core-api", format="svg"]
+=== Level 2: Rails Application (Whitebox)
+
+Zooming into the Rails Application to show its internal decomposition.
+
+[plantuml, target="level-2-rails", format="svg"]
 ....
 @startuml
-package "Core API" {
-    component [Storage Service] as StorageSvc
-    component [Metadata Service] as MetaSvc
-    component [Transformation Engine] as URLGen
-    component [Security Engine] as Sec
+skinparam backgroundColor #FAFAFA
+skinparam packageStyle rectangle
+skinparam defaultFontName Helvetica
+
+package "Rails Application" #EEF3FB {
+
+    package "Controllers" {
+        component [API v1\n(assets, search,\ncollections, CDN)] as APICtrl
+        component [Admin\n(users, groups, folders,\nimage/video profiles,\nmetadata schemas)] as AdminCtrl
+        component [GraphQL\nEndpoint] as GQL
+    }
+
+    package "Services / Models" {
+        component [RBAC Engine\n(UserGroup → FolderPolicy)] as RBAC
+        component [Asset Service\n(upload, transform URL)] as AssetSvc
+        component [Metadata Service\n(import / export)] as MetaSvc
+        component [URL Signing\n(HMAC / Fastly)] as URLSign
+        component [CDN Purge\nService] as Purge
+    }
+
+    package "Background Jobs (Sidekiq)" {
+        component [Ingest Worker\n(EXIF extraction)] as Ingest
+        component [Embedding Worker\n(AI vectors)] as Embed
+        component [Notification\nWorker] as Notify
+        component [Report Worker] as Report
+    }
 }
 
-database "PostgreSQL" as DB
-cloud "Object Storage" as Cloud
-
-StorageSvc --> Cloud : "Store/Delete"
-MetaSvc --> DB : "CRUD"
-URLGen --> MetaSvc : "Get Params"
-URLGen --> Sec : "Sign URL"
+APICtrl   --> RBAC    : Authorize
+APICtrl   --> AssetSvc
+AdminCtrl --> RBAC
+AdminCtrl --> MetaSvc
+GQL       --> RBAC
+AssetSvc  --> URLSign
+AssetSvc  --> Purge
+MetaSvc   --> Ingest  : enqueue
+Ingest    --> Embed   : enqueue
 @enduml
 ....
 
@@ -64,19 +125,95 @@ URLGen --> Sec : "Sign URL"
 [cols="1,3", options="header"]
 |===
 | Component | Responsibility
-| **Storage Service** | Abstracted interface to handle multi-cloud uploads. It abstracts the differences between S3, Azure Blob, and GCP buckets.
-| **Metadata Service** | Handles the extraction of EXIF/IPTC data during upload and manages business-level attributes.
-| **URL Generator** | The "Transformation Engine Wrapper." It builds the specific Fastly IO query strings (width, height, crop) based on requested presets.
-| **Security Engine** | Responsible for HMAC signing of delivery URLs to prevent unauthorized parameter manipulation.
+
+| **API v1 Controllers**
+| RESTful JSON endpoints consumed by the React frontend and external
+  integrations: assets, collections, CDN configurations, metadata schemas,
+  ingestion batches, and search.
+
+| **Admin Controllers**
+| System-level REST endpoints: user & group management, folder RBAC policies,
+  image/video processing profiles, workflow management, email templates,
+  and coverband coverage reports.
+
+| **GraphQL Endpoint**
+| Schema-first GraphQL API providing typed queries and mutations for asset
+  management, user/group administration, and metadata retrieval.
+
+| **RBAC Engine**
+| Evaluates user permissions by walking the `UserGroup → FolderPolicy`
+  closure tree. Implements the 7-column ACL matrix
+  (read, modify, create, delete, replicate, manage, explicit_deny).
+
+| **Asset Service**
+| Orchestrates the full asset lifecycle: multi-cloud upload via ActiveStorage,
+  Fastly IO URL construction with HMAC signing, focal-point-aware smart crop
+  parameter injection.
+
+| **Metadata Service**
+| Handles EXIF/IPTC/XMP extraction during ingest, structured metadata schema
+  validation, and bulk import/export (CSV/JSON).
+
+| **URL Signing (Security Engine)**
+| Generates HMAC-signed Fastly delivery URLs to prevent "denial-of-wallet"
+  attacks and unauthorized parameter manipulation.
+
+| **CDN Purge Service**
+| Issues Fastly "Purge by Surrogate Key" API calls when assets are updated
+  or deleted, ensuring instant global cache invalidation.
+
+| **Sidekiq Workers**
+| Async job queue with strict priority weighting: `mailers → notifications →
+  default → workflow → metadata → reports → ingest`. Prevents heavy bulk
+  uploads from delaying urgent email delivery.
 |===
 
+---
+
 === Level 2: Admin Portal (Whitebox)
-The Admin Portal is a decoupled Single Page Application (SPA).
+
+The Admin Portal is mounted as isolated React components within Rails views
+(Hybrid Monolith pattern). Each component is lazy-loaded via a `data-view`
+attribute.
 
 [cols="1,3", options="header"]
 |===
 | Component | Responsibility
-| **Uploader** | Handles multi-part uploads directly to the API with progress tracking.
-| **Focal Point Editor** | A visual tool allowing users to click an image to set X/Y coordinates for cropping.
-| **Asset Browser** | Consumes the Search Index to display instant results with infinite scroll.
+
+| **Asset Browser (Folders)**
+| Hierarchical folder tree with context menus, drag-and-drop asset
+  organisation, and inline preview panel.
+
+| **Asset Viewer / Editor**
+| Full-page asset detail with metadata editor, focal-point picker overlay,
+  version history, and collection membership.
+
+| **Users Manager**
+| Paginated data grid of all DAM users. Supports search, status toggle
+  (active / suspended), password reset, and group assignment.
+
+| **User Groups Manager**
+| Tree view of the group hierarchy with a slide-in GroupOverlay drawer.
+  Supports add/remove members, child-group nesting, and folder ACL editing
+  via the Groups tab (parent can add/remove children; child view is read-only).
+
+| **Image Profiles**
+| CRUD management of named transformation presets (width, height, crop,
+  format, quality) for the Fastly IO pipeline.
+
+| **Video Profiles**
+| Encoding profile management: codec, resolution, bitrate presets assigned
+  to folder paths for automated video transcoding.
+
+| **Metadata Schemas**
+| Field-level schema designer for structured asset metadata:
+  field type, validation rules, and folder-scope assignment.
+
+| **ACL Matrix**
+| Per-folder permission table rendered within both the Group overlay and the
+  Folder panel. Columns map 1:1 to the 7 FolderPolicy ACL flags.
+
+| **Folder Panel**
+| Slide-in drawer showing folder-level statistics, assigned image/video
+  profiles, and direct ACL policy editing.
 |===

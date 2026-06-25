@@ -2,41 +2,86 @@
 == Introduction and Goals
 
 === Executive Summary
-The **Headless DAM** project is a high-performance, cost-optimized Digital Asset Management system. It is designed to modernize media workflows by providing advanced dynamic media features—such as real-time image transformation, smart cropping, and global delivery—without the high entry costs and rigid licensing associated with **Legacy Monolithic Media Suites**.
 
-By leveraging **Fastly Image Optimizer (IO)** and a "Bring Your Own Storage" (BYOS) model, the system enables organizations to maintain full ownership of their master assets while delivering perfectly optimized media via a metadata-driven, edge-first architecture.
+The **Headless DAM** project is a high-performance, cost-optimised Digital Asset
+Management system built on **Ruby on Rails 8.1** (backend) and **React 19** with
+Material UI v9 (frontend), deployed on **Ruby 4.0.3**.
+
+It modernises media workflows by providing advanced dynamic media features — real-time
+image transformation, smart cropping, structured metadata, role-based access control
+(RBAC), and global delivery — without the high entry costs and rigid licensing
+associated with legacy monolithic media suites.
+
+By leveraging **Fastly Image Optimizer (IO)** and a "Bring Your Own Storage" (BYOS)
+model, the system enables organisations to maintain full ownership of their master
+assets while delivering perfectly optimised media via a metadata-driven, edge-first
+architecture.
 
 === Requirements Overview
-The primary goal is to manage the lifecycle of a digital asset from upload to global delivery with minimal latency.
 
-* **Multi-Cloud Storage:** Support for major cloud object stores.
-* **Metadata Management:** Store and index technical (dimensions, type) and business (tags, focal points) metadata.
-* **Dynamic Transformation:** Real-time cropping, resizing, and format conversion at the Edge.
-* **Rich GUI:** A user-friendly interface for non-technical users to upload and configure asset "Smart Features."
-* **High-Speed Search:** Sub-second asset discovery using indexed metadata.
-* **Cache Management:** Instant invalidation (Purge) across the global CDN when assets are updated.
+The primary goal is to manage the lifecycle of a digital asset from upload to global
+delivery with minimal latency.
+
+* **Multi-Cloud Storage:** Support for AWS S3, Azure Blob Storage, and Google Cloud Storage.
+* **Metadata Management:** Store and index technical (dimensions, EXIF/IPTC) and business (tags, focal points, schemas) metadata.
+* **Dynamic Transformation:** Real-time cropping, resizing, format conversion, and WebP delivery at the Edge via Fastly IO.
+* **Rich GUI:** Material UI-based interface for non-technical users to browse folders, upload assets, and configure image/video profiles.
+* **High-Speed Search:** Sub-second asset discovery using Typesense.
+* **Cache Management:** Instant per-asset Fastly purge via Surrogate Keys.
+* **RBAC Access Control:** Hierarchical user groups with per-folder permission policies (7-column ACL matrix).
+* **Metadata Schemas:** Configurable field schemas per folder path for structured metadata.
+* **Image Profiles:** Named Fastly IO transformation presets (width, crop, format).
+* **Video Profiles:** Encoding presets with folder-path assignment for transcoding workflows.
 
 === Quality Goals
-The following table describes the top architectural priorities:
 
 [cols="1,2,2", options="header"]
 |===
 | Priority | Quality Goal | Description
-| 1 | **Cost Efficiency** | The solution must minimize fixed licensing costs, favoring a "pay-as-you-go" operational model.
-| 2 | **Performance** | Image transformations must be executed at the Edge in <100ms for non-cached requests.
-| 3 | **Flexibility** | The system must be "Headless," allowing any frontend (Web, Mobile, IoT) to consume assets via a standardized API.
-| 4 | **Scalability** | Architecture must handle sudden traffic spikes (e.g., flash sales) without manual origin scaling.
+
+| 1 | **Cost Efficiency**
+| Minimise fixed licensing costs; favour a "pay-as-you-go" operational model.
+  On-the-fly Fastly IO rendering eliminates ~90% of rendition storage costs.
+
+| 2 | **Performance**
+| Image transformations execute at the Edge in <100 ms for non-cached requests.
+  Background workers use queue weighting to prevent bulk uploads from blocking
+  urgent user-facing jobs.
+
+| 3 | **Security**
+| HMAC-signed Fastly URLs prevent denial-of-wallet attacks.
+  RBAC with explicit-deny overrides ensures principle of least privilege.
+  All endpoints secured via Devise + optional Keycloak SSO (OmniAuth).
+
+| 4 | **Flexibility**
+| Headless architecture — any frontend (web, mobile, IoT) can consume assets
+  via REST or GraphQL APIs. Storage provider is swappable without code changes.
+
+| 5 | **Scalability**
+| Sidekiq queue topology absorbs traffic spikes; Fastly CDN shields the origin
+  from delivery load. Architecture supports horizontal scaling via Kamal.
 |===
 
 === Stakeholders
-The following individuals and roles have a vested interest in the Headless DAM:
 
 [cols="1,2", options="header"]
 |===
-| Role | Goal/Interest
-| **Ashok Pelluru** | Project Lead / Lead Architect.
-| **Marketing/Content Teams** | Need a simple GUI to manage assets without knowing technical URL parameters.
-| **Frontend Developers** | Need a reliable API to request responsive images for various devices.
-| **DevOps/SRE** | Interested in storage cost reduction and CDN performance metrics.
-| **Finance/Procurement** | Focused on the significant cost savings compared to enterprise "Dynamic Media" licenses.
+| Role | Goal / Interest
+
+| **Ashok Pelluru** | Project Lead / Lead Architect — owns architectural decisions and ADRs.
+
+| **Marketing / Content Teams**
+| Need a simple GUI to upload, tag, and organise assets without knowing URL parameters or cloud credentials.
+
+| **Frontend / Mobile Developers**
+| Need a reliable, well-documented REST + GraphQL API to request responsive images for any device size.
+
+| **DevOps / SRE**
+| Interested in storage cost reduction, CDN performance metrics, and Docker/Kamal deployment simplicity.
+
+| **System Administrators**
+| Manage user groups, folder hierarchies, RBAC policies, image/video profiles, and metadata schemas via the Admin UI.
+
+| **Finance / Procurement**
+| Focused on significant TCO savings versus enterprise "Dynamic Media" licences.
 |===

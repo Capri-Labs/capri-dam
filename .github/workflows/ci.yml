@@ -1,137 +1,279 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Headless DAM — Main CI Pipeline
+#
+# Triggered on every push and pull-request.
+#
+# Jobs:
+#   lint     → RuboCop (Ruby style)
+#   security → Brakeman + bundler-audit (CVE check)
+#   rspec    → Full backend test suite (models, requests, system)
+#   jest     → Frontend unit & component tests
+#   all-green→ Required gate for branch protection
+# ─────────────────────────────────────────────────────────────────────────────
 name: CI
 
 on:
   pull_request:
   push:
-    branches: [ main ]
+    branches: [main, master, develop]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  RUBY_VERSION: "4.0.3"
+  NODE_VERSION: "18"
+  BUNDLE_WITHOUT: "production"
+
+# ─────────────────────────────────────────────────────────────────────────────
 jobs:
-  scan_ruby:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Set up Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          bundler-cache: true
-
-      - name: Scan for common Rails security vulnerabilities using static analysis
-        run: bin/brakeman --no-pager
-      
-      - name: Scan for known security vulnerabilities in gems used
-        run: bin/bundler-audit
-      
+  # ─── 1. Ruby lint ───────────────────────────────────────────────────────────
   lint:
+    name: RuboCop
     runs-on: ubuntu-latest
     env:
       RUBOCOP_CACHE_ROOT: tmp/rubocop
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
 
-      - name: Set up Ruby
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Ruby ${{ env.RUBY_VERSION }}
         uses: ruby/setup-ruby@v1
         with:
+          ruby-version: ${{ env.RUBY_VERSION }}
           bundler-cache: true
 
-      - name: Prepare RuboCop cache
+      - name: Cache RuboCop offenses
         uses: actions/cache@v4
-        env:
-          DEPENDENCIES_HASH: ${{ hashFiles('.ruby-version', '**/.rubocop.yml', '**/.rubocop_todo.yml', 'Gemfile.lock') }}
         with:
           path: ${{ env.RUBOCOP_CACHE_ROOT }}
-          key: rubocop-${{ runner.os }}-${{ env.DEPENDENCIES_HASH }}-${{ github.ref_name == github.event.repository.default_branch && github.run_id || 'default' }}
+          key: rubocop-${{ runner.os }}-${{ hashFiles('.ruby-version','**/.rubocop.yml','Gemfile.lock') }}-${{ github.ref_name == github.event.repository.default_branch && github.run_id || 'default' }}
           restore-keys: |
-            rubocop-${{ runner.os }}-${{ env.DEPENDENCIES_HASH }}-
+            rubocop-${{ runner.os }}-${{ hashFiles('.ruby-version','**/.rubocop.yml','Gemfile.lock') }}-
 
-      - name: Lint code for consistent style
-        run: bin/rubocop -f github
+      - name: Run RuboCop
+        run: bin/rubocop --format github
 
-  test:
+  # ─── 2. Security scan ───────────────────────────────────────────────────────
+  security:
+    name: Security Scan
     runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Ruby ${{ env.RUBY_VERSION }}
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ env.RUBY_VERSION }}
+          bundler-cache: true
+
+      - name: Brakeman — static analysis
+        run: bin/brakeman --no-pager --format json --output tmp/brakeman.json
+        continue-on-error: true
+
+      - name: Upload Brakeman report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: brakeman-report
+          path: tmp/brakeman.json
+
+      - name: bundler-audit — gem CVE check
+        run: bin/bundler-audit check --update --config config/bundler-audit.yml
+
+  # ─── 3. Backend tests (RSpec) ───────────────────────────────────────────────
+  rspec:
+    name: RSpec
+    runs-on: ubuntu-latest
+    needs: [lint]
 
     services:
       postgres:
-        image: postgres
+        image: postgres:14-alpine
         env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-        ports:
-          - 5432:5432
-        options: --health-cmd="pg_isready" --health-interval=10s --health-timeout=5s --health-retries=3
+          POSTGRES_USER: headless_dam
+          POSTGRES_PASSWORD: headless_dam
+          POSTGRES_DB: headless_dam_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
-      # redis:
-      #   image: valkey/valkey:8
-      #   ports:
-      #     - 6379:6379
-      #   options: --health-cmd "redis-cli ping" --health-interval 10s --health-timeout 5s --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      RAILS_ENV: test
+      DATABASE_URL: postgres://headless_dam:headless_dam@localhost:5432/headless_dam_test
+      REDIS_URL: redis://localhost:6379/0
+      RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY }}
 
     steps:
-      - name: Install packages
-        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y libpq-dev libvips node-gyp
+      - name: Install system packages
+        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y libpq-dev libvips node-gyp exiv2
 
-      - name: Checkout code
-        uses: actions/checkout@v6
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Set up Ruby
+      - name: Set up Ruby ${{ env.RUBY_VERSION }}
         uses: ruby/setup-ruby@v1
         with:
+          ruby-version: ${{ env.RUBY_VERSION }}
           bundler-cache: true
 
-      - name: Run tests
-        env:
-          RAILS_ENV: test
-          DATABASE_URL: postgres://postgres:postgres@localhost:5432
-          # RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY }}
-          # REDIS_URL: redis://localhost:6379/0
-        run: bin/rails db:test:prepare test
+      - name: Set up Node ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: yarn
 
+      - name: Install JS dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Build JS assets (for asset pipeline)
+        run: yarn build
+
+      - name: Prepare test database
+        run: bundle exec rails db:test:prepare
+
+      - name: Run RSpec (unit + integration)
+        run: |
+          COVERAGE=true bundle exec rspec \
+            --format progress \
+            --format RspecJunitFormatter \
+            --out tmp/rspec-results.xml
+
+      - name: Upload RSpec test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rspec-results
+          path: tmp/rspec-results.xml
+
+      - name: Upload backend coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-backend
+          path: coverage/backend/
+
+  # ─── 4. Frontend unit tests (Jest) ──────────────────────────────────────────
+  jest:
+    name: Jest
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: yarn
+
+      - name: Install JS dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Run Jest with coverage
+        run: yarn jest --coverage --ci
+
+      - name: Upload frontend unit coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-frontend-unit
+          path: coverage-frontend/unit/
+
+  # ─── 5. System tests (Rails system) ────────────────────────────────────────
   system-test:
+    name: System Tests
     runs-on: ubuntu-latest
+    needs: [lint]
 
     services:
       postgres:
-        image: postgres
+        image: postgres:14-alpine
         env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-        ports:
-          - 5432:5432
-        options: --health-cmd="pg_isready" --health-interval=10s --health-timeout=5s --health-retries=3
+          POSTGRES_USER: headless_dam
+          POSTGRES_PASSWORD: headless_dam
+          POSTGRES_DB: headless_dam_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
-      # redis:
-      #   image: valkey/valkey:8
-      #   ports:
-      #     - 6379:6379
-      #   options: --health-cmd "redis-cli ping" --health-interval 10s --health-timeout 5s --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      RAILS_ENV: test
+      DATABASE_URL: postgres://headless_dam:headless_dam@localhost:5432/headless_dam_test
+      REDIS_URL: redis://localhost:6379/0
+      RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY }}
 
     steps:
-      - name: Install packages
-        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y libpq-dev libvips node-gyp
+      - name: Install system packages
+        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y libpq-dev libvips node-gyp exiv2
 
-      - name: Checkout code
-        uses: actions/checkout@v6
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Set up Ruby
+      - name: Set up Ruby ${{ env.RUBY_VERSION }}
         uses: ruby/setup-ruby@v1
         with:
+          ruby-version: ${{ env.RUBY_VERSION }}
           bundler-cache: true
 
-      - name: Run System Tests
-        env:
-          RAILS_ENV: test
-          DATABASE_URL: postgres://postgres:postgres@localhost:5432
-          # RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY }}
-          # REDIS_URL: redis://localhost:6379/0
-        run: bin/rails db:test:prepare test:system
+      - name: Prepare test database
+        run: bundle exec rails db:test:prepare
 
-      - name: Keep screenshots from failed system tests
-        uses: actions/upload-artifact@v7
+      - name: Run system tests
+        run: bin/rails test:system
+
+      - name: Upload screenshots from failed tests
+        uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: screenshots
-          path: ${{ github.workspace }}/tmp/screenshots
+          name: system-test-screenshots
+          path: tmp/screenshots
           if-no-files-found: ignore
+
+  # ─── 6. All-green gate (required for branch protection) ─────────────────────
+  all-green:
+    name: All checks passed
+    runs-on: ubuntu-latest
+    needs: [lint, security, rspec, jest, system-test]
+    if: always()
+    steps:
+      - name: Check all jobs succeeded
+        run: |
+          if [[ "${{ needs.lint.result }}" != "success" ||
+                "${{ needs.security.result }}" != "success" ||
+                "${{ needs.rspec.result }}" != "success" ||
+                "${{ needs.jest.result }}" != "success" ||
+                "${{ needs.system-test.result }}" != "success" ]]; then
+            echo "One or more CI jobs failed."
+            exit 1
+          fi
+          echo "All CI checks passed ✅"

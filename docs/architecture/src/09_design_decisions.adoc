@@ -1,7 +1,8 @@
 [[section-design-decisions]]
 == Design Decisions
 
-This section documents the major architectural choices made to achieve a high-performance DAM on a minimal budget.
+This section documents the major architectural choices made to achieve a
+high-performance DAM on a minimal budget.
 
 === ADR 1: Use of Fastly IO vs. Self-Hosted Image Processing
 **Status:** Accepted
@@ -76,3 +77,72 @@ Use **Typesense** as a dedicated search index alongside PostgreSQL.
 
 * **Pros:** Extremely fast UI; offloads heavy query work from the primary database.
 * **Cons:** Requires a synchronization mechanism to keep the index and DB in parity.
+
+=== ADR 4: Closure Table for Group Hierarchy vs. Adjacency List
+**Status:** Accepted
+
+**Background:**
+User groups must support multi-level nesting (e.g. `everyone → Marketing → EMEA → Hamburg`)
+so that folder permissions cascade through the hierarchy. A simple parent_id adjacency list
+requires recursive SQL to traverse ancestors, which is expensive and varies across databases.
+
+**Assumptions:**
+
+* Group hierarchies will rarely be deeper than 4–5 levels.
+* Permission evaluation happens on every authenticated request.
+* We must avoid N+1 queries when resolving all ancestors of a user's groups.
+
+**Requirements:**
+
+* O(1) lookup: "Is group B an ancestor of group A?"
+* Efficient query: "Give me all descendants of group X."
+* Standard SQL (no PostgreSQL-specific `WITH RECURSIVE` required in hot paths).
+
+**Decision:**
+We use the **Closure Table** pattern (`user_group_closures`), storing every
+ancestor-descendant pair with a `distance` column alongside the standard `parent_id`
+foreign key on `user_groups`. The `parent_id` column is kept in sync by `add_child`
+to support ActiveRecord associations; the closure table is the authoritative source for
+hierarchical queries in controllers and the RBAC engine.
+
+**Consequences:**
+
+* **Pros:** All ancestry/descendancy queries are simple `WHERE ancestor_id = ?` or
+  `WHERE descendant_id = ?` lookups; no recursive SQL needed in hot paths.
+* **Cons:** Writes are more expensive (must insert multiple closure rows on `add_child`);
+  `parent_id` FK must be explicitly maintained in sync with the closure table.
+
+=== ADR 5: Hybrid Monolith (Rails + React) vs. Separate SPA
+**Status:** Accepted
+
+**Background:**
+Many modern projects split into a separate SPA repository (React) and a separate API
+repository (Rails). While this provides strong decoupling, it adds significant
+operational complexity: two repos, two CI pipelines, CORS configuration, and a more
+complex local development environment.
+
+**Assumptions:**
+
+* The admin portal is exclusively used by authenticated admin users — not the public.
+* The team is small; reducing repository fragmentation saves engineering time.
+* Server-side rendering is not required for the admin UI.
+
+**Requirements:**
+
+* Single codebase for ease of maintenance and atomic commits.
+* React components with full interactivity where needed.
+* Standard Rails routing and authentication (Devise + Turbo).
+
+**Decision:**
+Use the **Hybrid Monolith** pattern. Rails serves HTML views that contain React
+mount points (`<div data-react-component="...">` attributes). The `application.js`
+entry point selects and renders the correct component. This provides the interactivity
+of an SPA within the stability and simplicity of a Rails application.
+
+**Consequences:**
+
+* **Pros:** Single repo; single CI pipeline; Devise auth works natively; atomic
+  commits across backend + frontend changes.
+* **Cons:** React components cannot be deployed independently; frontend bundle is
+  part of the Rails asset pipeline; less flexibility if a public-facing SPA is needed later.
+

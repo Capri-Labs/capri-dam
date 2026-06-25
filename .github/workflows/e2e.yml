@@ -1,0 +1,142 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Headless DAM — E2E Tests (Playwright)
+#
+# Runs the full Playwright end-to-end suite against a live Rails server
+# (spun up inside the workflow using Docker Compose-style services).
+#
+# Triggers:
+#   - Push to main/master
+#   - Pull-request (as a required check)
+#   - Manual dispatch (with optional base URL override)
+#
+# Required secrets:
+#   RAILS_MASTER_KEY    — Rails credentials key
+#   E2E_EMAIL           — Admin login for tests (default: admin@admin.com)
+#   E2E_PASSWORD        — Admin password
+# ─────────────────────────────────────────────────────────────────────────────
+name: E2E Tests
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: "Base URL to run E2E against (default: http://localhost:3000)"
+        required: false
+        default: "http://localhost:3000"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  RUBY_VERSION: "4.0.3"
+  NODE_VERSION: "18"
+  BUNDLE_WITHOUT: "production"
+  RAILS_ENV: test
+  DATABASE_URL: postgres://headless_dam:headless_dam@localhost:5432/headless_dam_e2e
+  REDIS_URL: redis://localhost:6379/0
+  E2E_BASE_URL: ${{ inputs.base_url || 'http://localhost:3000' }}
+
+jobs:
+  playwright:
+    name: Playwright E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    services:
+      postgres:
+        image: postgres:14-alpine
+        env:
+          POSTGRES_USER: headless_dam
+          POSTGRES_PASSWORD: headless_dam
+          POSTGRES_DB: headless_dam_e2e
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Install system packages
+        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y libpq-dev libvips node-gyp exiv2
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Ruby ${{ env.RUBY_VERSION }}
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ env.RUBY_VERSION }}
+          bundler-cache: true
+
+      - name: Set up Node ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: yarn
+
+      - name: Install JS dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: yarn playwright install --with-deps chromium
+
+      - name: Build JS assets
+        run: yarn build
+
+      - name: Prepare E2E database & seed
+        env:
+          RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY }}
+        run: |
+          bundle exec rails db:create
+          bundle exec rails db:migrate
+          bundle exec rails db:seed
+
+      - name: Start Rails server in background
+        env:
+          RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY }}
+        run: |
+          bundle exec rails server -p 3000 -e test &
+          # Wait until the server is ready
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:3000/up && break
+            sleep 2
+          done
+
+      - name: Run Playwright tests
+        env:
+          E2E_EMAIL: ${{ secrets.E2E_EMAIL || 'admin@admin.com' }}
+          E2E_PASSWORD: ${{ secrets.E2E_PASSWORD || 'AdminUser' }}
+          RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY }}
+        run: yarn playwright test --reporter=html
+
+      - name: Upload Playwright HTML report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: coverage-frontend/playwright-report/
+          retention-days: 30
+
+      - name: Upload E2E screenshots on failure
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-screenshots
+          path: coverage-frontend/playwright-report/
+          if-no-files-found: ignore
+

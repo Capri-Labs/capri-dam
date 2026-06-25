@@ -1,0 +1,164 @@
+# arc42 PDF theme for Headless DAM
+# Matches the arc42.css colour palette for consistent print output.
+# Used by: asciidoctor-pdf -a pdf-theme=arc42 -a pdf-themesdir=docs/architecture/theme
+
+extends: default
+
+base:
+  font-family: Helvetica
+  font-size: 10.5
+  line-height: 1.55
+  font-color: "#2D2D2D"
+
+font:
+  catalog:
+    Helvetica:
+      normal:  Helvetica
+      bold:    Helvetica-Bold
+      italic:  Helvetica-Oblique
+      bold_italic: Helvetica-BoldOblique
+    Courier:
+      normal: Courier
+      bold:   Courier-Bold
+      italic: Courier-Oblique
+
+heading:
+  font-family: Helvetica
+  font-color: "#27408B"
+  font-style: bold
+  line-height: 1.25
+  margin-top: 12
+  margin-bottom: 4
+
+heading_h1:
+  font-size: 24
+  font-color: "#27408B"
+
+heading_h2:
+  font-size: 18
+  font-color: "#27408B"
+  border-bottom-width: 1.5
+  border-bottom-color: "#4472C4"
+  padding-bottom: 3
+
+heading_h3:
+  font-size: 14
+  font-color: "#2F6690"
+
+heading_h4:
+  font-size: 12
+  font-color: "#4472C4"
+
+title_page:
+  background_color: "#27408B"
+  title:
+    font_size: 28
+    font_color: "#FFFFFF"
+    font_style: bold
+    margin_top: 120
+  subtitle:
+    font_size: 16
+    font_color: "#BDD7EE"
+    margin_top: 8
+  authors:
+    font_size: 12
+    font_color: "#FFFFFF"
+    margin_top: 24
+  revision:
+    font_color: "#BDD7EE"
+    font_size: 10
+
+header:
+  height: 18mm
+  border-bottom-width: 0.5
+  border-bottom-color: "#4472C4"
+  font-size: 8
+  font-color: "#595959"
+  recto:
+    right:
+      content: "{doctitle} · {revnumber}"
+  verso:
+    left:
+      content: "{doctitle} · {revnumber}"
+
+footer:
+  height: 12mm
+  border-top-width: 0.5
+  border-top-color: "#BDD7EE"
+  font-size: 8
+  font-color: "#595959"
+  recto:
+    right:
+      content: "Page {page-number} of {page-count}"
+    left:
+      content: "arc42 Architecture Documentation"
+  verso:
+    left:
+      content: "Page {page-number} of {page-count}"
+    right:
+      content: "arc42 Architecture Documentation"
+
+table:
+  border-color: "#D0D7DE"
+  border-width: 0.5
+  cell:
+    padding: [4, 6, 4, 6]
+  head:
+    background-color: "#27408B"
+    font-color: "#FFFFFF"
+    font-style: bold
+    font-size: 9
+  body:
+    stripe-background-color: "#EEF3FB"
+
+code:
+  font-family: Courier
+  font-size: 9
+  background-color: "#F0F4FF"
+  border-color: "#BDD7EE"
+  border-width: 0.5
+  border-radius: 2
+
+codespan:
+  font-color: "#27408B"
+  background-color: "#F0F4FF"
+
+sidebar:
+  background-color: "#EEF3FB"
+  border-color: "#4472C4"
+  border-left-width: 3
+  font-size: 10
+
+admonition:
+  column-rule-color: "#4472C4"
+  column-rule-width: 3
+  label:
+    font-style: bold
+    font-color: "#27408B"
+
+note:
+  background-color: "#EEF3FB"
+  border-color: "#4472C4"
+
+tip:
+  background-color: "#E8F5E9"
+  border-color: "#4CAF50"
+
+warning:
+  background-color: "#FFF8E1"
+  border-color: "#FFC107"
+
+caution:
+  background-color: "#FBE9E7"
+  border-color: "#FF5722"
+
+link:
+  font-color: "#4472C4"
+
+toc:
+  dot-leader-color: "#BDD7EE"
+  font-color: "#2D2D2D"
+  h2-font-color: "#27408B"
+  h2-font-style: bold
+  indent: 10
+
