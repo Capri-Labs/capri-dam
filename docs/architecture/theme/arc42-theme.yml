@@ -1,4 +1,4 @@
-# arc42 PDF theme for Headless DAM
+# arc42 PDF theme for Capri DAM
 # Matches the arc42.css colour palette for consistent print output.
 # Used by: asciidoctor-pdf -a pdf-theme=arc42 -a pdf-themesdir=docs/architecture/theme
 

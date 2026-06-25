@@ -1,5 +1,5 @@
 # ─────────────────────────────────────────────────────────────────────────────
-# Headless DAM — Docker Build & Push
+# Capri DAM — Docker Build & Push
 #
 # Builds the production Docker image and pushes it to GitHub Container Registry.
 #

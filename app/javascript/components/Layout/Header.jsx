@@ -49,7 +49,7 @@ export default function Header(props) {
                 <Box
                     component="img"
                     src="/images/logo.png" // You would use the transparent asset src
-                    alt="Headless DAM Logo"
+                    alt="Capri DAM Logo"
                     sx={{
                         height: 64, //
                         width: 'auto', //

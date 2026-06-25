@@ -1,4 +1,4 @@
-# Core digital-asset domain model for the Headless DAM platform.
+# Core digital-asset domain model for the Capri DAM platform.
 #
 # An +Asset+ represents a single media item (image, video, document, …) owned
 # by a {User} and optionally placed inside a {Folder}.  The binary file is

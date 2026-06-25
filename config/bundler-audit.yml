@@ -2,4 +2,11 @@
 # CVEs that are not relevant to the application can be enumerated on the ignore list below.
 
 ignore:
-  - CVE-THAT-DOES-NOT-APPLY
+  # CVE-2026-54297 – faraday: uncontrolled recursion DoS via deeply nested query params.
+  # Fix requires faraday >= 2.14.3 (2.x branch), but azure-storage-blob@2.x pins
+  # faraday (~> 1.0) via azure-storage-common. Cannot resolve until azure-storage-blob
+  # supports faraday 2.x or is replaced by the Azure SDK for Ruby.
+  # Mitigation: API gateway / WAF rate-limits + payload-size limits prevent untrusted
+  # deeply-nested query strings from reaching this code path.
+  # TODO: remove once azure-storage-blob is upgraded or replaced.
+  - CVE-2026-54297

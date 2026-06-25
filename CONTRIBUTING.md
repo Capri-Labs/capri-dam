@@ -1,6 +1,6 @@
-# Contributing to Headless DAM
+# Contributing to Capri DAM
 
-First off, thank you for considering contributing to Headless DAM! It's people like you that make open-source software great.
+First off, thank you for considering contributing to Capri DAM! It's people like you that make open-source software great.
 
 ## Code of Conduct
 By participating in this project, you are expected to uphold a welcoming, inclusive, and professional environment.

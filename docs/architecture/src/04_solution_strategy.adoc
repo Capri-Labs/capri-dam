@@ -1,7 +1,7 @@
 [[section-solution-strategy]]
 == Solution Strategy
 
-The Headless DAM follows a "Thin Origin, Fat Edge" strategy. By offloading heavy processing to the CDN and delegating binary storage to specialized cloud providers, the core system remains lightweight, scalable, and inexpensive to operate.
+The Capri DAM follows a "Thin Origin, Fat Edge" strategy. By offloading heavy processing to the CDN and delegating binary storage to specialized cloud providers, the core system remains lightweight, scalable, and inexpensive to operate.
 
 === Core Architectural Decisions
 

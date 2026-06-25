@@ -117,7 +117,7 @@ export default function Login() {
                                 <LockOutlinedIcon fontSize="large" />
                             </Avatar>
                             <Typography component="h1" variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
-                                Headless DAM
+                                Capri DAM
                             </Typography>
                             <Typography variant="body2" color="textSecondary" sx={{ mb: 3 }}>
                                 Welcome back. Please enter your details.

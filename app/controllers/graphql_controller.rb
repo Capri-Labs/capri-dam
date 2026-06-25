@@ -1,4 +1,4 @@
-# GraphQL execution endpoint for the Headless DAM platform.
+# GraphQL execution endpoint for the Capri DAM platform.
 #
 # All GraphQL operations (queries and mutations) are sent as HTTP POST requests
 # to +POST /graphql+.  This controller resolves the incoming request, wires up

@@ -1,6 +1,6 @@
 # System Architecture
 
-Headless DAM is designed for scale, flexibility, and enterprise compliance. By decoupling the asset management logic into a robust API and background processing layer, it can serve as the single source of truth for media across an organization.
+Capri DAM is designed for scale, flexibility, and enterprise compliance. By decoupling the asset management logic into a robust API and background processing layer, it can serve as the single source of truth for media across an organization.
 
 ## 1. The Hybrid Monolith
 Rather than managing a completely separate SPA (Single Page Application) repository and a backend API repository, this project utilizes a "Hybrid Monolith" approach.

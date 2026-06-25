@@ -10,7 +10,7 @@ const { test: base, expect } = require('@playwright/test');
 const MCR = require('monocart-coverage-reports');
 
 const coverageOptions = {
-  name: 'Headless DAM — Frontend E2E (Istanbul)',
+  name: 'Capri DAM — Frontend E2E (Istanbul)',
   outputDir: './coverage-frontend/e2e',
   reports: ['html', 'lcovonly', 'console-summary'],
   // Only report on our own application JS, not vendored bundles.

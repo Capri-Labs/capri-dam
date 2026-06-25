@@ -15,7 +15,7 @@ class AdminMailer < ApplicationMailer
     # Simple text/HTML body structure to verify rendering and layout integrity
     mail(
       to: recipient,
-      subject: "🔔 Headless DAM Diagnostic Run: Outbound Mail Successful"
+      subject: "🔔 Capri DAM Diagnostic Run: Outbound Mail Successful"
     ) do |format|
       format.text {
         render plain: <<~TEXT
@@ -28,7 +28,7 @@ class AdminMailer < ApplicationMailer
           Ruby Version: #{@ruby_version}
           Rails Version: #{@rails_version}
 
-          Your Headless DAM outgoing system configuration is fully functional.
+          Your Capri DAM outgoing system configuration is fully functional.
         TEXT
       }
     end

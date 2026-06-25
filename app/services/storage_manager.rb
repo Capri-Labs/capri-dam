@@ -1,4 +1,4 @@
-# Storage abstraction layer for the Headless DAM platform.
+# Storage abstraction layer for the Capri DAM platform.
 #
 # {StorageManager} is the single point of interaction between application code
 # and the configured storage provider.  It hides all provider-specific details

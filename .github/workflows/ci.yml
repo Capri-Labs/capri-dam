@@ -1,5 +1,5 @@
 # ─────────────────────────────────────────────────────────────────────────────
-# Headless DAM — Main CI Pipeline
+# Capri DAM — Main CI Pipeline
 #
 # Triggered on every push and pull-request.
 #
@@ -23,7 +23,7 @@ concurrency:
 
 env:
   RUBY_VERSION: "4.0.3"
-  NODE_VERSION: "18"
+  NODE_VERSION: "22"
   BUNDLE_WITHOUT: "production"
 
 # ─────────────────────────────────────────────────────────────────────────────

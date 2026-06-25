@@ -45,7 +45,7 @@ RSpec.describe 'Admin::EmailTemplates', type: :request do
             properties: {
               name: { type: :string, example: 'Welcome Email' },
               event_trigger: { type: :string, example: 'user_created' },
-              subject: { type: :string, example: 'Welcome to Headless DAM' },
+              subject: { type: :string, example: 'Welcome to Capri DAM' },
               html_body: { type: :string, example: '<h1>Welcome {{first_name}}</h1>' },
               text_body: { type: :string, example: 'Welcome {{first_name}}' },
               active: { type: :boolean, example: true }

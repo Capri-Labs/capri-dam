@@ -1,11 +1,11 @@
 [[section-quality-scenarios]]
 == Quality Scenarios
 
-This section quantifies the quality goals of the **Headless DAM** through concrete, measurable scenarios. These scenarios serve as the basis for architectural verification and load testing.
+This section quantifies the quality goals of the **Capri DAM** through concrete, measurable scenarios. These scenarios serve as the basis for architectural verification and load testing.
 
 === Quality Tree
 
-The Quality Tree is visualized here as a mindmap, branching from the core mission of the Headless DAM into its primary quality attributes and their specific measurable refinements.
+The Quality Tree is visualized here as a mindmap, branching from the core mission of the Capri DAM into its primary quality attributes and their specific measurable refinements.
 
 [plantuml, target="quality-tree", format="svg"]
 ....
@@ -24,7 +24,7 @@ mindmapDiagram {
   }
 }
 </style>
-* Headless DAM Quality Tree <<goal>>
+* Capri DAM Quality Tree <<goal>>
 ** Cost Efficiency
 *** Storage Optimization
 **** Only 1 master binary per asset <<scenario>>

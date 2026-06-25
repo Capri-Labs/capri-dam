@@ -1,6 +1,6 @@
 // Playwright configuration for frontend E2E tests.
 //
-// These tests drive a REAL browser against a running Headless DAM server
+// These tests drive a REAL browser against a running Capri DAM server
 // (default http://localhost:3000). Two coverage streams are produced from a
 // single run:
 //   • Frontend (Istanbul) — V8 JS coverage is collected per page and converted

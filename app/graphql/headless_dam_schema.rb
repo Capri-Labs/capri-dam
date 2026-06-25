@@ -1,4 +1,4 @@
-# Root GraphQL schema for the Headless DAM platform.
+# Root GraphQL schema for the Capri DAM platform.
 #
 # Wires together:
 # * {Types::QueryType}    — all read operations

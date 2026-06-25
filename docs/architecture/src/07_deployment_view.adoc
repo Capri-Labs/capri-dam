@@ -1,7 +1,7 @@
 [[section-deployment-view]]
 == Deployment View
 
-The Headless DAM is designed for high portability. It leverages managed services to reduce operational overhead (No-Ops) while maintaining a strict separation between the Management Plane and the Delivery Plane.
+The Capri DAM is designed for high portability. It leverages managed services to reduce operational overhead (No-Ops) while maintaining a strict separation between the Management Plane and the Delivery Plane.
 
 === Infrastructure Level 1: Global Logical Overview
 This level shows how the system is distributed between the Cloud Provider (for data and logic) and the Edge Provider (for delivery).

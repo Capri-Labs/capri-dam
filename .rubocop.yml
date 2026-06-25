@@ -1,5 +1,5 @@
 # ─────────────────────────────────────────────────────────────────────────────
-# Headless DAM — RuboCop configuration
+# Capri DAM — RuboCop configuration
 #
 # Inherits from rubocop-rails-omakase (Basecamp/Rails house style) and layers
 # project-specific overrides on top.

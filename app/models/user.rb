@@ -1,4 +1,4 @@
-# Authenticated user of the Headless DAM platform.
+# Authenticated user of the Capri DAM platform.
 #
 # Users are authenticated via Devise with two identity providers:
 # * **Local** — email + password managed inside the DAM database.

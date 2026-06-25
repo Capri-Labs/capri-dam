@@ -2,11 +2,11 @@
 == System Scope and Context
 
 === Business Context
-The Headless DAM serves as the central hub for digital assets. It bridges the gap between creative production (uploads) and digital consumption (web/mobile).
+The Capri DAM serves as the central hub for digital assets. It bridges the gap between creative production (uploads) and digital consumption (web/mobile).
 
 [cols="1,2,2", options="header"]
 |===
-| Communication Partner | Input to Headless DAM | Output from Headless DAM
+| Communication Partner | Input to Capri DAM | Output from Capri DAM
 | **Content Creators** | Master assets (High-res), Metadata (Tags, Focal points). | Upload status, Asset previews, Search results.
 | **Frontend Applications** | Asset IDs and required transformation parameters. | Optimized, transformed Image/Video URLs.
 | **Storage Providers** | Storage confirmation and binary retrieval. | Asset binaries (Write/Read commands).
@@ -14,7 +14,7 @@ The Headless DAM serves as the central hub for digital assets. It bridges the ga
 |===
 
 === Technical Context
-This section describes the technical interfaces and protocols used for communication between the Headless DAM and its environment.
+This section describes the technical interfaces and protocols used for communication between the Capri DAM and its environment.
 
 [cols="1,2,2", options="header"]
 |===

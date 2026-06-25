@@ -1,4 +1,4 @@
-puts "--- 🏗️  Seeding Headless DAM Ecosystem ---"
+puts "--- 🏗️  Seeding Capri DAM Ecosystem ---"
 
 # ---------------------------------------------------------------------------
 # 1. Built-in system groups

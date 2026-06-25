@@ -1,4 +1,4 @@
-# Base controller for the Headless DAM application.
+# Base controller for the Capri DAM application.
 #
 # Responsibilities:
 # * Restricts HTML responses to modern browsers (via +allow_browser+).

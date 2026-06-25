@@ -1,5 +1,5 @@
 # ─────────────────────────────────────────────────────────────────────────────
-# Headless DAM — E2E Tests (Playwright)
+# Capri DAM — E2E Tests (Playwright)
 #
 # Runs the full Playwright end-to-end suite against a live Rails server
 # (spun up inside the workflow using Docker Compose-style services).
@@ -34,7 +34,7 @@ concurrency:
 
 env:
   RUBY_VERSION: "4.0.3"
-  NODE_VERSION: "18"
+  NODE_VERSION: "22"
   BUNDLE_WITHOUT: "production"
   RAILS_ENV: test
   DATABASE_URL: postgres://headless_dam:headless_dam@localhost:5432/headless_dam_e2e

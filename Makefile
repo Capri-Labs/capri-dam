@@ -102,7 +102,7 @@ db-setup: auth-setup ## Create and migrate the database
 	$(MAKE) test-setup
 
 setup: install db-setup ## The 'One Command' to rule them all
-	@echo "\033[32m--- Headless DAM Setup Complete ---\033[0m"
+	@echo "\033[32m--- Capri DAM Setup Complete ---\033[0m"
 	@echo "Run 'make dev' to start the server, workers, and redis."
 
 swagger-docs: ## Generate Swagger/OpenAPI REST docs (spec/requests/api → swagger/v1/swagger.yaml)
@@ -175,7 +175,7 @@ check-api-specs: ## Verify every app/controllers/api/v1/*_controller.rb has a ma
 
 dev: ## Start the full engine (Server + Ingest Workers)
 	@echo "--- Switching to development environment ---"
-	@echo "--- Launching Headless DAM Ecosystem ---"
+	@echo "--- Launching Capri DAM Ecosystem ---"
 	RAILS_ENV=development ./bin/dev
 
 all-tests: ## Run all RSpec tests

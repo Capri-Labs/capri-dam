@@ -3,7 +3,7 @@
 
 === Whitebox Overall System (Level 1)
 
-The following diagram shows the decomposition of the Headless DAM into its primary
+The following diagram shows the decomposition of the Capri DAM into its primary
 building blocks and their relationships to external infrastructure.
 
 [plantuml, target="level-1-overview", format="svg"]
@@ -13,7 +13,7 @@ skinparam backgroundColor #FAFAFA
 skinparam componentStyle rectangle
 skinparam defaultFontName Helvetica
 
-package "Headless DAM System" #EEF3FB {
+package "Capri DAM System" #EEF3FB {
     component [Admin Portal\n(React + MUI)] as GUI <<React>>
     component [Rails Application\n(API + Background Workers)] as API <<Ruby on Rails>>
     database  [Metadata Store\n& RBAC] as DB <<PostgreSQL 14>>

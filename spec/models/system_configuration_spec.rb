@@ -18,8 +18,8 @@ RSpec.describe SystemConfiguration, type: :model do
 
   describe '.get' do
     it 'returns the value cast to string type' do
-      create(:system_configuration, key: 'site_name', data_type: 'string', value: 'Headless DAM')
-      expect(SystemConfiguration.get('site_name')).to eq('Headless DAM')
+      create(:system_configuration, key: 'site_name', data_type: 'string', value: 'Capri DAM')
+      expect(SystemConfiguration.get('site_name')).to eq('Capri DAM')
     end
 
     it 'returns the value cast to integer type' do

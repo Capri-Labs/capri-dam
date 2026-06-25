@@ -1,4 +1,4 @@
-= Headless DAM — Architecture Documentation
+= Capri DAM — Architecture Documentation
 Ashok Pelluru <apelluru@apache.org>
 v1.0.0, 2026-06-25
 :doctype: book
@@ -14,7 +14,7 @@ v1.0.0, 2026-06-25
 :imagesdir: ./images
 :!prewrap:
 :lang: en
-:description: arc42 architecture documentation for the Headless DAM — a modern, \
+:description: arc42 architecture documentation for the Capri DAM — a modern, \
   edge-first Digital Asset Management system built with Ruby on Rails and React.
 :keywords: DAM, digital asset management, arc42, Ruby on Rails, Fastly, headless
 // ── arc42 theme ──────────────────────────────────────────────────────────────
@@ -27,7 +27,7 @@ v1.0.0, 2026-06-25
 :pdf-theme: arc42
 // ─────────────────────────────────────────────────────────────────────────────
 
-This document serves as the **Headless DAM** arc42 architecture reference.
+This document serves as the **Capri DAM** arc42 architecture reference.
 The system delivers enterprise-grade dynamic media capabilities — real-time image
 transformation, metadata-driven delivery, RBAC access control, and multi-cloud
 storage — using a cost-efficient, _edge-first_ approach powered by **Fastly IO**.

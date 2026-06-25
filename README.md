@@ -1,6 +1,6 @@
 # Capri DAM (Digital Asset Management)
 
-A modern, high-performance Headless DAM built with a decoupled architecture. This platform utilizes **Ruby on Rails** for 
+A modern, high-performance Capri DAM built with a decoupled architecture. This platform utilizes **Ruby on Rails** for 
 the management engine and **React** for a dynamic, responsive user interface.
 
 ---

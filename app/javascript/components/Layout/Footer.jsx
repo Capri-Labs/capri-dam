@@ -77,7 +77,7 @@ export default function Footer() {
                 {/* Bottom Bar: Copyright and Versioning */}
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 2 }}>
                     <Typography variant="body2" sx={{ color: '#94a3b8' }}>
-                        &copy; {currentYear} Headless DAM. All rights reserved.
+                        &copy; {currentYear} Capri DAM. All rights reserved.
                     </Typography>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#10b981' }} /> {/* Green indicator light */}

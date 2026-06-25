@@ -3,7 +3,7 @@
 
 === Executive Summary
 
-The **Headless DAM** project is a high-performance, cost-optimised Digital Asset
+The **Capri DAM** project is a high-performance, cost-optimised Digital Asset
 Management system built on **Ruby on Rails 8.1** (backend) and **React 19** with
 Material UI v9 (frontend), deployed on **Ruby 4.0.3**.
 

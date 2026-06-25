@@ -152,7 +152,7 @@ export default function AiGatewayTab() {
                             rows={4}
                             fullWidth
                             variant="outlined"
-                            placeholder="You are an enterprise AI working within a Headless DAM..."
+                            placeholder="You are an enterprise AI working within a Capri DAM..."
                             value={config.system_prompt}
                             onChange={(e) => handleChange('system_prompt', e.target.value)}
                             helperText="This prompt is prepended to all LangChain agents and Copilot queries. Use this to enforce brand tone and strict data output formats."
