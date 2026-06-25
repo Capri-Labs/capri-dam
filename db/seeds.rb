@@ -1,44 +1,82 @@
-# This file should ensure the existence of records required to run the application in every environment (production,
-# development, test). The code here should be idempotent so that it can be executed at any point in every environment.
-# The data can then be loaded with the bin/rails db:seed command (or created alongside the database with db:setup).
-#
-# Example:
-#
-#   ["Action", "Comedy", "Drama", "Horror"].each do |genre_name|
-#     MovieGenre.find_or_create_by!(name: genre_name)
-#   end
-
 puts "--- 🏗️  Seeding Headless DAM Ecosystem ---"
 
-# 1. Create the Main Admin (For UI Access)
-admin = User.find_or_create_by!(email: 'admin@admin.com') do |user|
-  user.username = 'admin'
-  user.name     = 'System Admin'
-  user.password = 'AdminUser'
-  user.password_confirmation = 'AdminUser'
-  user.admin = true
-end
-puts "✅ Created Admin: #{admin.email}"
+# ---------------------------------------------------------------------------
+# 1. Built-in system groups
+# ---------------------------------------------------------------------------
 
-# 2. Create the System User (For API/Service Accounts)
+[
+  { slug: 'everyone',            name: 'everyone',
+    description: 'Every DAM user is implicitly a member of this group.' },
+  { slug: 'administrators',      name: 'administrators',
+    description: 'Members have full access. Only super-admins can modify this group.' },
+  { slug: 'super-administrators', name: 'super-administrators',
+    description: 'Reserved for the highest level of system operations.' }
+].each do |attrs|
+  # Case-insensitive lookup covers legacy capitalisation like "Everyone"
+  group = UserGroup.find_by(slug: attrs[:slug]) ||
+          UserGroup.where('lower(name) = ?', attrs[:name].downcase).first ||
+          UserGroup.new
+
+  if group.persisted?
+    group.update_columns(
+      name:        attrs[:name],
+      slug:        attrs[:slug],
+      is_system:   true,
+      description: attrs[:description]
+    )
+  else
+    group.assign_attributes(attrs.merge(is_system: true))
+    group.save!
+  end
+
+  puts "✅ Built-in group: #{group.name}"
+end
+
+everyone_group     = UserGroup.find_by!(slug: 'everyone')
+admins_group       = UserGroup.find_by!(slug: 'administrators')
+super_admins_group = UserGroup.find_by!(slug: 'super-administrators')
+
+# ---------------------------------------------------------------------------
+# 2. Main Admin User
+# ---------------------------------------------------------------------------
+
+admin = User.find_or_create_by!(email: 'admin@admin.com') do |user|
+  user.username              = 'admin'
+  user.name                  = 'System Admin'
+  user.password              = 'AdminUser'
+  user.password_confirmation = 'AdminUser'
+  user.admin                 = true
+end
+puts "✅ Admin: #{admin.email}"
+
+[admins_group, super_admins_group, everyone_group].each do |group|
+  unless admin.user_groups.include?(group)
+    admin.user_groups << group
+    puts "  ↳ Added admin to #{group.name}"
+  end
+end
+
+# ---------------------------------------------------------------------------
+# 3. System API User
+# ---------------------------------------------------------------------------
+
 system_user = User.find_or_create_by!(email: 'system@headless-dam.local') do |user|
-  user.username = 'system_api'        # Added this to pass validations
-  user.name     = 'System Account'    # Changed from first/last_name to match your schema
+  user.username = 'system_api'
+  user.name     = 'System Account'
   user.password = SecureRandom.hex(16)
   user.admin    = false
 end
-puts "✅ Created System User: #{system_user.email}"
+puts "✅ System User: #{system_user.email}"
 
-# 3. Create a Default Local Storage Backend
+# ---------------------------------------------------------------------------
+# 4. Default Storage Backend
+# ---------------------------------------------------------------------------
+
 backend = StorageBackend.find_or_create_by!(name: 'Local Disk') do |sb|
   sb.provider_type = 'local'
-  sb.active = true
+  sb.active        = true
   sb.configuration = { root_path: 'storage/dam' }
 end
-puts "✅ Created Storage Backend: #{backend.name}"
-
-# 4. Create an Initial Folder
-# folder = Folder.find_or_create_by!(name: 'General Assets')
-# puts "✅ Created Default Folder: #{folder.name}"
+puts "✅ Storage Backend: #{backend.name}"
 
 puts "---  Seed Complete! ---"

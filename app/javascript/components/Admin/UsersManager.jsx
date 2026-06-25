@@ -1,220 +1,289 @@
+/**
+ * UsersManager — DAM user directory with advanced admin features.
+ *
+ * Features:
+ *  - Server-side paginated DataGrid
+ *  - Row click → full tabbed UserDrawer (Properties | Groups | Permissions |
+ *    Impersonators | Preferences)
+ *  - Quick status toggle, group assignment from grid
+ *  - Invite new local user
+ *  - Admin/super-admin context propagated to all sub-components
+ *
+ * Access control note:
+ *  - isAdmin  : can manage all non-system groups
+ *  - isSuperAdmin : can also manage administrators + super-administrators groups
+ *    and toggle the "System Administrator" switch on users
+ */
 import React, { useState, useEffect } from 'react';
-import { Box, Paper, Typography, Button, Chip, IconButton, CssBaseline } from '@mui/material';
-import { DataGrid, GridToolbarContainer, GridToolbarColumnsButton, GridToolbarFilterButton, GridToolbarDensitySelector } from '@mui/x-data-grid';
-import { PersonAddOutlined, Security, VpnKey, GroupAdd } from '@mui/icons-material';
+import {
+  Box, Paper, Typography, Button, Chip, IconButton,
+  CssBaseline, Stack, Tooltip, Badge,
+} from '@mui/material';
+import {
+  DataGrid,
+  GridToolbarContainer,
+  GridToolbarColumnsButton,
+  GridToolbarFilterButton,
+  GridToolbarDensitySelector,
+  GridToolbarExport,
+} from '@mui/x-data-grid';
+import {
+  PersonAddOutlined, Security, VpnKey, GroupAdd,
+  CheckCircleOutlined, BlockOutlined, Shield,
+} from '@mui/icons-material';
 import { useNotify } from '../../context/NotificationContext';
-import Sidebar from "../Sidebar";
-import { navigateTo } from "../../utils/globalutils";
-
 import UserDrawer from './UserDrawer';
 import GroupAssignmentModal from './GroupAssignmentModal';
-import Footer from "../Layout/Footer";
+import { apiFetch } from '../../utils/adminUtils';
 
-/**
- * Custom Toolbar to replace the deprecated monolithic GridToolbar
- */
 function CustomToolbar() {
-    return (
-        <GridToolbarContainer>
-            <GridToolbarColumnsButton />
-            <GridToolbarFilterButton />
-            <GridToolbarDensitySelector />
-        </GridToolbarContainer>
-    );
+  return (
+    <GridToolbarContainer>
+      <GridToolbarColumnsButton />
+      <GridToolbarFilterButton />
+      <GridToolbarDensitySelector />
+      <GridToolbarExport />
+    </GridToolbarContainer>
+  );
 }
 
-export default function UsersManager() {
-    const notify = useNotify();
-    const [users, setUsers] = useState([]);
-    const [allGroups, setAllGroups] = useState([]);
-    const [loading, setLoading] = useState(true);
+export default function UsersManager({ isAdmin = false, isSuperAdmin = false }) {
+  const notify = useNotify();
 
-    const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 25 });
-    const [totalCount, setTotalCount] = useState(0);
+  const isAdminBool     = isAdmin === true || isAdmin === 'true';
+  const isSuperAdminBool = isSuperAdmin === true || isSuperAdmin === 'true';
 
-    const [drawerOpen, setDrawerOpen] = useState(false);
-    const [selectedUser, setSelectedUser] = useState(null);
-    const [isEditing, setIsEditing] = useState(false);
-    const [editForm, setEditForm] = useState({ email: '', first_name: '', last_name: '', department: '', role: '' });
+  const [users, setUsers]     = useState([]);
+  const [allGroups, setAllGroups] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 25 });
+  const [totalCount, setTotalCount] = useState(0);
 
-    const [groupModalOpen, setGroupModalOpen] = useState(false);
-    const [groupTargetUser, setGroupTargetUser] = useState(null);
+  const [drawerOpen, setDrawerOpen]     = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [editForm, setEditForm]         = useState({});
 
-    useEffect(() => {
-        fetchGroups();
-    }, []);
+  const [groupModalOpen, setGroupModalOpen]   = useState(false);
+  const [groupTargetUser, setGroupTargetUser] = useState(null);
 
-    // Re-fetch users whenever paginationModel changes
-    useEffect(() => {
-        fetchUsers();
-    }, [paginationModel]);
+  useEffect(() => { fetchGroups(); }, []);
+  useEffect(() => { fetchUsers();  }, [paginationModel]);
 
-    const fetchUsers = () => {
-        setLoading(true);
-        const { page, pageSize } = paginationModel;
-        fetch(`/admin/users.json?page=${page}&limit=${pageSize}`)
-            .then(res => res.json())
-            .then(data => {
-                setUsers(data.users || []);
-                setTotalCount(data.total_count || 0);
-                setLoading(false);
-            })
-            .catch(() => { notify("Failed to load user directory.", "error"); setLoading(false); });
-    };
+  const fetchUsers = async () => {
+    setLoading(true);
+    try {
+      const { page, pageSize } = paginationModel;
+      const data = await apiFetch(`/admin/users.json?page=${page}&limit=${pageSize}`);
+      setUsers(data.users || []);
+      setTotalCount(data.total_count || data.users?.length || 0);
+    } catch { notify('Failed to load users.', 'error'); }
+    finally   { setLoading(false); }
+  };
 
-    const handleToggleStatus = async () => {
-        if (!selectedUser?.id) return;
+  const fetchGroups = async () => {
+    try {
+      const data = await apiFetch('/admin/user_groups.json');
+      setAllGroups(data.user_groups || []);
+    } catch { /* non-critical */ }
+  };
 
-        const csrfToken = document.querySelector('[name="csrf-token"]').content;
-        const response = await fetch(`/admin/users/${selectedUser.id}/toggle_status.json`, {
-            method: 'POST',
-            headers: { 'X-CSRF-Token': csrfToken }
-        });
+  const handleToggleStatus = async () => {
+    if (!selectedUser?.id) return;
+    const data = await apiFetch(`/admin/users/${selectedUser.id}/toggle_status.json`, { method: 'POST' });
+    if (data.success) {
+      notify(data.message, selectedUser.active ? 'warning' : 'success');
+      fetchUsers();
+    } else {
+      notify('Failed to change user status.', 'error');
+    }
+  };
 
-        const data = await response.json();
-        if (data.success) {
-            notify(data.message, selectedUser.active ? "warning" : "success");
-            fetchUsers(); // Refresh the grid
-        } else {
-            notify("Failed to change user status.", "error");
-        }
-    };
+  const handleSaveProfile = async () => {
+    const url    = selectedUser.id ? `/admin/users/${selectedUser.id}.json` : '/admin/users.json';
+    const method = selectedUser.id ? 'PATCH' : 'POST';
+    const data   = await apiFetch(url, { method, body: JSON.stringify({ user: editForm }) });
+    if (data.success) {
+      notify('Saved successfully.', 'success');
+      setDrawerOpen(false);
+      fetchUsers();
+    } else {
+      notify(`Error: ${data.errors?.join(', ')}`, 'error');
+    }
+  };
 
-    const fetchGroups = () => {
-        fetch('/admin/user_groups.json')
-            .then(res => res.json())
-            .then(data => setAllGroups(data.user_groups || []));
-    };
+  const handleSaveGroups = async (userId, groupIds) => {
+    const data = await apiFetch(`/admin/users/${userId}.json`, {
+      method: 'PATCH',
+      body: JSON.stringify({ user: { user_group_ids: groupIds } })
+    });
+    if (data.success) {
+      notify('Groups updated.', 'success');
+      setGroupModalOpen(false);
+      fetchUsers();
+    } else {
+      notify('Error updating groups.', 'error');
+    }
+  };
 
-    const columns = [
-        { field: 'display_name', headerName: 'Profile', flex: 1.5, minWidth: 200 },
-        { field: 'email', headerName: 'Email', flex: 1.2, minWidth: 200 },
-        {
-            field: 'origin', headerName: 'Origin', flex: 0.8,
-            renderCell: (params) => (
-                params.row.sso_managed
-                    ? <Chip icon={<Security sx={{ fontSize: 16 }} />} label={params.row.provider} size="small" color="primary" variant="outlined" />
-                    : <Chip icon={<VpnKey sx={{ fontSize: 16 }} />} label="Local" size="small" variant="outlined" />
-            )
-        },
-        { field: 'department', headerName: 'Department', flex: 1, hideable: true },
-        { field: 'role', headerName: 'Role', flex: 1, hideable: true },
-        {
-            field: 'groups', headerName: 'Groups', flex: 1.5, minWidth: 200,
-            renderCell: (params) => (
-                <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center', width: '100%' }}>
-                    {params.row.groups?.slice(0, 2).map(g => <Chip key={g} label={g} size="small" sx={{ fontSize: '0.7rem' }} />)}
-                    {params.row.groups?.length > 2 && <Typography variant="caption">+{params.row.groups.length - 2}</Typography>}
-                    <IconButton size="small" sx={{ ml: 'auto' }} onClick={(e) => { e.stopPropagation(); setGroupTargetUser(params.row); setGroupModalOpen(true); }}>
-                        <GroupAdd fontSize="small" color="primary" />
-                    </IconButton>
-                </Box>
-            )
-        },
-        { field: 'active', headerName: 'Status', width: 100, type: 'boolean', renderCell: (p) => p.row.active ? 'Active' : 'Suspended' }
-    ];
+  const handleRowClick = (params) => {
+    const user = params.row;
+    setSelectedUser(user);
+    setEditForm({
+      email:      user.email,
+      first_name: user.first_name,
+      last_name:  user.last_name,
+      department: user.department,
+      role:       user.role,
+      admin:      user.admin || false,
+    });
+    setDrawerOpen(true);
+  };
 
-    const handleRowClick = (params) => {
-        const user = params.row;
-        setSelectedUser(user);
-        setEditForm({
-            email: user.email,
-            first_name: user.first_name,
-            last_name: user.last_name,
-            department: user.department,
-            role: user.role,
-            admin: user.admin || false
-        });
-        setIsEditing(true);
-        setDrawerOpen(true);
-    };
+  // ── Columns ──────────────────────────────────────────────────────────────
 
-    const handleSaveProfile = () => {
-        const csrfToken = document.querySelector('[name="csrf-token"]').content;
-        const url = selectedUser.id ? `/admin/users/${selectedUser.id}.json` : '/admin/users.json';
-        fetch(url, {
-            method: selectedUser.id ? 'PATCH' : 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
-            body: JSON.stringify({ user: editForm })
-        })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    notify("Saved successfully.", "success");
-                    setDrawerOpen(false);
-                    fetchUsers();
-                } else { notify(`Error: ${data.errors?.join(', ')}`, "error"); }
-            });
-    };
-
-    const handleSaveGroups = (userId, groupIds) => {
-        const csrfToken = document.querySelector('[name="csrf-token"]').content;
-        fetch(`/admin/users/${userId}.json`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
-            body: JSON.stringify({ user: { user_group_ids: groupIds } })
-        })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    notify("Groups updated.", "success");
-                    setGroupModalOpen(false);
-                    fetchUsers();
-                } else { notify("Error updating groups.", "error"); }
-            });
-    };
-
-    return (
-        <Box sx={{ display: 'flex', bgcolor: '#f4f7fb', minHeight: '100vh' }}>
-            <CssBaseline />
-
-            <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                    <Box>
-                        <Typography variant="h4" sx={{ fontWeight: 700 }}>System Users</Typography>
-                        <Typography variant="body2" color="textSecondary">Manage employee access and group hierarchy.</Typography>
-                    </Box>
-                    <Button variant="contained" startIcon={<PersonAddOutlined />} onClick={() => { setSelectedUser({}); setEditForm({ email: '', first_name: '', last_name: '' }); setIsEditing(true); setDrawerOpen(true); }}>
-                        Invite Local User
-                    </Button>
-                </Box>
-
-                <Paper variant="outlined" sx={{ borderRadius: 3, height: 750, bgcolor: 'white' }}>
-                    <DataGrid
-                        rows={users}
-                        columns={columns}
-                        loading={loading}
-                        // Pagination
-                        paginationMode="server"
-                        paginationModel={paginationModel}
-                        onPaginationModelChange={setPaginationModel}
-                        rowCount={totalCount}
-                        pageSizeOptions={[25, 50, 100]}
-                        // Toolbar
-                        slots={{ toolbar: CustomToolbar }}
-                        disableRowSelectionOnClick
-                        onRowClick={handleRowClick}
-                        sx={{ border: 'none', '& .MuiDataGrid-row:hover': { bgcolor: '#f1f5f9' } }}
-                    />
-                </Paper>
-            </Box>
-
-            <UserDrawer
-                open={drawerOpen}
-                user={selectedUser}
-                isEditing={isEditing}
-                editForm={editForm}
-                setEditForm={setEditForm}
-                onClose={() => setDrawerOpen(false)}
-                onSave={handleSaveProfile}
-                onOpenGroups={() => { setDrawerOpen(false); setGroupTargetUser(selectedUser); setGroupModalOpen(true); }}
-                onToggleStatus={handleToggleStatus}
-            />
-
-            <GroupAssignmentModal
-                open={groupModalOpen} user={groupTargetUser} allGroups={allGroups}
-                onClose={() => setGroupModalOpen(false)} onSave={handleSaveGroups}
-            />
+  const columns = [
+    {
+      field: 'display_name', headerName: 'Name', flex: 1.2, minWidth: 180,
+      renderCell: (p) => (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Typography variant="body2" fontWeight={500}>{p.row.display_name}</Typography>
+          {p.row.admin && (
+            <Tooltip title="System Administrator">
+              <Shield sx={{ fontSize: 14, color: 'warning.main' }} />
+            </Tooltip>
+          )}
         </Box>
-    );
+      )
+    },
+    { field: 'email', headerName: 'Email', flex: 1.2, minWidth: 200 },
+    {
+      field: 'origin', headerName: 'Auth', flex: 0.7, minWidth: 100,
+      renderCell: (p) => p.row.sso_managed
+        ? <Chip icon={<Security sx={{ fontSize: 14 }} />} label={p.row.provider || 'SSO'}
+            size="small" color="primary" variant="outlined" sx={{ fontSize: '0.7rem' }} />
+        : <Chip icon={<VpnKey sx={{ fontSize: 14 }} />} label="Local"
+            size="small" variant="outlined" sx={{ fontSize: '0.7rem' }} />
+    },
+    { field: 'department', headerName: 'Department', flex: 0.9, minWidth: 120 },
+    { field: 'role',       headerName: 'Role',       flex: 0.8, minWidth: 100 },
+    {
+      field: 'groups', headerName: 'Groups', flex: 1.5, minWidth: 200,
+      renderCell: (p) => (
+        <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center', width: '100%' }}>
+          {p.row.groups?.slice(0, 2).map(g => (
+            <Chip key={g} label={g} size="small" sx={{ fontSize: '0.65rem', height: 20 }} />
+          ))}
+          {p.row.groups?.length > 2 && (
+            <Typography variant="caption" color="text.secondary">
+              +{p.row.groups.length - 2}
+            </Typography>
+          )}
+          <Tooltip title="Manage group memberships">
+            <IconButton size="small" sx={{ ml: 'auto' }}
+              onClick={e => {
+                e.stopPropagation();
+                setGroupTargetUser(p.row);
+                setGroupModalOpen(true);
+              }}>
+              <GroupAdd fontSize="small" color="primary" />
+            </IconButton>
+          </Tooltip>
+        </Box>
+      )
+    },
+    {
+      field: 'active', headerName: 'Status', width: 110,
+      renderCell: (p) => (
+        <Chip
+          label={p.row.active ? 'Active' : 'Suspended'}
+          size="small"
+          color={p.row.active ? 'success' : 'default'}
+          icon={p.row.active
+            ? <CheckCircleOutlined sx={{ fontSize: 14 }} />
+            : <BlockOutlined sx={{ fontSize: 14 }} />
+          }
+          sx={{ fontSize: '0.7rem' }}
+        />
+      )
+    },
+  ];
+
+  // ── Render ────────────────────────────────────────────────────────────────
+
+  return (
+    <Box sx={{ display: 'flex', bgcolor: '#f4f7fb', minHeight: '100vh' }}>
+      <CssBaseline />
+      <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
+
+        {/* Header */}
+        <Stack direction="row" justifyContent="space-between" alignItems="flex-start" sx={{ mb: 3 }}>
+          <Box>
+            <Typography variant="h4" sx={{ fontWeight: 700 }}>System Users</Typography>
+            <Typography variant="body2" color="text.secondary">
+              Manage employee access, group hierarchy, and preferences.
+            </Typography>
+          </Box>
+          <Button
+            variant="contained"
+            startIcon={<PersonAddOutlined />}
+            disableElevation
+            onClick={() => {
+              setSelectedUser({});
+              setEditForm({ email: '', first_name: '', last_name: '', department: '', role: '', admin: false });
+              setDrawerOpen(true);
+            }}
+          >
+            Invite Local User
+          </Button>
+        </Stack>
+
+        {/* Grid */}
+        <Paper variant="outlined" sx={{ borderRadius: 3, height: 680, bgcolor: 'white' }}>
+          <DataGrid
+            rows={users}
+            columns={columns}
+            loading={loading}
+            paginationMode="server"
+            paginationModel={paginationModel}
+            onPaginationModelChange={setPaginationModel}
+            rowCount={totalCount}
+            pageSizeOptions={[25, 50, 100]}
+            slots={{ toolbar: CustomToolbar }}
+            disableRowSelectionOnClick
+            onRowClick={handleRowClick}
+            sx={{
+              border: 'none',
+              '& .MuiDataGrid-row': { cursor: 'pointer' },
+              '& .MuiDataGrid-row:hover': { bgcolor: '#f1f5f9' },
+            }}
+          />
+        </Paper>
+      </Box>
+
+      {/* Full tabbed user drawer */}
+      <UserDrawer
+        open={drawerOpen}
+        user={selectedUser}
+        editForm={editForm}
+        setEditForm={setEditForm}
+        onClose={() => setDrawerOpen(false)}
+        onSave={handleSaveProfile}
+        onToggleStatus={handleToggleStatus}
+        allGroups={allGroups}
+        isAdmin={isAdminBool}
+        isSuperAdmin={isSuperAdminBool}
+      />
+
+      {/* Group assignment modal with access control */}
+      <GroupAssignmentModal
+        open={groupModalOpen}
+        user={groupTargetUser}
+        allGroups={allGroups}
+        onClose={() => setGroupModalOpen(false)}
+        onSave={handleSaveGroups}
+        isAdmin={isAdminBool}
+        isSuperAdmin={isSuperAdminBool}
+      />
+    </Box>
+  );
 }

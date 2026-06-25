@@ -508,6 +508,552 @@ paths:
                 properties:
                   error:
                     type: string
+  "/admin/users":
+    get:
+      summary: List all DAM users
+      tags:
+      - Admin - Users
+      security:
+      - Bearer: []
+      responses:
+        '200':
+          description: Users list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  users:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/User'
+    post:
+      summary: Create a new local user
+      tags:
+      - Admin - Users
+      security:
+      - Bearer: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [user]
+              properties:
+                user:
+                  type: object
+                  required: [email, first_name, last_name]
+                  properties:
+                    email:          { type: string }
+                    first_name:     { type: string }
+                    last_name:      { type: string }
+                    department:     { type: string }
+                    role:           { type: string, default: viewer }
+                    admin:          { type: boolean, default: false }
+                    user_group_ids: { type: array, items: { type: integer } }
+      responses:
+        '200':
+          description: User created (temp password emailed to user)
+        '422':
+          description: Validation failed
+  "/admin/users/{id}":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema: { type: integer }
+    get:
+      summary: Retrieve a single user with tabs data
+      tags:
+      - Admin - Users
+      security:
+      - Bearer: []
+      responses:
+        '200':
+          description: User detail
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user: { $ref: '#/components/schemas/User' }
+    patch:
+      summary: Update user properties
+      tags:
+      - Admin - Users
+      security:
+      - Bearer: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user:
+                  type: object
+                  properties:
+                    first_name:     { type: string }
+                    last_name:      { type: string }
+                    department:     { type: string }
+                    role:           { type: string }
+                    admin:          { type: boolean }
+                    user_group_ids: { type: array, items: { type: integer } }
+      responses:
+        '200':
+          description: Updated
+        '403':
+          description: Forbidden
+    delete:
+      summary: Deactivate (soft-delete) a user
+      tags:
+      - Admin - Users
+      security:
+      - Bearer: []
+      responses:
+        '200':
+          description: Deactivated
+  "/admin/users/{id}/toggle_status":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema: { type: integer }
+    post:
+      summary: Toggle active/suspended state
+      tags:
+      - Admin - Users
+      security:
+      - Bearer: []
+      responses:
+        '200':
+          description: Status toggled
+  "/admin/users/{id}/change_password":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema: { type: integer }
+    post:
+      summary: Change a local user's password (admin initiated)
+      tags:
+      - Admin - Users
+      security:
+      - Bearer: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [new_password, new_password_confirmation]
+              properties:
+                new_password:              { type: string }
+                new_password_confirmation: { type: string }
+                force_change:              { type: boolean, default: false }
+      responses:
+        '200':
+          description: Password updated
+        '422':
+          description: SSO accounts cannot have password changed here
+  "/admin/users/{id}/groups":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema: { type: integer }
+    get:
+      summary: List groups this user belongs to
+      tags:
+      - Admin - Users
+      security:
+      - Bearer: []
+      responses:
+        '200':
+          description: Groups list
+  "/admin/users/{id}/impersonators":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema: { type: integer }
+    get:
+      summary: List users allowed to impersonate this account
+      tags:
+      - Admin - Users
+      security:
+      - Bearer: []
+      responses:
+        '200':
+          description: Impersonators list
+    post:
+      summary: Grant impersonation access to another user
+      tags:
+      - Admin - Users
+      security:
+      - Bearer: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [impersonator_id]
+              properties:
+                impersonator_id: { type: integer }
+      responses:
+        '200':
+          description: Access granted
+        '422':
+          description: Self-impersonation or duplicate grant
+  "/admin/users/{id}/impersonators/{impersonator_id}":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema: { type: integer }
+    - name: impersonator_id
+      in: path
+      required: true
+      schema: { type: integer }
+    delete:
+      summary: Revoke impersonation access
+      tags:
+      - Admin - Users
+      security:
+      - Bearer: []
+      responses:
+        '200':
+          description: Revoked
+  "/admin/users/{id}/preferences":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema: { type: integer }
+    get:
+      summary: Get user preferences (language, notifications)
+      tags:
+      - Admin - Users
+      security:
+      - Bearer: []
+      responses:
+        '200':
+          description: Preferences
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  preferences: { $ref: '#/components/schemas/UserPreference' }
+    patch:
+      summary: Update user preferences
+      tags:
+      - Admin - Users
+      security:
+      - Bearer: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                preferences:
+                  type: object
+                  properties:
+                    language:                { type: string, example: de }
+                    receive_mention_emails:  { type: boolean }
+                    receive_workflow_emails: { type: boolean }
+      responses:
+        '200':
+          description: Updated
+  "/admin/user_groups":
+    get:
+      summary: List all user groups
+      tags:
+      - Admin - User Groups
+      security:
+      - Bearer: []
+      description: |
+        Returns all groups including built-in system groups.
+        System groups: **everyone**, **administrators**, **super-administrators**.
+        These groups cannot be deleted (deletable: false).
+      responses:
+        '200':
+          description: User groups list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user_groups:
+                    type: array
+                    items: { $ref: '#/components/schemas/UserGroup' }
+    post:
+      summary: Create a new user group
+      tags:
+      - Admin - User Groups
+      security:
+      - Bearer: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [user_group]
+              properties:
+                user_group:
+                  type: object
+                  required: [name]
+                  properties:
+                    name:        { type: string }
+                    description: { type: string }
+                parent_id: { type: integer, nullable: true }
+      responses:
+        '201':
+          description: Created
+        '422':
+          description: Validation failed
+  "/admin/user_groups/{id}":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema: { type: integer }
+    get:
+      summary: Get a single group with members and sub-groups
+      tags:
+      - Admin - User Groups
+      security:
+      - Bearer: []
+      responses:
+        '200':
+          description: Group detail
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  group: { $ref: '#/components/schemas/UserGroup' }
+    patch:
+      summary: Update group name or description
+      tags:
+      - Admin - User Groups
+      security:
+      - Bearer: []
+      description: |
+        System groups have restrictions:
+        - **everyone**: immutable (no changes)
+        - **administrators**: only super-admins can modify
+        - **super-administrators**: only super-admins can modify
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_group:
+                  type: object
+                  properties:
+                    name:        { type: string }
+                    description: { type: string }
+      responses:
+        '200':
+          description: Updated
+        '403':
+          description: Forbidden
+    delete:
+      summary: Delete a non-system group
+      tags:
+      - Admin - User Groups
+      security:
+      - Bearer: []
+      description: System groups (everyone, administrators, super-administrators) cannot be deleted.
+      responses:
+        '200':
+          description: Deleted
+        '403':
+          description: System groups cannot be deleted
+  "/admin/user_groups/{id}/add_member":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema: { type: integer }
+    post:
+      summary: Add a user to the group
+      tags:
+      - Admin - User Groups
+      security:
+      - Bearer: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:   { type: string }
+                user_id: { type: integer }
+      responses:
+        '200':
+          description: User added
+        '403':
+          description: Forbidden (everyone group or administrators without super-admin)
+        '404':
+          description: User not found
+  "/admin/user_groups/{id}/remove_member":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema: { type: integer }
+    delete:
+      summary: Remove a user from the group
+      tags:
+      - Admin - User Groups
+      security:
+      - Bearer: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [user_id]
+              properties:
+                user_id: { type: integer }
+      responses:
+        '200':
+          description: Removed
+        '403':
+          description: Cannot remove from everyone group
+  "/admin/user_groups/{id}/add_group_member":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema: { type: integer }
+    post:
+      summary: Nest a child group inside this group
+      tags:
+      - Admin - User Groups
+      security:
+      - Bearer: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [child_group_id]
+              properties:
+                child_group_id: { type: integer }
+      responses:
+        '200':
+          description: Sub-group added
+  "/admin/user_groups/{id}/remove_group_member":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema: { type: integer }
+    delete:
+      summary: Remove a child group from this group
+      tags:
+      - Admin - User Groups
+      security:
+      - Bearer: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [child_group_id]
+              properties:
+                child_group_id: { type: integer }
+      responses:
+        '200':
+          description: Sub-group removed
+  "/admin/folders/{folder_id}/folder_policies":
+    parameters:
+    - name: folder_id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    get:
+      summary: List explicit and inherited ACL policies for a folder
+      tags:
+      - Admin - Permissions (ACL)
+      security:
+      - Bearer: []
+      description: |
+        Returns the full permission matrix for every group that has an entry
+        on this folder, plus inherited rules from parent folders.
+
+        **Actions:** Read | Modify | Create | Delete | Replicate | Manage
+
+        **explicit_deny** short-circuits all positive grants — even Administrators
+        are blocked (the only exception is if they are in the built-in
+        administrators group which always bypasses deny rules).
+      responses:
+        '200':
+          description: Policies retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  folder_name:
+                    type: string
+                  explicit_policies:
+                    type: array
+                    items: { $ref: '#/components/schemas/FolderPolicy' }
+                  inherited_policies:
+                    type: array
+                    items: { $ref: '#/components/schemas/FolderPolicy' }
+    post:
+      summary: Create or update a folder ACL entry for a group
+      tags:
+      - Admin - Permissions (ACL)
+      security:
+      - Bearer: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [group_id, policy]
+              properties:
+                group_id: { type: integer }
+                policy:
+                  type: object
+                  properties:
+                    read_access:      { type: boolean }
+                    modify_access:    { type: boolean }
+                    create_access:    { type: boolean }
+                    delete_access:    { type: boolean }
+                    replicate_access: { type: boolean }
+                    manage_access:    { type: boolean }
+                    explicit_deny:    { type: boolean }
+      responses:
+        '200':
+          description: Policy saved
+        '422':
+          description: Validation failed
+  "/admin/folders/{folder_id}/folder_policies/{group_id}":
+    parameters:
+    - name: folder_id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    - name: group_id
+      in: path
+      required: true
+      schema: { type: integer }
+    delete:
+      summary: Remove an explicit ACL entry (reverts to inherited)
+      tags:
+      - Admin - Permissions (ACL)
+      security:
+      - Bearer: []
+      responses:
+        '200':
+          description: Policy removed
 servers:
 - url: http://localhost:3000
   description: Local Development Server
@@ -519,3 +1065,96 @@ components:
       type: http
       scheme: bearer
       description: Enter your OAuth 2.0 Bearer token to authenticate requests.
+  schemas:
+    User:
+      type: object
+      properties:
+        id:           { type: integer }
+        email:        { type: string }
+        username:     { type: string, nullable: true }
+        display_name: { type: string }
+        first_name:   { type: string, nullable: true }
+        last_name:    { type: string, nullable: true }
+        department:   { type: string, nullable: true }
+        role:         { type: string }
+        avatar_url:   { type: string, nullable: true }
+        admin:        { type: boolean }
+        active:       { type: boolean }
+        sso_managed:  { type: boolean }
+        provider:     { type: string, nullable: true }
+        created_at:   { type: string, format: date-time }
+        groups:
+          type: array
+          items: { type: string }
+        group_ids:
+          type: array
+          items: { type: integer }
+        impersonators:
+          type: array
+          items:
+            type: object
+            properties:
+              id:           { type: integer }
+              display_name: { type: string }
+              email:        { type: string }
+        preferences:
+          $ref: '#/components/schemas/UserPreference'
+    UserPreference:
+      type: object
+      properties:
+        language:                { type: string, example: en }
+        receive_mention_emails:  { type: boolean }
+        receive_workflow_emails: { type: boolean }
+    UserGroup:
+      type: object
+      properties:
+        id:           { type: integer }
+        name:         { type: string }
+        slug:         { type: string, nullable: true }
+        description:  { type: string, nullable: true }
+        is_system:    { type: boolean }
+        deletable:    { type: boolean }
+        parent_id:    { type: integer, nullable: true }
+        member_count: { type: integer }
+        created_at:   { type: string, format: date-time }
+        members:
+          type: array
+          items:
+            type: object
+            properties:
+              id:           { type: integer }
+              display_name: { type: string }
+              email:        { type: string }
+              avatar_url:   { type: string, nullable: true }
+        child_groups:
+          type: array
+          items:
+            type: object
+            properties:
+              id:   { type: integer }
+              name: { type: string }
+              slug: { type: string, nullable: true }
+    FolderPolicy:
+      type: object
+      description: |
+        ACL entry for a (group, folder) pair.
+        Actions: Read | Modify | Create | Delete | Replicate | Manage
+        A single explicit_deny overrides all positive grants for the group.
+      properties:
+        id:            { type: integer }
+        folder_id:     { type: string }
+        group_id:      { type: integer }
+        group_name:    { type: string }
+        inherited:     { type: boolean }
+        source_folder: { type: string, nullable: true }
+        matrix:
+          type: object
+          properties:
+            read:         { type: boolean }
+            modify:       { type: boolean }
+            create:       { type: boolean }
+            delete:       { type: boolean }
+            replicate:    { type: boolean }
+            manage:       { type: boolean }
+            explicit_deny: { type: boolean }
+

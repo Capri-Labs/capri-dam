@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_24_200001) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_25_000004) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -201,16 +201,17 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_24_200001) do
   end
 
   create_table "folder_policies", force: :cascade do |t|
-    t.boolean "approval_flow", default: false, null: false
+    t.boolean "create_access", default: false, null: false
     t.datetime "created_at", null: false
     t.boolean "delete_access", default: false, null: false
     t.boolean "explicit_deny", default: false, null: false
     t.uuid "folder_id", null: false
     t.boolean "manage_access", default: false, null: false
+    t.boolean "modify_access", default: false, null: false
     t.boolean "read_access", default: false, null: false
+    t.boolean "replicate_access", default: false, null: false
     t.datetime "updated_at", null: false
     t.bigint "user_group_id", null: false
-    t.boolean "write_access", default: false, null: false
     t.index ["folder_id", "user_group_id"], name: "index_folder_policies_on_folder_id_and_user_group_id", unique: true
     t.index ["folder_id"], name: "index_folder_policies_on_folder_id"
     t.index ["user_group_id"], name: "index_folder_policies_on_user_group_id"
@@ -569,13 +570,29 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_24_200001) do
   create_table "user_groups", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "description"
+    t.boolean "is_system", default: false, null: false
     t.string "name", null: false
+    t.bigint "parent_id"
+    t.string "slug"
     t.datetime "updated_at", null: false
     t.index ["name"], name: "index_user_groups_on_name", unique: true
+    t.index ["parent_id"], name: "index_user_groups_on_parent_id"
+    t.index ["slug"], name: "index_user_groups_on_slug", unique: true
+  end
+
+  create_table "user_impersonators", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "impersonator_id", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["impersonator_id"], name: "index_user_impersonators_on_impersonator_id"
+    t.index ["user_id", "impersonator_id"], name: "index_user_impersonators_on_pair", unique: true
+    t.index ["user_id"], name: "index_user_impersonators_on_user_id"
   end
 
   create_table "user_preferences", force: :cascade do |t|
     t.datetime "created_at", null: false
+    t.string "language", default: "en", null: false
     t.boolean "receive_mention_emails", default: true, null: false
     t.boolean "receive_workflow_emails", default: true, null: false
     t.datetime "updated_at", null: false
@@ -763,6 +780,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_24_200001) do
   add_foreign_key "report_snapshots", "report_definitions"
   add_foreign_key "user_group_memberships", "user_groups"
   add_foreign_key "user_group_memberships", "users"
+  add_foreign_key "user_groups", "user_groups", column: "parent_id"
+  add_foreign_key "user_impersonators", "users"
+  add_foreign_key "user_impersonators", "users", column: "impersonator_id"
   add_foreign_key "user_preferences", "users"
   add_foreign_key "video_encoding_presets", "video_profiles"
   add_foreign_key "video_profile_folder_assignments", "video_profiles"

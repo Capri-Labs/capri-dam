@@ -160,5 +160,51 @@ module Types
     def video_profile(id:)
       VideoProfile.active.find_by(id: id)
     end
+
+    # -------------------------------------------------------------------------
+    # Users (admin only)
+    # -------------------------------------------------------------------------
+
+    field :users, [Types::UserType], null: false do
+      description "List all DAM users (admin only)"
+    end
+
+    def users
+      return [] unless context[:current_user]&.admin?
+      User.includes(:user_groups, :preference).order(created_at: :desc)
+    end
+
+    field :user, Types::UserType, null: true do
+      description "Fetch a single DAM user by ID (admin only)"
+      argument :id, ID, required: true
+    end
+
+    def user(id:)
+      return nil unless context[:current_user]&.admin?
+      User.find_by(id: id)
+    end
+
+    # -------------------------------------------------------------------------
+    # User Groups (admin only)
+    # -------------------------------------------------------------------------
+
+    field :user_groups, [Types::UserGroupType], null: false do
+      description "List all user groups (admin only)"
+    end
+
+    def user_groups
+      return [] unless context[:current_user]&.admin?
+      UserGroup.includes(:users, :child_groups).order(name: :asc)
+    end
+
+    field :user_group, Types::UserGroupType, null: true do
+      description "Fetch a single user group by ID (admin only)"
+      argument :id, ID, required: true
+    end
+
+    def user_group(id:)
+      return nil unless context[:current_user]&.admin?
+      UserGroup.find_by(id: id)
+    end
   end
 end

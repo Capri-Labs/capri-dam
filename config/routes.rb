@@ -302,14 +302,28 @@ Rails.application.routes.draw do
 
     resources :user_groups, except: [:new, :edit] do
       member do
-        post :add_user
-        delete :remove_user
+        # Legacy — kept for backward-compat; prefer add_member/remove_member
+        post   :add_user,    to: 'user_groups#add_member'
+        delete :remove_user, to: 'user_groups#remove_member'
+        # Members (users)
+        post   :add_member
+        delete :remove_member
+        # Sub-group (group-in-group) membership
+        post   :add_group_member
+        delete :remove_group_member
       end
     end
 
-    resources :users, only: [:index, :create, :update] do
+    resources :users, only: [:index, :show, :create, :update, :destroy] do
       member do
-        post :toggle_status
+        post   :toggle_status
+        post   :change_password
+        get    :groups
+        get    :impersonators
+        post   'impersonators', to: 'users#add_impersonator', as: :add_impersonator
+        delete 'impersonators/:impersonator_id', to: 'users#remove_impersonator', as: :remove_impersonator
+        get    :preferences
+        patch  :preferences, to: 'users#update_preferences'
       end
     end
 

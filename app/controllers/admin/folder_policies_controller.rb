@@ -65,24 +65,25 @@ class Admin::FolderPoliciesController < ApplicationController
 
   def policy_params
     params.require(:policy).permit(
-      :read_access, :write_access, :delete_access,
-      :manage_access, :approval_flow, :explicit_deny
+      :read_access, :modify_access, :create_access, :delete_access,
+      :replicate_access, :manage_access, :explicit_deny
     )
   end
 
   def format_policy(policy, inherited:, source_folder: nil)
     {
-      id: policy.id,
-      group_id: policy.user_group_id,
-      group_name: policy.user_group.name,
-      inherited: inherited,
+      id:            policy.id,
+      group_id:      policy.user_group_id,
+      group_name:    policy.user_group.name,
+      inherited:     inherited,
       source_folder: source_folder,
       matrix: {
-        read: policy.read_access,
-        write: policy.write_access,
-        delete: policy.delete_access,
-        manage: policy.manage_access,
-        approve: policy.approval_flow,
+        read:      policy.read_access,
+        modify:    policy.modify_access,
+        create:    policy.create_access,
+        delete:    policy.delete_access,
+        replicate: policy.replicate_access,
+        manage:    policy.manage_access,
         explicit_deny: policy.explicit_deny
       }
     }
