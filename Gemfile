@@ -111,7 +111,7 @@ gem "liquid", "~> 5.12"
 
 gem "mini_magick", "~> 5.3"
 
-gem "marcel", "~> 1.1"
+gem "marcel", "~> 1.2"
 
 # CSV generation (removed from Ruby's default gems in 3.4+)
 gem "csv"
