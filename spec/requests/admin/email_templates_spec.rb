@@ -6,7 +6,7 @@ RSpec.describe 'Admin::EmailTemplates', type: :request do
     get 'Retrieves a list of all email templates' do
       tags 'Admin - Email Templates'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
 
       response '200', 'email templates retrieved successfully' do
         schema type: :object,
@@ -21,10 +21,10 @@ RSpec.describe 'Admin::EmailTemplates', type: :request do
                        event_trigger: { type: :string },
                        subject: { type: :string },
                        active: { type: :boolean },
-                       updated_at: { type: :string }
-                     }
-                   }
-                 }
+                       updated_at: { type: :string },
+                     },
+                   },
+                 },
                }
         run_test!
       end
@@ -35,7 +35,7 @@ RSpec.describe 'Admin::EmailTemplates', type: :request do
       tags 'Admin - Email Templates'
       consumes 'application/json'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
 
       parameter name: :payload, in: :body, schema: {
         type: :object,
@@ -48,12 +48,12 @@ RSpec.describe 'Admin::EmailTemplates', type: :request do
               subject: { type: :string, example: 'Welcome to Capri DAM' },
               html_body: { type: :string, example: '<h1>Welcome {{first_name}}</h1>' },
               text_body: { type: :string, example: 'Welcome {{first_name}}' },
-              active: { type: :boolean, example: true }
+              active: { type: :boolean, example: true },
             },
-            required: ['name', 'event_trigger', 'subject']
-          }
+            required: [ 'name', 'event_trigger', 'subject' ],
+          },
         },
-        required: ['email_template']
+        required: [ 'email_template' ],
       }
 
       response '200', 'template created successfully' do
@@ -76,7 +76,7 @@ RSpec.describe 'Admin::EmailTemplates', type: :request do
     get 'Retrieves details of a specific email template' do
       tags 'Admin - Email Templates'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
 
       response '200', 'template details retrieved' do
         schema type: :object,
@@ -92,9 +92,9 @@ RSpec.describe 'Admin::EmailTemplates', type: :request do
                      text_body: { type: :string },
                      active: { type: :boolean },
                      created_at: { type: :string, format: 'date-time' },
-                     updated_at: { type: :string, format: 'date-time' }
-                   }
-                 }
+                     updated_at: { type: :string, format: 'date-time' },
+                   },
+                 },
                }
         run_test!
       end
@@ -105,7 +105,7 @@ RSpec.describe 'Admin::EmailTemplates', type: :request do
       tags 'Admin - Email Templates'
       consumes 'application/json'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
 
       parameter name: :payload, in: :body, schema: {
         type: :object,
@@ -118,10 +118,10 @@ RSpec.describe 'Admin::EmailTemplates', type: :request do
               subject: { type: :string },
               html_body: { type: :string },
               text_body: { type: :string },
-              active: { type: :boolean }
-            }
-          }
-        }
+              active: { type: :boolean },
+            },
+          },
+        },
       }
 
       response '200', 'template updated successfully' do
@@ -139,7 +139,7 @@ RSpec.describe 'Admin::EmailTemplates', type: :request do
     delete 'Deletes an email template' do
       tags 'Admin - Email Templates'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
 
       response '200', 'template deleted successfully' do
         schema type: :object, properties: { success: { type: :boolean }, message: { type: :string } }

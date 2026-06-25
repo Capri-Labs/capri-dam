@@ -10,7 +10,7 @@ puts "--- 🏗️  Seeding Capri DAM Ecosystem ---"
   { slug: 'administrators',      name: 'administrators',
     description: 'Members have full access. Only super-admins can modify this group.' },
   { slug: 'super-administrators', name: 'super-administrators',
-    description: 'Reserved for the highest level of system operations.' }
+    description: 'Reserved for the highest level of system operations.' },
 ].each do |attrs|
   # Case-insensitive lookup covers legacy capitalisation like "Everyone"
   group = UserGroup.find_by(slug: attrs[:slug]) ||
@@ -49,7 +49,7 @@ admin = User.find_or_create_by!(email: 'admin@admin.com') do |user|
 end
 puts "✅ Admin: #{admin.email}"
 
-[admins_group, super_admins_group, everyone_group].each do |group|
+[ admins_group, super_admins_group, everyone_group ].each do |group|
   unless admin.user_groups.include?(group)
     admin.user_groups << group
     puts "  ↳ Added admin to #{group.name}"
