@@ -74,6 +74,7 @@ gem "responders"
 
 group :development, :test do
   gem "rspec-rails"
+  gem "rspec_junit_formatter", require: false # JUnit XML output for CI
   gem "factory_bot_rails"
   gem "faker" # Optional: generates random data for tests
 

@@ -355,25 +355,6 @@ test.describe('Folder Permissions ACL', () => {
   });
 });
 
-//
-// Tests the full overlay-based UI for creating, editing, and managing users
-// and groups, including system group protection, impersonation grants, and
-// ACL permission matrix editing.
-//
-// Prereqs: app running at E2E_BASE_URL with seed data (bin/rails db:seed).
-
-const { test, expect } = require('./fixtures');
-
-const ADMIN_EMAIL    = process.env.E2E_EMAIL    || 'admin@admin.com';
-const ADMIN_PASSWORD = process.env.E2E_PASSWORD || 'AdminUser';
-
-async function login(page) {
-  await page.goto('/users/sign_in');
-  await page.fill('input[name="user[email]"]', ADMIN_EMAIL);
-  await page.fill('input[name="user[password]"]', ADMIN_PASSWORD);
-  await page.click('button[type="submit"], input[type="submit"]');
-  await page.waitForLoadState('networkidle');
-}
 
 // ---------------------------------------------------------------------------
 // Users

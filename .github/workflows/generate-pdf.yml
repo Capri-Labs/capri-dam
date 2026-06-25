@@ -41,8 +41,13 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             default-jre \
-            plantuml \
             graphviz
+          # Download PlantUML JAR directly — more reliable than the apt package
+          curl -fsSL -o /tmp/plantuml.jar \
+            https://github.com/plantuml/plantuml/releases/download/v1.2024.8/plantuml-1.2024.8.jar
+          echo '#!/bin/sh' | sudo tee /usr/local/bin/plantuml > /dev/null
+          echo 'exec java -jar /tmp/plantuml.jar "$@"' | sudo tee -a /usr/local/bin/plantuml > /dev/null
+          sudo chmod +x /usr/local/bin/plantuml
 
       - name: Install Asciidoctor + plugins
         run: |
@@ -58,6 +63,8 @@ jobs:
 
       # ── HTML (arc42 theme) ──────────────────────────────────────────────────
       - name: Generate HTML documentation
+        env:
+          PLANTUML_JAR: /tmp/plantuml.jar
         run: |
           asciidoctor \
             -r asciidoctor-diagram \
@@ -80,6 +87,8 @@ jobs:
 
       # ── PDF ────────────────────────────────────────────────────────────────
       - name: Generate PDF documentation
+        env:
+          PLANTUML_JAR: /tmp/plantuml.jar
         run: |
           asciidoctor-pdf \
             -r asciidoctor-diagram \
