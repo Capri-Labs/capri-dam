@@ -42,18 +42,17 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             default-jre \
             graphviz
-          # Download PlantUML JAR directly — more reliable than the apt package
+          # Download PlantUML JAR directly — more reliable than the apt package.
+          # asciidoctor-diagram >= 3.x reads DIAGRAM_PLANTUML_CLASSPATH.
           curl -fsSL -o /tmp/plantuml.jar \
             https://github.com/plantuml/plantuml/releases/download/v1.2024.8/plantuml-1.2024.8.jar
-          echo '#!/bin/sh' | sudo tee /usr/local/bin/plantuml > /dev/null
-          echo 'exec java -jar /tmp/plantuml.jar "$@"' | sudo tee -a /usr/local/bin/plantuml > /dev/null
-          sudo chmod +x /usr/local/bin/plantuml
 
       - name: Install Asciidoctor + plugins
         run: |
           sudo gem install \
             asciidoctor \
             asciidoctor-diagram \
+            asciidoctor-diagram-plantuml \
             asciidoctor-pdf \
             rouge \
             --no-document
@@ -64,7 +63,7 @@ jobs:
       # ── HTML (arc42 theme) ──────────────────────────────────────────────────
       - name: Generate HTML documentation
         env:
-          PLANTUML_JAR: /tmp/plantuml.jar
+          DIAGRAM_PLANTUML_CLASSPATH: /tmp/plantuml.jar
         run: |
           asciidoctor \
             -r asciidoctor-diagram \
@@ -88,7 +87,7 @@ jobs:
       # ── PDF ────────────────────────────────────────────────────────────────
       - name: Generate PDF documentation
         env:
-          PLANTUML_JAR: /tmp/plantuml.jar
+          DIAGRAM_PLANTUML_CLASSPATH: /tmp/plantuml.jar
         run: |
           asciidoctor-pdf \
             -r asciidoctor-diagram \
