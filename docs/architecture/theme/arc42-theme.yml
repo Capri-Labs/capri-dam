@@ -4,26 +4,21 @@
 
 extends: default
 
+# Fonts: use asciidoctor-pdf bundled fonts only (no external font files required).
+#   Noto Serif   — body / headings  (bundled with asciidoctor-pdf)
+#   M+ 1mn       — code / verbatim  (bundled with asciidoctor-pdf)
+# Previously used Helvetica/Courier but those require external TTF files not
+# available on CI runners; switching to bundled fonts avoids the
+# "Helvetica not found in GEM_FONTS_DIR" error.
+
 base:
-  font-family: Helvetica
+  font-family: Noto Serif
   font-size: 10.5
   line-height: 1.55
   font-color: "#2D2D2D"
 
-font:
-  catalog:
-    Helvetica:
-      normal:  Helvetica
-      bold:    Helvetica-Bold
-      italic:  Helvetica-Oblique
-      bold_italic: Helvetica-BoldOblique
-    Courier:
-      normal: Courier
-      bold:   Courier-Bold
-      italic: Courier-Oblique
-
 heading:
-  font-family: Helvetica
+  font-family: Noto Serif
   font-color: "#27408B"
   font-style: bold
   line-height: 1.25
@@ -112,7 +107,7 @@ table:
     stripe-background-color: "#EEF3FB"
 
 code:
-  font-family: Courier
+  font-family: M+ 1mn
   font-size: 9
   background-color: "#F0F4FF"
   border-color: "#BDD7EE"
