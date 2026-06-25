@@ -3,16 +3,14 @@
 require 'swagger_helper'
 
 RSpec.describe 'Api::V1::AiConfiguration', type: :request do
-
   # ===========================================================================
   # SHOW — GET /api/v1/ai_configuration
   # ===========================================================================
   path '/api/v1/ai_configuration' do
-
     get 'Retrieve the current AI Gateway configuration' do
       tags 'CDN & Settings'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
       description <<~DESC
         Returns the singleton `AiConfiguration` record. This controls which
         provider and model the AI Gateway uses for text generation and embedding.
@@ -28,7 +26,7 @@ RSpec.describe 'Api::V1::AiConfiguration', type: :request do
                  embedding_model:   { type: :string, example: 'text-embedding-ada-002' },
                  monthly_budget_usd: { type: :number, example: 200.00 },
                  system_prompt:     { type: :string, nullable: true },
-                 fallback_to_local: { type: :boolean, example: false }
+                 fallback_to_local: { type: :boolean, example: false },
                }
         run_test!
       end
@@ -39,7 +37,7 @@ RSpec.describe 'Api::V1::AiConfiguration', type: :request do
       tags 'CDN & Settings'
       consumes 'application/json'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
       description <<~DESC
         Updates the singleton AI configuration. Changes take effect immediately
         for all subsequent AI Gateway calls. Set `fallback_to_local: true` to
@@ -48,7 +46,7 @@ RSpec.describe 'Api::V1::AiConfiguration', type: :request do
 
       parameter name: :payload, in: :body, schema: {
         type: :object,
-        required: ['ai_configuration'],
+        required: [ 'ai_configuration' ],
         properties: {
           ai_configuration: {
             type: :object,
@@ -58,17 +56,17 @@ RSpec.describe 'Api::V1::AiConfiguration', type: :request do
               embedding_model:    { type: :string, example: 'text-embedding-ada-002' },
               monthly_budget_usd: { type: :number, example: 500.00 },
               system_prompt:      { type: :string, nullable: true },
-              fallback_to_local:  { type: :boolean }
-            }
-          }
-        }
+              fallback_to_local:  { type: :boolean },
+            },
+          },
+        },
       }
 
       response '200', 'AI Gateway configuration synchronized' do
         schema type: :object,
                properties: {
                  message: { type: :string },
-                 config:  { type: :object }
+                 config:  { type: :object },
                }
         run_test!
       end
@@ -80,6 +78,4 @@ RSpec.describe 'Api::V1::AiConfiguration', type: :request do
       end
     end
   end
-
 end
-

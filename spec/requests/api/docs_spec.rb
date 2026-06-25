@@ -100,4 +100,3 @@ RSpec.describe "Api::Docs", type: :request do
     end
   end
 end
-

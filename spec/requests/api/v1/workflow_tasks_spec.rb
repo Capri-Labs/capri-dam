@@ -1,7 +1,6 @@
 require 'swagger_helper'
 
 RSpec.describe 'Api::V1::WorkflowTasks', type: :request do
-
   # --- WORKFLOW TASK SUBMISSION ---
   path '/api/v1/workflow_tasks/{id}/submit' do
     parameter name: :id, in: :path, type: :string, description: 'Workflow Task ID'
@@ -10,15 +9,15 @@ RSpec.describe 'Api::V1::WorkflowTasks', type: :request do
       tags 'Workflows & Tasks'
       consumes 'application/json'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
 
       parameter name: :payload, in: :body, schema: {
         type: :object,
         properties: {
-          decision: { type: :string, enum: ['approved', 'rejected'], example: 'approved' },
-          comment: { type: :string, example: 'Looks good to go. Assets are on brand.' }
+          decision: { type: :string, enum: [ 'approved', 'rejected' ], example: 'approved' },
+          comment: { type: :string, example: 'Looks good to go. Assets are on brand.' },
         },
-        required: ['decision']
+        required: [ 'decision' ],
       }
 
       response '200', 'decision recorded successfully' do
@@ -44,7 +43,7 @@ RSpec.describe 'Api::V1::WorkflowTasks', type: :request do
       tags 'Workflows & Tasks'
       consumes 'application/json'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
 
       parameter name: :payload, in: :body, schema: {
         type: :object,
@@ -52,11 +51,11 @@ RSpec.describe 'Api::V1::WorkflowTasks', type: :request do
           ids: {
             type: :array,
             items: { type: :integer },
-            example: [101, 102, 105],
-            description: 'Array of Workflow Instance IDs to cancel'
-          }
+            example: [ 101, 102, 105 ],
+            description: 'Array of Workflow Instance IDs to cancel',
+          },
         },
-        required: ['ids']
+        required: [ 'ids' ],
       }
 
       response '200', 'workflows canceled successfully' do
@@ -70,7 +69,7 @@ RSpec.describe 'Api::V1::WorkflowTasks', type: :request do
     get 'Retrieves workflow data for the user dashboard' do
       tags 'Workflows & Tasks'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
 
       response '200', 'dashboard data retrieved successfully' do
         schema type: :object,
@@ -85,9 +84,9 @@ RSpec.describe 'Api::V1::WorkflowTasks', type: :request do
                        asset_id: { type: :integer },
                        asset_name: { type: :string },
                        asset_thumb: { type: :string, nullable: true },
-                       assigned_at: { type: :string, format: 'date-time' }
-                     }
-                   }
+                       assigned_at: { type: :string, format: 'date-time' },
+                     },
+                   },
                  },
                  active_workflows: {
                    type: :array,
@@ -99,9 +98,9 @@ RSpec.describe 'Api::V1::WorkflowTasks', type: :request do
                        current_step: { type: :string },
                        asset_id: { type: :integer },
                        asset_name: { type: :string },
-                       started_at: { type: :string, format: 'date-time' }
-                     }
-                   }
+                       started_at: { type: :string, format: 'date-time' },
+                     },
+                   },
                  },
                  completed_workflows: {
                    type: :array,
@@ -113,10 +112,10 @@ RSpec.describe 'Api::V1::WorkflowTasks', type: :request do
                        asset_id: { type: :integer },
                        asset_name: { type: :string },
                        status: { type: :string },
-                       completed_at: { type: :string, format: 'date-time' }
-                     }
-                   }
-                 }
+                       completed_at: { type: :string, format: 'date-time' },
+                     },
+                   },
+                 },
                }
         run_test!
       end

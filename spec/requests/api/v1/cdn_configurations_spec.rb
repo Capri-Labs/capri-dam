@@ -3,16 +3,14 @@
 require 'swagger_helper'
 
 RSpec.describe 'Api::V1::CdnConfigurations', type: :request do
-
   # ===========================================================================
   # INDEX — GET /api/v1/cdn_configurations
   # ===========================================================================
   path '/api/v1/cdn_configurations' do
-
     get 'Retrieve CDN configuration for all supported providers' do
       tags 'CDN & Settings'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
       description <<~DESC
         Returns the active CDN configuration for Fastly, Cloudflare, and Akamai.
         **Secrets are masked** in the response — only the last 4 characters of
@@ -28,23 +26,23 @@ RSpec.describe 'Api::V1::CdnConfigurations', type: :request do
                    properties: {
                      is_active: { type: :boolean },
                      settings:  { type: :object,
-                                   description: 'Provider-specific settings with secrets masked' }
-                   }
+                                   description: 'Provider-specific settings with secrets masked' },
+                   },
                  },
                  cloudflare: {
                    type: :object,
                    properties: {
                      is_active: { type: :boolean },
-                     settings:  { type: :object }
-                   }
+                     settings:  { type: :object },
+                   },
                  },
                  akamai: {
                    type: :object,
                    properties: {
                      is_active: { type: :boolean },
-                     settings:  { type: :object }
-                   }
-                 }
+                     settings:  { type: :object },
+                   },
+                 },
                }
         run_test!
       end
@@ -55,7 +53,7 @@ RSpec.describe 'Api::V1::CdnConfigurations', type: :request do
       tags 'CDN & Settings'
       consumes 'application/json'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
       description <<~DESC
         Creates or updates the `CdnConfiguration` for the specified `provider`.
         Values containing `••••` (the masking sentinel) are automatically
@@ -65,7 +63,7 @@ RSpec.describe 'Api::V1::CdnConfigurations', type: :request do
 
       parameter name: :payload, in: :body, schema: {
         type: :object,
-        required: ['provider'],
+        required: [ 'provider' ],
         properties: {
           provider:  { type: :string, example: 'fastly',
                        description: 'fastly | cloudflare | akamai' },
@@ -73,16 +71,16 @@ RSpec.describe 'Api::V1::CdnConfigurations', type: :request do
           settings: {
             type: :object,
             description: 'Provider-specific key-value settings (e.g. service_id, api_key)',
-            example: { service_id: 'svc_abc123', api_key: 'sk_live_xyz' }
-          }
-        }
+            example: { service_id: 'svc_abc123', api_key: 'sk_live_xyz' },
+          },
+        },
       }
 
       response '200', 'CDN configuration updated' do
         schema type: :object,
                properties: {
                  success: { type: :boolean },
-                 message: { type: :string, example: 'Fastly configuration updated.' }
+                 message: { type: :string, example: 'Fastly configuration updated.' },
                }
         run_test!
       end
@@ -94,6 +92,4 @@ RSpec.describe 'Api::V1::CdnConfigurations', type: :request do
       end
     end
   end
-
 end
-

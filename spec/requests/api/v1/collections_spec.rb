@@ -3,16 +3,14 @@
 require 'swagger_helper'
 
 RSpec.describe 'Api::V1::Collections', type: :request do
-
   # ===========================================================================
   # INDEX — GET /api/v1/collections
   # ===========================================================================
   path '/api/v1/collections' do
-
     get 'List all active collections / workspaces' do
       tags 'Collections'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
       description <<~DESC
         Returns all active (non-archived) collections ordered by `created_at DESC`.
         Supports **temporal time-travel** via `as_of`: pass an ISO-8601 timestamp
@@ -35,8 +33,8 @@ RSpec.describe 'Api::V1::Collections', type: :request do
                                       description: 'manual | smart' },
                    assets_count:    { type: :integer, example: 24 },
                    expires_at:      { type: :string, format: 'date-time', nullable: true },
-                   created_at:      { type: :string, format: 'date-time' }
-                 }
+                   created_at:      { type: :string, format: 'date-time' },
+                 },
                }
         run_test!
       end
@@ -47,15 +45,15 @@ RSpec.describe 'Api::V1::Collections', type: :request do
       tags 'Collections'
       consumes 'application/json'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
 
       parameter name: :payload, in: :body, schema: {
         type: :object,
-        required: ['collection'],
+        required: [ 'collection' ],
         properties: {
           collection: {
             type: :object,
-            required: ['name'],
+            required: [ 'name' ],
             properties: {
               name:            { type: :string,  example: 'Q3 Brand Campaign' },
               description:     { type: :string,  nullable: true },
@@ -65,14 +63,14 @@ RSpec.describe 'Api::V1::Collections', type: :request do
               properties: {
                 type: :object,
                 properties: {
-                  tags:           { type: :array,  items: { type: :string }, example: ['brand', 'social'] },
-                  allowed_groups: { type: :array,  items: { type: :string }, example: ['marketing'] },
-                  denied_groups:  { type: :array,  items: { type: :string } }
-                }
-              }
-            }
-          }
-        }
+                  tags:           { type: :array,  items: { type: :string }, example: [ 'brand', 'social' ] },
+                  allowed_groups: { type: :array,  items: { type: :string }, example: [ 'marketing' ] },
+                  denied_groups:  { type: :array,  items: { type: :string } },
+                },
+              },
+            },
+          },
+        },
       }
 
       response '201', 'Collection created' do
@@ -96,14 +94,14 @@ RSpec.describe 'Api::V1::Collections', type: :request do
       tags 'Collections'
       consumes 'application/json'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
 
       parameter name: :payload, in: :body, schema: {
         type: :object,
-        required: ['ids'],
+        required: [ 'ids' ],
         properties: {
-          ids: { type: :array, items: { type: :integer }, example: [1, 2, 3] }
-        }
+          ids: { type: :array, items: { type: :integer }, example: [ 1, 2, 3 ] },
+        },
       }
 
       response '200', 'Collections archived' do
@@ -126,7 +124,7 @@ RSpec.describe 'Api::V1::Collections', type: :request do
       tags 'Collections'
       consumes 'application/json'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
       description <<~DESC
         Deep-merges the provided `properties` into each matching collection's
         existing JSONB properties. Top-level scalar fields (e.g. `expires_at`)
@@ -135,17 +133,17 @@ RSpec.describe 'Api::V1::Collections', type: :request do
 
       parameter name: :payload, in: :body, schema: {
         type: :object,
-        required: ['ids'],
+        required: [ 'ids' ],
         properties: {
-          ids:        { type: :array,  items: { type: :integer }, example: [1, 2] },
+          ids:        { type: :array,  items: { type: :integer }, example: [ 1, 2 ] },
           expires_at: { type: :string, format: 'date-time', nullable: true },
           properties: {
             type: :object,
             properties: {
-              tags: { type: :array, items: { type: :string } }
-            }
-          }
-        }
+              tags: { type: :array, items: { type: :string } },
+            },
+          },
+        },
       }
 
       response '200', 'Collections updated' do
@@ -173,7 +171,7 @@ RSpec.describe 'Api::V1::Collections', type: :request do
       tags 'Collections'
       consumes 'application/json'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
       description <<~DESC
         Runs a pgvector cosine-similarity search against a semantic prompt and
         returns matching assets with mock match scores. Use this to preview the
@@ -182,12 +180,12 @@ RSpec.describe 'Api::V1::Collections', type: :request do
 
       parameter name: :payload, in: :body, schema: {
         type: :object,
-        required: ['semantic_prompt'],
+        required: [ 'semantic_prompt' ],
         properties: {
           semantic_prompt:      { type: :string,  example: 'outdoor lifestyle photography autumn' },
           similarity_threshold: { type: :number,  example: 0.80,
-                                  description: 'Cosine similarity floor (0.0–1.0)' }
-        }
+                                  description: 'Cosine similarity floor (0.0–1.0)' },
+        },
       }
 
       response '200', 'Simulation results returned' do
@@ -201,12 +199,12 @@ RSpec.describe 'Api::V1::Collections', type: :request do
                        id:               { type: :integer },
                        title:            { type: :string },
                        properties:       { type: :object },
-                       mock_match_score: { type: :number, example: 0.923 }
-                     }
-                   }
+                       mock_match_score: { type: :number, example: 0.923 },
+                     },
+                   },
                  },
                  count:   { type: :integer },
-                 message: { type: :string, example: 'Simulation complete.' }
+                 message: { type: :string, example: 'Simulation complete.' },
                }
         run_test!
       end
@@ -228,7 +226,7 @@ RSpec.describe 'Api::V1::Collections', type: :request do
     get 'Retrieve a collection with its assets and smart-rule config' do
       tags 'Collections'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
       description <<~DESC
         Returns full collection details including nested assets (respecting
         `as_of` time-travel), the `collection_rule` config, and any compliance
@@ -253,8 +251,8 @@ RSpec.describe 'Api::V1::Collections', type: :request do
                      semantic_prompt:      { type: :string },
                      similarity_threshold: { type: :number },
                      metadata_filters:     { type: :object },
-                     active:               { type: :boolean }
-                   }
+                     active:               { type: :boolean },
+                   },
                  },
                  collection_assets: {
                    type: :array,
@@ -268,12 +266,12 @@ RSpec.describe 'Api::V1::Collections', type: :request do
                            id:         { type: :integer },
                            title:      { type: :string },
                            properties: { type: :object },
-                           created_at: { type: :string, format: 'date-time' }
-                         }
-                       }
-                     }
-                   }
-                 }
+                           created_at: { type: :string, format: 'date-time' },
+                         },
+                       },
+                     },
+                   },
+                 },
                }
         run_test!
       end
@@ -294,11 +292,11 @@ RSpec.describe 'Api::V1::Collections', type: :request do
       tags 'Collections'
       consumes 'application/json'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
 
       parameter name: :payload, in: :body, schema: {
         type: :object,
-        required: ['collection'],
+        required: [ 'collection' ],
         properties: {
           collection: {
             type: :object,
@@ -311,12 +309,12 @@ RSpec.describe 'Api::V1::Collections', type: :request do
                 properties: {
                   tags:           { type: :array, items: { type: :string } },
                   allowed_groups: { type: :array, items: { type: :string } },
-                  denied_groups:  { type: :array, items: { type: :string } }
-                }
-              }
-            }
-          }
-        }
+                  denied_groups:  { type: :array, items: { type: :string } },
+                },
+              },
+            },
+          },
+        },
       }
 
       response '200', 'Collection updated' do
@@ -339,7 +337,7 @@ RSpec.describe 'Api::V1::Collections', type: :request do
     delete 'Archive (soft-delete) a collection' do
       tags 'Collections'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
       description 'Sets `deleted_at` on the collection to preserve audit trails.'
 
       response '200', 'Collection archived' do
@@ -364,7 +362,7 @@ RSpec.describe 'Api::V1::Collections', type: :request do
     get 'Retrieve 2D UMAP/t-SNE cluster coordinates for collection assets' do
       tags 'Collections'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
       description <<~DESC
         Returns 2D `[x, y]` projections for each asset in the collection for
         cluster-map visualisation. In production, coordinates are generated by a
@@ -383,10 +381,10 @@ RSpec.describe 'Api::V1::Collections', type: :request do
                        title: { type: :string },
                        x:     { type: :number, example: 42.73 },
                        y:     { type: :number, example: 18.56 },
-                       url:   { type: :string, nullable: true }
-                     }
-                   }
-                 }
+                       url:   { type: :string, nullable: true },
+                     },
+                   },
+                 },
                }
         run_test!
       end
@@ -404,7 +402,7 @@ RSpec.describe 'Api::V1::Collections', type: :request do
       tags 'Collections'
       consumes 'application/json'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
       description <<~DESC
         Upserts the `CollectionRule` for this workspace. Setting `active: true`
         causes the system to automatically route assets that match the semantic
@@ -418,15 +416,15 @@ RSpec.describe 'Api::V1::Collections', type: :request do
           semantic_prompt:      { type: :string, example: 'outdoor lifestyle photography' },
           similarity_threshold: { type: :number, example: 0.80 },
           metadata_filters:     { type: :object, example: { region: 'EMEA' } },
-          active:               { type: :boolean, example: true }
-        }
+          active:               { type: :boolean, example: true },
+        },
       }
 
       response '200', 'Smart rule updated' do
         schema type: :object,
                properties: {
                  message:    { type: :string },
-                 collection: { type: :object }
+                 collection: { type: :object },
                }
         run_test!
       end
@@ -449,7 +447,7 @@ RSpec.describe 'Api::V1::Collections', type: :request do
     post 'Trigger a CDN cache invalidation for all assets in this collection' do
       tags 'Collections'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
 
       response '200', 'CDN invalidation initiated' do
         schema type: :object, properties: { message: { type: :string } }
@@ -469,21 +467,21 @@ RSpec.describe 'Api::V1::Collections', type: :request do
       tags 'Collections'
       consumes 'application/json'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
 
       parameter name: :payload, in: :body, schema: {
         type: :object,
-        required: ['asset_id'],
+        required: [ 'asset_id' ],
         properties: {
-          asset_id: { type: :integer, example: 99 }
-        }
+          asset_id: { type: :integer, example: 99 },
+        },
       }
 
       response '200', 'Asset added to collection' do
         schema type: :object,
                properties: {
                  message:    { type: :string },
-                 collection: { type: :object }
+                 collection: { type: :object },
                }
         run_test!
       end
@@ -511,7 +509,7 @@ RSpec.describe 'Api::V1::Collections', type: :request do
     delete 'Remove an asset from a collection' do
       tags 'Collections'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
 
       response '200', 'Asset removed from collection' do
         schema type: :object, properties: { message: { type: :string } }
@@ -528,7 +526,7 @@ RSpec.describe 'Api::V1::Collections', type: :request do
     patch 'Toggle the pinned state of an asset within a collection' do
       tags 'Collections'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
       description <<~DESC
         Toggles `pinned` on the `CollectionAsset` join record. Pinned assets are
         always shown at the top of the collection view. Unpinned assets are
@@ -539,7 +537,7 @@ RSpec.describe 'Api::V1::Collections', type: :request do
         schema type: :object,
                properties: {
                  message: { type: :string, example: 'Asset pinned manually.' },
-                 pinned:  { type: :boolean }
+                 pinned:  { type: :boolean },
                }
         run_test!
       end
@@ -550,6 +548,4 @@ RSpec.describe 'Api::V1::Collections', type: :request do
       end
     end
   end
-
 end
-

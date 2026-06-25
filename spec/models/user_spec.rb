@@ -131,7 +131,7 @@ RSpec.describe User, type: :model do
       user   = create(:user)
       group1 = create(:user_group)
       group2 = create(:user_group)
-      user.user_groups << [group1, group2]
+      user.user_groups << [ group1, group2 ]
       create(:folder_policy, :read_only, folder: folder, user_group: group1)
       create(:folder_policy, folder: folder, user_group: group2, modify_access: true)
 
@@ -203,4 +203,3 @@ RSpec.describe User, type: :model do
     end
   end
 end
-

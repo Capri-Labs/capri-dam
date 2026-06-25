@@ -10,7 +10,7 @@ FactoryBot.define do
         "description"  => "A sample asset",
         "usage_terms"  => "Internal Use Only",
         "alt_text"     => "",
-        "tags"         => []
+        "tags"         => [],
       }
     end
     deleted_at { nil }

@@ -4,4 +4,3 @@ FactoryBot.define do
     association :impersonator, factory: :user
   end
 end
-

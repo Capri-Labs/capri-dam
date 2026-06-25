@@ -136,4 +136,3 @@ RSpec.describe 'Folders API (functional)', type: :request do
     end
   end
 end
-

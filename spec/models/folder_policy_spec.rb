@@ -46,4 +46,3 @@ RSpec.describe FolderPolicy, type: :model do
     end
   end
 end
-

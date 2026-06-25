@@ -6,7 +6,7 @@ RSpec.describe 'Admin::Users', type: :request do
     get 'Retrieves a list of all users' do
       tags 'Admin - Users'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
 
       response '200', 'users retrieved successfully' do
         schema type: :object,
@@ -30,10 +30,10 @@ RSpec.describe 'Admin::Users', type: :request do
                        active: { type: :boolean },
                        created_at: { type: :string },
                        groups: { type: :array, items: { type: :string } },
-                       group_ids: { type: :array, items: { type: :integer } }
-                     }
-                   }
-                 }
+                       group_ids: { type: :array, items: { type: :integer } },
+                     },
+                   },
+                 },
                }
 
         run_test!
@@ -45,7 +45,7 @@ RSpec.describe 'Admin::Users', type: :request do
       tags 'Admin - Users'
       consumes 'application/json'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
 
       parameter name: :payload, in: :body, schema: {
         type: :object,
@@ -59,11 +59,11 @@ RSpec.describe 'Admin::Users', type: :request do
               department: { type: :string, example: 'Marketing' },
               role: { type: :string, example: 'viewer' },
               admin: { type: :boolean, example: false },
-              user_group_ids: { type: :array, items: { type: :integer }, example: [1, 2] }
+              user_group_ids: { type: :array, items: { type: :integer }, example: [ 1, 2 ] },
             },
-            required: ['email', 'first_name', 'last_name']
-          }
-        }
+            required: [ 'email', 'first_name', 'last_name' ],
+          },
+        },
       }
 
       response '200', 'user created successfully' do
@@ -71,7 +71,7 @@ RSpec.describe 'Admin::Users', type: :request do
                properties: {
                  success: { type: :boolean },
                  message: { type: :string },
-                 user:    { '$ref' => '#/components/schemas/User' }
+                 user:    { '$ref' => '#/components/schemas/User' },
                }
         run_test!
       end
@@ -89,7 +89,7 @@ RSpec.describe 'Admin::Users', type: :request do
     get 'Retrieves a single user (with impersonators and preferences)' do
       tags 'Admin - Users'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
 
       response '200', 'user retrieved' do
         schema type: :object, properties: { user: { '$ref' => '#/components/schemas/User' } }
@@ -107,7 +107,7 @@ RSpec.describe 'Admin::Users', type: :request do
       tags 'Admin - Users'
       consumes 'application/json'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
 
       parameter name: :payload, in: :body, schema: {
         type: :object,
@@ -121,10 +121,10 @@ RSpec.describe 'Admin::Users', type: :request do
               department: { type: :string },
               role: { type: :string },
               admin: { type: :boolean },
-              user_group_ids: { type: :array, items: { type: :integer } }
-            }
-          }
-        }
+              user_group_ids: { type: :array, items: { type: :integer } },
+            },
+          },
+        },
       }
 
       response '200', 'user updated successfully' do
@@ -141,7 +141,7 @@ RSpec.describe 'Admin::Users', type: :request do
     delete 'Deactivates a user (soft delete)' do
       tags 'Admin - Users'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
 
       response '200', 'user deactivated' do
         schema type: :object, properties: { success: { type: :boolean }, message: { type: :string } }
@@ -156,14 +156,14 @@ RSpec.describe 'Admin::Users', type: :request do
     post 'Toggles a user between active and suspended states' do
       tags 'Admin - Users'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
 
       response '200', 'status toggled successfully' do
         schema type: :object,
                properties: {
                  success: { type: :boolean },
                  message: { type: :string },
-                 active:  { type: :boolean }
+                 active:  { type: :boolean },
                }
         run_test!
       end
@@ -177,17 +177,17 @@ RSpec.describe 'Admin::Users', type: :request do
       tags 'Admin - Users'
       consumes 'application/json'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
 
       parameter name: :payload, in: :body, schema: {
         type: :object,
-        required: ['new_password', 'new_password_confirmation'],
+        required: [ 'new_password', 'new_password_confirmation' ],
         properties: {
           new_password:              { type: :string, example: 'NewSecure#123' },
           new_password_confirmation: { type: :string, example: 'NewSecure#123' },
           force_change: { type: :boolean, example: false,
-                          description: 'When true the user must change on next login' }
-        }
+                          description: 'When true the user must change on next login' },
+        },
       }
 
       response '200', 'password updated' do
@@ -208,7 +208,7 @@ RSpec.describe 'Admin::Users', type: :request do
     get 'Lists the groups this user belongs to' do
       tags 'Admin - Users'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
 
       response '200', 'groups retrieved' do
         schema type: :object,
@@ -221,10 +221,10 @@ RSpec.describe 'Admin::Users', type: :request do
                        id:        { type: :integer },
                        name:      { type: :string },
                        slug:      { type: :string, nullable: true },
-                       is_system: { type: :boolean }
-                     }
-                   }
-                 }
+                       is_system: { type: :boolean },
+                     },
+                   },
+                 },
                }
         run_test!
       end
@@ -237,7 +237,7 @@ RSpec.describe 'Admin::Users', type: :request do
     get 'Lists users allowed to impersonate this account' do
       tags 'Admin - Users'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
 
       response '200', 'impersonators retrieved' do
         schema type: :object,
@@ -249,10 +249,10 @@ RSpec.describe 'Admin::Users', type: :request do
                      properties: {
                        id:           { type: :integer },
                        display_name: { type: :string },
-                       email:        { type: :string }
-                     }
-                   }
-                 }
+                       email:        { type: :string },
+                     },
+                   },
+                 },
                }
         run_test!
       end
@@ -262,14 +262,14 @@ RSpec.describe 'Admin::Users', type: :request do
       tags 'Admin - Users'
       consumes 'application/json'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
 
       parameter name: :payload, in: :body, schema: {
         type: :object,
-        required: ['impersonator_id'],
+        required: [ 'impersonator_id' ],
         properties: {
-          impersonator_id: { type: :integer, description: 'ID of the user to grant impersonation to' }
-        }
+          impersonator_id: { type: :integer, description: 'ID of the user to grant impersonation to' },
+        },
       }
 
       response '200', 'impersonation access granted' do
@@ -291,7 +291,7 @@ RSpec.describe 'Admin::Users', type: :request do
     delete 'Revokes impersonation access' do
       tags 'Admin - Users'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
 
       response '200', 'impersonation access revoked' do
         schema type: :object, properties: { success: { type: :boolean }, message: { type: :string } }
@@ -306,7 +306,7 @@ RSpec.describe 'Admin::Users', type: :request do
     get 'Retrieves user preferences (language, notifications)' do
       tags 'Admin - Users'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
 
       response '200', 'preferences retrieved' do
         schema type: :object,
@@ -316,9 +316,9 @@ RSpec.describe 'Admin::Users', type: :request do
                    properties: {
                      language:                { type: :string, example: 'en' },
                      receive_mention_emails:  { type: :boolean },
-                     receive_workflow_emails: { type: :boolean }
-                   }
-                 }
+                     receive_workflow_emails: { type: :boolean },
+                   },
+                 },
                }
         run_test!
       end
@@ -328,7 +328,7 @@ RSpec.describe 'Admin::Users', type: :request do
       tags 'Admin - Users'
       consumes 'application/json'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
 
       parameter name: :payload, in: :body, schema: {
         type: :object,
@@ -338,21 +338,20 @@ RSpec.describe 'Admin::Users', type: :request do
             properties: {
               language:                { type: :string, example: 'de' },
               receive_mention_emails:  { type: :boolean },
-              receive_workflow_emails: { type: :boolean }
-            }
-          }
-        }
+              receive_workflow_emails: { type: :boolean },
+            },
+          },
+        },
       }
 
       response '200', 'preferences updated' do
         schema type: :object,
                properties: {
                  success:     { type: :boolean },
-                 preferences: { type: :object }
+                 preferences: { type: :object },
                }
         run_test!
       end
     end
   end
 end
-

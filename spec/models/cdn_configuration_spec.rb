@@ -17,7 +17,7 @@ RSpec.describe CdnConfiguration, type: :model do
       expect(cdn).to receive(:ensure_single_active_provider).and_call_original
       # The callback fires; skip the full DB test because ActiveRecord encryption
       # type: :json is not fully supported in the test environment.
-      cdn.run_callbacks(:save) {}
+      cdn.run_callbacks(:save) { }
     end
   end
 end

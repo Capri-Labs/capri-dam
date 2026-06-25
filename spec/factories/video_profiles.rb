@@ -62,7 +62,7 @@ FactoryBot.define do
       smart_crop_ratios do
         [
           { 'name' => '16:9', 'crop_ratio' => '16:9' },
-          { 'name' => '4:3',  'crop_ratio' => '4:3' }
+          { 'name' => '4:3',  'crop_ratio' => '4:3' },
         ]
       end
     end
@@ -78,7 +78,7 @@ FactoryBot.define do
     trait :full do
       encode_for_adaptive_streaming { true }
       smart_crop_ratios do
-        [{ 'name' => '16:9', 'crop_ratio' => '16:9' }]
+        [ { 'name' => '16:9', 'crop_ratio' => '16:9' } ]
       end
       after(:create) do |profile|
         VideoProfile.default_adaptive_presets.each do |attrs|
@@ -88,4 +88,3 @@ FactoryBot.define do
     end
   end
 end
-

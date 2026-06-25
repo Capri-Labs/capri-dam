@@ -3,7 +3,6 @@
 require 'rails_helper'
 
 RSpec.describe MetadataSchema, type: :model do
-
   # ── Factories ──────────────────────────────────────────────────────────────
   let(:root_schema)    { create(:metadata_schema, :root) }
   let(:type_schema)    { create(:metadata_schema, :type_level, parent: root_schema, mime_segment: 'image') }
@@ -153,4 +152,3 @@ RSpec.describe MetadataSchema, type: :model do
     end
   end
 end
-

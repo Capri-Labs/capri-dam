@@ -10,5 +10,4 @@ RSpec.describe "ApiDocs (legacy routes)", type: :request do
       expect(response).to redirect_to("/api/rest")
     end
   end
-
 end

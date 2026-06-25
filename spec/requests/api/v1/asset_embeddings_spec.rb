@@ -3,17 +3,15 @@
 require 'swagger_helper'
 
 RSpec.describe 'Api::V1::AssetEmbeddings', type: :request do
-
   # ===========================================================================
   # PUT /api/v1/assets/{asset_id}/embedding
   # ===========================================================================
   path '/api/v1/assets/{asset_id}/embedding' do
-
     put 'Upsert the AI vector embedding for an asset' do
       tags        'Asset Embeddings'
       consumes    'application/json'
       produces    'application/json'
-      security    [Bearer: []]
+      security    [ Bearer: [] ]
       description <<~DESC
         Stores or overwrites the AI-generated vector embedding associated with a specific asset.
         Called by the internal AI microservice (embedding pipeline) after analysing asset content.
@@ -26,43 +24,43 @@ RSpec.describe 'Api::V1::AssetEmbeddings', type: :request do
       parameter name: :body, in: :body, required: true,
                 schema: {
                   type: :object,
-                  required: [:asset_embedding],
+                  required: [ :asset_embedding ],
                   properties: {
                     asset_embedding: {
                       type: :object,
-                      required: [:embedding, :model_name],
+                      required: [ :embedding, :model_name ],
                       properties: {
                         embedding: {
                           type:        :array,
                           items:       { type: :number, format: :float },
                           description: 'Dense vector produced by the embedding model (e.g. 1536-dim for OpenAI text-embedding-3-small)',
-                          example:     [0.021, -0.034, 0.018]
+                          example:     [ 0.021, -0.034, 0.018 ],
                         },
                         model_name: {
                           type:        :string,
                           description: 'Identifier of the model that produced the embedding',
-                          example:     'text-embedding-3-small'
-                        }
-                      }
-                    }
-                  }
+                          example:     'text-embedding-3-small',
+                        },
+                      },
+                    },
+                  },
                 }
 
       # ── 200 OK ─────────────────────────────────────────────────────────────
       response '200', 'Vector spatial index updated' do
         schema type: :object,
                properties: {
-                 message: { type: :string, example: 'Vector spatial index updated' }
+                 message: { type: :string, example: 'Vector spatial index updated' },
                },
-               required: [:message]
+               required: [ :message ]
 
         let(:asset_id) { create(:asset).id }
         let(:body) do
           {
             asset_embedding: {
               embedding:  Array.new(8) { rand(-1.0..1.0).round(6) },
-              model_name: 'text-embedding-3-small'
-            }
+              model_name: 'text-embedding-3-small',
+            },
           }
         end
 
@@ -73,17 +71,17 @@ RSpec.describe 'Api::V1::AssetEmbeddings', type: :request do
       response '422', 'Validation failed — embedding payload is invalid' do
         schema type: :object,
                properties: {
-                 errors: { type: :array, items: { type: :string }, example: ["Embedding can't be blank"] }
+                 errors: { type: :array, items: { type: :string }, example: [ "Embedding can't be blank" ] },
                },
-               required: [:errors]
+               required: [ :errors ]
 
         let(:asset_id) { create(:asset).id }
         let(:body) do
           {
             asset_embedding: {
               embedding:  nil,
-              model_name: ''
-            }
+              model_name: '',
+            },
           }
         end
 
@@ -94,16 +92,16 @@ RSpec.describe 'Api::V1::AssetEmbeddings', type: :request do
       response '404', 'Asset not found' do
         schema type: :object,
                properties: {
-                 error: { type: :string, example: 'Record not found' }
+                 error: { type: :string, example: 'Record not found' },
                }
 
         let(:asset_id) { 'non-existent-uuid' }
         let(:body) do
           {
             asset_embedding: {
-              embedding:  [0.1, 0.2],
-              model_name: 'text-embedding-3-small'
-            }
+              embedding:  [ 0.1, 0.2 ],
+              model_name: 'text-embedding-3-small',
+            },
           }
         end
 
@@ -112,4 +110,3 @@ RSpec.describe 'Api::V1::AssetEmbeddings', type: :request do
     end
   end
 end
-

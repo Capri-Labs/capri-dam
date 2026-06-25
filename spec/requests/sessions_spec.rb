@@ -10,8 +10,8 @@ RSpec.describe "Users::Sessions", type: :request do
            params: {
              user: {
                email: user.email,
-               password: "password123"
-             }
+               password: "password123",
+             },
            },
            as: :json
 
@@ -27,8 +27,8 @@ RSpec.describe "Users::Sessions", type: :request do
            params: {
              user: {
                email: user.email,
-               password: "wrong_password"
-             }
+               password: "wrong_password",
+             },
            },
            as: :json
 

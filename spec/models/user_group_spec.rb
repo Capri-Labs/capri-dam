@@ -132,7 +132,7 @@ RSpec.describe UserGroup, type: :model do
         parent.add_child(c1)
         parent.add_child(c2)
 
-        expect(parent.reload.child_groups).to match_array([c1, c2])
+        expect(parent.reload.child_groups).to match_array([ c1, c2 ])
       end
 
       it "does not change parent_id of an unrelated group" do
@@ -219,4 +219,3 @@ RSpec.describe UserGroup, type: :model do
     end
   end
 end
-

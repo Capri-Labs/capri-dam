@@ -46,7 +46,7 @@ jobs:
 
       - name: Install Asciidoctor + plugins
         run: |
-          gem install \
+          sudo gem install \
             asciidoctor \
             asciidoctor-diagram \
             asciidoctor-pdf \

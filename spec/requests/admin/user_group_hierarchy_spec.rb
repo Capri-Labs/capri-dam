@@ -78,7 +78,7 @@ RSpec.describe 'Admin::UserGroups — hierarchy (child groups)', type: :request 
         get admin_user_group_path(parent_group), as: :json
 
         child_ids = json.dig('group', 'child_groups').map { |c| c['id'] }
-        expect(child_ids).to match_array([child_group.id, child2.id])
+        expect(child_ids).to match_array([ child_group.id, child2.id ])
       end
     end
   end
@@ -204,4 +204,3 @@ RSpec.describe 'Admin::UserGroups — hierarchy (child groups)', type: :request 
     end
   end
 end
-

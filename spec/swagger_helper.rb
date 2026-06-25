@@ -30,34 +30,34 @@ RSpec.configure do |config|
         termsOfService: 'https://github.com/Capri-Labs/capri-dam',
         contact: {
           name: 'Ashok Pelluru | Operational Governance & Architecture',
-          url: 'https://github.com/Capri-Labs/capri-dam'
+          url: 'https://github.com/Capri-Labs/capri-dam',
         },
         license: {
           name: 'MIT License',
-          url: 'https://opensource.org/licenses/MIT'
-        }
+          url: 'https://opensource.org/licenses/MIT',
+        },
       },
       paths: {},
       servers: [
         {
           url: 'http://localhost:3000',
-          description: 'Local Development Server'
+          description: 'Local Development Server',
         },
         {
           url: 'https://api.yourdam.com',
-          description: 'Production Environment'
-        }
+          description: 'Production Environment',
+        },
       ],
       components: {
         securitySchemes: {
           Bearer: {
             type: :http,
             scheme: :bearer,
-            description: 'Enter your OAuth 2.0 Bearer token to authenticate requests.'
-          }
-        }
-      }
-    }
+            description: 'Enter your OAuth 2.0 Bearer token to authenticate requests.',
+          },
+        },
+      },
+    },
   }
 
   config.openapi_format = :yaml

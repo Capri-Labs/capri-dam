@@ -3,16 +3,14 @@
 require 'swagger_helper'
 
 RSpec.describe 'Api::V1::IngestionBatches', type: :request do
-
   # ===========================================================================
   # INDEX — GET /api/v1/ingestion_batches
   # ===========================================================================
   path '/api/v1/ingestion_batches' do
-
     get 'List the 50 most recent migration batches' do
       tags 'Ingestion & Migration'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
       description <<~DESC
         Returns summary records for the 50 most recent ingestion batches ordered
         by `created_at DESC`. Use this to build the batch monitoring dashboard.
@@ -29,8 +27,8 @@ RSpec.describe 'Api::V1::IngestionBatches', type: :request do
                    status:         { type: :string, example: 'review_needed',
                                      description: 'initializing | extracting | transforming | review_needed | committed | failed' },
                    started_at:     { type: :string, format: 'date-time' },
-                   completed_at:   { type: :string, format: 'date-time', nullable: true }
-                 }
+                   completed_at:   { type: :string, format: 'date-time', nullable: true },
+                 },
                }
         run_test!
       end
@@ -41,7 +39,7 @@ RSpec.describe 'Api::V1::IngestionBatches', type: :request do
       tags 'Ingestion & Migration'
       consumes 'application/json'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
       description <<~DESC
         Creates a new `IngestionBatch` record and immediately fires the
         `ExtractionWorker` Sidekiq job. The batch progresses through these states:
@@ -54,11 +52,11 @@ RSpec.describe 'Api::V1::IngestionBatches', type: :request do
 
       parameter name: :payload, in: :body, schema: {
         type: :object,
-        required: ['ingestion_batch'],
+        required: [ 'ingestion_batch' ],
         properties: {
           ingestion_batch: {
             type: :object,
-            required: ['name', 'source_type'],
+            required: [ 'name', 'source_type' ],
             properties: {
               name:         { type: :string,  example: 'Cloudinary Legacy Import' },
               source_type:  { type: :string,  example: 'cloudinary',
@@ -69,18 +67,18 @@ RSpec.describe 'Api::V1::IngestionBatches', type: :request do
               source_credentials: {
                 type: :object,
                 description: 'Provider-specific credentials map (stored encrypted). Prefer using connector_id.',
-                example: { endpoint: 'https://api.cloudinary.com/v1_1/mycloud', auth_token: 'sk_test_abc' }
-              }
-            }
-          }
-        }
+                example: { endpoint: 'https://api.cloudinary.com/v1_1/mycloud', auth_token: 'sk_test_abc' },
+              },
+            },
+          },
+        },
       }
 
       response '201', 'Batch created and extraction pipeline started' do
         schema type: :object,
                properties: {
                  message: { type: :string },
-                 batch:   { type: :object }
+                 batch:   { type: :object },
                }
         run_test!
       end
@@ -103,7 +101,7 @@ RSpec.describe 'Api::V1::IngestionBatches', type: :request do
     get 'Retrieve a batch with its paginated ingestion items' do
       tags 'Ingestion & Migration'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
 
       parameter name: :status, in: :query, type: :string, required: false,
                 description: 'Filter items by status (pending | ai_processing | review_needed | committed | failed)'
@@ -127,18 +125,18 @@ RSpec.describe 'Api::V1::IngestionBatches', type: :request do
                        error_log:         { type: :string, nullable: true },
                        legacy_metadata:   { type: :object, nullable: true },
                        clean_properties:  { type: :object, nullable: true },
-                       created_at:        { type: :string, format: 'date-time' }
-                     }
-                   }
+                       created_at:        { type: :string, format: 'date-time' },
+                     },
+                   },
                  },
                  meta: {
                    type: :object,
                    properties: {
                      total:    { type: :integer },
                      page:     { type: :integer },
-                     per_page: { type: :integer, example: 50 }
-                   }
-                 }
+                     per_page: { type: :integer, example: 50 },
+                   },
+                 },
                }
         run_test!
       end
@@ -160,7 +158,7 @@ RSpec.describe 'Api::V1::IngestionBatches', type: :request do
     post 'Human-approve and commit a batch to the DAM' do
       tags 'Ingestion & Migration'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
       description <<~DESC
         Transitions the batch from `review_needed` to `committed` and fires the
         `MigrationCommitWorker` to physically import all approved assets.
@@ -172,7 +170,7 @@ RSpec.describe 'Api::V1::IngestionBatches', type: :request do
         schema type: :object,
                properties: {
                  message: { type: :string },
-                 batch:   { type: :object }
+                 batch:   { type: :object },
                }
         run_test!
       end
@@ -199,14 +197,14 @@ RSpec.describe 'Api::V1::IngestionBatches', type: :request do
     post 'Abort a migration batch without committing' do
       tags 'Ingestion & Migration'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
       description 'Sets the batch status to `failed`. Cannot be called on already-committed batches.'
 
       response '200', 'Batch aborted' do
         schema type: :object,
                properties: {
                  message: { type: :string },
-                 batch:   { type: :object }
+                 batch:   { type: :object },
                }
         run_test!
       end
@@ -233,7 +231,7 @@ RSpec.describe 'Api::V1::IngestionBatches', type: :request do
     get 'Retrieve or generate the migration statistics report for a batch' do
       tags 'Ingestion & Migration'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
       description <<~DESC
         Returns pre-computed migration stats (success count, failure count, TDM
         quality scores, duplicate rates). If the report has not been generated yet
@@ -245,7 +243,7 @@ RSpec.describe 'Api::V1::IngestionBatches', type: :request do
         schema type: :object,
                properties: {
                  batch:  { type: :object },
-                 report: { type: :object, description: 'Migration statistics snapshot' }
+                 report: { type: :object, description: 'Migration statistics snapshot' },
                }
         run_test!
       end
@@ -261,6 +259,4 @@ RSpec.describe 'Api::V1::IngestionBatches', type: :request do
       end
     end
   end
-
 end
-

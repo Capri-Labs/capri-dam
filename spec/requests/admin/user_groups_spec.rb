@@ -6,7 +6,6 @@ require 'swagger_helper'
 # Built-in system groups (everyone, administrators, super-administrators)
 # are protected: they cannot be deleted and have restricted mutation rules.
 RSpec.describe 'Admin::UserGroups', type: :request do
-
   # ---------------------------------------------------------------------------
   # Collection
   # ---------------------------------------------------------------------------
@@ -15,7 +14,7 @@ RSpec.describe 'Admin::UserGroups', type: :request do
     get 'Retrieves all user groups with hierarchy metadata' do
       tags 'Admin - User Groups'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
 
       response '200', 'user groups retrieved successfully' do
         schema type: :object,
@@ -31,10 +30,10 @@ RSpec.describe 'Admin::UserGroups', type: :request do
                        description:  { type: :string, nullable: true },
                        is_system:    { type: :boolean },
                        parent_id:    { type: :integer, nullable: true },
-                       member_count: { type: :integer }
-                     }
-                   }
-                 }
+                       member_count: { type: :integer },
+                     },
+                   },
+                 },
                }
         run_test!
       end
@@ -44,30 +43,30 @@ RSpec.describe 'Admin::UserGroups', type: :request do
       tags 'Admin - User Groups'
       consumes 'application/json'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
 
       parameter name: :payload, in: :body, schema: {
         type: :object,
-        required: ['user_group'],
+        required: [ 'user_group' ],
         properties: {
           user_group: {
             type: :object,
-            required: ['name'],
+            required: [ 'name' ],
             properties: {
               name:        { type: :string, example: 'Marketing Team' },
-              description: { type: :string, example: 'Global marketing and content creators' }
-            }
+              description: { type: :string, example: 'Global marketing and content creators' },
+            },
           },
           parent_id: { type: :integer, nullable: true,
-                       description: 'Optional — nests this group under a parent' }
-        }
+                       description: 'Optional — nests this group under a parent' },
+        },
       }
 
       response '201', 'user group created' do
         schema type: :object,
                properties: {
                  success: { type: :boolean },
-                 group:   { '$ref' => '#/components/schemas/UserGroup' }
+                 group:   { '$ref' => '#/components/schemas/UserGroup' },
                }
         run_test!
       end
@@ -76,7 +75,7 @@ RSpec.describe 'Admin::UserGroups', type: :request do
         schema type: :object,
                properties: {
                  success: { type: :boolean },
-                 errors:  { type: :array, items: { type: :string } }
+                 errors:  { type: :array, items: { type: :string } },
                }
         run_test!
       end
@@ -93,12 +92,12 @@ RSpec.describe 'Admin::UserGroups', type: :request do
     get 'Retrieves a single group with members and sub-groups' do
       tags 'Admin - User Groups'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
 
       response '200', 'group retrieved' do
         schema type: :object,
                properties: {
-                 group: { '$ref' => '#/components/schemas/UserGroup' }
+                 group: { '$ref' => '#/components/schemas/UserGroup' },
                }
         run_test!
       end
@@ -113,7 +112,7 @@ RSpec.describe 'Admin::UserGroups', type: :request do
       tags 'Admin - User Groups'
       consumes 'application/json'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
 
       parameter name: :payload, in: :body, schema: {
         type: :object,
@@ -122,10 +121,10 @@ RSpec.describe 'Admin::UserGroups', type: :request do
             type: :object,
             properties: {
               name:        { type: :string },
-              description: { type: :string }
-            }
-          }
-        }
+              description: { type: :string },
+            },
+          },
+        },
       }
 
       response '200', 'group updated' do
@@ -142,7 +141,7 @@ RSpec.describe 'Admin::UserGroups', type: :request do
     delete 'Deletes a non-system group' do
       tags 'Admin - User Groups'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
 
       response '200', 'group deleted' do
         schema type: :object, properties: { success: { type: :boolean }, message: { type: :string } }
@@ -167,7 +166,7 @@ RSpec.describe 'Admin::UserGroups', type: :request do
       tags 'Admin - User Groups'
       consumes 'application/json'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
 
       parameter name: :payload, in: :body, schema: {
         type: :object,
@@ -175,8 +174,8 @@ RSpec.describe 'Admin::UserGroups', type: :request do
           email:   { type: :string,  example: 'employee@example.com',
                      description: 'Look up by email (preferred)' },
           user_id: { type: :integer, example: 42,
-                     description: 'Alternatively look up by ID' }
-        }
+                     description: 'Alternatively look up by ID' },
+        },
       }
 
       response '200', 'user added to group' do
@@ -203,14 +202,14 @@ RSpec.describe 'Admin::UserGroups', type: :request do
       tags 'Admin - User Groups'
       consumes 'application/json'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
 
       parameter name: :payload, in: :body, schema: {
         type: :object,
-        required: ['user_id'],
+        required: [ 'user_id' ],
         properties: {
-          user_id: { type: :integer, example: 42 }
-        }
+          user_id: { type: :integer, example: 42 },
+        },
       }
 
       response '200', 'user removed' do
@@ -236,14 +235,14 @@ RSpec.describe 'Admin::UserGroups', type: :request do
       tags 'Admin - User Groups'
       consumes 'application/json'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
 
       parameter name: :payload, in: :body, schema: {
         type: :object,
-        required: ['child_group_id'],
+        required: [ 'child_group_id' ],
         properties: {
-          child_group_id: { type: :integer, description: 'ID of the group to nest' }
-        }
+          child_group_id: { type: :integer, description: 'ID of the group to nest' },
+        },
       }
 
       response '200', 'sub-group added' do
@@ -260,14 +259,14 @@ RSpec.describe 'Admin::UserGroups', type: :request do
       tags 'Admin - User Groups'
       consumes 'application/json'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
 
       parameter name: :payload, in: :body, schema: {
         type: :object,
-        required: ['child_group_id'],
+        required: [ 'child_group_id' ],
         properties: {
-          child_group_id: { type: :integer }
-        }
+          child_group_id: { type: :integer },
+        },
       }
 
       response '200', 'sub-group removed' do
@@ -288,12 +287,12 @@ RSpec.describe 'Admin::UserGroups', type: :request do
       tags 'Admin - User Groups'
       consumes 'application/json'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
 
       parameter name: :payload, in: :body, schema: {
         type: :object,
-        required: ['email'],
-        properties: { email: { type: :string } }
+        required: [ 'email' ],
+        properties: { email: { type: :string } },
       }
 
       response '200', 'user added' do
@@ -303,4 +302,3 @@ RSpec.describe 'Admin::UserGroups', type: :request do
     end
   end
 end
-

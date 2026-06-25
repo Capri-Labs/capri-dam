@@ -3,7 +3,6 @@
 require 'swagger_helper'
 
 RSpec.describe 'Api::V1::IngestionItems', type: :request do
-
   # ===========================================================================
   # SHOW — GET /api/v1/ingestion_items/{id}
   # ===========================================================================
@@ -31,7 +30,7 @@ RSpec.describe 'Api::V1::IngestionItems', type: :request do
                  error_log:         { type: :string, nullable: true },
                  legacy_metadata:   { type: :object, nullable: true },
                  clean_properties:  { type: :object, nullable: true },
-                 created_at:        { type: :string, format: 'date-time' }
+                 created_at:        { type: :string, format: 'date-time' },
                }
         run_test!
       end
@@ -65,7 +64,7 @@ RSpec.describe 'Api::V1::IngestionItems', type: :request do
 
       parameter name: :payload, in: :body, schema: {
         type: :object,
-        required: ['ingestion_item'],
+        required: [ 'ingestion_item' ],
         properties: {
           ingestion_item: {
             type: :object,
@@ -73,16 +72,16 @@ RSpec.describe 'Api::V1::IngestionItems', type: :request do
               status: {
                 type: :string,
                 example: 'review_needed',
-                description: 'pending | ai_processing | review_needed | committed | failed'
+                description: 'pending | ai_processing | review_needed | committed | failed',
               },
               error_log:         { type: :string, nullable: true },
               clean_properties:  {
                 type: :object,
-                description: 'Sanitized/enriched metadata ready for import into DAM'
-              }
-            }
-          }
-        }
+                description: 'Sanitized/enriched metadata ready for import into DAM',
+              },
+            },
+          },
+        },
       }
 
       response '200', 'Item updated successfully' do
@@ -102,6 +101,4 @@ RSpec.describe 'Api::V1::IngestionItems', type: :request do
       end
     end
   end
-
 end
-

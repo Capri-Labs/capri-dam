@@ -49,7 +49,7 @@ jobs:
 
     services:
       postgres:
-        image: postgres:14-alpine
+        image: pgvector/pgvector:pg14
         env:
           POSTGRES_USER: headless_dam
           POSTGRES_PASSWORD: headless_dam

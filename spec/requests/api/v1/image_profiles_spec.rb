@@ -3,7 +3,6 @@
 require 'swagger_helper'
 
 RSpec.describe 'Image Profiles API', type: :request do
-
   # ── Shared setup ─────────────────────────────────────────────────────────────
   let(:admin_user)    { create(:user, admin: true) }
   let(:regular_user)  { create(:user, admin: false) }
@@ -14,7 +13,7 @@ RSpec.describe 'Image Profiles API', type: :request do
     get 'Lists all active Image Profiles' do
       tags        'Tools - Image Profiles'
       produces    'application/json'
-      security    [Bearer: []]
+      security    [ Bearer: [] ]
 
       response '200', 'profiles retrieved successfully' do
         schema type: :array,
@@ -35,12 +34,12 @@ RSpec.describe 'Image Profiles API', type: :request do
                      properties: {
                        amount:    { type: :number, description: 'Range: 0–5. Default: 1.75' },
                        radius:    { type: :number, description: 'Range: 0–250. Default: 0.2' },
-                       threshold: { type: :integer, description: 'Range: 0–255. Default: 2' }
-                     }
+                       threshold: { type: :integer, description: 'Range: 0–255. Default: 2' },
+                     },
                    },
                    created_at: { type: :string, format: 'date-time' },
-                   updated_at: { type: :string, format: 'date-time' }
-                 }
+                   updated_at: { type: :string, format: 'date-time' },
+                 },
                }
         run_test!
       end
@@ -50,15 +49,15 @@ RSpec.describe 'Image Profiles API', type: :request do
       tags        'Tools - Image Profiles'
       consumes    'application/json'
       produces    'application/json'
-      security    [Bearer: []]
+      security    [ Bearer: [] ]
 
       parameter name: :payload, in: :body, schema: {
         type: :object,
-        required: [:image_profile],
+        required: [ :image_profile ],
         properties: {
           image_profile: {
             type: :object,
-            required: [:name],
+            required: [ :name ],
             properties: {
               name:                    { type: :string, example: 'My Profile' },
               crop_type:               { type: :string, enum: %w[none smart_crop], example: 'smart_crop' },
@@ -70,9 +69,9 @@ RSpec.describe 'Image Profiles API', type: :request do
                   properties: {
                     name:   { type: :string,  example: 'Large' },
                     width:  { type: :integer, example: 1260 },
-                    height: { type: :integer, example: 720 }
-                  }
-                }
+                    height: { type: :integer, example: 720 },
+                  },
+                },
               },
               swatch_enabled:  { type: :boolean, example: true },
               swatch_width:    { type: :integer, example: 100 },
@@ -82,12 +81,12 @@ RSpec.describe 'Image Profiles API', type: :request do
                 properties: {
                   amount:    { type: :number,  example: 1.75 },
                   radius:    { type: :number,  example: 0.2 },
-                  threshold: { type: :integer, example: 2 }
-                }
-              }
-            }
-          }
-        }
+                  threshold: { type: :integer, example: 2 },
+                },
+              },
+            },
+          },
+        },
       }
 
       response '201', 'profile created' do
@@ -103,7 +102,7 @@ RSpec.describe 'Image Profiles API', type: :request do
       response '422', 'validation failed' do
         schema type: :object,
                properties: {
-                 errors: { type: :array, items: { type: :string } }
+                 errors: { type: :array, items: { type: :string } },
                }
         run_test!
       end
@@ -117,14 +116,14 @@ RSpec.describe 'Image Profiles API', type: :request do
     get 'Retrieves a single Image Profile' do
       tags     'Tools - Image Profiles'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
 
       response '200', 'profile found' do
         schema type: :object,
                properties: {
                  id:      { type: :integer },
                  name:    { type: :string },
-                 folders: { type: :array, items: { type: :object } }
+                 folders: { type: :array, items: { type: :object } },
                }
         run_test!
       end
@@ -139,7 +138,7 @@ RSpec.describe 'Image Profiles API', type: :request do
       tags     'Tools - Image Profiles'
       consumes 'application/json'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
 
       parameter name: :payload, in: :body, schema: {
         type: :object,
@@ -148,10 +147,10 @@ RSpec.describe 'Image Profiles API', type: :request do
             type: :object,
             properties: {
               name:      { type: :string },
-              crop_type: { type: :string, enum: %w[none smart_crop] }
-            }
-          }
-        }
+              crop_type: { type: :string, enum: %w[none smart_crop] },
+            },
+          },
+        },
       }
 
       response '200', 'profile updated' do
@@ -168,7 +167,7 @@ RSpec.describe 'Image Profiles API', type: :request do
     delete 'Soft-deletes an Image Profile' do
       tags     'Tools - Image Profiles'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
 
       response '204', 'deleted (no content)' do
         run_test!
@@ -189,21 +188,21 @@ RSpec.describe 'Image Profiles API', type: :request do
       tags     'Tools - Image Profiles'
       consumes 'application/json'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
 
       parameter name: :payload, in: :body, schema: {
         type: :object,
-        required: [:folder_id],
+        required: [ :folder_id ],
         properties: {
-          folder_id: { type: :string, format: :uuid, example: '3fa85f64-5717-4562-b3fc-2c963f66afa6' }
-        }
+          folder_id: { type: :string, format: :uuid, example: '3fa85f64-5717-4562-b3fc-2c963f66afa6' },
+        },
       }
 
       response '201', 'profile applied to folder' do
         schema type: :object,
                properties: {
                  profile_id: { type: :integer },
-                 folder_id:  { type: :string }
+                 folder_id:  { type: :string },
                }
         run_test!
       end
@@ -228,14 +227,14 @@ RSpec.describe 'Image Profiles API', type: :request do
       tags     'Tools - Image Profiles'
       consumes 'application/json'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
 
       parameter name: :payload, in: :body, schema: {
         type: :object,
-        required: [:folder_id],
+        required: [ :folder_id ],
         properties: {
-          folder_id: { type: :string, format: :uuid }
-        }
+          folder_id: { type: :string, format: :uuid },
+        },
       }
 
       response '204', 'removed (no content)' do
@@ -256,7 +255,7 @@ RSpec.describe 'Image Profiles API', type: :request do
     get 'Lists folders the Image Profile is applied to' do
       tags     'Tools - Image Profiles'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
 
       response '200', 'folders listed' do
         schema type: :array,
@@ -265,8 +264,8 @@ RSpec.describe 'Image Profiles API', type: :request do
                  properties: {
                    id:   { type: :string },
                    name: { type: :string },
-                   path: { type: :string }
-                 }
+                   path: { type: :string },
+                 },
                }
         run_test!
       end
@@ -404,4 +403,3 @@ RSpec.describe 'Image Profiles API', type: :request do
     end
   end
 end
-

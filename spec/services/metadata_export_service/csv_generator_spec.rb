@@ -45,7 +45,7 @@ RSpec.describe MetadataExportService::CsvGenerator do
       build_asset('Logo', folder, 'copyright' => 'ACME', 'secret' => 'hidden')
 
       export = create(:metadata_export, user: user, folder: folder,
-                                        property_mode: 'selective', selected_properties: ['copyright'])
+                                        property_mode: 'selective', selected_properties: [ 'copyright' ])
 
       files, = described_class.new(export).generate
       header = CSV.parse(files.first.data).first
@@ -80,4 +80,3 @@ RSpec.describe MetadataExportService::CsvGenerator do
     end
   end
 end
-

@@ -29,12 +29,12 @@ FactoryBot.define do
     trait :subtype_level do
       level        { "subtype" }
       mime_segment { "jpeg" }
-      association :parent, factory: [:metadata_schema, :type_level], strategy: :create
+      association :parent, factory: [ :metadata_schema, :type_level ], strategy: :create
     end
 
     trait :with_basic_tab do
       tabs do
-        [{
+        [ {
           "id"       => SecureRandom.uuid,
           "name"     => "Basic",
           "position" => 0,
@@ -47,12 +47,11 @@ FactoryBot.define do
               "position"        => 0,
               "required"        => true,
               "read_only"       => false,
-              "rules"           => {}
-            }
-          ]
-        }]
+              "rules"           => {},
+            },
+          ],
+        } ]
       end
     end
   end
 end
-

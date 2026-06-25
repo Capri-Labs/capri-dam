@@ -60,4 +60,3 @@ RSpec.configure do |config|
 
   config.include param_defaults, :api_doc
 end
-

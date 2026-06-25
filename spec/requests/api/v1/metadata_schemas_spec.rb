@@ -3,16 +3,14 @@
 require 'swagger_helper'
 
 RSpec.describe 'Api::V1::MetadataSchemas', type: :request do
-
   # ===========================================================================
   # INDEX — GET /api/v1/metadata_schemas
   # ===========================================================================
   path '/api/v1/metadata_schemas' do
-
     get 'List all root metadata schemas (with children)' do
       tags        'Metadata Schemas'
       produces    'application/json'
-      security    [Bearer: []]
+      security    [ Bearer: [] ]
       description <<~DESC
         Returns all active root-level metadata schemas, each fully populated with
         their type and subtype children. Schemas are ordered: built-in first, then
@@ -22,7 +20,7 @@ RSpec.describe 'Api::V1::MetadataSchemas', type: :request do
       response '200', 'Schemas returned' do
         schema type: :array,
                items: {
-                 '$ref' => '#/components/schemas/MetadataSchema'
+                 '$ref' => '#/components/schemas/MetadataSchema',
                }
 
         let(:Authorization) { 'Bearer test-token' }
@@ -46,7 +44,7 @@ RSpec.describe 'Api::V1::MetadataSchemas', type: :request do
       tags        'Metadata Schemas'
       consumes    'application/json'
       produces    'application/json'
-      security    [Bearer: []]
+      security    [ Bearer: [] ]
 
       parameter name: :body, in: :body, schema: {
         type: :object,
@@ -60,10 +58,10 @@ RSpec.describe 'Api::V1::MetadataSchemas', type: :request do
               level:        { type: :string,  example: 'root', enum: %w[root type subtype] },
               parent_id:    { type: :integer, nullable: true },
               mime_segment: { type: :string,  nullable: true, example: 'image' },
-              tabs:         { type: :array,   items: { type: :object } }
-            }
-          }
-        }
+              tabs:         { type: :array,   items: { type: :object } },
+            },
+          },
+        },
       }
 
       response '201', 'Schema created' do
@@ -90,14 +88,13 @@ RSpec.describe 'Api::V1::MetadataSchemas', type: :request do
   # SHOW — GET /api/v1/metadata_schemas/:id
   # ===========================================================================
   path '/api/v1/metadata_schemas/{id}' do
-
     parameter name: :id, in: :path, type: :integer, required: true,
               description: 'Metadata schema ID'
 
     get 'Retrieve a single metadata schema' do
       tags     'Metadata Schemas'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
       description 'Returns the schema including `resolved_tabs` which merges inherited tabs from the parent chain.'
 
       response '200', 'Schema returned' do
@@ -122,7 +119,7 @@ RSpec.describe 'Api::V1::MetadataSchemas', type: :request do
       tags     'Metadata Schemas'
       consumes 'application/json'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
 
       parameter name: :body, in: :body, schema: {
         type: :object,
@@ -132,10 +129,10 @@ RSpec.describe 'Api::V1::MetadataSchemas', type: :request do
             properties: {
               name:        { type: :string },
               description: { type: :string },
-              tabs:        { type: :array, items: { type: :object } }
-            }
-          }
-        }
+              tabs:        { type: :array, items: { type: :object } },
+            },
+          },
+        },
       }
 
       response '200', 'Schema updated' do
@@ -163,7 +160,7 @@ RSpec.describe 'Api::V1::MetadataSchemas', type: :request do
     delete 'Soft-delete a metadata schema' do
       tags     'Metadata Schemas'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
       description 'Soft-deletes the schema and all its child schemas. Built-in schemas cannot be deleted.'
 
       response '204', 'Deleted' do
@@ -186,13 +183,12 @@ RSpec.describe 'Api::V1::MetadataSchemas', type: :request do
   # DUPLICATE — POST /api/v1/metadata_schemas/:id/duplicate
   # ===========================================================================
   path '/api/v1/metadata_schemas/{id}/duplicate' do
-
     parameter name: :id, in: :path, type: :integer, required: true
 
     post 'Deep-duplicate a schema tree' do
       tags     'Metadata Schemas'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
       description <<~DESC
         Creates a deep copy of the schema and all its children. The copy is
         non-builtin and named "Copy of \<original name\>". This is the recommended
@@ -214,19 +210,18 @@ RSpec.describe 'Api::V1::MetadataSchemas', type: :request do
   # APPLY TO FOLDER — POST /api/v1/metadata_schemas/:id/apply_to_folder
   # ===========================================================================
   path '/api/v1/metadata_schemas/{id}/apply_to_folder' do
-
     parameter name: :id, in: :path, type: :integer, required: true
 
     post 'Apply a root schema to a folder' do
       tags     'Metadata Schemas'
       consumes 'application/json'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
 
       parameter name: :body, in: :body, schema: {
         type: :object,
         required: %w[folder_id],
-        properties: { folder_id: { type: :string, format: :uuid } }
+        properties: { folder_id: { type: :string, format: :uuid } },
       }
 
       response '201', 'Assignment created' do
@@ -251,19 +246,18 @@ RSpec.describe 'Api::V1::MetadataSchemas', type: :request do
   # REMOVE FROM FOLDER — DELETE /api/v1/metadata_schemas/:id/remove_from_folder
   # ===========================================================================
   path '/api/v1/metadata_schemas/{id}/remove_from_folder' do
-
     parameter name: :id, in: :path, type: :integer, required: true
 
     delete 'Remove a schema from a folder' do
       tags     'Metadata Schemas'
       consumes 'application/json'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
 
       parameter name: :body, in: :body, schema: {
         type: :object,
         required: %w[folder_id],
-        properties: { folder_id: { type: :string, format: :uuid } }
+        properties: { folder_id: { type: :string, format: :uuid } },
       }
 
       response '204', 'Removed' do
@@ -276,4 +270,3 @@ RSpec.describe 'Api::V1::MetadataSchemas', type: :request do
     end
   end
 end
-

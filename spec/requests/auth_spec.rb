@@ -1,14 +1,13 @@
 require 'swagger_helper'
 
 RSpec.describe 'Authorization API', type: :request do
-
   path '/oauth/token' do
     post 'Requests an OAuth Access Token (Client Credentials Grant)' do
       tags 'Authorization (OAuth 2.0)'
       description <<-DESC
-        This is the primary authentication endpoint for System Accounts and external integrations. 
+        This is the primary authentication endpoint for System Accounts and external integrations.#{" "}
         It converts your **Client ID** and **Client Secret** into a temporary **Bearer Access Token**.
-        
+
         This token must be included in the header of all subsequent API requests as:
         `Authorization: Bearer <your_access_token>`
       DESC
@@ -41,9 +40,9 @@ RSpec.describe 'Authorization API', type: :request do
                  token_type: { type: :string, example: 'Bearer' },
                  expires_in: { type: :integer, example: 7200, description: 'Time in seconds until expiration.' },
                  scope: { type: :string, example: 'read write' },
-                 created_at: { type: :integer, example: 1716912345 }
+                 created_at: { type: :integer, example: 1716912345 },
                },
-               required: ['access_token', 'token_type', 'expires_in']
+               required: [ 'access_token', 'token_type', 'expires_in' ]
 
         run_test!
       end
@@ -52,7 +51,7 @@ RSpec.describe 'Authorization API', type: :request do
         schema type: :object,
                properties: {
                  error: { type: :string, example: 'invalid_client' },
-                 error_description: { type: :string, example: 'Client authentication failed.' }
+                 error_description: { type: :string, example: 'Client authentication failed.' },
                }
         run_test!
       end

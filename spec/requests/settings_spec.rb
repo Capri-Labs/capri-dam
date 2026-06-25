@@ -8,7 +8,7 @@ RSpec.describe 'Settings', type: :request do
       tags 'Infrastructure Settings - Storage'
       consumes 'application/json'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
 
       parameter name: :payload, in: :body, schema: {
         type: :object,
@@ -17,7 +17,7 @@ RSpec.describe 'Settings', type: :request do
             type: :object,
             properties: {
               #  CRITICAL: The required discriminator
-              provider: { type: :string, enum: ['aws', 'cloudflare', 'digitalocean', 'google'], example: 'cloudflare' },
+              provider: { type: :string, enum: [ 'aws', 'cloudflare', 'digitalocean', 'google' ], example: 'cloudflare' },
 
               # Provider-specific credentials
               region: { type: :string, example: 'auto' },
@@ -25,12 +25,12 @@ RSpec.describe 'Settings', type: :request do
               #  Handle masked placeholder
               secret_key: { type: :string, example: '********', description: 'Will not overwrite if passed as masking placeholder' },
               bucket: { type: :string, example: 'dam-production-assets' },
-              endpoint: { type: :string, nullable: true, example: 'https://<accountid>.r2.cloudflarestorage.com' }
+              endpoint: { type: :string, nullable: true, example: 'https://<accountid>.r2.cloudflarestorage.com' },
             },
-            required: ['provider']
-          }
+            required: [ 'provider' ],
+          },
         },
-        required: ['storage_config']
+        required: [ 'storage_config' ],
       }
 
       response '200', 'configuration saved successfully' do
@@ -52,7 +52,7 @@ RSpec.describe 'Settings', type: :request do
       tags 'Infrastructure Settings - Storage'
       consumes 'application/json'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
 
       parameter name: :payload, in: :body, schema: {
         type: :object,
@@ -65,19 +65,19 @@ RSpec.describe 'Settings', type: :request do
               access_key: { type: :string },
               secret_key: { type: :string, description: 'Required. Handles masked placeholder by fetching existing secret.' },
               bucket: { type: :string },
-              endpoint: { type: :string, nullable: true, description: 'Required for non-AWS compatible S3 backends' }
+              endpoint: { type: :string, nullable: true, description: 'Required for non-AWS compatible S3 backends' },
             },
-            required: ['provider', 'region', 'access_key', 'secret_key', 'bucket']
-          }
+            required: [ 'provider', 'region', 'access_key', 'secret_key', 'bucket' ],
+          },
         },
-        required: ['storage_config']
+        required: [ 'storage_config' ],
       }
 
       response '200', 'connection successful (Head Bucket)' do
         schema type: :object,
                properties: {
                  success: { type: :boolean, example: true },
-                 message: { type: :string, example: 'Connection successful! Found bucket dam-assets' }
+                 message: { type: :string, example: 'Connection successful! Found bucket dam-assets' },
                }
         run_test!
       end
@@ -86,7 +86,7 @@ RSpec.describe 'Settings', type: :request do
         schema type: :object,
                properties: {
                  success: { type: :boolean, example: false },
-                 error: { type: :string, description: 'The exact error message returned by the storage provider via SDK' }
+                 error: { type: :string, description: 'The exact error message returned by the storage provider via SDK' },
                }
         run_test!
       end

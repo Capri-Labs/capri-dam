@@ -38,4 +38,3 @@ RSpec.describe MetadataExportWorker, type: :worker do
     expect(user.notifications.last.title).to match(/export failed/i)
   end
 end
-

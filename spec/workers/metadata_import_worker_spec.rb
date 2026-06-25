@@ -41,4 +41,3 @@ RSpec.describe MetadataImportWorker, type: :worker do
     expect(user.notifications.last.title).to match(/import failed/i)
   end
 end
-

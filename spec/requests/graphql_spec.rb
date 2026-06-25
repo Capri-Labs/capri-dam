@@ -45,7 +45,7 @@ RSpec.describe "GraphQL endpoint", type: :request do
         gql_post(query: simple_query)
         # GraphQL always returns HTTP 200; auth failure surfaces as 401 OR
         # as a GraphQL error depending on implementation.
-        expect([200, 401, 302]).to include(response.status)
+        expect([ 200, 401, 302 ]).to include(response.status)
       end
     end
 
@@ -496,4 +496,3 @@ RSpec.describe "GraphQL endpoint", type: :request do
     end
   end
 end
-

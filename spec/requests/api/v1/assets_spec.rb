@@ -3,7 +3,6 @@
 require 'swagger_helper'
 
 RSpec.describe 'Api::V1::Assets', type: :request do
-
   # ===========================================================================
   # SEARCH — GET /api/v1/search
   # Routed to SearchController#index (lexical + dynamic metadata filters + facets)
@@ -12,7 +11,7 @@ RSpec.describe 'Api::V1::Assets', type: :request do
     get 'Search assets (lexical + dynamic metadata facets)' do
       tags 'Assets'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
       description <<~DESC
         Performs full-text lexical search against asset titles and original filenames.
         Supports dynamic metadata filtering via arbitrary query params (e.g. `?region=EMEA`).
@@ -38,11 +37,11 @@ RSpec.describe 'Api::V1::Assets', type: :request do
                        properties: {
                          content_type: {
                            type: :array, items: { type: :string },
-                           example: ['image/jpeg', 'image/png']
-                         }
-                       }
-                     }
-                   }
+                           example: [ 'image/jpeg', 'image/png' ]
+                         },
+                       },
+                     },
+                   },
                  },
                  results: {
                    type: :array,
@@ -54,10 +53,10 @@ RSpec.describe 'Api::V1::Assets', type: :request do
                        title:     { type: :string, example: 'Brand Logo Final' },
                        type:      { type: :string, example: 'image/png' },
                        size:      { type: :string, example: '2.4 MB' },
-                       thumb_url: { type: :string, nullable: true }
-                     }
-                   }
-                 }
+                       thumb_url: { type: :string, nullable: true },
+                     },
+                   },
+                 },
                }
         run_test!
       end
@@ -72,7 +71,7 @@ RSpec.describe 'Api::V1::Assets', type: :request do
       tags 'Assets'
       consumes 'multipart/form-data'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
       description <<~DESC
         Accepts a multipart file and immediately queues async processing
         (`AssetProcessorWorker`, `CdnInvalidationWorker`, `EdgeMetadataSyncWorker`).
@@ -90,10 +89,10 @@ RSpec.describe 'Api::V1::Assets', type: :request do
 
       response '202', 'Asset accepted and queued for processing' do
         schema type: :object,
-               required: ['id', 'status'],
+               required: [ 'id', 'status' ],
                properties: {
                  id:     { type: :string, format: :uuid },
-                 status: { type: :string, example: 'processing' }
+                 status: { type: :string, example: 'processing' },
                }
         run_test!
       end
@@ -115,14 +114,14 @@ RSpec.describe 'Api::V1::Assets', type: :request do
     delete 'Soft-delete an asset (move to Recycle Bin)' do
       tags 'Assets'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
       description 'Sets `deleted_at`. Recoverable via restore or permanently via permanent delete.'
 
       response '200', 'Asset moved to bin' do
         schema type: :object,
                properties: {
                  success: { type: :boolean, example: true },
-                 message: { type: :string, example: 'Moved to bin' }
+                 message: { type: :string, example: 'Moved to bin' },
                }
         run_test!
       end
@@ -143,13 +142,13 @@ RSpec.describe 'Api::V1::Assets', type: :request do
     post 'Restore a soft-deleted asset from the Recycle Bin' do
       tags 'Assets'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
 
       response '200', 'Asset restored to active state' do
         schema type: :object,
                properties: {
                  success: { type: :boolean, example: true },
-                 message: { type: :string, example: 'Asset restored' }
+                 message: { type: :string, example: 'Asset restored' },
                }
         run_test!
       end
@@ -170,7 +169,7 @@ RSpec.describe 'Api::V1::Assets', type: :request do
     delete 'Permanently delete an asset and all its storage versions' do
       tags 'Assets'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
       description <<~DESC
         **Irreversible.** Purges all physical files from the active storage backend
         for every version and destroys the database record. Also triggers an edge
@@ -181,7 +180,7 @@ RSpec.describe 'Api::V1::Assets', type: :request do
         schema type: :object,
                properties: {
                  success: { type: :boolean, example: true },
-                 message: { type: :string, example: 'Permanently deleted all versions' }
+                 message: { type: :string, example: 'Permanently deleted all versions' },
                }
         run_test!
       end
@@ -202,7 +201,7 @@ RSpec.describe 'Api::V1::Assets', type: :request do
     get 'List all immutable versions of an asset' do
       tags 'Assets'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
       description <<~DESC
         Returns the full version chain in descending order. `is_active: true` marks
         the currently published version. To promote a prior version, call
@@ -223,10 +222,10 @@ RSpec.describe 'Api::V1::Assets', type: :request do
                        created_at:     { type: :string, example: 'Jun 21, 2026 at 03:15 PM' },
                        created_by:     { type: :string, example: 'ashok@example.com' },
                        is_active:      { type: :boolean },
-                       size:           { type: :string, example: '4.20 MB' }
-                     }
-                   }
-                 }
+                       size:           { type: :string, example: '4.20 MB' },
+                     },
+                   },
+                 },
                }
         run_test!
       end
@@ -247,7 +246,7 @@ RSpec.describe 'Api::V1::Assets', type: :request do
     get 'Retrieve the compliance audit trail for an asset' do
       tags 'Assets'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
       description <<~DESC
         Returns every version with its raw `properties` JSONB payload for
         compliance audits and delta-diff calculations — exposing full metadata state
@@ -268,10 +267,10 @@ RSpec.describe 'Api::V1::Assets', type: :request do
                        created_at:     { type: :string, format: 'date-time' },
                        created_by_id:  { type: :integer, nullable: true },
                        properties:     { type: :object,
-                                         description: 'Raw JSONB metadata snapshot at this version' }
-                     }
-                   }
-                 }
+                                         description: 'Raw JSONB metadata snapshot at this version' },
+                     },
+                   },
+                 },
                }
         run_test!
       end
@@ -294,7 +293,7 @@ RSpec.describe 'Api::V1::Assets', type: :request do
     post 'Promote a previous version to the active/published state' do
       tags 'Assets'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
       description <<~DESC
         Non-destructive promotion — only updates the `active_version_id` pointer.
         No data is mutated. The CDN URL will serve the restored version on the next
@@ -309,7 +308,7 @@ RSpec.describe 'Api::V1::Assets', type: :request do
                  title:    { type: :string },
                  version:  { type: :integer, example: 2 },
                  metadata: { type: :object },
-                 url:      { type: :string, nullable: true }
+                 url:      { type: :string, nullable: true },
                }
         run_test!
       end
@@ -331,7 +330,7 @@ RSpec.describe 'Api::V1::Assets', type: :request do
       tags 'Assets'
       consumes 'application/json'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
       description <<~DESC
         Runs the **Image Baking Pipeline** (ImageMagick/MiniMagick).
 
@@ -349,8 +348,8 @@ RSpec.describe 'Api::V1::Assets', type: :request do
         properties: {
           save_mode: {
             type: :string,
-            enum: ['version', 'overwrite', 'new'],
-            example: 'version'
+            enum: [ 'version', 'overwrite', 'new' ],
+            example: 'version',
           },
           target_folder_id: {
             type: :string, nullable: true, example: '42',
@@ -361,8 +360,8 @@ RSpec.describe 'Api::V1::Assets', type: :request do
             properties: {
               brightness: { type: :integer, example: 10 },
               contrast:   { type: :integer, example: 5 },
-              saturation: { type: :integer, example: -20 }
-            }
+              saturation: { type: :integer, example: -20 },
+            },
           },
           geometry: {
             type: :object,
@@ -373,18 +372,18 @@ RSpec.describe 'Api::V1::Assets', type: :request do
                 type: :object,
                 properties: {
                   x: { type: :number, example: 50.0 },
-                  y: { type: :number, example: 50.0 }
-                }
-              }
-            }
+                  y: { type: :number, example: 50.0 },
+                },
+              },
+            },
           },
           filter:     { type: :string, nullable: true, example: 'None' },
           custom_cli: {
             type: :string, nullable: true,
             example: '-monochrome -charcoal 2',
             description: 'Raw ImageMagick CLI flags. Use with caution.'
-          }
-        }
+          },
+        },
       }
 
       response '200', 'Image baked — overwrite or in-place version save' do
@@ -429,7 +428,7 @@ RSpec.describe 'Api::V1::Assets', type: :request do
     get 'Retrieve the active workflow instance and task timeline for an asset' do
       tags 'Assets'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
 
       response '200', 'Workflow history returned (active or inactive)' do
         schema type: :object,
@@ -449,10 +448,10 @@ RSpec.describe 'Api::V1::Assets', type: :request do
                        comment:         { type: :string, nullable: true },
                        completed_at:    { type: :string, format: 'date-time', nullable: true },
                        is_current_user: { type: :boolean },
-                       is_pending:      { type: :boolean }
-                     }
-                   }
-                 }
+                       is_pending:      { type: :boolean },
+                     },
+                   },
+                 },
                }
         run_test!
       end
@@ -473,7 +472,7 @@ RSpec.describe 'Api::V1::Assets', type: :request do
     get 'Download a watermarked secure proxy of an image asset' do
       tags 'Assets'
       produces 'image/jpeg'
-      security [Bearer: []]
+      security [ Bearer: [] ]
       description <<~DESC
         Returns the active image version with a diagonal `CONFIDENTIAL` watermark
         at 40% opacity as a downloadable JPEG attachment.
@@ -504,7 +503,7 @@ RSpec.describe 'Api::V1::Assets', type: :request do
       tags 'Assets'
       consumes 'application/json'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
       description <<~DESC
         Compute SHA-256 checksums client-side **before** uploading, then call this
         endpoint to detect existing duplicates. Returns matching asset details so
@@ -513,15 +512,15 @@ RSpec.describe 'Api::V1::Assets', type: :request do
 
       parameter name: :payload, in: :body, schema: {
         type: :object,
-        required: ['hashes'],
+        required: [ 'hashes' ],
         properties: {
           hashes: {
             type: :array,
             items: { type: :string },
-            example: ['a1b2c3d4e5f6...', 'e5f6g7h8i9j0...'],
-            description: 'Array of SHA-256 hex strings to check'
-          }
-        }
+            example: [ 'a1b2c3d4e5f6...', 'e5f6g7h8i9j0...' ],
+            description: 'Array of SHA-256 hex strings to check',
+          },
+        },
       }
 
       response '200', 'Duplicate check complete (empty `duplicates` object when none found)' do
@@ -539,11 +538,11 @@ RSpec.describe 'Api::V1::Assets', type: :request do
                          title:      { type: :string },
                          version:    { type: :integer },
                          url:        { type: :string, nullable: true },
-                         folderName: { type: :string, example: '/Marketing/Campaigns' }
-                       }
-                     }
-                   }
-                 }
+                         folderName: { type: :string, example: '/Marketing/Campaigns' },
+                       },
+                     },
+                   },
+                 },
                }
         run_test!
       end
@@ -557,7 +556,7 @@ RSpec.describe 'Api::V1::Assets', type: :request do
     get 'List all soft-deleted assets and folders in the Recycle Bin' do
       tags 'Assets'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
 
       response '200', 'Recycle bin contents returned' do
         schema type: :object,
@@ -569,9 +568,9 @@ RSpec.describe 'Api::V1::Assets', type: :request do
                      properties: {
                        id:         { type: :integer },
                        name:       { type: :string },
-                       deleted_at: { type: :string, format: 'date-time' }
-                     }
-                   }
+                       deleted_at: { type: :string, format: 'date-time' },
+                     },
+                   },
                  },
                  assets: {
                    type: :array,
@@ -583,9 +582,9 @@ RSpec.describe 'Api::V1::Assets', type: :request do
                        status:     { type: :string },
                        deleted_at: { type: :string, format: 'date-time' },
                        properties: { type: :object },
-                       url:        { type: :string, nullable: true }
-                     }
-                   }
+                       url:        { type: :string, nullable: true },
+                     },
+                   },
                  },
                  breadcrumbs: {
                    type: :array,
@@ -593,10 +592,10 @@ RSpec.describe 'Api::V1::Assets', type: :request do
                      type: :object,
                      properties: {
                        id:   { type: :string, example: 'bin' },
-                       name: { type: :string, example: 'Trash Bin' }
-                     }
-                   }
-                 }
+                       name: { type: :string, example: 'Trash Bin' },
+                     },
+                   },
+                 },
                }
         run_test!
       end
@@ -613,7 +612,7 @@ RSpec.describe 'Api::V1::Assets', type: :request do
     get 'Stream the active version file from local/staging storage' do
       tags 'Assets'
       produces '*/*'
-      security [Bearer: []]
+      security [ Bearer: [] ]
       description <<~DESC
         **Development & staging use only.** Streams the physical file from disk with
         the correct `Content-Type`. In production, assets are served via CDN URL.
@@ -634,7 +633,7 @@ RSpec.describe 'Api::V1::Assets', type: :request do
         schema type: :object,
                properties: {
                  error:     { type: :string },
-                 looked_at: { type: :string, nullable: true }
+                 looked_at: { type: :string, nullable: true },
                }
         run_test!
       end
@@ -660,21 +659,21 @@ RSpec.describe 'Api::V1::Assets', type: :request do
 
       parameter name: :payload, in: :body, schema: {
         type: :object,
-        required: ['asset_embedding'],
+        required: [ 'asset_embedding' ],
         properties: {
           asset_embedding: {
             type: :object,
-            required: ['embedding', 'model_name'],
+            required: [ 'embedding', 'model_name' ],
             properties: {
               embedding:  {
                 type: :array, items: { type: :number },
-                example: [0.023, -0.114, 0.987],
+                example: [ 0.023, -0.114, 0.987 ],
                 description: '1536-dimension float vector'
               },
-              model_name: { type: :string, example: 'text-embedding-ada-002' }
-            }
-          }
-        }
+              model_name: { type: :string, example: 'text-embedding-ada-002' },
+            },
+          },
+        },
       }
 
       response '200', 'Vector spatial index updated' do
@@ -689,5 +688,4 @@ RSpec.describe 'Api::V1::Assets', type: :request do
       end
     end
   end
-
 end

@@ -29,7 +29,7 @@ RSpec.describe 'Api::V1::MetadataExports', type: :request do
           metadata_export: {
             name: 'q3_assets', folder_id: folder.id,
             include_subfolders: true, property_mode: 'all'
-          }
+          },
         }, as: :json
       }.to change(MetadataExportWorker.jobs, :size).by(1)
 
@@ -70,4 +70,3 @@ RSpec.describe 'Api::V1::MetadataExports', type: :request do
     end
   end
 end
-

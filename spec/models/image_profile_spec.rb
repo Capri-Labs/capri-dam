@@ -3,7 +3,6 @@
 require 'rails_helper'
 
 RSpec.describe ImageProfile, type: :model do
-
   # ── Factories ────────────────────────────────────────────────────────────────
   subject(:profile) { build(:image_profile) }
 
@@ -65,13 +64,13 @@ RSpec.describe ImageProfile, type: :model do
       end
 
       it 'rejects crops with missing name' do
-        profile = build(:image_profile, responsive_crops: [{ 'width' => 400, 'height' => 300 }])
+        profile = build(:image_profile, responsive_crops: [ { 'width' => 400, 'height' => 300 } ])
         expect(profile).not_to be_valid
         expect(profile.errors[:responsive_crops]).to be_present
       end
 
       it 'rejects crops with zero width' do
-        profile = build(:image_profile, responsive_crops: [{ 'name' => 'Bad', 'width' => 0, 'height' => 300 }])
+        profile = build(:image_profile, responsive_crops: [ { 'name' => 'Bad', 'width' => 0, 'height' => 300 } ])
         expect(profile).not_to be_valid
       end
 
@@ -187,4 +186,3 @@ RSpec.describe ImageProfile, type: :model do
     end
   end
 end
-

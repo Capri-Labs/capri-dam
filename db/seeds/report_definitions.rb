@@ -13,8 +13,8 @@ REPORT_DEFINITIONS = [
     active:      true,
     query_config: {
       selects: %w[uuid title status content_type folder user created_at size],
-      group_by: 'status'
-    }
+      group_by: 'status',
+    },
   },
   {
     name:        'Workflow Compliance Report',
@@ -23,8 +23,8 @@ REPORT_DEFINITIONS = [
     active:      true,
     query_config: {
       model: 'WorkflowInstance',
-      selects: %w[workflow_name asset_title status started_at completed_at duration_hours]
-    }
+      selects: %w[workflow_name asset_title status started_at completed_at duration_hours],
+    },
   },
   {
     name:        'Storage Usage Report',
@@ -33,8 +33,8 @@ REPORT_DEFINITIONS = [
     active:      true,
     query_config: {
       aggregation: 'SUM(size)',
-      group_by: %w[content_type folder user]
-    }
+      group_by: %w[content_type folder user],
+    },
   },
   {
     name:        'User Activity Report',
@@ -43,8 +43,8 @@ REPORT_DEFINITIONS = [
     active:      true,
     query_config: {
       model: 'AuditLog',
-      selects: %w[user_email action count last_action_at]
-    }
+      selects: %w[user_email action count last_action_at],
+    },
   },
   {
     name:        'AI Coverage & Enrichment Report',
@@ -53,8 +53,8 @@ REPORT_DEFINITIONS = [
     active:      true,
     query_config: {
       join: 'asset_embeddings',
-      selects: %w[uuid title embedding_status model_name enrichment_date]
-    }
+      selects: %w[uuid title embedding_status model_name enrichment_date],
+    },
   },
   {
     name:        'Duplicate Detection Report',
@@ -63,8 +63,8 @@ REPORT_DEFINITIONS = [
     active:      true,
     query_config: {
       checksum_match: true,
-      include_migration: true
-    }
+      include_migration: true,
+    },
   },
   {
     name:        'License Expiry Forecast',
@@ -73,8 +73,8 @@ REPORT_DEFINITIONS = [
     active:      true,
     query_config: {
       filter: "properties->>'license_expires_at' IS NOT NULL",
-      sort: "license_expires_at ASC"
-    }
+      sort: "license_expires_at ASC",
+    },
   },
   {
     name:        'Collection & Smart Routing Report',
@@ -83,8 +83,8 @@ REPORT_DEFINITIONS = [
     active:      true,
     query_config: {
       model: 'Collection',
-      include_smart_rules: true
-    }
+      include_smart_rules: true,
+    },
   },
   {
     name:        'Audit Trail Report',
@@ -93,8 +93,8 @@ REPORT_DEFINITIONS = [
     active:      true,
     query_config: {
       model: 'AuditLog',
-      selects: %w[user_email action auditable_type changes_data ip_address created_at]
-    }
+      selects: %w[user_email action auditable_type changes_data ip_address created_at],
+    },
   },
   {
     name:        'Migration Batch Summary',
@@ -103,9 +103,9 @@ REPORT_DEFINITIONS = [
     active:      true,
     query_config: {
       model: 'IngestionBatch',
-      selects: %w[name source_type status committed_count duplicate_count error_count completed_at]
-    }
-  }
+      selects: %w[name source_type status committed_count duplicate_count error_count completed_at],
+    },
+  },
 ].freeze
 
 REPORT_DEFINITIONS.each do |attrs|
@@ -115,6 +115,5 @@ REPORT_DEFINITIONS.each do |attrs|
   report.query_config = (attrs[:query_config] || {}).merge('description' => config)
   report.active = true
   report.save!
-  puts "✅ ReportDefinition: #{report.name}"
+  Rails.logger.debug "✅ ReportDefinition: #{report.name}"
 end
-

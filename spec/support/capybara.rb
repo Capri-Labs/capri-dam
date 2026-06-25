@@ -18,4 +18,3 @@ RSpec.configure do |config|
 
   config.after(:each, type: :system) { Warden.test_reset! }
 end
-

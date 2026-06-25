@@ -43,8 +43,8 @@ RSpec.describe 'Api::V1::MetadataImports', type: :request do
             batch_size: 50,
             field_separator: ',',
             multi_value_delimiter: '|',
-            asset_path_column: 'asset_path'
-          }
+            asset_path_column: 'asset_path',
+          },
         }
       }.to change(MetadataImportWorker.jobs, :size).by(1)
 
@@ -69,4 +69,3 @@ RSpec.describe 'Api::V1::MetadataImports', type: :request do
     end
   end
 end
-

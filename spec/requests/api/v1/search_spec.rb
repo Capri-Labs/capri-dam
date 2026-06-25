@@ -3,13 +3,12 @@
 require 'swagger_helper'
 
 RSpec.describe 'Api::V1::Search', type: :request do
-
   # ── GET /api/v1/search ───────────────────────────────────────────────────────
   path '/api/v1/search' do
     get 'Full-text and faceted asset search' do
       tags        'Search'
       produces    'application/json'
-      security    [Bearer: []]
+      security    [ Bearer: [] ]
       description <<~DESC
         Performs lexical full-text search across asset `title`, `original_filename`,
         and **all JSONB metadata properties**. Supports mode filtering, schema filtering,
@@ -48,15 +47,15 @@ RSpec.describe 'Api::V1::Search', type: :request do
                        properties: {
                          content_type: {
                            type: :array, items: { type: :string },
-                           example: ['image/jpeg', 'image/png']
+                           example: [ 'image/jpeg', 'image/png' ]
                          },
                          applied_schema: {
                            type: :array, items: { type: :string },
-                           example: ['Product Images', 'Marketing Assets']
-                         }
-                       }
-                     }
-                   }
+                           example: [ 'Product Images', 'Marketing Assets' ]
+                         },
+                       },
+                     },
+                   },
                  },
                  results: {
                    type: :array,
@@ -84,17 +83,15 @@ RSpec.describe 'Api::V1::Search', type: :request do
                            asset_type:  { type: :string, nullable: true },
                            product_id:  { type: :string, nullable: true },
                            language:    { type: :string, nullable: true },
-                           tags:        { type: :array, items: { type: :string }, nullable: true }
-                         }
-                       }
-                     }
-                   }
-                 }
+                           tags:        { type: :array, items: { type: :string }, nullable: true },
+                         },
+                       },
+                     },
+                   },
+                 },
                }
         run_test!
       end
     end
   end
-
 end
-

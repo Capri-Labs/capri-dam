@@ -6,7 +6,7 @@ RSpec.describe 'Api::V1::Notifications', type: :request do
     get 'Retrieves recent unread notifications for the current user' do
       tags 'Notifications'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
 
       response '200', 'notifications retrieved successfully' do
         schema type: :array,
@@ -16,9 +16,9 @@ RSpec.describe 'Api::V1::Notifications', type: :request do
                    id: { type: :integer },
                    message: { type: :string, description: 'The notification text/content' },
                    read_at: { type: :string, format: 'date-time', nullable: true },
-                   created_at: { type: :string, format: 'date-time' }
+                   created_at: { type: :string, format: 'date-time' },
                    # Note: Add any other fields your Notification model serializes (e.g., action_url, type)
-                 }
+                 },
                }
         run_test!
       end
@@ -30,12 +30,12 @@ RSpec.describe 'Api::V1::Notifications', type: :request do
     patch 'Marks all unread notifications as read' do
       tags 'Notifications'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
 
       response '200', 'all notifications marked as read successfully' do
         schema type: :object,
                properties: {
-                 success: { type: :boolean }
+                 success: { type: :boolean },
                }
         run_test!
       end
@@ -49,12 +49,12 @@ RSpec.describe 'Api::V1::Notifications', type: :request do
     patch 'Marks a specific notification as read' do
       tags 'Notifications'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
 
       response '200', 'notification marked as read successfully' do
         schema type: :object,
                properties: {
-                 success: { type: :boolean }
+                 success: { type: :boolean },
                }
         run_test!
       end
@@ -62,7 +62,7 @@ RSpec.describe 'Api::V1::Notifications', type: :request do
       response '404', 'notification not found' do
         schema type: :object,
                properties: {
-                 error: { type: :string }
+                 error: { type: :string },
                }
         run_test!
       end

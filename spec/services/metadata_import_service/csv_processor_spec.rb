@@ -48,7 +48,7 @@ RSpec.describe MetadataImportService::CsvProcessor do
       asset  = create(:asset, title: 'bike.jpg', folder: folder, user: user)
 
       csv = +"asset_path,copyright,internal_note\n/Adventures/bike.jpg,ACME,secret\n"
-      import = import_with_csv(csv, ignored_columns: ['internal_note'])
+      import = import_with_csv(csv, ignored_columns: [ 'internal_note' ])
       described_class.new(import).process
 
       asset.reload
@@ -88,4 +88,3 @@ RSpec.describe MetadataImportService::CsvProcessor do
     end
   end
 end
-

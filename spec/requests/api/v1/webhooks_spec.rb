@@ -3,7 +3,6 @@
 require 'swagger_helper'
 
 RSpec.describe 'Api::V1::Webhooks', type: :request do
-
   # ===========================================================================
   # RECEIVE — POST /api/v1/webhooks/connectors/{connector_id}/receive
   # ===========================================================================
@@ -37,13 +36,13 @@ RSpec.describe 'Api::V1::Webhooks', type: :request do
 
       parameter name: :payload, in: :body, schema: {
         type: :object,
-        description: 'Provider-specific event payload (arbitrary JSON — passed through to IngestionWorker)'
+        description: 'Provider-specific event payload (arbitrary JSON — passed through to IngestionWorker)',
       }
 
       response '200', 'Event accepted and queued for async processing' do
         schema type: :object,
                properties: {
-                 status: { type: :string, example: 'accepted' }
+                 status: { type: :string, example: 'accepted' },
                }
         run_test!
       end
@@ -58,6 +57,4 @@ RSpec.describe 'Api::V1::Webhooks', type: :request do
       end
     end
   end
-
 end
-

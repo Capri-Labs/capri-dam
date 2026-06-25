@@ -3,7 +3,6 @@
 require 'swagger_helper'
 
 RSpec.describe 'Api::V1::Copilot (Semantic Search)', type: :request do
-
   # ===========================================================================
   # COPILOT SEARCH — POST /api/v1/copilot/search
   # ===========================================================================
@@ -12,7 +11,7 @@ RSpec.describe 'Api::V1::Copilot (Semantic Search)', type: :request do
       tags 'AI Copilot'
       consumes 'application/json'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
       description <<~DESC
         Translates a natural-language query into a 1536-dimension vector via the
         Python AI Gateway (`POST /api/embed_query`) and performs an HNSW nearest-
@@ -28,14 +27,14 @@ RSpec.describe 'Api::V1::Copilot (Semantic Search)', type: :request do
 
       parameter name: :payload, in: :body, schema: {
         type: :object,
-        required: ['query'],
+        required: [ 'query' ],
         properties: {
           query: {
             type: :string,
             example: 'outdoor lifestyle photography with warm autumn tones',
-            description: 'Natural language description of the assets you are looking for'
-          }
-        }
+            description: 'Natural language description of the assets you are looking for',
+          },
+        },
       }
 
       response '200', 'Semantic search results returned (may be empty array)' do
@@ -49,10 +48,10 @@ RSpec.describe 'Api::V1::Copilot (Semantic Search)', type: :request do
                        id:                { type: :integer },
                        original_filename: { type: :string },
                        file_url:          { type: :string, nullable: true },
-                       properties:        { type: :object }
-                     }
-                   }
-                 }
+                       properties:        { type: :object },
+                     },
+                   },
+                 },
                }
         run_test!
       end
@@ -64,6 +63,4 @@ RSpec.describe 'Api::V1::Copilot (Semantic Search)', type: :request do
       end
     end
   end
-
 end
-

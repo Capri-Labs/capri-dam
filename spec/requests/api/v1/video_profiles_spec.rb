@@ -3,7 +3,6 @@
 require 'swagger_helper'
 
 RSpec.describe 'Video Profiles API', type: :request do
-
   # ── Shared setup ─────────────────────────────────────────────────────────────
   let(:admin_user)   { create(:user, admin: true) }
   let(:regular_user) { create(:user, admin: false) }
@@ -35,14 +34,14 @@ RSpec.describe 'Video Profiles API', type: :request do
           keyframe:           { type: :string, description: 'Target keyframe interval in frames (recommended: 60–300)' },
           minBitrate:         { type: :string, description: 'Min bitrate in Kbps for VBR encodings' },
           maxBitrate:         { type: :string, description: 'Max bitrate in Kbps (recommended: 2x encoding bitrate)' },
-          audioBitrateCustom: { type: :string, description: '"true"/"false" — force constant audio bitrate' }
-        }
+          audioBitrateCustom: { type: :string, description: '"true"/"false" — force constant audio bitrate' },
+        },
       },
       position:   { type: :integer },
       size_label: { type: :string },
       created_at: { type: :string, format: 'date-time' },
-      updated_at: { type: :string, format: 'date-time' }
-    }
+      updated_at: { type: :string, format: 'date-time' },
+    },
   }.freeze
 
   PROFILE_SCHEMA = {
@@ -58,15 +57,15 @@ RSpec.describe 'Video Profiles API', type: :request do
           type: :object,
           properties: {
             name:       { type: :string, example: '16:9' },
-            crop_ratio: { type: :string, example: '16:9' }
-          }
-        }
+            crop_ratio: { type: :string, example: '16:9' },
+          },
+        },
       },
       adaptive_streaming_warnings: { type: :array, items: { type: :string } },
       folder_count:                { type: :integer },
       created_at:                  { type: :string, format: 'date-time' },
-      updated_at:                  { type: :string, format: 'date-time' }
-    }
+      updated_at:                  { type: :string, format: 'date-time' },
+    },
   }.freeze
 
   # ── GET /api/v1/video_profiles ───────────────────────────────────────────────
@@ -74,7 +73,7 @@ RSpec.describe 'Video Profiles API', type: :request do
     get 'Lists all active Video Profiles' do
       tags     'Tools - Video Profiles'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
 
       response '200', 'profiles retrieved' do
         schema type: :array, items: PROFILE_SCHEMA
@@ -86,15 +85,15 @@ RSpec.describe 'Video Profiles API', type: :request do
       tags     'Tools - Video Profiles'
       consumes 'application/json'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
 
       parameter name: :payload, in: :body, schema: {
         type: :object,
-        required: [:video_profile],
+        required: [ :video_profile ],
         properties: {
           video_profile: {
             type: :object,
-            required: [:name],
+            required: [ :name ],
             properties: {
               name:                          { type: :string, example: 'Adaptive HD' },
               description:                   { type: :string, example: 'Adaptive HLS for desktop and mobile' },
@@ -105,15 +104,15 @@ RSpec.describe 'Video Profiles API', type: :request do
                   type: :object,
                   properties: {
                     name:       { type: :string, example: '16:9' },
-                    crop_ratio: { type: :string, example: '16:9' }
-                  }
-                }
+                    crop_ratio: { type: :string, example: '16:9' },
+                  },
+                },
               },
               encoding_presets_attributes: {
                 type: :array,
                 items: {
                   type: :object,
-                  required: [:name, :height, :video_bitrate_kbps],
+                  required: [ :name, :height, :video_bitrate_kbps ],
                   properties: {
                     name:               { type: :string, example: '720p' },
                     video_format_codec: { type: :string, example: 'h264' },
@@ -124,13 +123,13 @@ RSpec.describe 'Video Profiles API', type: :request do
                     frame_rate_fps:     { type: :integer, example: 30 },
                     audio_codec:        { type: :string, example: 'he_aac' },
                     audio_bitrate_kbps: { type: :integer, example: 128 },
-                    position:           { type: :integer, example: 0 }
-                  }
-                }
-              }
-            }
-          }
-        }
+                    position:           { type: :integer, example: 0 },
+                  },
+                },
+              },
+            },
+          },
+        },
       }
 
       response '201', 'profile created' do
@@ -161,7 +160,7 @@ RSpec.describe 'Video Profiles API', type: :request do
     get 'Retrieves a single Video Profile with its encoding presets' do
       tags     'Tools - Video Profiles'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
 
       response '200', 'profile found' do
         schema PROFILE_SCHEMA.merge(
@@ -183,7 +182,7 @@ RSpec.describe 'Video Profiles API', type: :request do
       tags     'Tools - Video Profiles'
       consumes 'application/json'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
 
       parameter name: :payload, in: :body, schema: {
         type: :object,
@@ -193,10 +192,10 @@ RSpec.describe 'Video Profiles API', type: :request do
             properties: {
               name:                          { type: :string },
               description:                   { type: :string },
-              encode_for_adaptive_streaming: { type: :boolean }
-            }
-          }
-        }
+              encode_for_adaptive_streaming: { type: :boolean },
+            },
+          },
+        },
       }
 
       response '200', 'profile updated' do
@@ -217,7 +216,7 @@ RSpec.describe 'Video Profiles API', type: :request do
 
     delete 'Soft-deletes a Video Profile' do
       tags     'Tools - Video Profiles'
-      security [Bearer: []]
+      security [ Bearer: [] ]
 
       response '204', 'deleted (no content)' do
         run_test!
@@ -238,13 +237,13 @@ RSpec.describe 'Video Profiles API', type: :request do
       tags     'Tools - Video Profiles'
       consumes 'application/json'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
 
       parameter name: :payload, in: :body, schema: {
         type: :object,
         properties: {
-          name: { type: :string, example: 'Adaptive HD (copy)' }
-        }
+          name: { type: :string, example: 'Adaptive HD (copy)' },
+        },
       }
 
       response '201', 'profile copied' do
@@ -271,21 +270,21 @@ RSpec.describe 'Video Profiles API', type: :request do
       tags     'Tools - Video Profiles'
       consumes 'application/json'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
 
       parameter name: :payload, in: :body, schema: {
         type: :object,
-        required: [:folder_id],
+        required: [ :folder_id ],
         properties: {
-          folder_id: { type: :string, format: :uuid, example: '3fa85f64-5717-4562-b3fc-2c963f66afa6' }
-        }
+          folder_id: { type: :string, format: :uuid, example: '3fa85f64-5717-4562-b3fc-2c963f66afa6' },
+        },
       }
 
       response '201', 'profile applied to folder' do
         schema type: :object,
                properties: {
                  profile_id: { type: :integer },
-                 folder_id:  { type: :string }
+                 folder_id:  { type: :string },
                }
         run_test!
       end
@@ -310,14 +309,14 @@ RSpec.describe 'Video Profiles API', type: :request do
       tags     'Tools - Video Profiles'
       consumes 'application/json'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
 
       parameter name: :payload, in: :body, schema: {
         type: :object,
-        required: [:folder_id],
+        required: [ :folder_id ],
         properties: {
-          folder_id: { type: :string, format: :uuid }
-        }
+          folder_id: { type: :string, format: :uuid },
+        },
       }
 
       response '204', 'removed (no content)' do
@@ -338,7 +337,7 @@ RSpec.describe 'Video Profiles API', type: :request do
     get 'Lists folders the Video Profile is applied to' do
       tags     'Tools - Video Profiles'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
 
       response '200', 'folders listed' do
         schema type: :array,
@@ -347,8 +346,8 @@ RSpec.describe 'Video Profiles API', type: :request do
                  properties: {
                    id:   { type: :string },
                    name: { type: :string },
-                   path: { type: :string }
-                 }
+                   path: { type: :string },
+                 },
                }
         run_test!
       end
@@ -404,9 +403,9 @@ RSpec.describe 'Video Profiles API', type: :request do
                  encode_for_adaptive_streaming: true,
                  encoding_presets_attributes:   [
                    { name: '720p', height: 720, video_bitrate_kbps: 3000,
-                     frame_rate_fps: 30, audio_codec: 'he_aac', audio_bitrate_kbps: 128 }
-                 ]
-               }
+                     frame_rate_fps: 30, audio_codec: 'he_aac', audio_bitrate_kbps: 128 },
+                 ],
+               },
              }, as: :json
 
         expect(response).to have_http_status(:created)
@@ -588,4 +587,3 @@ RSpec.describe 'Video Profiles API', type: :request do
     end
   end
 end
-

@@ -3,16 +3,14 @@
 require 'swagger_helper'
 
 RSpec.describe 'Api::V1::Folders', type: :request do
-
   # ===========================================================================
   # INDEX — GET /api/v1/folders
   # ===========================================================================
   path '/api/v1/folders' do
-
     get 'Retrieve the full folder tree (flat list with paths)' do
       tags 'Folders'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
       description <<~DESC
         Returns every active folder as a flat sorted list with fully-qualified
         path names (e.g. `/Marketing/2026/Campaigns`). Used to populate folder-
@@ -27,13 +25,13 @@ RSpec.describe 'Api::V1::Folders', type: :request do
                    type: :array,
                    items: {
                      type: :object,
-                     required: ['id', 'name'],
+                     required: [ 'id', 'name' ],
                      properties: {
                        id:   { type: :integer, example: 42 },
-                       name: { type: :string,  example: '/Marketing/2026' }
-                     }
-                   }
-                 }
+                       name: { type: :string,  example: '/Marketing/2026' },
+                     },
+                   },
+                 },
                }
         run_test!
       end
@@ -44,22 +42,22 @@ RSpec.describe 'Api::V1::Folders', type: :request do
       tags 'Folders'
       consumes 'application/json'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
 
       parameter name: :payload, in: :body, schema: {
         type: :object,
-        required: ['folder'],
+        required: [ 'folder' ],
         properties: {
           folder: {
             type: :object,
-            required: ['name'],
+            required: [ 'name' ],
             properties: {
               name:      { type: :string, example: 'Q3 Campaigns' },
               parent_id: { type: :string, nullable: true, example: 'root',
-                           description: 'Parent folder ID or "root" to create at top level' }
-            }
-          }
-        }
+                           description: 'Parent folder ID or "root" to create at top level' },
+            },
+          },
+        },
       }
 
       response '201', 'Folder created successfully' do
@@ -93,7 +91,7 @@ RSpec.describe 'Api::V1::Folders', type: :request do
     get 'Retrieve a folder and its direct child contents' do
       tags 'Folders'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
       description <<~DESC
         Returns immediate sub-folders, assets in this folder, and the breadcrumb
         trail back to root. Pass `id=root` to list all top-level items.
@@ -118,9 +116,9 @@ RSpec.describe 'Api::V1::Folders', type: :request do
                        slug:        { type: :string, nullable: true },
                        description: { type: :string, nullable: true },
                        created_at:  { type: :string, format: 'date-time' },
-                       updated_at:  { type: :string, format: 'date-time' }
-                     }
-                   }
+                       updated_at:  { type: :string, format: 'date-time' },
+                     },
+                   },
                  },
                  assets: {
                    type: :array,
@@ -137,9 +135,9 @@ RSpec.describe 'Api::V1::Folders', type: :request do
                        content_type: { type: :string, nullable: true, example: 'image/jpeg' },
                        created_at:   { type: :string, format: 'date-time' },
                        updated_at:   { type: :string, format: 'date-time' },
-                       url:          { type: :string, nullable: true }
-                     }
-                   }
+                       url:          { type: :string, nullable: true },
+                     },
+                   },
                  },
                  breadcrumbs: {
                    type: :array,
@@ -147,17 +145,17 @@ RSpec.describe 'Api::V1::Folders', type: :request do
                      type: :object,
                      properties: {
                        id:   { type: :string },
-                       name: { type: :string }
-                     }
-                   }
+                       name: { type: :string },
+                     },
+                   },
                  },
                  sort: {
                    type: :object,
                    properties: {
                      field:     { type: :string, example: 'name' },
-                     direction: { type: :string, example: 'asc' }
-                   }
-                 }
+                     direction: { type: :string, example: 'asc' },
+                   },
+                 },
                }
         let(:id) { 'root' }
         run_test!
@@ -174,7 +172,7 @@ RSpec.describe 'Api::V1::Folders', type: :request do
       tags 'Folders'
       consumes 'application/json'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
       description <<~DESC
         Updates the folder `name` (rename) and/or `description`. The URL-safe
         `slug` is regenerated automatically when the name changes.
@@ -182,16 +180,16 @@ RSpec.describe 'Api::V1::Folders', type: :request do
 
       parameter name: :payload, in: :body, schema: {
         type: :object,
-        required: ['folder'],
+        required: [ 'folder' ],
         properties: {
           folder: {
             type: :object,
             properties: {
               name:        { type: :string, example: 'Q4 Campaigns' },
-              description: { type: :string, example: 'All creative assets for the Q4 push' }
-            }
-          }
-        }
+              description: { type: :string, example: 'All creative assets for the Q4 push' },
+            },
+          },
+        },
       }
 
       response '200', 'Folder updated successfully' do
@@ -201,7 +199,7 @@ RSpec.describe 'Api::V1::Folders', type: :request do
                  name:        { type: :string },
                  description: { type: :string, nullable: true },
                  slug:        { type: :string, nullable: true },
-                 updated_at:  { type: :string, format: 'date-time' }
+                 updated_at:  { type: :string, format: 'date-time' },
                }
         run_test!
       end
@@ -221,7 +219,7 @@ RSpec.describe 'Api::V1::Folders', type: :request do
     delete 'Move a folder to the Recycle Bin (soft delete)' do
       tags 'Folders'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
       description <<~DESC
         Soft-deletes the folder by stamping `deleted_at`. A CDN invalidation job
         is dispatched to drop any cached assets under this folder from edge nodes.
@@ -232,7 +230,7 @@ RSpec.describe 'Api::V1::Folders', type: :request do
         schema type: :object,
                properties: {
                  success: { type: :boolean, example: true },
-                 message: { type: :string, example: 'Folder moved to bin' }
+                 message: { type: :string, example: 'Folder moved to bin' },
                }
         run_test!
       end
@@ -248,7 +246,7 @@ RSpec.describe 'Api::V1::Folders', type: :request do
     get 'Retrieve all configuration profiles assigned to a folder' do
       tags 'Folders'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
       description <<~DESC
         Returns the image processing profile, video encoding profile, metadata
         schema (direct or inherited), and access-control policies assigned to a
@@ -267,7 +265,7 @@ RSpec.describe 'Api::V1::Folders', type: :request do
                      crop_type:               { type: :string },
                      unsharp_mask:            { type: :object, nullable: true },
                      responsive_crop_enabled: { type: :boolean },
-                     swatch_enabled:          { type: :boolean }
+                     swatch_enabled:          { type: :boolean },
                    }
                  },
                  video_profile: {
@@ -277,7 +275,7 @@ RSpec.describe 'Api::V1::Folders', type: :request do
                      name:                          { type: :string },
                      description:                   { type: :string, nullable: true },
                      encode_for_adaptive_streaming: { type: :boolean },
-                     preset_count:                  { type: :integer }
+                     preset_count:                  { type: :integer },
                    }
                  },
                  metadata_schema: {
@@ -286,7 +284,7 @@ RSpec.describe 'Api::V1::Folders', type: :request do
                      id:     { type: :integer },
                      name:   { type: :string },
                      source: { type: :string, enum: %w[direct inherited], description: 'Whether the schema is set on this folder or inherited from an ancestor' },
-                     tabs:   { type: :array, items: { type: :object } }
+                     tabs:   { type: :array, items: { type: :object } },
                    }
                  },
                  policies: {
@@ -300,10 +298,10 @@ RSpec.describe 'Api::V1::Folders', type: :request do
                        write:      { type: :boolean },
                        delete:     { type: :boolean },
                        manage:     { type: :boolean },
-                       deny:       { type: :boolean }
-                     }
-                   }
-                 }
+                       deny:       { type: :boolean },
+                     },
+                   },
+                 },
                }
         run_test!
       end
@@ -319,13 +317,13 @@ RSpec.describe 'Api::V1::Folders', type: :request do
     post 'Restore a soft-deleted folder from the Recycle Bin' do
       tags 'Folders'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
 
       response '200', 'Folder restored to active state' do
         schema type: :object,
                properties: {
                  success: { type: :boolean, example: true },
-                 message: { type: :string, example: 'Folder restored' }
+                 message: { type: :string, example: 'Folder restored' },
                }
         run_test!
       end
@@ -346,7 +344,7 @@ RSpec.describe 'Api::V1::Folders', type: :request do
     delete 'Permanently delete a folder from the Recycle Bin' do
       tags 'Folders'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
       description <<~DESC
         **Irreversible.** Destroys the folder database record. Also dispatches a
         CDN invalidation job to drop any cached assets under this folder from
@@ -358,7 +356,7 @@ RSpec.describe 'Api::V1::Folders', type: :request do
         schema type: :object,
                properties: {
                  success: { type: :boolean, example: true },
-                 message: { type: :string, example: 'Folder permanently deleted' }
+                 message: { type: :string, example: 'Folder permanently deleted' },
                }
         run_test!
       end
@@ -369,5 +367,4 @@ RSpec.describe 'Api::V1::Folders', type: :request do
       end
     end
   end
-
 end

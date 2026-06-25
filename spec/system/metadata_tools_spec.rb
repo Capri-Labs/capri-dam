@@ -28,4 +28,3 @@ RSpec.describe 'Metadata Tools pages', type: :system do
     expect(page).not_to have_css('[data-view="metadata-exports-screen"]', visible: :all)
   end
 end
-

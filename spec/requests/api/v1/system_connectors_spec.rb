@@ -3,16 +3,14 @@
 require 'swagger_helper'
 
 RSpec.describe 'Api::V1::SystemConnectors', type: :request do
-
   # ===========================================================================
   # INDEX — GET /api/v1/system_connectors
   # ===========================================================================
   path '/api/v1/system_connectors' do
-
     get 'List all system connectors (ingestion bridges)' do
       tags 'System Connectors'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
       description <<~DESC
         Returns all configured system connectors ordered by `created_at DESC`.
         A connector is a named integration bridge to an external DAM/storage
@@ -34,8 +32,8 @@ RSpec.describe 'Api::V1::SystemConnectors', type: :request do
                    assets_imported:  { type: :integer, example: 0 },
                    concurrency_limit: { type: :integer, nullable: true },
                    rps_limit:        { type: :integer, nullable: true },
-                   created_at:       { type: :string, format: 'date-time' }
-                 }
+                   created_at:       { type: :string, format: 'date-time' },
+                 },
                }
         run_test!
       end
@@ -46,15 +44,15 @@ RSpec.describe 'Api::V1::SystemConnectors', type: :request do
       tags 'System Connectors'
       consumes 'application/json'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
 
       parameter name: :payload, in: :body, schema: {
         type: :object,
-        required: ['system_connector'],
+        required: [ 'system_connector' ],
         properties: {
           system_connector: {
             type: :object,
-            required: ['name', 'provider_type'],
+            required: [ 'name', 'provider_type' ],
             properties: {
               name:              { type: :string,  example: 'Cloudinary Production' },
               provider_type:     { type: :string,  example: 'cloudinary',
@@ -66,10 +64,10 @@ RSpec.describe 'Api::V1::SystemConnectors', type: :request do
               concurrency_limit: { type: :integer, nullable: true, example: 5 },
               rps_limit:         { type: :integer, nullable: true, example: 10 },
               tdm_sanitation:    { type: :boolean, example: true,
-                                   description: 'Whether to run TDM sanitation on imported metadata' }
-            }
-          }
-        }
+                                   description: 'Whether to run TDM sanitation on imported metadata' },
+            },
+          },
+        },
       }
 
       response '201', 'Connector created' do
@@ -77,7 +75,7 @@ RSpec.describe 'Api::V1::SystemConnectors', type: :request do
                properties: {
                  id:             { type: :integer },
                  name:           { type: :string },
-                 provider_label: { type: :string }
+                 provider_label: { type: :string },
                }
         run_test!
       end
@@ -101,12 +99,12 @@ RSpec.describe 'Api::V1::SystemConnectors', type: :request do
       tags 'System Connectors'
       consumes 'application/json'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
       description 'Blank `auth_token` values are ignored so they do not overwrite the stored secret.'
 
       parameter name: :payload, in: :body, schema: {
         type: :object,
-        required: ['system_connector'],
+        required: [ 'system_connector' ],
         properties: {
           system_connector: {
             type: :object,
@@ -117,10 +115,10 @@ RSpec.describe 'Api::V1::SystemConnectors', type: :request do
                                 description: 'Leave blank to keep the existing secret' },
               status:         { type: :string,  example: 'active' },
               concurrency_limit: { type: :integer, nullable: true },
-              rps_limit:      { type: :integer,  nullable: true }
-            }
-          }
-        }
+              rps_limit:      { type: :integer,  nullable: true },
+            },
+          },
+        },
       }
 
       response '200', 'Connector updated' do
@@ -148,7 +146,7 @@ RSpec.describe 'Api::V1::SystemConnectors', type: :request do
       tags 'System Connectors'
       consumes 'application/json'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
       description <<~DESC
         Validates a set of credentials against the target provider **without
         saving them**. Use this in the connector setup wizard to verify the
@@ -157,7 +155,7 @@ RSpec.describe 'Api::V1::SystemConnectors', type: :request do
 
       parameter name: :payload, in: :body, schema: {
         type: :object,
-        required: ['provider_type'],
+        required: [ 'provider_type' ],
         properties: {
           provider_type:    { type: :string, example: 'cloudinary' },
           endpoint:         { type: :string, nullable: true },
@@ -170,15 +168,15 @@ RSpec.describe 'Api::V1::SystemConnectors', type: :request do
           password:         { type: :string, nullable: true,
                               description: 'FTP password' },
           remote_path:      { type: :string, nullable: true,
-                              description: 'FTP remote directory path' }
-        }
+                              description: 'FTP remote directory path' },
+        },
       }
 
       response '200', 'Connection successful' do
         schema type: :object,
                properties: {
                  success: { type: :boolean, example: true },
-                 message: { type: :string,  example: 'Successfully connected to Cloudinary.' }
+                 message: { type: :string,  example: 'Successfully connected to Cloudinary.' },
                }
         run_test!
       end
@@ -187,7 +185,7 @@ RSpec.describe 'Api::V1::SystemConnectors', type: :request do
         schema type: :object,
                properties: {
                  success: { type: :boolean, example: false },
-                 message: { type: :string,  example: 'Invalid API key.' }
+                 message: { type: :string,  example: 'Invalid API key.' },
                }
         run_test!
       end
@@ -196,7 +194,7 @@ RSpec.describe 'Api::V1::SystemConnectors', type: :request do
         schema type: :object,
                properties: {
                  success: { type: :boolean, example: false },
-                 message: { type: :string }
+                 message: { type: :string },
                }
         run_test!
       end
@@ -211,7 +209,7 @@ RSpec.describe 'Api::V1::SystemConnectors', type: :request do
       tags 'System Connectors'
       consumes 'application/json'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
       description <<~DESC
         Queues a `PreFlightAnalysisWorker` job that scans the source system to
         estimate asset count, total size, metadata quality score, and expected
@@ -220,10 +218,10 @@ RSpec.describe 'Api::V1::SystemConnectors', type: :request do
 
       parameter name: :payload, in: :body, schema: {
         type: :object,
-        required: ['id'],
+        required: [ 'id' ],
         properties: {
-          id: { type: :integer, description: 'SystemConnector ID to analyse' }
-        }
+          id: { type: :integer, description: 'SystemConnector ID to analyse' },
+        },
       }
 
       response '202', 'Pre-flight analysis started' do
@@ -243,7 +241,7 @@ RSpec.describe 'Api::V1::SystemConnectors', type: :request do
     post 'Start a full migration from a connector source' do
       tags 'System Connectors'
       produces 'application/json'
-      security [Bearer: []]
+      security [ Bearer: [] ]
       description <<~DESC
         Creates a new `IngestionBatch` pre-populated with the connector's
         credentials and immediately fires `ExtractionWorker`. The connector
@@ -256,7 +254,7 @@ RSpec.describe 'Api::V1::SystemConnectors', type: :request do
         schema type: :object,
                properties: {
                  message: { type: :string, example: 'Migration started.' },
-                 batch:   { type: :object }
+                 batch:   { type: :object },
                }
         run_test!
       end
@@ -272,6 +270,4 @@ RSpec.describe 'Api::V1::SystemConnectors', type: :request do
       end
     end
   end
-
 end
-

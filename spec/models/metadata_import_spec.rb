@@ -52,4 +52,3 @@ RSpec.describe MetadataImport, type: :model do
     end
   end
 end
-

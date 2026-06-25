@@ -27,7 +27,7 @@ unless ENV['COVERAGE'] == 'false'
     # Emit both an HTML report and a CI-friendly Cobertura XML report.
     formatter SimpleCov::Formatter::MultiFormatter.new([
       SimpleCov::Formatter::HTMLFormatter,
-      SimpleCov::Formatter::CoberturaFormatter
+      SimpleCov::Formatter::CoberturaFormatter,
     ])
 
     # Fail the suite if total coverage drops below this floor.

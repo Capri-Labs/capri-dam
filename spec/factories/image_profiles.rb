@@ -23,7 +23,7 @@ FactoryBot.define do
         [
           { 'name' => 'Large',  'width' => 1260, 'height' => 720 },
           { 'name' => 'Medium', 'width' => 700,  'height' => 525 },
-          { 'name' => 'Small',  'width' => 400,  'height' => 400 }
+          { 'name' => 'Small',  'width' => 400,  'height' => 400 },
         ]
       end
     end
@@ -40,7 +40,7 @@ FactoryBot.define do
       responsive_crops do
         [
           { 'name' => 'Large',  'width' => 1260, 'height' => 720 },
-          { 'name' => 'Small',  'width' => 400,  'height' => 400 }
+          { 'name' => 'Small',  'width' => 400,  'height' => 400 },
         ]
       end
       swatch_enabled { true }
@@ -53,4 +53,3 @@ FactoryBot.define do
     end
   end
 end
-
