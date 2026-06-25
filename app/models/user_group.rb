@@ -82,11 +82,14 @@ class UserGroup < ApplicationRecord
   def super_administrators? = slug == 'super-administrators'
   def member_count     = users.count
 
-  # Establishes a parent-child relationship and updates all closure paths.
+  # Establishes a parent-child relationship, sets parent_id, and updates all closure paths.
   def add_child(child_group)
     return if child_group.id == id
 
     ActiveRecord::Base.transaction do
+      # Keep the parent_id FK in sync so the has_many :child_groups association works
+      child_group.update_column(:parent_id, id)
+
       ancestor_closures.each do |closure|
         UserGroupClosure.find_or_create_by!(
           ancestor_id:   closure.ancestor_id,

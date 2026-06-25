@@ -84,7 +84,7 @@ export default function UserSearch({ onSelect, placeholder = 'Search by name or 
             endAdornment: (
               <>
                 {loading && <CircularProgress size={14} sx={{ mr: 1 }} />}
-                {params.InputProps.endAdornment}
+                {params.InputProps?.endAdornment}
               </>
             )
           }}

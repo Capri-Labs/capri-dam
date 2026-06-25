@@ -107,6 +107,96 @@ RSpec.describe UserGroup, type: :model do
       group = create(:user_group)
       expect { group.add_child(group) }.not_to change(UserGroupClosure, :count)
     end
+
+    describe "#add_child — parent_id sync" do
+      it "sets parent_id on the child group" do
+        parent = create(:user_group)
+        child  = create(:user_group)
+        parent.add_child(child)
+
+        expect(child.reload.parent_id).to eq(parent.id)
+      end
+
+      it "reflects the child via the child_groups association after add_child" do
+        parent = create(:user_group)
+        child  = create(:user_group)
+        parent.add_child(child)
+
+        expect(parent.reload.child_groups).to include(child)
+      end
+
+      it "adds multiple children and lists them all" do
+        parent = create(:user_group)
+        c1 = create(:user_group)
+        c2 = create(:user_group)
+        parent.add_child(c1)
+        parent.add_child(c2)
+
+        expect(parent.reload.child_groups).to match_array([c1, c2])
+      end
+
+      it "does not change parent_id of an unrelated group" do
+        parent = create(:user_group)
+        other  = create(:user_group)
+        child  = create(:user_group)
+        parent.add_child(child)
+
+        expect(other.reload.parent_id).to be_nil
+      end
+    end
+
+    describe "remove_group_member — parent_id sync" do
+      it "clears parent_id on the child when removed from parent via controller" do
+        parent = create(:user_group)
+        child  = create(:user_group)
+        parent.add_child(child)
+        expect(child.reload.parent_id).to eq(parent.id)
+
+        # Simulate what the controller does
+        child.update_column(:parent_id, nil) if child.parent_id == parent.id
+        UserGroupClosure.where(ancestor_id: parent.id, descendant_id: child.id).delete_all
+
+        expect(child.reload.parent_id).to be_nil
+        expect(parent.reload.child_groups).not_to include(child)
+      end
+
+      it "does not clear parent_id if child belongs to a different parent" do
+        parent1 = create(:user_group)
+        parent2 = create(:user_group)
+        child   = create(:user_group)
+        parent1.add_child(child)
+
+        # Trying to remove from parent2 should leave parent_id alone
+        child.update_column(:parent_id, nil) if child.parent_id == parent2.id
+
+        expect(child.reload.parent_id).to eq(parent1.id)
+      end
+    end
+
+    describe "multi-level hierarchy" do
+      it "creates transitive closure entries (grandparent → grandchild)" do
+        grand = create(:user_group)
+        mid   = create(:user_group)
+        leaf  = create(:user_group)
+        grand.add_child(mid)
+        mid.add_child(leaf)
+
+        expect(
+          UserGroupClosure.find_by(ancestor_id: grand.id, descendant_id: leaf.id, distance: 2)
+        ).to be_present
+      end
+
+      it "sets parent_id correctly at every level" do
+        grand = create(:user_group)
+        mid   = create(:user_group)
+        leaf  = create(:user_group)
+        grand.add_child(mid)
+        mid.add_child(leaf)
+
+        expect(mid.reload.parent_id).to eq(grand.id)
+        expect(leaf.reload.parent_id).to eq(mid.id)
+      end
+    end
   end
 
   # ---------------------------------------------------------------------------

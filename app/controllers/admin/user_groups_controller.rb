@@ -157,7 +157,10 @@ class Admin::UserGroupsController < ApplicationController
     child = UserGroup.find_by(id: params[:child_group_id])
     render json: { success: true } and return unless child
 
-    UserGroupClosure.where(ancestor_id: @group.id, descendant_id: child.id).destroy_all
+    # Clear parent_id FK so the has_many :child_groups association stays in sync
+    child.update_column(:parent_id, nil) if child.parent_id == @group.id
+
+    UserGroupClosure.where(ancestor_id: @group.id, descendant_id: child.id).delete_all
     render json: { success: true, message: "#{child.name} removed from #{@group.name}." }
   end
 
@@ -189,8 +192,12 @@ class Admin::UserGroupsController < ApplicationController
       data[:members] = group.users.map do |u|
         { id: u.id, display_name: u.display_name, email: u.email, avatar_url: u.avatar_url }
       end
-      data[:child_groups] = group.child_groups.map do |cg|
-        { id: cg.id, name: cg.name, slug: cg.slug }
+
+      # Use the closure table (distance: 1) as the authoritative source for direct children.
+      # This handles legacy rows where parent_id was not backfilled yet.
+      child_ids = UserGroupClosure.where(ancestor_id: group.id, distance: 1).pluck(:descendant_id)
+      data[:child_groups] = UserGroup.where(id: child_ids).map do |cg|
+        { id: cg.id, name: cg.name, slug: cg.slug, description: cg.description, is_system: cg.is_system }
       end
     end
 
