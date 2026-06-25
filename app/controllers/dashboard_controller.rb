@@ -2,7 +2,7 @@ class DashboardController < ApplicationController
   before_action :authenticate_user!
 
   def index
-    @active_view = 'Overview'
+    @active_view = "Overview"
     # 1. Base scope: Only search active assets (ignore the recycle bin)
     assets_scope = Asset.active
 
@@ -21,8 +21,8 @@ class DashboardController < ApplicationController
         id: asset.id,
         uuid: asset.uuid,
         name: asset.title || "Untitled Asset",
-        type: asset.properties&.dig('mime_type') || 'Unknown',
-        size: asset.properties&.dig('size_human') || '0 KB'
+        type: asset.properties&.dig("mime_type") || "Unknown",
+        size: asset.properties&.dig("size_human") || "0 KB",
       }
     end.to_json
 
@@ -31,21 +31,21 @@ class DashboardController < ApplicationController
   end
 
   def bin
-    @active_view = 'Bin'
+    @active_view = "Bin"
     # Renders app/views/dashboard/bin.html.erb
   end
 
   def folders
-    @active_view = 'All Assets'
+    @active_view = "All Assets"
     # Renders app/views/dashboard/folders.html.erb
   end
 
   def duplicates
-    @active_view = 'Duplicate Manager'
+    @active_view = "Duplicate Manager"
   end
 
   def search
-    @active_view = 'Search'
+    @active_view = "Search"
     # This just tells Rails to render app/views/dashboard/search.html.erb
   end
 end

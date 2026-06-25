@@ -14,4 +14,3 @@ class MetadataExportCleanupWorker
     end
   end
 end
-

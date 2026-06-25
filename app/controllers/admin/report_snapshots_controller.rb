@@ -1,6 +1,5 @@
 module Admin
   class ReportSnapshotsController < ApplicationController
-
     # GET /admin/report_snapshots.json
     def index
       # Fetch the 50 most recent snapshots and avoid N+1 queries
@@ -15,9 +14,9 @@ module Admin
             status: snapshot.status,
             created_at: snapshot.created_at.strftime("%b %d, %Y at %H:%M"),
             download_url: snapshot.completed? ? download_admin_report_snapshot_path(snapshot) : nil,
-            error_message: snapshot.failed? ? snapshot.error_message : nil
+            error_message: snapshot.failed? ? snapshot.error_message : nil,
           }
-        end
+        end,
       }
     end
 

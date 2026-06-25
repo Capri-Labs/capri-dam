@@ -1,5 +1,5 @@
-require 'net/http'
-require 'uri'
+require "net/http"
+require "uri"
 
 # MigrationTransformWorker
 # ─────────────────────────────────────────────────────────────────────────────
@@ -10,7 +10,7 @@ require 'uri'
 # Retry: 3 times with exponential backoff
 class MigrationTransformWorker
   include Sidekiq::Worker
-  sidekiq_options queue: 'metadata', retry: 3
+  sidekiq_options queue: "metadata", retry: 3
 
   def perform(item_id)
     item = IngestionItem.find_by(id: item_id)
@@ -23,7 +23,7 @@ class MigrationTransformWorker
     begin
       # 1. Skip duplicates — they were flagged at extraction time
       if item.flagged_duplicate?
-        item.update!(status: :rejected, error_log: 'Deduplication: exact hash match found in live DAM.')
+        item.update!(status: :rejected, error_log: "Deduplication: exact hash match found in live DAM.")
         batch.increment!(:duplicate_count)
         return
       end
@@ -37,7 +37,7 @@ class MigrationTransformWorker
         status: :ready_for_import
       )
 
-      Rails.logger.info("[MigrationTransform] Item #{item.id} normalized: #{normalized['title']}")
+      Rails.logger.info("[MigrationTransform] Item #{item.id} normalized: #{normalized["title"]}")
 
     rescue => e
       Rails.logger.error("[MigrationTransform] Failed for item #{item.id}: #{e.message}")
@@ -68,7 +68,7 @@ class MigrationTransformWorker
 
   def call_ai_gateway(filename, metadata)
     uri     = URI.parse("#{ai_gateway_url}/api/tdm/normalize")
-    request = Net::HTTP::Post.new(uri, 'Content-Type' => 'application/json')
+    request = Net::HTTP::Post.new(uri, "Content-Type" => "application/json")
     request.body = { filename: filename, metadata: metadata }.to_json
 
     response = Net::HTTP.start(uri.hostname, uri.port, open_timeout: 10, read_timeout: 30) do |http|
@@ -85,22 +85,22 @@ class MigrationTransformWorker
   # Common legacy field aliases → canonical DAM schema
   FIELD_MAP = {
     # Title variants
-    'dc:title' => 'title', 'name' => 'title', 'filename' => 'title', 'asset_name' => 'title',
+    "dc:title" => "title", "name" => "title", "filename" => "title", "asset_name" => "title",
     # Description variants
-    'dc:description' => 'description', 'caption' => 'description', 'abstract' => 'description',
+    "dc:description" => "description", "caption" => "description", "abstract" => "description",
     # Tags variants
-    'dc:subject' => 'tags', 'keywords' => 'tags', 'tag' => 'tags', 'cq:tags' => 'tags',
+    "dc:subject" => "tags", "keywords" => "tags", "tag" => "tags", "cq:tags" => "tags",
     # Creator
-    'dc:creator' => 'author', 'creator' => 'author', 'xmp_creator' => 'author',
+    "dc:creator" => "author", "creator" => "author", "xmp_creator" => "author",
     # Dates
-    'dc:created' => 'created', 'jcr:created' => 'created', 'creation_date' => 'created',
+    "dc:created" => "created", "jcr:created" => "created", "creation_date" => "created",
     # Media type
-    'dam:mimeType' => 'content_type', 'contentType' => 'content_type', 'mime_type' => 'content_type',
+    "dam:mimeType" => "content_type", "contentType" => "content_type", "mime_type" => "content_type",
     # Campaign / project
-    'campaign_name' => 'campaign', 'project' => 'campaign',
+    "campaign_name" => "campaign", "project" => "campaign",
     # Usage rights
-    'xmpRights:usageTerms' => 'usage_terms', 'usage_terms' => 'usage_terms',
-    'xmpRights:expiry' => 'license_expires_at', 'license_expires_at' => 'license_expires_at'
+    "xmpRights:usageTerms" => "usage_terms", "usage_terms" => "usage_terms",
+    "xmpRights:expiry" => "license_expires_at", "license_expires_at" => "license_expires_at"
   }.freeze
 
   def fallback_normalize(filename, raw)
@@ -111,9 +111,9 @@ class MigrationTransformWorker
     end
 
     # Ensure title is always set
-    result['title'] ||= File.basename(filename.to_s, '.*').titleize
+    result["title"] ||= File.basename(filename.to_s, ".*").titleize
     # Normalize tags to array
-    result['tags'] = Array(result['tags']).flatten.map(&:to_s).uniq
+    result["tags"] = Array(result["tags"]).flatten.map(&:to_s).uniq
     result
   end
 
@@ -121,7 +121,7 @@ class MigrationTransformWorker
     return unless batch.extracting? || batch.transforming?
 
     total      = batch.total_count.to_i
-    processed  = batch.ingestion_items.where(status: [:ready_for_import, :rejected]).count
+    processed  = batch.ingestion_items.where(status: [ :ready_for_import, :rejected ]).count
 
     return unless processed >= total && total > 0
 
@@ -130,7 +130,6 @@ class MigrationTransformWorker
   end
 
   def ai_gateway_url
-    ENV.fetch('AI_GATEWAY_URL', 'http://localhost:8000')
+    ENV.fetch("AI_GATEWAY_URL", "http://localhost:8000")
   end
 end
-

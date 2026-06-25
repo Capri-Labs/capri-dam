@@ -27,14 +27,14 @@
 # @see SystemConnector
 # @see QuarantinedAsset
 # @see SmartCollectionRouterWorker
-require 'net/http'
-require 'uri'
+require "net/http"
+require "uri"
 
 class IngestionWorker
   include Sidekiq::Worker
   include Sidekiq::Throttled::Worker
 
-  sidekiq_options retry: 3, queue: 'ingestion'
+  sidekiq_options retry: 3, queue: "ingestion"
 
   # Hard concurrency ceiling shared across all instances of this worker.
   sidekiq_throttle(concurrency: { limit: 10 })
@@ -47,7 +47,7 @@ class IngestionWorker
   # @return [void]
   def perform(connector_id, payload_json)
     connector = SystemConnector.find_by(id: connector_id)
-    return unless connector && connector.status == 'active'
+    return unless connector && connector.status == "active"
 
     if rate_limited?(connector)
       IngestionWorker.perform_in(5.seconds, connector_id, payload_json)
@@ -55,16 +55,16 @@ class IngestionWorker
     end
 
     payload  = JSON.parse(payload_json)
-    filename = payload.dig('asset', 'name') || "unknown_file_#{Time.now.to_i}"
-    metadata = payload.dig('asset', 'properties') || {}
+    filename = payload.dig("asset", "name") || "unknown_file_#{Time.now.to_i}"
+    metadata = payload.dig("asset", "properties") || {}
 
     if connector.tdm_sanitation?
       evaluation = evaluate_via_ai_gateway(filename, metadata)
 
-      if evaluation['approved']
+      if evaluation["approved"]
         ingest_clean_asset!(connector, filename, metadata, payload)
       else
-        quarantine_dirty_asset!(connector, payload, evaluation['reason'])
+        quarantine_dirty_asset!(connector, payload, evaluation["reason"])
       end
     else
       ingest_clean_asset!(connector, filename, metadata, payload)
@@ -111,7 +111,7 @@ class IngestionWorker
   #   +{ 'approved' => false, 'reason' => '...' }+
   def evaluate_via_ai_gateway(filename, metadata)
     uri     = URI.parse("http://localhost:8000/api/tdm/evaluate")
-    request = Net::HTTP::Post.new(uri, 'Content-Type' => 'application/json')
+    request = Net::HTTP::Post.new(uri, "Content-Type" => "application/json")
     request.body = { filename: filename, metadata: metadata }.to_json
 
     response = Net::HTTP.start(uri.hostname, uri.port) { |http| http.request(request) }
@@ -120,7 +120,7 @@ class IngestionWorker
     JSON.parse(response.body)
   rescue => e
     Rails.logger.error("TDM Gateway Unreachable: #{e.message}")
-    { 'approved' => false, 'reason' => 'AI Gateway Timeout/Error' }
+    { "approved" => false, "reason" => "AI Gateway Timeout/Error" }
   end
 
   # Fetches a vector embedding for the given text from the AI gateway.
@@ -129,13 +129,13 @@ class IngestionWorker
   # @return [Array<Float>, nil] the embedding vector, or +nil+ on failure
   def fetch_vector_embedding(text_to_embed)
     uri     = URI.parse("http://localhost:8000/api/embed_query")
-    request = Net::HTTP::Post.new(uri, 'Content-Type' => 'application/json')
+    request = Net::HTTP::Post.new(uri, "Content-Type" => "application/json")
     request.body = { text: text_to_embed }.to_json
 
     response = Net::HTTP.start(uri.hostname, uri.port) { |http| http.request(request) }
     return nil unless response.is_a?(Net::HTTPSuccess)
 
-    JSON.parse(response.body)['vector']
+    JSON.parse(response.body)["vector"]
   rescue => e
     Rails.logger.warn("Vector Generation Failed: #{e.message}")
     nil

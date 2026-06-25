@@ -65,7 +65,7 @@ module Api
       #
       # @return [void] renders JSON +{ total: Integer, results: Array<Hash> }+
       def search
-        @assets = Asset.where(status: 'ready').includes(:active_version)
+        @assets = Asset.where(status: "ready").includes(:active_version)
 
         if params[:q].present?
           @assets = @assets.where("title ILIKE ?", "%#{params[:q]}%")
@@ -78,7 +78,7 @@ module Api
 
         render json: {
           total: @assets.count,
-          results: @assets.map { |asset| format_asset(asset) }
+          results: @assets.map { |asset| format_asset(asset) },
         }
       end
 
@@ -116,9 +116,9 @@ module Api
             if params[:schema_id].present?
               schema = MetadataSchema.active.find_by(id: params[:schema_id])
               if schema
-                base_props['applied_schema_id']   = schema.id
-                base_props['applied_schema_slug']  = schema.slug
-                base_props['applied_schema_name']  = schema.name
+                base_props["applied_schema_id"]   = schema.id
+                base_props["applied_schema_slug"]  = schema.slug
+                base_props["applied_schema_name"]  = schema.name
               end
             end
 
@@ -146,7 +146,7 @@ module Api
               user:       active_resource_owner,
               folder:     target_folder,
               title:      params[:title] || file.original_filename,
-              status:     'pending',
+              status:     "pending",
               uuid:       SecureRandom.uuid,
               properties: base_props
             )
@@ -154,11 +154,11 @@ module Api
             # 2. Create the Initial Immutable Version (V1)
             @version = @asset.asset_versions.build(
               version_number: 1,
-              action_type:    'initial_upload',
+              action_type:    "initial_upload",
               created_by_id:  active_resource_owner&.id,
               properties: {
                 content_type: file.content_type,
-                size:         file.size
+                size:         file.size,
               }
             )
 
@@ -170,16 +170,16 @@ module Api
             @asset.update!(active_version_id: @version.id)
 
             # 4. Handle Local/Staging Path Logic for your Worker
-            staging_path = Rails.root.join('tmp', 'uploads', "#{@asset.uuid}_v1_#{file.original_filename}")
+            staging_path = Rails.root.join("tmp", "uploads", "#{@asset.uuid}_v1_#{file.original_filename}")
             FileUtils.mkdir_p(File.dirname(staging_path))
             FileUtils.cp(file.path, staging_path)
 
-            @version.update!(properties: @version.properties.merge('storage_path' => staging_path.to_s))
+            @version.update!(properties: @version.properties.merge("storage_path" => staging_path.to_s))
 
             dispatch_asset_workers(@asset, @version, staging_path)
           end
 
-          render json: { id: @asset.uuid, status: 'processing' }, status: :accepted
+          render json: { id: @asset.uuid, status: "processing" }, status: :accepted
         else
           render json: { error: "No file provided" }, status: :unprocessable_entity
         end
@@ -198,9 +198,9 @@ module Api
             version_number: v.version_number,
             action_type: v.action_type.to_s.titleize,
             created_at: v.created_at.strftime("%b %d, %Y at %I:%M %p"),
-            created_by: v.created_by&.email || 'System User',
+            created_by: v.created_by&.email || "System User",
             is_active: @asset.active_version_id == v.id,
-            size: v.properties['size'] ? "#{(v.properties['size'].to_i / 1024.0 / 1024.0).round(2)} MB" : 'Unknown'
+            size: v.properties["size"] ? "#{(v.properties["size"].to_i / 1024.0 / 1024.0).round(2)} MB" : "Unknown",
           }
         end
 
@@ -226,12 +226,12 @@ module Api
               # Depending on your user setup, you might want to map this to a real name later
               created_by_id: v.created_by_id,
               # 🚀 THE FIX: Explicitly expose the properties hash for delta calculations
-              properties: v.properties
+              properties: v.properties,
             }
-          end
+          end,
         }, status: :ok
       rescue ActiveRecord::RecordNotFound
-        render json: { error: 'Asset not found' }, status: :not_found
+        render json: { error: "Asset not found" }, status: :not_found
       end
 
       # Restores a specific historical version as the new active version.
@@ -272,45 +272,45 @@ module Api
           adjustments: params[:adjustments] || {},
           crop_aspect: params[:crop_aspect],
           filter: params[:filter],
-          geometry: params.permit(geometry: [:rotate, :flip_horizontal, focal_point: [:x, :y]])[:geometry] || {},
-          custom_cli: params[:custom_cli]
+          geometry: params.permit(geometry: [ :rotate, :flip_horizontal, focal_point: [ :x, :y ] ])[:geometry] || {},
+          custom_cli: params[:custom_cli],
         }
 
         active_v = @asset.active_version
         base_properties = active_v&.properties || @asset.properties || {}
 
         new_version_props = base_properties.deep_dup
-        #new_version_props['editor_state'] = editor_state
-        new_version_props['editor_state'] = {
+        # new_version_props['editor_state'] = editor_state
+        new_version_props["editor_state"] = {
           adjustments: {},
-          crop_aspect: 'free',
-          filter: 'None',
-          geometry: { focal_point: editor_state[:geometry][:focal_point] || { x: 50, y: 50 } }
+          crop_aspect: "free",
+          filter: "None",
+          geometry: { focal_point: editor_state[:geometry][:focal_point] || { x: 50, y: 50 } },
         }
 
         # ==========================================
         #  PHYSICAL IMAGE BAKING PIPELINE
         # ==========================================
-        source_path = base_properties['storage_path'].to_s
+        source_path = base_properties["storage_path"].to_s
 
         #  SMART PATH RESOLUTION:
         # Check if it's already a valid absolute path first (like a tmp file).
         # If not, assume it's a relative path from the DAM root.
         file_path = if File.exist?(source_path)
                       source_path
-                    else
-                      clean_path = source_path.sub(%r{\A/}, '')
-                      Rails.root.join('storage/dam', clean_path).to_s
-                    end
+        else
+                      clean_path = source_path.sub(%r{\A/}, "")
+                      Rails.root.join("storage/dam", clean_path).to_s
+        end
 
         # Fail gracefully if the physical file is totally missing from disk
         unless File.exist?(file_path)
           return render json: { error: "Source file not found on disk." }, status: :unprocessable_entity
         end
 
-        new_file_tmp_path = Rails.root.join('tmp', "baked_#{@asset.uuid}_#{SecureRandom.hex(4)}.jpg")
+        new_file_tmp_path = Rails.root.join("tmp", "baked_#{@asset.uuid}_#{SecureRandom.hex(4)}.jpg")
 
-        require 'mini_magick'
+        require "mini_magick"
         image = MiniMagick::Image.open(file_path)
 
         image.combine_options do |cmd|
@@ -333,24 +333,23 @@ module Api
               cmd << arg.strip
             end
           end
-
         end
 
         image.write(new_file_tmp_path)
 
-        new_version_props['storage_path'] = new_file_tmp_path.to_s
-        new_version_props['file_size'] = File.size(new_file_tmp_path)
+        new_version_props["storage_path"] = new_file_tmp_path.to_s
+        new_version_props["file_size"] = File.size(new_file_tmp_path)
         # ==========================================
 
         ActiveRecord::Base.transaction do
           # Safely resolve the target folder
-          target_folder_id = params[:target_folder_id] == 'root' ? nil : params[:target_folder_id]
+          target_folder_id = params[:target_folder_id] == "root" ? nil : params[:target_folder_id]
 
           # Detect if the user is attempting to save to a different folder
           is_moving = params[:target_folder_id].present? && target_folder_id != @asset.folder_id
 
           case params[:save_mode]
-          when 'new'
+          when "new"
             #  MODE 1: FORK (Save as Copy from UI)
             # BEHAVIOR: Original stays at V5 in Folder A. New Copy is created at V5 in Folder B.
             folder_id_for_copy = params[:target_folder_id].present? ? target_folder_id : @asset.folder_id
@@ -359,7 +358,7 @@ module Api
               user: active_resource_owner,
               folder_id: folder_id_for_copy,
               title: "#{@asset.title} (Copy)",
-              status: 'ready',
+              status: "ready",
               uuid: SecureRandom.uuid,
               properties: @asset.properties.deep_dup
             )
@@ -369,7 +368,7 @@ module Api
 
             @new_version = @new_asset.asset_versions.create!(
               version_number: current_version_num,
-              action_type: 'cloned_edit',
+              action_type: "cloned_edit",
               created_by_id: active_resource_owner&.id,
               properties: new_version_props
             )
@@ -380,18 +379,18 @@ module Api
 
             render json: format_asset(@new_asset), status: :created
 
-          when 'overwrite'
+          when "overwrite"
             #  MODE 2: DESTRUCTIVE (Overwrite Current)
             # BEHAVIOR: Bakes new file into the existing version row.
             if active_v.present?
               active_v.update!(properties: new_version_props)
               AssetProcessorWorker.perform_async(active_v.id, new_file_tmp_path.to_s) if defined?(AssetProcessorWorker)
               # Dispatch the background purge to the CDN
-              CdnInvalidationWorker.perform_async('asset', @asset.uuid)
+              CdnInvalidationWorker.perform_async("asset", @asset.uuid)
             else
               @new_version = @asset.asset_versions.create!(
                 version_number: 1,
-                action_type: 'image_edit',
+                action_type: "image_edit",
                 created_by_id: active_resource_owner&.id,
                 properties: new_version_props
               )
@@ -404,7 +403,7 @@ module Api
 
             render json: format_asset(@asset), status: :ok
 
-          when 'version'
+          when "version"
             #  MODE 3: BRANCH (Save as New Version from UI)
             new_version_num = @asset.next_version_number
 
@@ -414,14 +413,14 @@ module Api
                 user: active_resource_owner,
                 folder_id: target_folder_id,
                 title: @asset.title,
-                status: 'ready',
+                status: "ready",
                 uuid: SecureRandom.uuid,
                 properties: @asset.properties.deep_dup
               )
 
               @new_version = @new_asset.asset_versions.create!(
                 version_number: new_version_num, # Bumps to V6
-                action_type: 'branched_edit',
+                action_type: "branched_edit",
                 created_by_id: active_resource_owner&.id,
                 properties: new_version_props
               )
@@ -434,7 +433,7 @@ module Api
               # BEHAVIOR: Standard bump to V6 inside the current folder.
               @new_version = @asset.asset_versions.create!(
                 version_number: new_version_num,
-                action_type: 'image_edit',
+                action_type: "image_edit",
                 created_by_id: active_resource_owner&.id,
                 properties: new_version_props
               )
@@ -453,7 +452,7 @@ module Api
       # @return [void] renders +200 OK+ with +{ message }+
       def purge_cdn
         @asset = Asset.find(params[:id])
-        CdnInvalidationWorker.perform_async('asset', @asset.uuid)
+        CdnInvalidationWorker.perform_async("asset", @asset.uuid)
         render json: { message: "CDN purge initiated." }, status: :ok
       end
 
@@ -483,7 +482,7 @@ module Api
 
         # Deep-merge new metadata fields into existing properties
         merged_props = @asset.properties.merge(metadata_fields.to_unsafe_h).merge(
-          'applied_schema_id' => schema_id.present? ? schema_id.to_i : @asset.properties['applied_schema_id']
+          "applied_schema_id" => schema_id.present? ? schema_id.to_i : @asset.properties["applied_schema_id"]
         )
 
         # Create a new immutable version snapshot for auditing
@@ -492,9 +491,9 @@ module Api
 
         new_version = @asset.asset_versions.create!(
           version_number: new_version_num,
-          action_type:    'metadata_update',
+          action_type:    "metadata_update",
           created_by_id:  active_resource_owner&.id,
-          properties:     (active_v&.properties || {}).merge('metadata_snapshot' => metadata_fields.to_unsafe_h)
+          properties:     (active_v&.properties || {}).merge("metadata_snapshot" => metadata_fields.to_unsafe_h)
         )
 
         @asset.update!(
@@ -504,7 +503,7 @@ module Api
 
         render json: format_asset(@asset), status: :ok
       rescue ActiveRecord::RecordNotFound
-        render json: { error: 'Asset not found' }, status: :not_found
+        render json: { error: "Asset not found" }, status: :not_found
       rescue StandardError => e
         render json: { error: e.message }, status: :unprocessable_entity
       end
@@ -534,7 +533,7 @@ module Api
         storage = ::StorageManager.adapter_for(backend) if backend
 
         @asset.asset_versions.each do |version|
-          storage_path = version.properties['storage_path']
+          storage_path = version.properties["storage_path"]
           storage.delete(storage_path) if storage && storage_path
 
           # If using ActiveStorage
@@ -560,11 +559,11 @@ module Api
             status: a.status,
             deleted_at: a.deleted_at,
             properties: a.properties.merge(a.active_version&.properties || {}),
-            url: asset_url_for(a)
+            url: asset_url_for(a),
           }
         end
 
-        render json: { folders: trashed_folders, assets: trashed_assets, breadcrumbs: [{ id: 'bin', name: 'Trash Bin' }] }
+        render json: { folders: trashed_folders, assets: trashed_assets, breadcrumbs: [ { id: "bin", name: "Trash Bin" } ] }
       end
 
       # Returns the workflow task history for the most recent {WorkflowInstance}
@@ -586,7 +585,7 @@ module Api
               comment: task.comment,
               completed_at: task.completed_at,
               is_current_user: task.user_id == active_resource_owner.id,
-              is_pending: task.status == 'pending'
+              is_pending: task.status == "pending",
             }
           end
           render json: { active: true, instance_status: instance.status, started_at: instance.started_at, tasks: history }
@@ -606,7 +605,7 @@ module Api
         existing_versions = AssetVersion.includes(asset: :folder).where("properties->>'checksum_sha256' IN (?)", hashes)
 
         duplicates = existing_versions.each_with_object({}) do |version, acc|
-          hash_val = version.properties['checksum_sha256']
+          hash_val = version.properties["checksum_sha256"]
           asset = version.asset
 
           acc[hash_val] ||= []
@@ -615,7 +614,7 @@ module Api
             title: asset.title,
             version: version.version_number,
             url: asset_url_for(asset),
-            folderName: asset.folder ? asset.folder.name : '/Root/Uncategorized'
+            folderName: asset.folder ? asset.folder.name : "/Root/Uncategorized",
           }
         end
 
@@ -635,32 +634,32 @@ module Api
         @asset = Asset.includes(:active_version).find(params[:id])
         active_v = @asset.active_version
 
-        storage_path = active_v&.properties&.fetch('storage_path', nil) || @asset.properties['storage_path']
-        content_type = active_v&.properties&.fetch('content_type', nil) || @asset.properties['content_type']
+        storage_path = active_v&.properties&.fetch("storage_path", nil) || @asset.properties["storage_path"]
+        content_type = active_v&.properties&.fetch("content_type", nil) || @asset.properties["content_type"]
 
-        unless content_type&.start_with?('image/')
+        unless content_type&.start_with?("image/")
           return render json: { error: "Watermarking is only supported for images." }, status: :unprocessable_entity
         end
 
-        clean_path = storage_path.to_s.sub(%r{\A/}, '')
-        file_path = Rails.root.join('storage/dam', clean_path)
-        font_path = Rails.root.join('public', 'fonts', 'Roboto-Regular.ttf').to_s
+        clean_path = storage_path.to_s.sub(%r{\A/}, "")
+        file_path = Rails.root.join("storage/dam", clean_path)
+        font_path = Rails.root.join("public/fonts/Roboto-Regular.ttf").to_s
 
         begin
-          require 'mini_magick'
+          require "mini_magick"
           image = MiniMagick::Image.open(file_path)
 
           image.combine_options do |c|
-            c.gravity 'center'
-            c.fill 'rgba(255,255,255,0.4)'
+            c.gravity "center"
+            c.fill "rgba(255,255,255,0.4)"
             c.font font_path
-            c.pointsize '120'
-            c.annotate '-45', 'CONFIDENTIAL / ASHOK PELLURU'
+            c.pointsize "120"
+            c.annotate "-45", "CONFIDENTIAL / ASHOK PELLURU"
           end
 
           send_data image.to_blob,
-                    type: content_type || 'image/jpeg',
-                    disposition: 'attachment',
+                    type: content_type || "image/jpeg",
+                    disposition: "attachment",
                     filename: "watermarked_v#{active_v&.version_number}_#{@asset.title || @asset.uuid}.jpg"
         rescue StandardError => e
           Rails.logger.error "Watermarking failed: #{e.message}"
@@ -680,8 +679,8 @@ module Api
         asset = Asset.includes(:active_version).find_by!(uuid: params[:uuid])
         active_v = asset.active_version
 
-        storage_path = active_v&.properties&.fetch('storage_path', nil) || asset.properties['storage_path']
-        content_type = active_v&.properties&.fetch('content_type', nil) || asset.properties['content_type']
+        storage_path = active_v&.properties&.fetch("storage_path", nil) || asset.properties["storage_path"]
+        content_type = active_v&.properties&.fetch("content_type", nil) || asset.properties["content_type"]
 
         if active_v.respond_to?(:file) && active_v.file.attached?
           return redirect_to url_for(active_v.file)
@@ -689,14 +688,14 @@ module Api
 
         return render json: { error: "Asset version has no storage path" }, status: :not_found unless storage_path
 
-        clean_path = storage_path.to_s.sub(%r{\A/}, '')
+        clean_path = storage_path.to_s.sub(%r{\A/}, "")
         physical_path = Rails.root.join("storage/dam", clean_path)
 
         # Check both physical and staging paths to be safe during worker transit
         if File.exist?(physical_path)
-          send_file physical_path, disposition: 'inline', type: content_type
+          send_file physical_path, disposition: "inline", type: content_type
         elsif File.exist?(storage_path) # Direct fallback for tmp paths
-          send_file storage_path, disposition: 'inline', type: content_type
+          send_file storage_path, disposition: "inline", type: content_type
         else
           render json: { error: "File missing from disk", looked_at: physical_path.to_s }, status: :not_found
         end
@@ -720,20 +719,20 @@ module Api
         return nil if filename.blank?
 
         base = File.basename(filename.to_s, File.extname(filename.to_s))
-        parts = base.split('-')
+        parts = base.split("-")
         return nil if parts.length < 3
 
         asset_type_code = parts.last.to_s.upcase
         language_code   = parts[-2].to_s.downcase
-        product_id      = parts[0...-2].join('-')
+        product_id      = parts[0...-2].join("-")
 
         # Asset type must match two letters + two digits (FR01, BK02, SD01, etc.)
         return nil unless asset_type_code.match?(/\A[A-Z]{2}\d{2}\z/)
 
         {
-          'dam:product_id'    => product_id,
-          'dam:language_code' => language_code,
-          'dam:asset_type'    => asset_type_code
+          "dam:product_id"    => product_id,
+          "dam:language_code" => language_code,
+          "dam:asset_type"    => asset_type_code,
         }
       end
 
@@ -755,7 +754,7 @@ module Api
         AssetProcessorWorker.perform_async(target_version.id, file_path.to_s) if defined?(AssetProcessorWorker)
 
         # 2. Invalidate the edge cache for the CDN URL
-        CdnInvalidationWorker.perform_async('asset', target_asset.uuid) if defined?(CdnInvalidationWorker)
+        CdnInvalidationWorker.perform_async("asset", target_asset.uuid) if defined?(CdnInvalidationWorker)
 
         # 3. Sync the latest relational metadata to the Edge KV store
         EdgeMetadataSyncWorker.perform_async(target_asset.uuid) if defined?(EdgeMetadataSyncWorker)
@@ -798,7 +797,7 @@ module Api
           version: active_v&.version_number || 1,
           # Merge parent properties with active version properties so React sees everything
           metadata: asset.properties.merge(active_v&.properties || {}),
-          url: asset_url_for(asset)
+          url: asset_url_for(asset),
         }
       end
     end

@@ -8,4 +8,3 @@ class MetadataSchemaFolderAssignment < ApplicationRecord
   validates :folder_id,          presence: true
   validates :folder_id,          uniqueness: { scope: :metadata_schema_id }
 end
-

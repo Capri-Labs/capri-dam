@@ -27,7 +27,7 @@ class RedisTokenManager
   # 🚀 ADVANCED: Emergency clearing of an entire domain (e.g., all webhooks)
   # Requires direct Redis access, bypassing the standard Rails.cache wrapper
   def self.revoke_domain(domain)
-    redis = Redis.new(url: ENV.fetch('REDIS_URL', 'redis://localhost:6379/1'))
+    redis = Redis.new(url: ENV.fetch("REDIS_URL", "redis://localhost:6379/1"))
 
     # SCAN is operationally safe and won't block the Redis main thread
     cursor = "0"

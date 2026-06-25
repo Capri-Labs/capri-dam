@@ -5,7 +5,7 @@ module Api
     class MetadataImportsController < ApplicationController
       include Rails.application.routes.url_helpers
       before_action :authenticate_user!
-      before_action :set_import, only: [:show, :download, :destroy]
+      before_action :set_import, only: [ :show, :download, :destroy ]
 
       # GET /api/v1/metadata_imports
       def index
@@ -23,7 +23,7 @@ module Api
       def template
         csv = CSV.generate do |out|
           out << MetadataImport::TEMPLATE_COLUMNS
-          out << ["/Adventures/Cycling/bike.jpg", "Mountain Bike", "Trail ready", "WKND Site", "Internal Use Only", "Cyclist on a trail", "bike|outdoor|sport"]
+          out << [ "/Adventures/Cycling/bike.jpg", "Mountain Bike", "Trail ready", "WKND Site", "Internal Use Only", "Cyclist on a trail", "bike|outdoor|sport" ]
         end
         send_data csv,
                   filename: "metadata_import_template.csv",
@@ -34,7 +34,7 @@ module Api
       # POST /api/v1/metadata_imports  (multipart/form-data)
       def create
         unless params.dig(:metadata_import, :source_file).present?
-          return render json: { errors: ["Please select a CSV file."] }, status: :unprocessable_entity
+          return render json: { errors: [ "Please select a CSV file." ] }, status: :unprocessable_entity
         end
 
         import = current_user.metadata_imports.new(import_params)
@@ -115,7 +115,7 @@ module Api
           scheduled_at:          import.scheduled_at&.strftime("%b %d, %Y at %H:%M"),
           expires_at:            import.expires_at&.strftime("%b %d, %Y"),
           source_file:           file_meta(import, :source),
-          result_file:           file_meta(import, :result)
+          result_file:           file_meta(import, :result),
         }
       end
 
@@ -126,10 +126,9 @@ module Api
         {
           filename:     attachment.blob.filename.to_s,
           byte_size:    attachment.blob.byte_size,
-          download_url: download_api_v1_metadata_import_path(import, type: type)
+          download_url: download_api_v1_metadata_import_path(import, type: type),
         }
       end
     end
   end
 end
-

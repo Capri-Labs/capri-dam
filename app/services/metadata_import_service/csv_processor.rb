@@ -56,10 +56,10 @@ module MetadataImportService
     # ── Row import ────────────────────────────────────────────────────────────
     def import_row(row, headers, lookup)
       raw_path = row[@path_col]
-      return ["fail", "Missing '#{@path_col}' value"] if raw_path.to_s.strip.empty?
+      return [ "fail", "Missing '#{@path_col}' value" ] if raw_path.to_s.strip.empty?
 
       asset = lookup[normalize_path(raw_path)]
-      return ["fail", "No asset found at path '#{raw_path}'"] unless asset
+      return [ "fail", "No asset found at path '#{raw_path}'" ] unless asset
 
       properties = (asset.properties || {}).dup
       new_title  = nil
@@ -85,9 +85,9 @@ module MetadataImportService
 
       maybe_launch_workflow(asset)
 
-      ["success", "Updated #{properties.keys.size} propert#{properties.keys.size == 1 ? 'y' : 'ies'}"]
+      [ "success", "Updated #{properties.keys.size} propert#{properties.keys.size == 1 ? "y" : "ies"}" ]
     rescue StandardError => e
-      ["fail", e.message]
+      [ "fail", e.message ]
     end
 
     # Split multi-value cells into arrays; keep single values scalar.
@@ -145,17 +145,14 @@ module MetadataImportService
 
     # ── Results CSV ───────────────────────────────────────────────────────────
     def build_results_csv(headers, rows)
-      out_headers = headers + [MetadataImport::STATUS_COLUMN, MetadataImport::MESSAGE_COLUMN]
+      out_headers = headers + [ MetadataImport::STATUS_COLUMN, MetadataImport::MESSAGE_COLUMN ]
       CSV.generate(col_sep: @separator) do |csv|
         csv << out_headers
         rows.each do |entry|
           base = headers.map { |h| entry[:row][h] }
-          csv << (base + [entry[:status], entry[:message]])
+          csv << (base + [ entry[:status], entry[:message] ])
         end
       end
     end
   end
 end
-
-
-

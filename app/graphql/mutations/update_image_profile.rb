@@ -18,15 +18,15 @@ module Mutations
     argument :unsharp_threshold,       Integer, required: false
 
     field :image_profile, Types::ImageProfileType, null: true
-    field :errors,        [String],                null: false
+    field :errors,        [ String ],                null: false
 
     def resolve(**args)
       unless context[:current_user]&.admin?
-        return { image_profile: nil, errors: ['Administrator privileges required.'] }
+        return { image_profile: nil, errors: [ "Administrator privileges required." ] }
       end
 
       profile = ImageProfile.active.find_by(id: args[:id])
-      return { image_profile: nil, errors: ['Image profile not found.'] } unless profile
+      return { image_profile: nil, errors: [ "Image profile not found." ] } unless profile
 
       attrs = {}
       attrs[:name]                    = args[:name]                    if args.key?(:name)
@@ -43,9 +43,9 @@ module Mutations
       if args.key?(:unsharp_amount) || args.key?(:unsharp_radius) || args.key?(:unsharp_threshold)
         current = profile.unsharp_mask || {}
         attrs[:unsharp_mask] = {
-          'amount'    => args.fetch(:unsharp_amount,    current['amount']    || 1.75),
-          'radius'    => args.fetch(:unsharp_radius,    current['radius']    || 0.2),
-          'threshold' => args.fetch(:unsharp_threshold, current['threshold'] || 2)
+          "amount"    => args.fetch(:unsharp_amount,    current["amount"]    || 1.75),
+          "radius"    => args.fetch(:unsharp_radius,    current["radius"]    || 0.2),
+          "threshold" => args.fetch(:unsharp_threshold, current["threshold"] || 2),
         }
       end
 
@@ -57,4 +57,3 @@ module Mutations
     end
   end
 end
-

@@ -1,7 +1,7 @@
 module Types
   class CollectionType < Types::BaseObject
-    graphql_name 'Collection'
-    description 'A curated workspace of digital assets'
+    graphql_name "Collection"
+    description "A curated workspace of digital assets"
 
     field :id, ID, null: false
     field :uuid, String, null: false
@@ -12,7 +12,7 @@ module Types
     field :created_at, GraphQL::Types::ISO8601DateTime, null: false
 
     # The relational mapping: Returns the assets inside this collection
-    field :assets, [Types::AssetType], null: false, description: "Assets attached to this collection"
+    field :assets, [ Types::AssetType ], null: false, description: "Assets attached to this collection"
 
     # Optimization: Use a custom resolver to prevent N+1 query issues if you load many collections at once
     def assets

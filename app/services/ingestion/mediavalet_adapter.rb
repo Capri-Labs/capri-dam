@@ -1,5 +1,5 @@
-require 'net/http'
-require 'uri'
+require "net/http"
+require "uri"
 
 module IngestionAdapters
   # MediaValet DAM Adapter
@@ -14,41 +14,41 @@ module IngestionAdapters
       url  = "#{endpoint}/api/v1.4/assets?page=#{page}&pageSize=#{limit}&sortBy=createdAt&sortOrder=asc"
 
       data  = get_json(url)
-      items = Array(data.dig('payload', 'assets') || data['assets'] || [])
+      items = Array(data.dig("payload", "assets") || data["assets"] || [])
 
       files = items.map do |item|
-        attrs = item['attributes'] || item
+        attrs = item["attributes"] || item
         {
-          identifier:    item['id'],
-          size:          attrs['fileSize'].to_i,
-          original_name: attrs['filename'] || attrs['title'],
+          identifier:    item["id"],
+          size:          attrs["fileSize"].to_i,
+          original_name: attrs["filename"] || attrs["title"],
           metadata: {
-            'title'        => attrs['title'],
-            'description'  => attrs['description'],
-            'tags'         => Array(attrs['keywords']).join(', '),
-            'content_type' => attrs['mediaType'],
-            'created'      => attrs['createdAt'],
-            'modified'     => attrs['modifiedAt'],
-            'category'     => attrs['categoryName']
-          }.compact
+            "title"        => attrs["title"],
+            "description"  => attrs["description"],
+            "tags"         => Array(attrs["keywords"]).join(", "),
+            "content_type" => attrs["mediaType"],
+            "created"      => attrs["createdAt"],
+            "modified"     => attrs["modifiedAt"],
+            "category"     => attrs["categoryName"],
+          }.compact,
         }
       end
 
-      total    = data.dig('payload', 'total') || data['total'].to_i
+      total    = data.dig("payload", "total") || data["total"].to_i
       fetched  = (page - 1) * limit + items.size
 
       {
         files:       files,
         next_cursor: (page + 1).to_s,
-        has_more:    fetched < total
+        has_more:    fetched < total,
       }
     end
 
     def download_and_stream(file_identifier, &block)
       data         = get_json("#{endpoint}/api/v1.4/assets/#{file_identifier}/download")
-      download_url = data.dig('payload', 'downloadUrl') || data['downloadUrl']
+      download_url = data.dig("payload", "downloadUrl") || data["downloadUrl"]
       raise "MediaValet: no download URL for #{file_identifier}" unless download_url
-      stream_http_file(download_url, '.bin', &block)
+      stream_http_file(download_url, ".bin", &block)
     end
 
     def test_connection
@@ -59,4 +59,3 @@ module IngestionAdapters
     end
   end
 end
-

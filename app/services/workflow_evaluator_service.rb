@@ -1,5 +1,5 @@
 class WorkflowEvaluatorService
-  def self.call(asset, trigger_event: 'on_upload')
+  def self.call(asset, trigger_event: "on_upload")
     new(asset, trigger_event).evaluate_and_trigger!
   end
 
@@ -11,7 +11,7 @@ class WorkflowEvaluatorService
 
   def evaluate_and_trigger!
     # Fetch all active workflows that match this specific event
-    eligible_workflows = Workflow.where(status: 'active', trigger_type: @trigger_event)
+    eligible_workflows = Workflow.where(status: "active", trigger_type: @trigger_event)
 
     eligible_workflows.each do |workflow|
       if should_trigger?(workflow)
@@ -29,13 +29,13 @@ class WorkflowEvaluatorService
 
   def should_trigger?(workflow)
     # RULE 1: Specific Folders Only
-    if workflow.folder_scope == 'specific'
+    if workflow.folder_scope == "specific"
       # If the asset's folder isn't in the target list, skip it.
       return false unless workflow.target_folder_ids.include?(@folder_id)
     end
 
     # RULE 2: All Folders (with Exclusions)
-    if workflow.folder_scope == 'all'
+    if workflow.folder_scope == "all"
       # If the asset's folder IS in the exclusion list, skip it.
       return false if workflow.exclude_folder_ids.include?(@folder_id)
     end

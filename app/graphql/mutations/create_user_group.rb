@@ -8,10 +8,10 @@ module Mutations
     argument :parent_id,   ID,     required: false
 
     field :user_group, Types::UserGroupType, null: true
-    field :errors,     [String],             null: false
+    field :errors,     [ String ],             null: false
 
     def resolve(name:, description: nil, parent_id: nil)
-      return { user_group: nil, errors: ["Unauthorized"] } unless context[:current_user]&.admin?
+      return { user_group: nil, errors: [ "Unauthorized" ] } unless context[:current_user]&.admin?
 
       group = UserGroup.new(name: name, description: description)
 
@@ -27,4 +27,3 @@ module Mutations
     end
   end
 end
-

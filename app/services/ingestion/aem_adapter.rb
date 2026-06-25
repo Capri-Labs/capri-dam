@@ -1,5 +1,5 @@
-require 'net/http'
-require 'uri'
+require "net/http"
+require "uri"
 
 module IngestionAdapters
   # Adobe Experience Manager Assets Adapter
@@ -14,39 +14,39 @@ module IngestionAdapters
       url = "#{endpoint}/api/assets/content/dam.json?start=#{start_offset}&count=#{limit}&orderby=jcr:created&orderdir=asc"
 
       data  = get_json(url)
-      items = Array(data.dig('entities') || data.dig('assets') || [])
+      items = Array(data.dig("entities") || data.dig("assets") || [])
 
       files = items.map do |item|
-        props = item['properties'] || {}
+        props = item["properties"] || {}
         {
-          identifier:    item['links']&.find { |l| l['rel']&.include?('self') }&.dig('href') || item['id'],
-          size:          props['dam:size'].to_i,
-          original_name: item['name'] || props['dc:title'],
+          identifier:    item["links"]&.find { |l| l["rel"]&.include?("self") }&.dig("href") || item["id"],
+          size:          props["dam:size"].to_i,
+          original_name: item["name"] || props["dc:title"],
           metadata: {
-            'title'        => props['dc:title'],
-            'description'  => props['dc:description'],
-            'tags'         => Array(props['cq:tags']),
-            'creator'      => props['dc:creator'],
-            'created'      => props['jcr:created'],
-            'content_type' => props['dam:mimeType']
-          }.compact
+            "title"        => props["dc:title"],
+            "description"  => props["dc:description"],
+            "tags"         => Array(props["cq:tags"]),
+            "creator"      => props["dc:creator"],
+            "created"      => props["jcr:created"],
+            "content_type" => props["dam:mimeType"],
+          }.compact,
         }
       end
 
       {
         files:       files,
         next_cursor: (start_offset + items.size).to_s,
-        has_more:    items.size == limit
+        has_more:    items.size == limit,
       }
     end
 
     def download_and_stream(file_identifier, &block)
       # AEM download URL: /path/to/asset/jcr:content/renditions/original
-      download_url = file_identifier.end_with?('/jcr:content/renditions/original') ?
+      download_url = file_identifier.end_with?("/jcr:content/renditions/original") ?
                      file_identifier :
                      "#{file_identifier}/jcr:content/renditions/original"
 
-      ext = File.extname(file_identifier).presence || '.bin'
+      ext = File.extname(file_identifier).presence || ".bin"
       stream_http_file("#{endpoint}#{download_url}", ext, &block)
     end
 
@@ -59,4 +59,3 @@ module IngestionAdapters
     end
   end
 end
-

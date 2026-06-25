@@ -37,20 +37,20 @@
 # @see AssetWorkflowTriggerWorker
 # @see StorageManager
 # @see Api::V1::AssetsController#dispatch_asset_workers
-require 'digest'
+require "digest"
 
 class AssetProcessorWorker
   include Sidekiq::Worker
-  sidekiq_options queue: 'ingest', retry: 3
+  sidekiq_options queue: "ingest", retry: 3
 
   # Called when all retry attempts have been exhausted.
   # Marks the parent asset as +failed+ and cleans up the staging file.
   sidekiq_retries_exhausted do |msg, exception|
-    version_id   = msg['args'].first
-    staging_path = msg['args'][1]
+    version_id   = msg["args"].first
+    staging_path = msg["args"][1]
 
     version = AssetVersion.find_by(id: version_id)
-    version.asset.update!(status: 'failed') if version&.asset
+    version.asset.update!(status: "failed") if version&.asset
 
     File.delete(staging_path) if staging_path && File.exist?(staging_path)
     Rails.logger.error "💥 AssetVersion #{version_id} permanently failed: #{exception.message}"
@@ -67,7 +67,7 @@ class AssetProcessorWorker
     return unless version
 
     asset = version.asset
-    asset.update!(status: 'processing')
+    asset.update!(status: "processing")
 
     begin
       backend = ::StorageBackend.find_by(active: true)
@@ -76,7 +76,7 @@ class AssetProcessorWorker
       extracted_meta = {}
 
       # Extract naming-convention metadata from the original filename.
-      original_name = asset.properties&.dig('original_filename').to_s
+      original_name = asset.properties&.dig("original_filename").to_s
       name_meta     = parse_product_filename(original_name)
       extracted_meta.merge!(name_meta) if name_meta
 
@@ -89,24 +89,24 @@ class AssetProcessorWorker
         extracted_meta[:content_type] = mime_type
         file_stream.close
 
-        if mime_type.start_with?('image/')
+        if mime_type.start_with?("image/")
           extract_image_metadata(staging_path, extracted_meta)
           extract_text_from_image(staging_path, extracted_meta)
-        elsif mime_type == 'application/pdf'
+        elsif mime_type == "application/pdf"
           extract_pdf_metadata(staging_path, extracted_meta)
-        elsif mime_type.start_with?('video/')
-          extracted_meta[:format] = 'Video Media'
+        elsif mime_type.start_with?("video/")
+          extracted_meta[:format] = "Video Media"
         end
 
         safe_ext  = Marcel::Magic.new(mime_type)&.extensions&.first || "bin"
         file_path = "#{asset.uuid}/v#{version.version_number}_#{SecureRandom.hex(4)}.#{safe_ext}"
 
-        File.open(staging_path, 'rb') { |file| storage.store(file, file_path) }
+        File.open(staging_path, "rb") { |file| storage.store(file, file_path) }
         File.delete(staging_path)
       else
         file_path = "#{asset.uuid}/v#{version.version_number}_mock.bin"
         storage.store(StringIO.new("Mock data"), file_path)
-        extracted_meta[:content_type] = 'application/octet-stream'
+        extracted_meta[:content_type] = "application/octet-stream"
       end
 
       current_props = version.properties.is_a?(Hash) ? version.properties : {}
@@ -117,9 +117,9 @@ class AssetProcessorWorker
         )
       )
 
-      asset.update!(status: 'ready')
+      asset.update!(status: "ready")
 
-      AssetWorkflowTriggerWorker.perform_async(asset.id, 'on_upload') if defined?(AssetWorkflowTriggerWorker)
+      AssetWorkflowTriggerWorker.perform_async(asset.id, "on_upload") if defined?(AssetWorkflowTriggerWorker)
 
       Rails.logger.info "✅ AssetVersion #{version.id} processed and stored as #{file_path}"
 
@@ -140,19 +140,19 @@ class AssetProcessorWorker
     return nil if filename.blank?
 
     base  = File.basename(filename, File.extname(filename))
-    parts = base.split('-')
+    parts = base.split("-")
     return nil if parts.length < 3
 
     asset_type_code = parts.last.to_s.upcase
     language_code   = parts[-2].to_s.downcase
-    product_id      = parts[0...-2].join('-')
+    product_id      = parts[0...-2].join("-")
 
     return nil unless asset_type_code.match?(/\A[A-Z]{2}\d{2}\z/)
 
     {
-      'dam:product_id'    => product_id,
-      'dam:language_code' => language_code,
-      'dam:asset_type'    => asset_type_code
+      "dam:product_id"    => product_id,
+      "dam:language_code" => language_code,
+      "dam:asset_type"    => asset_type_code,
     }
   end
 
@@ -163,7 +163,7 @@ class AssetProcessorWorker
   # @param meta [Hash]   mutable metadata hash to populate
   # @return [void]
   def extract_image_metadata(path, meta)
-    require 'mini_magick'
+    require "mini_magick"
     image = MiniMagick::Image.open(path)
 
     meta[:width]        = image.width
@@ -176,9 +176,9 @@ class AssetProcessorWorker
 
     exif = image.exif
     if exif.any?
-      meta[:camera_make]  = exif['Make']&.strip
-      meta[:camera_model] = exif['Model']&.strip
-      meta[:software]     = exif['Software']&.strip
+      meta[:camera_make]  = exif["Make"]&.strip
+      meta[:camera_model] = exif["Model"]&.strip
+      meta[:software]     = exif["Software"]&.strip
     end
   rescue StandardError => e
     Rails.logger.error "Minor error: Image metadata extraction failed: #{e.message}"
@@ -216,7 +216,7 @@ class AssetProcessorWorker
   # @param meta [Hash]   mutable metadata hash; populates +:extracted_text+
   # @return [void]
   def extract_text_from_image(path, meta)
-    require 'rtesseract'
+    require "rtesseract"
     image          = RTesseract.new(path)
     extracted_text = image.to_s.strip
 
@@ -234,6 +234,6 @@ class AssetProcessorWorker
   # @param meta [Hash]   mutable metadata hash
   # @return [void]
   def extract_pdf_metadata(path, meta)
-    meta[:document_type] = 'PDF'
+    meta[:document_type] = "PDF"
   end
 end

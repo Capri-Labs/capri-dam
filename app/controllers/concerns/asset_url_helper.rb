@@ -7,7 +7,7 @@ module AssetUrlHelper
 
   def asset_url_for(asset)
     active_v = asset.active_version
-    storage_path = active_v&.properties&.fetch('storage_path', nil) || asset.properties['storage_path']
+    storage_path = active_v&.properties&.fetch("storage_path", nil) || asset.properties["storage_path"]
 
     return nil unless storage_path.present?
 

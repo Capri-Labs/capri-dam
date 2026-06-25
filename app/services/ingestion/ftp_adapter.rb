@@ -1,5 +1,5 @@
-require 'net/ftp'
-require 'tmpdir'
+require "net/ftp"
+require "tmpdir"
 
 module IngestionAdapters
   # FTP / SFTP Adapter
@@ -14,18 +14,18 @@ module IngestionAdapters
       files_list = []
 
       ftp_client do |ftp|
-        remote_dir = credentials['remote_path'].presence || '/'
+        remote_dir = credentials["remote_path"].presence || "/"
         ftp.chdir(remote_dir)
 
-        all_files = ftp.list('*').map do |entry|
+        all_files = ftp.list("*").map do |entry|
           # Parse FTP LIST output: "-rw-rw-r-- 1 user grp 5120 Jun 01 12:00 filename.jpg"
           parts = entry.split
-          next if entry.start_with?('d')  # skip directories
+          next if entry.start_with?("d")  # skip directories
           {
             identifier:    File.join(remote_dir, parts.last),
             size:          parts[4].to_i,
             original_name: parts.last,
-            metadata: { 'modified' => "#{parts[5]} #{parts[6]} #{parts[7]}", 'source' => 'ftp' }
+            metadata: { "modified" => "#{parts[5]} #{parts[6]} #{parts[7]}", "source" => "ftp" },
           }
         end.compact
 
@@ -36,13 +36,13 @@ module IngestionAdapters
         return {
           files:       files_list,
           next_cursor: (offset + files_list.size).to_s,
-          has_more:    (offset + files_list.size) < all_files.size
+          has_more:    (offset + files_list.size) < all_files.size,
         }
       end
     end
 
     def download_and_stream(file_identifier, &block)
-      tempfile = Tempfile.new(['ftp_migration_', File.extname(file_identifier)])
+      tempfile = Tempfile.new([ "ftp_migration_", File.extname(file_identifier) ])
       tempfile.binmode
 
       ftp_client do |ftp|
@@ -60,7 +60,7 @@ module IngestionAdapters
 
     def test_connection
       ftp_client { |ftp| ftp.list }
-      { success: true, message: "Connected to FTP server #{credentials['host']}." }
+      { success: true, message: "Connected to FTP server #{credentials["host"]}." }
     rescue => e
       { success: false, message: "FTP connection failed: #{e.message}" }
     end
@@ -69,10 +69,10 @@ module IngestionAdapters
 
     def ftp_client(&block)
       Net::FTP.open(
-        credentials['host'],
-        port:     (credentials['port'] || 21).to_i,
-        username: credentials['username'],
-        password: credentials['password'],
+        credentials["host"],
+        port:     (credentials["port"] || 21).to_i,
+        username: credentials["username"],
+        password: credentials["password"],
         passive:  true,
         ssl:      false
       ) do |ftp|
@@ -81,4 +81,3 @@ module IngestionAdapters
     end
   end
 end
-

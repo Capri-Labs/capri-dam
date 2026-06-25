@@ -6,9 +6,9 @@ class EmailDelivery < ApplicationRecord
   validates :retry_count, numericality: { greater_than_or_equal_to: 0 }
 
   # Scopes for the Audit Dashboard
-  scope :pending, -> { where(status: 'pending') }
-  scope :sent, -> { where(status: 'sent') }
-  scope :failed, -> { where(status: 'failed') }
+  scope :pending, -> { where(status: "pending") }
+  scope :sent, -> { where(status: "sent") }
+  scope :failed, -> { where(status: "failed") }
 
   # Helper to determine if we should give up
   def max_retries_reached?
@@ -16,12 +16,12 @@ class EmailDelivery < ApplicationRecord
   end
 
   def mark_as_sent!
-    update(status: 'sent', error_log: nil)
+    update(status: "sent", error_log: nil)
   end
 
   def mark_as_failed!(error_message)
     update(
-      status: 'failed',
+      status: "failed",
       error_log: error_message
     )
   end

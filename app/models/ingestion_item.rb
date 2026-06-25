@@ -12,7 +12,7 @@ class IngestionItem < ApplicationRecord
     flagged_error: 3,     # Corrupted file or missing usage rights
     ready_for_import: 4,  # Pristine and ready to commit
     committed: 5,         # Successfully moved to Asset table
-    rejected: 6           # Admin manually discarded this file
+    rejected: 6,           # Admin manually discarded this file
   }, instance_methods: false
 
   statuses.each_key do |state|

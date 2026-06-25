@@ -2,11 +2,11 @@ module Admin
   class ReportsController < ApplicationController
     before_action :authenticate_user!
     before_action :require_admin!
-    before_action :set_report_definition, only: [:show, :generate]
+    before_action :set_report_definition, only: [ :show, :generate ]
 
     # GET /admin/reports
     def index
-      @active_view = 'Reports'
+      @active_view = "Reports"
       @reports = ReportDefinition.where(active: true).order(:name)
       respond_to do |format|
         format.html
@@ -18,7 +18,7 @@ module Admin
     # Lightweight aggregation endpoint for the live dashboard charts.
     # Uses Rails.cache (5 min TTL) to survive UI polling.
     def analytics
-      range = params[:range].presence || 'last_30_days'
+      range = params[:range].presence || "last_30_days"
 
       data = Reports::AnalyticsService.new(
         range,
@@ -40,7 +40,7 @@ module Admin
         format.json do
           render json: {
             report: @report_definition,
-            recent_snapshots: format_snapshots(snapshots)
+            recent_snapshots: format_snapshots(snapshots),
           }
         end
       end
@@ -95,7 +95,7 @@ module Admin
           format:       s.format,
           created_at:   s.created_at,
           download_url: s.completed? ? download_admin_report_snapshot_path(s) : nil,
-          error_message: s.failed? ? s.error_message : nil
+          error_message: s.failed? ? s.error_message : nil,
         }
       end
     end

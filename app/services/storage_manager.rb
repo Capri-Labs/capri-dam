@@ -34,14 +34,14 @@
 class StorageManager
   # Provider key → fully-qualified adapter class name mapping.
   ADAPTERS = {
-    'local'        => 'StorageAdapters::LocalStorageAdapter',
-    'aws'          => 'StorageAdapters::S3Adapter',
-    'cloudflare'   => 'StorageAdapters::R2Adapter',
-    'digitalocean' => 'StorageAdapters::SpacesAdapter',
-    'wasabi'       => 'StorageAdapters::WasabiAdapter',
-    'backblaze'    => 'StorageAdapters::BackblazeAdapter',
-    'google'       => 'StorageAdapters::GcsAdapter',
-    'azure'        => 'StorageAdapters::AzureAdapter'
+    "local"        => "StorageAdapters::LocalStorageAdapter",
+    "aws"          => "StorageAdapters::S3Adapter",
+    "cloudflare"   => "StorageAdapters::R2Adapter",
+    "digitalocean" => "StorageAdapters::SpacesAdapter",
+    "wasabi"       => "StorageAdapters::WasabiAdapter",
+    "backblaze"    => "StorageAdapters::BackblazeAdapter",
+    "google"       => "StorageAdapters::GcsAdapter",
+    "azure"        => "StorageAdapters::AzureAdapter",
   }.freeze
 
   # Instantiates the appropriate adapter for the given {StorageBackend} record.
@@ -129,7 +129,7 @@ class StorageManager
     failed       = []
 
     AssetVersion.find_each do |version|
-      source_path = version.properties['storage_path']
+      source_path = version.properties["storage_path"]
       next if source_path.blank?
       begin
         unless dry_run
@@ -137,9 +137,9 @@ class StorageManager
           next unless file_data
           new_path = to_adapter.store(
             StringIO.new(file_data), source_path,
-            content_type: version.properties['content_type']
+            content_type: version.properties["content_type"]
           )
-          version.update_column(:properties, version.properties.merge('storage_path' => new_path))
+          version.update_column(:properties, version.properties.merge("storage_path" => new_path))
         end
         migrated += 1
       rescue => e
@@ -155,7 +155,7 @@ class StorageManager
 
   # @api private
   def self.build_from_settings
-    provider = Setting.get('active_storage_provider').to_s.presence || 'local'
+    provider = Setting.get("active_storage_provider").to_s.presence || "local"
     config   = load_config_for_provider(provider)
     build_adapter(provider, config)
   rescue => e
@@ -178,7 +178,7 @@ class StorageManager
   # Loads the JSON configuration stored in the +Setting+ model for the given provider.
   # @api private
   def self.load_config_for_provider(provider)
-    return {} if provider == 'local'
+    return {} if provider == "local"
     raw = Setting.get("storage_config_#{provider}")
     raw.is_a?(Hash) ? raw.transform_keys(&:to_s) : (JSON.parse(raw) rescue {})
   end
@@ -193,11 +193,11 @@ class StorageManager
   # @api private
   def self.read_file_from_adapter(adapter, path)
     if adapter.is_a?(StorageAdapters::LocalStorageAdapter)
-      full_path = Rails.root.join('storage', 'dam', path)
+      full_path = Rails.root.join("storage", "dam", path)
       File.exist?(full_path) ? File.binread(full_path) : nil
     else
       url = adapter.supports_presigned_urls? ? adapter.presign_url(path, expires_in: 600) : adapter.url(path)
-      require 'net/http'
+      require "net/http"
       Net::HTTP.get(URI.parse(url))
     end
   end

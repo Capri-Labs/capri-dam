@@ -1,5 +1,5 @@
-require 'net/http'
-require 'uri'
+require "net/http"
+require "uri"
 
 module IngestionAdapters
   # Extensis Portfolio (Server/Workgroup) Adapter
@@ -14,36 +14,36 @@ module IngestionAdapters
       url  = "#{endpoint}/api/v1/assets?page=#{page}&per_page=#{limit}&sort=created_at&direction=asc"
 
       data  = get_json(url)
-      items = Array(data['assets'] || data['data'] || [])
+      items = Array(data["assets"] || data["data"] || [])
 
       files = items.map do |item|
         {
-          identifier:    item['id'],
-          size:          item['file_size'].to_i,
-          original_name: item['filename'] || item['name'],
+          identifier:    item["id"],
+          size:          item["file_size"].to_i,
+          original_name: item["filename"] || item["name"],
           metadata: {
-            'title'        => item['title'] || item['name'],
-            'description'  => item['description'],
-            'tags'         => Array(item['keywords']),
-            'content_type' => item['mime_type'],
-            'created'      => item['created_at'],
-            'modified'     => item['updated_at'],
-            'catalog'      => item['catalog_name']
-          }.compact
+            "title"        => item["title"] || item["name"],
+            "description"  => item["description"],
+            "tags"         => Array(item["keywords"]),
+            "content_type" => item["mime_type"],
+            "created"      => item["created_at"],
+            "modified"     => item["updated_at"],
+            "catalog"      => item["catalog_name"],
+          }.compact,
         }
       end
 
-      total = data['total_count'].to_i
+      total = data["total_count"].to_i
       {
         files:       files,
         next_cursor: (page + 1).to_s,
-        has_more:    (page * limit) < total
+        has_more:    (page * limit) < total,
       }
     end
 
     def download_and_stream(file_identifier, &block)
       download_url = "#{endpoint}/api/v1/assets/#{file_identifier}/download"
-      stream_http_file(download_url, '.bin', &block)
+      stream_http_file(download_url, ".bin", &block)
     end
 
     def test_connection
@@ -54,4 +54,3 @@ module IngestionAdapters
     end
   end
 end
-

@@ -1,12 +1,12 @@
 class MetadataSchema < ApplicationRecord
   # ── Associations ──────────────────────────────────────────────────────────
-  belongs_to :parent, class_name: 'MetadataSchema', optional: true
+  belongs_to :parent, class_name: "MetadataSchema", optional: true
   has_many   :children,
-             class_name:  'MetadataSchema',
+             class_name:  "MetadataSchema",
              foreign_key: :parent_id,
              dependent:   :destroy
   has_many   :folder_assignments,
-             class_name:  'MetadataSchemaFolderAssignment',
+             class_name:  "MetadataSchemaFolderAssignment",
              dependent:   :destroy
 
   # ── Validations ───────────────────────────────────────────────────────────
@@ -14,7 +14,7 @@ class MetadataSchema < ApplicationRecord
   validates :uuid,         presence: true, uniqueness: true
   validates :slug,         presence: true,
                            uniqueness: { conditions: -> { where(deleted_at: nil) },
-                                         message: 'must be unique among active schemas' }
+                                         message: "must be unique among active schemas" }
   validates :level,        inclusion: { in: %w[root type subtype] }
   validate  :parent_required_for_non_root
   validate  :mime_segment_required_for_non_root
@@ -26,7 +26,7 @@ class MetadataSchema < ApplicationRecord
 
   # ── Scopes ────────────────────────────────────────────────────────────────
   scope :active,    -> { where(deleted_at: nil) }
-  scope :roots,     -> { active.where(level: 'root') }
+  scope :roots,     -> { active.where(level: "root") }
   scope :builtin,   -> { active.where(is_builtin: true) }
   scope :custom,    -> { active.where(is_builtin: false) }
 
@@ -34,13 +34,13 @@ class MetadataSchema < ApplicationRecord
   # Returns the most-specific schema for a given MIME string.
   # Pass root_schema_id: nil to use the global Default root.
   def self.resolve_for_mime(mime_string, root_schema_id: nil)
-    mime_type, mime_subtype = mime_string.to_s.downcase.split('/')
+    mime_type, mime_subtype = mime_string.to_s.downcase.split("/")
 
     root =
       if root_schema_id.present?
         roots.find_by(id: root_schema_id)
       else
-        roots.find_by(is_builtin: true, slug: 'default')
+        roots.find_by(is_builtin: true, slug: "default")
       end
 
     return root unless root
@@ -68,14 +68,14 @@ class MetadataSchema < ApplicationRecord
     inherited_tabs = ancestors.flat_map do |schema|
       (schema.tabs || []).map do |tab|
         tab.merge(
-          'inherited' => true,
-          'schema_name' => schema.name,
-          'fields' => (tab['fields'] || []).map { |f| f.merge('inherited' => true) }
+          "inherited" => true,
+          "schema_name" => schema.name,
+          "fields" => (tab["fields"] || []).map { |f| f.merge("inherited" => true) }
         )
       end
     end
 
-    own_tabs = (tabs || []).map { |t| t.merge('inherited' => false) }
+    own_tabs = (tabs || []).map { |t| t.merge("inherited" => false) }
     inherited_tabs + own_tabs
   end
 
@@ -113,13 +113,12 @@ class MetadataSchema < ApplicationRecord
   end
 
   def parent_required_for_non_root
-    return if level == 'root'
-    errors.add(:parent_id, 'must be present for type/subtype schemas') if parent_id.blank?
+    return if level == "root"
+    errors.add(:parent_id, "must be present for type/subtype schemas") if parent_id.blank?
   end
 
   def mime_segment_required_for_non_root
-    return if level == 'root'
-    errors.add(:mime_segment, 'must be present for type/subtype schemas') if mime_segment.blank?
+    return if level == "root"
+    errors.add(:mime_segment, "must be present for type/subtype schemas") if mime_segment.blank?
   end
 end
-

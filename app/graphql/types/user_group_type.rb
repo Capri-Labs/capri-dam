@@ -19,9 +19,9 @@ module Types
     field :created_at,   GraphQL::Types::ISO8601DateTime, null: false
     field :updated_at,   GraphQL::Types::ISO8601DateTime, null: false
 
-    field :members,      [Types::UserType],      null: false, description: "Direct user members"
-    field :child_groups, [Types::UserGroupType], null: false, description: "Nested sub-groups"
-    field :permissions,  [Types::FolderPolicyType], null: false, description: "ACL entries for this group"
+    field :members,      [ Types::UserType ],      null: false, description: "Direct user members"
+    field :child_groups, [ Types::UserGroupType ], null: false, description: "Nested sub-groups"
+    field :permissions,  [ Types::FolderPolicyType ], null: false, description: "ACL entries for this group"
 
     def deletable
       !object.system?
@@ -44,4 +44,3 @@ module Types
     end
   end
 end
-

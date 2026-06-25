@@ -49,12 +49,12 @@ module Types
     # @return [GraphQL::Pagination::Connection<Types::AssetType>]
     field :search_assets, Types::AssetType.connection_type, null: false do
       argument :query,            String,         required: false
-      argument :mode,             String,         required: false, default_value: 'images'
+      argument :mode,             String,         required: false, default_value: "images"
       argument :metadata_filters, Types::JsonType, required: false,
                description: "Key-value map for strict JSONB matching."
-      argument :sort_by, String, required: false, default_value: 'name',
+      argument :sort_by, String, required: false, default_value: "name",
                description: "Sort field: name, created_at, updated_at, size, or type."
-      argument :sort_direction, String, required: false, default_value: 'asc',
+      argument :sort_direction, String, required: false, default_value: "asc",
                description: "Sort direction: asc or desc."
     end
 
@@ -64,19 +64,19 @@ module Types
 
     # Allowed sort fields mapped to SQL ordering expressions.
     ASSET_SORT_COLUMNS = {
-      'name'       => 'title',
-      'created_at' => 'created_at',
-      'updated_at' => 'updated_at',
+      "name"       => "title",
+      "created_at" => "created_at",
+      "updated_at" => "updated_at",
       # size & type live in the JSONB properties column
-      'size'       => "(properties->>'size')::bigint",
-      'type'       => "properties->>'content_type'"
+      "size"       => "(properties->>'size')::bigint",
+      "type"       => "properties->>'content_type'",
     }.freeze
 
-    def search_assets(query: nil, mode: 'images', metadata_filters: nil,
-                      sort_by: 'name', sort_direction: 'asc')
+    def search_assets(query: nil, mode: "images", metadata_filters: nil,
+                      sort_by: "name", sort_direction: "asc")
       scope = Asset.active
       scope = scope.where("title ILIKE ?", "%#{query}%") if query.present?
-      scope = scope.where("properties->>'content_type' ILIKE 'image/%'") if mode == 'images'
+      scope = scope.where("properties->>'content_type' ILIKE 'image/%'") if mode == "images"
 
       if metadata_filters.present?
         metadata_filters.each do |key, value|
@@ -84,15 +84,15 @@ module Types
         end
       end
 
-      column    = ASSET_SORT_COLUMNS[sort_by.to_s] || ASSET_SORT_COLUMNS['name']
-      direction = sort_direction.to_s == 'desc' ? 'DESC' : 'ASC'
+      column    = ASSET_SORT_COLUMNS[sort_by.to_s] || ASSET_SORT_COLUMNS["name"]
+      direction = sort_direction.to_s == "desc" ? "DESC" : "ASC"
       scope.order(Arel.sql("#{column} #{direction} NULLS LAST"))
     end
 
     # Returns all active, non-expired collections ordered newest-first.
     #
     # @return [Array<Types::CollectionType>]
-    field :collections, [Types::CollectionType], null: false do
+    field :collections, [ Types::CollectionType ], null: false do
       description "Retrieve all active collections for the current workspace"
     end
 
@@ -116,7 +116,7 @@ module Types
     # Returns all active image processing profiles sorted alphabetically.
     #
     # @return [Array<Types::ImageProfileType>]
-    field :image_profiles, [Types::ImageProfileType], null: false do
+    field :image_profiles, [ Types::ImageProfileType ], null: false do
       description "List all active Image Processing Profiles"
     end
 
@@ -140,7 +140,7 @@ module Types
     # Returns all active video processing profiles sorted alphabetically.
     #
     # @return [Array<Types::VideoProfileType>]
-    field :video_profiles, [Types::VideoProfileType], null: false do
+    field :video_profiles, [ Types::VideoProfileType ], null: false do
       description "List all active Video Processing Profiles"
     end
 
@@ -165,7 +165,7 @@ module Types
     # Users (admin only)
     # -------------------------------------------------------------------------
 
-    field :users, [Types::UserType], null: false do
+    field :users, [ Types::UserType ], null: false do
       description "List all DAM users (admin only)"
     end
 
@@ -188,7 +188,7 @@ module Types
     # User Groups (admin only)
     # -------------------------------------------------------------------------
 
-    field :user_groups, [Types::UserGroupType], null: false do
+    field :user_groups, [ Types::UserGroupType ], null: false do
       description "List all user groups (admin only)"
     end
 

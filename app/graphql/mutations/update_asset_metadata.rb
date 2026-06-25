@@ -6,12 +6,12 @@ module Mutations
     argument :updates, Types::JsonType, required: true
 
     field :asset, Types::AssetType, null: true
-    field :errors, [String], null: false
+    field :errors, [ String ], null: false
 
     def resolve(uuid:, updates:)
       # Security Check: Ensure mutation account has administrative or manager status
       unless context[:current_user].role?(:manager)
-        return { asset: nil, errors: ["Unauthorized operational modification attempt."] }
+        return { asset: nil, errors: [ "Unauthorized operational modification attempt." ] }
       end
 
       asset = Asset.find_by(uuid: uuid)
@@ -21,7 +21,7 @@ module Mutations
         asset.update!(properties: existing_properties.merge(updates))
         { asset: asset, errors: [] }
       else
-        { asset: nil, errors: ["Target asset structural signature not found."] }
+        { asset: nil, errors: [ "Target asset structural signature not found." ] }
       end
     end
   end

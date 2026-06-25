@@ -50,7 +50,7 @@ class GraphqlController < ApplicationController
 
     context = {
       current_user: current_user,
-      session_id:   session.id
+      session_id:   session.id,
     }
 
     is_introspection = introspection_query?
@@ -79,7 +79,7 @@ class GraphqlController < ApplicationController
   #
   # @return [Boolean]
   def introspection_query?
-    Rails.env.development? && params[:operationName] == 'IntrospectionQuery'
+    Rails.env.development? && params[:operationName] == "IntrospectionQuery"
   end
 
   # Normalises the +variables+ parameter into a plain Ruby Hash.
@@ -109,6 +109,6 @@ class GraphqlController < ApplicationController
     logger.error e.message
     logger.error e.backtrace.join("\n")
 
-    render json: { errors: [{ message: e.message, backtrace: e.backtrace }], data: {} }, status: 500
+    render json: { errors: [ { message: e.message, backtrace: e.backtrace } ], data: {} }, status: :internal_server_error
   end
 end

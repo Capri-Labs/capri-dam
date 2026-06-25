@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 #
 # Coverband configuration — runtime / E2E code coverage.
 #
@@ -27,7 +28,7 @@ Coverband.configure do |config|
       Coverband::Adapters::RedisStore.new(redis, redis_namespace: "coverband_e2e")
     rescue StandardError => e
       warn "[Coverband] Redis unavailable (#{e.message}); using file store fallback."
-      Coverband::Adapters::FileStore.new(Rails.root.join("tmp", "coverband_e2e.json").to_s)
+      Coverband::Adapters::FileStore.new(Rails.root.join("tmp/coverband_e2e.json").to_s)
     end
 
   config.store = store
@@ -49,4 +50,3 @@ Coverband.configure do |config|
     bin/*
   ]
 end
-

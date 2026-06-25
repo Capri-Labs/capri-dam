@@ -13,4 +13,3 @@ class UserPreference < ApplicationRecord
                                     message: "%{value} is not a supported language code" },
                        allow_blank: true
 end
-

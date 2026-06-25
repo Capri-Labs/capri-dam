@@ -1,4 +1,4 @@
-require 'aws-sdk-s3'
+require "aws-sdk-s3"
 
 module StorageAdapters
   # Amazon S3 adapter. Also serves as the base for S3-compatible providers
@@ -20,7 +20,7 @@ module StorageAdapters
         key: path,
         body: file,
         content_type: options[:content_type],
-        cache_control: options[:cache_control] || 'public, max-age=31536000',
+        cache_control: options[:cache_control] || "public, max-age=31536000",
         acl: options[:acl] || acl_setting,
         metadata: stringify_metadata(options[:metadata] || {})
       )
@@ -40,7 +40,7 @@ module StorageAdapters
     def url(path)
       if public_bucket?
         # Construct a direct public URL (no expiry)
-        ep = @config['endpoint'].to_s.chomp('/')
+        ep = @config["endpoint"].to_s.chomp("/")
         if ep.present?
           "#{ep}/#{bucket}/#{path}"
         else
@@ -107,13 +107,13 @@ module StorageAdapters
         content_type: resp.content_type,
         etag: resp.etag&.delete('"'),
         last_modified: resp.last_modified,
-        metadata: resp.metadata || {}
+        metadata: resp.metadata || {},
       }
     rescue Aws::S3::Errors::NotFound, Aws::S3::Errors::NoSuchKey
       nil
     end
 
-    def list(prefix: '', limit: 100)
+    def list(prefix: "", limit: 100)
       resp = client.list_objects_v2(bucket: bucket, prefix: prefix, max_keys: limit)
       resp.contents.map do |obj|
         { key: obj.key, size: obj.size, last_modified: obj.last_modified, etag: obj.etag&.delete('"') }
@@ -143,37 +143,37 @@ module StorageAdapters
     def client_options
       opts = {
         region: region,
-        access_key_id: @config['access_key'],
-        secret_access_key: @config['secret_key'],
-        force_path_style: force_path_style?
+        access_key_id: @config["access_key"],
+        secret_access_key: @config["secret_key"],
+        force_path_style: force_path_style?,
       }
-      opts[:endpoint] = @config['endpoint'] if @config['endpoint'].present?
+      opts[:endpoint] = @config["endpoint"] if @config["endpoint"].present?
       opts
     end
 
     def bucket
-      @config['bucket'].to_s
+      @config["bucket"].to_s
     end
 
     def region
-      @config['region'].presence || default_region
+      @config["region"].presence || default_region
     end
 
     # Subclasses override this to set provider-specific default region.
     def default_region
-      'us-east-1'
+      "us-east-1"
     end
 
     def force_path_style?
-      @config['endpoint'].present?
+      @config["endpoint"].present?
     end
 
     def acl_setting
-      @config['acl'].presence || 'private'
+      @config["acl"].presence || "private"
     end
 
     def public_bucket?
-      acl_setting == 'public-read'
+      acl_setting == "public-read"
     end
 
     def stringify_metadata(hash)
@@ -184,4 +184,3 @@ module StorageAdapters
   # Convenience error class for all adapter failures
   StorageError = Class.new(StandardError)
 end
-

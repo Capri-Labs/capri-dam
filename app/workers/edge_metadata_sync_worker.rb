@@ -3,7 +3,7 @@ class EdgeMetadataSyncWorker
 
   # 🚀 Isolate this in a dedicated queue so massive metadata updates
   # don't block image processing or cache purges.
-  sidekiq_options queue: 'edge_metadata', retry: 5
+  sidekiq_options queue: "edge_metadata", retry: 5
 
   def perform(asset_uuid)
     asset = Asset.includes(:active_version).find_by(uuid: asset_uuid)
@@ -19,12 +19,12 @@ class EdgeMetadataSyncWorker
       uuid: asset.uuid,
       status: asset.status,
       version: active_v&.version_number || 1,
-      alt_text: properties['alt_text'] || asset.title,
-      content_type: properties['content_type'],
-      focal_point: properties.dig('editor_state', 'geometry', 'focal_point') || { x: 50, y: 50 },
-      color_space: properties['color_space'],
+      alt_text: properties["alt_text"] || asset.title,
+      content_type: properties["content_type"],
+      focal_point: properties.dig("editor_state", "geometry", "focal_point") || { x: 50, y: 50 },
+      color_space: properties["color_space"],
       # Extract only the 3 most prominent colors if you have an AI palette array
-      dominant_colors: (properties['color_palette'] || []).first(3)
+      dominant_colors: (properties["color_palette"] || []).first(3),
     }
 
     # 2. Hand off to the Agnostic Manager

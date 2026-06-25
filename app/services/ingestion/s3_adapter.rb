@@ -1,4 +1,4 @@
-require 'aws-sdk-s3'
+require "aws-sdk-s3"
 
 module IngestionAdapters
   class S3Adapter < Base
@@ -19,14 +19,14 @@ module IngestionAdapters
       )
 
       {
-        files: response.contents.map { |obj| { identifier: obj.key, size: obj.size, original_name: obj.key.split('/').last } },
+        files: response.contents.map { |obj| { identifier: obj.key, size: obj.size, original_name: obj.key.split("/").last } },
         next_cursor: response.next_continuation_token,
-        has_more: response.is_truncated
+        has_more: response.is_truncated,
       }
     end
 
     def download_and_stream(file_identifier)
-      tempfile = Tempfile.new(['ingestion', File.extname(file_identifier)])
+      tempfile = Tempfile.new([ "ingestion", File.extname(file_identifier) ])
       tempfile.binmode
 
       client.get_object(bucket: credentials[:bucket], key: file_identifier) do |chunk|

@@ -31,7 +31,7 @@ module MetadataExportService
       # Always emit at least an (empty) file so the user has something to download.
       files << build_csv([], columns, 0, 1) if files.empty?
 
-      [files, total]
+      [ files, total ]
     end
 
     private
@@ -56,10 +56,10 @@ module MetadataExportService
     def target_folder_ids
       return [] if export.folder_id.blank?
 
-      ids = [export.folder_id]
+      ids = [ export.folder_id ]
       return ids unless export.include_subfolders
 
-      queue = [export.folder_id]
+      queue = [ export.folder_id ]
       until queue.empty?
         children = Folder.active.where(parent_id: queue).pluck(:id)
         new_ids  = children - ids
@@ -158,4 +158,3 @@ module MetadataExportService
     end
   end
 end
-

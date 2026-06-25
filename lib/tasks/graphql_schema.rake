@@ -12,7 +12,7 @@ namespace :graphql do
   namespace :schema do
     desc "Dump the GraphQL SDL schema to swagger/graphql/schema.graphql"
     task dump: :environment do
-      output_path = Rails.root.join("swagger", "graphql", "schema.graphql")
+      output_path = Rails.root.join("swagger/graphql/schema.graphql")
       FileUtils.mkdir_p(File.dirname(output_path))
 
       schema_sdl = HeadlessDamSchema.to_definition
@@ -22,4 +22,3 @@ namespace :graphql do
     end
   end
 end
-

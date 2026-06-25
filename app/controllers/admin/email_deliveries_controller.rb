@@ -17,11 +17,11 @@ class Admin::EmailDeliveriesController < ApplicationController
       {
         id: log.id,
         recipient: log.recipient_email,
-        template_name: log.email_template&.name || 'Deleted Template',
+        template_name: log.email_template&.name || "Deleted Template",
         status: log.status,
         retry_count: log.retry_count,
         error_log: log.error_log,
-        sent_at: log.created_at.strftime("%Y-%m-%d %H:%M:%S")
+        sent_at: log.created_at.strftime("%Y-%m-%d %H:%M:%S"),
       }
     end
 
@@ -32,14 +32,14 @@ class Admin::EmailDeliveriesController < ApplicationController
   def retry
     delivery = EmailDelivery.find(params[:id])
 
-    if delivery.status == 'sent'
-      render json: { success: false, errors: ["This email has already been successfully sent."] }
+    if delivery.status == "sent"
+      render json: { success: false, errors: [ "This email has already been successfully sent." ] }
       return
     end
 
     # Reset the log and throw it back into the Sidekiq queue
     delivery.update!(
-      status: 'pending',
+      status: "pending",
       retry_count: 0,
       error_log: nil
     )

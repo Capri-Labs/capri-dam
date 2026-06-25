@@ -5,8 +5,8 @@ class TrashCleanupWorker
     threshold = 30.days.ago
 
     # Find items deleted more than 30 days ago
-    expired_assets = Asset.trashed.where('deleted_at < ?', threshold)
-    expired_folders = Folder.trashed.where('deleted_at < ?', threshold)
+    expired_assets = Asset.trashed.where("deleted_at < ?", threshold)
+    expired_folders = Folder.trashed.where("deleted_at < ?", threshold)
 
     expired_assets.find_each do |asset|
       # Trigger physical deletion logic here

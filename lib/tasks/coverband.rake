@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 #
 # Coverband (backend E2E / runtime coverage) helper tasks.
 #
@@ -53,4 +54,3 @@ namespace :coverband do
     end
   end
 end
-

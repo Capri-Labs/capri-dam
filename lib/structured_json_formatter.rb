@@ -25,7 +25,7 @@
 # middleware.
 #
 # @see https://opentelemetry.io/docs/instrumentation/ruby/
-require 'json'
+require "json"
 
 class StructuredJsonFormatter < ::Logger::Formatter
   # Formats a log event as a JSON string (with a trailing newline).
@@ -40,7 +40,7 @@ class StructuredJsonFormatter < ::Logger::Formatter
       timestamp:   time.utc.iso8601(3),
       level:       severity,
       message:     format_message(msg),
-      environment: Rails.env
+      environment: Rails.env,
     }
 
     # Append distributed tracing context when an active span is present.

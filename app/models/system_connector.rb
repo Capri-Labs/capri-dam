@@ -8,8 +8,8 @@ class SystemConnector < ApplicationRecord
   # FTP connectors use a bare hostname (no http scheme), so we only enforce
   # URL format for HTTP-based providers.
   validates :endpoint, presence: true,
-            format: { with: /\Ahttps?:\/\/.+/i, message: 'must be a valid http(s) URL' },
-            unless: -> { provider_type.to_s == 'ftp' }
+            format: { with: /\Ahttps?:\/\/.+/i, message: "must be a valid http(s) URL" },
+            unless: -> { provider_type.to_s == "ftp" }
 
   has_many :ingestion_batches, foreign_key: :connector_id, dependent: :nullify
 
@@ -17,7 +17,7 @@ class SystemConnector < ApplicationRecord
 
   # Test the live connection using the correct ingestion adapter (loaded lazily at runtime)
   def test_connection
-    creds = { 'endpoint' => endpoint, 'auth_token' => auth_token }
+    creds = { "endpoint" => endpoint, "auth_token" => auth_token }
     IngestionAdapters::Factory.test(provider_type, creds)
   rescue => e
     { success: false, message: e.message }

@@ -2,19 +2,28 @@
 # bin/check-docs-freshness
 #
 # Called by the git pre-commit hook (installed at .git/hooks/pre-commit).
-# Warns when staged changes to controllers or GraphQL schema files are not
-# accompanied by updated API documentation.
 #
-# Exit 0 = OK to commit   Exit 1 = block commit (stale docs detected)
+# Checks performed on every commit:
+#   1. RuboCop — lint staged Ruby files (blocks on offense)
+#   2. REST docs guard — warn when api/v1 controllers change without swagger update
+#   3. GraphQL docs guard — warn when graphql/ changes without SDL/HTML update
+#
+# Exit 0 = OK to commit   Exit 1 = block commit
+#
+# Bypass flags (not recommended):
+#   RUBOCOP_WARN_ONLY=1   — warn but don't block on RuboCop offenses
+#   DOCS_WARN_ONLY=1      — warn but don't block on stale docs
 
 set -euo pipefail
 
 RED='\033[0;31m'
 YELLOW='\033[1;33m'
 GREEN='\033[0;32m'
-NC='\033[0m' # No Colour
+CYAN='\033[0;36m'
+NC='\033[0m'
 
-warn_only="${DOCS_WARN_ONLY:-0}"  # Set DOCS_WARN_ONLY=1 to warn but not block
+warn_only_rubocop="${RUBOCOP_WARN_ONLY:-0}"
+warn_only_docs="${DOCS_WARN_ONLY:-0}"
 
 staged_files() {
   git diff --cached --name-only --diff-filter=ACM 2>/dev/null || true
@@ -23,9 +32,49 @@ staged_files() {
 STAGED=$(staged_files)
 BLOCKED=0
 
-# ─── 1. REST / Swagger guard ──────────────────────────────────────────────────
-# Trigger: any app/controllers/api/v1/ file changed
-# Expectation: swagger/v1/swagger.yaml was also staged
+# ─── 1. RuboCop — lint staged Ruby files ──────────────────────────────────────
+
+STAGED_RUBY=$(echo "$STAGED" | grep -E '\.rb$' || true)
+
+if [[ -n "$STAGED_RUBY" ]]; then
+  echo -e "${CYAN}🔍 RuboCop: checking $(echo "$STAGED_RUBY" | wc -l | tr -d ' ') staged Ruby file(s)…${NC}"
+
+  # Run RuboCop only on the staged files, using GitHub-style annotations in CI
+  # and the default formatter locally.
+  RUBOCOP_FORMAT="${RUBOCOP_FORMAT:-}"
+  if [[ -n "$RUBOCOP_FORMAT" ]]; then
+    FORMAT_ARG="--format $RUBOCOP_FORMAT"
+  else
+    FORMAT_ARG=""
+  fi
+
+  # Stash unstaged changes so RuboCop only sees the staged version
+  # (use a temporary file list; avoid stashing if nothing unstaged)
+  RUBOCOP_RESULT=0
+  # shellcheck disable=SC2086
+  bundle exec rubocop $FORMAT_ARG --force-exclusion $STAGED_RUBY || RUBOCOP_RESULT=$?
+
+  if [[ "$RUBOCOP_RESULT" -ne 0 ]]; then
+    echo ""
+    echo -e "${YELLOW}⚠  RUBOCOP OFFENSES DETECTED${NC}"
+    echo "   Run one of the following to fix:"
+    echo "     bundle exec rubocop -a            # safe auto-correct"
+    echo "     bundle exec rubocop -A            # unsafe auto-correct (review carefully)"
+    echo ""
+
+    if [[ "$warn_only_rubocop" -eq 1 ]]; then
+      echo -e "${YELLOW}RUBOCOP_WARN_ONLY=1 — commit allowed despite offenses.${NC}"
+    else
+      echo -e "${RED}Commit blocked: fix RuboCop offenses before committing.${NC}"
+      echo "   To bypass (not recommended): RUBOCOP_WARN_ONLY=1 git commit ..."
+      BLOCKED=1
+    fi
+  else
+    echo -e "${GREEN}✓ RuboCop: no offenses.${NC}"
+  fi
+fi
+
+# ─── 2. REST / Swagger guard ──────────────────────────────────────────────────
 
 REST_CTRL_CHANGED=$(echo "$STAGED" | grep -E '^app/controllers/api/v1/.*\.rb$' || true)
 
@@ -40,15 +89,17 @@ if [[ -n "$REST_CTRL_CHANGED" ]]; then
     echo "   Run:  make swagger-docs"
     echo "   Then: git add swagger/v1/swagger.yaml"
     echo ""
-    BLOCKED=1
+    if [[ "$warn_only_docs" -eq 1 ]]; then
+      echo -e "${YELLOW}DOCS_WARN_ONLY=1 — commit allowed despite stale docs.${NC}"
+    else
+      BLOCKED=1
+    fi
   else
     echo -e "${GREEN}✓ REST docs are up to date.${NC}"
   fi
 fi
 
-# ─── 2. GraphQL guard ─────────────────────────────────────────────────────────
-# Trigger: any app/graphql/ file or graphql_controller.rb changed
-# Expectation: swagger/graphql/schema.graphql AND public/graphql-docs/index.html staged
+# ─── 3. GraphQL guard ─────────────────────────────────────────────────────────
 
 GQL_SRC_CHANGED=$(echo "$STAGED" | grep -E '^(app/graphql/|app/controllers/graphql_controller\.rb)' || true)
 
@@ -70,23 +121,23 @@ if [[ -n "$GQL_SRC_CHANGED" ]]; then
     echo "   Run:  make graphql-docs"
     echo "   Then: git add swagger/graphql/schema.graphql public/graphql-docs/index.html"
     echo ""
-    BLOCKED=1
+    if [[ "$warn_only_docs" -eq 1 ]]; then
+      echo -e "${YELLOW}DOCS_WARN_ONLY=1 — commit allowed despite stale docs.${NC}"
+    else
+      BLOCKED=1
+    fi
   else
     echo -e "${GREEN}✓ GraphQL docs are up to date.${NC}"
   fi
 fi
 
 # ─── Result ───────────────────────────────────────────────────────────────────
+
 if [[ "$BLOCKED" -eq 1 ]]; then
-  if [[ "$warn_only" -eq 1 ]]; then
-    echo -e "${YELLOW}DOCS_WARN_ONLY=1 — commit allowed despite stale docs.${NC}"
-    exit 0
-  else
-    echo -e "${RED}Commit blocked: regenerate API docs before committing.${NC}"
-    echo "   To bypass (not recommended): DOCS_WARN_ONLY=1 git commit ..."
-    exit 1
-  fi
+  echo -e "${RED}Commit blocked.${NC}"
+  echo "   To bypass all checks (not recommended):"
+  echo "     RUBOCOP_WARN_ONLY=1 DOCS_WARN_ONLY=1 git commit ..."
+  exit 1
 fi
 
 exit 0
-

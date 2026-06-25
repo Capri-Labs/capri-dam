@@ -1,4 +1,4 @@
-require 'google/cloud/storage'
+require "google/cloud/storage"
 
 module StorageAdapters
   # Google Cloud Storage Adapter
@@ -14,7 +14,6 @@ module StorageAdapters
   #   acl               "private" | "public" | "publicRead" (default: "private")
   #   cdn_base_url      (optional) Cloud CDN or custom domain URL
   class GcsAdapter < BaseAdapter
-
     # ─────────────────────────────────────────────
     # CORE OPERATIONS
     # ─────────────────────────────────────────────
@@ -24,7 +23,7 @@ module StorageAdapters
         file,
         path,
         content_type: options[:content_type],
-        cache_control: options[:cache_control] || 'public, max-age=31536000',
+        cache_control: options[:cache_control] || "public, max-age=31536000",
         acl: gcs_acl(options[:acl]),
         metadata: options[:metadata] || {}
       )
@@ -64,8 +63,8 @@ module StorageAdapters
 
       if filename.present?
         uri = URI.parse(signed_url)
-        params = URI.decode_www_form(uri.query || '')
-        params << ['response-content-disposition', "attachment; filename=\"#{filename}\""]
+        params = URI.decode_www_form(uri.query || "")
+        params << [ "response-content-disposition", "attachment; filename=\"#{filename}\"" ]
         uri.query = URI.encode_www_form(params)
         signed_url = uri.to_s
       end
@@ -106,13 +105,13 @@ module StorageAdapters
         content_type: f.content_type,
         etag: f.etag,
         last_modified: f.updated_at,
-        metadata: f.metadata || {}
+        metadata: f.metadata || {},
       }
     rescue Google::Cloud::Error
       nil
     end
 
-    def list(prefix: '', limit: 100)
+    def list(prefix: "", limit: 100)
       gcs_bucket.files(prefix: prefix, max: limit).map do |f|
         { key: f.name, size: f.size, last_modified: f.updated_at, etag: f.etag }
       end
@@ -136,7 +135,7 @@ module StorageAdapters
 
     def storage_client
       @storage_client ||= begin
-        creds = @config['credentials_json']
+        creds = @config["credentials_json"]
         opts = { project_id: project_id }
 
         if creds.present?
@@ -147,7 +146,7 @@ module StorageAdapters
             # Parse inline JSON credentials
             opts[:credentials] = Google::Auth::ServiceAccountCredentials.make_creds(
               json_key_io: StringIO.new(creds),
-              scope: 'https://www.googleapis.com/auth/devstorage.full_control'
+              scope: "https://www.googleapis.com/auth/devstorage.full_control"
             )
           end
         end
@@ -161,25 +160,24 @@ module StorageAdapters
     end
 
     def project_id
-      @config['project_id'].to_s
+      @config["project_id"].to_s
     end
 
     def bucket_name
-      @config['bucket'].to_s
+      @config["bucket"].to_s
     end
 
     def public_bucket?
-      @config['acl'].to_s == 'public-read'
+      @config["acl"].to_s == "public-read"
     end
 
     def gcs_acl(override = nil)
-      acl = override || @config['acl'] || 'private'
+      acl = override || @config["acl"] || "private"
       case acl
-      when 'public-read', 'public' then 'publicRead'
-      when 'private'               then nil  # GCS default is private
+      when "public-read", "public" then "publicRead"
+      when "private"               then nil  # GCS default is private
       else acl
       end
     end
   end
 end
-

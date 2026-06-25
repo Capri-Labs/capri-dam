@@ -13,17 +13,17 @@ module Mutations
     argument :description, String, required: false
 
     field :user_group, Types::UserGroupType, null: true
-    field :errors,     [String],             null: false
+    field :errors,     [ String ],             null: false
 
     def resolve(id:, **attrs)
       current = context[:current_user]
-      return { user_group: nil, errors: ["Unauthorized"] } unless current&.admin?
+      return { user_group: nil, errors: [ "Unauthorized" ] } unless current&.admin?
 
       group = UserGroup.find_by(id: id)
-      return { user_group: nil, errors: ["Group not found"] } unless group
+      return { user_group: nil, errors: [ "Group not found" ] } unless group
 
       if group.administrators? && !current.super_admin?
-        return { user_group: nil, errors: ["Only super-administrators can modify this group"] }
+        return { user_group: nil, errors: [ "Only super-administrators can modify this group" ] }
       end
 
       if group.update(attrs.compact)
@@ -34,4 +34,3 @@ module Mutations
     end
   end
 end
-

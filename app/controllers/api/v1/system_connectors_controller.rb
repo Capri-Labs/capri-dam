@@ -3,16 +3,16 @@ class Api::V1::SystemConnectorsController < ApplicationController
 
   def index
     connectors = SystemConnector.all.order(created_at: :desc)
-    render json: connectors.as_json(methods: [:provider_label])
+    render json: connectors.as_json(methods: [ :provider_label ])
   end
 
   def create
     connector = SystemConnector.new(connector_params)
-    connector.status         = 'idle'
+    connector.status         = "idle"
     connector.assets_imported = 0
 
     if connector.save
-      render json: connector.as_json(methods: [:provider_label]), status: :created
+      render json: connector.as_json(methods: [ :provider_label ]), status: :created
     else
       render json: { errors: connector.errors.full_messages }, status: :unprocessable_entity
     end
@@ -23,7 +23,7 @@ class Api::V1::SystemConnectorsController < ApplicationController
     params[:system_connector].delete(:auth_token) if params[:system_connector][:auth_token].blank?
 
     if connector.update(connector_params)
-      render json: connector.as_json(methods: [:provider_label]), status: :ok
+      render json: connector.as_json(methods: [ :provider_label ]), status: :ok
     else
       render json: { errors: connector.errors.full_messages }, status: :unprocessable_entity
     end
@@ -34,16 +34,16 @@ class Api::V1::SystemConnectorsController < ApplicationController
   def test_connection
     provider = params[:provider_type].to_s
     creds    = {
-      'endpoint'        => params[:endpoint],
-      'auth_token'      => params[:auth_token],
-      'cloud_name'      => params[:cloud_name],
-      'brandfolder_key' => params[:brandfolder_key],
-      'username'        => params[:username],
-      'password'        => params[:password],
-      'remote_path'     => params[:remote_path]
+      "endpoint"        => params[:endpoint],
+      "auth_token"      => params[:auth_token],
+      "cloud_name"      => params[:cloud_name],
+      "brandfolder_key" => params[:brandfolder_key],
+      "username"        => params[:username],
+      "password"        => params[:password],
+      "remote_path"     => params[:remote_path],
     }.compact_blank
 
-    if creds['endpoint'].blank? && provider != 'cloudinary'
+    if creds["endpoint"].blank? && provider != "cloudinary"
       return render json: { success: false, message: "Endpoint and credentials are required." }, status: :bad_request
     end
 
@@ -69,16 +69,16 @@ class Api::V1::SystemConnectorsController < ApplicationController
   # Creates a new IngestionBatch and fires the extraction pipeline.
   def start_migration
     connector = SystemConnector.find(params[:id])
-    return render json: { error: "Connector is not active." }, status: :unprocessable_entity unless connector.status == 'active'
+    return render json: { error: "Connector is not active." }, status: :unprocessable_entity unless connector.status == "active"
 
     batch = IngestionBatch.create!(
-      name:           "#{connector.provider_label} Migration — #{Time.current.strftime('%Y-%m-%d %H:%M')}",
+      name:           "#{connector.provider_label} Migration — #{Time.current.strftime("%Y-%m-%d %H:%M")}",
       source_type:    connector.provider_type,
       connector_id:   connector.id,
       initiated_by_id: current_user.id,
       status:         :initializing,
       started_at:     Time.current,
-      source_credentials: { 'endpoint' => connector.endpoint, 'auth_token' => connector.auth_token }
+      source_credentials: { "endpoint" => connector.endpoint, "auth_token" => connector.auth_token }
     )
 
     ExtractionWorker.perform_async(batch.id)

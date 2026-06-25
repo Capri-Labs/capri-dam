@@ -9,9 +9,9 @@ module Api
         # We send back the config, but we DO NOT send back the raw secrets
         # unless explicitly necessary, or we mask them for the UI.
         render json: {
-          fastly: format_config(configs['fastly']),
-          cloudflare: format_config(configs['cloudflare']),
-          akamai: format_config(configs['akamai'])
+          fastly: format_config(configs["fastly"]),
+          cloudflare: format_config(configs["cloudflare"]),
+          akamai: format_config(configs["akamai"]),
         }
       end
 
@@ -21,7 +21,7 @@ module Api
 
         config.is_active = params[:is_active]
         clean_settings = params[:settings].reject do |key, value|
-          value.to_s.include?('••••') # Drop masked secrets so they aren't overwritten
+          value.to_s.include?("••••") # Drop masked secrets so they aren't overwritten
         end
         config.settings = (config.settings || {}).merge(clean_settings)
 
@@ -44,7 +44,7 @@ module Api
 
         {
           is_active: config.is_active,
-          settings: masked_settings
+          settings: masked_settings,
         }
       end
     end

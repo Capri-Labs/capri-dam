@@ -17,7 +17,7 @@ module Reports
 
       def default_filename(extension)
         safe_name = snapshot.report_definition.name.parameterize
-        timestamp = Time.current.strftime('%Y%m%d_%H%M%S')
+        timestamp = Time.current.strftime("%Y%m%d_%H%M%S")
         "#{safe_name}_#{timestamp}.#{extension}"
       end
     end

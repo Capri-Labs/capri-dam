@@ -2,12 +2,12 @@ class CdnInvalidationWorker
   include Sidekiq::Worker
 
   # 🚀 Isolate this away from the default and ingest queues
-  sidekiq_options queue: 'cdn_invalidation', retry: 5
+  sidekiq_options queue: "cdn_invalidation", retry: 5
 
   # Safety net to alert your DevOps team if a purge permanently fails
   sidekiq_retries_exhausted do |msg, exception|
-    target_type = msg['args'][0]
-    target_id = msg['args'][1]
+    target_type = msg["args"][0]
+    target_id = msg["args"][1]
     Rails.logger.error "💥 CDN Purge failed for #{target_type} #{target_id}: #{exception.message}"
   end
 
@@ -15,9 +15,9 @@ class CdnInvalidationWorker
     tag = "#{target_type}-#{target_id}"
     CdnManager.purge_tag(tag)
     case target_type
-    when 'asset'
+    when "asset"
       purge_asset(target_id)
-    when 'folder'
+    when "folder"
       purge_folder(target_id)
     else
       Rails.logger.warn "⚠️ Unknown CDN purge target: #{target_type}"
@@ -28,7 +28,7 @@ class CdnInvalidationWorker
 
   def purge_asset(asset_uuid)
     # The canonical path the CMS is using
-    paths_to_invalidate = ["/assets/#{asset_uuid}/latest*"]
+    paths_to_invalidate = [ "/assets/#{asset_uuid}/latest*" ]
 
     # Delegate to your CDN provider's API (e.g., Aws::CloudFront::Client)
     # CdnManager.invalidate_paths(paths_to_invalidate)

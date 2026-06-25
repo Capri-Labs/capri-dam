@@ -8,6 +8,5 @@ class ImageProfileFolderAssignment < ApplicationRecord
   validates :image_profile_id, presence: true
   validates :folder_id,        presence: true
   validates :folder_id, uniqueness: { scope: :image_profile_id,
-                                      message: 'Profile is already applied to this folder.' }
+                                      message: "Profile is already applied to this folder." }
 end
-

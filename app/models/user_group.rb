@@ -38,15 +38,15 @@ class UserGroup < ApplicationRecord
   # Associations
   # ---------------------------------------------------------------------------
 
-  belongs_to :parent, class_name: 'UserGroup', optional: true
+  belongs_to :parent, class_name: "UserGroup", optional: true
 
   has_many :user_group_memberships, dependent: :destroy
   has_many :users, through: :user_group_memberships
   has_many :folder_policies, dependent: :destroy
-  has_many :child_groups, class_name: 'UserGroup', foreign_key: :parent_id, dependent: :nullify
+  has_many :child_groups, class_name: "UserGroup", foreign_key: :parent_id, dependent: :nullify
 
-  has_many :ancestor_closures,   class_name: 'UserGroupClosure', foreign_key: 'descendant_id', dependent: :delete_all
-  has_many :descendant_closures, class_name: 'UserGroupClosure', foreign_key: 'ancestor_id',   dependent: :delete_all
+  has_many :ancestor_closures,   class_name: "UserGroupClosure", foreign_key: "descendant_id", dependent: :delete_all
+  has_many :descendant_closures, class_name: "UserGroupClosure", foreign_key: "ancestor_id",   dependent: :delete_all
 
   has_many :ancestors,   through: :ancestor_closures,   source: :ancestor
   has_many :descendants, through: :descendant_closures, source: :descendant
@@ -68,18 +68,18 @@ class UserGroup < ApplicationRecord
   # Class helpers
   # ---------------------------------------------------------------------------
 
-  def self.everyone          = find_by!(slug: 'everyone')
-  def self.administrators    = find_by!(slug: 'administrators')
-  def self.super_administrators = find_by!(slug: 'super-administrators')
+  def self.everyone          = find_by!(slug: "everyone")
+  def self.administrators    = find_by!(slug: "administrators")
+  def self.super_administrators = find_by!(slug: "super-administrators")
 
   # ---------------------------------------------------------------------------
   # Instance helpers
   # ---------------------------------------------------------------------------
 
   def system?          = is_system? || SYSTEM_SLUGS.include?(slug.to_s)
-  def everyone?        = slug == 'everyone'
-  def administrators?  = slug == 'administrators'
-  def super_administrators? = slug == 'super-administrators'
+  def everyone?        = slug == "everyone"
+  def administrators?  = slug == "administrators"
+  def super_administrators? = slug == "super-administrators"
   def member_count     = users.count
 
   # Establishes a parent-child relationship, sets parent_id, and updates all closure paths.

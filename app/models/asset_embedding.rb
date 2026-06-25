@@ -4,7 +4,7 @@ class AssetEmbedding < ApplicationRecord
   # Instructs the neighbor gem to treat this column as a high-dimensional vector
   has_neighbors :embedding
 
-  after_commit :trigger_smart_routing, on: [:create, :update]
+  after_commit :trigger_smart_routing, on: [ :create, :update ]
 
   validates :embedding, :model_name, presence: true
 

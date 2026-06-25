@@ -1,11 +1,11 @@
 class Admin::EmailTemplatesController < ApplicationController
   before_action :authenticate_user!
   before_action :ensure_admin!
-  before_action :set_template, only: [:show, :update, :destroy]
+  before_action :set_template, only: [ :show, :update, :destroy ]
 
   # GET /admin/email_templates
   def index
-    @active_view = 'Email Engine'
+    @active_view = "Email Engine"
 
     respond_to do |format|
       format.html # Renders the React layout
@@ -17,7 +17,7 @@ class Admin::EmailTemplatesController < ApplicationController
             event_trigger: template.event_trigger,
             subject: template.subject,
             active: template.active,
-            updated_at: template.updated_at.strftime("%Y-%m-%d %H:%M")
+            updated_at: template.updated_at.strftime("%Y-%m-%d %H:%M"),
           }
         end
         render json: { email_templates: templates }
@@ -55,7 +55,7 @@ class Admin::EmailTemplatesController < ApplicationController
     if @template.destroy
       render json: { success: true, message: "Template removed." }
     else
-      render json: { success: false, errors: ["Failed to delete template."] }
+      render json: { success: false, errors: [ "Failed to delete template." ] }
     end
   end
 

@@ -2,7 +2,7 @@ require_relative "boot"
 
 require "rails/all"
 
-require_relative '../lib/structured_json_formatter'
+require_relative "../lib/structured_json_formatter"
 
 # Require the gems listed in Gemfile, including any gems
 # you've limited to :test, :development, or :production.
@@ -17,7 +17,7 @@ module HeadlessDam
       # GraphQL-Ruby query log tags:
       current_graphql_operation: -> { GraphQL::Current.operation_name },
       current_graphql_field: -> { GraphQL::Current.field&.path },
-      current_dataloader_source: -> { GraphQL::Current.dataloader_source_class },
+      current_dataloader_source: -> { GraphQL::Current.dataloader_source_class }
     ]
     # Initialize configuration defaults for originally generated Rails version.
     config.load_defaults 8.1

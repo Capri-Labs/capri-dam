@@ -12,9 +12,9 @@ module Types
           description: "When true, all presets are validated for adaptive bitrate streaming compatibility"
     field :smart_crop_ratios,             Types::JsonType, null: true,
           description: "Array of { name, crop_ratio } objects for smart crop processing"
-    field :adaptive_streaming_warnings,   [String], null: false,
+    field :adaptive_streaming_warnings,   [ String ], null: false,
           description: "Validation warnings about preset inconsistencies that block adaptive streaming"
-    field :encoding_presets,              [Types::VideoEncodingPresetType], null: false
+    field :encoding_presets,              [ Types::VideoEncodingPresetType ], null: false
     field :folder_count,                  Integer, null: false
     field :created_at,                    GraphQL::Types::ISO8601DateTime, null: false
     field :updated_at,                    GraphQL::Types::ISO8601DateTime, null: false
@@ -36,4 +36,3 @@ module Types
     end
   end
 end
-

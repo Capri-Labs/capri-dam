@@ -8,7 +8,7 @@
 
 Rails.application.config.after_initialize do
   # Establish active connection check to prevent errors on pristine database boots
-  if ActiveRecord::Base.connection.active? && ActiveRecord::Base.connection.table_exists?('settings')
+  if ActiveRecord::Base.connection.active? && ActiveRecord::Base.connection.table_exists?("settings")
     Setting.apply_smtp_settings!
     Rails.logger.info "SMTP Dynamic Configuration: Successfully initialized system ActionMailer override."
   else

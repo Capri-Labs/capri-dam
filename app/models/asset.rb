@@ -54,7 +54,7 @@ class Asset < ApplicationRecord
 
   # @!attribute [r] active_version
   #   @return [AssetVersion, nil] the version currently presented to consumers
-  belongs_to :active_version, class_name: 'AssetVersion', optional: true
+  belongs_to :active_version, class_name: "AssetVersion", optional: true
 
   has_many :workflow_instances, dependent: :destroy
 
@@ -91,7 +91,7 @@ class Asset < ApplicationRecord
     in_review:  4,
     approved:   5,
     rejected:   6,
-    failed:     7
+    failed:     7,
   }, default: :draft
 
   # ---------------------------------------------------------------------------
@@ -119,7 +119,7 @@ class Asset < ApplicationRecord
   # ---------------------------------------------------------------------------
 
   # Publishes an embedding-request event to Redis after every create/update.
-  after_commit :broadcast_for_embedding, on: [:create, :update]
+  after_commit :broadcast_for_embedding, on: [ :create, :update ]
 
   after_initialize :set_property_defaults, if: :new_record?
 
@@ -158,9 +158,9 @@ class Asset < ApplicationRecord
   def broadcast_for_embedding
     return if properties.blank?
 
-    payload = { event: 'asset.needs_embedding', asset_uuid: self.id }.to_json
+    payload = { event: "asset.needs_embedding", asset_uuid: self.id }.to_json
     redis   = Redis.new(url: ENV.fetch("REDIS_URL", "redis://localhost:6379/0"))
-    redis.publish('ai_gateway_events', payload)
+    redis.publish("ai_gateway_events", payload)
   rescue StandardError => e
     Rails.logger.warn("[Asset##{id}] embedding broadcast skipped: #{e.message}")
   end
@@ -172,7 +172,7 @@ class Asset < ApplicationRecord
       description:  "",
       usage_terms:  "Internal Use Only",
       alt_text:     "",
-      tags:         []
+      tags:         [],
     }
   end
 end

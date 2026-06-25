@@ -13,7 +13,7 @@ class PreFlightAnalysisWorker
       missing_tags: 3200,
       invalid_schemas: 450,
       estimated_size_gb: 52.4,
-      timestamp: Time.current
+      timestamp: Time.current,
     }
 
     connector.update!(analysis_report: analysis)

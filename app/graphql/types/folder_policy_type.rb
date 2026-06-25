@@ -35,4 +35,3 @@ module Types
     def explicit_deny = object.explicit_deny
   end
 end
-

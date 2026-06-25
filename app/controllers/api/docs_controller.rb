@@ -7,7 +7,7 @@ module Api
 
     # GET /api/rest  — interactive Swagger UI
     def rest
-      render layout: false, content_type: 'text/html'
+      render layout: false, content_type: "text/html"
     end
 
     # GET /api/graphql  — SpectaQL-generated GraphQL docs
@@ -26,6 +26,3 @@ module Api
     end
   end
 end
-
-
-

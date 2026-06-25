@@ -60,7 +60,7 @@ module StorageAdapters
     end
 
     # List files under a prefix. Returns array of { key:, size:, last_modified: }.
-    def list(prefix: '', limit: 100)
+    def list(prefix: "", limit: 100)
       raise NotImplementedError, "#{self.class}#list is not implemented"
     end
 
@@ -80,12 +80,12 @@ module StorageAdapters
 
     # Returns the human-readable provider name derived from the class name.
     def provider_name
-      self.class.name.demodulize.underscore.delete_suffix('_adapter')
+      self.class.name.demodulize.underscore.delete_suffix("_adapter")
     end
 
     # Resolves the delivery URL: prefer CDN base URL if configured, else native url().
     def cdn_url(path)
-      base = @config['cdn_base_url'].to_s.chomp('/')
+      base = @config["cdn_base_url"].to_s.chomp("/")
       base.present? ? "#{base}/#{path}" : url(path)
     end
 
@@ -101,15 +101,15 @@ module StorageAdapters
       return unless options[:asset_uuid].present?
 
       payload = {
-        event: 'asset.needs_embedding',
+        event: "asset.needs_embedding",
         asset_uuid: options[:asset_uuid],
         storage_path: options[:storage_path],
         content_type: options[:content_type],
-        provider: provider_name
+        provider: provider_name,
       }.to_json
 
-      redis = Redis.new(url: ENV.fetch('REDIS_URL', 'redis://localhost:6379/0'))
-      redis.publish('ai_gateway_events', payload)
+      redis = Redis.new(url: ENV.fetch("REDIS_URL", "redis://localhost:6379/0"))
+      redis.publish("ai_gateway_events", payload)
     rescue => e
       Rails.logger.warn("[StorageAdapter] AI enrichment trigger failed: #{e.message}")
     end

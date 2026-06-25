@@ -14,7 +14,7 @@ module StorageAdapters
     private
 
     def default_region
-      'nyc3'
+      "nyc3"
     end
 
     # Spaces endpoint is always region-based unless overridden
@@ -35,7 +35,7 @@ module StorageAdapters
     # For Spaces, the public URL is virtual-hosted style
     def url(path)
       if public_bucket?
-        cdn_base = @config['cdn_base_url'].to_s.chomp('/')
+        cdn_base = @config["cdn_base_url"].to_s.chomp("/")
         if cdn_base.present?
           "#{cdn_base}/#{path}"
         else
@@ -53,4 +53,3 @@ module StorageAdapters
     end
   end
 end
-

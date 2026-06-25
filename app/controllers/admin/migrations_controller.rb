@@ -5,16 +5,16 @@ class Admin::MigrationsController < ApplicationController
   def ingestion
     # This must perfectly match the `id` in your MenuConfig.js
     # so the sidebar highlights the correct active tab.
-    @active_view = 'Ingestion Engine'
+    @active_view = "Ingestion Engine"
   end
 
   def connectors
     # Matches the ID in MenuConfig.js
-    @active_view = 'Legacy Connectors'
+    @active_view = "Legacy Connectors"
   end
 
   def health
     # Matches the exact ID in MenuConfig.js
-    @active_view = 'Data Health'
+    @active_view = "Data Health"
   end
 end

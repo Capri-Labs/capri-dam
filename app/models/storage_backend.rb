@@ -23,7 +23,7 @@ class StorageBackend < ApplicationRecord
   # Mask secret values before serializing (e.g. for API responses)
   def masked_configuration
     configuration.each_with_object({}) do |(k, v), h|
-      h[k] = k.to_s.match?(/secret|key|password|token|credentials/i) && v.present? ? '********' : v
+      h[k] = k.to_s.match?(/secret|key|password|token|credentials/i) && v.present? ? "********" : v
     end
   end
 end

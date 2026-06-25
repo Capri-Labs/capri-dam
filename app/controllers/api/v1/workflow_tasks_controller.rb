@@ -14,7 +14,7 @@ module Api
         end
 
         # Ensure we aren't updating a task that was already completed or canceled
-        if task.status != 'pending'
+        if task.status != "pending"
           return render json: { error: "Task is no longer pending" }, status: :unprocessable_entity
         end
 
@@ -40,19 +40,19 @@ module Api
           instances.each do |instance|
             # 2. Halt the engine
             instance.update!(
-              status: 'canceled', # Use 'canceled' to denote admin intervention
+              status: "canceled", # Use 'canceled' to denote admin intervention
               completed_at: Time.current
             )
 
             # 3. Cancel all associated pending tasks
-            instance.workflow_tasks.where(status: 'pending').update_all(
-              status: 'canceled',
+            instance.workflow_tasks.where(status: "pending").update_all(
+              status: "canceled",
               comment: "Admin Action: Workflow manually stopped by #{current_user.email}",
               completed_at: Time.current
             )
 
             # 4. Optional: Reset asset status
-            instance.asset.update!(status: 'archived')
+            instance.asset.update!(status: "archived")
           end
         end
 
@@ -62,15 +62,15 @@ module Api
       # GET /api/v1/workflows/dashboard
       def dashboard
         my_tasks = WorkflowTask.includes(workflow_instance: :asset, workflow_step: [])
-                               .where(user: current_user, status: 'pending')
+                               .where(user: current_user, status: "pending")
                                .order(created_at: :desc)
 
         active_instances = WorkflowInstance.includes(:asset, :workflow, :current_step)
-                                           .where(status: 'in_progress')
+                                           .where(status: "in_progress")
                                            .order(started_at: :desc)
 
         completed_instances = WorkflowInstance.includes(:workflow, :asset)
-                                              .where(status: ['completed', 'rejected', 'canceled'])
+                                              .where(status: [ "completed", "rejected", "canceled" ])
                                               .order(completed_at: :desc)
                                               .limit(50)
 
@@ -79,16 +79,16 @@ module Api
             instance_id: instance.id,
             workflow_name: instance.workflow.name,
             asset_id: instance.asset_id,
-            asset_name: instance.asset.title.presence || 'Untitled Asset',
+            asset_name: instance.asset.title.presence || "Untitled Asset",
             status: instance.status,
-            completed_at: instance.completed_at || instance.updated_at
+            completed_at: instance.completed_at || instance.updated_at,
           }
         end
 
         render json: {
           my_tasks: my_tasks.map { |t| format_task(t) },
           active_workflows: active_instances.map { |i| format_instance(i) },
-          completed_workflows: completed_data
+          completed_workflows: completed_data,
         }
       end
 
@@ -108,7 +108,7 @@ module Api
           asset_id: asset.id,
           asset_name: asset.title,
           asset_thumb: asset_url_for(asset),
-          assigned_at: task.created_at
+          assigned_at: task.created_at,
         }
       end
 
@@ -120,7 +120,7 @@ module Api
           current_step: instance.current_step&.title || "Processing",
           asset_id: asset.id,
           asset_name: asset.title,
-          started_at: instance.started_at
+          started_at: instance.started_at,
         }
       end
     end

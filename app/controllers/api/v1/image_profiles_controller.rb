@@ -45,7 +45,7 @@ class Api::V1::ImageProfilesController < ApplicationController
   # POST /api/v1/image_profiles/:id/apply_to_folder
   def apply_to_folder
     folder_id = params[:folder_id]
-    return render json: { error: 'folder_id is required' }, status: :bad_request if folder_id.blank?
+    return render json: { error: "folder_id is required" }, status: :bad_request if folder_id.blank?
 
     assignment = ImageProfileFolderAssignment.find_or_create_by!(
       image_profile_id: @profile.id,
@@ -59,7 +59,7 @@ class Api::V1::ImageProfilesController < ApplicationController
   # DELETE /api/v1/image_profiles/:id/remove_from_folder
   def remove_from_folder
     folder_id = params[:folder_id]
-    return render json: { error: 'folder_id is required' }, status: :bad_request if folder_id.blank?
+    return render json: { error: "folder_id is required" }, status: :bad_request if folder_id.blank?
 
     ImageProfileFolderAssignment
       .where(image_profile_id: @profile.id, folder_id: folder_id)
@@ -79,13 +79,13 @@ class Api::V1::ImageProfilesController < ApplicationController
   def set_profile
     @profile = ImageProfile.active.find(params[:id])
   rescue ActiveRecord::RecordNotFound
-    render json: { error: 'Image profile not found' }, status: :not_found
+    render json: { error: "Image profile not found" }, status: :not_found
   end
 
   def require_admin!
     return if current_user&.admin?
 
-    render json: { error: 'Administrator privileges required.' }, status: :forbidden
+    render json: { error: "Administrator privileges required." }, status: :forbidden
   end
 
   def profile_params
@@ -121,7 +121,7 @@ class Api::V1::ImageProfilesController < ApplicationController
       swatch_height:           profile.swatch_height,
       folder_count:            profile.folder_assignments.size,
       created_at:              profile.created_at,
-      updated_at:              profile.updated_at
+      updated_at:              profile.updated_at,
     }
 
     if include_folders
@@ -132,4 +132,3 @@ class Api::V1::ImageProfilesController < ApplicationController
     data
   end
 end
-

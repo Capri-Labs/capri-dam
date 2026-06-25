@@ -1,7 +1,7 @@
-require 'akamai/edgegrid'
-require 'net/http'
-require 'uri'
-require 'json'
+require "akamai/edgegrid"
+require "net/http"
+require "uri"
+require "json"
 
 module CdnAdapters
   class AkamaiAdapter < BaseAdapter
@@ -25,13 +25,13 @@ module CdnAdapters
       )
     end
 
-    def sync_metadata(uuid, json_payload, network: 'production', group: 'assets')
+    def sync_metadata(uuid, json_payload, network: "production", group: "assets")
       # Akamai Endpoint: PUT /edgekv/v1/networks/{network}/namespaces/{namespace}/groups/{group_id}/items/{item_id}
       endpoint = URI("https://#{@host}/edgekv/v1/networks/#{network}/namespaces/#{@edgekv_namespace}/groups/#{group}/items/#{uuid}")
 
       request = Net::HTTP::Put.new(endpoint)
-      request['Content-Type'] = 'application/json'
-      request['Accept'] = 'application/json'
+      request["Content-Type"] = "application/json"
+      request["Accept"] = "application/json"
 
       # Akamai accepts the raw payload directly into the item value
       request.body = json_payload
@@ -40,7 +40,7 @@ module CdnAdapters
     end
 
     def purge_tag(tag, options = {})
-      purge_batch([tag], options)
+      purge_batch([ tag ], options)
     end
 
     def purge_batch(tags, options = {})
@@ -51,18 +51,18 @@ module CdnAdapters
       # 🚀 ADVANCED: Operational Governance Routing
       # Default to 'invalidate' (Soft Purge) to ensure edge nodes can serve stale
       # content while fetching updates, preventing origin traffic spikes.
-      action = options.fetch(:hard_purge, false) ? 'delete' : 'invalidate'
+      action = options.fetch(:hard_purge, false) ? "delete" : "invalidate"
 
       # Allow routing to the staging network for pre-production testing
-      network = options.fetch(:network, 'production')
+      network = options.fetch(:network, "production")
 
       endpoint = URI("https://#{@host}/ccu/v3/#{action}/tag/#{network}")
 
       # Chunking the tags to respect payload limits
       tags.each_slice(MAX_TAGS_PER_REQUEST) do |tag_batch|
         request = Net::HTTP::Post.new(endpoint)
-        request['Content-Type'] = 'application/json'
-        request['Accept'] = 'application/json'
+        request["Content-Type"] = "application/json"
+        request["Accept"] = "application/json"
 
         # Akamai expects the payload under the "objects" key
         request.body = { objects: tag_batch }.to_json
@@ -88,7 +88,7 @@ module CdnAdapters
         parsed_response = JSON.parse(response.body)
 
         # Akamai returns an estimated seconds metric. Useful for logging.
-        eta = parsed_response['estimatedSeconds']
+        eta = parsed_response["estimatedSeconds"]
         Rails.logger.info "✅ Akamai #{action_name} successful. Edge sync ETA: #{eta}s."
         true
       else

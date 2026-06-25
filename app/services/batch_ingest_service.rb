@@ -35,11 +35,11 @@ class BatchIngestService
         user_id:    user.id,
         folder_id:  folder.id,
         title:      file[:filename],
-        status:     'pending',
+        status:     "pending",
         uuid:       SecureRandom.uuid,
         properties: { original_filename: file[:filename], size: file[:size] },
         created_at: Time.current,
-        updated_at: Time.current
+        updated_at: Time.current,
       }
     end
 
@@ -48,7 +48,7 @@ class BatchIngestService
 
     # Enqueue a processing worker for each newly created asset
     result.each do |row|
-      AssetProcessorWorker.perform_async(row['id'])
+      AssetProcessorWorker.perform_async(row["id"])
     end
 
     result.count

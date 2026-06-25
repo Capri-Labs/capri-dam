@@ -19,7 +19,7 @@ class ApplySchemaToFolderJob < ApplicationJob
 
   def apply_to_folder(folder_id, schema, cascade:, user_id:)
     # 1. Upsert the folder → schema assignment
-    if folder_id.present? && folder_id != 'root'
+    if folder_id.present? && folder_id != "root"
       MetadataSchemaFolderAssignment.find_or_create_by!(
         folder_id:          folder_id,
         metadata_schema_id: schema.id
@@ -39,22 +39,21 @@ class ApplySchemaToFolderJob < ApplicationJob
   end
 
   def apply_to_assets(folder_id, schema, user_id:)
-    scope = folder_id.blank? || folder_id == 'root' ? Asset.active.where(folder_id: nil) : Asset.active.where(folder_id: folder_id)
+    scope = folder_id.blank? || folder_id == "root" ? Asset.active.where(folder_id: nil) : Asset.active.where(folder_id: folder_id)
 
     scope.find_each do |asset|
       # Determine the most-specific schema for this asset's MIME type
-      mime_type      = asset.properties&.dig('content_type').to_s
+      mime_type      = asset.properties&.dig("content_type").to_s
       resolved_schema = MetadataSchema.resolve_for_mime(mime_type, root_schema_id: schema.id)
       target_schema   = resolved_schema || schema
 
       # Merge — don't overwrite existing property values
       merged_props = asset.properties.merge(
-        'applied_schema_id'   => target_schema.id,
-        'applied_schema_slug' => target_schema.slug,
-        'applied_schema_name' => target_schema.name
+        "applied_schema_id"   => target_schema.id,
+        "applied_schema_slug" => target_schema.slug,
+        "applied_schema_name" => target_schema.name
       )
       asset.update_columns(properties: merged_props, updated_at: Time.current)
     end
   end
 end
-

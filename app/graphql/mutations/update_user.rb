@@ -13,17 +13,17 @@ module Mutations
     argument :role,        String,  required: false
     argument :admin,       Boolean, required: false
     argument :active,      Boolean, required: false
-    argument :group_ids,   [ID],    required: false
+    argument :group_ids,   [ ID ],    required: false
 
     field :user,   Types::UserType, null: true
-    field :errors, [String],        null: false
+    field :errors, [ String ],        null: false
 
     def resolve(id:, **attrs)
       current = context[:current_user]
-      return { user: nil, errors: ["Unauthorized"] } unless current&.admin?
+      return { user: nil, errors: [ "Unauthorized" ] } unless current&.admin?
 
       user = User.find_by(id: id)
-      return { user: nil, errors: ["User not found"] } unless user
+      return { user: nil, errors: [ "User not found" ] } unless user
 
       safe = user.sso_managed? ? attrs.except(:first_name, :last_name) : attrs
       safe[:user_group_ids] = safe.delete(:group_ids).map(&:to_i) if safe[:group_ids]
@@ -36,4 +36,3 @@ module Mutations
     end
   end
 end
-

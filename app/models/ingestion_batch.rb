@@ -1,5 +1,5 @@
 class IngestionBatch < ApplicationRecord
-  belongs_to :connector, class_name: 'SystemConnector', optional: true
+  belongs_to :connector, class_name: "SystemConnector", optional: true
   has_many   :ingestion_items, dependent: :destroy
 
   validates :name, :source_type, presence: true
@@ -14,7 +14,7 @@ class IngestionBatch < ApplicationRecord
     transforming:  2,
     review_needed: 3,
     committed:     4,
-    failed:        5
+    failed:        5,
   }, instance_methods: false
 
   statuses.each_key do |state|
@@ -58,7 +58,7 @@ class IngestionBatch < ApplicationRecord
       completed_at:       completed_at,
       created_at:         created_at,
       connector_name:     connector&.name,
-      report_snapshot_id: report_snapshot_id
+      report_snapshot_id: report_snapshot_id,
     }
   end
 end

@@ -1,6 +1,6 @@
-require 'net/http'
-require 'uri'
-require 'json'
+require "net/http"
+require "uri"
+require "json"
 
 module CdnAdapters
   class CloudflareAdapter < BaseAdapter
@@ -24,8 +24,8 @@ module CdnAdapters
       uri = URI("#{@kv_base_url}/asset-#{uuid}")
 
       request = Net::HTTP::Put.new(uri)
-      request['Authorization'] = "Bearer #{@api_token}"
-      request['Content-Type'] = 'application/json'
+      request["Authorization"] = "Bearer #{@api_token}"
+      request["Content-Type"] = "application/json"
 
       # Cloudflare KV simply takes the raw string payload
       request.body = json_payload
@@ -35,7 +35,7 @@ module CdnAdapters
 
     def purge_tag(tag, options = {})
       # Keeps the codebase DRY by routing single tags through the batch processor
-      purge_batch([tag], options)
+      purge_batch([ tag ], options)
     end
 
     def purge_batch(tags, options = {})
@@ -49,8 +49,8 @@ module CdnAdapters
         request = Net::HTTP::Post.new(uri)
 
         # Cloudflare uses standard Bearer token authentication
-        request['Authorization'] = "Bearer #{@api_token}"
-        request['Content-Type'] = 'application/json'
+        request["Authorization"] = "Bearer #{@api_token}"
+        request["Content-Type"] = "application/json"
 
         # The Cloudflare Enterprise Cache-Tag payload
         request.body = { tags: tag_batch }.to_json
@@ -78,11 +78,11 @@ module CdnAdapters
         # so we MUST parse the JSON to check the internal 'success' boolean.
         parsed_response = JSON.parse(response.body)
 
-        if parsed_response['success']
+        if parsed_response["success"]
           Rails.logger.info "✅ Cloudflare #{action_name} successful."
           true
         else
-          Rails.logger.error "💥 Cloudflare #{action_name} API rejected: #{parsed_response['errors']}"
+          Rails.logger.error "💥 Cloudflare #{action_name} API rejected: #{parsed_response["errors"]}"
           false
         end
       else

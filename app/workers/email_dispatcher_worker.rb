@@ -2,12 +2,12 @@ class EmailDispatcherWorker
   include Sidekiq::Worker
 
   # Configure Sidekiq strictly for 3 retries on the mailers queue.
-  sidekiq_options queue: 'mailers', retry: 3
+  sidekiq_options queue: "mailers", retry: 3
 
   # If the email fails 3 times, Sidekiq natively catches it here.
   # We use this block to permanently mark the delivery as failed in your database.
   sidekiq_retries_exhausted do |msg, ex|
-    delivery = EmailDelivery.find_by(id: msg['args'][0])
+    delivery = EmailDelivery.find_by(id: msg["args"][0])
     delivery&.mark_as_failed!("Exhausted 3 retries. Final SMTP Error: #{ex.message}")
   end
 
@@ -15,7 +15,7 @@ class EmailDispatcherWorker
     delivery = EmailDelivery.find_by(id: delivery_id)
 
     # Safety guard: Prevent double-sending if the job was accidentally duplicated
-    return if delivery.nil? || delivery.status == 'sent'
+    return if delivery.nil? || delivery.status == "sent"
 
     template = delivery.email_template
     payload = delivery.payload

@@ -39,7 +39,7 @@ class Api::V1::MetadataSchemasController < ApplicationController
 
   # DELETE /api/v1/metadata_schemas/:id
   def destroy
-    return render json: { error: 'Built-in schemas cannot be deleted.' }, status: :forbidden if @schema.is_builtin?
+    return render json: { error: "Built-in schemas cannot be deleted." }, status: :forbidden if @schema.is_builtin?
 
     @schema.soft_delete!
     head :no_content
@@ -59,7 +59,7 @@ class Api::V1::MetadataSchemasController < ApplicationController
   # POST /api/v1/metadata_schemas/:id/apply_to_folder
   def apply_to_folder
     folder_id = params[:folder_id]
-    return render json: { error: 'folder_id is required' }, status: :bad_request if folder_id.blank?
+    return render json: { error: "folder_id is required" }, status: :bad_request if folder_id.blank?
 
     assignment = MetadataSchemaFolderAssignment.find_or_create_by!(
       metadata_schema_id: @schema.id,
@@ -91,7 +91,7 @@ class Api::V1::MetadataSchemasController < ApplicationController
   def set_schema
     @schema = MetadataSchema.active.find(params[:id])
   rescue ActiveRecord::RecordNotFound
-    render json: { error: 'Metadata schema not found' }, status: :not_found
+    render json: { error: "Metadata schema not found" }, status: :not_found
   end
 
   def schema_params
@@ -117,7 +117,7 @@ class Api::V1::MetadataSchemasController < ApplicationController
       folder_count:  schema.folder_assignments.size,
       child_count:   schema.children.active.count,
       created_at:    schema.created_at,
-      updated_at:    schema.updated_at
+      updated_at:    schema.updated_at,
     }
 
     if include_children
@@ -149,4 +149,3 @@ class Api::V1::MetadataSchemasController < ApplicationController
     copy
   end
 end
-

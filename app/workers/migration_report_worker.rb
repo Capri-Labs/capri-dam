@@ -7,7 +7,7 @@
 # Queue: 'reports'  (lowest priority)
 class MigrationReportWorker
   include Sidekiq::Worker
-  sidekiq_options queue: 'reports', retry: 1
+  sidekiq_options queue: "reports", retry: 1
 
   def perform(batch_id)
     batch = IngestionBatch.find_by(id: batch_id)
@@ -37,9 +37,9 @@ class MigrationReportWorker
 
     duration_seconds = if batch.started_at && batch.completed_at
                          (batch.completed_at - batch.started_at).to_i
-                       else
+    else
                          0
-                       end
+    end
 
     # Estimated savings: 5 MB average per duplicate blocked
     duplicate_storage_bytes = batch.duplicate_count.to_i * 5 * 1_024 * 1_024
@@ -62,14 +62,14 @@ class MigrationReportWorker
       ai_enriched:        items.where("clean_properties IS NOT NULL AND clean_properties != '{}'::jsonb").count,
       duplicate_storage_saved_gb: (duplicate_storage_bytes / (1_024.0 ** 3)).round(3),
       estimated_cost_savings_usd: estimated_savings_usd,
-      top_errors:         items.where(status: :flagged_error).limit(10).pluck(:original_filename, :error_log)
+      top_errors:         items.where(status: :flagged_error).limit(10).pluck(:original_filename, :error_log),
     }
   end
 
   def persist_report_snapshot(batch, stats)
     definition = ReportDefinition.find_or_create_by!(
-      name:        'migration_batch_summary',
-      report_type: 'migration'
+      name:        "migration_batch_summary",
+      report_type: "migration"
     ) do |rd|
       rd.active      = true
       rd.query_config = { auto_generated: true }
@@ -77,14 +77,14 @@ class MigrationReportWorker
 
     snapshot = ReportSnapshot.create!(
       report_definition: definition,
-      format:            'json',
+      format:            "json",
       status:            :completed,
       parameters:        { batch_id: batch.id },
     )
 
     # Store structured stats as the snapshot payload
     # (ReportSnapshot stores result in a text column via the generators)
-    snapshot.update_column(:parameters, snapshot.parameters.merge('stats' => stats))
+    snapshot.update_column(:parameters, snapshot.parameters.merge("stats" => stats))
 
     snapshot
   rescue => e
@@ -99,21 +99,21 @@ class MigrationReportWorker
 
     # Send through the existing EmailOrchestrator (uses Liquid templates + audit trail)
     EmailOrchestrator.trigger(
-      'migration_batch_complete',
+      "migration_batch_complete",
       user.email,
       {
-        'user'     => { 'first_name' => user.display_name },
-        'batch'    => {
-          'name'              => stats[:batch_name],
-          'source'            => stats[:source_label],
-          'committed'         => stats[:committed],
-          'duplicates_blocked' => stats[:duplicates_blocked],
-          'errors'            => stats[:errors],
-          'duration_minutes'  => (stats[:duration_seconds] / 60.0).round(1),
-          'savings_gb'        => stats[:duplicate_storage_saved_gb],
-          'savings_usd'       => stats[:estimated_cost_savings_usd],
-          'completed_at'      => stats[:completed_at]&.strftime('%B %d, %Y at %I:%M %p UTC')
-        }
+        "user"     => { "first_name" => user.display_name },
+        "batch"    => {
+          "name"              => stats[:batch_name],
+          "source"            => stats[:source_label],
+          "committed"         => stats[:committed],
+          "duplicates_blocked" => stats[:duplicates_blocked],
+          "errors"            => stats[:errors],
+          "duration_minutes"  => (stats[:duration_seconds] / 60.0).round(1),
+          "savings_gb"        => stats[:duplicate_storage_saved_gb],
+          "savings_usd"       => stats[:estimated_cost_savings_usd],
+          "completed_at"      => stats[:completed_at]&.strftime("%B %d, %Y at %I:%M %p UTC"),
+        },
       }
     )
   rescue => e
@@ -121,4 +121,3 @@ class MigrationReportWorker
     # Non-fatal — report was still generated
   end
 end
-

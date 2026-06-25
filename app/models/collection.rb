@@ -76,13 +76,13 @@ class Collection < ApplicationRecord
 
   # Non-deleted collections that have not yet exceeded their expiry date.
   # @return [ActiveRecord::Relation]
-  scope :active, -> { where(deleted_at: nil).where('expires_at IS NULL OR expires_at > ?', Time.current) }
+  scope :active, -> { where(deleted_at: nil).where("expires_at IS NULL OR expires_at > ?", Time.current) }
 
   # @return [ActiveRecord::Relation]
-  scope :smart,  -> { where(collection_type: 'smart') }
+  scope :smart,  -> { where(collection_type: "smart") }
 
   # @return [ActiveRecord::Relation]
-  scope :manual, -> { where(collection_type: 'manual') }
+  scope :manual, -> { where(collection_type: "manual") }
 
   # ---------------------------------------------------------------------------
   # Public instance methods
@@ -92,7 +92,7 @@ class Collection < ApplicationRecord
   #
   # @return [Boolean]
   def smart?
-    collection_type == 'smart'
+    collection_type == "smart"
   end
 
   # Determines whether the given user is allowed to view this collection.
@@ -143,22 +143,22 @@ class Collection < ApplicationRecord
 
     assets.find_each do |asset|
       props = asset.properties || {}
-      usage = props['usage_terms'] || 'Internal Use Only'
+      usage = props["usage_terms"] || "Internal Use Only"
 
-      if is_externally_accessible && usage == 'Internal Use Only'
+      if is_externally_accessible && usage == "Internal Use Only"
         violations << {
           asset_id: asset.id,
           title:    asset.title || asset.original_filename,
-          reason:   "Asset is restricted to 'Internal Use Only' but workspace allows external access."
+          reason:   "Asset is restricted to 'Internal Use Only' but workspace allows external access.",
         }
       end
 
-      if props['license_expires_at'].present? && self.expires_at.present?
-        if Time.zone.parse(props['license_expires_at']) < self.expires_at
+      if props["license_expires_at"].present? && self.expires_at.present?
+        if Time.zone.parse(props["license_expires_at"]) < self.expires_at
           violations << {
             asset_id: asset.id,
             title:    asset.title || asset.original_filename,
-            reason:   "Asset license expires before the campaign workspace TTL finishes."
+            reason:   "Asset license expires before the campaign workspace TTL finishes.",
           }
         end
       end

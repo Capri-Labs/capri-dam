@@ -8,7 +8,7 @@
 # Retry: 2 times
 class MigrationCommitWorker
   include Sidekiq::Worker
-  sidekiq_options queue: 'ingest', retry: 2
+  sidekiq_options queue: "ingest", retry: 2
 
   COMMIT_CHUNK = 50  # process this many items per job call
 
@@ -47,36 +47,36 @@ class MigrationCommitWorker
     ActiveRecord::Base.transaction do
       # Create the canonical Asset record
       asset = Asset.create!(
-        title:     props['title'].presence || File.basename(item.original_filename, '.*').titleize,
+        title:     props["title"].presence || File.basename(item.original_filename, ".*").titleize,
         user_id:   batch.initiated_by_id || User.first&.id,
         folder:    folder,
         status:    :pending,
         uuid:      SecureRandom.uuid,
         properties: {
           original_filename: item.original_filename,
-          description:       props['description'],
-          alt_text:          props['alt_text'] || props['description'],
-          usage_terms:       props['usage_terms'] || 'Internal Use Only',
-          tags:              Array(props['tags']),
-          author:            props['author'],
-          campaign:          props['campaign'],
-          license_expires_at: props['license_expires_at'],
+          description:       props["description"],
+          alt_text:          props["alt_text"] || props["description"],
+          usage_terms:       props["usage_terms"] || "Internal Use Only",
+          tags:              Array(props["tags"]),
+          author:            props["author"],
+          campaign:          props["campaign"],
+          license_expires_at: props["license_expires_at"],
           migrated_from:     batch.source_type,
           migration_batch_id: batch.id.to_s,
-          content_type:      props['content_type']
+          content_type:      props["content_type"],
         }.compact
       )
 
       # Create the initial version record
       version = asset.asset_versions.create!(
         version_number: 1,
-        action_type:    'migration_import',
+        action_type:    "migration_import",
         created_by_id:  batch.initiated_by_id,
         properties: {
           source_identifier: item.original_filename,
           file_hash:         item.file_hash,
           file_size:         item.file_size,
-          legacy_metadata:   item.legacy_metadata
+          legacy_metadata:   item.legacy_metadata,
         }
       )
 
@@ -115,7 +115,7 @@ class MigrationCommitWorker
   def resolve_target_folder(batch, props)
     # Try to map the asset's source campaign/folder to an existing DAM folder.
     # Creates a migration staging folder if no match found.
-    folder_name = props['campaign'].presence || "Migration — #{batch.source_type.upcase} — #{batch.created_at.strftime('%Y-%m-%d')}"
+    folder_name = props["campaign"].presence || "Migration — #{batch.source_type.upcase} — #{batch.created_at.strftime("%Y-%m-%d")}"
 
     Folder.find_or_create_by!(
       name:    folder_name,
@@ -126,4 +126,3 @@ class MigrationCommitWorker
     nil
   end
 end
-

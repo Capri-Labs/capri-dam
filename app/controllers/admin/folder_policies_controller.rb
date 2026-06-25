@@ -28,7 +28,7 @@ class Admin::FolderPoliciesController < ApplicationController
     render json: {
       folder_name: @folder.name,
       explicit_policies: explicit_policies,
-      inherited_policies: inherited_policies
+      inherited_policies: inherited_policies,
     }
   end
 
@@ -84,8 +84,8 @@ class Admin::FolderPoliciesController < ApplicationController
         delete:    policy.delete_access,
         replicate: policy.replicate_access,
         manage:    policy.manage_access,
-        explicit_deny: policy.explicit_deny
-      }
+        explicit_deny: policy.explicit_deny,
+      },
     }
   end
 

@@ -2,7 +2,7 @@ class FolderMetadataSyncWorker
   include Sidekiq::Worker
 
   # Low priority queue so manual mass-syncs don't block critical live uploads
-  sidekiq_options queue: 'edge_metadata_bulk', retry: 3
+  sidekiq_options queue: "edge_metadata_bulk", retry: 3
 
   def perform(folder_id)
     folder = Folder.active.find_by(id: folder_id)

@@ -1,5 +1,5 @@
-require 'net/http'
-require 'uri'
+require "net/http"
+require "uri"
 
 module IngestionAdapters
   # Aprimo DAM Adapter
@@ -14,37 +14,37 @@ module IngestionAdapters
       url    = "#{endpoint}/api/dam/v1/assets?offset=#{offset}&limit=#{limit}&sortBy=createdOn&sortOrder=ASC"
 
       data  = get_json(url)
-      items = Array(data['items'] || [])
+      items = Array(data["items"] || [])
 
       files = items.map do |item|
         {
-          identifier:    item['id'],
-          size:          item['fileSize'].to_i,
-          original_name: item['fileName'] || item['title'],
+          identifier:    item["id"],
+          size:          item["fileSize"].to_i,
+          original_name: item["fileName"] || item["title"],
           metadata: {
-            'title'        => item['title'],
-            'description'  => item['description'],
-            'tags'         => Array(item['tags']&.map { |t| t['name'] }),
-            'content_type' => item['mimeType'],
-            'created'      => item['createdOn'],
-            'modified'     => item['modifiedOn'],
-            'record_id'    => item['recordId']
-          }.compact
+            "title"        => item["title"],
+            "description"  => item["description"],
+            "tags"         => Array(item["tags"]&.map { |t| t["name"] }),
+            "content_type" => item["mimeType"],
+            "created"      => item["createdOn"],
+            "modified"     => item["modifiedOn"],
+            "record_id"    => item["recordId"],
+          }.compact,
         }
       end
 
       {
         files:       files,
         next_cursor: (offset + items.size).to_s,
-        has_more:    items.size == limit
+        has_more:    items.size == limit,
       }
     end
 
     def download_and_stream(file_identifier, &block)
       data         = get_json("#{endpoint}/api/dam/v1/assets/#{file_identifier}/download")
-      download_url = data['downloadUrl']
+      download_url = data["downloadUrl"]
       raise "Aprimo: no download URL for #{file_identifier}" unless download_url
-      stream_http_file(download_url, '.bin', &block)
+      stream_http_file(download_url, ".bin", &block)
     end
 
     def test_connection
@@ -55,4 +55,3 @@ module IngestionAdapters
     end
   end
 end
-

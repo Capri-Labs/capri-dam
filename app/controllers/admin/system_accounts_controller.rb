@@ -1,6 +1,6 @@
 module Admin
   class SystemAccountsController < BaseController
-    before_action :set_app, only: [:show, :destroy]
+    before_action :set_app, only: [ :show, :destroy ]
 
     def new
       @app = Doorkeeper::Application.new

@@ -1,10 +1,10 @@
 class WorkflowsController < ApplicationController
   before_action :authenticate_user!
   # Updated: Only include actions that actually exist in the controller
-  before_action :set_workflow, only: [:update, :destroy, :toggle_status]
+  before_action :set_workflow, only: [ :update, :destroy, :toggle_status ]
 
   def index
-    @active_view = 'Workflows'
+    @active_view = "Workflows"
     respond_to do |format|
       # ---------------------------------------------------------
       # 1. THE API RESPONSE (For React fetch requests)
@@ -27,7 +27,7 @@ class WorkflowsController < ApplicationController
             trigger_type: wf.trigger_type,
             step_count: wf.workflow_steps.count,
             last_modified_by: User.find_by(id: wf.updated_by_id)&.full_name || "Admin",
-            updated_at: wf.updated_at.strftime("%b %d, %Y %H:%M")
+            updated_at: wf.updated_at.strftime("%b %d, %Y %H:%M"),
           }
         end.to_json
 
@@ -79,7 +79,7 @@ class WorkflowsController < ApplicationController
     if @workflow.destroy
       render json: { success: true, message: "Workflow deleted" }
     else
-      render json: { success: false, errors: ["Could not delete workflow"] }, status: :search_timeout
+      render json: { success: false, errors: [ "Could not delete workflow" ] }, status: :search_timeout
     end
   end
 
@@ -121,7 +121,7 @@ class WorkflowsController < ApplicationController
         :assignee_id,
         :logic,
         :deadline_days,
-        :_destroy
+        :_destroy,
       ]
     )
 

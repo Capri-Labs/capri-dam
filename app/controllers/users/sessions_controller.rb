@@ -21,7 +21,7 @@ class Users::SessionsController < Devise::SessionsController
         render json: {
           success: true,
           force_password_change: true,
-          email: resource.email
+          email: resource.email,
         }, status: :ok
         return
       end
@@ -30,12 +30,12 @@ class Users::SessionsController < Devise::SessionsController
       sign_in(:user, resource)
       render json: {
         success: true,
-        user: { email: resource.email, username: resource.username }
+        user: { email: resource.email, username: resource.username },
       }, status: :ok
     else
       render json: {
         success: false,
-        error: "Invalid email or password"
+        error: "Invalid email or password",
       }, status: :unauthorized
     end
   end
@@ -57,10 +57,10 @@ class Users::SessionsController < Devise::SessionsController
         render json: {
           success: true,
           message: "Password updated successfully.",
-          user: { email: resource.email, username: resource.username }
+          user: { email: resource.email, username: resource.username },
         }, status: :ok
       else
-        render json: { success: false, error: resource.errors.full_messages.join(', ') }, status: :unprocessable_entity
+        render json: { success: false, error: resource.errors.full_messages.join(", ") }, status: :unprocessable_entity
       end
     else
       render json: { success: false, error: "Invalid temporary password." }, status: :unauthorized

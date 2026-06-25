@@ -1,5 +1,5 @@
-require 'net/http'
-require 'uri'
+require "net/http"
+require "uri"
 
 module IngestionAdapters
   # Nuxeo Platform Adapter
@@ -17,37 +17,37 @@ module IngestionAdapters
       url    = "#{endpoint}/api/v1/query?query=#{nxql}&pageSize=#{limit}&currentPageIndex=#{offset / limit}"
 
       data   = get_json(url)
-      items  = Array(data['entries'] || [])
+      items  = Array(data["entries"] || [])
 
       files = items.map do |item|
-        props = item['properties'] || {}
+        props = item["properties"] || {}
         {
-          identifier:    item['uid'] || item['path'],
-          size:          props.dig('file:content', 'length').to_i,
-          original_name: props.dig('file:content', 'name') || item['title'],
+          identifier:    item["uid"] || item["path"],
+          size:          props.dig("file:content", "length").to_i,
+          original_name: props.dig("file:content", "name") || item["title"],
           metadata: {
-            'title'        => props['dc:title'] || item['title'],
-            'description'  => props['dc:description'],
-            'tags'         => Array(props['dc:subjects']),
-            'creator'      => props['dc:creator'],
-            'created'      => props['dc:created'],
-            'modified'     => props['dc:modified'],
-            'content_type' => props.dig('file:content', 'mime-type')
-          }.compact
+            "title"        => props["dc:title"] || item["title"],
+            "description"  => props["dc:description"],
+            "tags"         => Array(props["dc:subjects"]),
+            "creator"      => props["dc:creator"],
+            "created"      => props["dc:created"],
+            "modified"     => props["dc:modified"],
+            "content_type" => props.dig("file:content", "mime-type"),
+          }.compact,
         }
       end
 
       {
         files:       files,
         next_cursor: (offset + items.size).to_s,
-        has_more:    !data['isLastPageAvailable'] || data['isLastPageAvailable'] == false
+        has_more:    !data["isLastPageAvailable"] || data["isLastPageAvailable"] == false,
       }
     end
 
     def download_and_stream(file_identifier, &block)
       # Nuxeo blob download endpoint
       download_url = "#{endpoint}/api/v1/id/#{file_identifier}/@blob/file:content"
-      stream_http_file(download_url, '.bin', &block)
+      stream_http_file(download_url, ".bin", &block)
     end
 
     def test_connection
@@ -60,15 +60,15 @@ module IngestionAdapters
     protected
 
     def default_headers
-      if credentials['username'].present?
+      if credentials["username"].present?
         # Basic auth fallback
-        require 'base64'
-        encoded = Base64.strict_encode64("#{credentials['username']}:#{credentials['password']}")
+        require "base64"
+        encoded = Base64.strict_encode64("#{credentials["username"]}:#{credentials["password"]}")
         {
-          'Authorization' => "Basic #{encoded}",
-          'Accept'        => 'application/json',
-          'Content-Type'  => 'application/json',
-          'User-Agent'    => 'CapriDAM-Migrator/1.0'
+          "Authorization" => "Basic #{encoded}",
+          "Accept"        => "application/json",
+          "Content-Type"  => "application/json",
+          "User-Agent"    => "CapriDAM-Migrator/1.0",
         }
       else
         super
@@ -76,4 +76,3 @@ module IngestionAdapters
     end
   end
 end
-

@@ -1,4 +1,4 @@
-require 'csv'
+require "csv"
 
 module Reports
   module Generators
@@ -16,9 +16,9 @@ module Reports
         end
 
         io = StringIO.new(csv_string)
-        filename = default_filename('csv')
+        filename = default_filename("csv")
 
-        [io, filename, 'text/csv']
+        [ io, filename, "text/csv" ]
       end
     end
   end

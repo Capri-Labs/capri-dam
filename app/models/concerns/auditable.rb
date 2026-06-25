@@ -22,17 +22,17 @@ module Auditable
   private
 
   def log_create
-    create_audit_log('create', saved_changes)
+    create_audit_log("create", saved_changes)
   end
 
   def log_update
     # Only log if actual data changed (excluding updated_at)
-    filtered_changes = saved_changes.except('updated_at')
-    create_audit_log('update', filtered_changes) if filtered_changes.any?
+    filtered_changes = saved_changes.except("updated_at")
+    create_audit_log("update", filtered_changes) if filtered_changes.any?
   end
 
   def log_destroy
-    create_audit_log('destroy', attributes)
+    create_audit_log("destroy", attributes)
   end
 
   def create_audit_log(action, data)

@@ -30,12 +30,12 @@ class Folder < ApplicationRecord
 
   # @!attribute [r] parent
   #   @return [Folder, nil] direct parent in the hierarchy; +nil+ for root folders
-  belongs_to :parent, class_name: 'Folder', optional: true
+  belongs_to :parent, class_name: "Folder", optional: true
 
   # @!attribute [r] children
   #   @return [ActiveRecord::Associations::CollectionProxy<Folder>]
   #     immediate child folders; cascade-destroyed when parent is destroyed
-  has_many :children, class_name: 'Folder', foreign_key: 'parent_id', dependent: :destroy
+  has_many :children, class_name: "Folder", foreign_key: "parent_id", dependent: :destroy
 
   # @!attribute [r] assets
   #   @return [ActiveRecord::Associations::CollectionProxy<Asset>]
@@ -52,7 +52,7 @@ class Folder < ApplicationRecord
   validates :name, presence: true
   validates :user_id, presence: true
   validates :name,
-            uniqueness: { scope: [:parent_id, :user_id],
+            uniqueness: { scope: [ :parent_id, :user_id ],
                           message: "already exists in this location" }
 
   # ---------------------------------------------------------------------------

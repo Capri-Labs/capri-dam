@@ -30,7 +30,7 @@ class Api::V1::IngestionItemsController < ApplicationController
 
   def check_batch_completion(batch)
     # If no items are pending or processing, the transformation phase is complete
-    active_items = batch.ingestion_items.where(status: [:pending, :ai_processing]).count
+    active_items = batch.ingestion_items.where(status: [ :pending, :ai_processing ]).count
 
     if active_items.zero? && batch.transforming?
       batch.review_needed!

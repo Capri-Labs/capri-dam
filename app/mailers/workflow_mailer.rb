@@ -1,5 +1,5 @@
 class WorkflowMailer < ApplicationMailer
-  default from: 'notifications@yourdam.com' # Update to your system's default sender
+  default from: "notifications@yourdam.com" # Update to your system's default sender
 
   def task_assigned(task_id)
     @task = WorkflowTask.find(task_id)

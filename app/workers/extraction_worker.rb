@@ -1,11 +1,11 @@
-require 'digest'
+require "digest"
 
 class ExtractionWorker
   include Sidekiq::Worker
 
   # Using the 'ingest' queue to group heavy ETL tasks
   # Sidekiq handles exponential backoff automatically on the 3 retries
-  sidekiq_options queue: 'ingest', retry: 3
+  sidekiq_options queue: "ingest", retry: 3
 
   def perform(batch_id)
     batch = IngestionBatch.find_by(id: batch_id)
@@ -73,13 +73,13 @@ class ExtractionWorker
 
   def broadcast_to_ai_gateway(item)
     payload = {
-      event: 'ingestion.item.staged',
+      event: "ingestion.item.staged",
       item_id: item.id,
-      item_uuid: item.uuid
+      item_uuid: item.uuid,
     }.to_json
 
     # Dispatching the event so the Python MCP Gateway can pick it up
-    Redis.current.publish('ai_gateway_events', payload)
+    Redis.current.publish("ai_gateway_events", payload)
 
     item.ai_processing!
   end

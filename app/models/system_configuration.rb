@@ -4,7 +4,7 @@ class SystemConfiguration < ApplicationRecord
   validates :data_type, inclusion: { in: %w[string integer boolean json] }
 
   # Automatically broadcast changes to the Puma workers after a successful save
-  after_commit :broadcast_configuration_change, on: [:create, :update]
+  after_commit :broadcast_configuration_change, on: [ :create, :update ]
 
   # Helper method to get a config value, fully type-casted
   def self.get(key_name, default: nil)
@@ -24,9 +24,9 @@ class SystemConfiguration < ApplicationRecord
   # Helper method to handle dynamic typing
   def cast_value(val)
     case data_type
-    when 'integer' then val.to_i
-    when 'boolean' then ActiveRecord::Type::Boolean.new.cast(val)
-    when 'json'    then JSON.parse(val) rescue {}
+    when "integer" then val.to_i
+    when "boolean" then ActiveRecord::Type::Boolean.new.cast(val)
+    when "json"    then JSON.parse(val) rescue {}
     else val
     end
   end
@@ -42,7 +42,7 @@ class SystemConfiguration < ApplicationRecord
     payload = {
       key: key,
       value: cast_value(value),
-      updated_at: updated_at.iso8601
+      updated_at: updated_at.iso8601,
     }.to_json
 
     # Publish the event to the Redis cluster

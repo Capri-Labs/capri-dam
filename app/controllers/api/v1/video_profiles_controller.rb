@@ -80,13 +80,13 @@ class Api::V1::VideoProfilesController < ApplicationController
 
     render json: serialize(clone, include_presets: true), status: :created
   rescue ActiveRecord::RecordInvalid => e
-    render json: { errors: [e.message] }, status: :unprocessable_entity
+    render json: { errors: [ e.message ] }, status: :unprocessable_entity
   end
 
   # POST /api/v1/video_profiles/:id/apply_to_folder
   def apply_to_folder
     folder_id = params[:folder_id]
-    return render json: { error: 'folder_id is required' }, status: :bad_request if folder_id.blank?
+    return render json: { error: "folder_id is required" }, status: :bad_request if folder_id.blank?
 
     assignment = VideoProfileFolderAssignment.find_or_create_by!(
       video_profile_id: @profile.id,
@@ -100,7 +100,7 @@ class Api::V1::VideoProfilesController < ApplicationController
   # DELETE /api/v1/video_profiles/:id/remove_from_folder
   def remove_from_folder
     folder_id = params[:folder_id]
-    return render json: { error: 'folder_id is required' }, status: :bad_request if folder_id.blank?
+    return render json: { error: "folder_id is required" }, status: :bad_request if folder_id.blank?
 
     VideoProfileFolderAssignment
       .where(video_profile_id: @profile.id, folder_id: folder_id)
@@ -120,13 +120,13 @@ class Api::V1::VideoProfilesController < ApplicationController
   def set_profile
     @profile = VideoProfile.active.find(params[:id])
   rescue ActiveRecord::RecordNotFound
-    render json: { error: 'Video profile not found' }, status: :not_found
+    render json: { error: "Video profile not found" }, status: :not_found
   end
 
   def require_admin!
     return if current_user&.admin?
 
-    render json: { error: 'Administrator privileges required.' }, status: :forbidden
+    render json: { error: "Administrator privileges required." }, status: :forbidden
   end
 
   def profile_params
@@ -177,7 +177,7 @@ class Api::V1::VideoProfilesController < ApplicationController
       adaptive_streaming_warnings:   profile.adaptive_streaming_warnings,
       folder_count:                  profile.folder_assignments.size,
       created_at:                    profile.created_at,
-      updated_at:                    profile.updated_at
+      updated_at:                    profile.updated_at,
     }
 
     if include_presets
@@ -210,9 +210,7 @@ class Api::V1::VideoProfilesController < ApplicationController
       audio_sampling_rate: preset.audio_sampling_rate,
       advanced_params:     preset.advanced_params || {},
       position:            preset.position,
-      size_label:          preset.size_label
+      size_label:          preset.size_label,
     }
   end
 end
-
-

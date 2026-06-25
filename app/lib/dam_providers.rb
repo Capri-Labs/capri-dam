@@ -14,19 +14,19 @@ module DamProviders
   #   - ConnectorCard / ConnectorDialog frontend labels
   #   - MigrationReportWorker summary stats
   LABELS = {
-    'aem'          => 'Adobe Experience Manager',
-    'bynder'       => 'Bynder',
-    'widen'        => 'Acquia DAM (Widen)',
-    'canto'        => 'Canto',
-    'mediavalet'   => 'MediaValet',
-    'brandfolder'  => 'Brandfolder',
-    'cloudinary'   => 'Cloudinary',
-    'nuxeo'        => 'Nuxeo Platform',
-    'aprimo'       => 'Aprimo DAM',
-    'extensis'     => 'Extensis Portfolio',
-    'sharepoint'   => 'Microsoft SharePoint',
-    'legacy_s3'    => 'AWS S3 Bucket',
-    'ftp'          => 'FTP / SFTP',
+    "aem"          => "Adobe Experience Manager",
+    "bynder"       => "Bynder",
+    "widen"        => "Acquia DAM (Widen)",
+    "canto"        => "Canto",
+    "mediavalet"   => "MediaValet",
+    "brandfolder"  => "Brandfolder",
+    "cloudinary"   => "Cloudinary",
+    "nuxeo"        => "Nuxeo Platform",
+    "aprimo"       => "Aprimo DAM",
+    "extensis"     => "Extensis Portfolio",
+    "sharepoint"   => "Microsoft SharePoint",
+    "legacy_s3"    => "AWS S3 Bucket",
+    "ftp"          => "FTP / SFTP",
   }.freeze
 
   KEYS = LABELS.keys.freeze
@@ -35,4 +35,3 @@ module DamProviders
     LABELS[provider_type.to_s] || provider_type.to_s
   end
 end
-

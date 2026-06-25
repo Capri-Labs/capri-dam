@@ -31,4 +31,3 @@ class MetadataExport < ApplicationRecord
     expires_at.present? && expires_at <= Time.current
   end
 end
-

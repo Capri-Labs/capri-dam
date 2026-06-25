@@ -24,10 +24,10 @@ module Types
     field :created_at,   GraphQL::Types::ISO8601DateTime, null: false
     field :updated_at,   GraphQL::Types::ISO8601DateTime, null: false
 
-    field :groups, [Types::UserGroupType], null: false,
+    field :groups, [ Types::UserGroupType ], null: false,
           description: "Groups this user belongs to"
 
-    field :impersonators, [Types::UserType], null: false,
+    field :impersonators, [ Types::UserType ], null: false,
           description: "Users allowed to impersonate this account"
 
     field :preferences, Types::UserPreferenceType, null: true,
@@ -50,4 +50,3 @@ module Types
     end
   end
 end
-

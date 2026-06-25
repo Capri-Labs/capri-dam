@@ -16,7 +16,7 @@ module StorageAdapters
     private
 
     def default_region
-      'auto'
+      "auto"
     end
 
     # R2 endpoint is derived from account_id if not explicitly set
@@ -27,7 +27,7 @@ module StorageAdapters
     end
 
     def r2_endpoint
-      account_id = @config['account_id'].to_s.strip
+      account_id = @config["account_id"].to_s.strip
       raise StorageError, "Cloudflare R2 requires an account_id" if account_id.blank?
       "https://#{account_id}.r2.cloudflarestorage.com"
     end
@@ -44,4 +44,3 @@ module StorageAdapters
     end
   end
 end
-

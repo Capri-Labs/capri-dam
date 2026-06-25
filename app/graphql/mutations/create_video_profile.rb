@@ -11,18 +11,18 @@ module Mutations
     argument :name,                          String,  required: true
     argument :description,                   String,  required: false
     argument :encode_for_adaptive_streaming, Boolean, required: false, default_value: true
-    argument :smart_crop_ratios,             String,  required: false, default_value: '[]',
+    argument :smart_crop_ratios,             String,  required: false, default_value: "[]",
              description: "JSON-encoded array of { name, crop_ratio } objects"
-    argument :encoding_presets,              String,  required: false, default_value: '[]',
+    argument :encoding_presets,              String,  required: false, default_value: "[]",
              description: "JSON-encoded array of encoding preset attribute hashes"
 
     field :video_profile, Types::VideoProfileType, null: true
-    field :errors,        [String],                null: false
+    field :errors,        [ String ],                null: false
 
     def resolve(name:, description: nil, encode_for_adaptive_streaming:,
                 smart_crop_ratios:, encoding_presets:)
       unless context[:current_user]&.admin?
-        return { video_profile: nil, errors: ['Administrator privileges required.'] }
+        return { video_profile: nil, errors: [ "Administrator privileges required." ] }
       end
 
       crops   = begin JSON.parse(smart_crop_ratios)  rescue [] end
@@ -45,4 +45,3 @@ module Mutations
     end
   end
 end
-

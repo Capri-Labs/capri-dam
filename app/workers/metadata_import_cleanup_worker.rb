@@ -15,4 +15,3 @@ class MetadataImportCleanupWorker
     end
   end
 end
-

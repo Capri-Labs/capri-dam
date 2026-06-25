@@ -1,17 +1,16 @@
-require 'sidekiq/web'
-require 'sidekiq/throttled/web' # Adds the "Throttled" tab to your Sidekiq UI
+require "sidekiq/web"
+require "sidekiq/throttled/web" # Adds the "Throttled" tab to your Sidekiq UI
 
 Rails.application.routes.draw do
-
   # ==========================================
   # 1. MOUNTS, ENGINES & DEV TOOLS
   # ==========================================
   authenticate :user, ->(user) { user.admin? } do
-    mount Sidekiq::Web => '/admin/queues'
+    mount Sidekiq::Web => "/admin/queues"
 
     # Coverband runtime/E2E coverage dashboard (development & production only).
     if defined?(Coverband)
-      mount Coverband::Reporters::Web.new, at: '/admin/coverband'
+      mount Coverband::Reporters::Web.new, at: "/admin/coverband"
     end
   end
 
@@ -23,17 +22,17 @@ Rails.application.routes.draw do
   # UNIFIED API DOCUMENTATION PORTAL
   # ==========================================
   # Primary docs URLs
-  get '/api/rest',    to: 'api/docs#rest'
-  get '/api/graphql', to: 'api/docs#graphql'
+  get "/api/rest",    to: "api/docs#rest"
+  get "/api/graphql", to: "api/docs#graphql"
 
   # Legacy redirects — keep old bookmarks working
-  get '/docs/graphql',   to: redirect('/api/graphql')
-  get '/api_docs/index', to: redirect('/api/rest')
-  get '/developers/api', to: redirect('/api/rest')
+  get "/docs/graphql",   to: redirect("/api/graphql")
+  get "/api_docs/index", to: redirect("/api/rest")
+  get "/developers/api", to: redirect("/api/rest")
 
   # Rswag engines (still needed to serve /api-docs/v1/swagger.yaml)
-  mount Rswag::Ui::Engine => '/api-docs'
-  mount Rswag::Api::Engine => '/api-docs'
+  mount Rswag::Ui::Engine => "/api-docs"
+  mount Rswag::Api::Engine => "/api-docs"
 
   # The actual data engine
   post "/graphql", to: "graphql#execute"
@@ -42,10 +41,10 @@ Rails.application.routes.draw do
   # 2. AUTHENTICATION & ROOT LOGIC
   # ==========================================
   use_doorkeeper
-  devise_for :users, controllers: { sessions: 'users/sessions' }
+  devise_for :users, controllers: { sessions: "users/sessions" }
 
   devise_scope :user do
-    post 'users/force_password_update', to: 'users/sessions#force_password_update'
+    post "users/force_password_update", to: "users/sessions#force_password_update"
   end
 
   authenticated :user do
@@ -59,41 +58,41 @@ Rails.application.routes.draw do
   # ==========================================
   # 3. FRONTEND UI ROUTES (HTML Shells)
   # ==========================================
-  get '/dashboard', to: 'dashboard#index'
-  get '/reports', to: 'admin/reports#index'
-  get '/bin', to: 'dashboard#bin'
-  get '/folders', to: 'dashboard#folders'
-  get '/duplicates', to: 'dashboard#duplicates'
-  get '/search', to: 'dashboard#search'
+  get "/dashboard", to: "dashboard#index"
+  get "/reports", to: "admin/reports#index"
+  get "/bin", to: "dashboard#bin"
+  get "/folders", to: "dashboard#folders"
+  get "/duplicates", to: "dashboard#duplicates"
+  get "/search", to: "dashboard#search"
   get "up" => "rails/health#show", as: :rails_health_check
 
-  resources :collections, only: [:index]
+  resources :collections, only: [ :index ]
 
   # Workflows UI
-  get '/workflows', to: 'workflows#index'
-  get 'workflows/dashboard', to: 'workflows#dashboard'
+  get "/workflows", to: "workflows#index"
+  get "workflows/dashboard", to: "workflows#dashboard"
   resources :workflows do
     member do
       patch :toggle_status
     end
-    resources :workflow_steps, only: [:index, :create, :update, :destroy]
+    resources :workflow_steps, only: [ :index, :create, :update, :destroy ]
   end
 
   # AI UI
   namespace :ai do
-    get 'copilot', to: 'ui#copilot'
-    get 'agents',  to: 'ui#agents'
-    get 'batch',   to: 'ui#batch'
+    get "copilot", to: "ui#copilot"
+    get "agents",  to: "ui#agents"
+    get "batch",   to: "ui#batch"
   end
 
   # ==========================================
   # 4. SYSTEM SETTINGS
   # ==========================================
-  resource :settings, only: [:show, :update], controller: 'settings' do
+  resource :settings, only: [ :show, :update ], controller: "settings" do
     collection do
       patch :update_storage
       post :test_connection
-      get :system, to: 'settings#show', as: :system
+      get :system, to: "settings#show", as: :system
     end
   end
 
@@ -101,35 +100,34 @@ Rails.application.routes.draw do
   # 4b. TOOLS (HTML pages)
   # ==========================================
   namespace :tools do
-    resources :metadata_schemas, only: [:index]
-    resources :metadata_exports, only: [:index]
-    resources :metadata_imports, only: [:index]
-    resources :asset_configurations, only: [:index]
+    resources :metadata_schemas, only: [ :index ]
+    resources :metadata_exports, only: [ :index ]
+    resources :metadata_imports, only: [ :index ]
+    resources :asset_configurations, only: [ :index ]
   end
 
   # ==========================================
   # 5. CORE API (v1)
   # ==========================================
   # Route to serve local storage files during development
-  get '/api/v1/assets/local/:uuid', to: 'api/v1/assets#serve_local', as: :serve_local_asset
+  get "/api/v1/assets/local/:uuid", to: "api/v1/assets#serve_local", as: :serve_local_asset
 
   namespace :api do
     namespace :v1 do
-
       # Global Search & AI
-      get 'search', to: 'search#index'
-      post 'copilot/search', to: 'copilots#search'
+      get "search", to: "search#index"
+      post "copilot/search", to: "copilots#search"
 
       # Dynamic CDN Configuration Routes
-      get 'cdn_configurations', to: 'cdn_configurations#index'
-      put 'cdn_configurations', to: 'cdn_configurations#update'
+      get "cdn_configurations", to: "cdn_configurations#index"
+      put "cdn_configurations", to: "cdn_configurations#update"
 
       # The global bin endpoint
-      get 'bin', to: 'assets#bin'
+      get "bin", to: "assets#bin"
 
       # Edge Operations
-      post 'edge_operations/sync', to: 'edge_operations#sync'
-      post 'edge_operations/purge', to: 'edge_operations#purge'
+      post "edge_operations/sync", to: "edge_operations#sync"
+      post "edge_operations/purge", to: "edge_operations#purge"
 
       #  THE FIXED ASSETS BLOCK
       resources :assets do
@@ -139,33 +137,33 @@ Rails.application.routes.draw do
         member do
           post :restore
           post :process_image
-          delete :permanent, to: 'assets#permanent_delete'
+          delete :permanent, to: "assets#permanent_delete"
           get :workflow_history
           get :watermarked
 
           # Versioning Endpoints
           get :versions
           get :audit_trail
-          post 'versions/:version_id/restore', to: 'assets#restore_version', as: :restore_version
+          post "versions/:version_id/restore", to: "assets#restore_version", as: :restore_version
 
           # Schema-driven metadata update
-          patch :metadata, to: 'assets#update_metadata'
+          patch :metadata, to: "assets#update_metadata"
         end
         # AI Embedding specific to this asset
-        resource :embedding, only: [:update], controller: 'asset_embeddings'
+        resource :embedding, only: [ :update ], controller: "asset_embeddings"
       end
 
       # Folders
-      resources :folders, only: [:index, :show, :create, :update, :destroy] do
+      resources :folders, only: [ :index, :show, :create, :update, :destroy ] do
         member do
           post :restore
-          delete :permanent, to: 'folders#permanent_delete'
+          delete :permanent, to: "folders#permanent_delete"
           # Metadata schema management
-          get    :schema,        to: 'folders#schema'
-          post   :apply_schema,  to: 'folders#apply_schema'
-          delete :remove_schema, to: 'folders#remove_schema'
+          get    :schema,        to: "folders#schema"
+          post   :apply_schema,  to: "folders#apply_schema"
+          delete :remove_schema, to: "folders#remove_schema"
           # Profile assignments (info panel)
-          get    :profiles,      to: 'folders#profiles'
+          get    :profiles,      to: "folders#profiles"
         end
       end
 
@@ -178,19 +176,19 @@ Rails.application.routes.draw do
         end
         member do
           get :cluster_map
-          post :rule, to: 'collections#configure_rule'
-          post 'purge_cdn', to: 'collections#purge_cdn'
+          post :rule, to: "collections#configure_rule"
+          post "purge_cdn", to: "collections#purge_cdn"
 
           # Asset Join Table Operations
-          post 'assets', to: 'collections#add_asset'
-          post 'assets/:asset_id', to: 'collections#add_asset'
-          delete 'assets/:asset_id', to: 'collections#remove_asset'
-          patch 'assets/:asset_id/pin', to: 'collections#toggle_pin'
+          post "assets", to: "collections#add_asset"
+          post "assets/:asset_id", to: "collections#add_asset"
+          delete "assets/:asset_id", to: "collections#remove_asset"
+          patch "assets/:asset_id/pin", to: "collections#toggle_pin"
         end
       end
 
       # Connectors & Ingestion
-      resources :system_connectors, only: [:index, :create, :update] do
+      resources :system_connectors, only: [ :index, :create, :update ] do
         collection do
           post :test_connection
           post :pre_flight_analysis
@@ -199,10 +197,10 @@ Rails.application.routes.draw do
           post :start_migration
         end
       end
-      post 'webhooks/connectors/:connector_id/receive', to: 'webhooks#receive'
+      post "webhooks/connectors/:connector_id/receive", to: "webhooks#receive"
 
-      resources :ingestion_items, only: [:show, :update, :index]
-      resources :ingestion_batches, only: [:create, :index, :show] do
+      resources :ingestion_items, only: [ :show, :update, :index ]
+      resources :ingestion_batches, only: [ :create, :index, :show ] do
         member do
           post :commit
           post :abort
@@ -211,26 +209,26 @@ Rails.application.routes.draw do
       end
 
       # Workflows API
-      get 'workflows/dashboard', to: 'workflow_tasks#dashboard'
+      get "workflows/dashboard", to: "workflow_tasks#dashboard"
       resources :workflow_tasks, only: [] do
         post :submit, on: :member
       end
 
       # Notifications
-      resource :ai_configuration, only: [:show, :update]
-      resource :upload_restrictions, only: [:show, :update]
+      resource :ai_configuration, only: [ :show, :update ]
+      resource :upload_restrictions, only: [ :show, :update ]
 
       # Image Profiles (asset upload processing configuration)
-      resources :image_profiles, only: [:index, :show, :create, :update, :destroy] do
+      resources :image_profiles, only: [ :index, :show, :create, :update, :destroy ] do
         member do
-          post  :apply_to_folder
+          post :apply_to_folder
           delete :remove_from_folder
-          get   :folders
+          get :folders
         end
       end
 
       # Video Profiles (video transcoding configuration)
-      resources :video_profiles, only: [:index, :show, :create, :update, :destroy] do
+      resources :video_profiles, only: [ :index, :show, :create, :update, :destroy ] do
         member do
           post   :copy
           post   :apply_to_folder
@@ -238,7 +236,7 @@ Rails.application.routes.draw do
           get    :folders
         end
       end
-      resources :notifications, only: [:index] do
+      resources :notifications, only: [ :index ] do
         collection do
           patch :mark_all_read
         end
@@ -248,17 +246,17 @@ Rails.application.routes.draw do
       end
 
       # Metadata Schemas
-      resources :metadata_schemas, only: [:index, :show, :create, :update, :destroy] do
+      resources :metadata_schemas, only: [ :index, :show, :create, :update, :destroy ] do
         member do
           post  :duplicate
           post  :apply_to_folder
           delete :remove_from_folder
-          get   :folders
+          get :folders
         end
       end
 
       # Metadata Export (async CSV export of asset metadata)
-      resources :metadata_exports, only: [:index, :show, :create, :destroy] do
+      resources :metadata_exports, only: [ :index, :show, :create, :destroy ] do
         collection do
           get :properties
         end
@@ -268,7 +266,7 @@ Rails.application.routes.draw do
       end
 
       # Metadata Import (async CSV import / bulk metadata update)
-      resources :metadata_imports, only: [:index, :show, :create, :destroy] do
+      resources :metadata_imports, only: [ :index, :show, :create, :destroy ] do
         collection do
           get :template
         end
@@ -276,7 +274,6 @@ Rails.application.routes.draw do
           get :download
         end
       end
-
     end
   end
   # ==========================================
@@ -284,27 +281,27 @@ Rails.application.routes.draw do
   # ==========================================
   namespace :admin do
     # System Status & Configs
-    get 'system_status', to: 'system_status#index'
-    post 'system_status/update_smtp', to: 'system_status#update_smtp'
-    post 'system_status/test_email', to: 'system_status#test_email'
-    post 'system_status/restart_server', to: 'system_status#restart_server'
+    get "system_status", to: "system_status#index"
+    post "system_status/update_smtp", to: "system_status#update_smtp"
+    post "system_status/test_email", to: "system_status#test_email"
+    post "system_status/restart_server", to: "system_status#restart_server"
 
-    get 'system_configurations/logging', to: 'system_configurations#logging_status'
-    post 'system_configurations/logging', to: 'system_configurations#update_logging'
+    get "system_configurations/logging", to: "system_configurations#logging_status"
+    post "system_configurations/logging", to: "system_configurations#update_logging"
 
     # Migrations
-    get 'migrations/ingestion', to: 'migrations#ingestion'
-    get 'migrations/connectors', to: 'migrations#connectors'
-    get 'migrations/health', to: 'migrations#health'
+    get "migrations/ingestion", to: "migrations#ingestion"
+    get "migrations/connectors", to: "migrations#connectors"
+    get "migrations/health", to: "migrations#health"
 
     # Users & Access Control
-    resources :system_accounts, only: [:index, :show, :new, :create, :destroy]
+    resources :system_accounts, only: [ :index, :show, :new, :create, :destroy ]
 
-    resources :user_groups, except: [:new, :edit] do
+    resources :user_groups, except: [ :new, :edit ] do
       member do
         # Legacy — kept for backward-compat; prefer add_member/remove_member
-        post   :add_user,    to: 'user_groups#add_member'
-        delete :remove_user, to: 'user_groups#remove_member'
+        post   :add_user,    to: "user_groups#add_member"
+        delete :remove_user, to: "user_groups#remove_member"
         # Members (users)
         post   :add_member
         delete :remove_member
@@ -314,33 +311,33 @@ Rails.application.routes.draw do
       end
     end
 
-    resources :users, only: [:index, :show, :create, :update, :destroy] do
+    resources :users, only: [ :index, :show, :create, :update, :destroy ] do
       member do
         post   :toggle_status
         post   :change_password
         get    :groups
         get    :impersonators
-        post   'impersonators', to: 'users#add_impersonator', as: :add_impersonator
-        delete 'impersonators/:impersonator_id', to: 'users#remove_impersonator', as: :remove_impersonator
+        post   "impersonators", to: "users#add_impersonator", as: :add_impersonator
+        delete "impersonators/:impersonator_id", to: "users#remove_impersonator", as: :remove_impersonator
         get    :preferences
-        patch  :preferences, to: 'users#update_preferences'
+        patch  :preferences, to: "users#update_preferences"
       end
     end
 
     resources :folders, only: [] do
-      resources :folder_policies, only: [:index, :create, :destroy], param: :group_id
+      resources :folder_policies, only: [ :index, :create, :destroy ], param: :group_id
     end
 
     # Communications
-    resources :email_templates, except: [:new, :edit]
-    resources :email_deliveries, only: [:index] do
+    resources :email_templates, except: [ :new, :edit ]
+    resources :email_deliveries, only: [ :index ] do
       member do
         post :retry
       end
     end
 
     # Reporting
-    resources :reports, only: [:index, :show] do
+    resources :reports, only: [ :index, :show ] do
       collection do
         get :analytics   # GET /admin/reports/analytics?range=last_30_days
       end
@@ -349,9 +346,8 @@ Rails.application.routes.draw do
       end
     end
 
-    resources :report_snapshots, only: [:index] do
+    resources :report_snapshots, only: [ :index ] do
       get :download, on: :member
     end
   end
-
 end

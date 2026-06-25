@@ -6,8 +6,8 @@ class Workflow < ApplicationRecord
   accepts_nested_attributes_for :workflow_steps, allow_destroy: true
 
   # Auditing & Ownership
-  belongs_to :creator, class_name: 'User', foreign_key: 'created_by_id', optional: true
-  belongs_to :last_modifier, class_name: 'User', foreign_key: 'updated_by_id', optional: true
+  belongs_to :creator, class_name: "User", foreign_key: "created_by_id", optional: true
+  belongs_to :last_modifier, class_name: "User", foreign_key: "updated_by_id", optional: true
 
   # Rails 7+ Enum Syntax
   enum :status, { inactive: 0, active: 1, draft: 2 }

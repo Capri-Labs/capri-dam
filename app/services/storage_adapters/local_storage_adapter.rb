@@ -1,11 +1,11 @@
 module StorageAdapters
   class LocalStorageAdapter < BaseAdapter
-    ROOT = -> { Rails.root.join('storage', 'dam') }
+    ROOT = -> { Rails.root.join("storage/dam") }
 
     def store(file, path, options = {})
       full_path = ROOT.call.join(path)
       FileUtils.mkdir_p(full_path.dirname)
-      File.open(full_path, 'wb') { |f| f.write(file.read) }
+      File.open(full_path, "wb") { |f| f.write(file.read) }
       path
     end
 
@@ -54,14 +54,14 @@ module StorageAdapters
         content_type: Marcel::MimeType.for(File.open(full_path), name: File.basename(path)),
         etag: Digest::MD5.file(full_path).hexdigest,
         last_modified: stat.mtime,
-        metadata: {}
+        metadata: {},
       }
     rescue => e
       Rails.logger.error("[LocalAdapter] metadata error: #{e.message}")
       nil
     end
 
-    def list(prefix: '', limit: 100)
+    def list(prefix: "", limit: 100)
       base = ROOT.call.join(prefix)
       return [] unless base.exist?
       Dir.glob("#{base}/**/*")

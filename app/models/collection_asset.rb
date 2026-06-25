@@ -8,7 +8,7 @@ class CollectionAsset < ApplicationRecord
   # Validations
   validates :asset_id, uniqueness: {
     scope: :collection_id,
-    message: "is already in this collection"
+    message: "is already in this collection",
   }
 
   # Callbacks

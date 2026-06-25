@@ -41,11 +41,10 @@ class MetadataImport < ApplicationRecord
 
   # Clamp the batch size into the allowed range.
   def normalized_batch_size
-    [[batch_size.to_i, 1].max, MAX_BATCH_SIZE].min
+    [ [ batch_size.to_i, 1 ].max, MAX_BATCH_SIZE ].min
   end
 
   def expired?
     expires_at.present? && expires_at <= Time.current
   end
 end
-

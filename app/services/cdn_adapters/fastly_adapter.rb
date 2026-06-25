@@ -1,6 +1,6 @@
-require 'net/http'
-require 'uri'
-require 'json'
+require "net/http"
+require "uri"
+require "json"
 
 module CdnAdapters
   class FastlyAdapter < BaseAdapter
@@ -33,7 +33,7 @@ module CdnAdapters
       request = Net::HTTP::Post.new(uri)
 
       setup_headers(request, options)
-      request['Content-Type'] = 'application/json'
+      request["Content-Type"] = "application/json"
       request.body = { surrogate_keys: tags }.to_json
 
       execute_request(uri, request, "Batch Purge (#{tags.size} tags)")
@@ -44,11 +44,11 @@ module CdnAdapters
       uri = URI("#{@base_url}/dictionary/#{@dictionary_id}/item/#{uuid}")
 
       request = Net::HTTP::Put.new(uri)
-      request['Fastly-Key'] = @api_key
-      request['Accept'] = 'application/json'
+      request["Fastly-Key"] = @api_key
+      request["Accept"] = "application/json"
 
       # Fastly Edge Dictionaries expect form-urlencoded data for item values
-      request.set_form_data({ 'item_value' => json_payload })
+      request.set_form_data({ "item_value" => json_payload })
 
       execute_request(uri, request, "Metadata Sync (#{uuid})")
     end
@@ -56,13 +56,13 @@ module CdnAdapters
     private
 
     def setup_headers(request, options)
-      request['Fastly-Key'] = @api_key
-      request['Accept'] = 'application/json'
+      request["Fastly-Key"] = @api_key
+      request["Accept"] = "application/json"
 
       # 🚀 ADVANCED: Soft Purge Implementation
       # If true, Fastly serves stale content while re-fetching from the Rails origin
       if options.fetch(:soft_purge, true)
-        request['Fastly-Soft-Purge'] = '1'
+        request["Fastly-Soft-Purge"] = "1"
       end
     end
 

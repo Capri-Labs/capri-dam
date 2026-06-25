@@ -50,14 +50,13 @@ class VideoEncodingPreset < ApplicationRecord
   #
   # @return [String] e.g. "auto x 720" or "1280 x 720"
   def size_label
-    "#{width.nil? ? 'auto' : width} x #{height}"
+    "#{width.nil? ? "auto" : width} x #{height}"
   end
 
   # Returns the effective width for display — "auto" when nil.
   #
   # @return [String]
   def display_width
-    width.nil? ? 'auto' : width.to_s
+    width.nil? ? "auto" : width.to_s
   end
 end
-

@@ -5,7 +5,7 @@ module Api
       before_action :authenticate_user!
 
       def index
-        @active_view = 'All Assets'
+        @active_view = "All Assets"
         # 1. Fetch all active folders in ONE query
         all_folders = Folder.active.to_a
 
@@ -26,7 +26,7 @@ module Api
           # Format for the React frontend
           {
             id: folder.id,
-            name: "/" + path_names.join("/") # e.g., "/Marketing/2026/Campaigns"
+            name: "/" + path_names.join("/"), # e.g., "/Marketing/2026/Campaigns"
           }
         end
 
@@ -37,14 +37,14 @@ module Api
       end
 
       def show
-        if params[:id] == 'root'
+        if params[:id] == "root"
           # Strictly fetch only ACTIVE top-level items
           @folders = Folder.active.where(parent_id: nil)
 
           #  FIX 1: Eager load the active_version to prevent database N+1 performance issues
           @assets = Asset.active.where(folder_id: nil).includes(:active_version)
 
-          breadcrumbs = [{ id: 'root', name: 'Home' }]
+          breadcrumbs = [ { id: "root", name: "Home" } ]
         else
           # Ensure a user cannot hack the URL to view a deleted folder
           current_folder = Folder.active.find(params[:id])
@@ -66,14 +66,14 @@ module Api
           folders: folders_payload,
           assets: assets_payload,
           breadcrumbs: breadcrumbs,
-          sort: { field: sort_field, direction: sort_direction }
+          sort: { field: sort_field, direction: sort_direction },
         }
       end
 
       def create
         @folder = current_user.folders.build(folder_params)
         # Handle the 'root' case from JS
-        @folder.parent_id = nil if params[:folder][:parent_id] == 'root'
+        @folder.parent_id = nil if params[:folder][:parent_id] == "root"
 
         if @folder.save
           render json: @folder, status: :created
@@ -91,13 +91,13 @@ module Api
             name:        @folder.name,
             description: @folder.description,
             slug:        @folder.slug,
-            updated_at:  @folder.updated_at
+            updated_at:  @folder.updated_at,
           }
         else
           render json: { errors: @folder.errors.full_messages }, status: :unprocessable_entity
         end
       rescue ActiveRecord::RecordNotFound
-        render json: { error: 'Folder not found' }, status: :not_found
+        render json: { error: "Folder not found" }, status: :not_found
       end
 
       # GET /api/v1/folders/:id/profiles
@@ -143,13 +143,13 @@ module Api
               write:      p.write_access,
               delete:     p.delete_access,
               manage:     p.manage_access,
-              deny:       p.explicit_deny
+              deny:       p.explicit_deny,
             }
-          }
+          },
         }
       end
       def purge_folder_cdn
-        CdnInvalidationWorker.perform_async('folder', params[:id])
+        CdnInvalidationWorker.perform_async("folder", params[:id])
         render json: { message: "Folder CDN purge initiated." }, status: :ok
       end
 
@@ -159,7 +159,7 @@ module Api
         @folder.soft_delete
 
         # Auto-purge CDN: Instantly drop deprecated assets from edge nodes
-        CdnInvalidationWorker.perform_async('folder', @folder.id)
+        CdnInvalidationWorker.perform_async("folder", @folder.id)
         render json: { success: true, message: "Folder moved to bin" }
       end
 
@@ -173,7 +173,7 @@ module Api
       # GET /api/v1/folders/:id/schema
       # Returns the schema currently applied to a folder (or inherited from ancestors).
       def schema
-        folder_id = params[:id] == 'root' ? nil : params[:id]
+        folder_id = params[:id] == "root" ? nil : params[:id]
 
         assignment = find_schema_assignment(folder_id)
 
@@ -181,7 +181,7 @@ module Api
           s = MetadataSchema.active.find_by(id: assignment.metadata_schema_id)
           render json: { schema: s ? serialize_schema(s) : nil, source: assignment_source(folder_id, assignment) }
         else
-          render json: { schema: nil, source: 'none' }
+          render json: { schema: nil, source: "none" }
         end
       end
 
@@ -189,10 +189,10 @@ module Api
       # Queues a background job to apply schema to folder + assets.
       def apply_schema
         schema = MetadataSchema.active.find_by(id: params[:schema_id])
-        return render json: { error: 'Schema not found' }, status: :not_found unless schema
+        return render json: { error: "Schema not found" }, status: :not_found unless schema
 
-        folder_id = params[:id] == 'root' ? nil : params[:id]
-        cascade   = params[:cascade] != 'false'
+        folder_id = params[:id] == "root" ? nil : params[:id]
+        cascade   = params[:cascade] != "false"
 
         ApplySchemaToFolderJob.perform_later(
           folder_id:    folder_id.to_s,
@@ -205,16 +205,16 @@ module Api
           message: "Schema '#{schema.name}' is being applied. Assets will update shortly.",
           schema_id:   schema.id,
           schema_name: schema.name,
-          cascade:     cascade
+          cascade:     cascade,
         }, status: :accepted
       end
 
       # DELETE /api/v1/folders/:id/remove_schema
       # Removes the schema assignment from a folder.
       def remove_schema
-        folder_id = params[:id] == 'root' ? nil : params[:id]
+        folder_id = params[:id] == "root" ? nil : params[:id]
         MetadataSchemaFolderAssignment.where(folder_id: folder_id.to_s).destroy_all
-        render json: { message: 'Schema assignment removed.' }, status: :ok
+        render json: { message: "Schema assignment removed." }, status: :ok
       end
 
       # DELETE /api/v1/folders/:id/permanent
@@ -222,7 +222,7 @@ module Api
         @folder = Folder.trashed.find(params[:id])
 
         # Auto-purge CDN: Ensure edge nodes drop these files permanently
-        CdnInvalidationWorker.perform_async('folder', @folder.id)
+        CdnInvalidationWorker.perform_async("folder", @folder.id)
 
         # Note: If deleting a folder should also permanently delete all assets inside it,
         # you need `dependent: :destroy` on your Folder model's `has_many :assets` association.
@@ -243,18 +243,18 @@ module Api
           uuid: asset.uuid,
           title: asset.title,
           name: asset.title,
-          status: asset.status || 'draft',
+          status: asset.status || "draft",
           version: active_v&.version_number || 1,
 
           properties: merged_props,
 
           # Sortable metadata surfaced at the top level for the UI
-          size:         merged_props['size'] || merged_props['file_size'] || 0,
-          content_type: merged_props['content_type'],
+          size:         merged_props["size"] || merged_props["file_size"] || 0,
+          content_type: merged_props["content_type"],
           created_at:   asset.created_at,
           updated_at:   asset.updated_at,
 
-          url: asset_url_for(asset)
+          url: asset_url_for(asset),
         }
       end
 
@@ -266,7 +266,7 @@ module Api
           slug:        folder.slug,
           description: folder.description,
           created_at:  folder.created_at,
-          updated_at:  folder.updated_at
+          updated_at:  folder.updated_at,
         }
       end
 
@@ -275,27 +275,27 @@ module Api
 
       def sort_field
         field = params[:sort].to_s
-        ALLOWED_SORT_FIELDS.include?(field) ? field : 'name'
+        ALLOWED_SORT_FIELDS.include?(field) ? field : "name"
       end
 
       def sort_direction
-        params[:direction].to_s == 'desc' ? 'desc' : 'asc'
+        params[:direction].to_s == "desc" ? "desc" : "asc"
       end
 
       # Folders only support name/created_at/updated_at sorting (no size/type).
       def sort_folders(folders)
         field = sort_field
-        field = 'name' if %w[size type].include?(field) # folders have no size/type
+        field = "name" if %w[size type].include?(field) # folders have no size/type
 
         sorted = folders.sort_by do |f|
           case field
-          when 'created_at' then f[:created_at] || Time.at(0)
-          when 'updated_at' then f[:updated_at] || Time.at(0)
+          when "created_at" then f[:created_at] || Time.at(0)
+          when "updated_at" then f[:updated_at] || Time.at(0)
           else f[:name].to_s.downcase
           end
         end
 
-        sort_direction == 'desc' ? sorted.reverse : sorted
+        sort_direction == "desc" ? sorted.reverse : sorted
       end
 
       def sort_assets(assets)
@@ -303,15 +303,15 @@ module Api
 
         sorted = assets.sort_by do |a|
           case field
-          when 'created_at' then a[:created_at] || Time.at(0)
-          when 'updated_at' then a[:updated_at] || Time.at(0)
-          when 'size'       then a[:size].to_i
-          when 'type'       then a[:content_type].to_s.downcase
+          when "created_at" then a[:created_at] || Time.at(0)
+          when "updated_at" then a[:updated_at] || Time.at(0)
+          when "size"       then a[:size].to_i
+          when "type"       then a[:content_type].to_s.downcase
           else a[:title].to_s.downcase
           end
         end
 
-        sort_direction == 'desc' ? sorted.reverse : sorted
+        sort_direction == "desc" ? sorted.reverse : sorted
       end
 
       def build_breadcrumbs(folder)
@@ -325,7 +325,7 @@ module Api
         end
 
         # Prepend the Home root
-        crumbs.unshift({ id: 'root', name: 'Home' })
+        crumbs.unshift({ id: "root", name: "Home" })
         crumbs
       end
 
@@ -351,7 +351,7 @@ module Api
       end
 
       def assignment_source(folder_id, assignment)
-        assignment.folder_id.to_s == folder_id.to_s ? 'direct' : 'inherited'
+        assignment.folder_id.to_s == folder_id.to_s ? "direct" : "inherited"
       end
 
       def serialize_schema(schema)
@@ -362,7 +362,7 @@ module Api
           level:       schema.level,
           description: schema.description,
           is_builtin:  schema.is_builtin,
-          tabs:        schema.tabs || []
+          tabs:        schema.tabs || [],
         }
       end
     end

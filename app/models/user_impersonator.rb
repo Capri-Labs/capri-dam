@@ -13,8 +13,8 @@
 # @see User#can_be_impersonated_by?
 # @see User#impersonating_accounts
 class UserImpersonator < ApplicationRecord
-  belongs_to :user,         class_name: 'User'   # account being impersonated
-  belongs_to :impersonator, class_name: 'User'   # account that can impersonate
+  belongs_to :user,         class_name: "User"   # account being impersonated
+  belongs_to :impersonator, class_name: "User"   # account that can impersonate
 
   validates :user_id, uniqueness: { scope: :impersonator_id,
                                     message: "is already allowed to impersonate this account" }
@@ -28,4 +28,3 @@ class UserImpersonator < ApplicationRecord
     end
   end
 end
-

@@ -11,17 +11,17 @@ module Mutations
     argument :first_name, String, required: true
     argument :last_name,  String, required: true
     argument :department, String, required: false
-    argument :role,       String, required: false, default_value: 'viewer'
+    argument :role,       String, required: false, default_value: "viewer"
     argument :admin,      Boolean, required: false, default_value: false
-    argument :group_ids,  [ID],   required: false, default_value: []
+    argument :group_ids,  [ ID ],   required: false, default_value: []
 
     field :user,   Types::UserType, null: true
-    field :errors, [String],        null: false
+    field :errors, [ String ],        null: false
 
     def resolve(email:, first_name:, last_name:, department: nil,
-                role: 'viewer', admin: false, group_ids: [])
+                role: "viewer", admin: false, group_ids: [])
       unless context[:current_user]&.admin?
-        return { user: nil, errors: ["Unauthorized"] }
+        return { user: nil, errors: [ "Unauthorized" ] }
       end
 
       temp_password = SecureRandom.base36(12)
@@ -42,8 +42,8 @@ module Mutations
       user.user_group_ids = group_ids.map(&:to_i) if group_ids.any?
 
       if user.save
-        EmailOrchestrator.trigger('user_created', user.email,
-          { 'user' => { 'first_name' => first_name, 'temp_password' => temp_password } })
+        EmailOrchestrator.trigger("user_created", user.email,
+          { "user" => { "first_name" => first_name, "temp_password" => temp_password } })
         { user: user, errors: [] }
       else
         { user: nil, errors: user.errors.full_messages }
@@ -51,4 +51,3 @@ module Mutations
     end
   end
 end
-

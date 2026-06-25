@@ -1,6 +1,6 @@
 class WorkflowEngineWorker
   include Sidekiq::Worker
-  sidekiq_options queue: 'workflow', retry: 3
+  sidekiq_options queue: "workflow", retry: 3
 
   def perform(task_id)
     task = WorkflowTask.find_by(id: task_id)
@@ -14,12 +14,12 @@ class WorkflowEngineWorker
       # -------------------------------------------------------------
       # SCENARIO A: The user REJECTED the asset.
       # -------------------------------------------------------------
-      if task.status == 'rejected'
+      if task.status == "rejected"
         #  Changed 'failed' to 'rejected' so the Dashboard API picks it up
-        instance.update!(status: 'rejected', completed_at: Time.current)
+        instance.update!(status: "rejected", completed_at: Time.current)
 
         # Update the asset status
-        asset.update!(status: 'rejected')
+        asset.update!(status: "rejected")
 
         # Cancel any sibling tasks for this step that haven't been answered yet
         cancel_pending_tasks(instance)
@@ -31,7 +31,7 @@ class WorkflowEngineWorker
       # -------------------------------------------------------------
       # SCENARIO B: The user APPROVED the asset.
       # -------------------------------------------------------------
-      if task.status == 'approved'
+      if task.status == "approved"
         # Evaluate if the overall Step is now complete based on its logic
         if step_complete?(step, instance)
 
@@ -48,8 +48,8 @@ class WorkflowEngineWorker
             Rails.logger.info "⏭️ Workflow #{instance.id} advanced to Step #{next_step.position}"
           else
             # VICTORY: No more steps! The workflow is successfully finished.
-            instance.update!(status: 'completed', completed_at: Time.current)
-            asset.update!(status: 'approved')
+            instance.update!(status: "completed", completed_at: Time.current)
+            asset.update!(status: "approved")
             Rails.logger.info "✅ Workflow #{instance.id} fully completed!"
           end
         else
@@ -67,12 +67,12 @@ class WorkflowEngineWorker
 
   # Evaluates whether the step criteria has been met
   def step_complete?(step, instance)
-    if step.logic == 'any'
+    if step.logic == "any"
       # One approval is all we need!
       return true
-    elsif step.logic == 'all'
+    elsif step.logic == "all"
       # It's complete ONLY if there are zero pending tasks left for this step
-      pending_count = instance.workflow_tasks.where(workflow_step: step, status: 'pending').count
+      pending_count = instance.workflow_tasks.where(workflow_step: step, status: "pending").count
       return pending_count.zero?
     end
 
@@ -82,8 +82,8 @@ class WorkflowEngineWorker
 
   # Cancels all remaining pending tasks for the current instance
   def cancel_pending_tasks(instance)
-    instance.workflow_tasks.where(status: 'pending').update_all(
-      status: 'canceled',
+    instance.workflow_tasks.where(status: "pending").update_all(
+      status: "canceled",
       completed_at: Time.current
     )
   end
@@ -97,9 +97,9 @@ class WorkflowEngineWorker
       Rails.logger.warn "⚠️ No valid assignees found for step '#{step.title}'. Using workflow fallback."
       workflow = instance.workflow
 
-      if workflow.fallback_assignee_type == 'user'
+      if workflow.fallback_assignee_type == "user"
         users << User.find_by(id: workflow.fallback_assignee_id)
-      elsif workflow.fallback_assignee_type == 'group'
+      elsif workflow.fallback_assignee_type == "group"
         group = UserGroup.find_by(id: workflow.fallback_assignee_id)
         users = group.users if group
       end
@@ -117,7 +117,7 @@ class WorkflowEngineWorker
         workflow_instance: instance,
         workflow_step: step,
         user: user,
-        status: 'pending'
+        status: "pending"
       )
 
       #  Trigger the Email/In-App Notification Dispatcher
@@ -127,9 +127,9 @@ class WorkflowEngineWorker
 
   def resolve_assignees(step)
     #  Changed 'User' to 'user' to match the database payload
-    if step.assignee_type == 'user'
-      [User.find_by(id: step.assignee_id)].compact
-    elsif step.assignee_type == 'group'
+    if step.assignee_type == "user"
+      [ User.find_by(id: step.assignee_id) ].compact
+    elsif step.assignee_type == "group"
       group = UserGroup.find_by(id: step.assignee_id)
       group ? group.users : []
     else

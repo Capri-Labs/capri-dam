@@ -3,7 +3,7 @@ module Api
     class MetadataExportsController < ApplicationController
       include Rails.application.routes.url_helpers
       before_action :authenticate_user!
-      before_action :set_export, only: [:show, :download, :destroy]
+      before_action :set_export, only: [ :show, :download, :destroy ]
 
       # GET /api/v1/metadata_exports
       # Lists the current user's (non-expired) exports for the reuse table.
@@ -106,7 +106,7 @@ module Api
           created_at:         export.created_at&.strftime("%b %d, %Y at %H:%M"),
           scheduled_at:       export.scheduled_at&.strftime("%b %d, %Y at %H:%M"),
           expires_at:         export.expires_at&.strftime("%b %d, %Y"),
-          files:              serialize_files(export)
+          files:              serialize_files(export),
         }
       end
 
@@ -118,7 +118,7 @@ module Api
             id:           att.id,
             filename:     att.blob.filename.to_s,
             byte_size:    att.blob.byte_size,
-            download_url: download_api_v1_metadata_export_path(export, attachment_id: att.id)
+            download_url: download_api_v1_metadata_export_path(export, attachment_id: att.id),
           }
         end
       end
@@ -143,10 +143,10 @@ module Api
       def resolve_folder_ids(folder_id, cascade)
         return [] if folder_id.blank?
 
-        ids = [folder_id]
+        ids = [ folder_id ]
         return ids unless cascade
 
-        queue = [folder_id]
+        queue = [ folder_id ]
         until queue.empty?
           children = Folder.active.where(parent_id: queue).pluck(:id)
           new_ids  = children - ids
@@ -158,4 +158,3 @@ module Api
     end
   end
 end
-

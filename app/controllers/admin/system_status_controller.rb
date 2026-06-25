@@ -4,11 +4,11 @@ class Admin::SystemStatusController < ApplicationController
 
   # GET /admin/system_status
   def index
-    @smtp_config = Setting.get('smtp_settings')
-    @notification_rules = Setting.get('notification_rules')
+    @smtp_config = Setting.get("smtp_settings")
+    @notification_rules = Setting.get("notification_rules")
 
     # UI view point
-    @active_view = 'System Operations'
+    @active_view = "System Operations"
 
     respond_to do |format|
       format.html
@@ -19,7 +19,7 @@ class Admin::SystemStatusController < ApplicationController
   # POST /admin/system_status/update_smtp
   def update_smtp
     # Convert parameters to hash cleanly
-    Setting.set!('smtp_settings', smtp_params.to_h)
+    Setting.set!("smtp_settings", smtp_params.to_h)
     # Re-apply config changes to the current environment context
     Setting.apply_smtp_settings!
     render json: { success: true, message: "SMTP configuration updated successfully." }
@@ -43,7 +43,7 @@ class Admin::SystemStatusController < ApplicationController
 
   # POST /admin/system_status/restart_server
   def restart_server
-    restart_file = Rails.root.join('tmp', 'restart.txt')
+    restart_file = Rails.root.join("tmp/restart.txt")
     begin
       FileUtils.mkdir_p(File.dirname(restart_file))
       FileUtils.touch(restart_file)
@@ -75,11 +75,11 @@ class Admin::SystemStatusController < ApplicationController
         environment: Rails.env,
         rails_version: Rails.version,
         ruby_version: RUBY_VERSION,
-        uptime: system_uptime
+        uptime: system_uptime,
       },
       database: db_diagnostics,
       cache_queue: redis_and_sidekiq_diagnostics,
-      storage_backend: active_storage_diagnostics
+      storage_backend: active_storage_diagnostics,
     }
   end
 
@@ -97,14 +97,14 @@ class Admin::SystemStatusController < ApplicationController
       latency_ms: latency,
       adapter: ActiveRecord::Base.connection.adapter_name,
       pool_size: ActiveRecord::Base.connection.pool.size,
-      active_connections: ActiveRecord::Base.connection.pool.stat[:connections]
+      active_connections: ActiveRecord::Base.connection.pool.stat[:connections],
     }
   rescue => e
     { status: "offline", error: e.message }
   end
 
   def redis_and_sidekiq_diagnostics
-    require 'sidekiq/api'
+    require "sidekiq/api"
 
     redis_info = nil
     redis_connected = false
@@ -126,7 +126,7 @@ class Admin::SystemStatusController < ApplicationController
       processed: stats.processed,
       failed: stats.failed,
       active_workers: Sidekiq::Workers.new.size,
-      processes: Sidekiq::ProcessSet.new.size
+      processes: Sidekiq::ProcessSet.new.size,
     }
   rescue => e
     { status: "degraded", error: "Sidekiq/Redis offline. Details: #{e.message}" }
@@ -145,7 +145,7 @@ class Admin::SystemStatusController < ApplicationController
     {
       status: "healthy",
       provider: service.class.name.demodulize,
-      latency_ms: latency
+      latency_ms: latency,
     }
   rescue => e
     { status: "unreachable", error: "Storage driver error: #{e.message}" }

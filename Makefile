@@ -126,13 +126,16 @@ graphql-docs: graphql-schema ## Generate SpectaQL HTML docs → public/graphql-d
 
 api-docs: swagger-docs graphql-docs ## Regenerate BOTH REST (Swagger) and GraphQL (SpectaQL) docs
 
-install-hooks: ## Install the stale-docs pre-commit git hook
+install-hooks: ## Install the pre-commit git hook (RuboCop lint + stale-docs guard)
 	@echo "--- Installing pre-commit hook ---"
 	@chmod +x bin/check-docs-freshness
 	@cp bin/check-docs-freshness .git/hooks/pre-commit
 	@chmod +x .git/hooks/pre-commit
-	@echo "\033[32mPre-commit hook installed. Commits that change controllers or GraphQL\033[0m"
-	@echo "\033[32msource without regenerating docs will be blocked.\033[0m"
+	@echo "\033[32mPre-commit hook installed. Every commit will:\033[0m"
+	@echo "\033[32m  1. Run RuboCop on staged .rb files (blocks on offense)\033[0m"
+	@echo "\033[32m  2. Block if api/v1 controllers changed without swagger update\033[0m"
+	@echo "\033[32m  3. Block if graphql/ changed without SDL/HTML doc update\033[0m"
+	@echo "\033[33mBypass: RUBOCOP_WARN_ONLY=1 DOCS_WARN_ONLY=1 git commit ...\033[0m"
 
 check-graphql-docs: ## Verify swagger/graphql/schema.graphql and public/graphql-docs/index.html exist
 	@echo "--- Checking for generated GraphQL docs ---"

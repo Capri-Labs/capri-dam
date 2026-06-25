@@ -1,10 +1,10 @@
 class TaskNotificationWorker
   include Sidekiq::Worker
-  sidekiq_options queue: 'notifications', retry: 3
+  sidekiq_options queue: "notifications", retry: 3
 
   def perform(task_id)
     task = WorkflowTask.find_by(id: task_id)
-    return unless task && task.status == 'pending'
+    return unless task && task.status == "pending"
 
     user = task.user
     asset = task.workflow_instance.asset
@@ -13,7 +13,7 @@ class TaskNotificationWorker
     Notification.create!(
       user: user,
       title: "New Task: #{task.workflow_step.title}",
-      message: "Please review: #{asset.title || 'Untitled Asset'}",
+      message: "Please review: #{asset.title || "Untitled Asset"}",
       # Deep link straight to the workflow dashboard
       action_url: "/workflows/dashboard"
     )

@@ -22,13 +22,13 @@ if defined?(Rails::Server) || defined?(Puma)
 
               # Map the incoming string value to Ruby's Logger constants
               log_constant = case new_level
-                             when 'DEBUG' then Logger::DEBUG
-                             when 'INFO'  then Logger::INFO
-                             when 'WARN'  then Logger::WARN
-                             when 'ERROR' then Logger::ERROR
-                             when 'FATAL' then Logger::FATAL
-                             else Logger::INFO
-                             end
+              when "DEBUG" then Logger::DEBUG
+              when "INFO"  then Logger::INFO
+              when "WARN"  then Logger::WARN
+              when "ERROR" then Logger::ERROR
+              when "FATAL" then Logger::FATAL
+              else Logger::INFO
+              end
 
               # Thread-safely update the dynamic memory of the active logger instance
               if Rails.logger.level != log_constant

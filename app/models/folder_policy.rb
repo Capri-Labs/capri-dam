@@ -26,5 +26,5 @@ class FolderPolicy < ApplicationRecord
 
   validates :read_access, :modify_access, :create_access, :delete_access,
             :replicate_access, :manage_access, :explicit_deny,
-            inclusion: { in: [true, false] }
+            inclusion: { in: [ true, false ] }
 end

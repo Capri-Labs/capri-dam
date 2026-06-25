@@ -1,8 +1,8 @@
-require 'azure/storage/blob'
-require 'openssl'
-require 'base64'
-require 'uri'
-require 'time'
+require "azure/storage/blob"
+require "openssl"
+require "base64"
+require "uri"
+require "time"
 
 module StorageAdapters
   # Azure Blob Storage Adapter
@@ -17,13 +17,12 @@ module StorageAdapters
   #   acl            "private" | "public-read" (sets container public access)
   #   cdn_base_url   (optional) Azure CDN or custom domain
   class AzureAdapter < BaseAdapter
-
     # ─────────────────────────────────────────────
     # CORE OPERATIONS
     # ─────────────────────────────────────────────
 
     def store(file, path, options = {})
-      content_type = options[:content_type] || 'application/octet-stream'
+      content_type = options[:content_type] || "application/octet-stream"
       blob_client.create_block_blob(
         container_name,
         path,
@@ -45,7 +44,7 @@ module StorageAdapters
 
     def url(path)
       if public_container?
-        cdn_base = @config['cdn_base_url'].to_s.chomp('/')
+        cdn_base = @config["cdn_base_url"].to_s.chomp("/")
         if cdn_base.present?
           "#{cdn_base}/#{path}"
         else
@@ -62,10 +61,10 @@ module StorageAdapters
 
     def presign_url(path, expires_in: 3600, method: :get, content_type: nil, filename: nil)
       now  = Time.now.utc
-      exp  = (now + expires_in).strftime('%Y-%m-%dT%H:%M:%SZ')
-      start = now.strftime('%Y-%m-%dT%H:%M:%SZ')
+      exp  = (now + expires_in).strftime("%Y-%m-%dT%H:%M:%SZ")
+      start = now.strftime("%Y-%m-%dT%H:%M:%SZ")
 
-      permissions = (method.to_sym == :put) ? 'cw' : 'r'
+      permissions = (method.to_sym == :put) ? "cw" : "r"
 
       # Build the SAS string-to-sign
       # Format: signedPermissions + \n + signedStart + \n + signedExpiry + \n
@@ -77,34 +76,34 @@ module StorageAdapters
         start,                              # st
         exp,                                # se
         canonicalized_resource,             # canonicalized resource
-        '',                                 # signedIdentifier
-        '',                                 # signedIP
-        'https',                            # signedProtocol
-        '2020-08-04',                       # signedVersion
-        'b',                                # signedResource (b = blob)
-        '',                                 # signedSnapshotTime
-        '',                                 # rscc (Cache-Control)
+        "",                                 # signedIdentifier
+        "",                                 # signedIP
+        "https",                            # signedProtocol
+        "2020-08-04",                       # signedVersion
+        "b",                                # signedResource (b = blob)
+        "",                                 # signedSnapshotTime
+        "",                                 # rscc (Cache-Control)
         content_type.to_s,                  # rscd (Content-Disposition) — repurposed for content_type hint
-        '',                                 # rsce (Content-Encoding)
-        '',                                 # rscl (Content-Language)
-        ''                                  # rsct (Content-Type)
+        "",                                 # rsce (Content-Encoding)
+        "",                                 # rscl (Content-Language)
+        "",                                  # rsct (Content-Type)
       ].join("\n")
 
       signature = Base64.strict_encode64(
-        OpenSSL::HMAC.digest('SHA256', Base64.decode64(account_key), string_to_sign)
+        OpenSSL::HMAC.digest("SHA256", Base64.decode64(account_key), string_to_sign)
       )
 
       params = {
-        'sv'  => '2020-08-04',
-        'ss'  => 'b',
-        'srt' => 'o',
-        'sp'  => permissions,
-        'se'  => exp,
-        'st'  => start,
-        'spr' => 'https',
-        'sig' => signature
+        "sv"  => "2020-08-04",
+        "ss"  => "b",
+        "srt" => "o",
+        "sp"  => permissions,
+        "se"  => exp,
+        "st"  => start,
+        "spr" => "https",
+        "sig" => signature,
       }
-      params['rscd'] = "attachment; filename=\"#{filename}\"" if filename.present?
+      params["rscd"] = "attachment; filename=\"#{filename}\"" if filename.present?
 
       base_url = "https://#{account_name}.blob.core.windows.net/#{container_name}/#{path}"
       "#{base_url}?#{URI.encode_www_form(params)}"
@@ -144,21 +143,21 @@ module StorageAdapters
         content_type: blob.properties[:content_type],
         etag: blob.properties[:etag]&.delete('"'),
         last_modified: blob.properties[:last_modified],
-        metadata: blob.metadata || {}
+        metadata: blob.metadata || {},
       }
     rescue Azure::Core::Http::HTTPError => e
       return nil if e.status_code == 404
       raise
     end
 
-    def list(prefix: '', limit: 100)
+    def list(prefix: "", limit: 100)
       blobs = blob_client.list_blobs(container_name, prefix: prefix, max_results: limit)
       blobs.map do |b|
         {
           key: b.name,
           size: b.properties[:content_length].to_i,
           last_modified: b.properties[:last_modified],
-          etag: b.properties[:etag]&.delete('"')
+          etag: b.properties[:etag]&.delete('"'),
         }
       end
     rescue Azure::Core::Http::HTTPError => e
@@ -190,20 +189,19 @@ module StorageAdapters
     end
 
     def account_name
-      @config['account_name'].to_s
+      @config["account_name"].to_s
     end
 
     def account_key
-      @config['account_key'] || @config['secret_key']
+      @config["account_key"] || @config["secret_key"]
     end
 
     def container_name
-      @config['container'] || @config['bucket']
+      @config["container"] || @config["bucket"]
     end
 
     def public_container?
-      @config['acl'].to_s == 'public-read'
+      @config["acl"].to_s == "public-read"
     end
   end
 end
-

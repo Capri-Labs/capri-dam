@@ -17,7 +17,7 @@ class EmailOrchestrator
       email_template: template,
       recipient_email: recipient_email,
       payload: liquid_payload,
-      status: 'pending'
+      status: "pending"
     )
 
     # 2. Throw it over the wall to Redis/Sidekiq for asynchronous processing

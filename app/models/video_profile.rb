@@ -35,12 +35,12 @@
 class VideoProfile < ApplicationRecord
   # ── Associations ─────────────────────────────────────────────────────────────
   has_many :encoding_presets,
-           class_name:  'VideoEncodingPreset',
+           class_name:  "VideoEncodingPreset",
            dependent:   :destroy,
            inverse_of:  :video_profile
 
   has_many :folder_assignments,
-           class_name:  'VideoProfileFolderAssignment',
+           class_name:  "VideoProfileFolderAssignment",
            dependent:   :destroy
 
   accepts_nested_attributes_for :encoding_presets,
@@ -60,12 +60,12 @@ class VideoProfile < ApplicationRecord
   # @return [Array<Hash>] preset attribute hashes ready for +VideoEncodingPreset.new+
   def self.default_adaptive_presets
     [
-      { name: '360p',  height: 360,  video_bitrate_kbps: 730,  frame_rate_fps: 30,
-        audio_codec: 'he_aac', audio_bitrate_kbps: 128, keep_aspect_ratio: true, position: 0 },
-      { name: '540p',  height: 540,  video_bitrate_kbps: 2000, frame_rate_fps: 30,
-        audio_codec: 'he_aac', audio_bitrate_kbps: 128, keep_aspect_ratio: true, position: 1 },
-      { name: '720p',  height: 720,  video_bitrate_kbps: 3000, frame_rate_fps: 30,
-        audio_codec: 'he_aac', audio_bitrate_kbps: 128, keep_aspect_ratio: true, position: 2 }
+      { name: "360p",  height: 360,  video_bitrate_kbps: 730,  frame_rate_fps: 30,
+        audio_codec: "he_aac", audio_bitrate_kbps: 128, keep_aspect_ratio: true, position: 0 },
+      { name: "540p",  height: 540,  video_bitrate_kbps: 2000, frame_rate_fps: 30,
+        audio_codec: "he_aac", audio_bitrate_kbps: 128, keep_aspect_ratio: true, position: 1 },
+      { name: "720p",  height: 720,  video_bitrate_kbps: 3000, frame_rate_fps: 30,
+        audio_codec: "he_aac", audio_bitrate_kbps: 128, keep_aspect_ratio: true, position: 2 },
     ]
   end
 
@@ -93,7 +93,7 @@ class VideoProfile < ApplicationRecord
     fields.each do |field|
       values = encoding_presets.map(&field.to_sym).uniq
       if values.size > 1
-        warnings << "Presets have different '#{field}' values (#{values.join(', ')}). " \
+        warnings << "Presets have different '#{field}' values (#{values.join(", ")}). " \
                     "Adaptive bitrate streaming will not be possible."
       end
     end
@@ -113,20 +113,19 @@ class VideoProfile < ApplicationRecord
   # @param mime [String] MIME type string, e.g. 'video/mp4'
   # @return [Boolean]
   def self.applicable_mime_type?(mime)
-    mime.to_s.start_with?('video/')
+    mime.to_s.start_with?("video/")
   end
 
   private
 
   def smart_crop_ratios_structure
     return if smart_crop_ratios.blank?
-    return errors.add(:smart_crop_ratios, 'must be an array') unless smart_crop_ratios.is_a?(Array)
+    return errors.add(:smart_crop_ratios, "must be an array") unless smart_crop_ratios.is_a?(Array)
 
     smart_crop_ratios.each_with_index do |ratio, i|
-      unless ratio.is_a?(Hash) && ratio['name'].present? && ratio['crop_ratio'].present?
+      unless ratio.is_a?(Hash) && ratio["name"].present? && ratio["crop_ratio"].present?
         errors.add(:smart_crop_ratios, "entry #{i + 1} must have 'name' and 'crop_ratio'")
       end
     end
   end
 end
-

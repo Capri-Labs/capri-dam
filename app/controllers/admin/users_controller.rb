@@ -18,14 +18,14 @@
 class Admin::UsersController < ApplicationController
   before_action :authenticate_user!
   before_action :ensure_admin!
-  before_action :set_target_user, only: [:show, :update, :destroy, :toggle_status,
+  before_action :set_target_user, only: [ :show, :update, :destroy, :toggle_status,
                                          :groups, :change_password,
                                          :impersonators, :add_impersonator, :remove_impersonator,
-                                         :preferences, :update_preferences]
+                                         :preferences, :update_preferences ]
 
   # GET /admin/users(.json)
   def index
-    @active_view = 'Users'
+    @active_view = "Users"
     respond_to do |format|
       format.html
       format.json do
@@ -66,9 +66,9 @@ class Admin::UsersController < ApplicationController
 
     if @user.save
       EmailOrchestrator.trigger(
-        'user_created',
+        "user_created",
         @user.email,
-        { 'user' => { 'first_name' => @user.first_name, 'temp_password' => temp_password } }
+        { "user" => { "first_name" => @user.first_name, "temp_password" => temp_password } }
       )
       render json: { success: true, message: "User created successfully.", user: serialize_user(@user) }
     else
@@ -81,13 +81,13 @@ class Admin::UsersController < ApplicationController
   def update
     # Prevent users from modifying their own admin status
     if @target_user == current_user && params[:user][:admin].present?
-      return render json: { success: false, errors: ["You cannot change your own admin status"] },
+      return render json: { success: false, errors: [ "You cannot change your own admin status" ] },
                     status: :forbidden
     end
 
     # Prevent non-admins from elevating admin status
     if params[:user][:admin].present? && !current_user.admin?
-      return render json: { success: false, errors: ["Unauthorized to modify admin status"] },
+      return render json: { success: false, errors: [ "Unauthorized to modify admin status" ] },
                     status: :forbidden
     end
 
@@ -146,7 +146,7 @@ class Admin::UsersController < ApplicationController
     render json: {
       groups: @target_user.user_groups.map { |g|
         { id: g.id, name: g.name, slug: g.slug, is_system: g.is_system }
-      }
+      },
     }
   end
 
@@ -155,7 +155,7 @@ class Admin::UsersController < ApplicationController
     render json: {
       impersonators: @target_user.impersonators.map { |u|
         { id: u.id, display_name: u.display_name, email: u.email }
-      }
+      },
     }
   end
 
@@ -167,7 +167,7 @@ class Admin::UsersController < ApplicationController
 
     @target_user.grant_impersonation_to(actor)
     AuditLog.record(
-      action:         'impersonation_grant',
+      action:         "impersonation_grant",
       auditable:      @target_user,
       user:           current_user,
       changes_data:   { granted_to: actor.email }
@@ -175,7 +175,7 @@ class Admin::UsersController < ApplicationController
 
     render json: { success: true, message: "#{actor.display_name} can now impersonate #{@target_user.display_name}." }
   rescue ActiveRecord::RecordInvalid => e
-    render json: { success: false, errors: [e.message] }, status: :unprocessable_entity
+    render json: { success: false, errors: [ e.message ] }, status: :unprocessable_entity
   end
 
   # DELETE /admin/users/:id/impersonators/:impersonator_id
@@ -184,7 +184,7 @@ class Admin::UsersController < ApplicationController
     @target_user.revoke_impersonation_from(actor) if actor
 
     AuditLog.record(
-      action:       'impersonation_revoke',
+      action:       "impersonation_revoke",
       auditable:    @target_user,
       user:         current_user,
       changes_data: { revoked_from: actor&.email }
@@ -245,7 +245,7 @@ class Admin::UsersController < ApplicationController
       active:       user.active,
       created_at:   user.created_at.strftime("%Y-%m-%d"),
       groups:       user.user_groups.pluck(:name),
-      group_ids:    user.user_groups.pluck(:id)
+      group_ids:    user.user_groups.pluck(:id),
     }
 
     if detailed
@@ -263,7 +263,7 @@ class Admin::UsersController < ApplicationController
     {
       language:                pref.language,
       receive_mention_emails:  pref.receive_mention_emails,
-      receive_workflow_emails: pref.receive_workflow_emails
+      receive_workflow_emails: pref.receive_workflow_emails,
     }
   end
 

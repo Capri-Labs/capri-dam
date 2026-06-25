@@ -13,7 +13,7 @@
 class ImageProfile < ApplicationRecord
   # ── Associations ─────────────────────────────────────────────────────────────
   has_many :folder_assignments,
-           class_name:  'ImageProfileFolderAssignment',
+           class_name:  "ImageProfileFolderAssignment",
            dependent:   :destroy
 
   # ── Validations ──────────────────────────────────────────────────────────────
@@ -38,7 +38,7 @@ class ImageProfile < ApplicationRecord
 
   # Returns the configured unsharp mask with safe defaults.
   def effective_unsharp_mask
-    defaults = { 'amount' => 1.75, 'radius' => 0.2, 'threshold' => 2 }
+    defaults = { "amount" => 1.75, "radius" => 0.2, "threshold" => 2 }
     defaults.merge(unsharp_mask.presence || {})
   end
 
@@ -48,7 +48,7 @@ class ImageProfile < ApplicationRecord
     excluded = %w[application/pdf image/gif application/x-indesign application/indesign]
     return false if excluded.include?(mime.to_s.downcase)
 
-    mime.to_s.start_with?('image/')
+    mime.to_s.start_with?("image/")
   end
 
   private
@@ -56,25 +56,24 @@ class ImageProfile < ApplicationRecord
   def unsharp_mask_values_in_range
     return if unsharp_mask.blank?
 
-    amount    = unsharp_mask['amount'].to_f
-    radius    = unsharp_mask['radius'].to_f
-    threshold = unsharp_mask['threshold'].to_i
+    amount    = unsharp_mask["amount"].to_f
+    radius    = unsharp_mask["radius"].to_f
+    threshold = unsharp_mask["threshold"].to_i
 
-    errors.add(:unsharp_mask, 'amount must be between 0 and 5')    unless amount.between?(0, 5)
-    errors.add(:unsharp_mask, 'radius must be between 0 and 250')  unless radius.between?(0, 250)
-    errors.add(:unsharp_mask, 'threshold must be between 0 and 255') unless threshold.between?(0, 255)
+    errors.add(:unsharp_mask, "amount must be between 0 and 5")    unless amount.between?(0, 5)
+    errors.add(:unsharp_mask, "radius must be between 0 and 250")  unless radius.between?(0, 250)
+    errors.add(:unsharp_mask, "threshold must be between 0 and 255") unless threshold.between?(0, 255)
   end
 
   def responsive_crops_structure
     return if responsive_crops.blank?
-    return errors.add(:responsive_crops, 'must be an array') unless responsive_crops.is_a?(Array)
+    return errors.add(:responsive_crops, "must be an array") unless responsive_crops.is_a?(Array)
 
     responsive_crops.each_with_index do |crop, i|
-      unless crop.is_a?(Hash) && crop['name'].present? &&
-             crop['width'].to_i > 0 && crop['height'].to_i > 0
+      unless crop.is_a?(Hash) && crop["name"].present? &&
+             crop["width"].to_i > 0 && crop["height"].to_i > 0
         errors.add(:responsive_crops, "entry #{i + 1} must have name, width > 0, and height > 0")
       end
     end
   end
 end
-

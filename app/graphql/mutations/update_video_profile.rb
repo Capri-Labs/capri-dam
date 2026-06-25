@@ -20,15 +20,15 @@ module Mutations
              description: "JSON-encoded array of preset hashes (supports nested attributes)"
 
     field :video_profile, Types::VideoProfileType, null: true
-    field :errors,        [String],                null: false
+    field :errors,        [ String ],                null: false
 
     def resolve(**args)
       unless context[:current_user]&.admin?
-        return { video_profile: nil, errors: ['Administrator privileges required.'] }
+        return { video_profile: nil, errors: [ "Administrator privileges required." ] }
       end
 
       profile = VideoProfile.active.find_by(id: args[:id])
-      return { video_profile: nil, errors: ['Video profile not found.'] } unless profile
+      return { video_profile: nil, errors: [ "Video profile not found." ] } unless profile
 
       attrs = {}
       attrs[:name]                          = args[:name]                          if args.key?(:name)
@@ -52,4 +52,3 @@ module Mutations
     end
   end
 end
-

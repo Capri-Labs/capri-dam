@@ -17,7 +17,7 @@ module StorageAdapters
     private
 
     def default_region
-      'us-west-002'
+      "us-west-002"
     end
 
     def client_options
@@ -41,4 +41,3 @@ module StorageAdapters
     end
   end
 end
-

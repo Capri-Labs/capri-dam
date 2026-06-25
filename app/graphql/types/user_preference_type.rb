@@ -8,4 +8,3 @@ module Types
     field :receive_workflow_emails,  Boolean, null: false
   end
 end
-

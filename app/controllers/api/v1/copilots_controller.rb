@@ -1,5 +1,5 @@
-require 'net/http'
-require 'uri'
+require "net/http"
+require "uri"
 
 class Api::V1::CopilotsController < ApplicationController
   # before_action :authenticate_user!
@@ -26,9 +26,9 @@ class Api::V1::CopilotsController < ApplicationController
             id: asset.id,
             original_filename: asset.original_filename,
             file_url: asset.file_url, # Assuming a helper that points to your AWS S3 bucket
-            properties: asset.properties
+            properties: asset.properties,
           }
-        end
+        end,
       }, status: :ok
     rescue => e
       Rails.logger.error("Semantic Search Failed: #{e.message}")

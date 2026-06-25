@@ -2,7 +2,7 @@ class SmartCollectionRouterWorker
   include Sidekiq::Job
 
   # Configure Sidekiq strictly for 3 retries on the mailers queue.
-  sidekiq_options queue: 'smartai', retry: 3
+  sidekiq_options queue: "smartai", retry: 3
 
   def perform(asset_id)
     asset = Asset.find_by(id: asset_id)

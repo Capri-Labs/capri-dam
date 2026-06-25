@@ -22,7 +22,7 @@ class Setting < ApplicationRecord
     data = find_by(key: key_name.to_s)&.value
 
     # If it's a hash wrapped inside our safety dictionary, unwrap it cleanly
-    if data.is_a?(Hash) && data.keys == [:val]
+    if data.is_a?(Hash) && data.keys == [ :val ]
       data[:val]
     else
       data
@@ -40,20 +40,20 @@ class Setting < ApplicationRecord
 
     data = if raw_data.is_a?(Hash)
              raw_data
-           elsif raw_data.is_a?(String)
+    elsif raw_data.is_a?(String)
              begin
                JSON.parse(raw_data)
              rescue JSON::ParserError
                {}
              end
-           else
+    else
              {}
-           end
+    end
 
     # Mask storage secrets before sending down the wire to React
     data.transform_keys!(&:to_s) # Ensure consistent string key lookups
     data.each do |key, value|
-      if key.downcase.include?('secret') && value.present?
+      if key.downcase.include?("secret") && value.present?
         data[key] = "********"
       end
     end
@@ -68,19 +68,18 @@ class Setting < ApplicationRecord
   # Applies dynamic database-backed SMTP settings directly to ActionMailer on the fly.
   # Can be triggered inside a background job, initializer, or controller context.
   def self.apply_smtp_settings!
-    config = get('smtp_settings')
-    return if config.blank? || config['enabled'] != 'true'
+    config = get("smtp_settings")
+    return if config.blank? || config["enabled"] != "true"
 
     ActionMailer::Base.delivery_method = :smtp
     ActionMailer::Base.smtp_settings = {
-      address:              config['address'],
-      port:                 config['port'].to_i,
-      domain:               config['domain'],
-      user_name:            config['user_name'],
-      password:             config['password'],
-      authentication:       config['authentication']&.to_sym || :plain,
-      enable_starttls_auto: config['enable_starttls_auto'] == 'true'
+      address:              config["address"],
+      port:                 config["port"].to_i,
+      domain:               config["domain"],
+      user_name:            config["user_name"],
+      password:             config["password"],
+      authentication:       config["authentication"]&.to_sym || :plain,
+      enable_starttls_auto: config["enable_starttls_auto"] == "true",
     }
   end
-
 end

@@ -15,13 +15,13 @@
 class Admin::UserGroupsController < ApplicationController
   before_action :authenticate_user!
   before_action :ensure_admin!
-  before_action :set_group, only: [:show, :update, :destroy, :add_member, :remove_member,
-                                   :add_group_member, :remove_group_member]
+  before_action :set_group, only: [ :show, :update, :destroy, :add_member, :remove_member,
+                                   :add_group_member, :remove_group_member ]
 
   # GET /admin/user_groups(.json)
   def index
     respond_to do |format|
-      format.html { @active_view = 'User Groups' }
+      format.html { @active_view = "User Groups" }
       format.json do
         groups = UserGroup.includes(:users, :child_groups).map do |group|
           parent_closure = UserGroupClosure.find_by(descendant_id: group.id, distance: 1)
@@ -36,7 +36,7 @@ class Admin::UserGroupsController < ApplicationController
   def show
     parent_closure = UserGroupClosure.find_by(descendant_id: @group.id, distance: 1)
     render json: {
-      group: serialize_group(@group, parent_id: parent_closure&.ancestor_id, include_members: true)
+      group: serialize_group(@group, parent_id: parent_closure&.ancestor_id, include_members: true),
     }
   end
 
@@ -185,7 +185,7 @@ class Admin::UserGroupsController < ApplicationController
       is_system:    group.is_system,
       parent_id:    parent_id || group.parent_id,
       member_count: group.users.count,
-      created_at:   group.created_at
+      created_at:   group.created_at,
     }
 
     if include_members

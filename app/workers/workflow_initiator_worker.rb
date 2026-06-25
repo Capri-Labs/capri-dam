@@ -1,6 +1,6 @@
 class WorkflowInitiatorWorker
   include Sidekiq::Worker
-  sidekiq_options queue: 'workflow', retry: 3
+  sidekiq_options queue: "workflow", retry: 3
 
   #  CHANGED: Now accepts workflow_id instead of trigger_event
   def perform(asset_id, workflow_id)
@@ -13,7 +13,7 @@ class WorkflowInitiatorWorker
     end
 
     #  Fetch the exact blueprint passed by the Evaluator Service
-    workflow = Workflow.find_by(id: workflow_id, status: 'active')
+    workflow = Workflow.find_by(id: workflow_id, status: "active")
     if workflow.nil?
       Rails.logger.warn "⚠️ ABORT: Blueprint #{workflow_id} is missing or inactive."
       return
@@ -21,13 +21,13 @@ class WorkflowInitiatorWorker
 
     ActiveRecord::Base.transaction do
       # 1. Lock the asset into review mode
-      asset.update!(status: 'in_review')
+      asset.update!(status: "in_review")
 
       # 2. Create the immutable Workflow Instance
       instance = WorkflowInstance.create!(
         asset: asset,
         workflow: workflow,
-        status: 'in_progress',
+        status: "in_progress",
         started_at: Time.current,
         blueprint_snapshot: generate_snapshot(workflow)
       )
@@ -41,8 +41,8 @@ class WorkflowInitiatorWorker
         Rails.logger.info " Workflow #{workflow.name} initiated successfully for Asset #{asset.id}"
       else
         # Safety Valve: Workflow has no steps
-        instance.update!(status: 'completed', completed_at: Time.current)
-        asset.update!(status: 'approved')
+        instance.update!(status: "completed", completed_at: Time.current)
+        asset.update!(status: "approved")
         Rails.logger.warn "⚠️ Workflow #{workflow.name} had zero steps. Auto-approved."
       end
     end
@@ -64,9 +64,9 @@ class WorkflowInitiatorWorker
       Rails.logger.warn "⚠️ No primary assignees found. Attempting fallback..."
       workflow = instance.workflow
 
-      if workflow.fallback_assignee_type == 'user'
+      if workflow.fallback_assignee_type == "user"
         users << User.find_by(id: workflow.fallback_assignee_id)
-      elsif workflow.fallback_assignee_type == 'group'
+      elsif workflow.fallback_assignee_type == "group"
         group = UserGroup.find_by(id: workflow.fallback_assignee_id)
         users = group.users if group
       end
@@ -84,7 +84,7 @@ class WorkflowInitiatorWorker
         workflow_instance: instance,
         workflow_step: step,
         user: user,
-        status: 'pending'
+        status: "pending"
       )
 
       TaskNotificationWorker.perform_async(task.id)
@@ -92,9 +92,9 @@ class WorkflowInitiatorWorker
   end
 
   def resolve_assignees(step)
-    if step.assignee_type == 'user'
-      [User.find_by(id: step.assignee_id)].compact
-    elsif step.assignee_type == 'group'
+    if step.assignee_type == "user"
+      [ User.find_by(id: step.assignee_id) ].compact
+    elsif step.assignee_type == "group"
       group = UserGroup.find_by(id: step.assignee_id)
       group ? group.users : []
     else

@@ -1,8 +1,178 @@
-# Omakase Ruby styling for Rails
-inherit_gem: { rubocop-rails-omakase: rubocop.yml }
-
-# Overwrite or add rules to create your own house style
+# ─────────────────────────────────────────────────────────────────────────────
+# Headless DAM — RuboCop configuration
 #
-# # Use `[a, [b, c]]` not `[ a, [ b, c ] ]`
-# Layout/SpaceInsideArrayLiteralBrackets:
-#   Enabled: false
+# Inherits from rubocop-rails-omakase (Basecamp/Rails house style) and layers
+# project-specific overrides on top.
+#
+# Usage:
+#   bundle exec rubocop               # check all
+#   bundle exec rubocop -a            # auto-correct safe offenses
+#   bundle exec rubocop --format github   # GitHub Actions annotations
+# ─────────────────────────────────────────────────────────────────────────────
+
+inherit_gem:
+  rubocop-rails-omakase: rubocop.yml
+
+# Require additional cops
+plugins:
+  - rubocop-rails
+  - rubocop-performance
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Paths
+# ─────────────────────────────────────────────────────────────────────────────
+AllCops:
+  NewCops: enable
+  TargetRubyVersion: 4.0
+  # Exclude generated/vendor code and test fixtures
+  Exclude:
+    - "bin/**/*"
+    - "db/schema.rb"
+    - "db/migrate/**/*"
+    - "node_modules/**/*"
+    - "vendor/**/*"
+    - "tmp/**/*"
+    - "log/**/*"
+    - "public/**/*"
+    - "storage/**/*"
+    - "coverage/**/*"
+    - "coverage-frontend/**/*"
+    - ".git/**/*"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Style
+# ─────────────────────────────────────────────────────────────────────────────
+
+Style/StringLiterals:
+  Enabled: true
+  EnforcedStyle: double_quotes
+
+Style/StringLiteralsInInterpolation:
+  Enabled: true
+  EnforcedStyle: double_quotes
+
+Style/FrozenStringLiteralComment:
+  # Rails handles this via config; disable for app files
+  Enabled: false
+
+Style/Documentation:
+  # Controllers, models etc. don't need class-level docs
+  Enabled: false
+
+Style/ClassAndModuleChildren:
+  # Allow compact class definitions: Admin::UsersController
+  Enabled: false
+
+Style/Lambda:
+  Enabled: true
+  EnforcedStyle: literal
+
+Style/TrailingCommaInArrayLiteral:
+  Enabled: true
+  EnforcedStyleForMultiline: comma
+
+Style/TrailingCommaInHashLiteral:
+  Enabled: true
+  EnforcedStyleForMultiline: comma
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Layout
+# ─────────────────────────────────────────────────────────────────────────────
+
+Layout/LineLength:
+  Max: 120
+  AllowedPatterns:
+    - '\A\s*#'          # long comments are OK
+    - "t\\.string"      # migration column definitions
+    - "t\\.text"
+    - "t\\.integer"
+    - "t\\.references"
+
+Layout/MultilineMethodCallIndentation:
+  EnforcedStyle: indented
+
+Layout/FirstArrayElementIndentation:
+  EnforcedStyle: consistent
+
+Layout/FirstHashElementIndentation:
+  EnforcedStyle: consistent
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Metrics — relaxed for service objects and controllers
+# ─────────────────────────────────────────────────────────────────────────────
+
+Metrics/MethodLength:
+  Max: 30
+  Exclude:
+    - "db/migrate/**/*"
+    - "spec/**/*"
+
+Metrics/ClassLength:
+  Max: 300
+  Exclude:
+    - "spec/**/*"
+
+Metrics/BlockLength:
+  Max: 50
+  Exclude:
+    - "spec/**/*"
+    - "config/routes.rb"
+    - "config/environments/**/*"
+    - "config/initializers/**/*"
+
+Metrics/AbcSize:
+  Max: 30
+  Exclude:
+    - "spec/**/*"
+
+Metrics/CyclomaticComplexity:
+  Max: 12
+
+Metrics/PerceivedComplexity:
+  Max: 12
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Rails cops
+# ─────────────────────────────────────────────────────────────────────────────
+
+Rails/FilePath:
+  Enabled: true
+
+Rails/HttpStatus:
+  Enabled: true
+  EnforcedStyle: symbolic
+
+Rails/NotNullColumn:
+  # Migrations sometimes add NOT NULL without a default
+  Enabled: false
+
+Rails/SkipsModelValidations:
+  # update_column is used intentionally for parent_id syncs
+  Enabled: false
+
+Rails/Output:
+  Enabled: true
+  Exclude:
+    - "db/seeds.rb"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Performance cops
+# ─────────────────────────────────────────────────────────────────────────────
+
+Performance/StringReplacement:
+  Enabled: true
+
+Performance/Count:
+  Enabled: true
+
+Performance/Detect:
+  Enabled: true
+
+Performance/FlatMap:
+  Enabled: true
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Spec / test relaxations (rubocop-rspec not required — kept as comments)
+# ─────────────────────────────────────────────────────────────────────────────
+# RSpec/ExampleLength: { Max: 30 }
+# RSpec/MultipleExpectations: { Max: 10 }

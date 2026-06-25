@@ -1,6 +1,6 @@
 class Api::V1::IngestionBatchesController < ApplicationController
   before_action :authenticate_user!
-  before_action :set_batch, only: [:show, :commit, :abort, :report]
+  before_action :set_batch, only: [ :show, :commit, :abort, :report ]
 
   # GET /api/v1/ingestion_batches
   def index
@@ -16,7 +16,7 @@ class Api::V1::IngestionBatchesController < ApplicationController
     items_scope = items_scope.where(status: params[:status]) if params[:status].present?
 
     # Pagination (cursor)
-    page     = [params[:page].to_i, 1].max
+    page     = [ params[:page].to_i, 1 ].max
     per_page = 50
     items    = items_scope.page(page).per(per_page) rescue items_scope.limit(per_page).offset((page - 1) * per_page)
 
@@ -32,14 +32,14 @@ class Api::V1::IngestionBatchesController < ApplicationController
           error_log:         item.error_log,
           legacy_metadata:   item.legacy_metadata,
           clean_properties:  item.clean_properties,
-          created_at:        item.created_at
+          created_at:        item.created_at,
         }
       },
       meta: {
         total:    items_scope.count,
         page:     page,
-        per_page: per_page
-      }
+        per_page: per_page,
+      },
     }
   end
 
@@ -86,7 +86,7 @@ class Api::V1::IngestionBatchesController < ApplicationController
   def report
     if @batch.report_snapshot_id.present?
       snapshot = ReportSnapshot.find_by(id: @batch.report_snapshot_id)
-      stats    = snapshot&.parameters&.dig('stats') || {}
+      stats    = snapshot&.parameters&.dig("stats") || {}
     else
       stats = {}
     end
@@ -105,7 +105,7 @@ class Api::V1::IngestionBatchesController < ApplicationController
   def set_batch
     @batch = IngestionBatch.find(params[:id])
   rescue ActiveRecord::RecordNotFound
-    render json: { error: 'Batch not found' }, status: :not_found
+    render json: { error: "Batch not found" }, status: :not_found
   end
 
   def batch_params

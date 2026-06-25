@@ -20,7 +20,7 @@ module Api
 
         render json: {
           success: true,
-          message: "Metadata sync initiated for #{folders.size} folders and #{assets.size} assets."
+          message: "Metadata sync initiated for #{folders.size} folders and #{assets.size} assets.",
         }, status: :accepted
       end
 
@@ -32,18 +32,18 @@ module Api
         # 1. Dispatch Folder Purge Workers
         # (This invalidates the folder's cache tag at the edge)
         folders.each do |folder_id|
-          CdnInvalidationWorker.perform_async('folder', folder_id)
+          CdnInvalidationWorker.perform_async("folder", folder_id)
         end
 
         # 2. Dispatch Asset Purge Workers
         # (This invalidates the specific asset's cache tag)
         assets.each do |asset_uuid|
-          CdnInvalidationWorker.perform_async('asset', asset_uuid)
+          CdnInvalidationWorker.perform_async("asset", asset_uuid)
         end
 
         render json: {
           success: true,
-          message: "Cache purge initiated for #{folders.size} folders and #{assets.size} assets."
+          message: "Cache purge initiated for #{folders.size} folders and #{assets.size} assets.",
         }, status: :accepted
       end
     end

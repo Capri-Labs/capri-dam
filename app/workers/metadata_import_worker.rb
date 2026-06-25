@@ -69,4 +69,3 @@ class MetadataImportWorker
     Rails.logger.error "⚠️ Failed to notify user for import ##{import.id}: #{e.message}"
   end
 end
-

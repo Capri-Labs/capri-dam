@@ -65,4 +65,3 @@ class MetadataExportWorker
     Rails.logger.error "⚠️ Failed to notify user for export ##{export.id}: #{e.message}"
   end
 end
-

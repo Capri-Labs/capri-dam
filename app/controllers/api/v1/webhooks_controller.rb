@@ -12,9 +12,9 @@ class Api::V1::WebhooksController < ApplicationController
     IngestionWorker.perform_async(connector.id, payload.to_json)
 
     # Always return a fast 200 OK to the source system so it doesn't retry
-    render json: { status: 'accepted' }, status: :ok
+    render json: { status: "accepted" }, status: :ok
   rescue ActiveRecord::RecordNotFound
-    render json: { error: 'Ingestion bridge not found' }, status: :not_found
+    render json: { error: "Ingestion bridge not found" }, status: :not_found
   end
 
   private
@@ -25,7 +25,7 @@ class Api::V1::WebhooksController < ApplicationController
 
     # Different systems use different signature headers.
     # Adobe I/O uses x-adobe-signature, generic systems often use x-hub-signature-256
-    signature_header = request.headers['x-adobe-signature'] || request.headers['x-hub-signature-256']
+    signature_header = request.headers["x-adobe-signature"] || request.headers["x-hub-signature-256"]
     return head :unauthorized unless signature_header
 
     # Recreate the HMAC hash using your local secret and the raw request body
@@ -33,7 +33,7 @@ class Api::V1::WebhooksController < ApplicationController
     payload_body = request.body.read
 
     expected_signature = OpenSSL::HMAC.base64digest(
-      OpenSSL::Digest.new('sha256'),
+      OpenSSL::Digest.new("sha256"),
       connector.webhook_secret,
       payload_body
     )

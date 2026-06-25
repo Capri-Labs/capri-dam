@@ -1,7 +1,7 @@
 class DynamicMailer < ApplicationMailer
   # Uses the default from address you configured in your SMTP settings,
   # or falls back to a generic one if not set.
-  default from: ENV.fetch('MAILER_SENDER_ADDRESS', 'noreply@yourdam.com')
+  default from: ENV.fetch("MAILER_SENDER_ADDRESS", "noreply@yourdam.com")
 
   def dispatch_email(to:, subject:, html_body:, text_body:)
     mail(to: to, subject: subject) do |format|

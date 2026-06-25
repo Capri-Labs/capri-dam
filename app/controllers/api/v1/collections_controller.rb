@@ -10,7 +10,7 @@ class Api::V1::CollectionsController < ApplicationController
     :remove_asset,
     :toggle_pin,
     :configure_rule,
-    :purge_cdn
+    :purge_cdn,
   ]
 
   # GET /api/v1/collections
@@ -21,13 +21,13 @@ class Api::V1::CollectionsController < ApplicationController
     #  Temporal Time-Travel Filter
     if params[:as_of].present?
       target_date = Time.zone.parse(params[:as_of]).end_of_day
-      @collections = @collections.where('created_at <= ?', target_date)
+      @collections = @collections.where("created_at <= ?", target_date)
     end
 
     @collections = @collections.order(created_at: :desc)
 
     render json: @collections.as_json(
-      methods: [:assets_count]
+      methods: [ :assets_count ]
     ), status: :ok
   end
 
@@ -42,7 +42,7 @@ class Api::V1::CollectionsController < ApplicationController
 
   # PATCH /api/v1/collections/bulk_update
   def bulk_update
-    return render json: { error: 'No IDs provided' }, status: :bad_request if params[:ids].blank?
+    return render json: { error: "No IDs provided" }, status: :bad_request if params[:ids].blank?
 
     collections = Collection.where(id: params[:ids])
 
@@ -72,19 +72,19 @@ class Api::V1::CollectionsController < ApplicationController
     as_of_date = params[:as_of].present? ? Time.zone.parse(params[:as_of]).end_of_day : Time.current
 
     render json: @collection.as_json(
-      methods: [:compliance_violations],
+      methods: [ :compliance_violations ],
       include: {
         collection_rule: {
-          only: [:semantic_prompt, :similarity_threshold, :metadata_filters, :active]
+          only: [ :semantic_prompt, :similarity_threshold, :metadata_filters, :active ],
         },
         collection_assets: {
           # Only show assets that were in the collection as of this date
-          conditions: -> { where('collection_assets.created_at <= ?', as_of_date) },
+          conditions: -> { where("collection_assets.created_at <= ?", as_of_date) },
           include: {
-            asset: { only: [:id, :title, :properties, :url, :created_at] }
+            asset: { only: [ :id, :title, :properties, :url, :created_at ] },
           },
-          methods: [:pinned]
-        }
+          methods: [ :pinned ],
+        },
       }
     ), status: :ok
   end
@@ -102,7 +102,7 @@ class Api::V1::CollectionsController < ApplicationController
         # Mocking the 2D projection distribution (0 to 100 scale)
         x: rand(10.0..90.0).round(2),
         y: rand(10.0..90.0).round(2),
-        url: asset.url
+        url: asset.url,
       }
     end
 
@@ -124,12 +124,12 @@ class Api::V1::CollectionsController < ApplicationController
   # POST /api/v1/collections/:slug/assets
   def add_asset
     asset = Asset.find_by(id: params[:asset_id])
-    return render json: { error: 'Asset not found' }, status: :not_found unless asset
+    return render json: { error: "Asset not found" }, status: :not_found unless asset
 
     join_record = CollectionAsset.new(collection: @collection, asset: asset)
 
     if join_record.save
-      render json: { message: 'Asset added successfully', collection: @collection.as_json }, status: :ok
+      render json: { message: "Asset added successfully", collection: @collection.as_json }, status: :ok
     else
       render json: { errors: join_record.errors.full_messages }, status: :unprocessable_entity
     end
@@ -141,16 +141,16 @@ class Api::V1::CollectionsController < ApplicationController
 
     if join_record
       join_record.destroy
-      render json: { message: 'Asset removed successfully' }, status: :ok
+      render json: { message: "Asset removed successfully" }, status: :ok
     else
-      render json: { error: 'Asset not found in this collection' }, status: :not_found
+      render json: { error: "Asset not found in this collection" }, status: :not_found
     end
   end
 
   # POST /api/v1/collections/:slug/rule
   def configure_rule
     # Ensure the collection is marked as 'smart'
-    @collection.update!(collection_type: 'smart') unless @collection.smart?
+    @collection.update!(collection_type: "smart") unless @collection.smart?
 
     rule = @collection.collection_rule || @collection.build_collection_rule
 
@@ -162,8 +162,8 @@ class Api::V1::CollectionsController < ApplicationController
 
     if rule.save
       render json: {
-        message: 'Smart routing rules updated successfully.',
-        collection: @collection.as_json(include: :collection_rule)
+        message: "Smart routing rules updated successfully.",
+        collection: @collection.as_json(include: :collection_rule),
       }, status: :ok
     else
       render json: { errors: rule.errors.full_messages }, status: :unprocessable_entity
@@ -174,12 +174,12 @@ class Api::V1::CollectionsController < ApplicationController
   def toggle_pin
     join_record = CollectionAsset.find_by(collection: @collection, asset_id: params[:asset_id])
 
-    return render json: { error: 'Asset not in collection' }, status: :not_found unless join_record
+    return render json: { error: "Asset not in collection" }, status: :not_found unless join_record
 
     # Toggle the boolean state
     join_record.update!(pinned: !join_record.pinned)
 
-    status_message = join_record.pinned ? 'Asset pinned manually.' : 'Asset unpinned. AI will manage routing.'
+    status_message = join_record.pinned ? "Asset pinned manually." : "Asset unpinned. AI will manage routing."
     render json: { message: status_message, pinned: join_record.pinned }, status: :ok
   end
 
@@ -187,16 +187,16 @@ class Api::V1::CollectionsController < ApplicationController
   def destroy
     # Soft delete to maintain audit trails
     if @collection.update(deleted_at: Time.current)
-      render json: { message: 'Workspace archived successfully.' }, status: :ok
+      render json: { message: "Workspace archived successfully." }, status: :ok
     else
-      render json: { error: 'Failed to archive workspace.' }, status: :unprocessable_entity
+      render json: { error: "Failed to archive workspace." }, status: :unprocessable_entity
     end
   end
 
   # DELETE /api/v1/collections/bulk_delete
   def bulk_delete
     # Verify we received an array of IDs
-    return render json: { error: 'No IDs provided' }, status: :bad_request if params[:ids].blank?
+    return render json: { error: "No IDs provided" }, status: :bad_request if params[:ids].blank?
 
     collections = Collection.where(id: params[:ids])
 
@@ -231,8 +231,8 @@ class Api::V1::CollectionsController < ApplicationController
 
     # --- DEVELOPMENT MOCK (Replace with logic above in Production) ---
     # Simulates finding 4 to 12 assets with random match scores above the threshold
-    simulated_matches = Asset.published.order(Arel.sql('RANDOM()')).limit(rand(4..12)).map do |asset|
-      asset.as_json(only: [:id, :title, :properties]).merge(
+    simulated_matches = Asset.published.order(Arel.sql("RANDOM()")).limit(rand(4..12)).map do |asset|
+      asset.as_json(only: [ :id, :title, :properties ]).merge(
         mock_match_score: (threshold + rand(0.01..(1.0 - threshold))).round(3)
       )
     end
@@ -240,7 +240,7 @@ class Api::V1::CollectionsController < ApplicationController
     render json: {
       matches: simulated_matches,
       count: simulated_matches.size,
-      message: "Simulation complete."
+      message: "Simulation complete.",
     }, status: :ok
   rescue ActionController::ParameterMissing => e
     render json: { error: e.message }, status: :bad_request
@@ -253,10 +253,10 @@ class Api::V1::CollectionsController < ApplicationController
 
     # Enforce Security on the detailed view
     unless @collection.accessible_by?(current_user)
-      render json: { error: 'Unauthorized Access: You do not have clearance for this workspace.' }, status: :forbidden
+      render json: { error: "Unauthorized Access: You do not have clearance for this workspace." }, status: :forbidden
     end
   rescue ActiveRecord::RecordNotFound
-    render json: { error: 'Collection not found' }, status: :not_found
+    render json: { error: "Collection not found" }, status: :not_found
   end
 
   def collection_params
@@ -269,7 +269,7 @@ class Api::V1::CollectionsController < ApplicationController
       properties: [
         tags: [],
         allowed_groups: [],
-        denied_groups: []
+        denied_groups: [],
       ]
     )
   end

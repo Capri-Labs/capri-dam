@@ -46,7 +46,7 @@ module IngestionAdapters
     # Raises on non-2xx responses.
     def get_json(url, extra_headers = {})
       uri      = URI.parse(url)
-      response = Net::HTTP.start(uri.hostname, uri.port, use_ssl: uri.scheme == 'https') do |http|
+      response = Net::HTTP.start(uri.hostname, uri.port, use_ssl: uri.scheme == "https") do |http|
         req = Net::HTTP::Get.new(uri)
         default_headers.merge(extra_headers).each { |k, v| req[k] = v }
         http.request(req)
@@ -60,21 +60,21 @@ module IngestionAdapters
     # Override in subclasses that use Basic auth or custom headers.
     def default_headers
       {
-        'Authorization' => "Bearer #{credentials['auth_token']}",
-        'Accept'        => 'application/json',
-        'Content-Type'  => 'application/json',
-        'User-Agent'    => 'CapriDAM-Migrator/1.0'
+        "Authorization" => "Bearer #{credentials["auth_token"]}",
+        "Accept"        => "application/json",
+        "Content-Type"  => "application/json",
+        "User-Agent"    => "CapriDAM-Migrator/1.0",
       }
     end
 
     # Download a binary file via HTTP and write to a tempfile.
     # Yields each chunk if a block is given (for live SHA-256 hashing).
-    def stream_http_file(url, extension = '.bin', &block)
+    def stream_http_file(url, extension = ".bin", &block)
       uri      = URI.parse(url)
-      tempfile = Tempfile.new(['migration_', extension])
+      tempfile = Tempfile.new([ "migration_", extension ])
       tempfile.binmode
 
-      Net::HTTP.start(uri.hostname, uri.port, use_ssl: uri.scheme == 'https') do |http|
+      Net::HTTP.start(uri.hostname, uri.port, use_ssl: uri.scheme == "https") do |http|
         req = Net::HTTP::Get.new(uri)
         default_headers.each { |k, v| req[k] = v }
 
@@ -93,7 +93,7 @@ module IngestionAdapters
     end
 
     def endpoint
-      credentials['endpoint'].to_s.chomp('/')
+      credentials["endpoint"].to_s.chomp("/")
     end
   end
 end

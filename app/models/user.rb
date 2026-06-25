@@ -66,16 +66,16 @@ class User < ApplicationRecord
   has_many :notifications,          dependent: :destroy
   has_many :metadata_exports,       dependent: :destroy
   has_many :metadata_imports,       dependent: :destroy
-  has_one  :preference, class_name: 'UserPreference', dependent: :destroy
+  has_one  :preference, class_name: "UserPreference", dependent: :destroy
 
   # Impersonation: accounts that may impersonate THIS user
-  has_many :impersonator_grants, class_name: 'UserImpersonator',
+  has_many :impersonator_grants, class_name: "UserImpersonator",
            foreign_key: :user_id, dependent: :destroy
   has_many :impersonators, through: :impersonator_grants,
            source: :impersonator
 
   # Impersonation: accounts THIS user is allowed to act as
-  has_many :impersonatee_grants, class_name: 'UserImpersonator',
+  has_many :impersonatee_grants, class_name: "UserImpersonator",
            foreign_key: :impersonator_id, dependent: :destroy
   has_many :impersonating_accounts, through: :impersonatee_grants,
            source: :user
@@ -111,8 +111,8 @@ class User < ApplicationRecord
     if user.new_record?
       user.email    = auth.info.email
       user.password = Devise.friendly_token[0, 20]
-      user.name     = auth.info.name.presence || auth.info.email.split('@').first
-      user.username = "#{auth.info.email.split('@').first}_sso"
+      user.name     = auth.info.name.presence || auth.info.email.split("@").first
+      user.username = "#{auth.info.email.split("@").first}_sso"
     else
       # Sync mutable fields on every login
       user.name       = auth.info.name.presence || user.name
@@ -138,8 +138,8 @@ class User < ApplicationRecord
   # @return [String]
   def display_name
     name.presence ||
-      [first_name, last_name].compact.join(' ').presence ||
-      email.split('@').first
+      [ first_name, last_name ].compact.join(" ").presence ||
+      email.split("@").first
   end
 
   # @return [Boolean]
@@ -169,7 +169,7 @@ class User < ApplicationRecord
   # super-administrators built-in groups.
   # @return [Boolean]
   def super_admin?
-    user_groups.where(slug: 'super-administrators').exists?
+    user_groups.where(slug: "super-administrators").exists?
   end
 
   # Computes the effective permission set for the user inside a specific folder.
@@ -198,7 +198,7 @@ class User < ApplicationRecord
       create:    policies.any?(&:create_access),
       delete:    policies.any?(&:delete_access),
       replicate: policies.any?(&:replicate_access),
-      manage:    policies.any?(&:manage_access)
+      manage:    policies.any?(&:manage_access),
     }
   end
 
@@ -284,7 +284,7 @@ class User < ApplicationRecord
   # ---------------------------------------------------------------------------
 
   def add_to_everyone_group
-    everyone = UserGroup.find_by(slug: 'everyone')
+    everyone = UserGroup.find_by(slug: "everyone")
     user_groups << everyone if everyone && !user_groups.include?(everyone)
   rescue StandardError => e
     Rails.logger.warn("[User] Could not add #{email} to everyone group: #{e.message}")
