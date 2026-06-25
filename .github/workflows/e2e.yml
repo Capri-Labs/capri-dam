@@ -75,7 +75,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install --no-install-recommends -y libpq-dev libvips node-gyp exiv2
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Ruby ${{ env.RUBY_VERSION }}
         uses: ruby/setup-ruby@v1
