@@ -75,7 +75,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install --no-install-recommends -y libpq-dev libvips node-gyp exiv2
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Ruby ${{ env.RUBY_VERSION }}
         uses: ruby/setup-ruby@v1
@@ -110,12 +110,23 @@ jobs:
         env:
           RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY }}
         run: |
-          bundle exec rails server -p 3000 -e test &
-          # Wait until the server is ready
+          bundle exec rails server -p 3000 -e test > /tmp/rails-server.log 2>&1 &
+          echo "Rails server PID: $!"
+          # Wait up to 60 s (30 × 2 s) for the /up health-check to respond
           for i in $(seq 1 30); do
-            curl -sf http://localhost:3000/up && break
+            if curl -sf --max-time 2 http://localhost:3000/up; then
+              echo "Rails server is ready (attempt $i)"
+              break
+            fi
+            echo "Waiting for server... attempt $i/30"
             sleep 2
           done
+          # Hard-fail the step if the server still isn't answering
+          if ! curl -sf --max-time 2 http://localhost:3000/up; then
+            echo "::error::Rails server did not start within 60 s"
+            echo "=== Server log ===" && cat /tmp/rails-server.log || true
+            exit 1
+          fi
 
       - name: Run Playwright tests
         env:
@@ -125,7 +136,7 @@ jobs:
         run: yarn playwright test --reporter=html
 
       - name: Upload Playwright HTML report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: playwright-report
@@ -133,7 +144,7 @@ jobs:
           retention-days: 30
 
       - name: Upload E2E screenshots on failure
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: playwright-screenshots

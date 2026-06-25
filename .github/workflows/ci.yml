@@ -37,7 +37,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Ruby ${{ env.RUBY_VERSION }}
         uses: ruby/setup-ruby@v1
@@ -46,7 +46,7 @@ jobs:
           bundler-cache: true
 
       - name: Cache RuboCop offenses
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ${{ env.RUBOCOP_CACHE_ROOT }}
           key: rubocop-${{ runner.os }}-${{ hashFiles('.ruby-version','**/.rubocop.yml','Gemfile.lock') }}-${{ github.ref_name == github.event.repository.default_branch && github.run_id || 'default' }}
@@ -63,7 +63,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Ruby ${{ env.RUBY_VERSION }}
         uses: ruby/setup-ruby@v1
@@ -76,7 +76,7 @@ jobs:
         continue-on-error: true
 
       - name: Upload Brakeman report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: brakeman-report
@@ -125,7 +125,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install --no-install-recommends -y libpq-dev libvips node-gyp exiv2
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Ruby ${{ env.RUBY_VERSION }}
         uses: ruby/setup-ruby@v1
@@ -156,14 +156,14 @@ jobs:
             --out tmp/rspec-results.xml
 
       - name: Upload RSpec test results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: rspec-results
           path: tmp/rspec-results.xml
 
       - name: Upload backend coverage report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: coverage-backend
@@ -176,7 +176,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Node ${{ env.NODE_VERSION }}
         uses: actions/setup-node@v4
@@ -191,7 +191,7 @@ jobs:
         run: yarn jest --coverage --ci
 
       - name: Upload frontend unit coverage report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: coverage-frontend-unit
@@ -237,7 +237,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install --no-install-recommends -y libpq-dev libvips node-gyp exiv2
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Ruby ${{ env.RUBY_VERSION }}
         uses: ruby/setup-ruby@v1
@@ -245,14 +245,26 @@ jobs:
           ruby-version: ${{ env.RUBY_VERSION }}
           bundler-cache: true
 
+      - name: Set up Node ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: yarn
+
+      - name: Install JS dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Build JS assets
+        run: yarn build
+
       - name: Prepare test database
         run: bundle exec rails db:test:prepare
 
-      - name: Run system tests
-        run: bin/rails test:system
+      - name: Run system tests (RSpec)
+        run: bundle exec rspec spec/system/ --format progress
 
       - name: Upload screenshots from failed tests
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: system-test-screenshots
