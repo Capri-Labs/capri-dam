@@ -16,6 +16,21 @@ FactoryBot.define do
       role  { "admin" }
     end
 
+    # Super-admin — member of the 'super-administrators' group.
+    # The after(:create) hook mirrors the group-based check in User#super_admin?
+    trait :super_admin do
+      admin { true }
+      role  { "admin" }
+
+      after(:create) do |user|
+        group = UserGroup.find_or_create_by!(
+          slug: "super-administrators",
+          name: "Super Administrators",
+        ) { |g| g.is_system = true }
+        user.user_groups << group unless user.user_groups.include?(group)
+      end
+    end
+
     trait :sso do
       sequence(:provider) { "keycloak_openid" }
       sequence(:uid)      { |n| "keycloak-uid-#{n}" }

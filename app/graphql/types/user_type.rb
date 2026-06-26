@@ -1,8 +1,9 @@
 # GraphQL type for a DAM user account.
 #
 # Exposes the fields needed by the admin UI overlay tabs (Properties, Groups,
-# Impersonators, Preferences).  Sensitive fields such as encrypted_password
-# and reset_password_token are intentionally omitted.
+# Impersonators, Preferences) and the self-service Profile page.
+# Sensitive fields such as encrypted_password and reset_password_token
+# are intentionally omitted.
 module Types
   class UserType < Types::BaseObject
     description "A DAM user account"
@@ -31,7 +32,12 @@ module Types
           description: "Users allowed to impersonate this account"
 
     field :preferences, Types::UserPreferenceType, null: true,
-          description: "Language and notification preferences"
+          description: "Language, theme, timezone and notification preferences"
+
+    field :personal_access_tokens, [ Types::PersonalAccessTokenType ], null: false,
+          description: "API tokens owned by this user (only returned for own account)"
+
+    # ── Resolvers ──────────────────────────────────────────────────────────
 
     def sso_managed
       object.sso_managed?
@@ -47,6 +53,13 @@ module Types
 
     def preferences
       object.preference
+    end
+
+    def personal_access_tokens
+      # Only expose PATs when the viewer is looking at their own account.
+      return [] unless context[:current_user]&.id == object.id ||
+                       context[:current_user]&.admin?
+      object.personal_access_tokens.order(created_at: :desc)
     end
   end
 end

@@ -25,6 +25,7 @@ import MetadataSchemasManager from "./Tools/MetadataSchemas";
 import MetadataExportManager from "./Tools/MetadataExport";
 import MetadataImportManager from "./Tools/MetadataImport";
 import AssetConfigurationsManager from "./Tools/AssetConfigurations";
+import ProfilePage from "./Profile/ProfilePage";
 
 export const COMPONENT_REGISTRY = {
     'dashboard': DashboardManager,
@@ -54,4 +55,5 @@ export const COMPONENT_REGISTRY = {
     'metadata-exports-screen': MetadataExportManager,
     'metadata-imports-screen': MetadataImportManager,
     'asset-configurations-screen': AssetConfigurationsManager,
+    'profile': ProfilePage,
 };

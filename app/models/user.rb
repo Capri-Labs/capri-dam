@@ -67,6 +67,7 @@ class User < ApplicationRecord
   has_many :metadata_exports,       dependent: :destroy
   has_many :metadata_imports,       dependent: :destroy
   has_one  :preference, class_name: "UserPreference", dependent: :destroy
+  has_many :personal_access_tokens, dependent: :destroy
 
   # Impersonation: accounts that may impersonate THIS user
   has_many :impersonator_grants, class_name: "UserImpersonator",
@@ -226,9 +227,21 @@ class User < ApplicationRecord
 
   # Returns +true+ when +actor+ is authorised to impersonate this user.
   #
+  # Rules (in priority order):
+  # 1. Nobody can impersonate themselves.
+  # 2. Super-admins can impersonate any user (including regular admins),
+  #    but NOT other super-admins.
+  # 3. Regular admins can impersonate any non-super-admin user.
+  # 4. Any user with an explicit {UserImpersonator} grant can impersonate.
+  #
   # @param actor [User] the would-be impersonator
   # @return [Boolean]
   def can_be_impersonated_by?(actor)
+    return false if actor.id == id                   # no self-impersonation
+
+    return false if super_admin?                     # super-admins are never impersonated
+    return true  if actor.super_admin?               # super-admins can impersonate anyone else
+    return true  if actor.admin? && !super_admin?    # admins can impersonate non-super-admins
     impersonator_grants.where(impersonator_id: actor.id).exists?
   end
 

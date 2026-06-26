@@ -51,10 +51,14 @@
                   <a href="#group-Operations-Mutations">Mutations</a>
                 </h5>
                 <ul class="nav-group-section-items">
+                  <li><a href="#mutation-createPersonalAccessToken">createPersonalAccessToken</a></li>
                   <li><a href="#mutation-createUser">createUser</a></li>
                   <li><a href="#mutation-createUserGroup">createUserGroup</a></li>
                   <li><a href="#mutation-createVideoProfile">createVideoProfile</a></li>
                   <li><a href="#mutation-deleteUserGroup">deleteUserGroup</a></li>
+                  <li><a href="#mutation-revokePersonalAccessToken">revokePersonalAccessToken</a></li>
+                  <li><a href="#mutation-startImpersonation">startImpersonation</a></li>
+                  <li><a href="#mutation-stopImpersonation">stopImpersonation</a></li>
                   <li><a href="#mutation-updateUser">updateUser</a></li>
                   <li><a href="#mutation-updateUserGroup">updateUserGroup</a></li>
                   <li><a href="#mutation-updateVideoProfile">updateVideoProfile</a></li>
@@ -68,6 +72,8 @@
             <ul class="nav-group-items">
               <li><a href="#definition-Asset">Asset</a></li>
               <li><a href="#definition-Collection">Collection</a></li>
+              <li><a href="#definition-CreatePersonalAccessTokenInput">CreatePersonalAccessTokenInput</a></li>
+              <li><a href="#definition-CreatePersonalAccessTokenPayload">CreatePersonalAccessTokenPayload</a></li>
               <li><a href="#definition-CreateUserGroupInput">CreateUserGroupInput</a></li>
               <li><a href="#definition-CreateUserGroupPayload">CreateUserGroupPayload</a></li>
               <li><a href="#definition-CreateUserInput">CreateUserInput</a></li>
@@ -79,6 +85,13 @@
               <li><a href="#definition-FolderPolicy">FolderPolicy</a></li>
               <li><a href="#definition-ImageProfile">ImageProfile</a></li>
               <li><a href="#definition-JSON">JSON</a></li>
+              <li><a href="#definition-PersonalAccessToken">PersonalAccessToken</a></li>
+              <li><a href="#definition-RevokePersonalAccessTokenInput">RevokePersonalAccessTokenInput</a></li>
+              <li><a href="#definition-RevokePersonalAccessTokenPayload">RevokePersonalAccessTokenPayload</a></li>
+              <li><a href="#definition-StartImpersonationInput">StartImpersonationInput</a></li>
+              <li><a href="#definition-StartImpersonationPayload">StartImpersonationPayload</a></li>
+              <li><a href="#definition-StopImpersonationInput">StopImpersonationInput</a></li>
+              <li><a href="#definition-StopImpersonationPayload">StopImpersonationPayload</a></li>
               <li><a href="#definition-UpdateUserGroupInput">UpdateUserGroupInput</a></li>
               <li><a href="#definition-UpdateUserGroupPayload">UpdateUserGroupPayload</a></li>
               <li><a href="#definition-UpdateUserInput">UpdateUserInput</a></li>
@@ -374,6 +387,7 @@
     <span class="hljs-symbol">impersonators <span class="hljs-tag">{
       <span class="hljs-type">...UserFragment</span>
     }</span></span>
+    <span class="hljs-symbol">personalAccessTokens</span>
     <span class="hljs-symbol">preferences</span>
   }</span></span>
 }</span></span>
@@ -386,6 +400,7 @@
     <span class="hljs-attr">"user"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
       <span class="hljs-attr">"groups"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-string">UserGroup</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span>
       <span class="hljs-attr">"impersonators"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-string">User</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span>
+      <span class="hljs-attr">"personalAccessTokens"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-string">PersonalAccessToken</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span>
       <span class="hljs-attr">"preferences"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">UserPreference</span>
     <span class="hljs-punctuation">}</span>
   <span class="hljs-punctuation">}</span>
@@ -544,6 +559,7 @@
     <span class="hljs-symbol">impersonators <span class="hljs-tag">{
       <span class="hljs-type">...UserFragment</span>
     }</span></span>
+    <span class="hljs-symbol">personalAccessTokens</span>
     <span class="hljs-symbol">preferences</span>
   }</span></span>
 }</span></span>
@@ -557,6 +573,7 @@
       <span class="hljs-punctuation">{</span>
         <span class="hljs-attr">"groups"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-string">UserGroup</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span>
         <span class="hljs-attr">"impersonators"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-string">User</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"personalAccessTokens"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-string">PersonalAccessToken</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span>
         <span class="hljs-attr">"preferences"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">UserPreference</span>
       <span class="hljs-punctuation">}</span>
     <span class="hljs-punctuation">]</span>
@@ -664,7 +681,79 @@
             </div>
           </section>
           <h1 id="group-Operations-Mutations" class="group-heading" data-traverse-target="group-Operations-Mutations">Mutations</h1>
+          <section id="mutation-createPersonalAccessToken" class="operation operation-mutation" data-traverse-target="mutation-createPersonalAccessToken">
+            <h2 class="operation-heading ">
+              <code>createPersonalAccessToken</code>
+            </h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Generate a new Personal Access Token for the current user</p>
+                </div>
+              </div>
+            </div>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-response doc-copy-section">
+                  <h5>Response</h5>
+                  <p> Returns a <a href="#definition-CreatePersonalAccessTokenPayload"><code>CreatePersonalAccessTokenPayload</code></a>
+                  </p>
+                </div>
+                <div class="operation-arguments doc-copy-section">
+                  <h5>Arguments</h5>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>
+                          <span class="property-name"><code>input</code></span> - <span class="property-type"><a href="#definition-CreatePersonalAccessTokenInput"><code>CreatePersonalAccessTokenInput!</code></a></span>
+                        </td>
+                        <td> Parameters for CreatePersonalAccessToken </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <h4 class="example-heading">Example</h4>
+                <div class="example-section example-section-is-code operation-query-example">
+                  <h5>Query</h5>
+                  <pre><code class="hljs language-gql"><span class="hljs-symbol"><span class="hljs-keyword">mutation</span> createPersonalAccessToken<span class="hljs-tag">(<span class="hljs-code">$input</span>:<span class="hljs-type"> CreatePersonalAccessTokenInput!</span>)</span> <span class="hljs-tag">{
+  <span class="hljs-symbol">createPersonalAccessToken<span class="hljs-tag">(input: <span class="hljs-code">$input</span>)</span> <span class="hljs-tag">{
+    <span class="hljs-symbol">token</span>
+  }</span></span>
+}</span></span>
+</code></pre>
+                </div>
+                <div class="example-section example-section-is-code operation-variables-example">
+                  <h5>Variables</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"input"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">CreatePersonalAccessTokenInput</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+                <div class="example-section example-section-is-code operation-response-example">
+                  <h5>Response</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">"data"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">"createPersonalAccessToken"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+      <span class="hljs-attr">"token"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">PersonalAccessToken</span>
+    <span class="hljs-punctuation">}</span>
+  <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
           <section id="mutation-createUser" class="operation operation-mutation" data-traverse-target="mutation-createUser">
+            <div class="operation-group-name">
+              <a href="#group-Operations-Mutations">Mutations</a>
+            </div>
             <h2 class="operation-heading ">
               <code>createUser</code>
             </h2>
@@ -928,6 +1017,206 @@
                 <div class="example-section example-section-is-code operation-response-example">
                   <h5>Response</h5>
                   <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"data"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-attr">"deleteUserGroup"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="mutation-revokePersonalAccessToken" class="operation operation-mutation" data-traverse-target="mutation-revokePersonalAccessToken">
+            <div class="operation-group-name">
+              <a href="#group-Operations-Mutations">Mutations</a>
+            </div>
+            <h2 class="operation-heading ">
+              <code>revokePersonalAccessToken</code>
+            </h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Revoke a Personal Access Token owned by the current user</p>
+                </div>
+              </div>
+            </div>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-response doc-copy-section">
+                  <h5>Response</h5>
+                  <p> Returns a <a href="#definition-RevokePersonalAccessTokenPayload"><code>RevokePersonalAccessTokenPayload</code></a>
+                  </p>
+                </div>
+                <div class="operation-arguments doc-copy-section">
+                  <h5>Arguments</h5>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>
+                          <span class="property-name"><code>input</code></span> - <span class="property-type"><a href="#definition-RevokePersonalAccessTokenInput"><code>RevokePersonalAccessTokenInput!</code></a></span>
+                        </td>
+                        <td> Parameters for RevokePersonalAccessToken </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <h4 class="example-heading">Example</h4>
+                <div class="example-section example-section-is-code operation-query-example">
+                  <h5>Query</h5>
+                  <pre><code class="hljs language-gql"><span class="hljs-symbol"><span class="hljs-keyword">mutation</span> revokePersonalAccessToken<span class="hljs-tag">(<span class="hljs-code">$input</span>:<span class="hljs-type"> RevokePersonalAccessTokenInput!</span>)</span> <span class="hljs-tag">{
+  <span class="hljs-symbol">revokePersonalAccessToken<span class="hljs-tag">(input: <span class="hljs-code">$input</span>)</span></span>
+}</span></span>
+</code></pre>
+                </div>
+                <div class="example-section example-section-is-code operation-variables-example">
+                  <h5>Variables</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"input"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">RevokePersonalAccessTokenInput</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+                <div class="example-section example-section-is-code operation-response-example">
+                  <h5>Response</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"data"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-attr">"revokePersonalAccessToken"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="mutation-startImpersonation" class="operation operation-mutation" data-traverse-target="mutation-startImpersonation">
+            <div class="operation-group-name">
+              <a href="#group-Operations-Mutations">Mutations</a>
+            </div>
+            <h2 class="operation-heading ">
+              <code>startImpersonation</code>
+            </h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Begin impersonating another user (admin/super-admin only)</p>
+                </div>
+              </div>
+            </div>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-response doc-copy-section">
+                  <h5>Response</h5>
+                  <p> Returns a <a href="#definition-StartImpersonationPayload"><code>StartImpersonationPayload</code></a>
+                  </p>
+                </div>
+                <div class="operation-arguments doc-copy-section">
+                  <h5>Arguments</h5>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>
+                          <span class="property-name"><code>input</code></span> - <span class="property-type"><a href="#definition-StartImpersonationInput"><code>StartImpersonationInput!</code></a></span>
+                        </td>
+                        <td> Parameters for StartImpersonation </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <h4 class="example-heading">Example</h4>
+                <div class="example-section example-section-is-code operation-query-example">
+                  <h5>Query</h5>
+                  <pre><code class="hljs language-gql"><span class="hljs-symbol"><span class="hljs-keyword">mutation</span> startImpersonation<span class="hljs-tag">(<span class="hljs-code">$input</span>:<span class="hljs-type"> StartImpersonationInput!</span>)</span> <span class="hljs-tag">{
+  <span class="hljs-symbol">startImpersonation<span class="hljs-tag">(input: <span class="hljs-code">$input</span>)</span> <span class="hljs-tag">{
+    <span class="hljs-symbol">impersonatedUser <span class="hljs-tag">{
+      <span class="hljs-type">...UserFragment</span>
+    }</span></span>
+  }</span></span>
+}</span></span>
+</code></pre>
+                </div>
+                <div class="example-section example-section-is-code operation-variables-example">
+                  <h5>Variables</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"input"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">StartImpersonationInput</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+                <div class="example-section example-section-is-code operation-response-example">
+                  <h5>Response</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">"data"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">"startImpersonation"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-attr">"impersonatedUser"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">User</span><span class="hljs-punctuation">}</span>
+  <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="mutation-stopImpersonation" class="operation operation-mutation" data-traverse-target="mutation-stopImpersonation">
+            <div class="operation-group-name">
+              <a href="#group-Operations-Mutations">Mutations</a>
+            </div>
+            <h2 class="operation-heading ">
+              <code>stopImpersonation</code>
+            </h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>End the current impersonation session</p>
+                </div>
+              </div>
+            </div>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-response doc-copy-section">
+                  <h5>Response</h5>
+                  <p> Returns a <a href="#definition-StopImpersonationPayload"><code>StopImpersonationPayload</code></a>
+                  </p>
+                </div>
+                <div class="operation-arguments doc-copy-section">
+                  <h5>Arguments</h5>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>
+                          <span class="property-name"><code>input</code></span> - <span class="property-type"><a href="#definition-StopImpersonationInput"><code>StopImpersonationInput!</code></a></span>
+                        </td>
+                        <td> Parameters for StopImpersonation </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <h4 class="example-heading">Example</h4>
+                <div class="example-section example-section-is-code operation-query-example">
+                  <h5>Query</h5>
+                  <pre><code class="hljs language-gql"><span class="hljs-symbol"><span class="hljs-keyword">mutation</span> stopImpersonation<span class="hljs-tag">(<span class="hljs-code">$input</span>:<span class="hljs-type"> StopImpersonationInput!</span>)</span> <span class="hljs-tag">{
+  <span class="hljs-symbol">stopImpersonation<span class="hljs-tag">(input: <span class="hljs-code">$input</span>)</span></span>
+}</span></span>
+</code></pre>
+                </div>
+                <div class="example-section example-section-is-code operation-variables-example">
+                  <h5>Variables</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"input"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">StopImpersonationInput</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+                <div class="example-section example-section-is-code operation-response-example">
+                  <h5>Response</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"data"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-attr">"stopImpersonation"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span>
 </code></pre>
                 </div>
               </div>
@@ -1200,6 +1489,67 @@
                 <div class="example-section example-section-is-code">
                   <h5>Example</h5>
                   <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"assets"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-string">Asset</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">"properties"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="definition-CreatePersonalAccessTokenInput" class="definition definition-input-object" data-traverse-target="definition-CreatePersonalAccessTokenInput">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">CreatePersonalAccessTokenInput</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Autogenerated input type of CreatePersonalAccessToken</p>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <div class="example-section example-section-is-code">
+                  <h5>Example</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="definition-CreatePersonalAccessTokenPayload" class="definition definition-object" data-traverse-target="definition-CreatePersonalAccessTokenPayload">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">CreatePersonalAccessTokenPayload</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Autogenerated return type of CreatePersonalAccessToken.</p>
+                </div>
+                <div class="definition-properties doc-copy-section">
+                  <h5>Fields</h5>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Field Name</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td data-property-name=""><span class="property-name"><code>token</code></span> - <span class="property-type"><a href="#definition-PersonalAccessToken"><code>PersonalAccessToken</code></a></span>
+                        </td>
+                        <td>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <div class="example-section example-section-is-code">
+                  <h5>Example</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"token"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">PersonalAccessToken</span><span class="hljs-punctuation">}</span>
 </code></pre>
                 </div>
               </div>
@@ -1493,6 +1843,172 @@
               </div>
             </div>
           </section>
+          <section id="definition-PersonalAccessToken" class="definition definition-object" data-traverse-target="definition-PersonalAccessToken">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">PersonalAccessToken</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>A personal access token for API / CLI authentication</p>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <div class="example-section example-section-is-code">
+                  <h5>Example</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="definition-RevokePersonalAccessTokenInput" class="definition definition-input-object" data-traverse-target="definition-RevokePersonalAccessTokenInput">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">RevokePersonalAccessTokenInput</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Autogenerated input type of RevokePersonalAccessToken</p>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <div class="example-section example-section-is-code">
+                  <h5>Example</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="definition-RevokePersonalAccessTokenPayload" class="definition definition-object" data-traverse-target="definition-RevokePersonalAccessTokenPayload">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">RevokePersonalAccessTokenPayload</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Autogenerated return type of RevokePersonalAccessToken.</p>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <div class="example-section example-section-is-code">
+                  <h5>Example</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="definition-StartImpersonationInput" class="definition definition-input-object" data-traverse-target="definition-StartImpersonationInput">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">StartImpersonationInput</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Autogenerated input type of StartImpersonation</p>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <div class="example-section example-section-is-code">
+                  <h5>Example</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="definition-StartImpersonationPayload" class="definition definition-object" data-traverse-target="definition-StartImpersonationPayload">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">StartImpersonationPayload</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Autogenerated return type of StartImpersonation.</p>
+                </div>
+                <div class="definition-properties doc-copy-section">
+                  <h5>Fields</h5>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Field Name</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td data-property-name=""><span class="property-name"><code>impersonatedUser</code></span> - <span class="property-type"><a href="#definition-User"><code>User</code></a></span>
+                        </td>
+                        <td>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <div class="example-section example-section-is-code">
+                  <h5>Example</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"impersonatedUser"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">User</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="definition-StopImpersonationInput" class="definition definition-input-object" data-traverse-target="definition-StopImpersonationInput">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">StopImpersonationInput</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Autogenerated input type of StopImpersonation</p>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <div class="example-section example-section-is-code">
+                  <h5>Example</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="definition-StopImpersonationPayload" class="definition definition-object" data-traverse-target="definition-StopImpersonationPayload">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">StopImpersonationPayload</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Autogenerated return type of StopImpersonation.</p>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <div class="example-section example-section-is-code">
+                  <h5>Example</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
           <section id="definition-UpdateUserGroupInput" class="definition definition-input-object" data-traverse-target="definition-UpdateUserGroupInput">
             <div class="definition-group-name">
               <a href="#group-Types">Types</a>
@@ -1708,9 +2224,14 @@
                         <td> Users allowed to impersonate this account </td>
                       </tr>
                       <tr>
+                        <td data-property-name=""><span class="property-name"><code>personalAccessTokens</code></span> - <span class="property-type"><a href="#definition-PersonalAccessToken"><code>[PersonalAccessToken!]!</code></a></span>
+                        </td>
+                        <td> API tokens owned by this user (only returned for own account) </td>
+                      </tr>
+                      <tr>
                         <td data-property-name=""><span class="property-name"><code>preferences</code></span> - <span class="property-type"><a href="#definition-UserPreference"><code>UserPreference</code></a></span>
                         </td>
-                        <td> Language and notification preferences </td>
+                        <td> Language, theme, timezone and notification preferences </td>
                       </tr>
                     </tbody>
                   </table>
@@ -1722,6 +2243,7 @@
                   <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span>
   <span class="hljs-attr">"groups"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-string">UserGroup</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span>
   <span class="hljs-attr">"impersonators"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-string">User</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">"personalAccessTokens"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-string">PersonalAccessToken</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span>
   <span class="hljs-attr">"preferences"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">UserPreference</span>
 <span class="hljs-punctuation">}</span>
 </code></pre>
@@ -1791,7 +2313,7 @@
               <div class="doc-copy">
                 <div class="definition-description doc-copy-section">
                   <h5>Description</h5>
-                  <p>User-level language and notification preferences</p>
+                  <p>User-level language, notification preferences, theme and timezone</p>
                 </div>
               </div>
               <div class="doc-examples">

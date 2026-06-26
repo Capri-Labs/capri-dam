@@ -21,6 +21,7 @@ class Admin::UsersController < ApplicationController
   before_action :set_target_user, only: [ :show, :update, :destroy, :toggle_status,
                                          :groups, :change_password,
                                          :impersonators, :add_impersonator, :remove_impersonator,
+                                         :start_impersonation,
                                          :preferences, :update_preferences ]
 
   # GET /admin/users(.json)
@@ -151,10 +152,26 @@ class Admin::UsersController < ApplicationController
   end
 
   # GET /admin/users/:id/impersonators.json
+  #
+  # Returns the list of users who have been explicitly granted impersonation
+  # access for this account, plus a search endpoint consumed by the
+  # autocomplete widget.
   def impersonators
+    scope = @target_user.impersonators
+
+    # Autocomplete search — used by the React UserSearch widget
+    if params[:search].present?
+      q = "%#{params[:search].downcase}%"
+      scope = scope.where(
+        "lower(email) LIKE :q OR lower(COALESCE(first_name,'')) LIKE :q " \
+        "OR lower(COALESCE(last_name,'')) LIKE :q OR lower(COALESCE(name,'')) LIKE :q",
+        q: q
+      )
+    end
+
     render json: {
-      impersonators: @target_user.impersonators.map { |u|
-        { id: u.id, display_name: u.display_name, email: u.email }
+      impersonators: scope.map { |u|
+        { id: u.id, display_name: u.display_name, email: u.email, avatar_url: u.avatar_url }
       },
     }
   end
@@ -165,13 +182,21 @@ class Admin::UsersController < ApplicationController
     actor = User.find_by(id: params[:impersonator_id])
     return render json: { error: "User not found." }, status: :not_found unless actor
 
+    # A super-admin account can never be granted impersonation explicitly —
+    # they already have implicit access to everything.
+    if @target_user.super_admin?
+      return render json: { error: "Super-admin accounts cannot be configured as impersonation targets." },
+                    status: :forbidden
+    end
+
     @target_user.grant_impersonation_to(actor)
+
     AuditLog.record(
-      action:         "impersonation_grant",
-      auditable:      @target_user,
-      user:           current_user,
-      changes_data:   { granted_to: actor.email }
-    ) if defined?(AuditLog)
+      action:       "impersonation_grant",
+      auditable:    @target_user,
+      user:         current_user,
+      changes_data: { granted_to: actor.email },
+    )
 
     render json: { success: true, message: "#{actor.display_name} can now impersonate #{@target_user.display_name}." }
   rescue ActiveRecord::RecordInvalid => e
@@ -187,10 +212,38 @@ class Admin::UsersController < ApplicationController
       action:       "impersonation_revoke",
       auditable:    @target_user,
       user:         current_user,
-      changes_data: { revoked_from: actor&.email }
-    ) if defined?(AuditLog)
+      changes_data: { revoked_from: actor&.email },
+    )
 
     render json: { success: true, message: "Impersonation access revoked." }
+  end
+
+  # POST /admin/users/:id/start_impersonation
+  #
+  # Allows an admin to begin impersonating a user directly from the admin
+  # panel, subject to the same rules as Impersonation::SessionsController.
+  def start_impersonation
+    unless @target_user.can_be_impersonated_by?(current_user)
+      return render json: { error: "You are not authorised to impersonate this user." },
+                    status: :forbidden
+    end
+
+    AuditLog.record(
+      action:       "impersonation_start",
+      auditable:    @target_user,
+      user:         current_user,
+      changes_data: { impersonated_user: @target_user.email, impersonated_by: current_user.email },
+    )
+
+    session[:impersonated_user_id] = @target_user.id
+    session[:impersonator_id]      = current_user.id
+
+    render json: {
+      success:           true,
+      message:           "You are now impersonating #{@target_user.display_name}.",
+      redirect_to:       "/dashboard",
+      impersonated_user: { id: @target_user.id, display_name: @target_user.display_name },
+    }
   end
 
   # GET /admin/users/:id/preferences.json

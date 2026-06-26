@@ -66,6 +66,22 @@ Rails.application.routes.draw do
   get "/search", to: "dashboard#search"
   get "up" => "rails/health#show", as: :rails_health_check
 
+  # ── User self-service profile ──────────────────────────────────────────────
+  resource :profile, only: [ :show, :update ], controller: "profile" do
+    patch :password,     to: "profile#update_password"
+    patch :preferences,  to: "profile#update_preferences"
+    get   :activity,     to: "profile#activity"
+
+    resources :personal_access_tokens, only: [ :index, :create, :destroy ],
+              controller: "profile/personal_access_tokens"
+  end
+
+  # ── Impersonation engine ───────────────────────────────────────────────────
+  namespace :impersonation do
+    post   "start/:user_id", to: "sessions#create",  as: :start
+    delete "stop",           to: "sessions#destroy", as: :stop
+  end
+
   resources :collections, only: [ :index ]
 
   # Workflows UI
@@ -317,10 +333,11 @@ Rails.application.routes.draw do
         post   :change_password
         get    :groups
         get    :impersonators
-        post   "impersonators", to: "users#add_impersonator", as: :add_impersonator
-        delete "impersonators/:impersonator_id", to: "users#remove_impersonator", as: :remove_impersonator
+        post   "impersonators",                   to: "users#add_impersonator",     as: :add_impersonator
+        delete "impersonators/:impersonator_id",  to: "users#remove_impersonator",  as: :remove_impersonator
+        post   :start_impersonation
         get    :preferences
-        patch  :preferences, to: "users#update_preferences"
+        patch  :preferences,                      to: "users#update_preferences"
       end
     end
 

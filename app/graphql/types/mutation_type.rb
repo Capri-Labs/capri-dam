@@ -24,5 +24,13 @@ module Types
     field :create_user_group, mutation: Mutations::CreateUserGroup
     field :update_user_group, mutation: Mutations::UpdateUserGroup
     field :delete_user_group, mutation: Mutations::DeleteUserGroup
+
+    # Impersonation
+    field :start_impersonation, mutation: Mutations::StartImpersonation
+    field :stop_impersonation,  mutation: Mutations::StopImpersonation
+
+    # Personal Access Tokens
+    field :create_personal_access_token, mutation: Mutations::CreatePersonalAccessToken
+    field :revoke_personal_access_token, mutation: Mutations::RevokePersonalAccessToken
   end
 end

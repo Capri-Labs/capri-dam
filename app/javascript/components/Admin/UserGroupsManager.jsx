@@ -211,8 +211,8 @@ export default function UserGroupsManager({
           <Grid container sx={{ height: 'calc(100vh - 180px)', minHeight: 520 }}>
 
             {/* ── Left: hierarchy tree ── */}
-            <Grid item xs={12} md={4} lg={3.5}
-              sx={{ borderRight: '1px solid', borderColor: 'divider', overflowY: 'auto' }}>
+            <Grid item xs={12} md={10} lg={3.5}
+              sx={{ borderRight: '1px solid', borderColor: 'divider', overflowY: 'auto', width: '30%' }}>
 
               {/* Search */}
               <Box sx={{ p: 1.5, borderBottom: '1px solid', borderColor: 'divider', bgcolor: '#fafafa' }}>
@@ -293,9 +293,9 @@ export default function UserGroupsManager({
             </Grid>
 
             {/* ── Right: empty / hint state ── */}
-            <Grid item xs={12} md={8} lg={8.5}
+            <Grid item xs={12} md={10} lg={8.5}
               sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center',
-                bgcolor: '#fafbfc', borderRadius: '0 12px 12px 0' }}>
+                bgcolor: '#fafbfc', borderRadius: '0 12px 12px 0', width: '70%' }}>
               {!overlayOpen && (
                 <Box sx={{ textAlign: 'center', p: 4, maxWidth: 420 }}>
                   <GroupWorkOutlined sx={{ fontSize: 72, color: '#ddd', mb: 2 }} />

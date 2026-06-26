@@ -6,6 +6,7 @@
  * Security:
  *  - Only super-admins can toggle the System Administrator switch.
  *  - SSO users have name/email fields locked.
+ *  - Super-admin accounts cannot be set as impersonation targets.
  */
 import React, { useState, useEffect } from 'react';
 import {
@@ -18,10 +19,11 @@ import {
 import {
   Close, Block, CheckCircleOutlined, GroupAdd, Shield,
   PersonOutlined, LockOutlined, NotificationsOutlined, PublicOutlined,
-  DeleteOutlined, AddOutlined, SecurityOutlined,
+  DeleteOutlined, AddOutlined, SecurityOutlined, SupervisedUserCircle,
 } from '@mui/icons-material';
 import { apiFetch, formatDate } from '../../utils/adminUtils';
 import AclMatrix from './AclMatrix';
+import UserSearch from './UserSearch';
 import { useNotify } from '../../context/NotificationContext';
 
 const SUPPORTED_LANGS = [
@@ -45,8 +47,8 @@ export default function UserDrawer({
   const [tab, setTab] = useState(0);
 
   const [impersonators, setImpersonators]             = useState([]);
-  const [impersonatorEmail, setImpersonatorEmail]     = useState('');
   const [impersonatorsLoading, setImpersonatorsLoading] = useState(false);
+  const [startingImpersonation, setStartingImpersonation] = useState(false);
 
   const [prefs, setPrefs]           = useState({ language: 'en', receive_mention_emails: true, receive_workflow_emails: true });
   const [prefsLoading, setPrefsLoading] = useState(false);
@@ -77,21 +79,34 @@ export default function UserDrawer({
     } finally { setPrefsLoading(false); }
   };
 
-  const handleAddImpersonator = async () => {
-    if (!impersonatorEmail.trim()) return;
-    const usersData = await apiFetch('/admin/users.json');
-    const actor = (usersData.users || []).find(u => u.email.toLowerCase() === impersonatorEmail.toLowerCase());
-    if (!actor) { notify('User not found.', 'error'); return; }
+  // Called by UserSearch autocomplete with the selected user object
+  const handleAddImpersonator = async (actor) => {
+    if (!actor?.id) return;
     const res = await apiFetch(`/admin/users/${user.id}/impersonators`, {
-      method: 'POST', body: JSON.stringify({ impersonator_id: actor.id })
+      method: 'POST', body: JSON.stringify({ impersonator_id: actor.id }),
     });
-    if (res.success) { notify(res.message, 'success'); setImpersonatorEmail(''); fetchImpersonators(); }
-    else notify(res.errors?.join(', ') || 'Failed.', 'error');
+    if (res.success) { notify(res.message, 'success'); fetchImpersonators(); }
+    else notify(res.errors?.join(', ') || res.error || 'Failed.', 'error');
   };
 
   const handleRemoveImpersonator = async (impId) => {
     const res = await apiFetch(`/admin/users/${user.id}/impersonators/${impId}`, { method: 'DELETE' });
     if (res.success) { notify('Access revoked.', 'success'); fetchImpersonators(); }
+  };
+
+  // Start impersonation — kicks off a real session and redirects to dashboard
+  const handleStartImpersonation = async () => {
+    setStartingImpersonation(true);
+    try {
+      const res = await apiFetch(`/admin/users/${user.id}/start_impersonation`, { method: 'POST' });
+      if (res.success) {
+        notify(res.message, 'warning');
+        setTimeout(() => { window.location.href = res.redirect_to || '/dashboard'; }, 800);
+      } else {
+        notify(res.error || 'Could not start impersonation.', 'error');
+        setStartingImpersonation(false);
+      }
+    } catch { setStartingImpersonation(false); }
   };
 
   const handleSavePreferences = async () => {
@@ -260,19 +275,31 @@ export default function UserDrawer({
             <Stack spacing={2}>
               <Alert severity="info" sx={{ borderRadius: 2 }}>
                 Users below can act as <strong>{user.display_name || user.email}</strong>.
-                All their actions appear in audit logs as this account.
+                All their actions appear in audit logs attributed to this account.
+                The <strong>true actor</strong> is always recorded separately for compliance.
               </Alert>
-              {isAdmin && (
-                <Box sx={{ display: 'flex', gap: 1 }}>
-                  <TextField size="small" fullWidth placeholder="Email of user to grant impersonation…"
-                    value={impersonatorEmail} onChange={e => setImpersonatorEmail(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && handleAddImpersonator()} />
-                  <Button variant="contained" startIcon={<AddOutlined />}
-                    onClick={handleAddImpersonator} disableElevation disabled={!impersonatorEmail.trim()}>
-                    Grant
-                  </Button>
+
+              {/* Super-admin guard notice */}
+              {user.super_admin && (
+                <Alert severity="warning" sx={{ borderRadius: 2 }}>
+                  Super-admin accounts cannot be configured as impersonation targets.
+                </Alert>
+              )}
+
+              {/* Grant access — UserSearch autocomplete (not a plain text field) */}
+              {isAdmin && !user.super_admin && (
+                <Box>
+                  <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: 'block' }}>
+                    Grant impersonation access to a user:
+                  </Typography>
+                  <UserSearch
+                    placeholder="Search by name or email…"
+                    excludeIds={[user.id, ...(impersonators.map(i => i.id))]}
+                    onSelect={handleAddImpersonator}
+                  />
                 </Box>
               )}
+
               {impersonatorsLoading ? (
                 <CircularProgress size={24} sx={{ alignSelf: 'center' }} />
               ) : impersonators.length === 0 ? (
@@ -284,7 +311,8 @@ export default function UserDrawer({
                       {idx > 0 && <Divider />}
                       <ListItem>
                         <ListItemAvatar>
-                          <Avatar sx={{ width: 32, height: 32, fontSize: '0.8rem', bgcolor: 'secondary.main' }}>
+                          <Avatar src={imp.avatar_url}
+                            sx={{ width: 32, height: 32, fontSize: '0.8rem', bgcolor: 'secondary.main' }}>
                             {imp.display_name?.[0]?.toUpperCase()}
                           </Avatar>
                         </ListItemAvatar>
@@ -306,6 +334,29 @@ export default function UserDrawer({
                     </React.Fragment>
                   ))}
                 </List>
+              )}
+
+              {/* "Impersonate Now" CTA — only shown when the current viewer can impersonate */}
+              {isAdmin && !user.super_admin && user.id && (
+                <Box sx={{ pt: 1, borderTop: '1px dashed', borderColor: 'divider' }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                    Start an impersonation session as this user:
+                  </Typography>
+                  <Button
+                    variant="outlined"
+                    color="warning"
+                    size="small"
+                    startIcon={startingImpersonation
+                      ? <CircularProgress size={14} />
+                      : <SupervisedUserCircle fontSize="small" />
+                    }
+                    onClick={handleStartImpersonation}
+                    disabled={startingImpersonation}
+                    sx={{ fontWeight: 600 }}
+                  >
+                    {startingImpersonation ? 'Starting…' : `Impersonate ${user.display_name || user.email}`}
+                  </Button>
+                </Box>
               )}
             </Stack>
           )}

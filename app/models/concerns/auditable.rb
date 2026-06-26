@@ -6,6 +6,12 @@
 # that run without a current user are silently skipped so that a missing user
 # never causes a transaction rollback.
 #
+# == Impersonation non-repudiation
+#
+# When an admin is actively impersonating another user, {Current.true_user} is
+# the real admin and {Current.user} is the impersonated account.  Both are
+# recorded so that audit reviewers can reconstruct the true chain of custody.
+#
 # @example Include in a model
 #   class User < ApplicationRecord
 #     include Auditable
@@ -14,8 +20,8 @@ module Auditable
   extend ActiveSupport::Concern
 
   included do
-    after_create :log_create
-    after_update :log_update
+    after_create  :log_create
+    after_update  :log_update
     after_destroy :log_destroy
   end
 
@@ -26,7 +32,6 @@ module Auditable
   end
 
   def log_update
-    # Only log if actual data changed (excluding updated_at)
     filtered_changes = saved_changes.except("updated_at")
     create_audit_log("update", filtered_changes) if filtered_changes.any?
   end
@@ -36,20 +41,18 @@ module Auditable
   end
 
   def create_audit_log(action, data)
-    # We need to access the current_user. In Rails, we usually store this
-    # in Current.user via a middleware.
-    #
-    # Skip audit logging for user-less (system) contexts — seeds, background
-    # jobs, rake tasks and tests — so a missing Current.user never rolls back
-    # or crashes the underlying business operation.
     return if Current.user.nil?
 
     AuditLog.create!(
-      user:            Current.user,
-      action:          action,
-      auditable_type:  self.class.name,
-      auditable_id:    self.id,
-      changes_data:    data
+      user:           Current.user,
+      true_user:      Current.true_user,
+      impersonated:   Current.impersonating?,
+      action:         action,
+      auditable_type: self.class.name,
+      auditable_id:   self.id,
+      changes_data:   data,
+      ip_address:     Current.ip_address,
+      user_agent:     Current.user_agent,
     )
   end
 end

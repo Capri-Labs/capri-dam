@@ -24,8 +24,11 @@ document.addEventListener('turbo:load', () => {
         headerContainer.innerHTML = ''; // Clear to prevent duplicates
         const headerRoot = createRoot(headerContainer);
         const headerProps = {
-            userName: headerContainer.dataset.userName,
-            isSignedIn: headerContainer.dataset.signedIn === 'true'
+            userName:         headerContainer.dataset.userName,
+            isSignedIn:       headerContainer.dataset.signedIn === 'true',
+            impersonating:    headerContainer.dataset.impersonating === 'true',
+            impersonatedUser: headerContainer.dataset.impersonatedUser || null,
+            trueUserName:     headerContainer.dataset.trueUserName || null,
         };
         headerRoot.render(<Header {...headerProps} />);
     }

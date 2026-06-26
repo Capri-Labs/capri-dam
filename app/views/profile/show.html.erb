@@ -1,0 +1,19 @@
+<div id="root"
+     data-view="profile"
+     data-user-id="<%= current_user.id %>"
+     data-user-email="<%= current_user.email %>"
+     data-user-name="<%= current_user.display_name %>"
+     data-user-first-name="<%= current_user.first_name %>"
+     data-user-last-name="<%= current_user.last_name %>"
+     data-user-department="<%= current_user.department %>"
+     data-user-avatar-url="<%= current_user.avatar_url %>"
+     data-user-role="<%= current_user.role %>"
+     data-sso-managed="<%= current_user.sso_managed? %>"
+     data-sso-provider="<%= current_user.provider %>"
+     data-is-admin="<%= current_user.admin? %>"
+     data-audit-logs='<%= @audit_logs %>'
+     data-preferences='<%= current_user.preference!.to_json %>'
+     data-impersonating="<%= impersonating? %>"
+     data-impersonated-user='<%= impersonating? ? { id: current_user.id, display_name: current_user.display_name }.to_json : "null" %>'>
+</div>
+

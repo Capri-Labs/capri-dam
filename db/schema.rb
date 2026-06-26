@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_25_100001) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_26_000003) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -104,11 +104,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_25_100001) do
     t.string "auditable_type"
     t.jsonb "changes_data"
     t.datetime "created_at", null: false
+    t.boolean "impersonated", default: false, null: false
     t.string "ip_address"
+    t.bigint "true_user_id"
     t.datetime "updated_at", null: false
     t.string "user_agent"
     t.bigint "user_id"
     t.index ["auditable_type", "auditable_id", "ip_address", "user_id"], name: "idx_audit_logs_polymorphic_ip_user"
+    t.index ["true_user_id"], name: "index_audit_logs_on_true_user_id"
     t.index ["user_id"], name: "index_audit_logs_on_user_id"
   end
 
@@ -447,6 +450,22 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_25_100001) do
     t.index ["uid"], name: "index_oauth_applications_on_uid", unique: true
   end
 
+  create_table "personal_access_tokens", force: :cascade do |t|
+    t.boolean "active", default: true, null: false
+    t.datetime "created_at", null: false
+    t.datetime "expires_at"
+    t.string "last_four", null: false
+    t.datetime "last_used_at"
+    t.string "name", null: false
+    t.string "scopes", default: "read"
+    t.string "token_digest", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["token_digest"], name: "index_personal_access_tokens_on_token_digest", unique: true
+    t.index ["user_id", "active"], name: "index_personal_access_tokens_on_user_id_and_active"
+    t.index ["user_id"], name: "index_personal_access_tokens_on_user_id"
+  end
+
   create_table "quarantined_assets", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.jsonb "original_payload"
@@ -595,6 +614,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_25_100001) do
     t.string "language", default: "en", null: false
     t.boolean "receive_mention_emails", default: true, null: false
     t.boolean "receive_workflow_emails", default: true, null: false
+    t.string "theme", default: "system", null: false
+    t.string "timezone", default: "UTC", null: false
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
     t.index ["user_id"], name: "index_user_preferences_on_user_id"
