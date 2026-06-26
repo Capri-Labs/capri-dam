@@ -203,7 +203,7 @@ export default function EmailEngineManager() {
                                     {SYSTEM_EVENTS.map(event => {
                                         const mappedTemplate = templates.find(t => t.event_trigger === event.id);
                                         return (
-                                            <Grid item xs={12} md={6} key={event.id}>
+                                            <Grid size={{ xs: 12, md: 6 }} key={event.id}>
                                                 <Paper variant="outlined" sx={{ p: 3, borderRadius: 2, height: '100%', display: 'flex', flexDirection: 'column' }}>
                                                     <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>{event.label}</Typography>
                                                     <Typography variant="caption" color="textSecondary" sx={{ mb: 2, fontFamily: 'monospace' }}>Trigger: {event.id}</Typography>
@@ -283,7 +283,7 @@ export default function EmailEngineManager() {
                         </Box>
 
                         <Grid container spacing={4} sx={{ flexGrow: 1 }}>
-                            <Grid item xs={12} md={8}>
+                            <Grid size={{ xs: 12, md: 8 }}>
                                 <Stack spacing={3}>
                                     <TextField
                                         label="Template Name (Internal)" fullWidth required
@@ -312,7 +312,7 @@ export default function EmailEngineManager() {
                             </Grid>
 
                             {/* LIQUID HELPER SIDEBAR */}
-                            <Grid item xs={12} md={4}>
+                            <Grid size={{ xs: 12, md: 4 }}>
                                 <Paper variant="outlined" sx={{ p: 2, bgcolor: '#f8f9fa', borderRadius: 2 }}>
                                     <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 700 }}>Available Liquid Tags</Typography>
                                     {editForm.event_trigger ? (

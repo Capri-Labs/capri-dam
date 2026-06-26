@@ -100,15 +100,17 @@ export default function Sidebar({ activeView, onNavigate }) {
                 <ListItemText
                     primary={item.labelKey ? t(item.labelKey, { defaultValue: item.label }) : item.label}
                     sx={{
-                        opacity: open ? 1 : 0, // Fade text out instead of removing it
+                        opacity: open ? 1 : 0,
                         transition: 'opacity 0.3s ease',
                         m: 0,
                         whiteSpace: 'nowrap'
                     }}
-                    primaryTypographyProps={{
-                        variant: 'body2',
-                        fontWeight: isActive ? 600 : 500,
-                        fontSize: isChild ? '0.85rem' : '0.875rem'
+                    slotProps={{
+                        primary: {
+                            variant: 'body2',
+                            fontWeight: isActive ? 600 : 500,
+                            fontSize: isChild ? '0.85rem' : '0.875rem'
+                        }
                     }}
                 />
 

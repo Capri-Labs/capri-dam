@@ -410,7 +410,7 @@ function ApplyImageProfileDialog({ open, onClose, folderId, folderName }) {
                                         </Box>
                                     }
                                     secondary={`Unsharp: amount ${p.unsharp_mask?.amount ?? 1.75} · radius ${p.unsharp_mask?.radius ?? 0.2}`}
-                                    secondaryTypographyProps={{ sx: { fontSize: '0.72rem' } }}
+                                    slotProps={{ secondary: { sx: { fontSize: '0.72rem' } } }}
                                 />
                                 {selected?.id === p.id && <CheckCircleOutlined sx={{ color: '#7c3aed' }} />}
                             </ListItemButton>

@@ -6,7 +6,7 @@ export default function FeatureFlagsTab() {
     return (
         <Paper elevation={0} sx={{ p: 3, border: '2px solid #5e35b1', borderRadius: 3, bgcolor: '#f9f8ff' }}>
             <Grid container spacing={4}>
-                <Grid item xs={12}>
+                <Grid size={12}>
                     <Paper variant="outlined" sx={{ p: 5, borderRadius: 3, textAlign: 'center', bgcolor: '#ffffff' }}>
                         <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
                             <ToggleOn sx={{ fontSize: 60, color: '#5e35b1' }} />

@@ -256,11 +256,11 @@ export default function ImageEditorDialog({ asset, open, onClose, onSave }) {
 
             <Grid container sx={{ height: 'calc(100vh - 64px)'}}>
                 {/* LEFT PANE: Dark Mode Canvas (75%) */}
-                <Grid item xs={12} md={9} sx={{
-                    bgcolor: '#0f172a', position: 'relative', width: '65%',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', p: 4,
-                    backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'20\' height=\'20\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath d=\'M0 0h10v10H0zm10 10h10v10H10z\' fill=\'%231e293b\' fill-opacity=\'0.4\' fill-rule=\'evenodd\'/%3E%3C/svg%3E")'
-                }}>
+                <Grid size={{ xs: 12, md: 9 }} sx={{
+ bgcolor: '#0f172a', position: 'relative', width: '65%',
+ display: 'flex', alignItems: 'center', justifyContent: 'center', p: 4,
+ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'20\' height=\'20\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath d=\'M0 0h10v10H0zm10 10h10v10H10z\' fill=\'%231e293b\' fill-opacity=\'0.4\' fill-rule=\'evenodd\'/%3E%3C/svg%3E")'
+ }}>
                     <Box
                         ref={imageContainerRef}
                         onMouseMove={handleFocalDrag}
@@ -332,7 +332,7 @@ export default function ImageEditorDialog({ asset, open, onClose, onSave }) {
                 </Grid>
 
                 {/* RIGHT PANE: Tool Sidebar (25%) */}
-                <Grid item xs={12} md={3} sx={{ bgcolor: '#ffffff', display: 'flex', flexDirection: 'column', borderLeft: '1px solid #e2e8f0', width: '35%' }}>
+                <Grid size={{ xs: 12, md: 3 }} sx={{ bgcolor: '#ffffff', display: 'flex', flexDirection: 'column', borderLeft: '1px solid #e2e8f0', width: '35%' }}>
                     <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
                         <Tabs value={activeTab} onChange={handleTabChange} variant="fullWidth" sx={{ '& .MuiTab-root': { minWidth: 'auto', px: 2, textTransform: 'none', fontWeight: 600 } }}>
                             <Tab icon={<AutoAwesome fontSize="small" />} iconPosition="start" label="Suggestions" />
@@ -502,7 +502,7 @@ export default function ImageEditorDialog({ asset, open, onClose, onSave }) {
                                 <AccordionDetails sx={{ pt: 0, pb: 2, px: 2 }}>
                                     <Grid container spacing={1}>
                                         {['None', 'Vivid', 'West', 'Palma', 'Metro', 'Eiffel', 'Blush', 'Modena', 'Vogue'].map(filter => (
-                                            <Grid item xs={6} key={filter}>
+                                            <Grid size={6} key={filter}>
                                                 <Paper
                                                     onClick={() => setActiveFilter(filter)}
                                                     elevation={0}

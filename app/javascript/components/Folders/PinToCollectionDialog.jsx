@@ -112,7 +112,7 @@ export default function PinToCollectionDialog({ open, onClose, asset }) {
                                     <ListItemText
                                         primary={collection.name}
                                         secondary={collection.collection_type === 'smart' ? 'AI Smart Routing' : 'Manual Curation'}
-                                        primaryTypographyProps={{ variant: 'subtitle2', fontWeight: 600 }}
+                                        slotProps={{ primary: { variant: 'subtitle2', fontWeight: 600 } }}
                                     />
                                 </ListItemButton>
                             </ListItem>

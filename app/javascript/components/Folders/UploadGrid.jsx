@@ -59,7 +59,7 @@ export default function UploadGrid({
                         const isProductSchema = schemaOptions.find(s => s.id === Number(resolvedSchemaId))?.slug === 'product-images';
 
                         return (
-                            <Grid item xs={12} sm={6} md={4} lg={3} key={fData.id}>
+                            <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={fData.id}>
                                 <Paper elevation={fData.selected ? 3 : 0} sx={{ bgcolor: '#ffffff', borderRadius: 2, overflow: 'hidden', border: '1px solid', borderColor: fData.isDuplicate ? '#f59e0b' : fData.selected ? '#4f46e5' : '#e2e8f0', transition: 'all 0.2s' }}>
                                     <Box sx={{ display: 'flex', justifyContent: 'space-between', p: 1, position: 'absolute', width: '100%', zIndex: 10, bgcolor: 'linear-gradient(to bottom, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0) 100%)' }}>
                                         <Checkbox checked={fData.selected} onChange={() => handleToggleSelectFile(fData.id)} sx={{ color: '#fff', '&.Mui-checked': { color: '#4f46e5', bgcolor: '#fff', borderRadius: 1, p: 0.5 } }} />

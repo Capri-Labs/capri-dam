@@ -98,7 +98,7 @@ export default function OperationalLoggingTab() {
             <Grid container spacing={4}>
 
                 {/* Active Status Display */}
-                <Grid item xs={12} md={5}>
+                <Grid size={{ xs: 12, md: 5 }}>
                     <Paper variant="outlined" sx={{ p: 3, borderRadius: 3, height: '100%', bgcolor: '#ffffff' }}>
                         <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
                             <BugReport color="primary" /> Current Pipeline Status
@@ -134,7 +134,7 @@ export default function OperationalLoggingTab() {
                 </Grid>
 
                 {/* Configuration Controls */}
-                <Grid item xs={12} md={7}>
+                <Grid size={{ xs: 12, md: 7 }}>
                     <Paper variant="outlined" sx={{ p: 3, borderRadius: 3, height: '100%' }}>
                         <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
                             Adjust Log Verbosity
@@ -149,7 +149,7 @@ export default function OperationalLoggingTab() {
 
                         <Stack spacing={3}>
                             <Grid container spacing={2}>
-                                <Grid item xs={12} sm={6}>
+                                <Grid size={{ xs: 12, sm: 6 }}>
                                     <FormControl fullWidth>
                                         <InputLabel id="log-level-label">Target Log Level</InputLabel>
                                         <Select
@@ -168,7 +168,7 @@ export default function OperationalLoggingTab() {
                                     </FormControl>
                                 </Grid>
 
-                                <Grid item xs={12} sm={6}>
+                                <Grid size={{ xs: 12, sm: 6 }}>
                                     <FormControl fullWidth>
                                         <InputLabel id="ttl-label">Time-To-Live (Auto-Revert)</InputLabel>
                                         <Select

@@ -649,7 +649,7 @@ export function ApplyVideoProfileDialog({ open, onClose, folderId, folderName })
                                         </Box>
                                     }
                                     secondary={p.description || `${p.folder_count ?? 0} folder assignment${p.folder_count !== 1 ? 's' : ''}`}
-                                    secondaryTypographyProps={{ sx: { fontSize: '0.72rem' } }}
+                                    slotProps={{ secondary: { sx: { fontSize: '0.72rem' } } }}
                                 />
                                 {selected?.id === p.id && <CheckCircleOutlined sx={{ color: '#7c3aed' }} />}
                             </ListItemButton>

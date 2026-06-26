@@ -103,7 +103,7 @@ export default function SearchScreen() {
                     <Grid container spacing={3}>
                         {/* Map through your assets here just as before... */}
                         {assets.map((asset) => (
-                            <Grid item xs={12} sm={6} md={4} lg={3} key={asset.uuid}>
+                            <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={asset.uuid}>
                                 <Paper elevation={0} sx={{ /* ... styles ... */ }}>
                                     {/* ... Thumbnail and Metadata ... */}
                                     <Box sx={{ p: 2 }}>

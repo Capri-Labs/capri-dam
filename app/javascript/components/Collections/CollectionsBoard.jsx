@@ -221,7 +221,7 @@ export default function CollectionsBoard({ onSelectCollection, selectedIds, setS
                     const isPrivate = Array.isArray(props.allowed_groups) && props.allowed_groups.length > 0;
 
                     return (
-                        <Grid item xs={12} sm={6} md={4} lg={3} key={collection.id}>
+                        <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={collection.id}>
                             <Card
                                 elevation={0}
                                 sx={{

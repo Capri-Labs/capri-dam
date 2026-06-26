@@ -31,7 +31,7 @@ export default function BulkReassignModal({ open, onClose, selectedWorkflows, on
             <DialogContent sx={{ p: 0 }}>
                 <Grid container>
                     {/* LEFT SIDE: IMPACT CONTEXT */}
-                    <Grid item xs={5} sx={{ p: 3, borderRight: '1px solid #e2e8f0', bgcolor: '#fdfdfd' }}>
+                    <Grid size={5} sx={{ p: 3, borderRight: '1px solid #e2e8f0', bgcolor: '#fdfdfd' }}>
                         <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>
                             <History fontSize="small" /> Affected Workflows ({selectedWorkflows.length})
                         </Typography>
@@ -45,7 +45,7 @@ export default function BulkReassignModal({ open, onClose, selectedWorkflows, on
                                     <ListItemText
                                         primary={w.asset_name}
                                         secondary={`Step: ${w.current_step}`}
-                                        primaryTypographyProps={{ variant: 'body2', fontWeight: 600 }}
+                                        slotProps={{ primary: { variant: 'body2', fontWeight: 600 } }}
                                     />
                                 </ListItem>
                             ))}
@@ -53,7 +53,7 @@ export default function BulkReassignModal({ open, onClose, selectedWorkflows, on
                     </Grid>
 
                     {/* RIGHT SIDE: CONTROL PANEL */}
-                    <Grid item xs={7} sx={{ p: 3 }}>
+                    <Grid size={7} sx={{ p: 3 }}>
                         <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 700 }}>Assignment Details</Typography>
 
                         <Stack direction="row" spacing={1} sx={{ mb: 3 }}>

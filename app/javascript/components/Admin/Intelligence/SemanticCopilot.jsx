@@ -141,7 +141,7 @@ export default function SemanticCopilot() {
                 ) : (
                     <Grid container spacing={3}>
                         {results.map((asset) => (
-                            <Grid item xs={12} sm={6} md={4} xl={3} key={asset.id}>
+                            <Grid size={{ xs: 12, sm: 6, md: 4, xl: 3 }} key={asset.id}>
                                 <Card elevation={0} sx={{ border: '1px solid #e2e8f0', borderRadius: 3, transition: 'all 0.2s', '&:hover': { borderColor: '#8e24aa', transform: 'translateY(-2px)', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' } }}>
                                     <Box sx={{ position: 'relative' }}>
                                         {/*  WIRED TO RAILS file_url */}

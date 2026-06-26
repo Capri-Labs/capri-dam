@@ -60,7 +60,7 @@ export default function BatchProcessing() {
 
             <Grid container spacing={4}>
                 {/* Configuration Panel */}
-                <Grid item xs={12} md={4}>
+                <Grid size={{ xs: 12, md: 4 }}>
                     <Paper elevation={0} sx={{ p: 3, border: '1px solid #e3e8ef', borderRadius: 3 }}>
                         <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 3 }}>Batch Configuration</Typography>
 
@@ -116,7 +116,7 @@ export default function BatchProcessing() {
                 </Grid>
 
                 {/* Execution Stream Panel */}
-                <Grid item xs={12} md={8}>
+                <Grid size={{ xs: 12, md: 8 }}>
                     <Paper elevation={0} sx={{ p: 3, border: '1px solid #e3e8ef', borderRadius: 3, height: '100%', display: 'flex', flexDirection: 'column' }}>
                         <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
                             <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>Execution Stream</Typography>

@@ -35,7 +35,7 @@ export default function DuplicateResolverDialog({ open, onClose, fileData, onRes
             <DialogContent sx={{ p: 4 }}>
                 <Grid container spacing={4}>
                     {/* LEFT: Existing Asset in DAM */}
-                    <Grid item xs={6}>
+                    <Grid size={6}>
                         <Typography variant="subtitle2" color="textSecondary" fontWeight="700" sx={{ mb: 2 }}>
                             Currently in DAM ({existingAssets.length} found)
                         </Typography>
@@ -62,7 +62,7 @@ export default function DuplicateResolverDialog({ open, onClose, fileData, onRes
                     </Grid>
 
                     {/* RIGHT: New Upload Attempt */}
-                    <Grid item xs={6}>
+                    <Grid size={6}>
                         <Typography variant="subtitle2" color="primary" fontWeight="700" sx={{ mb: 2 }}>Your New Upload</Typography>
                         <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, borderColor: '#4f46e5', bgcolor: '#eef2ff', height: '100%' }}>
                             <Box sx={{ height: 140, display: 'flex', justifyContent: 'center', mb: 2 }}>

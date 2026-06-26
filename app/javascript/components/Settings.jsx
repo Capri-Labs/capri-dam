@@ -259,7 +259,7 @@ export default function Settings(props) {
 
         if (fieldDef.type === 'select') {
             return (
-                <Grid item xs={12} md={6} sx={{ p: 1 }} key={fieldDef.key}>
+                <Grid size={{ xs: 12, md: 6 }} sx={{ p: 1 }} key={fieldDef.key}>
                     <FormControl fullWidth sx={{ bgcolor: 'white' }}>
                         <InputLabel>{fieldDef.label}</InputLabel>
                         <Select
@@ -281,7 +281,7 @@ export default function Settings(props) {
 
         if (fieldDef.type === 'multiline') {
             return (
-                <Grid item xs={12} sx={{ p: 1 }} key={fieldDef.key}>
+                <Grid size={12} sx={{ p: 1 }} key={fieldDef.key}>
                     <TextField
                         label={fieldDef.label}
                         fullWidth multiline rows={5}
@@ -298,7 +298,7 @@ export default function Settings(props) {
         }
 
         return (
-            <Grid item xs={12} md={fieldDef.type === 'text' && fieldDef.key.includes('url') ? 12 : 6} sx={{ p: 1 }} key={fieldDef.key}>
+            <Grid size={{ xs: 12, md: fieldDef.type === 'text' && fieldDef.key.includes('url') ? 12 : 6 }} sx={{ p: 1 }} key={fieldDef.key}>
                 <TextField
                     label={fieldDef.label}
                     type={fieldDef.type === 'password' ? 'password' : 'text'}
@@ -389,7 +389,7 @@ export default function Settings(props) {
 
                         {/* Provider Selector */}
                         <Grid container>
-                            <Grid item xs={12} sx={{ p: 1 }}>
+                            <Grid size={12} sx={{ p: 1 }}>
                                 <FormControl fullWidth sx={{ bgcolor: 'white' }}>
                                     <InputLabel id="storage-provider-label">Primary Storage Provider</InputLabel>
                                     <Select
@@ -415,7 +415,7 @@ export default function Settings(props) {
                             </Grid>
 
                             {/* Provider description */}
-                            <Grid item xs={12} sx={{ px: 1, pb: 1 }}>
+                            <Grid size={12} sx={{ px: 1, pb: 1 }}>
                                 <Alert severity="info" icon={<Info fontSize="small" />}
                                     sx={{ borderRadius: 2, py: 0.5 }}>
                                     <strong>{providerDef.label}:</strong> {providerDef.description}
@@ -430,7 +430,7 @@ export default function Settings(props) {
 
                         {/* Dynamic credential fields */}
                         {storageProvider === 'local' ? (
-                            <Grid item xs={12} sx={{ p: 1 }}>
+                            <Grid size={12} sx={{ p: 1 }}>
                                 <Alert severity="info">
                                     Local storage saves files to <code>/storage/dam/</code> in your Rails root.
                                     Presigned URLs are generated using Rails message verifier.
@@ -457,7 +457,7 @@ export default function Settings(props) {
                                 </Button>
                                 <Collapse in={showAdvanced}>
                                     <Grid container>
-                                        <Grid item xs={12} md={6} sx={{ p: 1 }}>
+                                        <Grid size={{ xs: 12, md: 6 }} sx={{ p: 1 }}>
                                             <TextField
                                                 label="Presigned URL Expiry (seconds)"
                                                 type="number"
@@ -468,7 +468,7 @@ export default function Settings(props) {
                                                 sx={{ bgcolor: 'white' }}
                                             />
                                         </Grid>
-                                        <Grid item xs={12} md={6} sx={{ p: 1 }}>
+                                        <Grid size={{ xs: 12, md: 6 }} sx={{ p: 1 }}>
                                             <FormControl fullWidth sx={{ bgcolor: 'white' }}>
                                                 <InputLabel>AI Enrichment on Upload</InputLabel>
                                                 <Select
@@ -483,7 +483,7 @@ export default function Settings(props) {
                                                 </Select>
                                             </FormControl>
                                         </Grid>
-                                        <Grid item xs={12} sx={{ p: 1 }}>
+                                        <Grid size={12} sx={{ p: 1 }}>
                                             <Alert severity="info" sx={{ borderRadius: 2 }}>
                                                 <strong>Presigned URLs</strong> generate time-limited signed links so private assets are served
                                                 securely without exposing your bucket publicly. Recommended for all production deployments.

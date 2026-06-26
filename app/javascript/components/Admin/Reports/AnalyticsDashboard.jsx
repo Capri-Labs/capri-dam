@@ -162,7 +162,7 @@ export default function AnalyticsDashboard({ onCreateExport }) {
                     { label: 'Avg. Approval Time',  value: s.avg_approval_hours != null ? `${s.avg_approval_hours}h` : null, icon: <Timer />, color: '#0284c7' },
                     { label: 'Duplicates Blocked',  value: s.duplicates_blocked?.toLocaleString(), icon: <Block />, color: '#dc2626' },
                 ].map((card, i) => (
-                    <Grid item xs={6} sm={4} md={3} key={i}>
+                    <Grid size={{ xs: 6, sm: 4, md: 3 }} key={i}>
                         <StatCard {...card} loading={loading} />
                     </Grid>
                 ))}
@@ -170,33 +170,33 @@ export default function AnalyticsDashboard({ onCreateExport }) {
 
             {/* ── Charts Row 1 ──────────────────────────────────────────── */}
             <Grid container spacing={2.5} sx={{ mb: 2.5 }}>
-                <Grid item xs={12} lg={8}>
+                <Grid size={{ xs: 12, lg: 8 }}>
                     <AssetTrendChart data={ts} loading={loading} />
                 </Grid>
-                <Grid item xs={12} lg={4}>
+                <Grid size={{ xs: 12, lg: 4 }}>
                     <AiCoverageChart data={ai} loading={loading} />
                 </Grid>
             </Grid>
 
             {/* ── Charts Row 2 ──────────────────────────────────────────── */}
             <Grid container spacing={2.5} sx={{ mb: 2.5 }}>
-                <Grid item xs={12} md={4}>
+                <Grid size={{ xs: 12, md: 4 }}>
                     <ContentTypeDonut data={bkd.by_content_type || []} loading={loading} />
                 </Grid>
-                <Grid item xs={12} md={4}>
+                <Grid size={{ xs: 12, md: 4 }}>
                     <StatusBreakdownChart data={bkd.by_status || []} loading={loading} />
                 </Grid>
-                <Grid item xs={12} md={4}>
+                <Grid size={{ xs: 12, md: 4 }}>
                     <WorkflowFunnelChart data={bkd.workflow_funnel || []} loading={loading} />
                 </Grid>
             </Grid>
 
             {/* ── Charts Row 3 ──────────────────────────────────────────── */}
             <Grid container spacing={2.5}>
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                     <TopFoldersChart data={bkd.top_folders || []} loading={loading} />
                 </Grid>
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                     {/* Top uploaders */}
                     <Paper elevation={0} sx={{ border: '1px solid #e3e8ef', borderRadius: 3, p: 2.5, height: '100%' }}>
                         <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 0.5 }}>Top Uploaders</Typography>

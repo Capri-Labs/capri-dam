@@ -12,7 +12,7 @@ export default function FolderGrid({ folders, viewMode, selectedItems, toggleSel
             <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', mb: 2 }}>Folders</Typography>
             <Grid container spacing={2}>
                 {folders.map(folder => (
-                    <Grid item xs={6} sm={4} md={3} lg={2} key={folder.id}>
+                    <Grid size={{ xs: 6, sm: 4, md: 3, lg: 2 }} key={folder.id}>
                         <Paper
                             elevation={0}
                             onClick={(e) => viewMode === 'bin' ? toggleSelection('folders', folder.id, e) : handleNavigate(folder.id)}

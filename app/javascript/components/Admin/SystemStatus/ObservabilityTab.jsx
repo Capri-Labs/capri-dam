@@ -74,7 +74,7 @@ export default function ObservabilityTab() {
                 ) : (
                     <Grid container spacing={3}>
                         {/* App Server */}
-                        <Grid item xs={12} sm={6} md={3}>
+                        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                             <Paper variant="outlined" sx={{ p: 3, borderRadius: 3 }}>
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
                                     <Typography variant="subtitle2" color="textSecondary">Application Node</Typography>
@@ -88,7 +88,7 @@ export default function ObservabilityTab() {
                         </Grid>
 
                         {/* Database Card */}
-                        <Grid item xs={12} sm={6} md={3}>
+                        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                             <Paper variant="outlined" sx={{ p: 3, borderRadius: 3 }}>
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
                                     <Typography variant="subtitle2" color="textSecondary">PostgreSQL</Typography>
@@ -104,7 +104,7 @@ export default function ObservabilityTab() {
                         </Grid>
 
                         {/* Background Queue Cache Card */}
-                        <Grid item xs={12} sm={6} md={3}>
+                        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                             <Paper variant="outlined" sx={{ p: 3, borderRadius: 3 }}>
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
                                     <Typography variant="subtitle2" color="textSecondary">Redis & Sidekiq</Typography>
@@ -120,7 +120,7 @@ export default function ObservabilityTab() {
                         </Grid>
 
                         {/* Storage Driver Card */}
-                        <Grid item xs={12} sm={6} md={3}>
+                        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                             <Paper variant="outlined" sx={{ p: 3, borderRadius: 3 }}>
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
                                     <Typography variant="subtitle2" color="textSecondary">ActiveStorage</Typography>
@@ -151,7 +151,7 @@ export default function ObservabilityTab() {
                 )}
 
                 <Grid container spacing={3}>
-                    <Grid item xs={12} md={6}>
+                    <Grid size={{ xs: 12, md: 6 }}>
                         <Paper elevation={0} sx={{ p: 2, bgcolor: '#f8f9fa', border: '1px solid #e3e8ef', borderRadius: 2 }}>
                             <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>Restart Application Server</Typography>
                             <Typography variant="caption" color="textSecondary" display="block" sx={{ mb: 2 }}>

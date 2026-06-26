@@ -227,7 +227,7 @@ export default function CollectionDetail({ slug, onBack }) {
             ) : (
                 <Grid container spacing={3}>
                     {assets.map((asset) => (
-                        <Grid item xs={12} sm={6} md={4} lg={3} key={asset.id}>
+                        <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={asset.id}>
                             <Card elevation={0} sx={{ border: '1px solid', borderColor: asset.pinned ? '#5e35b1' : '#e3e8ef', borderRadius: 2, position: 'relative' }}>
                                 {asset.pinned && (
                                     <Box sx={{ position: 'absolute', top: 8, right: 8, bgcolor: '#fff', borderRadius: '50%', p: 0.5, boxShadow: 1, zIndex: 1 }}>
@@ -311,7 +311,7 @@ export default function CollectionDetail({ slug, onBack }) {
                     <Grid container sx={{ flexGrow: 1 }}>
 
                         {/* LEFT COLUMN: The Configurator */}
-                        <Grid item xs={12} md={5} sx={{ p: 3, borderRight: { md: '1px solid #e2e8f0' }, bgcolor: '#f8fafc' }}>
+                        <Grid size={{ xs: 12, md: 5 }} sx={{ p: 3, borderRight: { md: '1px solid #e2e8f0' }, bgcolor: '#f8fafc' }}>
                             <Typography variant="body2" color="textSecondary" sx={{ mb: 3 }}>
                                 Define semantic boundaries. Assets meeting the Cosine Similarity threshold will be autonomously routed here.
                             </Typography>
@@ -351,7 +351,7 @@ export default function CollectionDetail({ slug, onBack }) {
                         </Grid>
 
                         {/* RIGHT COLUMN: The Sandbox Results */}
-                        <Grid item xs={12} md={7} sx={{ p: 3, display: 'flex', flexDirection: 'column' }}>
+                        <Grid size={{ xs: 12, md: 7 }} sx={{ p: 3, display: 'flex', flexDirection: 'column' }}>
                             <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2, display: 'flex', justifyContent: 'space-between' }}>
                                 Sandbox Preview
                                 {simulationResults && (

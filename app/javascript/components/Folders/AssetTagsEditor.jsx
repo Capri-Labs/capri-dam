@@ -78,7 +78,7 @@ export default function AssetTagsEditor({ asset, open, onClose, onSave }) {
 
             <Grid container sx={{ height: 'calc(100vh - 64px)' }}>
                 {/* LEFT PANE: 60% Image Preview */}
-                <Grid item sx={{ width: '60%', bgcolor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', p: 4, borderRight: '1px solid #cbd5e1' }}>
+                <Grid  sx={{ width: '60%', bgcolor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', p: 4, borderRight: '1px solid #cbd5e1' }}>
                     {asset.url ? (
                         <Box component="img" src={asset.url} alt="Preview" sx={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }} />
                     ) : (
@@ -87,7 +87,7 @@ export default function AssetTagsEditor({ asset, open, onClose, onSave }) {
                 </Grid>
 
                 {/* RIGHT PANE: 40% Tagging Workspace */}
-                <Grid item sx={{ width: '40%', bgcolor: '#ffffff', overflowY: 'auto', p: 4 }}>
+                <Grid  sx={{ width: '40%', bgcolor: '#ffffff', overflowY: 'auto', p: 4 }}>
 
                     {/* MANUAL TAGS SECTION */}
                     <Box sx={{ mb: 5 }}>

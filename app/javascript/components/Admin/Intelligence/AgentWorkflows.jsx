@@ -84,7 +84,7 @@ export default function AgentWorkflows() {
 
             <Grid container spacing={3}>
                 {/* Main Orchestration Canvas */}
-                <Grid item xs={12} lg={8}>
+                <Grid size={{ xs: 12, lg: 8 }}>
                     <Stack spacing={3}>
                         {workflows.map((wf) => (
                             <Card key={wf.id} elevation={0} sx={{ border: '1px solid', borderColor: wf.active ? '#bae6fd' : '#e2e8f0', borderRadius: 3, transition: 'all 0.2s', ...(wf.active && { boxShadow: '0 4px 20px rgba(14, 165, 233, 0.05)' }) }}>
@@ -108,7 +108,7 @@ export default function AgentWorkflows() {
                                     <Box sx={{ mt: 3, p: 2, bgcolor: '#f8fafc', borderRadius: 2, border: '1px dashed #cbd5e1' }}>
                                         <Grid container alignItems="center" spacing={2}>
                                             {/* Trigger Node */}
-                                            <Grid item xs={3}>
+                                            <Grid size={3}>
                                                 <Paper elevation={0} sx={{ p: 1.5, textAlign: 'center', border: '1px solid #e2e8f0', bgcolor: '#fff' }}>
                                                     <Sensors sx={{ color: '#64748b', mb: 0.5 }} />
                                                     <Typography variant="caption" sx={{ display: 'block', fontWeight: 600, color: '#475569' }}>Event Trigger</Typography>
@@ -117,10 +117,10 @@ export default function AgentWorkflows() {
                                             </Grid>
 
                                             {/* Connector */}
-                                            <Grid item xs={1} sx={{ textAlign: 'center', color: '#94a3b8' }}>➔</Grid>
+                                            <Grid size={1} sx={{ textAlign: 'center', color: '#94a3b8' }}>➔</Grid>
 
                                             {/* Agent Node */}
-                                            <Grid item xs={4}>
+                                            <Grid size={4}>
                                                 <Paper elevation={0} sx={{ p: 1.5, textAlign: 'center', border: '1px solid #c7d2fe', bgcolor: '#e0e7ff' }}>
                                                     <SmartToy sx={{ color: '#4f46e5', mb: 0.5 }} />
                                                     <Typography variant="caption" sx={{ display: 'block', fontWeight: 600, color: '#3730a3' }}>LangChain Agent</Typography>
@@ -129,10 +129,10 @@ export default function AgentWorkflows() {
                                             </Grid>
 
                                             {/* Connector */}
-                                            <Grid item xs={1} sx={{ textAlign: 'center', color: '#94a3b8' }}>➔</Grid>
+                                            <Grid size={1} sx={{ textAlign: 'center', color: '#94a3b8' }}>➔</Grid>
 
                                             {/* Tools Node */}
-                                            <Grid item xs={3}>
+                                            <Grid size={3}>
                                                 <Paper elevation={0} sx={{ p: 1.5, textAlign: 'center', border: '1px solid #e2e8f0', bgcolor: '#fff' }}>
                                                     <Extension sx={{ color: '#64748b', mb: 0.5 }} />
                                                     <Typography variant="caption" sx={{ display: 'block', fontWeight: 600, color: '#475569' }}>Capabilities</Typography>
@@ -160,7 +160,7 @@ export default function AgentWorkflows() {
                 </Grid>
 
                 {/* Right Sidebar: Execution Stream */}
-                <Grid item xs={12} lg={4}>
+                <Grid size={{ xs: 12, lg: 4 }}>
                     <Paper elevation={0} sx={{ border: '1px solid #e3e8ef', borderRadius: 3, height: '100%', display: 'flex', flexDirection: 'column' }}>
                         <Box sx={{ p: 2.5, borderBottom: '1px solid #e3e8ef', display: 'flex', alignItems: 'center', gap: 1.5 }}>
                             <History sx={{ color: '#64748b' }} />

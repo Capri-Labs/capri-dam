@@ -74,7 +74,7 @@ export default function App() {
                         <ListItemIcon sx={{ color: currentView === 'explorer' ? '#38bdf8' : '#94a3b8', minWidth: '40px' }}>
                             <FolderCopy />
                         </ListItemIcon>
-                        <ListItemText primary="Asset Explorer" primaryTypographyProps={{ fontWeight: currentView === 'explorer' ? 600 : 400 }} />
+                        <ListItemText primary="Asset Explorer" slotProps={{ primary: { fontWeight: currentView === 'explorer' ? 600 : 400 } }} />
                     </ListItem>
 
                     <ListItem
@@ -89,7 +89,7 @@ export default function App() {
                         <ListItemIcon sx={{ color: currentView === 'workflows' ? '#38bdf8' : '#94a3b8', minWidth: '40px' }}>
                             <Assignment />
                         </ListItemIcon>
-                        <ListItemText primary="Workflows" primaryTypographyProps={{ fontWeight: currentView === 'workflows' ? 600 : 400 }} />
+                        <ListItemText primary="Workflows" slotProps={{ primary: { fontWeight: currentView === 'workflows' ? 600 : 400 } }} />
                     </ListItem>
                 </List>
 

@@ -79,7 +79,7 @@ export default function SmtpSettingsTab({ incomingConfigs }) {
         <Paper elevation={0} sx={{ p: 3, border: '2px solid #5e35b1', borderRadius: 3, bgcolor: '#f9f8ff' }}>
             <Grid container spacing={4}>
                 {/* SMTP Credentials Form */}
-                <Grid item xs={12} lg={7}>
+                <Grid size={{ xs: 12, lg: 7 }}>
                     <Paper variant="outlined" sx={{ p: 3, borderRadius: 3 }}>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                             <Typography variant="h6" sx={{ fontWeight: 700 }}>SMTP Infrastructure Setup</Typography>
@@ -100,10 +100,10 @@ export default function SmtpSettingsTab({ incomingConfigs }) {
 
                         <Stack spacing={3}>
                             <Grid container spacing={2}>
-                                <Grid item xs={12} sm={8}>
+                                <Grid size={{ xs: 12, sm: 8 }}>
                                     <TextField fullWidth label="SMTP Mail Server Host" value={smtpConfig.address} onChange={(e) => handleSmtpChange('address', e.target.value)} />
                                 </Grid>
-                                <Grid item xs={12} sm={4}>
+                                <Grid size={{ xs: 12, sm: 4 }}>
                                     <TextField fullWidth label="Port" value={smtpConfig.port} onChange={(e) => handleSmtpChange('port', e.target.value)} />
                                 </Grid>
                             </Grid>
@@ -111,23 +111,23 @@ export default function SmtpSettingsTab({ incomingConfigs }) {
                             <TextField fullWidth label="Sender Address (From:)" value={smtpConfig.sender_address} onChange={(e) => handleSmtpChange('sender_address', e.target.value)} />
 
                             <Grid container spacing={2}>
-                                <Grid item xs={12} sm={6}>
+                                <Grid size={{ xs: 12, sm: 6 }}>
                                     <TextField fullWidth label="Authentication Username" value={smtpConfig.user_name} onChange={(e) => handleSmtpChange('user_name', e.target.value)} />
                                 </Grid>
-                                <Grid item xs={12} sm={6}>
+                                <Grid size={{ xs: 12, sm: 6 }}>
                                     <TextField fullWidth type="password" label="SMTP Password" value={smtpConfig.password} onChange={(e) => handleSmtpChange('password', e.target.value)} />
                                 </Grid>
                             </Grid>
 
                             <Grid container spacing={2}>
-                                <Grid item xs={12} sm={6}>
+                                <Grid size={{ xs: 12, sm: 6 }}>
                                     <TextField fullWidth select label="Authentication Handshake Type" value={smtpConfig.authentication} onChange={(e) => handleSmtpChange('authentication', e.target.value)}>
                                         <MenuItem value="plain">Plain Text (Standard)</MenuItem>
                                         <MenuItem value="login">Login Sequence</MenuItem>
                                         <MenuItem value="cram_md5">CRAM MD5 Hash</MenuItem>
                                     </TextField>
                                 </Grid>
-                                <Grid item xs={12} sm={6}>
+                                <Grid size={{ xs: 12, sm: 6 }}>
                                     <TextField fullWidth select label="Connection Security Protocol" value={smtpConfig.enable_starttls_auto} onChange={(e) => handleSmtpChange('enable_starttls_auto', e.target.value)}>
                                         <MenuItem value="true">Enable STARTTLS Auto (Secure)</MenuItem>
                                         <MenuItem value="false">No Encryption / Standard Port 25</MenuItem>
@@ -145,7 +145,7 @@ export default function SmtpSettingsTab({ incomingConfigs }) {
                 </Grid>
 
                 {/* SMTP Real-time Diagnosis Console */}
-                <Grid item xs={12} lg={5}>
+                <Grid size={{ xs: 12, lg: 5 }}>
                     <Paper variant="outlined" sx={{ p: 3, borderRadius: 3, borderStyle: 'dashed', bgcolor: '#fafafa' }}>
                         <Typography variant="h6" sx={{ fontWeight: 700, mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
                             <Speed /> Send SMTP Echo Check

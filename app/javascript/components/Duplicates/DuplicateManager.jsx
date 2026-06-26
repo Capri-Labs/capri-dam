@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
     Box, CssBaseline, Typography, Grid, Paper, Chip,
-    Button, Skeleton, Tooltip
+    Button, Skeleton
 } from '@mui/material';
 import {
     ContentCopy, RefreshOutlined, CheckCircleOutlined, HourglassEmptyOutlined,
@@ -239,35 +239,31 @@ export default function DuplicateManager() {
                         </Typography>
                     </Box>
                     <Box sx={{ display: 'flex', gap: 1 }}>
-                        <Tooltip title={t('common.search')}>
-                            <Button
-                                size="small"
-                                variant="outlined"
-                                startIcon={<SettingsOutlined />}
-                                onClick={() => navigateTo('/tools/asset_configurations')}
-                                sx={{ textTransform: 'none', borderRadius: 2, fontSize: '0.8rem' }}
-                            >
-                                {t('duplicateManager.settings.title')}
-                            </Button>
-                        </Tooltip>
-                        <Tooltip title={t('common.save')}>
-                            <Button
-                                size="small"
-                                variant="outlined"
-                                startIcon={<RefreshOutlined />}
-                                onClick={() => fetchGroups(filter)}
-                                sx={{ textTransform: 'none', borderRadius: 2, fontSize: '0.8rem' }}
-                            >
-                                {t('common.refresh', 'Refresh')}
-                            </Button>
-                        </Tooltip>
+                        <Button
+                            size="small"
+                            variant="outlined"
+                            startIcon={<SettingsOutlined />}
+                            onClick={() => navigateTo('/tools/asset_configurations')}
+                            sx={{ textTransform: 'none', borderRadius: 2, fontSize: '0.8rem' }}
+                        >
+                            {t('duplicateManager.settings.title')}
+                        </Button>
+                        <Button
+                            size="small"
+                            variant="outlined"
+                            startIcon={<RefreshOutlined />}
+                            onClick={() => fetchGroups(filter)}
+                            sx={{ textTransform: 'none', borderRadius: 2, fontSize: '0.8rem' }}
+                        >
+                            {t('common.refresh', 'Refresh')}
+                        </Button>
                     </Box>
                 </Box>
 
                 {/* ── Stats row ───────────────────────────────────────────── */}
                 {stats && (
                     <Grid container spacing={2} sx={{ mb: 3 }}>
-                        <Grid item xs={12} sm={4}>
+                        <Grid size={{ xs: 12, sm: 4 }}>
                             <StatCard
                                 label={t('duplicateManager.stats.pendingGroups')}
                                 value={stats.pending}
@@ -275,7 +271,7 @@ export default function DuplicateManager() {
                                 icon={<HourglassEmptyOutlined />}
                             />
                         </Grid>
-                        <Grid item xs={12} sm={4}>
+                        <Grid size={{ xs: 12, sm: 4 }}>
                             <StatCard
                                 label={t('duplicateManager.stats.resolvedGroups')}
                                 value={stats.resolved}
@@ -283,7 +279,7 @@ export default function DuplicateManager() {
                                 icon={<CheckCircleOutlined />}
                             />
                         </Grid>
-                        <Grid item xs={12} sm={4}>
+                        <Grid size={{ xs: 12, sm: 4 }}>
                             <StatCard
                                 label={t('duplicateManager.stats.totalGroups')}
                                 value={stats.total}
@@ -321,7 +317,7 @@ export default function DuplicateManager() {
                 {loading ? (
                     <Grid container spacing={3}>
                         {[1, 2, 3, 4].map(i => (
-                            <Grid item xs={12} sm={6} md={4} lg={3} key={i}>
+                            <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={i}>
                                 <Skeleton variant="rectangular" height={160} sx={{ borderRadius: 3 }} />
                             </Grid>
                         ))}
@@ -339,7 +335,7 @@ export default function DuplicateManager() {
                 ) : (
                     <Grid container spacing={3}>
                         {groups.map(group => (
-                            <Grid item xs={12} sm={6} md={4} lg={3} key={group.id}>
+                            <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={group.id}>
                                 <GroupCard
                                     group={group}
                                     onClick={fetchGroupDetail}

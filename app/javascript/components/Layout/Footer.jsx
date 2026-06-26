@@ -11,15 +11,16 @@ export default function Footer() {
                 bgcolor: '#ffffff',
                 borderTop: '1px solid #e2e8f0',
                 py: 4,
-                mt: 'auto', // Pushes footer to the bottom of the flex container
+                mt: 'auto',
                 width: '100%'
             }}
         >
             <Container maxWidth="xl">
+                {/* MUI v9 Grid2: no `item` prop; use `size` for responsive columns */}
                 <Grid container spacing={4} justifyContent="space-between">
 
                     {/* Branding & Mission */}
-                    <Grid item xs={12} md={5}>
+                    <Grid size={{ xs: 12, md: 5 }}>
                         <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#1e293b', mb: 1.5, letterSpacing: '-0.02em' }}>
                             Intelligent Asset Engine
                         </Typography>
@@ -29,11 +30,12 @@ export default function Footer() {
                     </Grid>
 
                     {/* Navigation Columns */}
-                    <Grid item xs={12} md={7}>
-                        <Grid container spacing={4} justifyContent={{ xs: 'flex-start', md: 'flex-end' }}>
+                    <Grid size={{ xs: 12, md: 7 }}>
+                        {/* Responsive justifyContent via sx (not a direct prop in Grid2 children) */}
+                        <Grid container spacing={4} sx={{ justifyContent: { xs: 'flex-start', md: 'flex-end' } }}>
 
                             {/* Resources Column */}
-                            <Grid item xs={6} sm={4}>
+                            <Grid size={{ xs: 6, sm: 4 }}>
                                 <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#1e293b', mb: 2, textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '0.75rem' }}>
                                     Resources
                                 </Typography>
@@ -51,7 +53,7 @@ export default function Footer() {
                             </Grid>
 
                             {/* Legal Column */}
-                            <Grid item xs={6} sm={4}>
+                            <Grid size={{ xs: 6, sm: 4 }}>
                                 <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#1e293b', mb: 2, textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '0.75rem' }}>
                                     Legal & Security
                                 </Typography>
@@ -80,7 +82,7 @@ export default function Footer() {
                         &copy; {currentYear} Capri DAM. All rights reserved.
                     </Typography>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#10b981' }} /> {/* Green indicator light */}
+                        <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#10b981' }} />
                         <Typography variant="caption" sx={{ color: '#cbd5e1', fontWeight: 500, fontFamily: 'monospace', fontSize: '0.8rem' }}>
                             v1.0.0-alpha
                         </Typography>

@@ -103,10 +103,10 @@ export default function AssetViewer({ asset: initialAsset, open, onClose, onAsse
     const totalTagsCount = (props.tags?.length || 0) + (props.ai_tags?.faces?.length || 0) + (props.ai_tags?.text?.length || 0);
 
     const liveFilterStyle = `
-        brightness(${100 + (adjustments.brightness || 0)}%) 
-        contrast(${100 + (adjustments.contrast || 0)}%) 
-        saturate(${100 + (adjustments.saturation || 0)}%) 
-        sepia(${adjustments.warmth > 0 ? adjustments.warmth / 2 : 0}%) 
+        brightness(${100 + (adjustments.brightness || 0)}%)
+        contrast(${100 + (adjustments.contrast || 0)}%)
+        saturate(${100 + (adjustments.saturation || 0)}%)
+        sepia(${adjustments.warmth > 0 ? adjustments.warmth / 2 : 0}%)
         hue-rotate(${adjustments.tint || 0}deg)
     `;
 
@@ -165,7 +165,7 @@ export default function AssetViewer({ asset: initialAsset, open, onClose, onAsse
                             <ListItemText
                                 primary="Download Secure Proxy"
                                 secondary="Includes unremovable watermark"
-                                primaryTypographyProps={{ color: 'error', fontWeight: 600 }}
+                                slotProps={{ primary: { color: 'error', fontWeight: 600 } }}
                             />
                         </MenuItem>
                     </Menu>
@@ -174,7 +174,7 @@ export default function AssetViewer({ asset: initialAsset, open, onClose, onAsse
 
             <Grid container sx={{ height: 'calc(100vh - 64px)' }}>
                 {/* LEFT PANE: 60% Image Preview */}
-                <Grid item sx={{ width: '65%', bgcolor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', p: 4, borderRight: '1px solid #cbd5e1' }}>
+                <Grid  sx={{ width: '65%', bgcolor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', p: 4, borderRight: '1px solid #cbd5e1' }}>
                     {isImage && asset.url ? (
                         <Box component="img"
                              src={`${asset.url}?v=${asset.version || Date.now()}`}
@@ -193,7 +193,7 @@ export default function AssetViewer({ asset: initialAsset, open, onClose, onAsse
                 </Grid>
 
                 {/* RIGHT PANE: 40% Tabbed Inspector */}
-                <Grid item sx={{ width: '35%', bgcolor: '#ffffff', display: 'flex', flexDirection: 'column' }}>
+                <Grid  sx={{ width: '35%', bgcolor: '#ffffff', display: 'flex', flexDirection: 'column' }}>
                     <Box sx={{ borderBottom: 1, borderColor: 'divider', px: 2, pt: 1 }}>
                         <Tabs value={activeTab} onChange={handleTabChange} variant="scrollable" scrollButtons="auto" sx={{ '& .MuiTab-root': { textTransform: 'none', minWidth: 'auto', px: 2 } }}>
                             <Tab icon={<InfoOutlined fontSize="small" />} iconPosition="start" label="Info" />

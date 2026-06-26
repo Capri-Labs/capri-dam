@@ -53,7 +53,7 @@ function SchemaOptionRow({ schema, depth = 0, selected, onSelect }) {
                         </Box>
                     }
                     secondary={schema.description}
-                    secondaryTypographyProps={{ sx: { fontSize: '0.75rem', mt: 0.25 } }}
+                    slotProps={{ secondary: { sx: { fontSize: '0.75rem', mt: 0.25 } } }}
                 />
                 {isSelected && <CheckCircle sx={{ color: '#5e35b1', ml: 1 }} />}
             </ListItemButton>

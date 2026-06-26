@@ -206,7 +206,7 @@ export default function ConnectorDialog({
                             </Typography>
                             <Grid container spacing={2}>
                                 {providerDef.fields.map(field => (
-                                    <Grid item xs={12} md={field.key === 'auth_token' || field.key.includes('url') || field.key.includes('endpoint') ? 12 : 6} key={field.key}>
+                                    <Grid size={{ xs: 12, md: field.key === 'auth_token' || field.key.includes('url') || field.key.includes('endpoint') ? 12 : 6 }} key={field.key}>
                                         <TextField
                                             fullWidth
                                             label={field.label}
@@ -246,13 +246,13 @@ export default function ConnectorDialog({
                     </Box>
 
                     <Grid container spacing={2}>
-                        <Grid item xs={6}>
+                        <Grid size={6}>
                             <TextField type="number" fullWidth label="Max Concurrent Threads"
                                 value={formData.concurrency_limit || 3}
                                 onChange={(e) => setFormData({ ...formData, concurrency_limit: parseInt(e.target.value) })}
                                 helperText="Parallel download threads" />
                         </Grid>
-                        <Grid item xs={6}>
+                        <Grid size={6}>
                             <TextField type="number" fullWidth label="Max Requests/Sec (Rate Limit)"
                                 value={formData.rps_limit || 5}
                                 onChange={(e) => setFormData({ ...formData, rps_limit: parseInt(e.target.value) })}

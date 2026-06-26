@@ -63,7 +63,7 @@ export default function DataHealthDashboard() {
 
             {/* Top Row: Executive TDM Metrics */}
             <Grid container spacing={3} sx={{ mb: 4 }}>
-                <Grid item xs={12} md={4}>
+                <Grid size={{ xs: 12, md: 4 }}>
                     <Card elevation={0} sx={{ border: '1px solid #e3e8ef', borderRadius: 3, height: '100%' }}>
                         <CardContent>
                             <Typography color="textSecondary" variant="caption" sx={{ fontWeight: 600 }}>DEDUPLICATION SAVINGS</Typography>
@@ -76,7 +76,7 @@ export default function DataHealthDashboard() {
                         </CardContent>
                     </Card>
                 </Grid>
-                <Grid item xs={12} md={8}>
+                <Grid size={{ xs: 12, md: 8 }}>
                     <Card elevation={0} sx={{ border: '1px solid #e3e8ef', borderRadius: 3, height: '100%' }}>
                         <CardContent>
                             <Typography color="textSecondary" variant="caption" sx={{ fontWeight: 600 }}>CLOUD STORAGE COMPOSITION</Typography>

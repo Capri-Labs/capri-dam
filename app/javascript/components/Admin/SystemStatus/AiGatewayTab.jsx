@@ -79,14 +79,14 @@ export default function AiGatewayTab() {
 
             <Grid container spacing={4}>
                 {/* LEFT COLUMN: Routing & Models */}
-                <Grid item xs={12} md={7}>
+                <Grid size={{ xs: 12, md: 7 }}>
                     <Paper elevation={0} sx={{ p: 3, border: '1px solid #e3e8ef', borderRadius: 3, mb: 4 }}>
                         <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
                             <SwapCalls color="primary" /> Traffic Routing & Models
                         </Typography>
 
                         <Grid container spacing={3}>
-                            <Grid item xs={12}>
+                            <Grid size={12}>
                                 <TextField
                                     select
                                     fullWidth
@@ -100,7 +100,7 @@ export default function AiGatewayTab() {
                                     <MenuItem value="perplexity">Perplexity AI</MenuItem>
                                 </TextField>
                             </Grid>
-                            <Grid item xs={12} sm={6}>
+                            <Grid size={{ xs: 12, sm: 6 }}>
                                 <TextField
                                     select
                                     fullWidth
@@ -114,7 +114,7 @@ export default function AiGatewayTab() {
                                     <MenuItem value="llama-3">Llama 3 70B</MenuItem>
                                 </TextField>
                             </Grid>
-                            <Grid item xs={12} sm={6}>
+                            <Grid size={{ xs: 12, sm: 6 }}>
                                 <TextField
                                     select
                                     fullWidth
@@ -161,7 +161,7 @@ export default function AiGatewayTab() {
                 </Grid>
 
                 {/* RIGHT COLUMN: Budgets & Metrics */}
-                <Grid item xs={12} md={5}>
+                <Grid size={{ xs: 12, md: 5 }}>
                     <Paper elevation={0} sx={{ p: 3, border: '1px solid #e3e8ef', borderRadius: 3, mb: 4 }}>
                         <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
                             <AccountBalanceWallet sx={{ color: '#f59e0b' }} /> Financial Token Governance

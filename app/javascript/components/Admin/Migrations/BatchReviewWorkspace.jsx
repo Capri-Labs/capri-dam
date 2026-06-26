@@ -171,7 +171,7 @@ export default function BatchReviewWorkspace({ batchId, onBack }) {
                             { label: 'Storage Saved', value: `${report.duplicate_storage_saved_gb} GB`, color: '#0ea5e9' },
                             { label: 'Est. Cost Savings', value: `$${report.estimated_cost_savings_usd}/mo`, color: '#0ea5e9' },
                         ].map((stat, i) => (
-                            <Grid item xs={6} sm={4} md={2} key={i}>
+                            <Grid size={{ xs: 6, sm: 4, md: 2 }} key={i}>
                                 <Box sx={{ textAlign: 'center' }}>
                                     <Typography variant="h5" sx={{ fontWeight: 700, color: stat.color }}>{stat.value}</Typography>
                                     <Typography variant="caption" color="textSecondary">{stat.label}</Typography>
@@ -194,7 +194,7 @@ export default function BatchReviewWorkspace({ batchId, onBack }) {
 
             <Grid container spacing={3}>
                 {/* ── Item Queue (left panel) ── */}
-                <Grid item xs={12} md={4}>
+                <Grid size={{ xs: 12, md: 4 }}>
                     <Paper elevation={0} sx={{ border: '1px solid #e3e8ef', borderRadius: 3 }}>
                         {/* Filter bar */}
                         <Box sx={{ p: 1.5, borderBottom: '1px solid #f1f5f9' }}>
@@ -244,7 +244,7 @@ export default function BatchReviewWorkspace({ batchId, onBack }) {
                 </Grid>
 
                 {/* ── Detail Panel (right) ── */}
-                <Grid item xs={12} md={8}>
+                <Grid size={{ xs: 12, md: 8 }}>
                     {selectedItem ? (
                         <Paper elevation={0} sx={{ p: 3, border: '1px solid #e3e8ef', borderRadius: 3, minHeight: '70vh' }}>
                             <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5, wordBreak: 'break-all' }}>
@@ -283,7 +283,7 @@ export default function BatchReviewWorkspace({ batchId, onBack }) {
                             ) : (
                                 <Grid container spacing={2}>
                                     {/* Raw Legacy Metadata */}
-                                    <Grid item xs={12} sm={6}>
+                                    <Grid size={{ xs: 12, sm: 6 }}>
                                         <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, color: '#64748b' }}>
                                             Raw Legacy Attributes
                                         </Typography>
@@ -292,7 +292,7 @@ export default function BatchReviewWorkspace({ batchId, onBack }) {
                                         </Box>
                                     </Grid>
                                     {/* AI Normalized Schema */}
-                                    <Grid item xs={12} sm={6}>
+                                    <Grid size={{ xs: 12, sm: 6 }}>
                                         <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1.5 }}>
                                             <AutoAwesome sx={{ color: '#8e24aa', fontSize: 18 }} />
                                             <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#8e24aa' }}>AI Normalized Schema</Typography>

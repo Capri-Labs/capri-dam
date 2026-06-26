@@ -15,9 +15,9 @@ export default function AssetStatisticsTab({ asset }) {
         <Box>
             <Typography variant="subtitle1" fontWeight="700" sx={{ mb: 2 }}>Asset Statistics</Typography>
             <Grid container spacing={2}>
-                <Grid item xs={4}>{statBlock(<CloudDownloadOutlined color="primary" />, "Downloads", "14")}</Grid>
-                <Grid item xs={4}>{statBlock(<RemoveRedEyeOutlined color="primary" />, "CDN Views", "1,204")}</Grid>
-                <Grid item xs={4}>{statBlock(<ShareOutlined color="primary" />, "Shares", "3")}</Grid>
+                <Grid size={4}>{statBlock(<CloudDownloadOutlined color="primary" />, "Downloads", "14")}</Grid>
+                <Grid size={4}>{statBlock(<RemoveRedEyeOutlined color="primary" />, "CDN Views", "1,204")}</Grid>
+                <Grid size={4}>{statBlock(<ShareOutlined color="primary" />, "Shares", "3")}</Grid>
             </Grid>
         </Box>
     );

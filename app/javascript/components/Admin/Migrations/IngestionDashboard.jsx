@@ -115,7 +115,7 @@ export default function IngestionDashboard() {
                     { label: 'TOTAL ASSETS STAGED', value: metrics.totalAssets.toLocaleString(), sub: 'Across all active and completed batches', icon: <Storage sx={{ color: '#0ea5e9', fontSize: 32 }} />, color: '#0ea5e9' },
                     { label: 'COMMITTED TO DAM', value: metrics.totalCommitted.toLocaleString(), sub: 'Successfully migrated and indexed', icon: <CheckCircle sx={{ color: '#16a34a', fontSize: 32 }} />, color: '#16a34a' },
                 ].map((m, i) => (
-                    <Grid item xs={12} sm={6} md={3} key={i}>
+                    <Grid size={{ xs: 12, sm: 6, md: 3 }} key={i}>
                         <Card elevation={0} sx={{ border: '1px solid #e3e8ef', borderRadius: 3 }}>
                             <CardContent>
                                 <Stack direction="row" justifyContent="space-between" alignItems="center">

@@ -120,12 +120,12 @@ function ImportDialog({ open, onClose, onCreate }) {
                     )}
 
                     <Grid container spacing={2}>
-                        <Grid item xs={6}>
+                        <Grid size={6}>
                             <TextField label="Batch size" type="number" size="small" fullWidth
                                 value={batchSize} onChange={e => setBatchSize(e.target.value)}
                                 inputProps={{ min: 1, max: 100 }} helperText="Default 50, max 100" />
                         </Grid>
-                        <Grid item xs={6}>
+                        <Grid size={6}>
                             <Autocomplete
                                 freeSolo size="small" options={headers} value={assetPathColumn}
                                 onInputChange={(_, v) => setAssetPathCol(v)}
@@ -135,12 +135,12 @@ function ImportDialog({ open, onClose, onCreate }) {
                                 )}
                             />
                         </Grid>
-                        <Grid item xs={6}>
+                        <Grid size={6}>
                             <TextField label="Field separator" size="small" fullWidth
                                 value={fieldSeparator} onChange={e => setFieldSeparator(e.target.value)}
                                 inputProps={{ maxLength: 3 }} helperText="Default ," />
                         </Grid>
-                        <Grid item xs={6}>
+                        <Grid size={6}>
                             <TextField label="Multi-value delimiter" size="small" fullWidth
                                 value={multiDelimiter} onChange={e => setMultiDelimiter(e.target.value)}
                                 inputProps={{ maxLength: 3 }} helperText="Default |" />
