@@ -32,5 +32,9 @@ module Types
     # Personal Access Tokens
     field :create_personal_access_token, mutation: Mutations::CreatePersonalAccessToken
     field :revoke_personal_access_token, mutation: Mutations::RevokePersonalAccessToken
+
+    # Duplicate Manager
+    field :resolve_duplicate_group, mutation: Mutations::ResolveDuplicateGroup
+    field :trigger_duplicate_scan,  mutation: Mutations::TriggerDuplicateScan
   end
 end

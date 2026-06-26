@@ -10,6 +10,7 @@
 
   # Standard Priority
   - [default, 3]       # Standard application jobs
+  - [duplicate_detection, 3] # for duplicate application jobs
 
   # Medium Priority (System Processing)
   - [workflow, 2]      # Transitioning states, creating audit logs

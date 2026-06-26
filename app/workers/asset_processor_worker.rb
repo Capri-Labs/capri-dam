@@ -121,6 +121,12 @@ class AssetProcessorWorker
 
       AssetWorkflowTriggerWorker.perform_async(asset.id, "on_upload") if defined?(AssetWorkflowTriggerWorker)
 
+      # Enqueue duplicate detection if a checksum was extracted.
+      sha256 = extracted_meta[:checksum_sha256]
+      if sha256.present?
+        DuplicateDetectionWorker.perform_async(asset.id, sha256, asset.user_id)
+      end
+
       Rails.logger.info "✅ AssetVersion #{version.id} processed and stored as #{file_path}"
 
     rescue StandardError => e

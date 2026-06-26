@@ -169,6 +169,92 @@
       "noActivity": "Noch keine Aktivitäten.",
       "viaImpersonation": "Via Imitation"
     }
+  },
+  "tools": {
+    "assetConfigurations": {
+      "uploadRestrictions": "Upload-Einschränkungen",
+      "uploadRestrictionsDesc": "Erlaubte MIME-Typen verwalten",
+      "imageProfiles": "Bildprofile",
+      "imageProfilesDesc": "Automatisches Zuschneiden beim Upload",
+      "videoProfiles": "Videoprofile",
+      "videoProfilesDesc": "Adaptive Videocodierung"
+    }
+  },
+  "duplicateManager": {
+    "title": "Duplikat-Manager",
+    "subtitle": "Doppelte Assets überprüfen und auflösen",
+    "emptyState": "Keine Duplikatgruppen gefunden. Ihr Repository ist sauber!",
+    "group": {
+      "identicalFiles": "{{count}} identische Dateien",
+      "potentialMatch": "Mögliche Übereinstimmung",
+      "sha256": "SHA-256"
+    },
+    "resolution": {
+      "title": "Duplikate auflösen",
+      "subtitle": "{{count}} Assets gefunden",
+      "accept": "Alle behalten",
+      "delete": "Ausgewählte löschen",
+      "dismiss": "Ohne Aktion schließen",
+      "navigateTo": "Zum Asset navigieren",
+      "goToFolder": "Zum Ordner",
+      "originalBadge": "Original — älteste Kopie",
+      "selectedCount": "{{count}} zum Löschen ausgewählt",
+      "confirmDeleteBody": "Die ausgewählten Assets werden in den Papierkorb verschoben.",
+      "resolvedSuccess": "Duplikatgruppe aufgelöst.",
+      "keptAllSuccess": "Alle Assets behalten.",
+      "deletedSuccess": "{{count}} Asset(s) in den Papierkorb verschoben.",
+      "loading": "Duplikate werden geladen…"
+    },
+    "settings": {
+      "title": "Duplikat-Manager-Einstellungen",
+      "subtitle": "Duplikaterkennung für Asset-Uploads konfigurieren",
+      "enableLabel": "Duplikaterkennung aktivieren",
+      "enableHelp": "Prüft den SHA-256-Prüfwert jedes hochgeladenen Assets.",
+      "inboxNotificationsLabel": "Posteingang-Benachrichtigungen",
+      "inboxNotificationsHelp": "Sendet eine aggregierte Benachrichtigung bei erkannten Duplikaten.",
+      "performanceWarning": "Die Duplikaterkennung kann die Upload-Leistung beeinflussen.",
+      "maxReported": "Die ersten {{count}} Duplikatgruppen werden angezeigt.",
+      "saved": "Einstellungen gespeichert.",
+      "loadError": "Einstellungen konnten nicht geladen werden.",
+      "adminOnly": "Nur Admins",
+      "status": {
+        "enabled": "Aktiv",
+        "disabled": "Deaktiviert"
+      }
+    },
+    "status": {
+      "pending": "Ausstehend",
+      "resolved": "Aufgelöst",
+      "dismissed": "Abgewiesen"
+    },
+    "filters": {
+      "all": "Alle Gruppen",
+      "pending": "Ausstehend",
+      "resolved": "Aufgelöst"
+    },
+    "stats": {
+      "totalGroups": "Gruppen gesamt",
+      "pendingGroups": "Ausstehend",
+      "resolvedGroups": "Aufgelöst"
+    },
+    "scan": {
+      "title": "Repository-Scan",
+      "subtitle": "Gesamtes Repository nach doppelten Assets durchsuchen",
+      "description": "Der Scan analysiert alle Asset-Versionen im Repository. Mehrere Versionen desselben Assets mit gleichem Prüfwert sind KEINE Duplikate — nur unterschiedliche Assets mit gleichem SHA-256 werden markiert.",
+      "triggerButton": "Vollständigen Scan starten",
+      "autoQueued": "Duplikaterkennung aktiviert — ein vollständiger Repository-Scan wurde automatisch in die Warteschlange gestellt.",
+      "queued": "Repository-Scan wurde in die Warteschlange gestellt.",
+      "alreadyRunning": "Ein Scan läuft bereits. Bitte warten Sie, bis er abgeschlossen ist.",
+      "lastScan": "Letzter Scan abgeschlossen",
+      "versionNote": "Versionen desselben Assets mit gleichem Prüfwert sind KEINE Duplikate.",
+      "progressLabel": "{{processed}} von {{total}} Prüfwerten verarbeitet",
+      "status": {
+        "idle": "Inaktiv",
+        "queued": "In der Warteschlange",
+        "running": "Wird ausgeführt",
+        "completed": "Abgeschlossen",
+        "failed": "Fehlgeschlagen"
+      }
+    }
   }
 }
-

@@ -69,7 +69,8 @@
     "success": "Sucesso",
     "warning": "Aviso",
     "info": "Info",
-    "copyDismiss": "Copiar e fechar"
+    "copyDismiss": "Copiar e fechar",
+    "refresh": "Atualizar"
   },
   "header": {
     "myProfile": "Meu perfil",
@@ -169,6 +170,92 @@
       "noActivity": "Nenhuma atividade ainda.",
       "viaImpersonation": "Via representação"
     }
+  },
+  "tools": {
+    "assetConfigurations": {
+      "uploadRestrictions": "Restrições de upload",
+      "uploadRestrictionsDesc": "Gerenciar tipos MIME permitidos",
+      "imageProfiles": "Perfis de imagem",
+      "imageProfilesDesc": "Corte automático ao carregar",
+      "videoProfiles": "Perfis de vídeo",
+      "videoProfilesDesc": "Codificação de vídeo adaptativa"
+    }
+  },
+  "duplicateManager": {
+    "title": "Gerenciador de duplicatas",
+    "subtitle": "Revisar e resolver ativos duplicados detectados",
+    "emptyState": "Nenhum grupo de duplicatas encontrado. Seu repositório está limpo!",
+    "group": {
+      "identicalFiles": "{{count}} arquivos idênticos",
+      "potentialMatch": "Correspondência potencial",
+      "sha256": "SHA-256"
+    },
+    "resolution": {
+      "title": "Resolver duplicatas",
+      "subtitle": "{{count}} ativos encontrados",
+      "accept": "Manter todos",
+      "delete": "Excluir selecionados",
+      "dismiss": "Fechar sem ação",
+      "navigateTo": "Navegar até o ativo",
+      "goToFolder": "Ir para a pasta",
+      "originalBadge": "Original — cópia mais antiga",
+      "selectedCount": "{{count}} selecionado(s) para exclusão",
+      "confirmDeleteBody": "Os ativos selecionados serão movidos para a lixeira.",
+      "resolvedSuccess": "Grupo de duplicatas resolvido.",
+      "keptAllSuccess": "Todos os ativos mantidos.",
+      "deletedSuccess": "{{count}} ativo(s) movido(s) para a lixeira.",
+      "loading": "Carregando duplicatas..."
+    },
+    "settings": {
+      "title": "Configurações do gerenciador de duplicatas",
+      "subtitle": "Configurar detecção de duplicatas no upload",
+      "enableLabel": "Ativar detecção de duplicatas",
+      "enableHelp": "Verifica o SHA-256 de cada ativo carregado.",
+      "inboxNotificationsLabel": "Notificações na caixa de entrada",
+      "inboxNotificationsHelp": "Envia notificação agregada quando duplicatas são detectadas.",
+      "performanceWarning": "A detecção pode afetar o desempenho de upload.",
+      "maxReported": "Os primeiros {{count}} grupos são exibidos.",
+      "saved": "Configurações salvas.",
+      "loadError": "Falha ao carregar configurações.",
+      "adminOnly": "Somente administradores",
+      "status": {
+        "enabled": "Ativado",
+        "disabled": "Desativado"
+      }
+    },
+    "status": {
+      "pending": "Pendente",
+      "resolved": "Resolvido",
+      "dismissed": "Ignorado"
+    },
+    "filters": {
+      "all": "Todos os grupos",
+      "pending": "Pendente",
+      "resolved": "Resolvido"
+    },
+    "stats": {
+      "totalGroups": "Total de grupos",
+      "pendingGroups": "Pendente",
+      "resolvedGroups": "Resolvido"
+    },
+    "scan": {
+      "title": "Varredura do repositório",
+      "subtitle": "Varrer todo o repositório em busca de ativos duplicados",
+      "description": "A varredura analisa todas as versões de ativos. Várias versões do mesmo ativo que compartilham um checksum NÃO são duplicatas — apenas ativos diferentes que compartilham um SHA-256 são sinalizados.",
+      "triggerButton": "Executar varredura completa",
+      "autoQueued": "Detecção de duplicatas ativada — uma varredura completa do repositório foi enfileirada automaticamente.",
+      "queued": "A varredura do repositório foi enfileirada.",
+      "alreadyRunning": "Uma varredura já está em andamento. Aguarde a conclusão.",
+      "lastScan": "Última varredura concluída",
+      "versionNote": "Versões do mesmo ativo que compartilham um checksum NÃO são duplicatas.",
+      "progressLabel": "{{processed}} de {{total}} checksums processados",
+      "status": {
+        "idle": "Ocioso",
+        "queued": "Na fila",
+        "running": "Em execução",
+        "completed": "Concluído",
+        "failed": "Falhou"
+      }
+    }
   }
 }
-

@@ -69,7 +69,8 @@
     "success": "Success",
     "warning": "Warning",
     "info": "Info",
-    "copyDismiss": "Copy & Dismiss"
+    "copyDismiss": "Copy & Dismiss",
+    "refresh": "Refresh"
   },
   "header": {
     "myProfile": "My Profile",
@@ -169,6 +170,94 @@
       "noActivity": "No activity yet.",
       "viaImpersonation": "Via Impersonation"
     }
+  },
+  "tools": {
+    "assetConfigurations": {
+      "uploadRestrictions": "Upload Restrictions",
+      "uploadRestrictionsDesc": "Control which MIME types can be uploaded",
+      "imageProfiles": "Image Profiles",
+      "imageProfilesDesc": "Automatic crop & sharpening on upload",
+      "videoProfiles": "Video Profiles",
+      "videoProfilesDesc": "Adaptive & progressive video encoding"
+    }
+  },
+  "duplicateManager": {
+    "title": "Duplicate Manager",
+    "subtitle": "Review and resolve duplicate assets detected in your repository",
+    "emptyState": "No duplicate groups found. Your repository is clean!",
+    "group": {
+      "identicalFiles": "{{count}} identical files",
+      "potentialMatch": "Potential Match",
+      "sha256": "SHA-256"
+    },
+    "resolution": {
+      "title": "Resolve Duplicates",
+      "subtitle": "{{count}} assets found",
+      "accept": "Keep All",
+      "delete": "Delete Selected",
+      "dismiss": "Dismiss without action",
+      "deleting": "Deleting…",
+      "navigateTo": "Navigate to asset",
+      "goToFolder": "Go to folder",
+      "originalBadge": "Original — oldest copy",
+      "selectedCount": "{{count}} selected for deletion",
+      "confirmDelete": "Delete {{count}} asset(s)?",
+      "confirmDeleteBody": "The selected assets will be moved to the Recycle Bin. This action can be undone from the Bin.",
+      "resolvedSuccess": "Duplicate group resolved.",
+      "keptAllSuccess": "All assets kept. Group dismissed.",
+      "deletedSuccess": "{{count}} asset(s) moved to Bin.",
+      "loading": "Loading duplicates…"
+    },
+    "settings": {
+      "title": "Duplicate Manager Settings",
+      "subtitle": "Control duplicate detection behaviour for asset uploads",
+      "enableLabel": "Enable Duplicate Detection",
+      "enableHelp": "When enabled, DAM checks each uploaded asset's SHA-256 checksum against existing assets. Disable this setting if you experience upload performance issues with large repositories.",
+      "inboxNotificationsLabel": "Inbox Notifications",
+      "inboxNotificationsHelp": "When enabled, an aggregated notification is sent to your Inbox when duplicates are detected during an upload session.",
+      "performanceWarning": "Duplicate detection may impact upload performance for repositories with more than 100,000 assets.",
+      "maxReported": "The first {{count}} duplicate groups are shown in the Duplicate Manager.",
+      "saved": "Duplicate Manager settings saved.",
+      "loadError": "Failed to load settings.",
+      "adminOnly": "Admin only",
+      "status": {
+        "enabled": "Enabled",
+        "disabled": "Disabled"
+      }
+    },
+    "status": {
+      "pending": "Pending",
+      "resolved": "Resolved",
+      "dismissed": "Dismissed"
+    },
+    "filters": {
+      "all": "All Groups",
+      "pending": "Pending",
+      "resolved": "Resolved"
+    },
+    "stats": {
+      "totalGroups": "Total Groups",
+      "pendingGroups": "Pending Review",
+      "resolvedGroups": "Resolved"
+    },
+    "scan": {
+      "title": "Repository Scan",
+      "subtitle": "Scan the entire repository for existing duplicate assets",
+      "description": "The scan analyses all asset versions in the repository. Multiple versions of the same asset that share a checksum are NOT counted as duplicates — only different assets that share a checksum are flagged.",
+      "triggerButton": "Run Full Scan",
+      "autoQueued": "Duplicate detection enabled — a full repository scan has been queued automatically.",
+      "queued": "Repository scan has been queued.",
+      "alreadyRunning": "A scan is already running. Please wait for it to finish.",
+      "lastScan": "Last scan completed",
+      "versionNote": "Versions of the same asset sharing a checksum are NOT duplicates.",
+      "progressLabel": "{{processed}} of {{total}} checksums processed",
+      "status": {
+        "idle": "Idle",
+        "queued": "Queued",
+        "running": "Running",
+        "completed": "Completed",
+        "failed": "Failed"
+      }
+    }
   }
 }
-

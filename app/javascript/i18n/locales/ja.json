@@ -69,7 +69,8 @@
     "success": "成功",
     "warning": "警告",
     "info": "情報",
-    "copyDismiss": "コピーして閉じる"
+    "copyDismiss": "コピーして閉じる",
+    "refresh": "更新"
   },
   "header": {
     "myProfile": "マイプロフィール",
@@ -169,6 +170,92 @@
       "noActivity": "アクティビティなし。",
       "viaImpersonation": "偽装経由"
     }
+  },
+  "tools": {
+    "assetConfigurations": {
+      "uploadRestrictions": "アップロード制限",
+      "uploadRestrictionsDesc": "許可されるMIMEタイプを管理",
+      "imageProfiles": "画像プロファイル",
+      "imageProfilesDesc": "アップロード時の自動クロップ",
+      "videoProfiles": "ビデオプロファイル",
+      "videoProfilesDesc": "アダプティブビデオエンコード"
+    }
+  },
+  "duplicateManager": {
+    "title": "重複マネージャー",
+    "subtitle": "検出された重複アセットを確認・解決",
+    "emptyState": "重複グループが見つかりません。リポジトリはクリーンです！",
+    "group": {
+      "identicalFiles": "{{count}} 個の同一ファイル",
+      "potentialMatch": "潜在的な一致",
+      "sha256": "SHA-256"
+    },
+    "resolution": {
+      "title": "重複を解決",
+      "subtitle": "{{count}} 個のアセットが見つかりました",
+      "accept": "すべて保持",
+      "delete": "選択を削除",
+      "dismiss": "アクションなしで閉じる",
+      "navigateTo": "アセットに移動",
+      "goToFolder": "フォルダに移動",
+      "originalBadge": "オリジナル — 最古のコピー",
+      "selectedCount": "{{count}} 個が削除対象として選択済み",
+      "confirmDeleteBody": "選択されたアセットはごみ箱に移動されます。",
+      "resolvedSuccess": "重複グループが解決されました。",
+      "keptAllSuccess": "すべてのアセットを保持しました。",
+      "deletedSuccess": "{{count}} 個のアセットをごみ箱に移動しました。",
+      "loading": "重複を読み込み中…"
+    },
+    "settings": {
+      "title": "重複マネージャー設定",
+      "subtitle": "アップロード時の重複検出を設定",
+      "enableLabel": "重複検出を有効化",
+      "enableHelp": "アップロードされた各アセットのSHA-256チェックサムを確認します。",
+      "inboxNotificationsLabel": "受信トレイ通知",
+      "inboxNotificationsHelp": "重複が検出された場合に集約通知を送信します。",
+      "performanceWarning": "重複検出はアップロードのパフォーマンスに影響する場合があります。",
+      "maxReported": "最初の{{count}}グループが表示されます。",
+      "saved": "設定を保存しました。",
+      "loadError": "設定の読み込みに失敗しました。",
+      "adminOnly": "管理者のみ",
+      "status": {
+        "enabled": "有効",
+        "disabled": "無効"
+      }
+    },
+    "status": {
+      "pending": "保留中",
+      "resolved": "解決済み",
+      "dismissed": "却下済み"
+    },
+    "filters": {
+      "all": "すべてのグループ",
+      "pending": "保留中",
+      "resolved": "解決済み"
+    },
+    "stats": {
+      "totalGroups": "グループ合計",
+      "pendingGroups": "保留中",
+      "resolvedGroups": "解決済み"
+    },
+    "scan": {
+      "title": "リポジトリスキャン",
+      "subtitle": "リポジトリ全体で既存の重複アセットをスキャン",
+      "description": "スキャンはすべてのアセットバージョンを分析します。同じチェックサムを持つ同一アセットの複数バージョンは重複ではありません — 異なるアセットが同じSHA-256を共有している場合のみフラグが立てられます。",
+      "triggerButton": "フルスキャンを実行",
+      "autoQueued": "重複検出が有効化されました — リポジトリの完全スキャンが自動的にキューに追加されました。",
+      "queued": "リポジトリスキャンがキューに追加されました。",
+      "alreadyRunning": "スキャンはすでに実行中です。完了するまでお待ちください。",
+      "lastScan": "最終スキャン完了",
+      "versionNote": "同じチェックサムを共有する同一アセットのバージョンは重複ではありません。",
+      "progressLabel": "{{total}}件中{{processed}}件のチェックサムを処理済み",
+      "status": {
+        "idle": "アイドル",
+        "queued": "キュー済み",
+        "running": "実行中",
+        "completed": "完了",
+        "failed": "失敗"
+      }
+    }
   }
 }
-

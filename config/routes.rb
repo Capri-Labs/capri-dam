@@ -237,6 +237,24 @@ Rails.application.routes.draw do
       resource :ai_configuration, only: [ :show, :update ]
       resource :upload_restrictions, only: [ :show, :update ]
 
+      # Duplicate Manager
+      resource :duplicate_manager_settings, only: [ :show, :update ] do
+        collection do
+          get  :scan_status
+          post :trigger_scan
+        end
+      end
+      resources :duplicate_groups, only: [ :index, :show ] do
+        collection do
+          get  :stats
+          patch :bulk_resolve
+        end
+        member do
+          patch :resolve
+          patch :dismiss
+        end
+      end
+
       # Image Profiles (asset upload processing configuration)
       resources :image_profiles, only: [ :index, :show, :create, :update, :destroy ] do
         member do

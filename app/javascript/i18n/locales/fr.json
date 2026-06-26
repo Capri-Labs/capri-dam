@@ -69,7 +69,8 @@
     "success": "Succès",
     "warning": "Avertissement",
     "info": "Info",
-    "copyDismiss": "Copier & Fermer"
+    "copyDismiss": "Copier & Fermer",
+    "refresh": "Actualiser"
   },
   "header": {
     "myProfile": "Mon profil",
@@ -169,6 +170,92 @@
       "noActivity": "Aucune activité pour l'instant.",
       "viaImpersonation": "Via incarnation"
     }
+  },
+  "tools": {
+    "assetConfigurations": {
+      "uploadRestrictions": "Restrictions de téléversement",
+      "uploadRestrictionsDesc": "Gérer les types MIME autorisés",
+      "imageProfiles": "Profils image",
+      "imageProfilesDesc": "Recadrage automatique au téléversement",
+      "videoProfiles": "Profils vidéo",
+      "videoProfilesDesc": "Encodage vidéo adaptatif"
+    }
+  },
+  "duplicateManager": {
+    "title": "Gestionnaire de doublons",
+    "subtitle": "Vérifiez et résolvez les doublons détectés",
+    "emptyState": "Aucun doublon trouvé. Votre dépôt est propre !",
+    "group": {
+      "identicalFiles": "{{count}} fichiers identiques",
+      "potentialMatch": "Correspondance potentielle",
+      "sha256": "SHA-256"
+    },
+    "resolution": {
+      "title": "Résoudre les doublons",
+      "subtitle": "{{count}} assets trouvés",
+      "accept": "Tout conserver",
+      "delete": "Supprimer la sélection",
+      "dismiss": "Ignorer",
+      "navigateTo": "Aller à l'asset",
+      "goToFolder": "Aller au dossier",
+      "originalBadge": "Original — copie la plus ancienne",
+      "selectedCount": "{{count}} sélectionné(s) pour suppression",
+      "confirmDeleteBody": "Les assets sélectionnés seront déplacés dans la corbeille.",
+      "resolvedSuccess": "Groupe de doublons résolu.",
+      "keptAllSuccess": "Tous les assets conservés.",
+      "deletedSuccess": "{{count}} asset(s) déplacé(s) dans la corbeille.",
+      "loading": "Chargement des doublons…"
+    },
+    "settings": {
+      "title": "Paramètres du gestionnaire de doublons",
+      "subtitle": "Configurer la détection de doublons",
+      "enableLabel": "Activer la détection de doublons",
+      "enableHelp": "Vérifie le SHA-256 de chaque asset téléversé.",
+      "inboxNotificationsLabel": "Notifications Inbox",
+      "inboxNotificationsHelp": "Envoie une notification agrégée si des doublons sont détectés.",
+      "performanceWarning": "La détection peut affecter les performances de téléversement.",
+      "maxReported": "Les {{count}} premiers groupes sont affichés.",
+      "saved": "Paramètres sauvegardés.",
+      "loadError": "Échec du chargement.",
+      "adminOnly": "Admin seulement",
+      "status": {
+        "enabled": "Activé",
+        "disabled": "Désactivé"
+      }
+    },
+    "status": {
+      "pending": "En attente",
+      "resolved": "Résolu",
+      "dismissed": "Ignoré"
+    },
+    "filters": {
+      "all": "Tous les groupes",
+      "pending": "En attente",
+      "resolved": "Résolu"
+    },
+    "stats": {
+      "totalGroups": "Groupes au total",
+      "pendingGroups": "En attente",
+      "resolvedGroups": "Résolu"
+    },
+    "scan": {
+      "title": "Analyse du dépôt",
+      "subtitle": "Analyser tout le dépôt pour trouver les assets dupliqués",
+      "description": "L'analyse examine toutes les versions d'assets. Plusieurs versions du même asset partageant un checksum ne sont PAS des doublons — seuls les assets différents partageant un SHA-256 sont signalés.",
+      "triggerButton": "Lancer l'analyse complète",
+      "autoQueued": "Détection de doublons activée — une analyse complète du dépôt a été mise en file d'attente automatiquement.",
+      "queued": "L'analyse du dépôt a été mise en file d'attente.",
+      "alreadyRunning": "Une analyse est déjà en cours. Veuillez attendre qu'elle se termine.",
+      "lastScan": "Dernière analyse terminée",
+      "versionNote": "Les versions du même asset partageant un checksum ne sont PAS des doublons.",
+      "progressLabel": "{{processed}} sur {{total}} checksums traités",
+      "status": {
+        "idle": "Inactif",
+        "queued": "En file d'attente",
+        "running": "En cours",
+        "completed": "Terminé",
+        "failed": "Échoué"
+      }
+    }
   }
 }
-

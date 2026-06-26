@@ -1,34 +1,51 @@
 import React, { useState } from 'react';
 import { Box, Typography, Chip } from '@mui/material';
-import { SettingsOutlined, SecurityOutlined, BlockOutlined, ImageOutlined, VideoFileOutlined } from '@mui/icons-material';
+import { SettingsOutlined, SecurityOutlined, BlockOutlined, ImageOutlined, VideoFileOutlined, ContentCopyOutlined } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 import UploadRestrictionsPanel from './UploadRestrictions';
 import ImageProfilesManager from './ImageProfiles';
 import VideoProfilesManager from './VideoProfiles';
+import DuplicateManagerSettings from './DuplicateManagerSettings';
 
 const NAV_ITEMS = [
     {
         id: 'upload_restrictions',
-        label: 'Upload Restrictions',
+        labelKey: 'tools.assetConfigurations.uploadRestrictions',
+        labelFallback: 'Upload Restrictions',
         icon: <BlockOutlined sx={{ fontSize: 18 }} />,
-        description: 'Control which MIME types can be uploaded',
+        descriptionKey: 'tools.assetConfigurations.uploadRestrictionsDesc',
+        descriptionFallback: 'Control which MIME types can be uploaded',
     },
     {
         id: 'image_profiles',
-        label: 'Image Profiles',
+        labelKey: 'tools.assetConfigurations.imageProfiles',
+        labelFallback: 'Image Profiles',
         icon: <ImageOutlined sx={{ fontSize: 18 }} />,
-        description: 'Automatic crop & sharpening on upload',
+        descriptionKey: 'tools.assetConfigurations.imageProfilesDesc',
+        descriptionFallback: 'Automatic crop & sharpening on upload',
     },
     {
         id: 'video_profiles',
-        label: 'Video Profiles',
+        labelKey: 'tools.assetConfigurations.videoProfiles',
+        labelFallback: 'Video Profiles',
         icon: <VideoFileOutlined sx={{ fontSize: 18 }} />,
-        description: 'Adaptive & progressive video encoding',
+        descriptionKey: 'tools.assetConfigurations.videoProfilesDesc',
+        descriptionFallback: 'Adaptive & progressive video encoding',
+    },
+    {
+        id: 'duplicate_manager',
+        labelKey: 'duplicateManager.settings.title',
+        labelFallback: 'Duplicate Manager Settings',
+        icon: <ContentCopyOutlined sx={{ fontSize: 18 }} />,
+        descriptionKey: 'duplicateManager.settings.subtitle',
+        descriptionFallback: 'SHA-256 based duplicate detection on upload',
+        badge: 'New',
     },
 ];
 
 export default function AssetConfigurationsManager() {
+    const { t } = useTranslation();
     const [activeSection, setActiveSection] = useState('upload_restrictions');
-
 
     return (
         <Box sx={{ display: 'flex', height: '100%', bgcolor: '#f8fafc' }}>
@@ -37,7 +54,7 @@ export default function AssetConfigurationsManager() {
                        display: 'flex', flexDirection: 'column' }}>
                 <Box sx={{ p: 2, borderBottom: '1px solid #f1f5f9' }}>
                     <Typography variant="subtitle2" fontWeight={700} sx={{ color: '#1e293b' }}>
-                        Asset Configurations
+                        {t('menu.item.AssetConfigurations', 'Asset Configurations')}
                     </Typography>
                     <Typography variant="caption" sx={{ color: '#94a3b8' }}>Tools › Assets</Typography>
                 </Box>
@@ -56,14 +73,20 @@ export default function AssetConfigurationsManager() {
                             }}
                         >
                             {item.icon}
-                            <Box>
-                                <Typography variant="body2"
-                                            fontWeight={activeSection === item.id ? 600 : 400}
-                                            sx={{ lineHeight: 1.3 }}>
-                                    {item.label}
-                                </Typography>
+                            <Box sx={{ flex: 1 }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                    <Typography variant="body2"
+                                                fontWeight={activeSection === item.id ? 600 : 400}
+                                                sx={{ lineHeight: 1.3 }}>
+                                        {t(item.labelKey, item.labelFallback)}
+                                    </Typography>
+                                    {item.badge && (
+                                        <Chip label={item.badge} size="small"
+                                              sx={{ height: 16, fontSize: '0.6rem', bgcolor: '#dbeafe', color: '#1d4ed8' }} />
+                                    )}
+                                </Box>
                                 <Typography variant="caption" sx={{ color: '#94a3b8', fontSize: '0.68rem' }}>
-                                    {item.description}
+                                    {t(item.descriptionKey, item.descriptionFallback)}
                                 </Typography>
                             </Box>
                         </Box>
@@ -80,22 +103,23 @@ export default function AssetConfigurationsManager() {
                         <SettingsOutlined sx={{ color: '#5e35b1', fontSize: 22 }} />
                         <Box sx={{ flex: 1 }}>
                             <Typography variant="h6" fontWeight={700} sx={{ color: '#1e293b', lineHeight: 1.2 }}>
-                                Upload Restrictions
+                                {t('tools.assetConfigurations.uploadRestrictions', 'Upload Restrictions')}
                             </Typography>
                             <Typography variant="caption" sx={{ color: '#94a3b8' }}>
                                 Tools › Assets › Asset Configurations › Upload Restrictions
                             </Typography>
                         </Box>
                         <Chip icon={<SecurityOutlined sx={{ fontSize: '14px !important' }} />}
-                              label="Admin only" size="small"
+                              label={t('duplicateManager.settings.adminOnly', 'Admin only')} size="small"
                               sx={{ bgcolor: '#fef3c7', color: '#92400e', fontSize: '0.7rem', border: '1px solid #fde68a' }} />
                     </Box>
                 )}
 
-                <Box sx={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                <Box sx={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
                     {activeSection === 'upload_restrictions' && <UploadRestrictionsPanel />}
                     {activeSection === 'image_profiles'      && <ImageProfilesManager />}
                     {activeSection === 'video_profiles'      && <VideoProfilesManager />}
+                    {activeSection === 'duplicate_manager'   && <DuplicateManagerSettings />}
                 </Box>
             </Box>
         </Box>

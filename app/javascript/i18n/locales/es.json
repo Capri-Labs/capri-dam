@@ -69,7 +69,8 @@
     "success": "Éxito",
     "warning": "Advertencia",
     "info": "Info",
-    "copyDismiss": "Copiar y cerrar"
+    "copyDismiss": "Copiar y cerrar",
+    "refresh": "Actualizar"
   },
   "header": {
     "myProfile": "Mi perfil",
@@ -169,6 +170,92 @@
       "noActivity": "Sin actividad aún.",
       "viaImpersonation": "Via suplantación"
     }
+  },
+  "tools": {
+    "assetConfigurations": {
+      "uploadRestrictions": "Restricciones de carga",
+      "uploadRestrictionsDesc": "Gestionar tipos MIME permitidos",
+      "imageProfiles": "Perfiles de imagen",
+      "imageProfilesDesc": "Recorte automático al cargar",
+      "videoProfiles": "Perfiles de vídeo",
+      "videoProfilesDesc": "Codificación de vídeo adaptativa"
+    }
+  },
+  "duplicateManager": {
+    "title": "Gestor de duplicados",
+    "subtitle": "Revise y resuelva activos duplicados detectados",
+    "emptyState": "No se encontraron duplicados. Su repositorio está limpio!",
+    "group": {
+      "identicalFiles": "{{count}} archivos idénticos",
+      "potentialMatch": "Posible coincidencia",
+      "sha256": "SHA-256"
+    },
+    "resolution": {
+      "title": "Resolver duplicados",
+      "subtitle": "{{count}} activos encontrados",
+      "accept": "Mantener todos",
+      "delete": "Eliminar seleccionados",
+      "dismiss": "Descartar sin acción",
+      "navigateTo": "Ir al activo",
+      "goToFolder": "Ir a la carpeta",
+      "originalBadge": "Original — copia más antigua",
+      "selectedCount": "{{count}} seleccionados para eliminar",
+      "confirmDeleteBody": "Los activos seleccionados se moverán a la papelera.",
+      "resolvedSuccess": "Grupo de duplicados resuelto.",
+      "keptAllSuccess": "Todos los activos conservados.",
+      "deletedSuccess": "{{count}} activo(s) movido(s) a la papelera.",
+      "loading": "Cargando duplicados..."
+    },
+    "settings": {
+      "title": "Configuración del gestor de duplicados",
+      "subtitle": "Configurar la detección de duplicados",
+      "enableLabel": "Activar detección de duplicados",
+      "enableHelp": "Verifica el SHA-256 de cada activo cargado.",
+      "inboxNotificationsLabel": "Notificaciones en bandeja",
+      "inboxNotificationsHelp": "Envía notificación agregada cuando se detectan duplicados.",
+      "performanceWarning": "La detección puede afectar el rendimiento de carga.",
+      "maxReported": "Se muestran los primeros {{count}} grupos.",
+      "saved": "Configuración guardada.",
+      "loadError": "Error al cargar la configuración.",
+      "adminOnly": "Solo administradores",
+      "status": {
+        "enabled": "Activado",
+        "disabled": "Desactivado"
+      }
+    },
+    "status": {
+      "pending": "Pendiente",
+      "resolved": "Resuelto",
+      "dismissed": "Descartado"
+    },
+    "filters": {
+      "all": "Todos los grupos",
+      "pending": "Pendiente",
+      "resolved": "Resuelto"
+    },
+    "stats": {
+      "totalGroups": "Total de grupos",
+      "pendingGroups": "Pendiente",
+      "resolvedGroups": "Resuelto"
+    },
+    "scan": {
+      "title": "Análisis del repositorio",
+      "subtitle": "Analizar todo el repositorio para encontrar activos duplicados",
+      "description": "El análisis examina todas las versiones de activos. Varias versiones del mismo activo que comparten un checksum NO son duplicados — solo se marcan diferentes activos que comparten un SHA-256.",
+      "triggerButton": "Ejecutar análisis completo",
+      "autoQueued": "Detección de duplicados activada — se ha puesto en cola un análisis completo del repositorio automáticamente.",
+      "queued": "El análisis del repositorio ha sido puesto en cola.",
+      "alreadyRunning": "Ya hay un análisis en curso. Por favor, espere a que finalice.",
+      "lastScan": "Último análisis completado",
+      "versionNote": "Las versiones del mismo activo que comparten un checksum NO son duplicados.",
+      "progressLabel": "{{processed}} de {{total}} checksums procesados",
+      "status": {
+        "idle": "Inactivo",
+        "queued": "En cola",
+        "running": "En ejecución",
+        "completed": "Completado",
+        "failed": "Fallido"
+      }
+    }
   }
 }
-

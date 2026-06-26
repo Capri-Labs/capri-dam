@@ -206,5 +206,68 @@ module Types
       return nil unless context[:current_user]&.admin?
       UserGroup.find_by(id: id)
     end
+
+    # -------------------------------------------------------------------------
+    # Duplicate Manager
+    # -------------------------------------------------------------------------
+
+    field :duplicate_groups, Types::DuplicateGroupType.connection_type, null: false do
+      description "Paginated list of duplicate asset groups."
+      argument :status, String, required: false, default_value: "pending",
+               description: "Filter by status: pending (default), resolved, dismissed, all."
+    end
+
+    def duplicate_groups(status: "pending")
+      scope = case status
+      when "resolved"  then DuplicateGroup.resolved
+      when "dismissed" then DuplicateGroup.dismissed
+      when "all"       then DuplicateGroup.all
+      else                  DuplicateGroup.pending
+      end
+      scope.order(created_at: :desc).limit(DuplicateGroup::DISPLAY_LIMIT)
+    end
+
+    field :duplicate_group, Types::DuplicateGroupType, null: true do
+      description "Fetch a single duplicate group by ID."
+      argument :id, String, required: true
+    end
+
+    def duplicate_group(id:)
+      DuplicateGroup.find_by(id: id)
+    end
+
+    field :duplicate_manager_stats, Types::JsonType, null: false do
+      description "Counts of duplicate groups by status."
+    end
+
+    def duplicate_manager_stats
+      {
+        pending:   DuplicateGroup.pending.count,
+        resolved:  DuplicateGroup.resolved.count,
+        dismissed: DuplicateGroup.dismissed.count,
+        total:     DuplicateGroup.count,
+      }
+    end
+
+    # Returns the current state of the background repository scan.
+    #
+    # +scan_status+ values: idle | queued | running | completed | failed
+    field :duplicate_manager_scan_status, Types::JsonType, null: false do
+      description "Current status and progress of the background repository duplicate scan."
+    end
+
+    def duplicate_manager_scan_status
+      raw_status   = Setting.get("duplicate_manager_scan_status")
+      raw_progress = Setting.get("duplicate_manager_scan_progress")
+      last_scan_at = Setting.get("duplicate_manager_last_scan_at")
+
+      progress = raw_progress.is_a?(Hash) ? raw_progress : {}
+
+      {
+        scan_status:   raw_status.to_s.presence || "idle",
+        scan_progress: progress,
+        last_scan_at:  last_scan_at,
+      }
+    end
   end
 end

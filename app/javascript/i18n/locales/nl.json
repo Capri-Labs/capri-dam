@@ -69,7 +69,8 @@
     "success": "Succes",
     "warning": "Waarschuwing",
     "info": "Info",
-    "copyDismiss": "Kopiëren & Sluiten"
+    "copyDismiss": "Kopiëren & Sluiten",
+    "refresh": "Vernieuwen"
   },
   "header": {
     "myProfile": "Mijn profiel",
@@ -169,6 +170,92 @@
       "noActivity": "Nog geen activiteit.",
       "viaImpersonation": "Via imitatie"
     }
+  },
+  "tools": {
+    "assetConfigurations": {
+      "uploadRestrictions": "Upload-restricties",
+      "uploadRestrictionsDesc": "Toegestane MIME-typen beheren",
+      "imageProfiles": "Beeldprofielen",
+      "imageProfilesDesc": "Automatisch bijsnijden bij upload",
+      "videoProfiles": "Videoprofielen",
+      "videoProfilesDesc": "Adaptieve videocodering"
+    }
+  },
+  "duplicateManager": {
+    "title": "Dubbelbeheer",
+    "subtitle": "Gedetecteerde dubbele assets bekijken en oplossen",
+    "emptyState": "Geen dubbele groepen gevonden. Uw repository is schoon!",
+    "group": {
+      "identicalFiles": "{{count}} identieke bestanden",
+      "potentialMatch": "Mogelijke overeenkomst",
+      "sha256": "SHA-256"
+    },
+    "resolution": {
+      "title": "Duplicaten oplossen",
+      "subtitle": "{{count}} assets gevonden",
+      "accept": "Alles bewaren",
+      "delete": "Geselecteerde verwijderen",
+      "dismiss": "Sluiten zonder actie",
+      "navigateTo": "Naar asset navigeren",
+      "goToFolder": "Naar map",
+      "originalBadge": "Origineel — oudste kopie",
+      "selectedCount": "{{count}} geselecteerd voor verwijdering",
+      "confirmDeleteBody": "De geselecteerde assets worden naar de prullenbak verplaatst.",
+      "resolvedSuccess": "Dubbele groep opgelost.",
+      "keptAllSuccess": "Alle assets bewaard.",
+      "deletedSuccess": "{{count}} asset(s) naar prullenbak verplaatst.",
+      "loading": "Duplicaten laden..."
+    },
+    "settings": {
+      "title": "Dubbelbeheer-instellingen",
+      "subtitle": "Dubbele detectie voor asset-uploads configureren",
+      "enableLabel": "Dubbele detectie inschakelen",
+      "enableHelp": "Controleert de SHA-256 van elk geüpload asset.",
+      "inboxNotificationsLabel": "Inbox-meldingen",
+      "inboxNotificationsHelp": "Stuurt een geaggregeerde melding als duplicaten worden gedetecteerd.",
+      "performanceWarning": "Detectie kan de uploadprestaties beïnvloeden.",
+      "maxReported": "De eerste {{count}} groepen worden weergegeven.",
+      "saved": "Instellingen opgeslagen.",
+      "loadError": "Instellingen laden mislukt.",
+      "adminOnly": "Alleen beheerders",
+      "status": {
+        "enabled": "Ingeschakeld",
+        "disabled": "Uitgeschakeld"
+      }
+    },
+    "status": {
+      "pending": "In behandeling",
+      "resolved": "Opgelost",
+      "dismissed": "Afgewezen"
+    },
+    "filters": {
+      "all": "Alle groepen",
+      "pending": "In behandeling",
+      "resolved": "Opgelost"
+    },
+    "stats": {
+      "totalGroups": "Totaal groepen",
+      "pendingGroups": "In behandeling",
+      "resolvedGroups": "Opgelost"
+    },
+    "scan": {
+      "title": "Repository-scan",
+      "subtitle": "Volledige repository scannen op dubbele assets",
+      "description": "De scan analyseert alle assetversies. Meerdere versies van hetzelfde asset met dezelfde checksum zijn GEEN duplicaten — alleen verschillende assets die een SHA-256 delen worden gemarkeerd.",
+      "triggerButton": "Volledige scan uitvoeren",
+      "autoQueued": "Dubbele detectie ingeschakeld — een volledige repository-scan is automatisch in de wachtrij geplaatst.",
+      "queued": "Repository-scan staat in de wachtrij.",
+      "alreadyRunning": "Er is al een scan actief. Wacht tot deze klaar is.",
+      "lastScan": "Laatste scan voltooid",
+      "versionNote": "Versies van hetzelfde asset met dezelfde checksum zijn GEEN duplicaten.",
+      "progressLabel": "{{processed}} van {{total}} checksums verwerkt",
+      "status": {
+        "idle": "Inactief",
+        "queued": "In wachtrij",
+        "running": "Bezig",
+        "completed": "Voltooid",
+        "failed": "Mislukt"
+      }
+    }
   }
 }
-

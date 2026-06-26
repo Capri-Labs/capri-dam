@@ -69,7 +69,8 @@
     "success": "成功",
     "warning": "警告",
     "info": "信息",
-    "copyDismiss": "复制并关闭"
+    "copyDismiss": "复制并关闭",
+    "refresh": "刷新"
   },
   "header": {
     "myProfile": "我的个人资料",
@@ -169,6 +170,92 @@
       "noActivity": "暂无活动。",
       "viaImpersonation": "通过模拟"
     }
+  },
+  "tools": {
+    "assetConfigurations": {
+      "uploadRestrictions": "上传限制",
+      "uploadRestrictionsDesc": "管理允许的 MIME 类型",
+      "imageProfiles": "图像配置文件",
+      "imageProfilesDesc": "上传时自动裁剪",
+      "videoProfiles": "视频配置文件",
+      "videoProfilesDesc": "自适应视频编码"
+    }
+  },
+  "duplicateManager": {
+    "title": "重复管理器",
+    "subtitle": "查看并解决检测到的重复资产",
+    "emptyState": "未找到重复组。您的存储库是干净的！",
+    "group": {
+      "identicalFiles": "{{count}} 个相同文件",
+      "potentialMatch": "潜在匹配",
+      "sha256": "SHA-256"
+    },
+    "resolution": {
+      "title": "解决重复项",
+      "subtitle": "找到 {{count}} 个资产",
+      "accept": "全部保留",
+      "delete": "删除选中项",
+      "dismiss": "不操作关闭",
+      "navigateTo": "导航到资产",
+      "goToFolder": "前往文件夹",
+      "originalBadge": "原始 — 最早的副本",
+      "selectedCount": "已选择 {{count}} 项待删除",
+      "confirmDeleteBody": "选定的资产将被移至回收站。",
+      "resolvedSuccess": "重复组已解决。",
+      "keptAllSuccess": "已保留所有资产。",
+      "deletedSuccess": "{{count}} 个资产已移至回收站。",
+      "loading": "正在加载重复项..."
+    },
+    "settings": {
+      "title": "重复管理器设置",
+      "subtitle": "配置资产上传的重复检测",
+      "enableLabel": "启用重复检测",
+      "enableHelp": "检查每个上传资产的 SHA-256 校验和。",
+      "inboxNotificationsLabel": "收件箱通知",
+      "inboxNotificationsHelp": "检测到重复时发送聚合通知。",
+      "performanceWarning": "重复检测可能影响上传性能。",
+      "maxReported": "显示前 {{count}} 个重复组。",
+      "saved": "设置已保存。",
+      "loadError": "加载设置失败。",
+      "adminOnly": "仅管理员",
+      "status": {
+        "enabled": "已启用",
+        "disabled": "已禁用"
+      }
+    },
+    "status": {
+      "pending": "待处理",
+      "resolved": "已解决",
+      "dismissed": "已忽略"
+    },
+    "filters": {
+      "all": "所有组",
+      "pending": "待处理",
+      "resolved": "已解决"
+    },
+    "stats": {
+      "totalGroups": "组总数",
+      "pendingGroups": "待处理",
+      "resolvedGroups": "已解决"
+    },
+    "scan": {
+      "title": "存储库扫描",
+      "subtitle": "扫描整个存储库以查找现有重复资产",
+      "description": "扫描分析所有资产版本。共享相同校验和的同一资产的多个版本不是重复项 — 只有共享相同 SHA-256 的不同资产才会被标记。",
+      "triggerButton": "运行完整扫描",
+      "autoQueued": "重复检测已启用 — 完整存储库扫描已自动加入队列。",
+      "queued": "存储库扫描已加入队列。",
+      "alreadyRunning": "扫描已在运行中。请等待其完成。",
+      "lastScan": "上次扫描完成",
+      "versionNote": "共享校验和的同一资产的版本不是重复项。",
+      "progressLabel": "已处理 {{total}} 个校验和中的 {{processed}} 个",
+      "status": {
+        "idle": "空闲",
+        "queued": "已排队",
+        "running": "运行中",
+        "completed": "已完成",
+        "failed": "失败"
+      }
+    }
   }
 }
-

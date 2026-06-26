@@ -69,7 +69,8 @@
     "success": "성공",
     "warning": "경고",
     "info": "정보",
-    "copyDismiss": "복사하고 닫기"
+    "copyDismiss": "복사하고 닫기",
+    "refresh": "새로 고침"
   },
   "header": {
     "myProfile": "내 프로필",
@@ -169,6 +170,92 @@
       "noActivity": "아직 활동 없음.",
       "viaImpersonation": "가장을 통해"
     }
+  },
+  "tools": {
+    "assetConfigurations": {
+      "uploadRestrictions": "업로드 제한",
+      "uploadRestrictionsDesc": "허용 MIME 유형 관리",
+      "imageProfiles": "이미지 프로파일",
+      "imageProfilesDesc": "업로드 시 자동 자르기",
+      "videoProfiles": "비디오 프로파일",
+      "videoProfilesDesc": "적응형 비디오 인코딩"
+    }
+  },
+  "duplicateManager": {
+    "title": "중복 관리자",
+    "subtitle": "감지된 중복 자산 검토 및 해결",
+    "emptyState": "중복 그룹이 없습니다. 저장소가 깨끗합니다!",
+    "group": {
+      "identicalFiles": "동일한 파일 {{count}}개",
+      "potentialMatch": "잠재적 일치",
+      "sha256": "SHA-256"
+    },
+    "resolution": {
+      "title": "중복 해결",
+      "subtitle": "{{count}}개 자산 발견",
+      "accept": "모두 유지",
+      "delete": "선택 항목 삭제",
+      "dismiss": "작업 없이 닫기",
+      "navigateTo": "자산으로 이동",
+      "goToFolder": "폴더로 이동",
+      "originalBadge": "원본 — 가장 오래된 사본",
+      "selectedCount": "{{count}}개 삭제 선택됨",
+      "confirmDeleteBody": "선택된 자산이 휴지통으로 이동됩니다.",
+      "resolvedSuccess": "중복 그룹이 해결되었습니다.",
+      "keptAllSuccess": "모든 자산을 유지했습니다.",
+      "deletedSuccess": "{{count}}개 자산이 휴지통으로 이동되었습니다.",
+      "loading": "중복 로딩 중..."
+    },
+    "settings": {
+      "title": "중복 관리자 설정",
+      "subtitle": "자산 업로드 중복 감지 구성",
+      "enableLabel": "중복 감지 활성화",
+      "enableHelp": "업로드된 각 자산의 SHA-256 체크섬을 확인합니다.",
+      "inboxNotificationsLabel": "받은 편지함 알림",
+      "inboxNotificationsHelp": "중복 감지 시 집계 알림을 보냅니다.",
+      "performanceWarning": "중복 감지는 업로드 성능에 영향을 줄 수 있습니다.",
+      "maxReported": "처음 {{count}}개 그룹이 표시됩니다.",
+      "saved": "설정이 저장되었습니다.",
+      "loadError": "설정을 불러오지 못했습니다.",
+      "adminOnly": "관리자 전용",
+      "status": {
+        "enabled": "활성화됨",
+        "disabled": "비활성화됨"
+      }
+    },
+    "status": {
+      "pending": "보류 중",
+      "resolved": "해결됨",
+      "dismissed": "무시됨"
+    },
+    "filters": {
+      "all": "모든 그룹",
+      "pending": "보류 중",
+      "resolved": "해결됨"
+    },
+    "stats": {
+      "totalGroups": "전체 그룹",
+      "pendingGroups": "보류 중",
+      "resolvedGroups": "해결됨"
+    },
+    "scan": {
+      "title": "저장소 스캔",
+      "subtitle": "전체 저장소에서 기존 중복 자산 스캔",
+      "description": "스캔은 모든 자산 버전을 분석합니다. 동일한 체크섬을 공유하는 같은 자산의 여러 버전은 중복이 아닙니다 — SHA-256을 공유하는 서로 다른 자산만 표시됩니다.",
+      "triggerButton": "전체 스캔 실행",
+      "autoQueued": "중복 감지가 활성화되었습니다 — 전체 저장소 스캔이 자동으로 대기열에 추가되었습니다.",
+      "queued": "저장소 스캔이 대기열에 추가되었습니다.",
+      "alreadyRunning": "스캔이 이미 실행 중입니다. 완료될 때까지 기다려 주세요.",
+      "lastScan": "마지막 스캔 완료",
+      "versionNote": "동일한 체크섬을 공유하는 같은 자산의 버전은 중복이 아닙니다.",
+      "progressLabel": "{{total}}개 중 {{processed}}개 체크섬 처리됨",
+      "status": {
+        "idle": "유휴",
+        "queued": "대기 중",
+        "running": "실행 중",
+        "completed": "완료됨",
+        "failed": "실패"
+      }
+    }
   }
 }
-

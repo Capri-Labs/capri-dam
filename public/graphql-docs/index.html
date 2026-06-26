@@ -36,6 +36,8 @@
                   <li><a href="#query-assetDetail">assetDetail</a></li>
                   <li><a href="#query-collection">collection</a></li>
                   <li><a href="#query-collections">collections</a></li>
+                  <li><a href="#query-duplicateGroup">duplicateGroup</a></li>
+                  <li><a href="#query-duplicateGroups">duplicateGroups</a></li>
                   <li><a href="#query-imageProfile">imageProfile</a></li>
                   <li><a href="#query-imageProfiles">imageProfiles</a></li>
                   <li><a href="#query-user">user</a></li>
@@ -56,9 +58,11 @@
                   <li><a href="#mutation-createUserGroup">createUserGroup</a></li>
                   <li><a href="#mutation-createVideoProfile">createVideoProfile</a></li>
                   <li><a href="#mutation-deleteUserGroup">deleteUserGroup</a></li>
+                  <li><a href="#mutation-resolveDuplicateGroup">resolveDuplicateGroup</a></li>
                   <li><a href="#mutation-revokePersonalAccessToken">revokePersonalAccessToken</a></li>
                   <li><a href="#mutation-startImpersonation">startImpersonation</a></li>
                   <li><a href="#mutation-stopImpersonation">stopImpersonation</a></li>
+                  <li><a href="#mutation-triggerDuplicateScan">triggerDuplicateScan</a></li>
                   <li><a href="#mutation-updateUser">updateUser</a></li>
                   <li><a href="#mutation-updateUserGroup">updateUserGroup</a></li>
                   <li><a href="#mutation-updateVideoProfile">updateVideoProfile</a></li>
@@ -71,6 +75,7 @@
             <h4 class="nav-group-title">Types</h4>
             <ul class="nav-group-items">
               <li><a href="#definition-Asset">Asset</a></li>
+              <li><a href="#definition-BigInt">BigInt</a></li>
               <li><a href="#definition-Collection">Collection</a></li>
               <li><a href="#definition-CreatePersonalAccessTokenInput">CreatePersonalAccessTokenInput</a></li>
               <li><a href="#definition-CreatePersonalAccessTokenPayload">CreatePersonalAccessTokenPayload</a></li>
@@ -82,16 +87,24 @@
               <li><a href="#definition-CreateVideoProfilePayload">CreateVideoProfilePayload</a></li>
               <li><a href="#definition-DeleteUserGroupInput">DeleteUserGroupInput</a></li>
               <li><a href="#definition-DeleteUserGroupPayload">DeleteUserGroupPayload</a></li>
+              <li><a href="#definition-DuplicateGroup">DuplicateGroup</a></li>
+              <li><a href="#definition-DuplicateGroupAsset">DuplicateGroupAsset</a></li>
+              <li><a href="#definition-DuplicateGroupConnection">DuplicateGroupConnection</a></li>
+              <li><a href="#definition-DuplicateGroupEdge">DuplicateGroupEdge</a></li>
               <li><a href="#definition-FolderPolicy">FolderPolicy</a></li>
               <li><a href="#definition-ImageProfile">ImageProfile</a></li>
               <li><a href="#definition-JSON">JSON</a></li>
               <li><a href="#definition-PersonalAccessToken">PersonalAccessToken</a></li>
+              <li><a href="#definition-ResolveDuplicateGroupInput">ResolveDuplicateGroupInput</a></li>
+              <li><a href="#definition-ResolveDuplicateGroupPayload">ResolveDuplicateGroupPayload</a></li>
               <li><a href="#definition-RevokePersonalAccessTokenInput">RevokePersonalAccessTokenInput</a></li>
               <li><a href="#definition-RevokePersonalAccessTokenPayload">RevokePersonalAccessTokenPayload</a></li>
               <li><a href="#definition-StartImpersonationInput">StartImpersonationInput</a></li>
               <li><a href="#definition-StartImpersonationPayload">StartImpersonationPayload</a></li>
               <li><a href="#definition-StopImpersonationInput">StopImpersonationInput</a></li>
               <li><a href="#definition-StopImpersonationPayload">StopImpersonationPayload</a></li>
+              <li><a href="#definition-TriggerDuplicateScanInput">TriggerDuplicateScanInput</a></li>
+              <li><a href="#definition-TriggerDuplicateScanPayload">TriggerDuplicateScanPayload</a></li>
               <li><a href="#definition-UpdateUserGroupInput">UpdateUserGroupInput</a></li>
               <li><a href="#definition-UpdateUserGroupPayload">UpdateUserGroupPayload</a></li>
               <li><a href="#definition-UpdateUserInput">UpdateUserInput</a></li>
@@ -265,6 +278,108 @@
                   <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span>
   <span class="hljs-attr">"data"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
     <span class="hljs-attr">"collections"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-punctuation">{</span><span class="hljs-attr">"assets"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-string">Asset</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">"properties"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">]</span>
+  <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="query-duplicateGroup" class="operation operation-query" data-traverse-target="query-duplicateGroup">
+            <div class="operation-group-name">
+              <a href="#group-Operations-Queries">Queries</a>
+            </div>
+            <h2 class="operation-heading ">
+              <code>duplicateGroup</code>
+            </h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Fetch a single duplicate group by ID.</p>
+                </div>
+              </div>
+            </div>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-response doc-copy-section">
+                  <h5>Response</h5>
+                  <p> Returns a <a href="#definition-DuplicateGroup"><code>DuplicateGroup</code></a>
+                  </p>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <h4 class="example-heading">Example</h4>
+                <div class="example-section example-section-is-code operation-query-example">
+                  <h5>Query</h5>
+                  <pre><code class="hljs language-gql"><span class="hljs-symbol"><span class="hljs-keyword">query</span> duplicateGroup <span class="hljs-tag">{
+  <span class="hljs-symbol">duplicateGroup <span class="hljs-tag">{
+    <span class="hljs-symbol">assets <span class="hljs-tag">{
+      <span class="hljs-type">...DuplicateGroupAssetFragment</span>
+    }</span></span>
+  }</span></span>
+}</span></span>
+</code></pre>
+                </div>
+                <div class="example-section example-section-is-code operation-response-example">
+                  <h5>Response</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">"data"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">"duplicateGroup"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-attr">"assets"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-string">DuplicateGroupAsset</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">}</span>
+  <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="query-duplicateGroups" class="operation operation-query" data-traverse-target="query-duplicateGroups">
+            <div class="operation-group-name">
+              <a href="#group-Operations-Queries">Queries</a>
+            </div>
+            <h2 class="operation-heading ">
+              <code>duplicateGroups</code>
+            </h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Paginated list of duplicate asset groups.</p>
+                </div>
+              </div>
+            </div>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-response doc-copy-section">
+                  <h5>Response</h5>
+                  <p> Returns a <a href="#definition-DuplicateGroupConnection"><code>DuplicateGroupConnection!</code></a>
+                  </p>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <h4 class="example-heading">Example</h4>
+                <div class="example-section example-section-is-code operation-query-example">
+                  <h5>Query</h5>
+                  <pre><code class="hljs language-gql"><span class="hljs-symbol"><span class="hljs-keyword">query</span> duplicateGroups <span class="hljs-tag">{
+  <span class="hljs-symbol">duplicateGroups <span class="hljs-tag">{
+    <span class="hljs-symbol">edges <span class="hljs-tag">{
+      <span class="hljs-type">...DuplicateGroupEdgeFragment</span>
+    }</span></span>
+    <span class="hljs-symbol">nodes <span class="hljs-tag">{
+      <span class="hljs-type">...DuplicateGroupFragment</span>
+    }</span></span>
+  }</span></span>
+}</span></span>
+</code></pre>
+                </div>
+                <div class="example-section example-section-is-code operation-response-example">
+                  <h5>Response</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">"data"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">"duplicateGroups"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+      <span class="hljs-attr">"edges"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-string">DuplicateGroupEdge</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span>
+      <span class="hljs-attr">"nodes"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-string">DuplicateGroup</span><span class="hljs-punctuation">]</span>
+    <span class="hljs-punctuation">}</span>
   <span class="hljs-punctuation">}</span>
 <span class="hljs-punctuation">}</span>
 </code></pre>
@@ -1022,6 +1137,78 @@
               </div>
             </div>
           </section>
+          <section id="mutation-resolveDuplicateGroup" class="operation operation-mutation" data-traverse-target="mutation-resolveDuplicateGroup">
+            <div class="operation-group-name">
+              <a href="#group-Operations-Mutations">Mutations</a>
+            </div>
+            <h2 class="operation-heading ">
+              <code>resolveDuplicateGroup</code>
+            </h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Resolve a duplicate group by keeping all assets or deleting chosen copies.</p>
+                </div>
+              </div>
+            </div>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-response doc-copy-section">
+                  <h5>Response</h5>
+                  <p> Returns a <a href="#definition-ResolveDuplicateGroupPayload"><code>ResolveDuplicateGroupPayload</code></a>
+                  </p>
+                </div>
+                <div class="operation-arguments doc-copy-section">
+                  <h5>Arguments</h5>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>
+                          <span class="property-name"><code>input</code></span> - <span class="property-type"><a href="#definition-ResolveDuplicateGroupInput"><code>ResolveDuplicateGroupInput!</code></a></span>
+                        </td>
+                        <td> Parameters for ResolveDuplicateGroup </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <h4 class="example-heading">Example</h4>
+                <div class="example-section example-section-is-code operation-query-example">
+                  <h5>Query</h5>
+                  <pre><code class="hljs language-gql"><span class="hljs-symbol"><span class="hljs-keyword">mutation</span> resolveDuplicateGroup<span class="hljs-tag">(<span class="hljs-code">$input</span>:<span class="hljs-type"> ResolveDuplicateGroupInput!</span>)</span> <span class="hljs-tag">{
+  <span class="hljs-symbol">resolveDuplicateGroup<span class="hljs-tag">(input: <span class="hljs-code">$input</span>)</span> <span class="hljs-tag">{
+    <span class="hljs-symbol">group <span class="hljs-tag">{
+      <span class="hljs-type">...DuplicateGroupFragment</span>
+    }</span></span>
+  }</span></span>
+}</span></span>
+</code></pre>
+                </div>
+                <div class="example-section example-section-is-code operation-variables-example">
+                  <h5>Variables</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"input"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">ResolveDuplicateGroupInput</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+                <div class="example-section example-section-is-code operation-response-example">
+                  <h5>Response</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">"data"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">"resolveDuplicateGroup"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-attr">"group"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">DuplicateGroup</span><span class="hljs-punctuation">}</span>
+  <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
           <section id="mutation-revokePersonalAccessToken" class="operation operation-mutation" data-traverse-target="mutation-revokePersonalAccessToken">
             <div class="operation-group-name">
               <a href="#group-Operations-Mutations">Mutations</a>
@@ -1217,6 +1404,70 @@
                 <div class="example-section example-section-is-code operation-response-example">
                   <h5>Response</h5>
                   <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"data"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-attr">"stopImpersonation"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="mutation-triggerDuplicateScan" class="operation operation-mutation" data-traverse-target="mutation-triggerDuplicateScan">
+            <div class="operation-group-name">
+              <a href="#group-Operations-Mutations">Mutations</a>
+            </div>
+            <h2 class="operation-heading ">
+              <code>triggerDuplicateScan</code>
+            </h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Queue a full repository scan for duplicate assets (admin only).</p>
+                </div>
+              </div>
+            </div>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-response doc-copy-section">
+                  <h5>Response</h5>
+                  <p> Returns a <a href="#definition-TriggerDuplicateScanPayload"><code>TriggerDuplicateScanPayload</code></a>
+                  </p>
+                </div>
+                <div class="operation-arguments doc-copy-section">
+                  <h5>Arguments</h5>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>
+                          <span class="property-name"><code>input</code></span> - <span class="property-type"><a href="#definition-TriggerDuplicateScanInput"><code>TriggerDuplicateScanInput!</code></a></span>
+                        </td>
+                        <td> Parameters for TriggerDuplicateScan </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <h4 class="example-heading">Example</h4>
+                <div class="example-section example-section-is-code operation-query-example">
+                  <h5>Query</h5>
+                  <pre><code class="hljs language-gql"><span class="hljs-symbol"><span class="hljs-keyword">mutation</span> triggerDuplicateScan<span class="hljs-tag">(<span class="hljs-code">$input</span>:<span class="hljs-type"> TriggerDuplicateScanInput!</span>)</span> <span class="hljs-tag">{
+  <span class="hljs-symbol">triggerDuplicateScan<span class="hljs-tag">(input: <span class="hljs-code">$input</span>)</span></span>
+}</span></span>
+</code></pre>
+                </div>
+                <div class="example-section example-section-is-code operation-variables-example">
+                  <h5>Variables</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"input"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">TriggerDuplicateScanInput</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+                <div class="example-section example-section-is-code operation-response-example">
+                  <h5>Response</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"data"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-attr">"triggerDuplicateScan"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span>
 </code></pre>
                 </div>
               </div>
@@ -1438,6 +1689,27 @@
                 <div class="definition-description doc-copy-section">
                   <h5>Description</h5>
                   <p>Represents a core cryptographic digital asset within the ecosystem.</p>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <div class="example-section example-section-is-code">
+                  <h5>Example</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="definition-BigInt" class="definition definition-scalar" data-traverse-target="definition-BigInt">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">BigInt</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Represents non-fractional signed whole numeric values. Since the value may exceed the size of a 32-bit integer, it&#39;s encoded as a string.</p>
                 </div>
               </div>
               <div class="doc-examples">
@@ -1780,6 +2052,171 @@
               </div>
             </div>
           </section>
+          <section id="definition-DuplicateGroup" class="definition definition-object" data-traverse-target="definition-DuplicateGroup">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">DuplicateGroup</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>A group of assets detected as duplicates based on SHA-256 checksum.</p>
+                </div>
+                <div class="definition-properties doc-copy-section">
+                  <h5>Fields</h5>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Field Name</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td data-property-name=""><span class="property-name"><code>assets</code></span> - <span class="property-type"><a href="#definition-DuplicateGroupAsset"><code>[DuplicateGroupAsset!]!</code></a></span>
+                        </td>
+                        <td> Member assets in this group. </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <div class="example-section example-section-is-code">
+                  <h5>Example</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"assets"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-string">DuplicateGroupAsset</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="definition-DuplicateGroupAsset" class="definition definition-object" data-traverse-target="definition-DuplicateGroupAsset">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">DuplicateGroupAsset</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>A member asset within a duplicate group.</p>
+                </div>
+                <div class="definition-properties doc-copy-section">
+                  <h5>Fields</h5>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Field Name</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td data-property-name=""><span class="property-name"><code>fileSize</code></span> - <span class="property-type"><a href="#definition-BigInt"><code>BigInt</code></a></span>
+                        </td>
+                        <td>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <div class="example-section example-section-is-code">
+                  <h5>Example</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"fileSize"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="definition-DuplicateGroupConnection" class="definition definition-object" data-traverse-target="definition-DuplicateGroupConnection">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">DuplicateGroupConnection</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>The connection type for DuplicateGroup.</p>
+                </div>
+                <div class="definition-properties doc-copy-section">
+                  <h5>Fields</h5>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Field Name</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td data-property-name=""><span class="property-name"><code>edges</code></span> - <span class="property-type"><a href="#definition-DuplicateGroupEdge"><code>[DuplicateGroupEdge]</code></a></span>
+                        </td>
+                        <td> A list of edges. </td>
+                      </tr>
+                      <tr>
+                        <td data-property-name=""><span class="property-name"><code>nodes</code></span> - <span class="property-type"><a href="#definition-DuplicateGroup"><code>[DuplicateGroup]</code></a></span>
+                        </td>
+                        <td> A list of nodes. </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <div class="example-section example-section-is-code">
+                  <h5>Example</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">"edges"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-string">DuplicateGroupEdge</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">"nodes"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-string">DuplicateGroup</span><span class="hljs-punctuation">]</span>
+<span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="definition-DuplicateGroupEdge" class="definition definition-object" data-traverse-target="definition-DuplicateGroupEdge">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">DuplicateGroupEdge</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>An edge in a connection.</p>
+                </div>
+                <div class="definition-properties doc-copy-section">
+                  <h5>Fields</h5>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Field Name</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td data-property-name=""><span class="property-name"><code>node</code></span> - <span class="property-type"><a href="#definition-DuplicateGroup"><code>DuplicateGroup</code></a></span>
+                        </td>
+                        <td> The item at the end of the edge. </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <div class="example-section example-section-is-code">
+                  <h5>Example</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"node"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">DuplicateGroup</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
           <section id="definition-FolderPolicy" class="definition definition-object" data-traverse-target="definition-FolderPolicy">
             <div class="definition-group-name">
               <a href="#group-Types">Types</a>
@@ -1859,6 +2296,67 @@
                 <div class="example-section example-section-is-code">
                   <h5>Example</h5>
                   <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="definition-ResolveDuplicateGroupInput" class="definition definition-input-object" data-traverse-target="definition-ResolveDuplicateGroupInput">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">ResolveDuplicateGroupInput</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Autogenerated input type of ResolveDuplicateGroup</p>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <div class="example-section example-section-is-code">
+                  <h5>Example</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="definition-ResolveDuplicateGroupPayload" class="definition definition-object" data-traverse-target="definition-ResolveDuplicateGroupPayload">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">ResolveDuplicateGroupPayload</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Autogenerated return type of ResolveDuplicateGroup.</p>
+                </div>
+                <div class="definition-properties doc-copy-section">
+                  <h5>Fields</h5>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Field Name</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td data-property-name=""><span class="property-name"><code>group</code></span> - <span class="property-type"><a href="#definition-DuplicateGroup"><code>DuplicateGroup</code></a></span>
+                        </td>
+                        <td>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <div class="example-section example-section-is-code">
+                  <h5>Example</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"group"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">DuplicateGroup</span><span class="hljs-punctuation">}</span>
 </code></pre>
                 </div>
               </div>
@@ -1998,6 +2496,48 @@
                 <div class="definition-description doc-copy-section">
                   <h5>Description</h5>
                   <p>Autogenerated return type of StopImpersonation.</p>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <div class="example-section example-section-is-code">
+                  <h5>Example</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="definition-TriggerDuplicateScanInput" class="definition definition-input-object" data-traverse-target="definition-TriggerDuplicateScanInput">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">TriggerDuplicateScanInput</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Autogenerated input type of TriggerDuplicateScan</p>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <div class="example-section example-section-is-code">
+                  <h5>Example</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="definition-TriggerDuplicateScanPayload" class="definition definition-object" data-traverse-target="definition-TriggerDuplicateScanPayload">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">TriggerDuplicateScanPayload</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Autogenerated return type of TriggerDuplicateScan.</p>
                 </div>
               </div>
               <div class="doc-examples">

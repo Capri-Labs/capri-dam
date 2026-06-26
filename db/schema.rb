@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_26_092131) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_26_130000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -174,6 +174,31 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_26_092131) do
     t.integer "metric_value", default: 0
     t.datetime "updated_at", null: false
     t.index ["metric_date", "metric_name"], name: "index_daily_metrics_on_metric_date_and_metric_name", unique: true
+  end
+
+  create_table "duplicate_group_assets", force: :cascade do |t|
+    t.uuid "asset_id", null: false
+    t.datetime "created_at", null: false
+    t.uuid "duplicate_group_id", null: false
+    t.boolean "is_original", default: false, null: false
+    t.datetime "updated_at", null: false
+    t.index ["asset_id"], name: "index_duplicate_group_assets_on_asset_id"
+    t.index ["duplicate_group_id", "asset_id"], name: "idx_dup_group_assets_unique", unique: true
+    t.index ["duplicate_group_id"], name: "index_duplicate_group_assets_on_duplicate_group_id"
+  end
+
+  create_table "duplicate_groups", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.string "checksum", null: false
+    t.datetime "created_at", null: false
+    t.string "resolution_action"
+    t.datetime "resolved_at"
+    t.bigint "resolved_by_id"
+    t.string "status", default: "pending", null: false
+    t.integer "total_count", default: 0, null: false
+    t.datetime "updated_at", null: false
+    t.index ["checksum"], name: "index_duplicate_groups_on_checksum", unique: true
+    t.index ["resolved_by_id"], name: "index_duplicate_groups_on_resolved_by_id"
+    t.index ["status"], name: "index_duplicate_groups_on_status"
   end
 
   create_table "email_deliveries", force: :cascade do |t|
@@ -778,6 +803,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_26_092131) do
   add_foreign_key "collection_assets", "collection_rules"
   add_foreign_key "collection_assets", "collections"
   add_foreign_key "collection_rules", "collections"
+  add_foreign_key "duplicate_group_assets", "assets"
+  add_foreign_key "duplicate_group_assets", "duplicate_groups"
+  add_foreign_key "duplicate_groups", "users", column: "resolved_by_id"
   add_foreign_key "email_deliveries", "email_templates"
   add_foreign_key "folder_policies", "folders"
   add_foreign_key "folder_policies", "user_groups"
