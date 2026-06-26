@@ -69,7 +69,7 @@ export default function ImpersonateUserDialog({ open, onClose }) {
       onClose={handleClose}
       maxWidth="sm"
       fullWidth
-      PaperProps={{ sx: { borderRadius: 3 } }}
+      slotProps={{ paper: { sx: { borderRadius: 3 } } }}
     >
       <DialogTitle sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1.5, pb: 1 }}>
         <SupervisedUserCircle color="warning" sx={{ fontSize: 28 }} />

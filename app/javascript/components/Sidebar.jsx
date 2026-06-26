@@ -5,12 +5,14 @@ import {
     IconButton, Tooltip, Collapse
 } from '@mui/material';
 import { MenuOpen, Menu, ExpandLess, ExpandMore } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 import { MENU_GROUPS } from './MenuConfig';
 
 const expandedWidth = 260;
 const collapsedWidth = 80;
 
 export default function Sidebar({ activeView, onNavigate }) {
+    const { t } = useTranslation();
     const [open, setOpen] = useState(() => {
         const savedState = localStorage.getItem('dam_sidebar_open');
         return savedState !== null ? JSON.parse(savedState) : true;
@@ -96,7 +98,7 @@ export default function Sidebar({ activeView, onNavigate }) {
                 </ListItemIcon>
 
                 <ListItemText
-                    primary={item.label}
+                    primary={item.labelKey ? t(item.labelKey, { defaultValue: item.label }) : item.label}
                     sx={{
                         opacity: open ? 1 : 0, // Fade text out instead of removing it
                         transition: 'opacity 0.3s ease',
@@ -153,7 +155,7 @@ export default function Sidebar({ activeView, onNavigate }) {
                                 overflow: 'hidden'
                             }}
                         >
-                            {group.title}
+                        {group.titleKey ? t(group.titleKey, { defaultValue: group.title }) : group.title}
                         </Typography>
 
                         <List sx={{ p: 0 }}>

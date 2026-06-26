@@ -122,7 +122,7 @@ export default function Header(props) {
                                     anchorEl={createAnchorEl}
                                     open={Boolean(createAnchorEl)}
                                     onClose={() => setCreateAnchorEl(null)}
-                                    PaperProps={{ elevation: 3, sx: { mt: 1.5, minWidth: 200, borderRadius: 2 } }}
+                                    slotProps={{ paper: { elevation: 3, sx: { mt: 1.5, minWidth: 200, borderRadius: 2 } } }}
                                 >
                                     <MenuItem onClick={() => setCreateAnchorEl(null)}>
                                         <ListItemIcon><CloudUpload fontSize="small" color="primary" /></ListItemIcon>
@@ -167,7 +167,7 @@ export default function Header(props) {
                                     anchorEl={profileAnchorEl}
                                     open={Boolean(profileAnchorEl)}
                                     onClose={() => setProfileAnchorEl(null)}
-                                    PaperProps={{ elevation: 3, sx: { mt: 1.5, minWidth: 240, borderRadius: 2 } }}
+                                    slotProps={{ paper: { elevation: 3, sx: { mt: 1.5, minWidth: 240, borderRadius: 2 } } }}
                                     transformOrigin={{ horizontal: 'right', vertical: 'top' }}
                                     anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
                                 >

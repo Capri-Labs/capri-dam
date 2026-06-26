@@ -153,7 +153,7 @@ export default function ConnectorDialog({
     };
 
     return (
-        <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+        <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth slotProps={{ paper: { sx: { borderRadius: 3 } } }}>
             <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: 700, borderBottom: '1px solid #e2e8f0', pb: 2, pt: 3, px: 3 }}>
                 {formData.id ? 'Configure System Connector' : 'Establish System Connector'}
                 <IconButton onClick={onClose} size="small"><Close /></IconButton>

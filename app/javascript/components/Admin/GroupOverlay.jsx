@@ -180,7 +180,7 @@ export default function GroupOverlay({
     <>
       <Drawer
         anchor="right" open={open} onClose={onClose}
-        PaperProps={{ sx: { width: { xs: '100vw', sm: '80vw', md: 700 }, display: 'flex', flexDirection: 'column' } }}
+        slotProps={{ paper: { sx: { width: { xs: '100vw', sm: '80vw', md: 700 }, display: 'flex', flexDirection: 'column' } } }}
       >
         {/* ── Header ── */}
         <Box sx={{ p: 2.5, pb: 0, borderBottom: '1px solid', borderColor: 'divider', bgcolor: '#fafafa' }}>
@@ -317,8 +317,10 @@ export default function GroupOverlay({
                           </ListItemAvatar>
                           <ListItemText
                             primary={u.display_name} secondary={u.email}
-                            primaryTypographyProps={{ variant: 'body2', fontWeight: 600 }}
-                            secondaryTypographyProps={{ variant: 'caption' }}
+                            slotProps={{
+                              primary:   { variant: 'body2', fontWeight: 600, component: 'span' },
+                              secondary: { variant: 'caption', component: 'span' },
+                            }}
                           />
                           {perms.canRemoveMembers && String(u.id) !== String(currentUserId) && (
                             <ListItemSecondaryAction>
@@ -420,7 +422,7 @@ export default function GroupOverlay({
                               </Box>
                             }
                             secondary={cg.description || cg.slug || 'custom group'}
-                            secondaryTypographyProps={{ variant: 'caption' }}
+                            slotProps={{ secondary: { variant: 'caption', component: 'span' } }}
                           />
                           {isAdmin && (
                             <ListItemSecondaryAction>
@@ -471,7 +473,7 @@ export default function GroupOverlay({
                           </Box>
                         }
                         secondary={parentGroup.description || parentGroup.slug || 'custom group'}
-                        secondaryTypographyProps={{ variant: 'caption' }}
+                        slotProps={{ secondary: { variant: 'caption', component: 'span' } }}
                       />
                       <ListItemSecondaryAction>
                         <Tooltip title="Parent cannot be removed from the child group — open the parent group to manage its children">

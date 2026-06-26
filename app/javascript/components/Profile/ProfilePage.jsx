@@ -23,6 +23,8 @@ import {
   ContentCopy, DeleteOutlined, AddOutlined, Visibility, VisibilityOff,
   CheckCircleOutlined, WarningAmber, KeyOutlined,
 } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
+import { changeLanguage } from '../../i18n/index';
 import { apiFetch } from '../../utils/adminUtils';
 import { useNotify } from '../../context/NotificationContext';
 
@@ -42,13 +44,6 @@ const SUPPORTED_THEMES = [
   { value: 'dark',   label: 'Dark' },
 ];
 
-// A curated list of common IANA timezones for the selector
-const COMMON_TIMEZONES = [
-  'UTC', 'America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles',
-  'America/Sao_Paulo', 'Europe/London', 'Europe/Berlin', 'Europe/Paris', 'Europe/Madrid',
-  'Europe/Rome', 'Europe/Amsterdam', 'Asia/Dubai', 'Asia/Kolkata', 'Asia/Singapore',
-  'Asia/Tokyo', 'Asia/Seoul', 'Asia/Shanghai', 'Australia/Sydney', 'Pacific/Auckland',
-];
 
 function TabPanel({ children, value, index }) {
   return value === index ? <Box sx={{ pt: 3 }}>{children}</Box> : null;
@@ -67,6 +62,7 @@ function ActivityIcon({ action }) {
 
 export default function ProfilePage(props) {
   const notify = useNotify();
+  const { t, i18n } = useTranslation();
   const [tab, setTab] = useState(0);
 
   // ── Personal Details state ─────────────────────────────────────────────────
@@ -152,9 +148,13 @@ export default function ProfilePage(props) {
         method: 'PATCH', body: JSON.stringify({ preferences: prefs }),
       });
       if (data.success) {
-        notify('Preferences saved.', 'success');
+        notify(t('common.success'), 'success');
         if (data.preferences) setPrefs(data.preferences);
-      } else notify(data.errors?.join(', ') || 'Save failed.', 'error');
+        // Apply the language change instantly — zero-lag, no page reload needed.
+        if (data.preferences?.language) {
+          changeLanguage(data.preferences.language);
+        }
+      } else notify(data.errors?.join(', ') || t('common.error'), 'error');
     } finally { setPrefsSaving(false); }
   };
 
@@ -238,10 +238,10 @@ export default function ProfilePage(props) {
           sx={{ borderBottom: '1px solid', borderColor: 'divider', px: 2 }}
           variant="scrollable"
         >
-          <Tab icon={<PersonOutlined sx={{ fontSize: 18 }} />} iconPosition="start" label="Personal Details" />
-          <Tab icon={<PublicOutlined sx={{ fontSize: 18 }} />} iconPosition="start" label="Localization" />
-          <Tab icon={<LockOutlined sx={{ fontSize: 18 }} />}   iconPosition="start" label="Security & Access" />
-          <Tab icon={<HistoryOutlined sx={{ fontSize: 18 }} />} iconPosition="start" label="My Activity" />
+          <Tab icon={<PersonOutlined sx={{ fontSize: 18 }} />} iconPosition="start" label={t('profile.tabs.personal')} />
+          <Tab icon={<PublicOutlined sx={{ fontSize: 18 }} />} iconPosition="start" label={t('profile.tabs.localization')} />
+          <Tab icon={<LockOutlined sx={{ fontSize: 18 }} />}   iconPosition="start" label={t('profile.tabs.security')} />
+          <Tab icon={<HistoryOutlined sx={{ fontSize: 18 }} />} iconPosition="start" label={t('profile.tabs.activity')} />
         </Tabs>
 
         <Box sx={{ p: 3 }}>
@@ -300,18 +300,18 @@ export default function ProfilePage(props) {
           <TabPanel value={tab} index={1}>
             <Stack spacing={3}>
               <FormControl fullWidth size="small">
-                <InputLabel>UI Theme</InputLabel>
-                <Select value={prefs.theme || 'system'} label="UI Theme"
+                <InputLabel>{t('profile.localization.theme')}</InputLabel>
+                <Select value={prefs.theme || 'system'} label={t('profile.localization.theme')}
                   onChange={e => setPrefs({ ...prefs, theme: e.target.value })}>
-                  {SUPPORTED_THEMES.map(t => (
-                    <MenuItem key={t.value} value={t.value}>{t.label}</MenuItem>
-                  ))}
+                  <MenuItem value="system">{t('profile.localization.themeSystem')}</MenuItem>
+                  <MenuItem value="light">{t('profile.localization.themeLight')}</MenuItem>
+                  <MenuItem value="dark">{t('profile.localization.themeDark')}</MenuItem>
                 </Select>
               </FormControl>
 
               <FormControl fullWidth size="small">
-                <InputLabel>Interface Language</InputLabel>
-                <Select value={prefs.language || 'en'} label="Interface Language"
+                <InputLabel>{t('profile.localization.language')}</InputLabel>
+                <Select value={prefs.language || 'en'} label={t('profile.localization.language')}
                   onChange={e => setPrefs({ ...prefs, language: e.target.value })}>
                   {SUPPORTED_LANGS.map(l => (
                     <MenuItem key={l.value} value={l.value}>{l.label}</MenuItem>
@@ -319,24 +319,11 @@ export default function ProfilePage(props) {
                 </Select>
               </FormControl>
 
-              <FormControl fullWidth size="small">
-                <InputLabel>Timezone</InputLabel>
-                <Select value={prefs.timezone || 'UTC'} label="Timezone"
-                  onChange={e => setPrefs({ ...prefs, timezone: e.target.value })}>
-                  {COMMON_TIMEZONES.map(tz => (
-                    <MenuItem key={tz} value={tz}>{tz.replace(/_/g, ' ')}</MenuItem>
-                  ))}
-                </Select>
-                <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
-                  Used to display accurate upload and modification timestamps throughout the DAM.
-                </Typography>
-              </FormControl>
-
               <Divider />
 
               <Box>
                 <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>
-                  Email Notifications
+                  {t('profile.localization.notifications')}
                 </Typography>
                 <Stack spacing={0.5}>
                   <FormControlLabel
@@ -346,7 +333,7 @@ export default function ProfilePage(props) {
                         onChange={e => setPrefs({ ...prefs, receive_mention_emails: e.target.checked })}
                       />
                     }
-                    label="@Mention notifications"
+                    label={t('profile.localization.mentions')}
                   />
                   <FormControlLabel
                     control={
@@ -355,7 +342,7 @@ export default function ProfilePage(props) {
                         onChange={e => setPrefs({ ...prefs, receive_workflow_emails: e.target.checked })}
                       />
                     }
-                    label="Workflow task notifications"
+                    label={t('profile.localization.workflowTasks')}
                   />
                 </Stack>
               </Box>
@@ -363,7 +350,7 @@ export default function ProfilePage(props) {
               <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
                 <Button variant="contained" onClick={handleSavePreferences}
                   disabled={prefsSaving} disableElevation>
-                  {prefsSaving ? 'Saving…' : 'Save Preferences'}
+                  {prefsSaving ? t('common.saving') : t('profile.localization.savePreferences')}
                 </Button>
               </Box>
             </Stack>

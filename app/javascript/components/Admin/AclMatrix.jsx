@@ -180,7 +180,7 @@ export default function AclMatrix({ groupId, folderId, readOnly = false, isAdmin
 
   return (
     <Box>
-      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
+      <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
         <Typography variant="subtitle2" color="text.secondary">
           Folder-level ACL — {readOnly ? 'View only' : 'Click checkboxes to edit, then Save'}
         </Typography>
@@ -237,7 +237,7 @@ export default function AclMatrix({ groupId, folderId, readOnly = false, isAdmin
                 >
                   {/* Folder name */}
                   <TableCell>
-                    <Stack direction="row" alignItems="center" spacing={0.5} sx={{ pl: depth * 2 }}>
+                    <Stack direction="row" sx={{ alignItems: 'center' }} spacing={0.5} style={{ paddingLeft: `${depth * 16}px` }}>
                       {hasExplicit
                         ? <FolderOpenOutlined fontSize="small" color="primary" />
                         : <FolderOutlined fontSize="small" color="disabled" />
@@ -287,7 +287,7 @@ export default function AclMatrix({ groupId, folderId, readOnly = false, isAdmin
                   {/* Save / Remove actions */}
                   {!readOnly && isAdmin && (
                     <TableCell align="center">
-                      <Stack direction="row" spacing={0.5} justifyContent="center">
+                      <Stack direction="row" spacing={0.5} sx={{ justifyContent: 'center' }}>
                         <Tooltip title="Save explicit rule for this folder">
                           <span>
                             <IconButton size="small" color="primary" onClick={() => handleSave(folder.id)}

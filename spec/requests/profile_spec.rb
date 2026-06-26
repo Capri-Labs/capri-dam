@@ -45,15 +45,23 @@ RSpec.describe "Profile API", type: :request do
   # ── PATCH /profile/preferences ────────────────────────────────────────────────
 
   describe "PATCH /profile/preferences" do
-    it "saves language, theme and timezone" do
+    it "saves language and theme" do
       patch preferences_profile_path,
-            params: { preferences: { language: "de", theme: "dark", timezone: "Europe/Berlin" } },
+            params: { preferences: { language: "de", theme: "dark" } },
             as: :json
       expect(response).to have_http_status(:ok)
       pref = user.reload.preference
       expect(pref.language).to eq("de")
       expect(pref.theme).to eq("dark")
-      expect(pref.timezone).to eq("Europe/Berlin")
+    end
+
+    it "silently ignores a timezone param (not user-managed)" do
+      patch preferences_profile_path,
+            params: { preferences: { language: "fr", timezone: "America/New_York" } },
+            as: :json
+      expect(response).to have_http_status(:ok)
+      # timezone must NOT have been persisted
+      expect(user.reload.preference.timezone).not_to eq("America/New_York")
     end
 
     it "rejects an unsupported theme" do
@@ -61,6 +69,14 @@ RSpec.describe "Profile API", type: :request do
             params: { preferences: { theme: "neon-toxic" } },
             as: :json
       expect(response).to have_http_status(:unprocessable_entity)
+    end
+
+    it "does not expose timezone in the response" do
+      patch preferences_profile_path,
+            params: { preferences: { language: "es" } },
+            as: :json
+      json = response.parsed_body
+      expect(json["preferences"]).not_to have_key("timezone")
     end
   end
 

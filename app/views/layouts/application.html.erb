@@ -1,5 +1,8 @@
 <!DOCTYPE html>
-<html lang="en">
+<%# The lang attribute on <html> gives screen-readers and search engines the
+    correct language. It is set from the user's saved preference (falls back to
+    the Accept-Language header locale). %>
+<html lang="<%= current_user&.preference&.language || I18n.locale.to_s %>">
 <head>
   <title><%= content_for(:title) || "Capri DAM" %></title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -28,12 +31,13 @@
 <%# 2. Lower Split: Sidebar + Scrollable Content %>
 <div style="display: flex; flex-grow: 1; overflow: hidden;">
 
-  <%# 3. Global Sidebar Container (Fixed on Left) %>
-  <%# React will mount the Sidebar component here %>
-  <% if user_signed_in? %>
+    <%# The React sidebar reads data-language so i18n initialises with the
+        correct locale synchronously on the very first render. %>
+    <% if user_signed_in? %>
     <div
       id="react-sidebar-root"
       data-active-view="<%= @active_view || 'Dashboard' %>"
+      data-language="<%= current_user.preference&.language || 'en' %>"
       style="flex-shrink: 0; height: 100%; overflow-y: auto; background: #fff; border-right: 1px solid #e2e8f0; z-index: 10;"
     >
     </div>

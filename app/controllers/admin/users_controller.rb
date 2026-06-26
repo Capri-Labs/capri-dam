@@ -147,16 +147,23 @@ class Admin::UsersController < ApplicationController
   #
   # Returns the user's current group memberships with rich metadata, plus the
   # full list of available groups for the assignment autocomplete.
+  #
+  # NOTE: PostgreSQL treats NULL != 'everyone' as NULL (not TRUE), so a plain
+  # .where.not(slug: "everyone") silently excludes every group whose slug is
+  # NULL (i.e. all custom/user-created groups).  The correct predicate is
+  # "slug IS NULL OR slug != 'everyone'".
   def groups
     member_ids = @target_user.user_groups.pluck(:id)
 
     render json: {
       # Groups the user is currently in (rich detail)
       groups: @target_user.user_groups.map { |g| serialize_group_detail(g) },
-      # All groups (for the assignment autocomplete, exclude 'everyone')
-      all_groups: UserGroup.where.not(slug: "everyone").order(:name).map { |g|
-        serialize_group_detail(g)
-      },
+      # All assignable groups — excludes 'everyone' (auto-managed) but must
+      # include groups with NULL slugs (custom groups created by the admin).
+      all_groups: UserGroup
+        .where("slug IS NULL OR slug != ?", "everyone")
+        .order(:name)
+        .map { |g| serialize_group_detail(g) },
       total: member_ids.size,
     }
   end

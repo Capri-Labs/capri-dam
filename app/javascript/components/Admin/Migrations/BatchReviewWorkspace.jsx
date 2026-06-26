@@ -108,7 +108,7 @@ export default function BatchReviewWorkspace({ batchId, onBack }) {
         <Box sx={{ p: 4, bgcolor: '#f4f7fb', minHeight: '100vh' }}>
             {/* ── Toolbar ── */}
             <Paper elevation={0} sx={{ p: 2, mb: 3, borderRadius: 2, border: '1px solid #e3e8ef' }}>
-                <Stack direction="row" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={1}>
+                <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }} gap={1}>
                     <Stack direction="row" alignItems="center" spacing={1}>
                         <Button startIcon={<ArrowBack />} onClick={onBack} color="inherit" sx={{ textTransform: 'none' }}>Back</Button>
                         <Divider orientation="vertical" flexItem />
@@ -221,8 +221,10 @@ export default function BatchReviewWorkspace({ batchId, onBack }) {
                                         <ListItemText
                                             primary={item.original_filename?.split('/').pop() || item.original_filename}
                                             secondary={`${item.file_size ? `${(item.file_size / 1024 / 1024).toFixed(1)} MB · ` : ''}${cfg.label}`}
-                                            primaryTypographyProps={{ noWrap: true, variant: 'subtitle2', fontWeight: 600 }}
-                                            secondaryTypographyProps={{ noWrap: true }}
+                                                            slotProps={{
+                                                              primary:   { noWrap: true, variant: 'subtitle2', fontWeight: 600, component: 'span' },
+                                                              secondary: { noWrap: true, component: 'span' },
+                                                            }}
                                         />
                                     </ListItem>
                                 );
@@ -248,7 +250,7 @@ export default function BatchReviewWorkspace({ batchId, onBack }) {
                             <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5, wordBreak: 'break-all' }}>
                                 {selectedItem.original_filename}
                             </Typography>
-                            <Stack direction="row" spacing={1} sx={{ mb: 2 }} flexWrap="wrap">
+                            <Stack direction="row" spacing={1} sx={{ mb: 2, flexWrap: 'wrap' }}>
                                 <Chip label={ITEM_STATUS_CONFIG[selectedItem.status]?.label || selectedItem.status}
                                     color={ITEM_STATUS_CONFIG[selectedItem.status]?.color || 'default'} size="small" />
                                 {selectedItem.file_hash && (

@@ -22,9 +22,11 @@
     "@tiptap/starter-kit": "^3.23.5",
     "@xyflow/react": "^12.10.2",
     "esbuild": "^0.20.0",
+    "i18next": "^26.3.2",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "react-dropzone": "^15.0.0",
+    "react-i18next": "^17.0.8",
     "react-router-dom": "^7.17.0",
     "reactflow": "^11.11.4",
     "recharts": "^3.8.1"

@@ -2,6 +2,9 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import "@hotwired/turbo-rails"
 
+// ── i18n — must be imported before any component that calls useTranslation ──
+import './i18n/index';
+
 // Components
 import Header from './components/Layout/Header';
 import Login from './components/Login/Login';

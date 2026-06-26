@@ -95,7 +95,7 @@ export default function ReportBuilderDrawer({ open, onClose, onExportStarted }) 
 
     return (
         <Drawer anchor="right" open={open} onClose={onClose}
-            PaperProps={{ sx: { width: 440, borderRadius: '16px 0 0 16px' } }}>
+            slotProps={{ paper: { sx: { width: 440, borderRadius: '16px 0 0 16px' } } }}>
             <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
                 {/* Header */}
                 <Box sx={{ px: 3, py: 2.5, borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

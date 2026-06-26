@@ -181,7 +181,7 @@ export default function AgentWorkflows() {
                                                 </Stack>
                                             }
                                             secondary={log.action}
-                                            secondaryTypographyProps={{ variant: 'body2', color: '#475569' }}
+                                            slotProps={{ secondary: { variant: 'body2', color: '#475569', component: 'span' } }}
                                         />
                                     </ListItem>
                                     {index < executionLogs.length - 1 && <Divider component="li" />}

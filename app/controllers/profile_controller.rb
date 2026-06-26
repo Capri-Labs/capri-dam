@@ -3,7 +3,7 @@
 # Handles the +/profile+ page where authenticated users can manage their own:
 #
 # * Personal details (name, department, avatar)
-# * Preferences (theme, language, timezone, notification settings)
+# * Preferences (theme, language, notification settings)
 # * Password (local accounts only)
 # * Recent activity (read-only audit log)
 #
@@ -98,7 +98,7 @@ class ProfileController < ApplicationController
   end
 
   def preference_params
-    params.require(:preferences).permit(:language, :theme, :timezone,
+    params.require(:preferences).permit(:language, :theme,
                                         :receive_mention_emails, :receive_workflow_emails)
   end
 
@@ -120,9 +120,8 @@ class ProfileController < ApplicationController
 
   def serialize_preference(pref)
     {
-      language:               pref.language,
-      theme:                  pref.theme,
-      timezone:               pref.timezone,
+      language:                pref.language,
+      theme:                   pref.theme,
       receive_mention_emails:  pref.receive_mention_emails,
       receive_workflow_emails: pref.receive_workflow_emails,
     }

@@ -152,7 +152,7 @@ export default function SemanticCopilot() {
                                         <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mb: 1.5 }}>
                                             {asset.properties?.campaign ? `Campaign: ${asset.properties.campaign}` : 'Unassigned Campaign'}
                                         </Typography>
-                                        <Stack direction="row" spacing={0.5} flexWrap="wrap" sx={{ gap: 0.5 }}>
+                                        <Stack direction="row" spacing={0.5} sx={{ flexWrap: 'wrap', gap: 0.5 }}>
                                             {asset.properties?.tags?.slice(0, 3).map((tag, idx) => (
                                                 <Chip key={idx} label={tag} size="small" sx={{ height: 20, fontSize: '0.7rem', bgcolor: '#f1f5f9' }} />
                                             ))}

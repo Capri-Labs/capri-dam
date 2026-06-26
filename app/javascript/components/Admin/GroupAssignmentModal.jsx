@@ -105,8 +105,10 @@ export default function GroupAssignmentModal({
               </Box>
             }
             secondary={node.description}
-            primaryTypographyProps={{ variant: 'body2', fontWeight: node.is_system ? 600 : 400 }}
-            secondaryTypographyProps={{ variant: 'caption' }}
+            slotProps={{
+              primary:   { variant: 'body2', fontWeight: node.is_system ? 600 : 400, component: 'div' },
+              secondary: { variant: 'caption', component: 'div' },
+            }}
           />
         </ListItem>
         {node.children?.length > 0 && renderTree(node.children, depth + 1)}

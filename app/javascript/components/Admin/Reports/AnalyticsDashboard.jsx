@@ -75,7 +75,7 @@ export default function AnalyticsDashboard({ onCreateExport }) {
     return (
         <Box>
             {/* ── Toolbar ─────────────────────────────────────────────────── */}
-            <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2} sx={{ mb: 3 }}>
+            <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', mb: 3 }} gap={2}>
                 <Box>
                     <Typography variant="h5" sx={{ fontWeight: 700, color: '#0f172a' }}>System Analytics</Typography>
                     <Typography variant="body2" color="textSecondary">
@@ -83,7 +83,7 @@ export default function AnalyticsDashboard({ onCreateExport }) {
                     </Typography>
                 </Box>
 
-                <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap">
+                <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
                     {/* Date range picker */}
                     <FormControl size="small" sx={{ minWidth: 160 }}>
                         <Select value={range} onChange={(e) => handleRangeChange(e.target.value)}

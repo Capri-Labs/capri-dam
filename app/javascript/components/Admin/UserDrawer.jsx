@@ -15,8 +15,7 @@ import {
   List, ListItem, ListItemText, ListItemAvatar, ListItemSecondaryAction,
   MenuItem, Select, FormControl, InputLabel, Tooltip, CircularProgress,
   Dialog, DialogTitle, DialogContent, DialogActions,
-} from '@mui/material';
-import {
+} from '@mui/material';import {
   Close, Block, CheckCircleOutlined, GroupAdd, Shield,
   PersonOutlined, LockOutlined, PublicOutlined,
   DeleteOutlined, AddOutlined, SecurityOutlined, SupervisedUserCircle,
@@ -55,7 +54,9 @@ export default function UserDrawer({
   const [groupsData, setGroupsData]         = useState({ groups: [], all_groups: [], total: 0 });
   const [groupsLoading, setGroupsLoading]   = useState(false);
   const [groupFilter, setGroupFilter]       = useState('');
-  const [groupActionId, setGroupActionId]   = useState(null); // track which group is loading
+  const [groupActionId, setGroupActionId]   = useState(null);
+  // Permissions tab — selected group to view ACL for
+  const [permGroupId, setPermGroupId]       = useState(null);
 
   const [prefs, setPrefs]           = useState({ language: 'en', receive_mention_emails: true, receive_workflow_emails: true });
   const [prefsLoading, setPrefsLoading] = useState(false);
@@ -67,9 +68,17 @@ export default function UserDrawer({
 
   useEffect(() => { if (open) setTab(0); }, [open, user?.id]);
 
-  useEffect(() => { if (tab === 1 && user?.id) fetchGroups();        }, [tab, user?.id]);
+  // Fetch groups data for BOTH Groups tab (1) and Permissions tab (2)
+  useEffect(() => { if ((tab === 1 || tab === 2) && user?.id) fetchGroups(); }, [tab, user?.id]);
   useEffect(() => { if (tab === 3 && user?.id) fetchImpersonators(); }, [tab, user?.id]);
   useEffect(() => { if (tab === 4 && user?.id) fetchPreferences();   }, [tab, user?.id]);
+
+  // Auto-select first group when groups data loads (for Permissions tab)
+  useEffect(() => {
+    if (groupsData.groups.length > 0 && !permGroupId) {
+      setPermGroupId(groupsData.groups[0].id);
+    }
+  }, [groupsData.groups]);
 
   const fetchImpersonators = async () => {
     setImpersonatorsLoading(true);
@@ -88,6 +97,8 @@ export default function UserDrawer({
         all_groups: data.all_groups || [],
         total:      data.total      || 0,
       });
+      // Reset permission group selection when groups reload
+      setPermGroupId(null);
     } finally { setGroupsLoading(false); }
   };
 
@@ -187,7 +198,7 @@ export default function UserDrawer({
     <>
       <Drawer
         anchor="right" open={open} onClose={onClose}
-        PaperProps={{ sx: { width: { xs: '100vw', sm: 560 }, display: 'flex', flexDirection: 'column' } }}
+        slotProps={{ paper: { sx: { width: { xs: '100vw', sm: 560 }, display: 'flex', flexDirection: 'column' } } }}
       >
         {/* Header */}
         <Box sx={{ p: 2.5, pb: 0, borderBottom: '1px solid', borderColor: 'divider' }}>
@@ -202,7 +213,7 @@ export default function UserDrawer({
                   {isNew ? 'Invite New User' : (user.display_name || user.email)}
                 </Typography>
                 {!isNew && (
-                  <Stack direction="row" spacing={0.5} flexWrap="wrap">
+                  <Stack direction="row" spacing={0.5} sx={{ flexWrap: 'wrap' }}>
                     <Typography variant="caption" color="text.secondary">{user.email}</Typography>
                     {user.sso_managed && <Chip label={user.provider} size="small" color="primary" variant="outlined" sx={{ height: 16, fontSize: '0.6rem' }} />}
                     {user.admin && <Chip label="Admin" size="small" color="warning" sx={{ height: 16, fontSize: '0.6rem' }} />}
@@ -467,7 +478,51 @@ export default function UserDrawer({
 
           {/* Tab 2: Permissions */}
           {!isNew && tab === 2 && (
-            <AclMatrix groupId={user.group_ids?.[0]} readOnly isAdmin={isAdmin} />
+            <Stack spacing={2}>
+              {groupsLoading ? (
+                <CircularProgress size={24} sx={{ alignSelf: 'center', my: 2 }} />
+              ) : groupsData.groups.length === 0 ? (
+                <Alert severity="info" sx={{ borderRadius: 2 }}>
+                  This user does not belong to any groups. Assign the user to a group first
+                  to view or edit folder-level permissions.
+                </Alert>
+              ) : (
+                <>
+                  {/* Group selector — shown when user belongs to more than one group */}
+                  {groupsData.groups.length > 1 && (
+                    <FormControl fullWidth size="small">
+                      <InputLabel>View permissions for group</InputLabel>
+                      <Select
+                        value={permGroupId || ''}
+                        label="View permissions for group"
+                        onChange={e => setPermGroupId(e.target.value)}
+                      >
+                        {groupsData.groups.map(g => (
+                          <MenuItem key={g.id} value={g.id}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              {g.is_system && <Shield sx={{ fontSize: 14, color: 'warning.main' }} />}
+                              {g.name}
+                              <Typography variant="caption" color="text.secondary" sx={{ ml: 0.5 }}>
+                                ({g.member_count} members)
+                              </Typography>
+                            </Box>
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  )}
+
+                  {/* ACL matrix for the selected group */}
+                  {permGroupId && (
+                    <AclMatrix
+                      groupId={permGroupId}
+                      readOnly={!isAdmin}
+                      isAdmin={isAdmin}
+                    />
+                  )}
+                </>
+              )}
+            </Stack>
           )}
 
           {/* Tab 3: Impersonators */}
@@ -518,8 +573,10 @@ export default function UserDrawer({
                         </ListItemAvatar>
                         <ListItemText
                           primary={imp.display_name} secondary={imp.email}
-                          primaryTypographyProps={{ variant: 'body2', fontWeight: 600 }}
-                          secondaryTypographyProps={{ variant: 'caption' }}
+                          slotProps={{
+                            primary:   { variant: 'body2', fontWeight: 600, component: 'span' },
+                            secondary: { variant: 'caption', component: 'span' },
+                          }}
                         />
                         {isAdmin && (
                           <ListItemSecondaryAction>
@@ -601,7 +658,7 @@ export default function UserDrawer({
               Provision Local Account
             </Button>
           ) : tab === 0 ? (
-            <Stack direction="row" justifyContent="space-between">
+            <Stack direction="row" sx={{ justifyContent: 'space-between' }}>
               <Button color={user.active ? 'error' : 'success'} size="small"
                 startIcon={user.active ? <Block /> : <CheckCircleOutlined />}
                 onClick={async () => { await onToggleStatus(); onClose(); }}>

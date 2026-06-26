@@ -1008,14 +1008,13 @@ type UserGroup {
 }
 
 """
-User-level language, notification preferences, theme and timezone
+User-level language, notification preferences and theme
 """
 type UserPreference {
   language: String!
   receiveMentionEmails: Boolean!
   receiveWorkflowEmails: Boolean!
   theme: String!
-  timezone: String!
 }
 
 """
