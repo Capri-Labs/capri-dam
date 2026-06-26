@@ -102,7 +102,8 @@ class User < ApplicationRecord
   # profile fields from Keycloak on every login.
   #
   # New SSO users receive a random password (they will never type it) and a
-  # username derived from the email local-part suffixed with +"_sso"+.
+  # username derived from the email local-part suffixed with +"_sso"+.  If that
+  # username is already taken a numeric suffix is appended until it is unique.
   #
   # @param auth [OmniAuth::AuthHash]
   # @return [User]
@@ -110,10 +111,13 @@ class User < ApplicationRecord
     user = where(provider: auth.provider, uid: auth.uid).first_or_initialize
 
     if user.new_record?
-      user.email    = auth.info.email
-      user.password = Devise.friendly_token[0, 20]
-      user.name     = auth.info.name.presence || auth.info.email.split("@").first
-      user.username = "#{auth.info.email.split("@").first}_sso"
+      user.email      = auth.info.email
+      user.password   = Devise.friendly_token[0, 20]
+      user.name       = auth.info.name.presence || auth.info.email.split("@").first
+      user.first_name = auth.info.first_name.presence
+      user.last_name  = auth.info.last_name.presence
+      user.avatar_url = auth.info.image.presence
+      user.username   = unique_sso_username(auth.info.email)
     else
       # Sync mutable fields on every login
       user.name       = auth.info.name.presence || user.name
@@ -125,6 +129,24 @@ class User < ApplicationRecord
     user.save!
     user
   end
+
+  # Generates a unique SSO username from the email local-part.
+  # Appends "_sso", then increments a counter suffix on collision:
+  #   jane_sso, jane_sso_2, jane_sso_3, …
+  #
+  # @param email [String]
+  # @return [String]
+  def self.unique_sso_username(email)
+    base     = "#{email.split("@").first}_sso"
+    username = base
+    counter  = 2
+    while where(username: username).exists?
+      username = "#{base}_#{counter}"
+      counter += 1
+    end
+    username
+  end
+  private_class_method :unique_sso_username
 
   # ---------------------------------------------------------------------------
   # Instance methods — identity

@@ -1,60 +1,150 @@
 [[section-concepts]]
 == Cross-cutting Concepts
 
-=== Upgrade Concept
-To maintain the "Minimum Budget" goal, we follow a **Blue/Green Deployment** or **Canary** strategy using serverless versioning.
+=== Deployment & Upgrade Strategy
 
-- **Database Migrations:** Managed via tools like **Prisma** or **Liquibase**. Schema changes must always be backward compatible (expand-then-contract) to avoid downtime for the API.
-- **Fastly VCL/Compute Updates:** Versioned using the Fastly API. New edge logic is tested on a "Staging Service" before being promoted to the production service.
+Capri DAM follows a **zero-downtime deploy** approach using Kamal (container-based
+rolling deployments):
+
+* **Database Migrations:** Managed exclusively via ActiveRecord migrations in
+  `db/migrate/`. Every migration must be reversible and use the _expand-then-contract_
+  pattern: schema additions ship before the code that depends on them, and column
+  removals ship after all code references are gone.
+* **Feature Flags:** Breaking changes may be gated behind a Rails
+  `ActiveSupport::CurrentAttributes` flag to allow safe rollback.
+* **Docker Images:** The canonical `Dockerfile` pins Ruby `4.0.3` and Node
+  `22.16.0`. Kamal pushes versioned image tags and can rollback to any previous tag.
 
 === Observability and Auditing
-* **Asset Lifecycle Logs:** Every upload, delete, and metadata change is logged in a `system_audit_log` table in PostgreSQL.
-* **Fastly Log Streaming:** Real-time logs are streamed from the Edge to a budget-friendly destination (like **S3 + Athena** or **BetterStack**) to track delivery performance and cache hit ratios.
-* **User Audit:** Tracks "who changed which tag" to ensure accountability within the Admin UI.
+
+* **Asset Lifecycle Logs:** Every asset upload, delete, download, and metadata
+  change is recorded in the `asset_audit_logs` table in PostgreSQL.
+* **OpenTelemetry:** Distributed tracing is instrumented via
+  `opentelemetry-instrumentation-all` and exported to any OTel-compatible
+  collector (Jaeger, Honeycomb, etc.).
+* **User Audit:** The `Auditable` concern (included in `User`, `Asset`,
+  `Folder`) captures `who changed what and when` for accountability.
+* **Runtime Coverage:** Coverband (`:development`, `:production`) tracks which
+  code lines execute in real traffic — visible at `/admin/coverband`.
 
 === Security
+
 ==== Overview
-The security model is based on **Least Privilege**. The API acts as the gatekeeper, while the Edge (Fastly) acts as the enforcement point.
 
-==== Requirements
-* **Signed URLs (HMAC):** To prevent "Cost-of-Service" attacks (unauthorized resizing of images), delivery URLs must be signed.
-* **Storage Isolation:** The S3/Azure buckets must **not** be public. Only the Fastly IP ranges and the Core API IAM role have access.
-* **Authentication:** The Admin Portal uses OIDC (e.g., **Keycloak** or **Auth0**) to manage user access.
+The security model is based on **Least Privilege**.
 
-==== Operations
-* **Token Rotation:** API keys for Fastly and Cloud Storage are rotated every 90 days via automated scripts.
-* **Rate Limiting:** Implemented at the Fastly Edge to prevent brute-force search queries or rapid-fire uploads.
+[cols="1,2"]
+|===
+| Layer | Mechanism
 
-=== Monitoring
-.We focus on "Golden Signals":
-* **Latency:** Time-to-First-Byte (TTFB) for image transformations.
-* **Traffic:** Number of requests per second (monitored to stay within Fastly/Cloud free tiers).
-* **Errors:** Tracking 4xx (Client errors) and 5xx (Transformation failures).
-* **Saturation:** Monitoring S3 egress limits and Database connection pools.
+| Identity
+| Dual-provider Devise: local (email + password) and SSO via Keycloak
+  OpenID Connect (OmniAuth)
 
-=== Testing
+| API access
+| Doorkeeper OAuth 2.0 — Bearer tokens issued via `POST /oauth/token`
+  (client-credentials grant for system accounts; resource-owner password
+  grant for interactive clients)
+
+| Authorisation
+| Group-based ABAC: users belong to `UserGroup` hierarchies; `FolderPolicy`
+  records attach permission bits to `(group, folder)` pairs
+
+| Signed delivery URLs
+| HMAC-signed CDN URLs prevent unauthorised image transformations
+
+| Storage isolation
+| Cloud storage buckets (`S3 / GCS / Azure Blob`) are private; only the
+  Rails app IAM role and CDN edge have access
+
+| Dependency CVEs
+| `bundle exec bundler-audit` + Dependabot; explicit version floors pinned
+  in `Gemfile`
+
+| Static analysis
+| Brakeman scans every CI run; RuboCop-rails-omakase enforces style
+|===
+
+==== Keycloak SSO Flow
+
+[plantuml, target="sso-flow", format="svg"]
+....
+@startuml
+actor Browser
+participant "Rails App\n(OmniAuth)" as Rails
+participant "Keycloak\n(OIDC)" as KC
+
+Browser -> Rails : GET /users/auth/keycloak_openid
+Rails   -> KC    : redirect → Keycloak login page
+KC      -> Browser : render login UI
+Browser -> KC    : submit credentials
+KC      -> Rails : redirect /users/auth/keycloak_openid/callback\n(code + state)
+Rails   -> KC    : exchange code for ID token
+KC      -> Rails : ID token (JWT)
+Rails   -> Rails : User.from_omniauth(auth_hash)\nfind-or-provision user row
+Rails   -> Browser : sign_in_and_redirect → /dashboard
+@enduml
+....
+
+Key implementation points:
+
+* `Users::OmniauthCallbacksController#keycloak_openid` handles the callback.
+* `User.from_omniauth` provisions new SSO users (random password they never
+  use) and syncs `name`, `first_name`, `last_name`, `avatar_url` on every login.
+* The `provider` + `uid` pair is the SSO identity key. `email` is never changed
+  after initial provisioning to preserve referential integrity.
+* Deactivated users (`active: false`) are blocked at the callback before sign-in.
+* Username collisions are resolved by appending a counter suffix
+  (`jane_sso`, `jane_sso_2`, …).
+* `omniauth-rails_csrf_protection` prevents CSRF on the initiation endpoint.
+
+==== Token rotation & key management
+
+* OAuth API keys (`Doorkeeper`) rotate on demand via system account management.
+* `RAILS_MASTER_KEY` / `config/credentials.yml.enc` holds all secrets.
+* Keycloak client secrets are supplied via environment variables
+  (`KEYCLOAK_CLIENT_ID`, `KEYCLOAK_CLIENT_SECRET`, `KEYCLOAK_URL`,
+  `KEYCLOAK_REALM`).
+
+=== Testing Strategy
+
 [plantuml, target="testing-strategy", format="svg"]
 ....
 @startuml
 package "Testing Layers" {
-    [Unit Tests] as Unit <<Vitest/Jest>>
-    [Integration Tests] as Integration <<Supertest>>
+    [Unit Tests] as Unit <<RSpec — models, services>>
+    [Integration Tests] as Integration <<RSpec — request specs>>
+    [System Tests] as System <<RSpec + Capybara>>
     [E2E Tests] as E2E <<Playwright>>
-    [Edge Tests] as Edge <<Fastly Fiddle>>
 }
-note right of Edge: Validates VCL/Wasm logic
+Unit --> Integration
+Integration --> System
+System --> E2E
 @enduml
 ....
 
-* **Automated:** Every Pull Request triggers the Unit and Integration suite.
-* **Edge Simulation:** Use local Fastly emulators (Vic) to test transformation logic before deployment.
+* **Unit:** Models and service objects (`spec/models/`, `spec/services/`).
+* **Integration:** Every `app/controllers/api/v1/**` controller has a request
+  spec with rswag Swagger annotations (`spec/requests/api/v1/`).
+* **System:** Capybara full-stack browser tests (`spec/system/`).
+* **E2E:** Playwright scenarios in `spec/e2e/` against a running dev server.
+* **Coverage:** SimpleCov for backend; Istanbul/nyc for frontend.
 
 === Release Management
-* **CI/CD Pipeline:** Fully automated via**GitHub Actions**.
-* **Triggers:** Commits to `main` deploy to Staging.
-** GitHub "Releases" (Tags) trigger production deployment.
-* **Artifacts:** Docker images for the API and static assets for the UI.
+
+* **CI/CD:** Fully automated via GitHub Actions (`.github/workflows/`).
+* **Triggers:** PRs run the full test matrix. Pushes to `main` trigger a
+  staging deploy. Versioned tags (`v*`) trigger a production deploy.
+* **Versioning:** Semantic Versioning (`MAJOR.MINOR.PATCH`). Release process
+  is documented in link:../../../RELEASING.md[RELEASING.md].
+* **Artifacts:** Docker images tagged with the version and `latest`, published
+  to the container registry; API docs regenerated and committed.
 
 === Change Management
-* **ADRs (Architecture Decision Records):** Significant changes to the architecture (e.g., adding a new storage provider) must be documented in the `/docs/adr` folder.
-* **Small Batches:** We prefer small, frequent updates over "big bang" releases to minimize risk in a small-team environment.
+
+* **ADRs (Architecture Decision Records):** Significant architectural decisions
+  are documented in `docs/architecture/src/09_design_decisions.adoc`.
+* **API contract changes** require regenerated Swagger/SpectaQL docs
+  (`make api-docs`) and pass `make check-api-specs`.
+* **Small batches:** We prefer small, frequent PRs over "big bang" merges to
+  minimise risk and keep CI fast.

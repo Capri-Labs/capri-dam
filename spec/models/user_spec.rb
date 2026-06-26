@@ -174,14 +174,14 @@ RSpec.describe User, type: :model do
   describe ".from_omniauth" do
     let(:auth) do
       OmniAuth::AuthHash.new(
-        provider: 'keycloak_openid',
-        uid:      'kc-uid-42',
+        provider: "keycloak_openid",
+        uid:      "kc-uid-42",
         info:     OmniAuth::AuthHash::InfoHash.new(
-          email:      'jane@example.com',
-          name:       'Jane Doe',
-          first_name: 'Jane',
-          last_name:  'Doe',
-          image:      nil
+          email:      "jane@example.com",
+          name:       "Jane Doe",
+          first_name: "Jane",
+          last_name:  "Doe",
+          image:      "https://kc.example.com/jane.png",
         )
       )
     end
@@ -195,11 +195,73 @@ RSpec.describe User, type: :model do
       expect { User.from_omniauth(auth) }.not_to change(User, :count)
     end
 
+    it "populates first_name, last_name and avatar_url on initial creation" do
+      user = User.from_omniauth(auth)
+      expect(user.first_name).to eq("Jane")
+      expect(user.last_name).to  eq("Doe")
+      expect(user.avatar_url).to eq("https://kc.example.com/jane.png")
+    end
+
+    it "assigns a username derived from the email local-part with _sso suffix" do
+      user = User.from_omniauth(auth)
+      expect(user.username).to eq("jane_sso")
+    end
+
     it "syncs the name on re-login" do
       user = User.from_omniauth(auth)
       auth.info.name = "Jane Updated"
       User.from_omniauth(auth)
       expect(user.reload.name).to eq("Jane Updated")
+    end
+
+    it "syncs first_name and last_name on re-login" do
+      user = User.from_omniauth(auth)
+      auth.info.first_name = "Janine"
+      auth.info.last_name  = "Updated"
+      User.from_omniauth(auth)
+      expect(user.reload.first_name).to eq("Janine")
+      expect(user.reload.last_name).to  eq("Updated")
+    end
+
+    it "syncs avatar_url on re-login" do
+      user = User.from_omniauth(auth)
+      auth.info.image = "https://kc.example.com/new.png"
+      User.from_omniauth(auth)
+      expect(user.reload.avatar_url).to eq("https://kc.example.com/new.png")
+    end
+
+    context "when name is blank in the token" do
+      before { auth.info.name = nil }
+
+      it "falls back to the email local-part as the name" do
+        user = User.from_omniauth(auth)
+        expect(user.name).to eq("jane")
+      end
+    end
+
+    context "when a username collision would otherwise occur" do
+      before { create(:user, username: "jane_sso") }
+
+      it "assigns a unique username with a counter suffix" do
+        user = User.from_omniauth(auth)
+        expect(user.username).to eq("jane_sso_2")
+      end
+
+      it "keeps incrementing until the username is unique" do
+        create(:user, username: "jane_sso_2")
+        user = User.from_omniauth(auth)
+        expect(user.username).to eq("jane_sso_3")
+      end
+    end
+
+    context "when the provider/uid combination is not found but email already exists" do
+      # If a local user later authenticates via SSO with a different provider uid,
+      # from_omniauth creates a second user — document this edge-case behaviour.
+      before { create(:user, email: "jane@example.com") }
+
+      it "raises an error due to the unique email constraint" do
+        expect { User.from_omniauth(auth) }.to raise_error(ActiveRecord::RecordInvalid)
+      end
     end
   end
 end
