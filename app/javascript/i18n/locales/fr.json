@@ -334,7 +334,9 @@
       "resolvedSuccess": "Groupe de doublons résolu.",
       "keptAllSuccess": "Tous les assets conservés.",
       "deletedSuccess": "{{count}} asset(s) déplacé(s) dans la corbeille.",
-      "loading": "Chargement des doublons…"
+      "loading": "Chargement des doublons…",
+      "deleting": "Suppression…",
+      "confirmDelete": "Supprimer {{count}} élément(s) ?"
     },
     "settings": {
       "title": "Paramètres du gestionnaire de doublons",

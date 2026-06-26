@@ -34,6 +34,7 @@
                 </h5>
                 <ul class="nav-group-section-items">
                   <li><a href="#query-assetDetail">assetDetail</a></li>
+                  <li><a href="#query-binAiSuggestions">binAiSuggestions</a></li>
                   <li><a href="#query-binPurgeStatus">binPurgeStatus</a></li>
                   <li><a href="#query-binRetentionPolicy">binRetentionPolicy</a></li>
                   <li><a href="#query-binStats">binStats</a></li>
@@ -83,6 +84,7 @@
             <ul class="nav-group-items">
               <li><a href="#definition-Asset">Asset</a></li>
               <li><a href="#definition-BigInt">BigInt</a></li>
+              <li><a href="#definition-BinAiSuggestion">BinAiSuggestion</a></li>
               <li><a href="#definition-BinItemInput">BinItemInput</a></li>
               <li><a href="#definition-BinPurgeStatus">BinPurgeStatus</a></li>
               <li><a href="#definition-BinRetentionPolicy">BinRetentionPolicy</a></li>
@@ -205,6 +207,46 @@
                 <div class="example-section example-section-is-code operation-response-example">
                   <h5>Response</h5>
                   <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"data"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-attr">"assetDetail"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="query-binAiSuggestions" class="operation operation-query" data-traverse-target="query-binAiSuggestions">
+            <div class="operation-group-name">
+              <a href="#group-Operations-Queries">Queries</a>
+            </div>
+            <h2 class="operation-heading ">
+              <code>binAiSuggestions</code>
+            </h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>AI-assisted suggestions for assets that are safe to permanently purge (admin only).</p>
+                </div>
+              </div>
+            </div>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-response doc-copy-section">
+                  <h5>Response</h5>
+                  <p> Returns <a href="#definition-BinAiSuggestion"><code>[BinAiSuggestion!]!</code></a>
+                  </p>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <h4 class="example-heading">Example</h4>
+                <div class="example-section example-section-is-code operation-query-example">
+                  <h5>Query</h5>
+                  <pre><code class="hljs language-gql"><span class="hljs-symbol"><span class="hljs-keyword">query</span> binAiSuggestions <span class="hljs-tag">{
+  <span class="hljs-symbol">binAiSuggestions</span>
+}</span></span>
+</code></pre>
+                </div>
+                <div class="example-section example-section-is-code operation-response-example">
+                  <h5>Response</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"data"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-attr">"binAiSuggestions"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span>
 </code></pre>
                 </div>
               </div>
@@ -2119,6 +2161,27 @@
                 <div class="definition-description doc-copy-section">
                   <h5>Description</h5>
                   <p>Represents non-fractional signed whole numeric values. Since the value may exceed the size of a 32-bit integer, it&#39;s encoded as a string.</p>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <div class="example-section example-section-is-code">
+                  <h5>Example</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="definition-BinAiSuggestion" class="definition definition-object" data-traverse-target="definition-BinAiSuggestion">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">BinAiSuggestion</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>An AI-assisted suggestion for permanently purging a trashed asset.</p>
                 </div>
               </div>
               <div class="doc-examples">

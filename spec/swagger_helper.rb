@@ -62,9 +62,12 @@ RSpec.configure do |config|
 
   config.openapi_format = :yaml
 
-  # Setting rswag_dry_run = false ensures the swagger formatter fires
-  # example_group_finished callbacks and actually captures path definitions.
-  # Tests that fail (e.g., auth failures) still produce valid YAML output
-  # because the formatter reads spec DSL metadata, not test assertions.
-  config.rswag_dry_run = false
+  # rswag_dry_run controls whether run_test! actually makes HTTP requests:
+  #   true  — run_test! is a no-op; YAML is generated from DSL metadata only.
+  #            Safe for `make swagger-docs` (doc generation).
+  #   false — run_test! fires real HTTP requests and validates response codes.
+  #            Used by `make test-api-docs` (API validation).
+  #
+  # Control via env: RSWAG_DRY_RUN=0 → execute;  anything else (or absent) → dry-run.
+  config.rswag_dry_run = ENV.fetch('RSWAG_DRY_RUN', '1') != '0'
 end

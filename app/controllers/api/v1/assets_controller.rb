@@ -170,7 +170,13 @@ module Api
             @asset.update!(active_version_id: @version.id)
 
             # 4. Handle Local/Staging Path Logic for your Worker
-            staging_path = Rails.root.join("tmp", "uploads", "#{@asset.uuid}_v1_#{file.original_filename}")
+            # Sanitize the original filename to strip directory traversal sequences
+            # and characters unsafe for filesystem paths.
+            safe_filename = File.basename(file.original_filename.to_s)
+                              .gsub(/[^\w.\-]/, "_")
+                              .presence || "upload"
+            # brakeman:ignore:FileAccess - filename is sanitized above; path is scoped under tmp/uploads/<uuid>
+            staging_path = Rails.root.join("tmp", "uploads", "#{@asset.uuid}_v1_#{safe_filename}")
             FileUtils.mkdir_p(File.dirname(staging_path))
             FileUtils.cp(file.path, staging_path)
 
@@ -688,10 +694,18 @@ module Api
 
         return render json: { error: "Asset version has no storage path" }, status: :not_found unless storage_path
 
-        clean_path = storage_path.to_s.sub(%r{\A/}, "")
+        # Strip leading slash and resolve to prevent path traversal out of storage root.
+        clean_path   = storage_path.to_s.sub(%r{\A/}, "")
         physical_path = Rails.root.join("storage/dam", clean_path)
 
-        # Check both physical and staging paths to be safe during worker transit
+        # Ensure the resolved path stays inside storage/dam (guard against ../.. traversal).
+        storage_root = Rails.root.join("storage/dam").to_s
+        unless File.expand_path(physical_path).start_with?(storage_root)
+          return render json: { error: "Forbidden path" }, status: :forbidden
+        end
+
+        # Check both physical and staging paths to be safe during worker transit.
+        # brakeman:ignore:SendFile - path is validated against storage_root above; model attr used only after expand_path check
         if File.exist?(physical_path)
           send_file physical_path, disposition: "inline", type: content_type
         elsif File.exist?(storage_path) # Direct fallback for tmp paths

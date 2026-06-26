@@ -91,20 +91,26 @@ module Reports
     def time_series
       # Assets created per day in range
       assets_by_day = ActiveRecord::Base.connection.select_all(
-        "SELECT DATE(created_at) AS date, COUNT(*) AS count
-         FROM assets
-         WHERE created_at >= '#{@date_from.to_s(:db)}' AND deleted_at IS NULL
-         GROUP BY DATE(created_at)
-         ORDER BY date"
+        ActiveRecord::Base.sanitize_sql_array([
+          "SELECT DATE(created_at) AS date, COUNT(*) AS count
+           FROM assets
+           WHERE created_at >= ? AND deleted_at IS NULL
+           GROUP BY DATE(created_at)
+           ORDER BY date",
+          @date_from,
+        ])
       ).map { |r| { date: r["date"].to_s, count: r["count"].to_i } }
 
       # Workflows completed per day
       workflows_by_day = ActiveRecord::Base.connection.select_all(
-        "SELECT DATE(completed_at) AS date, COUNT(*) AS count
-         FROM workflow_instances
-         WHERE completed_at >= '#{@date_from.to_s(:db)}' AND status = 'approved'
-         GROUP BY DATE(completed_at)
-         ORDER BY date"
+        ActiveRecord::Base.sanitize_sql_array([
+          "SELECT DATE(completed_at) AS date, COUNT(*) AS count
+           FROM workflow_instances
+           WHERE completed_at >= ? AND status = 'approved'
+           GROUP BY DATE(completed_at)
+           ORDER BY date",
+          @date_from,
+        ])
       ).map { |r| { date: r["date"].to_s, count: r["count"].to_i } }
 
       # Merge by date
@@ -149,10 +155,13 @@ module Reports
       ]
 
       by_user = ActiveRecord::Base.connection.select_all(
-        "SELECT u.email, COUNT(a.id) AS count
-         FROM assets a JOIN users u ON a.user_id = u.id
-         WHERE a.deleted_at IS NULL AND a.created_at >= '#{@date_from.to_s(:db)}'
-         GROUP BY u.email ORDER BY count DESC LIMIT 10"
+        ActiveRecord::Base.sanitize_sql_array([
+          "SELECT u.email, COUNT(a.id) AS count
+           FROM assets a JOIN users u ON a.user_id = u.id
+           WHERE a.deleted_at IS NULL AND a.created_at >= ?
+           GROUP BY u.email ORDER BY count DESC LIMIT 10",
+          @date_from,
+        ])
       ).map { |r| { user: r["email"]&.split("@")&.first, count: r["count"].to_i } }
 
       {
@@ -176,9 +185,12 @@ module Reports
 
       # 1. Upload spike detection
       daily_counts = ActiveRecord::Base.connection.select_all(
-        "SELECT DATE(created_at) AS date, COUNT(*) AS cnt
-         FROM assets WHERE created_at >= '#{30.days.ago.to_s(:db)}' AND deleted_at IS NULL
-         GROUP BY DATE(created_at) ORDER BY date"
+        ActiveRecord::Base.sanitize_sql_array([
+          "SELECT DATE(created_at) AS date, COUNT(*) AS cnt
+           FROM assets WHERE created_at >= ? AND deleted_at IS NULL
+           GROUP BY DATE(created_at) ORDER BY date",
+          30.days.ago,
+        ])
       ).map { |r| r["cnt"].to_i }
 
       if daily_counts.size >= 7

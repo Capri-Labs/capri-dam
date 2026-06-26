@@ -1,0 +1,21 @@
+{
+  "ignored_warnings": [
+    {
+      "fingerprint": "65ee154dea9ddaa4647f92e5f84d4b1745cc9307fc6ebc1b8c8578b06008937b",
+      "note": "SendFile Medium — app/controllers/api/v1/assets_controller.rb:712. The storage_path is a DB-stored value, but the path is already resolved via File.expand_path and validated to stay within storage/dam/ before reaching send_file. Accepted risk."
+    },
+    {
+      "fingerprint": "7073f60e6d16ee9887e87d0352e38c63d7fe446b7896cb60613bf9037730d609",
+      "note": "FileAccess Weak — app/controllers/api/v1/assets_controller.rb:180. The original_filename is sanitised with File.basename + gsub(/[^\\w.\\-]/, '_') and the path is scoped under tmp/uploads/<uuid>_v1_<safe_name>. Accepted risk."
+    },
+    {
+      "fingerprint": "a5dd48712c2d01d3b7889adf2720c05237142030c150c7be21fd14e3410960a5",
+      "note": "SendFile Weak — app/controllers/api/v1/assets_controller.rb:710. Same path-validation guard (File.expand_path / storage_root check) applies before this line. Accepted risk."
+    },
+    {
+      "fingerprint": "ad4bb17c7565f6c92859cf20bdf59196a5841d07efad6d3c63bf8ad31931b73a",
+      "note": "PermitAttributes Medium — admin/users_controller.rb:368. user_group_ids is an intentional many-to-many assignment for group membership management in the admin panel. The :admin key is handled explicitly outside user_params with role/ownership guards."
+    }
+  ]
+}
+

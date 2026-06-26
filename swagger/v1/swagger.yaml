@@ -7073,6 +7073,7 @@ paths:
                       enum:
                       - active
                       - inactive
+                      - draft
                     trigger_type:
                       type: string
                       enum:
@@ -7080,7 +7081,8 @@ paths:
                       - manual
                     graph_data:
                       type: object
-                      description: Deeply nested React Flow JSON structure
+                      description: React Flow canvas JSON
+                      nullable: true
                     workflow_steps:
                       type: array
                       items:
@@ -7206,7 +7208,7 @@ paths:
       description: Workflow ID
       required: true
       schema:
-        type: string
+        type: integer
     get:
       summary: Retrieves details of a specific workflow definition
       tags:
@@ -7227,10 +7229,20 @@ paths:
                     type: string
                   graph_data:
                     type: object
+                    nullable: true
                   workflow_steps:
                     type: array
                     items:
                       type: object
+        '404':
+          description: workflow not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
     patch:
       summary: Updates an existing workflow definition
       tags:
@@ -7256,7 +7268,7 @@ paths:
                         items:
                           type: object
         '422':
-          description: update failed
+          description: update failed — validation error
           content:
             application/json:
               schema:
@@ -7314,8 +7326,8 @@ paths:
                     type: boolean
                   message:
                     type: string
-        '408':
-          description: deletion failed (using search_timeout status)
+        '422':
+          description: deletion failed
           content:
             application/json:
               schema:
@@ -7334,7 +7346,7 @@ paths:
       description: Workflow ID
       required: true
       schema:
-        type: string
+        type: integer
     patch:
       summary: Activates or deactivates a workflow definition
       tags:
@@ -7343,7 +7355,7 @@ paths:
       - Bearer: []
       responses:
         '200':
-          description: toggle failed
+          description: status toggled successfully
           content:
             application/json:
               schema:
@@ -7356,6 +7368,20 @@ paths:
                     enum:
                     - active
                     - inactive
+                    - draft
+        '422':
+          description: toggle failed — could not save
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  errors:
+                    type: array
+                    items:
+                      type: string
 servers:
 - url: http://localhost:3000
   description: Local Development Server

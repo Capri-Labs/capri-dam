@@ -108,8 +108,8 @@ setup: install db-setup ## The 'One Command' to rule them all
 swagger-docs: ## Generate Swagger/OpenAPI REST docs (spec/requests/api → swagger/v1/swagger.yaml)
 	@echo "--- Preparing test database ---"
 	RAILS_ENV=test bundle exec rails db:test:prepare
-	@echo "--- Generating OpenAPI Spec (spec/requests/api/**/*_spec.rb → swagger/v1/swagger.yaml) ---"
-	RAILS_ENV=test RUN_API_DOCS=1 RSWAG_DRY_RUN=0 bundle exec rails rswag:specs:swaggerize
+	@echo "--- Generating OpenAPI Spec (dry-run: DSL metadata only, no HTTP requests) ---"
+	RAILS_ENV=test RUN_API_DOCS=1 RSWAG_DRY_RUN=1 bundle exec rails rswag:specs:swaggerize
 	@echo "\033[32mDone. View at: http://localhost:3000/api/rest\033[0m"
 
 graphql-schema: ## Dump the live GraphQL SDL to swagger/graphql/schema.graphql
@@ -215,8 +215,8 @@ test: ## Run the full backend RSpec suite (models, requests, system)
 test-api-docs: ## Run the rswag OpenAPI/Swagger doc specs (excluded from the default run)
 	@echo "--- Preparing test database ---"
 	RAILS_ENV=test bundle exec rails db:test:prepare
-	@echo "--- Backend: rswag API-doc specs ---"
-	RUN_API_DOCS=1 bundle exec rspec spec/requests --format progress 2>&1
+	@echo "--- Backend: rswag API-doc specs (live HTTP validation) ---"
+	RAILS_ENV=test RUN_API_DOCS=1 RSWAG_DRY_RUN=0 bundle exec rspec spec/requests --format progress 2>&1
 
 test-graphql: ## Run the GraphQL endpoint request specs
 	@echo "--- Preparing test database ---"

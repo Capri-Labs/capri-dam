@@ -334,7 +334,9 @@
       "resolvedSuccess": "Grupo de duplicatas resolvido.",
       "keptAllSuccess": "Todos os ativos mantidos.",
       "deletedSuccess": "{{count}} ativo(s) movido(s) para a lixeira.",
-      "loading": "Carregando duplicatas..."
+      "loading": "Carregando duplicatas...",
+      "deleting": "Excluindo…",
+      "confirmDelete": "Excluir {{count}} ativo(s)?"
     },
     "settings": {
       "title": "Configurações do gerenciador de duplicatas",

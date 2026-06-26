@@ -334,7 +334,9 @@
       "resolvedSuccess": "重复组已解决。",
       "keptAllSuccess": "已保留所有资产。",
       "deletedSuccess": "{{count}} 个资产已移至回收站。",
-      "loading": "正在加载重复项..."
+      "loading": "正在加载重复项...",
+      "deleting": "删除中…",
+      "confirmDelete": "确认删除 {{count}} 个资产？"
     },
     "settings": {
       "title": "重复管理器设置",

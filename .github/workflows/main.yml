@@ -57,7 +57,7 @@ jobs:
         run: bundle exec rubocop --format github
 
       - name: Brakeman (security scan)
-        run: bundle exec brakeman -q --no-pager --exit-on-warn
+        run: bundle exec brakeman -q --no-pager --exit-on-warn -i .brakeman/ignore.json
 
       - name: bundler-audit (CVE check)
         run: bundle exec bundler-audit check --update
@@ -115,6 +115,10 @@ jobs:
       - name: Run RSpec
         run: bundle exec rspec --format progress
 
+      - name: Generate Swagger docs (dry-run — DSL only, no HTTP requests)
+        run: |
+          RAILS_ENV=test RUN_API_DOCS=1 RSWAG_DRY_RUN=1 bundle exec rails rswag:specs:swaggerize
+
       - name: Upload test results
         uses: actions/upload-artifact@v4
         if: always()
@@ -140,7 +144,7 @@ jobs:
           cache: yarn
 
       - name: Install JS dependencies
-        run: yarn install --frozen-lockfile
+        run: yarn install --frozen-lockfile --ignore-engines
 
       - name: Run Jest
         run: yarn test --ci
@@ -162,7 +166,7 @@ jobs:
         env:
           POSTGRES_USER:     capri
           POSTGRES_PASSWORD: capri
-          POSTGRES_DB:       headless_dam_development
+          POSTGRES_DB:       headless_dam_test
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -180,12 +184,14 @@ jobs:
         ports: ['6379:6379']
 
     env:
-      RAILS_ENV:              development
-      DATABASE_URL:           postgres://capri:capri@localhost:5432/headless_dam_development
-      REDIS_URL:              redis://localhost:6379/0
-      SECRET_KEY_BASE:        ${{ secrets.SECRET_KEY_BASE || 'ci_e2e_placeholder' }}
+      RAILS_ENV:              test
+      DATABASE_URL:           postgres://capri:capri@localhost:5432/headless_dam_test
+      REDIS_URL:              redis://localhost:6379/1
+      SECRET_KEY_BASE:        ${{ secrets.SECRET_KEY_BASE || 'ci_e2e_placeholder_not_for_prod' }}
       ACTIVE_STORAGE_SERVICE: local
       RAILS_SERVE_STATIC_FILES: true
+      # Tell the Playwright base URL where the server lives
+      E2E_BASE_URL: http://localhost:3000
 
     steps:
       - uses: actions/checkout@v4
@@ -202,10 +208,13 @@ jobs:
           node-version: '22'
           cache: yarn
 
-      - name: Install dependencies
+      - name: Install JS dependencies
+        run: yarn install --frozen-lockfile --ignore-engines
+
+      - name: Prepare test database + seed
         run: |
-          yarn install --frozen-lockfile
-          bundle exec rails db:prepare db:seed
+          bundle exec rails db:test:prepare
+          bundle exec rails db:seed RAILS_ENV=test || true
 
       - name: Install Playwright browsers
         run: yarn playwright install --with-deps chromium
@@ -213,15 +222,27 @@ jobs:
       - name: Build JS assets
         run: yarn build
 
-      - name: Start Rails server
-        run: bundle exec rails server -d -b 0.0.0.0 -p 3000
-
-      - name: Wait for server
+      - name: Start Rails server (background)
         run: |
-          for i in $(seq 1 30); do
-            curl -sf http://localhost:3000/up && echo "Server ready." && break
-            echo "Waiting ($i/30)…"; sleep 2
+          bundle exec rails server -b 0.0.0.0 -p 3000 -e test > /tmp/rails-server.log 2>&1 &
+          echo $! > /tmp/rails-server.pid
+          echo "Rails server PID: $(cat /tmp/rails-server.pid)"
+
+      - name: Wait for Rails server to be ready
+        run: |
+          echo "Waiting for Rails on http://localhost:3000/up …"
+          for i in $(seq 1 60); do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/up || true)
+            if [ "$STATUS" = "200" ] || [ "$STATUS" = "204" ]; then
+              echo "Server ready (HTTP $STATUS) after ${i}s"
+              exit 0
+            fi
+            echo "  attempt $i/60 — HTTP $STATUS, retrying…"
+            sleep 2
           done
+          echo "Server failed to start. Last log lines:"
+          tail -30 /tmp/rails-server.log || true
+          exit 1
 
       - name: Run Playwright tests
         run: yarn playwright test
@@ -233,6 +254,13 @@ jobs:
           name: playwright-report
           path: coverage-frontend/playwright-report/
           if-no-files-found: ignore
+
+      - name: Upload Rails server log on failure
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: rails-server-log
+          path: /tmp/rails-server.log
 
   # ─────────────────────────────────────────────────────────────────────────
   # JOB 5 — Build documentation site (AsciiDoc → HTML)

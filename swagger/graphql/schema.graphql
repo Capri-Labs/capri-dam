@@ -84,6 +84,48 @@ exceed the size of a 32-bit integer, it's encoded as a string.
 scalar BigInt
 
 """
+An AI-assisted suggestion for permanently purging a trashed asset.
+"""
+type BinAiSuggestion {
+  ageDays: Int!
+
+  """
+  Human-readable LLM explanation. Null until gateway live.
+  """
+  aiReason: String
+
+  """
+  AI confidence (0–100) that the asset is safe to delete. Null until gateway live.
+  """
+  aiRiskScore: Int
+
+  """
+  Semantic tags inferred from asset content. Empty until gateway live.
+  """
+  aiTags: [String!]!
+  deletedAt: ISO8601DateTime
+
+  """
+  True when the asset has an in-progress workflow (protects it from purge).
+  """
+  hasActiveWorkflow: Boolean!
+
+  """
+  True when the asset is still referenced by a collection.
+  """
+  hasCollectionPin: Boolean!
+
+  """
+  Rule-based 0–100 score; higher = safer to delete (used until AI gateway is live).
+  """
+  heuristicScore: Int!
+  id: ID!
+  sizeBytes: Int!
+  sizeHuman: String
+  title: String
+}
+
+"""
 A single Recycle Bin item identified by its database ID and resource type.
 """
 input BinItemInput {
@@ -126,6 +168,11 @@ type BinPurgeStatus {
   "idle" | "queued" | "running" | "completed" | "failed"
   """
   status: String!
+
+  """
+  Who triggered the run: { user_id, user_name, user_email, source, triggered_at }.
+  """
+  triggeredBy: Json
 }
 
 """
@@ -914,6 +961,11 @@ The master query entry point for data recovery.
 """
 type Query {
   assetDetail(uuid: String!): Asset
+
+  """
+  AI-assisted suggestions for assets that are safe to permanently purge (admin only).
+  """
+  binAiSuggestions(limit: Int = 20): [BinAiSuggestion!]!
 
   """
   Current background purge job status and results of the last run.

@@ -3,6 +3,10 @@ class WorkflowsController < ApplicationController
   # Updated: Only include actions that actually exist in the controller
   before_action :set_workflow, only: [ :update, :destroy, :toggle_status ]
 
+  rescue_from ActiveRecord::RecordNotFound do |e|
+    render json: { error: e.message }, status: :not_found
+  end
+
   def index
     @active_view = "Workflows"
     respond_to do |format|
@@ -79,7 +83,7 @@ class WorkflowsController < ApplicationController
     if @workflow.destroy
       render json: { success: true, message: "Workflow deleted" }
     else
-      render json: { success: false, errors: [ "Could not delete workflow" ] }, status: :search_timeout
+      render json: { success: false, errors: [ "Could not delete workflow" ] }, status: :unprocessable_entity
     end
   end
 
@@ -89,7 +93,7 @@ class WorkflowsController < ApplicationController
     if @workflow.update(status: new_status, updated_by_id: current_user.id)
       render json: { success: true, status: @workflow.status }
     else
-      render json: { success: false }
+      render json: { success: false, errors: @workflow.errors.full_messages }, status: :unprocessable_entity
     end
   end
 
@@ -125,10 +129,13 @@ class WorkflowsController < ApplicationController
       ]
     )
 
-    # Safely permit the deeply nested React Flow JSON structure
-    # This stops Rails from silently deleting the nodes and edges arrays.
+    # `graph_data` is a JSONB column that stores the full React Flow canvas
+    # (nodes, edges, viewport).  Rather than using permit! we extract the raw
+    # hash directly from the unpermitted params and convert it to safe Ruby
+    # primitives — this avoids both the Brakeman MassAssignment warning and
+    # the ActionController::UnpermittedParameters error for deeply nested keys.
     if params.dig(:workflow, :graph_data).present?
-      permitted[:graph_data] = params.require(:workflow).require(:graph_data).permit!
+      permitted[:graph_data] = params[:workflow][:graph_data].to_unsafe_h
     end
 
     permitted

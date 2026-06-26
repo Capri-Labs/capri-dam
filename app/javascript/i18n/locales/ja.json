@@ -334,7 +334,9 @@
       "resolvedSuccess": "重複グループが解決されました。",
       "keptAllSuccess": "すべてのアセットを保持しました。",
       "deletedSuccess": "{{count}} 個のアセットをごみ箱に移動しました。",
-      "loading": "重複を読み込み中…"
+      "loading": "重複を読み込み中…",
+      "deleting": "削除中…",
+      "confirmDelete": "{{count}} 件のアセットを削除しますか？"
     },
     "settings": {
       "title": "重複マネージャー設定",

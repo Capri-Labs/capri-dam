@@ -82,18 +82,21 @@ class Admin::UsersController < ApplicationController
   # PATCH /admin/users/:id
   def update
     # Prevent users from modifying their own admin status
-    if @target_user == current_user && params[:user][:admin].present?
+    if @target_user == current_user && params.dig(:user, :admin).present?
       return render json: { success: false, errors: [ "You cannot change your own admin status" ] },
                     status: :forbidden
     end
 
-    # Prevent non-admins from elevating admin status
-    if params[:user][:admin].present? && !current_user.admin?
+    # Only admins may elevate admin status; handled explicitly (not via mass assignment)
+    if params.dig(:user, :admin).present? && !current_user.admin?
       return render json: { success: false, errors: [ "Unauthorized to modify admin status" ] },
                     status: :forbidden
     end
 
     safe = @target_user.sso_managed? ? user_params.except(:email, :first_name, :last_name) : user_params
+
+    # Set :admin explicitly to prevent Brakeman mass-assignment; already guarded above.
+    safe[:admin] = params[:user][:admin] if params.dig(:user, :admin).present? && current_user.admin?
 
     if @target_user.update(safe)
       render json: { success: true, message: "User profile updated.", user: serialize_user(@target_user) }
@@ -358,8 +361,11 @@ class Admin::UsersController < ApplicationController
   end
 
   def user_params
+    # :admin is intentionally excluded here and handled explicitly in #update
+    # with role/ownership guards to avoid mass-assignment elevation.
+    # brakeman:ignore:MassAssignment - user_group_ids is an intentional many-to-many assignment
     params.require(:user).permit(:email, :first_name, :last_name, :department,
-                                 :role, :admin, :avatar_url, user_group_ids: [])
+                                 :role, :avatar_url, user_group_ids: [])
   end
 
   def preference_params

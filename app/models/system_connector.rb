@@ -8,7 +8,7 @@ class SystemConnector < ApplicationRecord
   # FTP connectors use a bare hostname (no http scheme), so we only enforce
   # URL format for HTTP-based providers.
   validates :endpoint, presence: true,
-            format: { with: /\Ahttps?:\/\/.+/i, message: "must be a valid http(s) URL" },
+            format: { with: /\Ahttps?:\/\/.+\z/i, message: "must be a valid http(s) URL" },
             unless: -> { provider_type.to_s == "ftp" }
 
   has_many :ingestion_batches, foreign_key: :connector_id, dependent: :nullify

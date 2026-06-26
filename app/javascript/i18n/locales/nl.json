@@ -334,7 +334,9 @@
       "resolvedSuccess": "Dubbele groep opgelost.",
       "keptAllSuccess": "Alle assets bewaard.",
       "deletedSuccess": "{{count}} asset(s) naar prullenbak verplaatst.",
-      "loading": "Duplicaten laden..."
+      "loading": "Duplicaten laden...",
+      "deleting": "Verwijderen…",
+      "confirmDelete": "{{count}} asset(s) verwijderen?"
     },
     "settings": {
       "title": "Dubbelbeheer-instellingen",

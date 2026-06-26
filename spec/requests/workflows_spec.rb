@@ -16,9 +16,9 @@ RSpec.describe 'Workflows', type: :request do
                    id: { type: :integer },
                    name: { type: :string },
                    description: { type: :string, nullable: true },
-                   status: { type: :string, enum: [ 'active', 'inactive' ] },
+                   status: { type: :string, enum: [ 'active', 'inactive', 'draft' ] },
                    trigger_type: { type: :string, enum: [ 'on_ingest', 'manual' ] },
-                   graph_data: { type: :object, description: 'Deeply nested React Flow JSON structure' },
+                   graph_data: { type: :object, description: 'React Flow canvas JSON', nullable: true },
                    workflow_steps: {
                      type: :array,
                      items: {
@@ -54,8 +54,6 @@ RSpec.describe 'Workflows', type: :request do
               name: { type: :string, example: 'Product Shot Approval' },
               description: { type: :string, example: 'Legal and Art review for new products' },
               trigger_type: { type: :string, enum: [ 'on_ingest', 'manual' ], example: 'on_ingest' },
-
-              #  CRITICAL: Documenting the nested graph data from React Flow
               graph_data: {
                 type: :object,
                 properties: {
@@ -64,8 +62,6 @@ RSpec.describe 'Workflows', type: :request do
                   viewport: { type: :object },
                 },
               },
-
-              #  CRITICAL: Documenting standard Rails nested attributes
               workflow_steps_attributes: {
                 type: :array,
                 items: {
@@ -93,6 +89,7 @@ RSpec.describe 'Workflows', type: :request do
                  success: { type: :boolean },
                  workflow: { type: :object },
                }
+        let(:payload) { { workflow: { name: 'Approval Flow', trigger_type: 'manual' } } }
         run_test!
       end
 
@@ -102,13 +99,14 @@ RSpec.describe 'Workflows', type: :request do
                  success: { type: :boolean },
                  errors: { type: :array, items: { type: :string } },
                }
+        let(:payload) { { workflow: { name: '', trigger_type: 'manual' } } }
         run_test!
       end
     end
   end
 
   path '/workflows/{id}' do
-    parameter name: :id, in: :path, type: :string, description: 'Workflow ID'
+    parameter name: :id, in: :path, type: :integer, description: 'Workflow ID'
 
     # 3. GET /workflows/:id.json
     get 'Retrieves details of a specific workflow definition' do
@@ -121,9 +119,17 @@ RSpec.describe 'Workflows', type: :request do
                properties: {
                  id: { type: :integer },
                  name: { type: :string },
-                 graph_data: { type: :object },
+                 graph_data: { type: :object, nullable: true },
                  workflow_steps: { type: :array, items: { type: :object } },
                }
+        let(:workflow) { FactoryBot.create(:workflow) }
+        let(:id)       { workflow.id }
+        run_test!
+      end
+
+      response '404', 'workflow not found' do
+        schema type: :object, properties: { error: { type: :string } }
+        let(:id) { 0 }
         run_test!
       end
     end
@@ -135,7 +141,6 @@ RSpec.describe 'Workflows', type: :request do
       produces 'application/json'
       security [ Bearer: [] ]
 
-      # Payload structure is the same as POST, adding :_destroy for steps
       parameter name: :payload, in: :body, schema: {
         type: :object,
         properties: {
@@ -167,11 +172,17 @@ RSpec.describe 'Workflows', type: :request do
                  success: { type: :boolean },
                  workflow: { type: :object, properties: { workflow_steps: { type: :array, items: { type: :object } } } },
                }
+        let(:workflow) { FactoryBot.create(:workflow) }
+        let(:id)       { workflow.id }
+        let(:payload)  { { workflow: { name: 'Renamed Approval Flow' } } }
         run_test!
       end
 
-      response '422', 'update failed' do
+      response '422', 'update failed — validation error' do
         schema type: :object, properties: { success: { type: :boolean }, errors: { type: :array, items: { type: :string } } }
+        let(:workflow) { FactoryBot.create(:workflow) }
+        let(:id)       { workflow.id }
+        let(:payload)  { { workflow: { name: '' } } }
         run_test!
       end
     end
@@ -184,19 +195,23 @@ RSpec.describe 'Workflows', type: :request do
 
       response '200', 'workflow deleted' do
         schema type: :object, properties: { success: { type: :boolean }, message: { type: :string } }
+        let(:workflow) { FactoryBot.create(:workflow) }
+        let(:id)       { workflow.id }
         run_test!
       end
 
-      response '408', 'deletion failed (using search_timeout status)' do
-        # Note: Controller oddly returns 408 Search Timeout on failure
+      response '422', 'deletion failed' do
         schema type: :object, properties: { success: { type: :boolean }, errors: { type: :array, items: { type: :string } } }
+        let(:workflow) { FactoryBot.create(:workflow) }
+        let(:id)       { workflow.id }
+        before { allow_any_instance_of(Workflow).to receive(:destroy).and_return(false) } # rubocop:disable RSpec/AnyInstance
         run_test!
       end
     end
   end
 
   path '/workflows/{id}/toggle_status' do
-    parameter name: :id, in: :path, type: :string, description: 'Workflow ID'
+    parameter name: :id, in: :path, type: :integer, description: 'Workflow ID'
 
     # 6. PATCH /workflows/:id/toggle_status
     patch 'Activates or deactivates a workflow definition' do
@@ -208,13 +223,23 @@ RSpec.describe 'Workflows', type: :request do
         schema type: :object,
                properties: {
                  success: { type: :boolean },
-                 status: { type: :string, enum: [ 'active', 'inactive' ] },
+                 status: { type: :string, enum: [ 'active', 'inactive', 'draft' ] },
                }
+        # Create an active workflow with a step, then toggle to inactive.
+        # Toggling inactive→active would trigger `must_have_steps` validation;
+        # toggling active→inactive does not, so no steps are required for the
+        # success path.
+        let(:step)     { FactoryBot.build(:workflow_step) }
+        let(:workflow) { FactoryBot.create(:workflow, status: :active, workflow_steps: [ step ]) }
+        let(:id)       { workflow.id }
         run_test!
       end
 
-      response '200', 'toggle failed' do
-        schema type: :object, properties: { success: { type: :boolean } }
+      response '422', 'toggle failed — could not save' do
+        schema type: :object, properties: { success: { type: :boolean }, errors: { type: :array, items: { type: :string } } }
+        let(:workflow) { FactoryBot.create(:workflow) }
+        let(:id)       { workflow.id }
+        before { allow_any_instance_of(Workflow).to receive(:update).and_return(false) } # rubocop:disable RSpec/AnyInstance
         run_test!
       end
     end

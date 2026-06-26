@@ -69,7 +69,8 @@
     "success": "Erfolg",
     "warning": "Warnung",
     "info": "Info",
-    "copyDismiss": "Kopieren & Schließen"
+    "copyDismiss": "Kopieren & Schließen",
+    "refresh": "Aktualisieren"
   },
   "header": {
     "myProfile": "Mein Profil",
@@ -333,7 +334,9 @@
       "resolvedSuccess": "Duplikatgruppe aufgelöst.",
       "keptAllSuccess": "Alle Assets behalten.",
       "deletedSuccess": "{{count}} Asset(s) in den Papierkorb verschoben.",
-      "loading": "Duplikate werden geladen…"
+      "loading": "Duplikate werden geladen…",
+      "deleting": "Wird gelöscht…",
+      "confirmDelete": "{{count}} Asset(s) löschen?"
     },
     "settings": {
       "title": "Duplikat-Manager-Einstellungen",

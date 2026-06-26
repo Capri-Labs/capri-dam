@@ -334,7 +334,9 @@
       "resolvedSuccess": "중복 그룹이 해결되었습니다.",
       "keptAllSuccess": "모든 자산을 유지했습니다.",
       "deletedSuccess": "{{count}}개 자산이 휴지통으로 이동되었습니다.",
-      "loading": "중복 로딩 중..."
+      "loading": "중복 로딩 중...",
+      "deleting": "삭제 중…",
+      "confirmDelete": "{{count}}개의 자산을 삭제하시겠습니까?"
     },
     "settings": {
       "title": "중복 관리자 설정",

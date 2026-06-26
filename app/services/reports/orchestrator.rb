@@ -6,12 +6,15 @@ module Reports
 
       begin
         # 1. Data Fetching Phase
-        # This delegates to a separate class that builds the SQL query based on parameters
         raw_data = Reports::DataFetcher.fetch(snapshot)
 
-        # 2. Strategy Routing Phase
-        # Dynamically instantiate the correct generator (e.g., Reports::Generators::Csv)
-        generator_class = "Reports::Generators::#{snapshot.format.capitalize}".constantize
+        # 2. Strategy Routing Phase — explicit case avoids unsafe constantize / const_get.
+        generator_class = case snapshot.format.to_s.downcase
+        when "csv"  then Reports::Generators::Csv
+        when "xlsx" then Reports::Generators::Xlsx
+        when "pdf"  then Reports::Generators::Pdf
+        else raise ArgumentError, "Unsupported report format: #{snapshot.format}"
+        end
         generator = generator_class.new(raw_data, snapshot)
 
         # 3. Generation Phase

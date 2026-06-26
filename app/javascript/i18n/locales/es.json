@@ -334,7 +334,9 @@
       "resolvedSuccess": "Grupo de duplicados resuelto.",
       "keptAllSuccess": "Todos los activos conservados.",
       "deletedSuccess": "{{count}} activo(s) movido(s) a la papelera.",
-      "loading": "Cargando duplicados..."
+      "loading": "Cargando duplicados...",
+      "deleting": "Eliminando…",
+      "confirmDelete": "¿Eliminar {{count}} activo(s)?"
     },
     "settings": {
       "title": "Configuración del gestor de duplicados",
