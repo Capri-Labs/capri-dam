@@ -1,0 +1,51 @@
+# Pre-commit configuration — https://pre-commit.com
+#
+# Optional, framework-based alternative/complement to the bespoke git hook
+# installed via `make install-hooks`.
+#
+# Setup:
+#   pip install pre-commit        # or: brew install pre-commit
+#   pre-commit install            # install the git hook
+#   pre-commit run --all-files    # run against the whole repo once
+#
+# Bypass a single commit (not recommended): git commit --no-verify
+
+minimum_pre_commit_version: "3.5.0"
+default_stages: [pre-commit]
+
+repos:
+  # ── Generic hygiene ─────────────────────────────────────────────────────────
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: '\.md$'      # Markdown uses trailing spaces for hard breaks
+      - id: end-of-file-fixer
+      - id: mixed-line-ending
+        args: ["--fix=lf"]
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: ["--maxkb=1024"]
+      - id: check-yaml
+        exclude: '^config/credentials\.yml\.enc$'
+      - id: check-json
+      - id: detect-private-key
+
+  # ── Ruby style (matches CI: rubocop-rails-omakase) ──────────────────────────
+  - repo: local
+    hooks:
+      - id: rubocop
+        name: RuboCop (staged Ruby)
+        entry: bundle exec rubocop --force-exclusion
+        language: system
+        types: [ruby]
+        require_serial: true
+
+      # ── Stale-docs guard (reuses the repo's existing script) ────────────────
+      - id: docs-freshness
+        name: REST/GraphQL docs freshness
+        entry: bin/check-docs-freshness
+        language: script
+        pass_filenames: false
+        always_run: true
+

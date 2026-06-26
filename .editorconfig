@@ -1,0 +1,36 @@
+# EditorConfig — https://editorconfig.org
+# Top-most EditorConfig file
+root = true
+
+# Defaults for all files
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 2
+
+# Ruby, ERB, Rake, Gemfile
+[*.{rb,rake,erb}]
+indent_size = 2
+
+[{Gemfile,Rakefile,*.gemspec}]
+indent_size = 2
+
+# JavaScript / JSX / TypeScript / JSON / YAML
+[*.{js,jsx,ts,tsx,json,yml,yaml}]
+indent_size = 2
+
+# Markdown — keep trailing whitespace (it encodes hard line breaks)
+[*.md]
+trim_trailing_whitespace = false
+
+# Makefiles require real tabs
+[Makefile]
+indent_style = tab
+
+# Shell scripts
+[*.sh]
+indent_size = 2
+

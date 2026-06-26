@@ -1,0 +1,39 @@
+# CODEOWNERS
+#
+# These owners are requested for review when someone opens a pull request that
+# modifies matching files. Order matters — the last matching pattern wins.
+# Replace the placeholder handles/teams with your real GitHub org teams.
+#
+# Docs: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owners for everything in the repo
+* @apelluru
+
+# Backend (Rails)
+/app/controllers/               @apelluru
+/app/models/                    @apelluru
+/app/services/                  @apelluru
+/app/graphql/                   @apelluru
+/app/workers/                   @apelluru
+/app/jobs/                      @apelluru
+/db/                            @apelluru
+
+# Frontend (React)
+/app/javascript/                @apelluru
+
+# Infrastructure & CI
+/.github/                       @apelluru
+/Dockerfile                     @apelluru
+/config/                        @apelluru
+/infra/                         @apelluru
+/Makefile                       @apelluru
+
+# Documentation
+/docs/                          @apelluru
+*.md                            @apelluru
+
+# Security-sensitive files require a security review
+/SECURITY.md                    @apelluru
+/Gemfile                        @apelluru
+/config/credentials.yml.enc     @apelluru
+
