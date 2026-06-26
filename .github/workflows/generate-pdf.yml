@@ -114,7 +114,10 @@ jobs:
         run: cp headless-dam-architecture.pdf docs/architecture/output/
 
       - name: Setup GitHub Pages
-        uses: actions/configure-pages@v4
+        uses: actions/configure-pages@v5
+        with:
+          # Auto-enable Pages for this repository if it hasn't been enabled yet.
+          enablement: true
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
