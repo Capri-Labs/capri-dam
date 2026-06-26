@@ -1,0 +1,246 @@
+[[section-testing]]
+= Testing Guide
+
+Capri DAM has a **4-layer test strategy**:
+
+[cols="1,1,3", options="header"]
+|===
+| Layer | Tool | What it covers
+
+| Backend unit + integration | RSpec | Models, service objects, workers, API requests.
+| Frontend unit + component | Jest + Testing Library | React components, context providers, utils.
+| Backend runtime coverage | Coverband | Which Ruby lines are hit by real HTTP traffic.
+| End-to-end | Playwright | Critical user journeys in a real browser.
+|===
+
+== Backend (RSpec)
+
+=== Running tests
+
+[source,bash]
+----
+make test                          # full suite (prepares test DB first)
+bundle exec rspec                  # same, without DB prep
+
+# Focused runs
+bundle exec rspec spec/models/asset_spec.rb
+bundle exec rspec spec/requests/api/v1/assets_spec.rb
+bundle exec rspec spec/services/batch_ingest_service_spec.rb
+bundle exec rspec spec/workers/bin_purge_worker_spec.rb
+----
+
+=== Spec organisation
+
+[source]
+----
+spec/
+  models/          # unit tests for Active Record models
+  requests/        # request specs (REST API + admin endpoints)
+    api/v1/        # one spec per controller (enforced by make check-api-specs)
+    graphql_spec.rb
+  services/        # service object unit tests
+  workers/         # Sidekiq worker unit tests
+  factories/       # FactoryBot factories
+  support/         # shared contexts, helpers, custom matchers
+  system/          # Capybara system tests (DOM-level E2E within RSpec)
+  views/           # view partial specs
+  javascript/      # Jest test root (separate toolchain)
+  e2e/             # Playwright test root (separate toolchain)
+----
+
+=== Factory conventions
+
+[source,ruby]
+----
+# spec/factories/assets.rb
+FactoryBot.define do
+  factory :asset do
+    title       { Faker::Lorem.words(number: 3).join(' ') }
+    description { Faker::Lorem.sentence }
+    status      { :active }
+    association :folder
+    association :created_by, factory: :user
+
+    trait :with_file do
+      after(:build) do |a|
+        a.file.attach(
+          io:           Rails.root.join('spec/fixtures/sample.jpg').open,
+          filename:     'sample.jpg',
+          content_type: 'image/jpeg'
+        )
+      end
+    end
+
+    trait :in_bin do
+      deleted_at { 2.days.ago }
+    end
+  end
+end
+----
+
+=== Request spec pattern
+
+[source,ruby]
+----
+# spec/requests/api/v1/assets_spec.rb
+RSpec.describe 'Assets API', type: :request do
+  let(:user)   { create(:user, role: :contributor) }
+  let(:folder) { create(:folder) }
+  let(:token)  { create(:personal_access_token, user:).plain_token }
+
+  before { create(:folder_policy, folder:, user_group: user.groups.first, can_read: true) }
+
+  describe 'GET /api/v1/assets' do
+    it 'returns paginated assets' do
+      create_list(:asset, 3, folder:)
+      get api_v1_assets_path(folder_id: folder.id),
+          headers: { 'Authorization' => "Bearer #{token}" }
+
+      expect(response).to have_http_status(:ok)
+      expect(json['data'].length).to eq(3)
+    end
+  end
+end
+----
+
+=== Shared helpers
+
+[source,ruby]
+----
+# spec/support/api_helpers.rb
+module ApiHelpers
+  def json = JSON.parse(response.body)
+  def auth_headers(user) = { 'Authorization' => "Bearer #{create_token(user)}" }
+end
+
+RSpec.configure { |c| c.include ApiHelpers, type: :request }
+----
+
+=== Coverage (SimpleCov)
+
+[source,bash]
+----
+make coverage-backend      # runs COVERAGE=true rspec → coverage/backend/index.html
+----
+
+Minimum coverage is enforced in `spec/spec_helper.rb`:
+
+[source,ruby]
+----
+SimpleCov.minimum_coverage 90
+----
+
+== Frontend (Jest + Testing Library)
+
+=== Running tests
+
+[source,bash]
+----
+make test-frontend     # yarn jest
+yarn test:watch        # watch mode
+yarn test:coverage     # with Istanbul → coverage-frontend/unit/
+----
+
+=== Test file locations
+
+[source]
+----
+app/javascript/components/**/*.test.jsx   # co-located component tests
+spec/javascript/                          # shared setup and integration tests
+spec/javascript/setup.js                  # @testing-library/jest-dom matchers
+----
+
+=== Component test pattern
+
+[source,jsx]
+----
+// app/javascript/components/Folders/AssetCard.test.jsx
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { AssetCard } from './AssetCard';
+
+describe('AssetCard', () => {
+  it('renders the asset title', () => {
+    render(<AssetCard asset={{ id: '1', title: 'Hero Banner', contentType: 'image/jpeg' }} />);
+    expect(screen.getByText('Hero Banner')).toBeInTheDocument();
+  });
+
+  it('calls onSelect when clicked', async () => {
+    const onSelect = jest.fn();
+    render(<AssetCard asset={{ id: '1', title: 'Test' }} onSelect={onSelect} />);
+    await userEvent.click(screen.getByRole('button'));
+    expect(onSelect).toHaveBeenCalledWith('1');
+  });
+});
+----
+
+=== Mocking the API
+
+[source,javascript]
+----
+// Use jest.mock for fetch / apiRequest
+jest.mock('../../utils/globalutils', () => ({
+  apiRequest: jest.fn().mockResolvedValue({ data: [] })
+}));
+----
+
+== End-to-End (Playwright)
+
+=== Setup
+
+[source,bash]
+----
+make playwright-install   # installs Chromium binaries (one-time)
+make dev                  # start the server (required)
+yarn playwright test      # run all E2E specs
+----
+
+Config: `playwright.config.js`.  Tests: `spec/e2e/`.
+
+=== Test example
+
+[source,javascript]
+----
+// spec/e2e/upload.spec.js
+import { test, expect } from '@playwright/test';
+
+test('upload an asset and see it in the folder', async ({ page }) => {
+  await page.goto('/');
+  await page.fill('[data-testid="email"]', 'admin@example.com');
+  await page.fill('[data-testid="password"]', 'password');
+  await page.click('[data-testid="login-btn"]');
+
+  await page.click('[data-testid="folder-Marketing"]');
+  const upload = page.locator('[data-testid="upload-zone"]');
+  await upload.setInputFiles('spec/fixtures/sample.jpg');
+  await expect(page.locator('text=sample.jpg')).toBeVisible({ timeout: 10_000 });
+});
+----
+
+=== Coverage (Istanbul via Playwright)
+
+[source,bash]
+----
+make e2e-frontend   # runs Playwright + collects Istanbul coverage
+# → coverage-frontend/e2e/index.html
+----
+
+== Continuous integration
+
+All test suites run in `.github/workflows/main.yml`.
+The CI pipeline runs: RuboCop → Brakeman → bundler-audit → RSpec → Jest → Playwright.
+See <<section-ci>> (`.github/workflows/main.yml`) for the full job graph.
+
+== Quick-reference commands
+
+[source,bash]
+----
+make test                # backend RSpec (full)
+make test-frontend       # frontend Jest
+make test-api-docs       # rswag OpenAPI specs only
+make test-graphql        # GraphQL request specs
+make coverage            # backend + frontend unit coverage
+make e2e                 # Playwright + Coverband E2E coverage
+make test-all            # everything
+----
+

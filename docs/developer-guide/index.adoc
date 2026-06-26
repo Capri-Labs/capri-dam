@@ -1,0 +1,66 @@
+= Capri DAM — Developer Guide
+Ashok Pelluru <apelluru@apache.org>
+v2.0.0, 2026-06-26
+:doctype: book
+:toc: left
+:toclevels: 3
+:sectnums:
+:sectanchors:
+:sectlinks:
+:icons: font
+:experimental:
+:source-highlighter: rouge
+:rouge-style: github
+:imagesdir: ./images
+:!prewrap:
+:lang: en
+:description: Complete developer reference for the Capri DAM — models, APIs, components, auth, storage, workers, workflows, search, and testing.
+:keywords: DAM, developer guide, Ruby on Rails, React, REST, GraphQL, RBAC, Sidekiq
+:stylesdir: ../theme
+:stylesheet: capri.css
+:docinfodir: ..
+:docinfo: shared-head
+
+This guide is the authoritative reference for contributors and integrators working on
+**Capri DAM**.  It covers every layer of the stack — data models, REST and GraphQL APIs,
+React components, authentication and RBAC, storage backends, background workers,
+the workflow engine, semantic search, and the test suite.
+
+ifdef::backend-html5[]
+[.text-right]
+link:../[← Documentation Hub] · link:../architecture/[Architecture Docs]
+endif::backend-html5[]
+
+// ── Sections ──────────────────────────────────────────────────────────────────
+
+include::models.adoc[leveloffset=+1]
+
+include::api-reference.adoc[leveloffset=+1]
+
+include::graphql.adoc[leveloffset=+1]
+
+include::ui-components.adoc[leveloffset=+1]
+
+include::authentication.adoc[leveloffset=+1]
+
+include::storage.adoc[leveloffset=+1]
+
+include::workers-and-jobs.adoc[leveloffset=+1]
+
+include::workflows.adoc[leveloffset=+1]
+
+include::search.adoc[leveloffset=+1]
+
+include::testing.adoc[leveloffset=+1]
+
+ifdef::backend-html5[]
+// Back-to-top button
+++++
+<button id="back-to-top" title="Back to top">&#8679;</button>
+<script>
+  const btn = document.getElementById('back-to-top');
+  window.addEventListener('scroll', () => { btn.classList.toggle('visible', window.scrollY > 400); });
+  btn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+</script>
+++++
+endif::backend-html5[]

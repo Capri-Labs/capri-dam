@@ -1,0 +1,171 @@
+[[section-authentication]]
+= Authentication, Authorisation & RBAC
+
+Capri DAM uses a layered security model:
+
+* **Devise** — local email/password authentication.
+* **OmniAuth + Keycloak** — enterprise SSO via OAuth2/OIDC.
+* **Doorkeeper** — OAuth2 server for programmatic API access.
+* **PersonalAccessToken** — long-lived hashed tokens for CI/scripts.
+* **Group-based RBAC** — hierarchical user groups with `FolderPolicy` ACL overrides.
+
+== Authentication methods
+
+=== Local login
+
+Standard Devise flow. Routes: `POST /users/sign_in`, `DELETE /users/sign_out`,
+`POST /users/password` (reset).
+
+[source,ruby]
+----
+# app/controllers/application_controller.rb
+before_action :authenticate_user!
+----
+
+Force-password-change flag:
+
+[source,ruby]
+----
+user.update!(force_password_change: true)
+# React Login component shows ForcePasswordChange screen on next login.
+----
+
+=== Keycloak SSO
+
+Configured via `OmniAuth::Strategies::Keycloak` in `config/initializers/`.
+
+[source,ruby]
+----
+# config/initializers/omniauth.rb (example)
+Rails.application.config.middleware.use OmniAuth::Builder do
+  provider :keycloak_openid, ENV['KEYCLOAK_CLIENT_ID'],
+           ENV['KEYCLOAK_CLIENT_SECRET'],
+           client_options: { site: ENV['KEYCLOAK_URL'], realm: ENV['KEYCLOAK_REALM'] }
+end
+----
+
+On successful callback, `User` is found-or-created by `provider`+`uid`.
+
+=== Doorkeeper OAuth2
+
+Used by external applications. Token endpoint: `POST /oauth/token` (client credentials or auth-code flow).
+
+[source,http]
+----
+POST /oauth/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=client_credentials&client_id=APP_ID&client_secret=APP_SECRET&scope=read+write
+----
+
+Returns:
+
+[source,json]
+----
+{ "access_token": "abc...", "token_type": "Bearer", "expires_in": 7200 }
+----
+
+=== Personal Access Tokens
+
+Long-lived tokens created by users at `GET /profile` or via the API.
+Stored as a `bcrypt` hash; the plain text is shown once on creation.
+
+[source,http]
+----
+Authorization: Bearer capri_pat_<token>
+----
+
+== RBAC model
+
+=== Role hierarchy
+
+Roles are ordered; each role subsumes the permissions of lower roles.
+
+[cols="1,4", options="header"]
+|===
+| Role | Default permissions
+
+| `viewer` | Browse public folders, view/download permitted assets.
+| `contributor` | Upload and edit metadata in assigned folders.
+| `manager` | All contributor permissions + manage folder policies and metadata schemas.
+| `admin` | All manager permissions + user/group management, system configuration.
+| `super_admin` | All admin permissions + impersonation, dangerous operations (empty bin, purge).
+|===
+
+=== Group hierarchy
+
+`UserGroup` records form a **closure table** tree (`UserGroupClosure`).
+A user in a child group **inherits** the parent group's `FolderPolicy` grants.
+
+[source,ruby]
+----
+user.all_group_ids   # returns own + all ancestor group IDs via closure table
+----
+
+=== FolderPolicy ACL
+
+Every `UserGroup` × `Folder` pair can have an explicit `FolderPolicy` row with
+7 boolean columns.
+
+[cols="1,1,3", options="header"]
+|===
+| Column | Default | Meaning
+
+| `can_read` | false | Browse folder and view asset metadata.
+| `can_upload` | false | Upload new assets.
+| `can_edit_metadata` | false | Modify metadata fields.
+| `can_download` | false | Download master file or rendition.
+| `can_delete` | false | Trash assets.
+| `can_manage` | false | Change folder settings, policies, and schemas.
+| `can_share` | false | Generate share / CDN URLs.
+|===
+
+**Explicit deny wins**: if any policy for the user's groups has a `false` for a
+column, that permission is denied even if another group has `true`.
+
+=== Permission check
+
+[source,ruby]
+----
+user.can?(:download, asset.folder)
+# 1. Aggregates FolderPolicy rows for all user.all_group_ids matching the folder
+# 2. Checks the user's role-level default
+# 3. Returns true only if no explicit deny and at least one grant
+----
+
+== Impersonation
+
+`super_admin` users can impersonate any non-super-admin.
+
+[source,ruby]
+----
+POST /admin/impersonations       # body: { user_id: 42 }
+DELETE /admin/impersonations     # stop session
+----
+
+The `ImpersonationBanner` React component shows a sticky banner during the session.
+All audit logs during impersonation record both `user_id` (impersonated) and `actor_id` (impersonator).
+
+== API authentication middleware
+
+[source,ruby]
+----
+# app/controllers/api/v1/base_controller.rb (conceptual)
+before_action :authenticate_api_user!
+
+def authenticate_api_user!
+  @current_user = doorkeeper_token&.resource_owner ||
+                  PersonalAccessToken.resolve(bearer_token) ||
+                  warden.user
+  head :unauthorized unless @current_user
+end
+----
+
+== Security hardening
+
+* HMAC-signed Fastly IO URLs prevent denial-of-wallet attacks on image transforms.
+* `SecurityAnomalyDetector` (`app/services/security/anomaly_detector.rb`) flags unusual download or bulk-export patterns and quarantines assets if policy thresholds are exceeded.
+* Rate limiting via Rack::Attack (configured in `config/initializers/rack_attack.rb`).
+* Brakeman scans run in CI; `bundle exec brakeman -q` must exit 0.
+* `bundler-audit check --update` verifies Gem CVE floors defined in `Gemfile`.
+

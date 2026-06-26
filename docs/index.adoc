@@ -1,0 +1,117 @@
+= Capri DAM — Documentation Hub
+Ashok Pelluru <apelluru@apache.org>
+v2.0.0, 2026-06-26
+:doctype: article
+:toc!:
+:icons: font
+:experimental:
+:source-highlighter: rouge
+:rouge-style: github
+:lang: en
+:description: Central documentation hub for Capri DAM — a modern, headless Digital Asset Management platform.
+:keywords: DAM, digital asset management, Ruby on Rails, React, headless, API, documentation
+:stylesdir: theme
+:stylesheet: capri.css
+:docinfodir: .
+:docinfo: shared-head
+
+ifdef::backend-html5[]
+++++
+<style>
+  .hero {
+    background: linear-gradient(135deg, #27408B 0%, #4472C4 60%, #2F6690 100%);
+    color: #fff;
+    padding: 4rem 2rem 3rem;
+    text-align: center;
+    margin: -1.5rem -2rem 2rem;
+  }
+  .hero h1 { font-size: 2.6rem; margin: 0 0 0.5rem; color: #fff; border: none; }
+  .hero p  { font-size: 1.15rem; opacity: 0.9; max-width: 640px; margin: 0 auto 1.5rem; }
+  .badge { display:inline-block; background:rgba(255,255,255,0.18); border:1px solid rgba(255,255,255,0.35);
+    border-radius:20px; padding:0.25rem 0.9rem; font-size:0.82rem; margin:0.2rem; }
+  .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+    gap:1.5rem; margin:2rem 0; }
+  .card { background:#fff; border:1px solid #D0D7DE; border-radius:10px;
+    padding:1.6rem 1.4rem; text-decoration:none; color:inherit;
+    box-shadow:0 2px 8px rgba(0,0,0,0.06); transition:transform .15s,box-shadow .15s; }
+  .card:hover { transform:translateY(-3px); box-shadow:0 6px 20px rgba(68,114,196,0.18); text-decoration:none; }
+  .card-icon { font-size:2rem; margin-bottom:0.6rem; }
+  .card h2 { font-size:1.2rem; margin:0 0 0.5rem; color:#27408B; border:none; }
+  .card p  { font-size:0.9rem; color:#595959; margin:0; line-height:1.55; }
+  .card .tag { display:inline-block; font-size:0.72rem; background:#EEF3FB; color:#27408B;
+    border-radius:3px; padding:0.1rem 0.4rem; margin-top:0.7rem; }
+  .quick-links { background:#F5F5F5; border-radius:8px; padding:1.2rem 1.5rem; margin:2rem 0; }
+  .quick-links h3 { margin-top:0; font-size:1rem; color:#27408B; }
+  .quick-links a { display:inline-block; margin:0.2rem 0.6rem 0.2rem 0;
+    font-size:0.88rem; color:#4472C4; text-decoration:none; }
+  .quick-links a:hover { text-decoration:underline; }
+  .footer-note { text-align:center; color:#888; font-size:0.82rem; margin-top:3rem; padding-top:1rem;
+    border-top:1px solid #eee; }
+</style>
+
+<div class="hero">
+  <h1>🎨 Capri DAM</h1>
+  <p>Headless Digital Asset Management — edge-first, cloud-native, open source</p>
+  <span class="badge">Ruby on Rails 8.1</span>
+  <span class="badge">React 19 + MUI v9</span>
+  <span class="badge">REST + GraphQL</span>
+  <span class="badge">Apache 2.0</span>
+</div>
+
+<div class="cards">
+
+  <a class="card" href="architecture/">
+    <div class="card-icon">🏛️</div>
+    <h2>Architecture</h2>
+    <p>arc42-format architecture documentation covering system goals, building blocks,
+       runtime views, deployment, design decisions, and quality scenarios.</p>
+    <span class="tag">arc42 · AsciiDoc</span>
+  </a>
+
+  <a class="card" href="developer-guide/">
+    <div class="card-icon">🛠️</div>
+    <h2>Developer Guide</h2>
+    <p>In-depth reference for contributors — domain models, REST &amp; GraphQL APIs,
+       React components, authentication, storage, workers, workflows, search, and testing.</p>
+    <span class="tag">Ruby · React · API</span>
+  </a>
+
+  <a class="card" href="product-info/">
+    <div class="card-icon">📦</div>
+    <h2>Product Info</h2>
+    <p>Feature overview, use cases, licensing, and roadmap for evaluators, customers,
+       and product stakeholders.</p>
+    <span class="tag">Features · Roadmap</span>
+  </a>
+
+</div>
+
+<div class="quick-links">
+  <h3>⚡ Quick links</h3>
+  <a href="developer-guide/models.html">Domain Models</a>
+  <a href="developer-guide/api-reference.html">REST API Reference</a>
+  <a href="developer-guide/graphql.html">GraphQL API</a>
+  <a href="developer-guide/authentication.html">Auth &amp; RBAC</a>
+  <a href="developer-guide/ui-components.html">UI Components</a>
+  <a href="developer-guide/storage.html">Storage &amp; CDN</a>
+  <a href="developer-guide/workers-and-jobs.html">Background Workers</a>
+  <a href="developer-guide/workflows.html">Workflow Engine</a>
+  <a href="developer-guide/search.html">Search &amp; AI</a>
+  <a href="developer-guide/testing.html">Testing</a>
+</div>
+
+<div class="footer-note">
+  Capri DAM &nbsp;·&nbsp; Apache 2.0 licence &nbsp;·&nbsp;
+  <a href="https://github.com/capri-labs/capri-dam">GitHub</a>
+</div>
+++++
+endif::backend-html5[]
+
+ifndef::backend-html5[]
+== Capri DAM Documentation
+
+* link:architecture/index.adoc[Architecture (arc42)]
+* link:developer-guide/index.adoc[Developer Guide]
+* link:product-info/index.adoc[Product Info]
+endif::backend-html5[]
+

@@ -1,0 +1,178 @@
+[[section-storage]]
+= Storage Backends & CDN
+
+Capri DAM follows a **Bring Your Own Storage** (BYOS) model.  The storage
+provider, CDN configuration, and delivery URL strategy are all runtime-configurable
+without code changes.
+
+== Storage architecture overview
+
+[source]
+----
+Browser / API client
+        │
+        ▼
+Rails Application  ──► ActiveStorage presigned PUT ──► Object Storage
+        │                                               (S3 / GCS / Azure / local)
+        │
+        ▼
+Fastly Edge  ──► Fetch master from storage ──► Apply IO transforms ──► Deliver
+----
+
+The origin only serves **signed master asset URLs** and API responses.
+Public / CDN delivery goes directly through the Fastly edge layer.
+
+== Storage adapters
+
+Each `StorageBackend` record has an `adapter` field selecting the implementation.
+Service class: `StorageManager` (`app/services/storage_manager.rb`).
+Adapters in `app/services/storage_adapters/`:
+
+[cols="1,3", options="header"]
+|===
+| Adapter | Class
+
+| `local` | `StorageAdapters::LocalStorageAdapter` — ActiveStorage local disk. Dev/test only.
+| `s3` | `StorageAdapters::S3Adapter` — AWS S3 or any S3-compatible API.
+| `gcs` | `StorageAdapters::GcsAdapter` — Google Cloud Storage.
+| `azure` | `StorageAdapters::AzureAdapter` — Azure Blob Storage.
+| `wasabi` | `StorageAdapters::WasabiAdapter` — Wasabi Hot Cloud Storage.
+| `r2` | `StorageAdapters::R2Adapter` — Cloudflare R2.
+| `spaces` | `StorageAdapters::SpacesAdapter` — DigitalOcean Spaces.
+| `backblaze` | `StorageAdapters::BackblazeAdapter` — Backblaze B2.
+|===
+
+=== Configuration
+
+Each adapter accepts a `config` JSONB hash stored in `StorageBackend#config`
+(encrypted with Rails credentials).  Common fields:
+
+[source,json]
+----
+{
+  "region":     "us-east-1",
+  "bucket":     "my-dam-assets",
+  "access_key": "AKIA...",
+  "secret_key": "..."
+}
+----
+
+The active backend is selected by `StorageBackend.find_by(active: true)`.
+
+=== Switching backends
+
+. Create a new `StorageBackend` record with the new adapter credentials.
+. Run a migration job (`StorageAdapters::MigrationCommitWorker`) to copy blobs.
+. Toggle `active: true` on the new backend (atomic).
+
+== CDN adapters
+
+CDN configurations are stored in `CdnConfiguration`.
+Service: `CdnManager` (`app/services/cdn_manager.rb`).
+Adapters in `app/services/cdn_adapters/`:
+
+[cols="1,3", options="header"]
+|===
+| Adapter | Class
+
+| `fastly` | `CdnAdapters::FastlyAdapter` — Fastly IO for real-time image transforms and Surrogate Key purging.
+| `cloudflare` | `CdnAdapters::CloudflareAdapter` — Cloudflare Images / Cache Rules.
+| `akamai` | `CdnAdapters::AkamaiAdapter` — Akamai Image Manager.
+|===
+
+=== Fastly IO delivery URL format
+
+[source]
+----
+https://media.example.com/assets/12345?width=800&height=600&crop=entropy&format=webp
+----
+
+URL signing (HMAC-SHA256) prevents unapproved transformation parameters:
+
+[source,ruby]
+----
+# app/services/cdn_adapters/fastly_adapter.rb
+def signed_url(asset, params)
+  base   = "#{cdn_base}/assets/#{asset.id}"
+  query  = params.to_query
+  sig    = OpenSSL::HMAC.hexdigest('SHA256', signing_key, "#{base}?#{query}")
+  "#{base}?#{query}&sig=#{sig}"
+end
+----
+
+=== Surrogate-key purge
+
+Every asset is tagged with `X-Surrogate-Key: asset-<id>` on delivery.
+Purge a single asset:
+
+[source,http]
+----
+POST /api/v1/edge_operations/purge
+{ "asset_ids": [42] }
+----
+
+Purge all (admin only):
+
+[source,http]
+----
+POST /api/v1/edge_operations/purge_all
+----
+
+The `CdnInvalidationWorker` handles Sidekiq-queued purge requests.
+
+== Image profiles & transformation presets
+
+`ImageProfile` bundles one or more `TransformationPreset` entries and is assigned
+to folder paths via `ImageProfileFolderAssignment`.
+
+Each preset defines Fastly IO parameters:
+
+[source,json]
+----
+{
+  "name": "thumbnail",
+  "width": 300, "height": 300,
+  "crop": "entropy",
+  "format": "webp",
+  "quality": 80
+}
+----
+
+Requesting a delivery URL:
+
+[source,http]
+----
+GET /api/v1/assets/42/url?profile_id=3&format=webp
+----
+
+The controller resolves the active `ImageProfile` for the asset's folder and
+returns the signed Fastly IO URL.
+
+== Video profiles & encoding
+
+`VideoProfile` (with `VideoEncodingPreset` entries) is assigned via
+`VideoProfileFolderAssignment`.  When an asset matching the folder is uploaded,
+`AssetProcessorWorker` queues an encoding job.
+
+Presets define codec, bitrate, and resolution:
+
+[source,json]
+----
+{
+  "codec": "h264", "bitrate_kbps": 4000,
+  "width": 1920, "height": 1080
+}
+----
+
+== ActiveStorage direct upload flow
+
+. Client calls `GET /rails/active_storage/direct_uploads` to obtain a presigned URL.
+. Client PUTs the file binary directly to the storage backend.
+. Client POSTs the signed blob ID to `POST /api/v1/assets`.
+. `AssetProcessorWorker` runs EXIF extraction, generates thumbnail rendition, and queues embedding.
+
+== Local development storage
+
+`config/storage.yml` defines the `local` service pointing to `storage/` in the project root.
+Set `ACTIVE_STORAGE_SERVICE=local` in `.env.development`.
+

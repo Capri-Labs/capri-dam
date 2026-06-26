@@ -1,0 +1,139 @@
+/* ============================================================================
+   Capri DAM — Shared Documentation Theme
+   Used by: docs/index.adoc, docs/developer-guide/, docs/product-info/
+   The architecture section uses docs/architecture/theme/arc42.css instead.
+   ============================================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+/* ── Colour tokens ─────────────────────────────────── */
+:root {
+  --capri-blue-dark:    #27408B;
+  --capri-blue:         #4472C4;
+  --capri-blue-light:   #BDD7EE;
+  --capri-blue-bg:      #EEF3FB;
+  --capri-teal:         #2F6690;
+  --capri-orange:       #C55A11;
+  --capri-green:        #375623;
+  --capri-gray-dark:    #2D2D2D;
+  --capri-gray-mid:     #595959;
+  --capri-gray-light:   #F5F5F5;
+  --capri-border:       #D0D7DE;
+  --capri-white:        #FFFFFF;
+  --capri-body-font:    'Inter', 'Segoe UI', Helvetica, Arial, sans-serif;
+  --capri-mono-font:    'JetBrains Mono', 'Courier New', monospace;
+}
+
+/* ── Base ─────────────────────────────────────────── */
+body {
+  font-family: var(--capri-body-font);
+  font-size: 16px;
+  line-height: 1.7;
+  color: var(--capri-gray-dark);
+  background: var(--capri-white);
+  margin: 0;
+}
+
+#header, #content, #footnotes, #footer {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+/* ── Headings ─────────────────────────────────────── */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--capri-body-font);
+  font-weight: 600;
+  color: var(--capri-blue-dark);
+  line-height: 1.3;
+}
+h1 { font-size: 2rem; border-bottom: 3px solid var(--capri-blue); padding-bottom: .4rem; margin-top: 2rem; }
+h2 { font-size: 1.5rem; border-bottom: 1px solid var(--capri-border); padding-bottom: .3rem; margin-top: 2rem; }
+h3 { font-size: 1.2rem; color: var(--capri-teal); margin-top: 1.5rem; }
+h4 { font-size: 1rem; color: var(--capri-gray-mid); margin-top: 1.2rem; }
+
+/* ── TOC ─────────────────────────────────────────── */
+#toc {
+  background: var(--capri-blue-bg);
+  border-right: 3px solid var(--capri-blue-light);
+  padding: 1.2rem 1rem;
+  font-size: 0.88rem;
+}
+#toc a { color: var(--capri-teal); text-decoration: none; }
+#toc a:hover { text-decoration: underline; color: var(--capri-blue-dark); }
+#toc .sectlevel1 > li { font-weight: 600; margin-top: .5rem; }
+#toc .sectlevel2 > li { font-weight: 400; margin-left: .8rem; }
+
+/* ── Tables ──────────────────────────────────────── */
+table.tableblock {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1rem 0 1.5rem;
+  font-size: 0.9rem;
+}
+table.tableblock thead th {
+  background: var(--capri-blue-dark);
+  color: var(--capri-white);
+  padding: .5rem .7rem;
+  text-align: left;
+  font-weight: 600;
+}
+table.tableblock tbody tr:nth-child(even) { background: var(--capri-blue-bg); }
+table.tableblock tbody td { padding: .45rem .7rem; border-bottom: 1px solid var(--capri-border); vertical-align: top; }
+table.tableblock tbody tr:hover { background: #e3ebf8; }
+
+/* ── Code blocks ──────────────────────────────────── */
+pre, code {
+  font-family: var(--capri-mono-font);
+  font-size: 0.875rem;
+}
+.listingblock pre {
+  background: #1e1e2e;
+  color: #cdd6f4;
+  border-radius: 6px;
+  padding: 1rem 1.2rem;
+  overflow-x: auto;
+  line-height: 1.55;
+  border: 1px solid #313244;
+}
+.listingblock .title { font-size: .8rem; color: var(--capri-gray-mid); margin-bottom: .3rem; }
+code { background: #f0f4ff; color: #1a237e; padding: .1rem .35rem; border-radius: 3px; }
+.listingblock pre code { background: transparent; color: inherit; padding: 0; }
+
+/* ── Admonitions ─────────────────────────────────── */
+.admonitionblock { border-radius: 6px; margin: 1.2rem 0; padding: .8rem 1rem; }
+.admonitionblock.note    { background: var(--capri-blue-bg); border-left: 4px solid var(--capri-blue); }
+.admonitionblock.tip     { background: #f0fdf4; border-left: 4px solid var(--capri-green); }
+.admonitionblock.warning { background: #fff8ed; border-left: 4px solid #d97706; }
+.admonitionblock.caution { background: #fff5f5; border-left: 4px solid #dc2626; }
+.admonitionblock .icon   { display: none; }
+.admonitionblock td.content { padding: .2rem .6rem; }
+
+/* ── Links ──────────────────────────────────────── */
+a { color: var(--capri-blue); text-decoration: none; }
+a:hover { text-decoration: underline; color: var(--capri-blue-dark); }
+
+/* ── Section nums ────────────────────────────────── */
+.sect1 { margin-top: 2.5rem; }
+.sect2 { margin-top: 1.8rem; }
+
+/* ── Back-to-top button ──────────────────────────── */
+#back-to-top {
+  position: fixed; bottom: 2rem; right: 2rem;
+  background: var(--capri-blue); color: #fff;
+  border: none; border-radius: 50%;
+  width: 42px; height: 42px; font-size: 1.4rem; cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,.25);
+  display: none; align-items: center; justify-content: center;
+  transition: opacity .2s;
+}
+#back-to-top.visible { display: flex; }
+#back-to-top:hover { background: var(--capri-blue-dark); }
+
+/* ── Responsive ──────────────────────────────────── */
+@media (max-width: 768px) {
+  h1 { font-size: 1.5rem; }
+  h2 { font-size: 1.2rem; }
+  #toc { position: static; width: auto; }
+}
+

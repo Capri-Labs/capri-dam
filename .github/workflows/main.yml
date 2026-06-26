@@ -1,0 +1,411 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Capri DAM — Main CI + Documentation Pipeline
+#
+# Triggers:
+#   • push / PR to main or master — runs full CI (lint, security, tests)
+#   • push to main/master         — rebuilds and deploys the GitHub Pages site
+#   • workflow_dispatch           — manual trigger (with optional force-docs flag)
+#
+# Published site:
+#   https://capri-labs.github.io/capri-dam/                  ← root hub
+#   https://capri-labs.github.io/capri-dam/architecture/     ← arc42 docs
+#   https://capri-labs.github.io/capri-dam/developer-guide/  ← developer guide
+#   https://capri-labs.github.io/capri-dam/product-info/     ← product info
+# ─────────────────────────────────────────────────────────────────────────────
+name: CI + Docs
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+    inputs:
+      force_docs:
+        description: 'Force docs rebuild even without a code push'
+        type: boolean
+        default: false
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pages:    write
+  id-token: write
+  checks:   write
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────────────
+  # JOB 1 — Ruby lint & security
+  # ─────────────────────────────────────────────────────────────────────────
+  ruby-lint:
+    name: RuboCop · Brakeman · bundler-audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '4.0.3'
+          bundler-cache: true
+
+      - name: RuboCop
+        run: bundle exec rubocop --format github
+
+      - name: Brakeman (security scan)
+        run: bundle exec brakeman -q --no-pager --exit-on-warn
+
+      - name: bundler-audit (CVE check)
+        run: bundle exec bundler-audit check --update
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # JOB 2 — Backend tests (RSpec)
+  # ─────────────────────────────────────────────────────────────────────────
+  backend-tests:
+    name: RSpec (backend)
+    runs-on: ubuntu-latest
+    needs: ruby-lint
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg14
+        env:
+          POSTGRES_USER:     capri
+          POSTGRES_PASSWORD: capri
+          POSTGRES_DB:       headless_dam_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports: ['5432:5432']
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports: ['6379:6379']
+
+    env:
+      RAILS_ENV:              test
+      DATABASE_URL:           postgres://capri:capri@localhost:5432/headless_dam_test
+      REDIS_URL:              redis://localhost:6379/1
+      SECRET_KEY_BASE:        ${{ secrets.SECRET_KEY_BASE || 'ci_placeholder_not_used_in_test' }}
+      ACTIVE_STORAGE_SERVICE: local
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '4.0.3'
+          bundler-cache: true
+
+      - name: Prepare test database
+        run: bundle exec rails db:test:prepare
+
+      - name: Run RSpec
+        run: bundle exec rspec --format progress
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rspec-results
+          path: rspec.xml
+          if-no-files-found: ignore
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # JOB 3 — Frontend tests (Jest)
+  # ─────────────────────────────────────────────────────────────────────────
+  frontend-tests:
+    name: Jest (frontend)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: yarn
+
+      - name: Install JS dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Run Jest
+        run: yarn test --ci
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # JOB 4 — End-to-end tests (Playwright) — push to main/master only
+  # ─────────────────────────────────────────────────────────────────────────
+  e2e-tests:
+    name: Playwright (E2E)
+    runs-on: ubuntu-latest
+    if: >
+      github.event_name == 'push' &&
+      (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    needs: [backend-tests, frontend-tests]
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg14
+        env:
+          POSTGRES_USER:     capri
+          POSTGRES_PASSWORD: capri
+          POSTGRES_DB:       headless_dam_development
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports: ['5432:5432']
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports: ['6379:6379']
+
+    env:
+      RAILS_ENV:              development
+      DATABASE_URL:           postgres://capri:capri@localhost:5432/headless_dam_development
+      REDIS_URL:              redis://localhost:6379/0
+      SECRET_KEY_BASE:        ${{ secrets.SECRET_KEY_BASE || 'ci_e2e_placeholder' }}
+      ACTIVE_STORAGE_SERVICE: local
+      RAILS_SERVE_STATIC_FILES: true
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '4.0.3'
+          bundler-cache: true
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: yarn
+
+      - name: Install dependencies
+        run: |
+          yarn install --frozen-lockfile
+          bundle exec rails db:prepare db:seed
+
+      - name: Install Playwright browsers
+        run: yarn playwright install --with-deps chromium
+
+      - name: Build JS assets
+        run: yarn build
+
+      - name: Start Rails server
+        run: bundle exec rails server -d -b 0.0.0.0 -p 3000
+
+      - name: Wait for server
+        run: |
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:3000/up && echo "Server ready." && break
+            echo "Waiting ($i/30)…"; sleep 2
+          done
+
+      - name: Run Playwright tests
+        run: yarn playwright test
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: coverage-frontend/playwright-report/
+          if-no-files-found: ignore
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # JOB 5 — Build documentation site (AsciiDoc → HTML)
+  # ─────────────────────────────────────────────────────────────────────────
+  build-docs:
+    name: Build docs site
+    runs-on: ubuntu-latest
+    if: >
+      (github.event_name == 'push' &&
+        (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')) ||
+      github.event_name == 'workflow_dispatch'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # ── System dependencies ───────────────────────────────────────────────
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            default-jre graphviz fonts-liberation
+          # PlantUML for architecture diagrams
+          curl -fsSL -o /tmp/plantuml.jar \
+            https://github.com/plantuml/plantuml/releases/download/v1.2024.8/plantuml-1.2024.8.jar
+
+      - name: Install Asciidoctor toolchain
+        run: |
+          sudo gem install asciidoctor asciidoctor-diagram asciidoctor-diagram-plantuml \
+                           asciidoctor-pdf rouge --no-document
+
+      # ── Output directories ────────────────────────────────────────────────
+      - name: Create output directories
+        run: |
+          mkdir -p _site/architecture/images
+          mkdir -p _site/developer-guide
+          mkdir -p _site/product-info
+          mkdir -p _site/theme
+
+      # ── Shared build flags ────────────────────────────────────────────────
+      - name: Export shared Asciidoctor flags
+        run: |
+          echo "ADOC_BASE=-b html5 -a toc=left -a toclevels=3 -a sectnums -a sectanchors -a sectlinks -a icons=font -a source-highlighter=rouge -a rouge-style=github -a allow-uri-read" >> "$GITHUB_ENV"
+
+      # ── Copy shared theme ─────────────────────────────────────────────────
+      - name: Copy shared CSS theme
+        run: |
+          cp docs/theme/capri.css _site/theme/capri.css
+          cp docs/theme/capri.css _site/developer-guide/capri.css
+          cp docs/theme/capri.css _site/product-info/capri.css
+          cp public/icon.png _site/icon.png 2>/dev/null || true
+
+      # ── Root landing page ─────────────────────────────────────────────────
+      - name: Build root landing page
+        run: |
+          asciidoctor $ADOC_BASE \
+            -a stylesdir=theme \
+            -a stylesheet=capri.css \
+            -a docinfodir=docs \
+            -a docinfo=shared-head \
+            -D _site -o index.html \
+            docs/index.adoc
+
+      # ── Architecture (arc42 + PlantUML) ───────────────────────────────────
+      - name: Build architecture HTML
+        env:
+          DIAGRAM_PLANTUML_CLASSPATH: /tmp/plantuml.jar
+        run: |
+          asciidoctor -r asciidoctor-diagram \
+            $ADOC_BASE \
+            -a toclevels=4 \
+            -a imagesoutdir=_site/architecture/images \
+            -a stylesdir=docs/architecture/theme \
+            -a stylesheet=arc42.css \
+            -a docinfodir=docs/architecture \
+            -a docinfo=shared \
+            -D _site/architecture -o index.html \
+            docs/architecture/index.adoc
+          mkdir -p _site/architecture/theme
+          cp -r docs/architecture/theme/. _site/architecture/theme/
+
+      - name: Build architecture PDF
+        env:
+          DIAGRAM_PLANTUML_CLASSPATH: /tmp/plantuml.jar
+        run: |
+          asciidoctor-pdf -r asciidoctor-diagram \
+            -a allow-uri-read \
+            -a pdf-themesdir=docs/architecture/theme \
+            -a pdf-theme=arc42 \
+            -o _site/architecture/capri-dam-architecture.pdf \
+            docs/architecture/index.adoc
+
+      # ── Developer Guide ───────────────────────────────────────────────────
+      - name: Build developer guide (unified book)
+        run: |
+          asciidoctor $ADOC_BASE \
+            -a stylesdir=../theme \
+            -a stylesheet=capri.css \
+            -a docinfodir=docs \
+            -a docinfo=shared-head \
+            -D _site/developer-guide -o index.html \
+            docs/developer-guide/index.adoc
+
+      - name: Build developer guide (standalone section pages)
+        run: |
+          for s in models api-reference graphql ui-components authentication \
+                   storage workers-and-jobs workflows search testing; do
+            f="docs/developer-guide/${s}.adoc"
+            [ -f "$f" ] || { echo "Skipping missing: $f"; continue; }
+            asciidoctor $ADOC_BASE \
+              -a stylesdir=../theme \
+              -a stylesheet=capri.css \
+              -a docinfodir=docs \
+              -a docinfo=shared-head \
+              -D _site/developer-guide \
+              -o "${s}.html" \
+              "$f"
+          done
+
+      # ── Product Info ──────────────────────────────────────────────────────
+      - name: Build product info
+        run: |
+          asciidoctor $ADOC_BASE \
+            -a stylesdir=../theme \
+            -a stylesheet=capri.css \
+            -a docinfodir=docs \
+            -a docinfo=shared-head \
+            -D _site/product-info -o index.html \
+            docs/product-info/index.adoc
+
+      # ── No-Jekyll (serve plain HTML) ──────────────────────────────────────
+      - name: Add .nojekyll
+        run: touch _site/.nojekyll
+
+      # ── Sanity check ─────────────────────────────────────────────────────
+      - name: List site files
+        run: find _site -type f | sort
+
+      # ── Upload for deployment ─────────────────────────────────────────────
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site/
+
+      - name: Upload docs as downloadable artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: capri-dam-docs-site
+          path: _site/
+          retention-days: 30
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # JOB 6 — Deploy to GitHub Pages
+  # ─────────────────────────────────────────────────────────────────────────
+  deploy-pages:
+    name: Deploy to GitHub Pages
+    runs-on: ubuntu-latest
+    needs: build-docs
+    if: >
+      (github.event_name == 'push' &&
+        (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')) ||
+      github.event_name == 'workflow_dispatch'
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
