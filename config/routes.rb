@@ -141,8 +141,21 @@ Rails.application.routes.draw do
       get "cdn_configurations", to: "cdn_configurations#index"
       put "cdn_configurations", to: "cdn_configurations#update"
 
-      # The global bin endpoint
-      get "bin", to: "assets#bin"
+      # Recycle Bin — full CRUD with stats, bulk operations, retention policy, AI
+      scope "bin" do
+        get    "/",               to: "bin#index",                  as: :bin
+        get    "stats",           to: "bin#stats",                  as: :bin_stats
+        post   "bulk_restore",    to: "bin#bulk_restore",           as: :bin_bulk_restore
+        delete "bulk_destroy",    to: "bin#bulk_destroy",           as: :bin_bulk_destroy
+        delete "empty",           to: "bin#empty",                  as: :bin_empty
+        get    "retention_policy", to: "bin#retention_policy",      as: :bin_retention_policy
+        put    "retention_policy", to: "bin#update_retention_policy"
+        post   "trigger_purge",   to: "bin#trigger_purge",          as: :bin_trigger_purge
+        get    "purge_status",    to: "bin#purge_status",           as: :bin_purge_status
+        # AI-powered suggestions (stub — will be powered by AI gateway)
+        get    "ai/smart_suggestions", to: "bin#ai_smart_suggestions",  as: :bin_ai_smart_suggestions
+        get    "ai/cleanup_report",    to: "bin#ai_cleanup_report",     as: :bin_ai_cleanup_report
+      end
 
       # Edge Operations
       post "edge_operations/sync", to: "edge_operations#sync"

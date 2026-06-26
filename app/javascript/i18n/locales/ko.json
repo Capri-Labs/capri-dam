@@ -181,6 +181,136 @@
       "videoProfilesDesc": "적응형 비디오 인코딩"
     }
   },
+  "bin": {
+    "title": "휴지통",
+    "subtitle": "지난 {{days}}일 동안 삭제된 항목입니다. 그 이후는 영구적으로 제거됩니다.",
+    "empty": "휴지통이 비어 있습니다",
+    "emptySubtitle": "삭제된 에셋과 폴더가 여기에 표시됩니다.",
+    "emptyBin": "휴지통 비우기",
+    "restoreSelected": "선택 항목 복원",
+    "deleteSelected": "선택 항목 삭제",
+    "search": "휴지통 검색…",
+    "results": "결과",
+    "filters": {
+      "all": "모든 항목",
+      "assets": "에셋",
+      "folders": "폴더",
+      "images": "이미지",
+      "videos": "비디오",
+      "documents": "문서"
+    },
+    "sort": {
+      "deletedNewest": "삭제일 (여다 순)",
+      "deletedOldest": "삭제일 (오래된 순)",
+      "nameAZ": "이름 (A–Z)",
+      "nameZA": "이름 (Z–A)",
+      "sizeDesc": "크기 (큰 순)",
+      "sizeAsc": "크기 (작은 순)"
+    },
+    "stats": {
+      "totalItems": "전체 항목",
+      "assets": "에셋",
+      "folders": "폴더",
+      "storageUsed": "사용 저장소"
+    },
+    "item": {
+      "type": "유형",
+      "name": "이름",
+      "deletedAt": "삭제일",
+      "size": "크기",
+      "originalPath": "위치",
+      "expires": "만료",
+      "actions": "작업",
+      "restore": "복원",
+      "deletePermanently": "영구 삭제",
+      "folder": "폴더",
+      "asset": "에셋"
+    },
+    "retention": {
+      "label": "보유 정책",
+      "description": "{{days}}일 후 자동 삭제",
+      "expires": "{{days}}일 남음",
+      "expired": "만료"
+    },
+    "confirm": {
+      "restore": "{{count}}개 항목을 복원하시겠습니까?",
+      "restoreBody": "선택한 항목이 원래 위치로 이동됩니다.",
+      "delete": "{{count}}개 항목을 영구 삭제하시겠습니까?",
+      "deleteBody": "이 작업은 실행 취소할 수 없습니다.",
+      "emptyBin": "휴지통을 비우시겠습니까?",
+      "emptyBinBody": "모든 {{count}}개 항목이 영구적으로 삭제됩니다.",
+      "confirm": "확인",
+      "cancel": "취소"
+    },
+    "notifications": {
+      "restored": "{{count}}개 항목이 복원되었습니다.",
+      "deleted": "{{count}}개 항목이 영구 삭제되었습니다.",
+      "emptied": "휴지통이 비어졌습니다.",
+      "loadError": "휴지통을 로드하지 못했습니다."
+    },
+    "pagination": {
+      "prev": "이전",
+      "next": "다음",
+      "info": "{{pages}}페이지 중 {{page}}페이지"
+    },
+    "purge": {
+      "title": "자동 제거",
+      "subtitle": "휴지통에서 만료된 항목을 영구적으로 삭제하는 야간 작업입니다.",
+      "triggerButton": "지금 제거 실행",
+      "policyButton": "정책 구성",
+      "policyTitle": "보유 정책",
+      "queued": "제거가 대기열에 추가되었습니다.",
+      "running": "제거 실행 중…",
+      "policySaved": "보유 정책이 저장되었습니다.",
+      "lastRan": "마지막 실행:",
+      "skippedWarning": "{{count}}개 항목이 건너뛰었습니다.",
+      "skippedDetail": "이 에셋에는 활성 워크플로우 인스턴스가 있습니다.",
+      "status": {
+        "idle": "대기",
+        "queued": "대기 중",
+        "running": "실행 중",
+        "completed": "완료",
+        "failed": "실패"
+      },
+      "results": {
+        "deleted": "{{count}}개 삭제됨",
+        "skipped": "{{count}}개 건너뜀",
+        "failed": "{{count}}개 실패"
+      },
+      "policy": {
+        "retentionDays": "보유 일수",
+        "retentionDaysHelp": "이보다 오래된 항목은 제거됩니다",
+        "workflowBehavior": "워크플로우 동작",
+        "behaviorSkip": "건너뛰기",
+        "behaviorForceTerminate": "지정종료 후 삭제",
+        "batchSize": "배치 크기",
+        "notifyAdmins": "매 실행 후 관리자에게 알림",
+        "forceTerminateWarning": "지정종료는 보류 중인 모든 워크플로우 작업을 취소합니다."
+      },
+      "triggeredBy": "{{name}}이(가) 실행",
+      "triggeredBySchedule": "야간 일정에 의해 실행"
+    },
+    "settings": {
+      "title": "휴지통 및 영구 삭제",
+      "subtitle": "삭제된 에셋을 영구적으로 제거하는 방법과 시기를 구성합니다.",
+      "warningNote": "영구 삭제는 에셋과 모든 버전을 스토리지에서 영구적으로 삭제합니다. 되돌릴 수 없습니다.",
+      "policySubtitle": "{{days}}일이 지난 항목 제거 · 워크플로우: {{behavior}}",
+      "nextScheduled": "다음 예약 실행"
+    },
+    "activePurge": {
+      "runningTitle": "휴지통 영구 삭제 진행 중",
+      "queuedTitle": "휴지통 영구 삭제 대기 중",
+      "hint": "만료된 항목을 영구적으로 제거하고 있습니다. 완료되면 이 페이지가 새로 고침됩니다."
+    },
+    "ai": {
+      "title": "AI 지원 정리",
+      "comingSoon": "곧 출시",
+      "description": "Capri AI Gateway에 연결되면 휴지통에 지능형 정리 기능이 추가됩니다:",
+      "feature1": "사용량, 기간, 중복을 기반으로 안전하게 삭제 가능한 에셋 스마트 제안.",
+      "feature2": "아직 필요할 수 있는 에셋을 표시하는 위험 점수.",
+      "feature3": "제거된 항목과 회수된 스토리지를 요약하는 자연어 정리 보고서."
+    }
+  },
   "duplicateManager": {
     "title": "중복 관리자",
     "subtitle": "감지된 중복 자산 검토 및 해결",

@@ -126,16 +126,23 @@ graphql-docs: graphql-schema ## Generate SpectaQL HTML docs → public/graphql-d
 
 api-docs: swagger-docs graphql-docs ## Regenerate BOTH REST (Swagger) and GraphQL (SpectaQL) docs
 
-install-hooks: ## Install the pre-commit git hook (RuboCop lint + stale-docs guard)
-	@echo "--- Installing pre-commit hook ---"
-	@chmod +x bin/check-docs-freshness
+install-hooks: ## Install the git hooks (lint, doc, and commit-msg guards)
+	@echo "--- Installing git hooks ---"
+	@chmod +x bin/check-docs-freshness bin/check-commit-msg
 	@cp bin/check-docs-freshness .git/hooks/pre-commit
-	@chmod +x .git/hooks/pre-commit
-	@echo "\033[32mPre-commit hook installed. Every commit will:\033[0m"
+	@cp bin/check-commit-msg .git/hooks/commit-msg
+	@chmod +x .git/hooks/pre-commit .git/hooks/commit-msg
+	@echo "\033[32mHooks installed.\033[0m"
+	@echo "\033[32mpre-commit will, on every commit:\033[0m"
 	@echo "\033[32m  1. Run RuboCop on staged .rb files (blocks on offense)\033[0m"
 	@echo "\033[32m  2. Block if api/v1 controllers changed without swagger update\033[0m"
 	@echo "\033[32m  3. Block if graphql/ changed without SDL/HTML doc update\033[0m"
-	@echo "\033[33mBypass: RUBOCOP_WARN_ONLY=1 DOCS_WARN_ONLY=1 git commit ...\033[0m"
+	@echo "\033[32m  4. Validate staged YAML (.yml/.yaml) syntax\033[0m"
+	@echo "\033[32m  5. Validate staged JSON syntax\033[0m"
+	@echo "\033[32m  6. Compile-check staged Python (+ ruff/flake8 if installed)\033[0m"
+	@echo "\033[32m  7. ESLint staged JS/JSX (skipped if eslint not installed)\033[0m"
+	@echo "\033[32mcommit-msg will enforce subject rules (capitalised, <=72 chars, no trailing period).\033[0m"
+	@echo "\033[33mBypass: RUBOCOP_WARN_ONLY=1 DOCS_WARN_ONLY=1 LINT_WARN_ONLY=1 COMMIT_MSG_WARN_ONLY=1 git commit ...\033[0m"
 
 check-graphql-docs: ## Verify swagger/graphql/schema.graphql and public/graphql-docs/index.html exist
 	@echo "--- Checking for generated GraphQL docs ---"

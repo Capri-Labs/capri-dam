@@ -1,219 +1,276 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
-    Box, CssBaseline, Typography, Button, IconButton,
-    Tooltip, Chip, Dialog, DialogTitle, DialogContent,
-    DialogContentText, DialogActions, Card, CardContent
+    Box, CssBaseline, Typography, Button, IconButton, Tooltip, Chip,
+    LinearProgress, Stack
 } from '@mui/material';
-import { DataGrid } from '@mui/x-data-grid';
 import {
-    Restore, DeleteForever, FolderZipOutlined,
-    InsertDriveFileOutlined, ErrorOutlined
+    DeleteForeverOutlined, RestoreFromTrashOutlined, WarningAmberOutlined,
+    RefreshOutlined
 } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 
-import Sidebar from '../Sidebar';
-import { navigateTo } from "../../utils/globalutils";
 import { useNotify } from '../../context/NotificationContext';
+import BinFilterBar from './BinFilterBar';
+import BinStatsBar from './BinStatsBar';
+import BinGrid from './BinGrid';
+import BinList from './BinList';
+import BinEmptyState from './BinEmptyState';
+import BinConfirmDialog from './BinConfirmDialog';
+import BinActivePurgeBanner from './BinActivePurgeBanner';
+
+const getCsrfToken = () => document.querySelector('[name="csrf-token"]')?.content ?? '';
 
 export default function BinManager() {
+    const { t } = useTranslation();
     const notify = useNotify();
-    const [items, setItems] = useState([]);
-    const [loading, setLoading] = useState(true);
 
-    // Dialog State for Permanent Deletion
-    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-    const [itemToDelete, setItemToDelete] = useState(null);
+    // ── Data ──────────────────────────────────────────────────────────────────
+    const [items, setItems]               = useState([]);
+    const [stats, setStats]               = useState(null);
+    const [loading, setLoading]           = useState(true);
+    const [statsLoading, setStatsLoading] = useState(true);
+    const [pagination, setPagination]     = useState({ total: 0, page: 1, per_page: 25, pages: 1 });
 
-    const fetchBinContents = () => {
-        setLoading(true);
-        // This hits the global 'assets#bin' route defined in your routes.rb
-        fetch('/api/v1/bin.json')
-            .then(res => res.json())
-            .then(data => {
-                // Normalize folders and assets into a single array for the DataGrid
-                const trashedFolders = (data.folders || []).map(f => ({ ...f, item_type: 'folder', grid_id: `folder_${f.id}` }));
-                const trashedAssets = (data.assets || []).map(a => ({ ...a, item_type: 'asset', grid_id: `asset_${a.id}` }));
+    // ── Filters & view ────────────────────────────────────────────────────────
+    const [query, setQuery]               = useState('');
+    const [typeFilter, setTypeFilter]     = useState('all');
+    const [sort, setSort]                 = useState({ field: 'deleted_at', direction: 'desc' });
+    const [viewLayout, setViewLayout]     = useState('list');
+    const [gridSize, setGridSize]         = useState('medium');
+    const [currentPage, setCurrentPage]   = useState(1);
 
-                setItems([...trashedFolders, ...trashedAssets]);
-                setLoading(false);
-            })
-            .catch(err => {
-                console.error(err);
-                notify("Failed to load recycle bin.", "error");
-                setLoading(false);
-            });
-    };
+    // ── Selection ─────────────────────────────────────────────────────────────
+    const [selected, setSelected] = useState(new Set());
 
-    useEffect(() => {
-        fetchBinContents();
+    // ── Confirm dialog ────────────────────────────────────────────────────────
+    const [confirmDialog, setConfirmDialog] = useState({ open: false, variant: null, count: 0, onConfirm: null });
+
+    const searchTimer = useRef(null);
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // DATA FETCHING
+    // ─────────────────────────────────────────────────────────────────────────
+
+    const fetchStats = useCallback(() => {
+        setStatsLoading(true);
+        fetch('/api/v1/bin/stats')
+            .then(r => r.json())
+            .then(data => setStats(data))
+            .catch(() => notify(t('bin.notifications.loadError'), 'error'))
+            .finally(() => setStatsLoading(false));
     }, []);
 
-    // --- Action Handlers ---
-
-    const handleRestore = (id, type) => {
-        const csrfToken = document.querySelector('[name="csrf-token"]').content;
-        const endpoint = type === 'folder'
-            ? `/api/v1/folders/${id}/restore.json`
-            : `/api/v1/assets/${id}/restore.json`;
-
-        fetch(endpoint, {
-            method: 'POST',
-            headers: { 'X-CSRF-Token': csrfToken, 'Content-Type': 'application/json' }
-        })
-            .then(res => res.json())
+    const fetchItems = useCallback((page = 1) => {
+        setLoading(true);
+        const params = new URLSearchParams({
+            q:         query,
+            type:      typeFilter,
+            sort:      sort.field,
+            direction: sort.direction,
+            page,
+            per_page:  pagination.per_page,
+        });
+        fetch(`/api/v1/bin?${params}`)
+            .then(r => r.json())
             .then(data => {
-                if (data.success) {
-                    notify(`${type === 'folder' ? 'Folder' : 'Asset'} restored successfully.`, "success");
-                    setItems(prev => prev.filter(item => item.grid_id !== `${type}_${id}`));
-                } else {
-                    notify(data.errors || "Failed to restore.", "error");
-                }
-            });
-    };
-
-    const confirmPermanentDelete = (item) => {
-        setItemToDelete(item);
-        setDeleteDialogOpen(true);
-    };
-
-    const executePermanentDelete = () => {
-        if (!itemToDelete) return;
-
-        const csrfToken = document.querySelector('[name="csrf-token"]').content;
-        const { id, item_type } = itemToDelete;
-        const endpoint = item_type === 'folder'
-            ? `/api/v1/folders/${id}/permanent.json`
-            : `/api/v1/assets/${id}/permanent.json`;
-
-        fetch(endpoint, {
-            method: 'DELETE',
-            headers: { 'X-CSRF-Token': csrfToken, 'Content-Type': 'application/json' }
-        })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    notify("Permanently deleted.", "warning");
-                    setItems(prev => prev.filter(i => i.grid_id !== `${item_type}_${id}`));
-                } else {
-                    notify(data.errors || "Failed to delete.", "error");
-                }
+                setItems(data.items || []);
+                setPagination(data.pagination || { total: 0, page: 1, per_page: 25, pages: 1 });
+                setSelected(new Set());
             })
-            .finally(() => {
-                setDeleteDialogOpen(false);
-                setItemToDelete(null);
-            });
+            .catch(() => notify(t('bin.notifications.loadError'), 'error'))
+            .finally(() => setLoading(false));
+    }, [query, typeFilter, sort, pagination.per_page]);
+
+    useEffect(() => { fetchStats(); }, []);
+
+    useEffect(() => {
+        clearTimeout(searchTimer.current);
+        searchTimer.current = setTimeout(() => {
+            setCurrentPage(1);
+            fetchItems(1);
+        }, query ? 300 : 0);
+        return () => clearTimeout(searchTimer.current);
+    }, [query, typeFilter, sort]);
+
+    useEffect(() => { fetchItems(currentPage); }, [currentPage]);
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // SELECTION
+    // ─────────────────────────────────────────────────────────────────────────
+
+    const toggleItem    = (gridId) => setSelected(prev => { const n = new Set(prev); n.has(gridId) ? n.delete(gridId) : n.add(gridId); return n; });
+    const selectAll     = () => setSelected(new Set(items.map(i => i.grid_id)));
+    const deselectAll   = () => setSelected(new Set());
+    const isSelected    = (gridId) => selected.has(gridId);
+    const hasSelection  = selected.size > 0;
+    const allSelected   = items.length > 0 && selected.size === items.length;
+    const selectedItems = () => items.filter(i => selected.has(i.grid_id)).map(i => ({ id: i.id, type: i.item_type }));
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // ACTIONS
+    // ─────────────────────────────────────────────────────────────────────────
+
+    const refresh = () => { fetchStats(); fetchItems(currentPage); };
+
+    const openConfirm  = (variant, count, onConfirm) => setConfirmDialog({ open: true, variant, count, onConfirm });
+    const closeConfirm = () => setConfirmDialog(prev => ({ ...prev, open: false }));
+
+    const handleRestore         = (item) => openConfirm('restore',  1,             () => doRestore([{ id: item.id, type: item.item_type }]));
+    const handlePermanentDelete = (item) => openConfirm('delete',   1,             () => doDelete([{ id: item.id, type: item.item_type }]));
+    const handleBulkRestore     = ()     => openConfirm('restore',  selected.size, () => doRestore(selectedItems()));
+    const handleBulkDelete      = ()     => openConfirm('delete',   selected.size, () => doDelete(selectedItems()));
+    const handleEmptyBin        = ()     => openConfirm('emptyBin', stats?.total_items ?? 0, doEmptyBin);
+
+    const doRestore = async (items) => {
+        closeConfirm();
+        const res  = await fetch('/api/v1/bin/bulk_restore', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken() }, body: JSON.stringify({ items }) });
+        const data = await res.json();
+        notify(t('bin.notifications.restored', { count: data.restored }), 'success');
+        if (data.errors?.length) notify(data.errors.join(', '), 'warning');
+        refresh();
     };
 
-    // --- DataGrid Columns ---
+    const doDelete = async (items) => {
+        closeConfirm();
+        const res  = await fetch('/api/v1/bin/bulk_destroy', { method: 'DELETE', headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken() }, body: JSON.stringify({ items }) });
+        const data = await res.json();
+        notify(t('bin.notifications.deleted', { count: data.deleted }), 'warning');
+        if (data.errors?.length) notify(data.errors.join(', '), 'warning');
+        refresh();
+    };
 
-    const columns = [
-        {
-            field: 'item_type', headerName: 'Type', width: 130,
-            renderCell: (params) => {
-                const isFolder = params.value === 'folder';
-                return (
-                    <Chip
-                        icon={isFolder ? <FolderZipOutlined /> : <InsertDriveFileOutlined />}
-                        label={isFolder ? 'Folder' : 'Asset'}
-                        size="small"
-                        color={isFolder ? 'primary' : 'default'}
-                        variant="outlined"
-                    />
-                );
-            }
-        },
-        { field: 'name', headerName: 'Name / Title', flex: 1, minWidth: 200 },
-        {
-            field: 'deleted_at', headerName: 'Date Deleted', width: 180,
-            renderCell: (params) => {
-                if (!params.value) return 'Unknown';
-                return new Date(params.value).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
-            }
-        },
-        {
-            field: 'actions', headerName: 'Actions', width: 180, sortable: false, align: 'right', headerAlign: 'right',
-            renderCell: (params) => (
-                <Box sx={{ display: 'flex', gap: 1 }}>
-                    <Tooltip title="Restore Item">
-                        <IconButton
-                            size="small"
-                            color="success"
-                            onClick={() => handleRestore(params.row.id, params.row.item_type)}
-                        >
-                            <Restore fontSize="small" />
-                        </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Permanently Delete">
-                        <IconButton
-                            size="small"
-                            color="error"
-                            onClick={() => confirmPermanentDelete(params.row)}
-                        >
-                            <DeleteForever fontSize="small" />
-                        </IconButton>
-                    </Tooltip>
-                </Box>
-            )
-        }
-    ];
+    const doEmptyBin = async () => {
+        closeConfirm();
+        await fetch('/api/v1/bin/empty', { method: 'DELETE', headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken() } });
+        notify(t('bin.notifications.emptied'), 'warning');
+        refresh();
+    };
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // RENDER
+    // ─────────────────────────────────────────────────────────────────────────
+
+    const isEmpty = !loading && items.length === 0 && !query && typeFilter === 'all';
 
     return (
-        <Box sx={{ display: 'flex', bgcolor: '#f4f7fb', minHeight: '100vh' }}>
+        <Box sx={{ display: 'flex', bgcolor: '#f8fafc', minHeight: '100vh' }}>
             <CssBaseline />
 
-            <Box component="main" sx={{ flexGrow: 1, p: 3, display: 'flex', flexDirection: 'column' }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+            <Box component="main" sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+
+                {/* ── Page Header ────────────────────────────────────────── */}
+                <Box sx={{
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
+                    px: 4, pt: 4, pb: 2, borderBottom: '1px solid #e2e8f0', bgcolor: '#fff',
+                    flexWrap: 'wrap', gap: 2
+                }}>
                     <Box>
-                        <Typography variant="h4" sx={{ fontWeight: 700, color: '#1e293b' }}>
-                            Recycle Bin
-                        </Typography>
-                        <Typography variant="body2" color="textSecondary">
-                            Items here will be permanently deleted after 30 days.
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
+                            <Box sx={{ p: 1, bgcolor: '#fef2f2', borderRadius: 2, display: 'flex' }}>
+                                <DeleteForeverOutlined sx={{ color: '#ef4444', fontSize: 24 }} />
+                            </Box>
+                            <Typography variant="h5" sx={{ fontWeight: 800, color: '#1e293b' }}>
+                                {t('bin.title')}
+                            </Typography>
+                            {stats && stats.total_items > 0 && (
+                                <Chip label={stats.total_items} size="small"
+                                    sx={{ bgcolor: '#fef2f2', color: '#ef4444', fontWeight: 700 }} />
+                            )}
+                        </Box>
+                        <Typography variant="body2" color="text.secondary">
+                            {t('bin.subtitle', { days: stats?.retention_days ?? 30 })}
                         </Typography>
                     </Box>
+
+                    <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap">
+                        <Tooltip title={t('common.refresh')}>
+                            <IconButton onClick={refresh} size="small" sx={{ border: '1px solid #e2e8f0' }}>
+                                <RefreshOutlined fontSize="small" />
+                            </IconButton>
+                        </Tooltip>
+
+                        {hasSelection && (
+                            <>
+                                <Button variant="outlined" color="success" size="small"
+                                    startIcon={<RestoreFromTrashOutlined />} onClick={handleBulkRestore}
+                                    sx={{ textTransform: 'none', fontWeight: 600 }}>
+                                    {t('bin.restoreSelected')} ({selected.size})
+                                </Button>
+                                <Button variant="outlined" color="error" size="small"
+                                    startIcon={<DeleteForeverOutlined />} onClick={handleBulkDelete}
+                                    sx={{ textTransform: 'none', fontWeight: 600 }}>
+                                    {t('bin.deleteSelected')} ({selected.size})
+                                </Button>
+                            </>
+                        )}
+
+                        {stats?.total_items > 0 && (
+                            <Button variant="contained" color="error" size="small"
+                                startIcon={<WarningAmberOutlined />} onClick={handleEmptyBin}
+                                disableElevation sx={{ textTransform: 'none', fontWeight: 600 }}>
+                                {t('bin.emptyBin')}
+                            </Button>
+                        )}
+                    </Stack>
                 </Box>
 
-                <Card variant="outlined" sx={{ borderRadius: 2, bgcolor: 'white', flexGrow: 1 }}>
-                    <CardContent sx={{ height: 600, p: 0, '&:last-child': { pb: 0 } }}>
-                        <DataGrid
-                            rows={items}
-                            columns={columns}
-                            getRowId={(row) => row.grid_id} // Use composite ID
-                            loading={loading}
-                            disableRowSelectionOnClick
-                            sx={{ border: 'none' }}
-                            initialState={{
-                                pagination: { paginationModel: { pageSize: 10 } },
-                            }}
-                            pageSizeOptions={[10, 25, 50]}
-                            emptyRowsOverlay={
-                                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#94a3b8' }}>
-                                    <Restore sx={{ fontSize: 48, mb: 1, opacity: 0.5 }} />
-                                    <Typography>Your recycle bin is empty.</Typography>
-                                </Box>
-                            }
-                        />
-                    </CardContent>
-                </Card>
+                {/* ── Stats Bar ──────────────────────────────────────────── */}
+                <BinStatsBar stats={stats} loading={statsLoading} />
 
-                {/* Permanent Delete Confirmation Dialog */}
-                <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
-                    <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'error.main' }}>
-                        <ErrorOutlined /> Confirm Permanent Deletion
-                    </DialogTitle>
-                    <DialogContent>
-                        <DialogContentText>
-                            Are you sure you want to permanently delete <strong>{itemToDelete?.name}</strong>?
-                            This action cannot be undone and the file will be removed from storage.
-                        </DialogContentText>
-                    </DialogContent>
-                    <DialogActions sx={{ p: 2, pt: 0 }}>
-                        <Button onClick={() => setDeleteDialogOpen(false)} color="inherit">Cancel</Button>
-                        <Button onClick={executePermanentDelete} color="error" variant="contained" disableElevation>
-                            Permanently Delete
-                        </Button>
-                    </DialogActions>
-                </Dialog>
+                {/* ── Filter Bar ─────────────────────────────────────────── */}
+                <BinFilterBar
+                    query={query} onQueryChange={setQuery}
+                    typeFilter={typeFilter} onTypeFilterChange={setTypeFilter}
+                    sort={sort} onSortChange={setSort}
+                    viewLayout={viewLayout} onViewLayoutChange={setViewLayout}
+                    gridSize={gridSize} onGridSizeChange={setGridSize}
+                    resultCount={pagination.total}
+                    allSelected={allSelected} hasSelection={hasSelection}
+                    onSelectAll={selectAll} onDeselectAll={deselectAll}
+                />
+
+                {loading && <LinearProgress sx={{ height: 2 }} />}
+
+                {/* ── Active Purge Banner (only when a job is running) ─────── */}
+                <BinActivePurgeBanner onComplete={refresh} />
+
+                {/* ── Content ────────────────────────────────────────────── */}
+                <Box sx={{ flexGrow: 1, px: 4, py: 3 }}>
+                    {isEmpty ? (
+                        <BinEmptyState />
+                    ) : viewLayout === 'grid' ? (
+                        <BinGrid items={items} isSelected={isSelected} onToggleSelect={toggleItem}
+                            onRestore={handleRestore} onDelete={handlePermanentDelete}
+                            gridSize={gridSize} loading={loading} />
+                    ) : (
+                        <BinList items={items} isSelected={isSelected} onToggleSelect={toggleItem}
+                            onRestore={handleRestore} onDelete={handlePermanentDelete}
+                            loading={loading} sort={sort} onSortChange={setSort} />
+                    )}
+
+                    {pagination.pages > 1 && (
+                        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 1, mt: 3 }}>
+                            <Button size="small" disabled={currentPage <= 1}
+                                onClick={() => setCurrentPage(p => p - 1)} sx={{ textTransform: 'none' }}>
+                                ← {t('bin.pagination.prev')}
+                            </Button>
+                            <Typography variant="body2" color="text.secondary">
+                                {t('bin.pagination.info', { page: currentPage, pages: pagination.pages })}
+                            </Typography>
+                            <Button size="small" disabled={currentPage >= pagination.pages}
+                                onClick={() => setCurrentPage(p => p + 1)} sx={{ textTransform: 'none' }}>
+                                {t('bin.pagination.next')} →
+                            </Button>
+                        </Box>
+                    )}
+                </Box>
             </Box>
+
+            <BinConfirmDialog
+                open={confirmDialog.open} variant={confirmDialog.variant}
+                count={confirmDialog.count} onConfirm={confirmDialog.onConfirm}
+                onClose={closeConfirm}
+            />
         </Box>
     );
 }

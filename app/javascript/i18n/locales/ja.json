@@ -181,6 +181,136 @@
       "videoProfilesDesc": "アダプティブビデオエンコード"
     }
   },
+  "bin": {
+    "title": "ゴミ筱",
+    "subtitle": "過去{{days}}日間に削除されたアイテム。その後、永久に削除されます。",
+    "empty": "ゴミ筱は空です",
+    "emptySubtitle": "削除されたアセットとフォルダがここに表示されます。",
+    "emptyBin": "ゴミ筱を空にする",
+    "restoreSelected": "選択した項目を復元",
+    "deleteSelected": "選択した項目を削除",
+    "search": "ゴミ筱を検索…",
+    "results": "件",
+    "filters": {
+      "all": "すべてのアイテム",
+      "assets": "アセット",
+      "folders": "フォルダ",
+      "images": "画像",
+      "videos": "動画",
+      "documents": "ドキュメント"
+    },
+    "sort": {
+      "deletedNewest": "削除日時（新しい順）",
+      "deletedOldest": "削除日時（古い順）",
+      "nameAZ": "名前 (A–Z)",
+      "nameZA": "名前 (Z–A)",
+      "sizeDesc": "サイズ（大きい順）",
+      "sizeAsc": "サイズ（小さい順）"
+    },
+    "stats": {
+      "totalItems": "アイテム合計",
+      "assets": "アセット",
+      "folders": "フォルダ",
+      "storageUsed": "使用ストレージ"
+    },
+    "item": {
+      "type": "種類",
+      "name": "名前",
+      "deletedAt": "削除日時",
+      "size": "サイズ",
+      "originalPath": "元の場所",
+      "expires": "有効期限",
+      "actions": "操作",
+      "restore": "復元",
+      "deletePermanently": "永久削除",
+      "folder": "フォルダ",
+      "asset": "アセット"
+    },
+    "retention": {
+      "label": "保持ポリシー",
+      "description": "{{days}}日後に自動削除されます",
+      "expires": "残り{{days}}日",
+      "expired": "期限切れ"
+    },
+    "confirm": {
+      "restore": "{{count}}件を復元しますか？",
+      "restoreBody": "選択したアイテムは元の場所に戻されます。",
+      "delete": "{{count}}件を永久削除しますか？",
+      "deleteBody": "この操作は元に戻せません。ファイルはストレージから永久に削除されます。",
+      "emptyBin": "ゴミ筱を空にしますか？",
+      "emptyBinBody": "全{{count}}件が永久に削除されます。この操作は元に戻せません。",
+      "confirm": "確認",
+      "cancel": "キャンセル"
+    },
+    "notifications": {
+      "restored": "{{count}}件を復元しました。",
+      "deleted": "{{count}}件を永久削除しました。",
+      "emptied": "ゴミ筱を空にしました。",
+      "loadError": "ゴミ筱の読み込みに失敗しました。"
+    },
+    "pagination": {
+      "prev": "前へ",
+      "next": "次へ",
+      "info": "{{pages}}ページ中{{page}}ページ"
+    },
+    "purge": {
+      "title": "自動パージ",
+      "subtitle": "期限切れのアイテムをゴミ筱から永久删除する夜間ジョブ。",
+      "triggerButton": "今すぐパージを実行",
+      "policyButton": "ポリシーを設定",
+      "policyTitle": "保持ポリシー",
+      "queued": "パージがキューに追加されました。",
+      "running": "パージ実行中…",
+      "policySaved": "保持ポリシーを保存しました。",
+      "lastRan": "最終実行：",
+      "skippedWarning": "{{count}}件のアイテムがスキップされました。",
+      "skippedDetail": "これらのアセットにはアクティブなワークフローインスタンスがあります。",
+      "status": {
+        "idle": "アイドル",
+        "queued": "キュー待機",
+        "running": "実行中",
+        "completed": "完了",
+        "failed": "失敗"
+      },
+      "results": {
+        "deleted": "{{count}}件削除",
+        "skipped": "{{count}}件スキップ",
+        "failed": "{{count}}件失敗"
+      },
+      "policy": {
+        "retentionDays": "保持日数",
+        "retentionDaysHelp": "それ以古のアイテムがパージされます",
+        "workflowBehavior": "ワークフロー動作",
+        "behaviorSkip": "スキップ",
+        "behaviorForceTerminate": "強制終了して削除",
+        "batchSize": "バッチサイズ",
+        "notifyAdmins": "実行後に管理者に通知",
+        "forceTerminateWarning": "強制終了は全ての保留中ワークフロータスクをキャンセルします。"
+      },
+      "triggeredBy": "{{name}}によって実行",
+      "triggeredBySchedule": "夜間スケジュールによって実行"
+    },
+    "settings": {
+      "title": "ゴミ箱とパージ",
+      "subtitle": "削除されたアセットを永久に削除する方法とタイミングを設定します。",
+      "warningNote": "パージはアセットとそのすべてのバージョンをストレージから永久に削除します。元に戻せません。",
+      "policySubtitle": "{{days}}日以上経過した項目をパージ · ワークフロー: {{behavior}}",
+      "nextScheduled": "次回の予定実行"
+    },
+    "activePurge": {
+      "runningTitle": "ゴミ箱のパージを実行中",
+      "queuedTitle": "ゴミ箱のパージがキューに登録されました",
+      "hint": "期限切れの項目を永久に削除しています。完了するとこのページが更新されます。"
+    },
+    "ai": {
+      "title": "AI支援クリーンアップ",
+      "comingSoon": "近日公開",
+      "description": "Capri AI Gatewayに接続すると、ゴミ箱にインテリジェントな機能が追加されます:",
+      "feature1": "使用状況、経過時間、重複に基づく安全に削除可能なアセットのスマート提案。",
+      "feature2": "まだ必要な可能性のあるアセットにフラグを立てるリスクスコアリング。",
+      "feature3": "削除内容と回収ストレージを要約する自然言語クリーンアップレポート。"
+    }
+  },
   "duplicateManager": {
     "title": "重複マネージャー",
     "subtitle": "検出された重複アセットを確認・解決",

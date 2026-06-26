@@ -11,3 +11,10 @@ end
 every 1.day, at: "2:15 am" do
   runner "MetadataImportCleanupWorker.perform_async"
 end
+
+# Enterprise Recycle Bin purge — permanently destroys expired trashed items.
+# Policy (retention_days, workflow_behavior, etc.) is configurable via
+# GET/PUT /api/v1/bin/retention_policy.
+every 1.day, at: "3:00 am" do
+  runner "BinPurgeWorker.perform_async"
+end

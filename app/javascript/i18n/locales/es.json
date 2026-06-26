@@ -181,6 +181,136 @@
       "videoProfilesDesc": "Codificación de vídeo adaptativa"
     }
   },
+  "bin": {
+    "title": "Papelera de reciclaje",
+    "subtitle": "Elementos eliminados en los últimos {{days}} días. Después se eliminan definitivamente.",
+    "empty": "Tu papelera está vacía",
+    "emptySubtitle": "Los assets y carpetas eliminados aparecerán aquí.",
+    "emptyBin": "Vaciar papelera",
+    "restoreSelected": "Restaurar selección",
+    "deleteSelected": "Eliminar selección",
+    "search": "Buscar en papelera…",
+    "results": "Resultados",
+    "filters": {
+      "all": "Todos los elementos",
+      "assets": "Assets",
+      "folders": "Carpetas",
+      "images": "Imágenes",
+      "videos": "Videos",
+      "documents": "Documentos"
+    },
+    "sort": {
+      "deletedNewest": "Eliminado (Más reciente)",
+      "deletedOldest": "Eliminado (Más antiguo)",
+      "nameAZ": "Nombre (A–Z)",
+      "nameZA": "Nombre (Z–A)",
+      "sizeDesc": "Tamaño (Mayor primero)",
+      "sizeAsc": "Tamaño (Menor primero)"
+    },
+    "stats": {
+      "totalItems": "Total de elementos",
+      "assets": "Assets",
+      "folders": "Carpetas",
+      "storageUsed": "Almacenamiento usado"
+    },
+    "item": {
+      "type": "Tipo",
+      "name": "Nombre",
+      "deletedAt": "Eliminado",
+      "size": "Tamaño",
+      "originalPath": "Ubicación",
+      "expires": "Expira",
+      "actions": "Acciones",
+      "restore": "Restaurar",
+      "deletePermanently": "Eliminar permanentemente",
+      "folder": "Carpeta",
+      "asset": "Asset"
+    },
+    "retention": {
+      "label": "Política de retención",
+      "description": "Los elementos se eliminan automáticamente después de {{days}} días",
+      "expires": "{{days}}d restantes",
+      "expired": "Expirado"
+    },
+    "confirm": {
+      "restore": "¿Restaurar {{count}} elemento(s)?",
+      "restoreBody": "Los elementos seleccionados se moverán de vuelta a su ubicación original.",
+      "delete": "¿Eliminar permanentemente {{count}} elemento(s)?",
+      "deleteBody": "Esta acción no se puede deshacer. Los archivos se eliminarán del almacenamiento.",
+      "emptyBin": "¿Vaciar la papelera de reciclaje?",
+      "emptyBinBody": "Todos los {{count}} elementos se eliminarán permanentemente. Esta acción no se puede deshacer.",
+      "confirm": "Confirmar",
+      "cancel": "Cancelar"
+    },
+    "notifications": {
+      "restored": "{{count}} elemento(s) restaurado(s) con éxito.",
+      "deleted": "{{count}} elemento(s) eliminado(s) permanentemente.",
+      "emptied": "Papelera vaciada.",
+      "loadError": "Error al cargar la papelera."
+    },
+    "pagination": {
+      "prev": "Anterior",
+      "next": "Siguiente",
+      "info": "Página {{page}} de {{pages}}"
+    },
+    "purge": {
+      "title": "Purga automática",
+      "subtitle": "Tarea nocturna que elimina permanentemente los elementos expirados de la papelera.",
+      "triggerButton": "Ejecutar purga ahora",
+      "policyButton": "Configurar política",
+      "policyTitle": "Política de retención",
+      "queued": "La purga ha sido puesta en cola.",
+      "running": "Purga en ejecución…",
+      "policySaved": "Política de retención guardada.",
+      "lastRan": "Última ejecución:",
+      "skippedWarning": "{{count}} elemento(s) omitidos.",
+      "skippedDetail": "Estos assets tienen instancias de workflow activas.",
+      "status": {
+        "idle": "Inactivo",
+        "queued": "En cola",
+        "running": "Ejecutando",
+        "completed": "Completado",
+        "failed": "Fallido"
+      },
+      "results": {
+        "deleted": "{{count}} eliminados",
+        "skipped": "{{count}} omitidos",
+        "failed": "{{count}} fallidos"
+      },
+      "policy": {
+        "retentionDays": "Días de retención",
+        "retentionDaysHelp": "Los elementos más antiguos serán purgados",
+        "workflowBehavior": "Comportamiento de workflow",
+        "behaviorSkip": "Omitir (proteger workflows activos)",
+        "behaviorForceTerminate": "Forzar terminación y eliminar",
+        "batchSize": "Tamaño de lote",
+        "notifyAdmins": "Notificar a los administradores después de cada ejecución",
+        "forceTerminateWarning": "Forzar terminación cancelará todas las tareas de workflow pendientes."
+      },
+      "triggeredBy": "Activado por {{name}}",
+      "triggeredBySchedule": "Activado por la programación nocturna"
+    },
+    "settings": {
+      "title": "Papelera y purga",
+      "subtitle": "Configure cómo y cuándo se eliminan permanentemente los assets borrados.",
+      "warningNote": "La purga elimina permanentemente los assets y todas sus versiones del almacenamiento. No se puede deshacer.",
+      "policySubtitle": "Elementos de más de {{days}} días se purgan · Workflow: {{behavior}}",
+      "nextScheduled": "Próxima ejecución programada"
+    },
+    "activePurge": {
+      "runningTitle": "Purga de papelera en curso",
+      "queuedTitle": "Purga de papelera en cola",
+      "hint": "Los elementos expirados se están eliminando permanentemente. Esta página se actualizará al completarse."
+    },
+    "ai": {
+      "title": "Limpieza asistida por IA",
+      "comingSoon": "Próximamente",
+      "description": "Al conectarse con Capri AI Gateway, la papelera obtendrá capacidades inteligentes:",
+      "feature1": "Sugerencias inteligentes de assets eliminables según uso, antigüedad y duplicación.",
+      "feature2": "Puntuación de riesgo para marcar assets que aún podrían necesitarse.",
+      "feature3": "Informes de limpieza en lenguaje natural."
+    }
+  },
   "duplicateManager": {
     "title": "Gestor de duplicados",
     "subtitle": "Revise y resuelva activos duplicados detectados",

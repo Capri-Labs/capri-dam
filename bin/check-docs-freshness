@@ -7,12 +7,17 @@
 #   1. RuboCop — lint staged Ruby files (blocks on offense)
 #   2. REST docs guard — warn when api/v1 controllers change without swagger update
 #   3. GraphQL docs guard — warn when graphql/ changes without SDL/HTML update
+#   4. YAML syntax — validate staged .yml/.yaml files (blocks on parse error)
+#   5. JSON syntax — validate staged .json files (blocks on parse error)
+#   6. Python — compile-check staged .py files (+ ruff/flake8 if available)
+#   7. ESLint — lint staged .js/.jsx files (skipped if eslint not installed)
 #
 # Exit 0 = OK to commit   Exit 1 = block commit
 #
 # Bypass flags (not recommended):
 #   RUBOCOP_WARN_ONLY=1   — warn but don't block on RuboCop offenses
 #   DOCS_WARN_ONLY=1      — warn but don't block on stale docs
+#   LINT_WARN_ONLY=1      — warn but don't block on YAML/JSON/Python/ESLint issues
 
 set -euo pipefail
 
@@ -24,6 +29,7 @@ NC='\033[0m'
 
 warn_only_rubocop="${RUBOCOP_WARN_ONLY:-0}"
 warn_only_docs="${DOCS_WARN_ONLY:-0}"
+warn_only_lint="${LINT_WARN_ONLY:-0}"
 
 staged_files() {
   git diff --cached --name-only --diff-filter=ACM 2>/dev/null || true
@@ -131,12 +137,154 @@ if [[ -n "$GQL_SRC_CHANGED" ]]; then
   fi
 fi
 
+# ─── 4. YAML syntax — validate staged .yml/.yaml files ────────────────────────
+
+STAGED_YAML=$(echo "$STAGED" | grep -E '\.ya?ml$' || true)
+
+if [[ -n "$STAGED_YAML" ]]; then
+  echo -e "${CYAN}🔍 YAML: validating $(echo "$STAGED_YAML" | wc -l | tr -d ' ') staged file(s)…${NC}"
+  YAML_BAD=""
+  while IFS= read -r f; do
+    [[ -z "$f" || ! -f "$f" ]] && continue
+    # ERB-templated YAML (e.g. database.yml) can't be parsed as plain YAML; skip.
+    if grep -q '<%' "$f" 2>/dev/null; then
+      continue
+    fi
+    if ! ruby -ryaml -e 'YAML.load_file(ARGV[0])' "$f" >/dev/null 2>&1; then
+      YAML_BAD="$YAML_BAD $f"
+    fi
+  done <<< "$STAGED_YAML"
+
+  if [[ -n "$YAML_BAD" ]]; then
+    echo -e "${YELLOW}⚠  INVALID YAML detected in:${NC}"
+    echo "$YAML_BAD" | tr ' ' '\n' | sed '/^$/d;s/^/     • /'
+    for f in $YAML_BAD; do ruby -ryaml -e 'YAML.load_file(ARGV[0])' "$f" 2>&1 | sed 's/^/       /' || true; done
+    if [[ "$warn_only_lint" -eq 1 ]]; then
+      echo -e "${YELLOW}LINT_WARN_ONLY=1 — commit allowed despite YAML errors.${NC}"
+    else
+      BLOCKED=1
+    fi
+  else
+    echo -e "${GREEN}✓ YAML: all staged files parse cleanly.${NC}"
+  fi
+fi
+
+# ─── 5. JSON syntax — validate staged .json files ─────────────────────────────
+
+STAGED_JSON=$(echo "$STAGED" | grep -E '\.json$' || true)
+
+if [[ -n "$STAGED_JSON" ]]; then
+  echo -e "${CYAN}🔍 JSON: validating $(echo "$STAGED_JSON" | wc -l | tr -d ' ') staged file(s)…${NC}"
+  JSON_BAD=""
+  while IFS= read -r f; do
+    [[ -z "$f" || ! -f "$f" ]] && continue
+    if ! ruby -rjson -e 'JSON.parse(File.read(ARGV[0]))' "$f" >/dev/null 2>&1; then
+      JSON_BAD="$JSON_BAD $f"
+    fi
+  done <<< "$STAGED_JSON"
+
+  if [[ -n "$JSON_BAD" ]]; then
+    echo -e "${YELLOW}⚠  INVALID JSON detected in:${NC}"
+    echo "$JSON_BAD" | tr ' ' '\n' | sed '/^$/d;s/^/     • /'
+    for f in $JSON_BAD; do ruby -rjson -e 'JSON.parse(File.read(ARGV[0]))' "$f" 2>&1 | sed 's/^/       /' || true; done
+    if [[ "$warn_only_lint" -eq 1 ]]; then
+      echo -e "${YELLOW}LINT_WARN_ONLY=1 — commit allowed despite JSON errors.${NC}"
+    else
+      BLOCKED=1
+    fi
+  else
+    echo -e "${GREEN}✓ JSON: all staged files parse cleanly.${NC}"
+  fi
+fi
+
+# ─── 6. Python — compile-check staged .py files ───────────────────────────────
+
+STAGED_PY=$(echo "$STAGED" | grep -E '\.py$' || true)
+
+if [[ -n "$STAGED_PY" ]]; then
+  PYTHON_BIN="$(command -v python3 || command -v python || true)"
+  if [[ -z "$PYTHON_BIN" ]]; then
+    echo -e "${YELLOW}⚠  Python files staged but no python interpreter found — skipping.${NC}"
+  else
+    echo -e "${CYAN}🔍 Python: checking $(echo "$STAGED_PY" | wc -l | tr -d ' ') staged file(s)…${NC}"
+    PY_BAD=""
+    # Prefer ruff or flake8 when available; always fall back to a syntax compile.
+    if command -v ruff >/dev/null 2>&1; then
+      # shellcheck disable=SC2086
+      ruff check $STAGED_PY || PY_BAD="ruff"
+    elif command -v flake8 >/dev/null 2>&1; then
+      # shellcheck disable=SC2086
+      flake8 $STAGED_PY || PY_BAD="flake8"
+    fi
+    # Syntax compile (always runs, catches parse errors even without a linter)
+    while IFS= read -r f; do
+      [[ -z "$f" || ! -f "$f" ]] && continue
+      if ! "$PYTHON_BIN" -m py_compile "$f" >/dev/null 2>&1; then
+        PY_BAD="$PY_BAD $f"
+        "$PYTHON_BIN" -m py_compile "$f" 2>&1 | sed 's/^/       /' || true
+      fi
+    done <<< "$STAGED_PY"
+
+    if [[ -n "$PY_BAD" ]]; then
+      echo -e "${YELLOW}⚠  Python issues detected (syntax or lint).${NC}"
+      if [[ "$warn_only_lint" -eq 1 ]]; then
+        echo -e "${YELLOW}LINT_WARN_ONLY=1 — commit allowed despite Python issues.${NC}"
+      else
+        BLOCKED=1
+      fi
+    else
+      echo -e "${GREEN}✓ Python: staged files OK.${NC}"
+    fi
+  fi
+fi
+
+# ─── 7. ESLint — lint staged JS/JSX (skipped if eslint not installed) ─────────
+
+STAGED_JS=$(echo "$STAGED" | grep -E '\.(jsx?|tsx?)$' || true)
+
+if [[ -n "$STAGED_JS" ]]; then
+  ESLINT_BIN=""
+  if [[ -x "node_modules/.bin/eslint" ]]; then
+    ESLINT_BIN="node_modules/.bin/eslint"
+  elif command -v eslint >/dev/null 2>&1; then
+    ESLINT_BIN="eslint"
+  fi
+
+  # Only lint when the project actually defines an ESLint config; otherwise a
+  # globally-installed eslint would error out on a repo that doesn't use it.
+  ESLINT_CONFIG=""
+  for cfg in eslint.config.js eslint.config.mjs eslint.config.cjs \
+             .eslintrc .eslintrc.js .eslintrc.cjs .eslintrc.json \
+             .eslintrc.yml .eslintrc.yaml; do
+    if [[ -f "$cfg" ]]; then ESLINT_CONFIG="$cfg"; break; fi
+  done
+
+  if [[ -z "$ESLINT_BIN" || -z "$ESLINT_CONFIG" ]]; then
+    echo -e "${YELLOW}⚠  No ESLint setup found — skipping JS/JSX lint (add eslint + a config to enable).${NC}"
+  else
+    echo -e "${CYAN}🔍 ESLint: checking $(echo "$STAGED_JS" | wc -l | tr -d ' ') staged file(s)…${NC}"
+    ESLINT_RESULT=0
+    # shellcheck disable=SC2086
+    "$ESLINT_BIN" $STAGED_JS || ESLINT_RESULT=$?
+    if [[ "$ESLINT_RESULT" -ne 0 ]]; then
+      echo -e "${YELLOW}⚠  ESLint reported problems. Fix with: yarn eslint --fix <files>${NC}"
+      if [[ "$warn_only_lint" -eq 1 ]]; then
+        echo -e "${YELLOW}LINT_WARN_ONLY=1 — commit allowed despite ESLint problems.${NC}"
+      else
+        BLOCKED=1
+      fi
+    else
+      echo -e "${GREEN}✓ ESLint: no problems.${NC}"
+    fi
+  fi
+fi
+
 # ─── Result ───────────────────────────────────────────────────────────────────
 
 if [[ "$BLOCKED" -eq 1 ]]; then
   echo -e "${RED}Commit blocked.${NC}"
   echo "   To bypass all checks (not recommended):"
-  echo "     RUBOCOP_WARN_ONLY=1 DOCS_WARN_ONLY=1 git commit ..."
+  echo "     RUBOCOP_WARN_ONLY=1 DOCS_WARN_ONLY=1 LINT_WARN_ONLY=1 git commit ..."
   exit 1
 fi
 

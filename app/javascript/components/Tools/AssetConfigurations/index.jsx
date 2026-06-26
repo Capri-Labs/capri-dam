@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { Box, Typography, Chip } from '@mui/material';
-import { SettingsOutlined, SecurityOutlined, BlockOutlined, ImageOutlined, VideoFileOutlined, ContentCopyOutlined } from '@mui/icons-material';
+import { SettingsOutlined, SecurityOutlined, BlockOutlined, ImageOutlined, VideoFileOutlined, ContentCopyOutlined, DeleteForeverOutlined } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import UploadRestrictionsPanel from './UploadRestrictions';
 import ImageProfilesManager from './ImageProfiles';
 import VideoProfilesManager from './VideoProfiles';
 import DuplicateManagerSettings from './DuplicateManagerSettings';
+import BinPurgeSettings from './BinPurgeSettings';
 
 const NAV_ITEMS = [
     {
@@ -39,6 +40,15 @@ const NAV_ITEMS = [
         icon: <ContentCopyOutlined sx={{ fontSize: 18 }} />,
         descriptionKey: 'duplicateManager.settings.subtitle',
         descriptionFallback: 'SHA-256 based duplicate detection on upload',
+        badge: 'New',
+    },
+    {
+        id: 'bin_purge',
+        labelKey: 'bin.settings.title',
+        labelFallback: 'Recycle Bin & Purge',
+        icon: <DeleteForeverOutlined sx={{ fontSize: 18 }} />,
+        descriptionKey: 'bin.settings.subtitle',
+        descriptionFallback: 'Auto-purge policy & retention for deleted assets',
         badge: 'New',
     },
 ];
@@ -120,6 +130,7 @@ export default function AssetConfigurationsManager() {
                     {activeSection === 'image_profiles'      && <ImageProfilesManager />}
                     {activeSection === 'video_profiles'      && <VideoProfilesManager />}
                     {activeSection === 'duplicate_manager'   && <DuplicateManagerSettings />}
+                    {activeSection === 'bin_purge'           && <BinPurgeSettings />}
                 </Box>
             </Box>
         </Box>

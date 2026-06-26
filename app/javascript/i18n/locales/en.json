@@ -181,6 +181,136 @@
       "videoProfilesDesc": "Adaptive & progressive video encoding"
     }
   },
+  "bin": {
+    "title": "Recycle Bin",
+    "subtitle": "Items deleted in the last {{days}} days. After that, they are permanently removed.",
+    "empty": "Your recycle bin is empty",
+    "emptySubtitle": "Deleted assets and folders will appear here.",
+    "emptyBin": "Empty Bin",
+    "restoreSelected": "Restore Selected",
+    "deleteSelected": "Delete Selected",
+    "search": "Search recycle bin…",
+    "results": "Results",
+    "filters": {
+      "all": "All Items",
+      "assets": "Assets",
+      "folders": "Folders",
+      "images": "Images",
+      "videos": "Videos",
+      "documents": "Documents"
+    },
+    "sort": {
+      "deletedNewest": "Deleted (Newest first)",
+      "deletedOldest": "Deleted (Oldest first)",
+      "nameAZ": "Name (A–Z)",
+      "nameZA": "Name (Z–A)",
+      "sizeDesc": "Size (Largest first)",
+      "sizeAsc": "Size (Smallest first)"
+    },
+    "stats": {
+      "totalItems": "Total Items",
+      "assets": "Assets",
+      "folders": "Folders",
+      "storageUsed": "Storage Used"
+    },
+    "item": {
+      "type": "Type",
+      "name": "Name",
+      "deletedAt": "Deleted",
+      "size": "Size",
+      "originalPath": "Location",
+      "expires": "Expires",
+      "actions": "Actions",
+      "restore": "Restore",
+      "deletePermanently": "Delete Permanently",
+      "folder": "Folder",
+      "asset": "Asset"
+    },
+    "retention": {
+      "label": "Retention Policy",
+      "description": "Items are auto-deleted after {{days}} days",
+      "expires": "{{days}}d left",
+      "expired": "Expired"
+    },
+    "confirm": {
+      "restore": "Restore {{count}} item(s)?",
+      "restoreBody": "Selected items will be moved back to their original location.",
+      "delete": "Permanently delete {{count}} item(s)?",
+      "deleteBody": "This cannot be undone. Files will be permanently removed from storage.",
+      "emptyBin": "Empty the Recycle Bin?",
+      "emptyBinBody": "All {{count}} items will be permanently deleted. This cannot be undone.",
+      "confirm": "Confirm",
+      "cancel": "Cancel"
+    },
+    "notifications": {
+      "restored": "{{count}} item(s) restored successfully.",
+      "deleted": "{{count}} item(s) permanently deleted.",
+      "emptied": "Recycle bin emptied.",
+      "loadError": "Failed to load recycle bin."
+    },
+    "pagination": {
+      "prev": "Previous",
+      "next": "Next",
+      "info": "Page {{page}} of {{pages}}"
+    },
+    "purge": {
+      "title": "Automatic Purge",
+      "subtitle": "Nightly job that permanently removes expired items from the bin.",
+      "triggerButton": "Run Purge Now",
+      "policyButton": "Configure Policy",
+      "policyTitle": "Retention Policy",
+      "queued": "Purge has been queued.",
+      "running": "Purge running…",
+      "policySaved": "Retention policy saved.",
+      "lastRan": "Last run:",
+      "skippedWarning": "{{count}} item(s) were skipped.",
+      "skippedDetail": "These assets have active workflow instances. Change the policy to 'Force Terminate' or restore the assets first.",
+      "status": {
+        "idle": "Idle",
+        "queued": "Queued",
+        "running": "Running",
+        "completed": "Completed",
+        "failed": "Failed"
+      },
+      "results": {
+        "deleted": "{{count}} deleted",
+        "skipped": "{{count}} skipped",
+        "failed": "{{count}} failed"
+      },
+      "policy": {
+        "retentionDays": "Retention days",
+        "retentionDaysHelp": "Items older than this are purged",
+        "workflowBehavior": "Workflow behavior",
+        "behaviorSkip": "Skip (protect active workflows)",
+        "behaviorForceTerminate": "Force terminate & delete",
+        "batchSize": "Batch size",
+        "notifyAdmins": "Notify admins after each run",
+        "forceTerminateWarning": "Force terminate will cancel all pending workflow tasks on affected assets. This action is irreversible."
+      },
+      "triggeredBy": "Triggered by {{name}}",
+      "triggeredBySchedule": "Triggered by the nightly schedule"
+    },
+    "settings": {
+      "title": "Recycle Bin & Purge",
+      "subtitle": "Configure how and when deleted assets are permanently removed.",
+      "warningNote": "Purging permanently deletes assets and all their versions from storage. This cannot be undone.",
+      "policySubtitle": "Items older than {{days}} days are purged · Workflow: {{behavior}}",
+      "nextScheduled": "Next scheduled run"
+    },
+    "activePurge": {
+      "runningTitle": "Recycle Bin purge in progress",
+      "queuedTitle": "Recycle Bin purge queued",
+      "hint": "Expired items are being permanently removed. This page will refresh when complete."
+    },
+    "ai": {
+      "title": "AI-Assisted Cleanup",
+      "comingSoon": "Coming Soon",
+      "description": "Once connected to the Capri AI Gateway, the bin will gain intelligent cleanup capabilities:",
+      "feature1": "Smart suggestions for safe-to-delete assets based on usage, age & duplication.",
+      "feature2": "Risk scoring to flag assets that may still be needed before purging.",
+      "feature3": "Natural-language cleanup reports summarising what was removed and storage reclaimed."
+    }
+  },
   "duplicateManager": {
     "title": "Duplicate Manager",
     "subtitle": "Review and resolve duplicate assets detected in your repository",

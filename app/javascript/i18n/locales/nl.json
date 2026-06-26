@@ -181,6 +181,136 @@
       "videoProfilesDesc": "Adaptieve videocodering"
     }
   },
+  "bin": {
+    "title": "Prullenbak",
+    "subtitle": "Items verwijderd in de afgelopen {{days}} dagen. Daarna worden ze permanent verwijderd.",
+    "empty": "Uw prullenbak is leeg",
+    "emptySubtitle": "Verwijderde assets en mappen verschijnen hier.",
+    "emptyBin": "Prullenbak leegmaken",
+    "restoreSelected": "Selectie herstellen",
+    "deleteSelected": "Selectie verwijderen",
+    "search": "Zoeken in prullenbak…",
+    "results": "Resultaten",
+    "filters": {
+      "all": "Alle items",
+      "assets": "Assets",
+      "folders": "Mappen",
+      "images": "Afbeeldingen",
+      "videos": "Video's",
+      "documents": "Documenten"
+    },
+    "sort": {
+      "deletedNewest": "Verwijderd (Nieuwste eerst)",
+      "deletedOldest": "Verwijderd (Oudste eerst)",
+      "nameAZ": "Naam (A–Z)",
+      "nameZA": "Naam (Z–A)",
+      "sizeDesc": "Grootte (Grootste eerst)",
+      "sizeAsc": "Grootte (Kleinste eerst)"
+    },
+    "stats": {
+      "totalItems": "Totaal items",
+      "assets": "Assets",
+      "folders": "Mappen",
+      "storageUsed": "Opslag gebruikt"
+    },
+    "item": {
+      "type": "Type",
+      "name": "Naam",
+      "deletedAt": "Verwijderd op",
+      "size": "Grootte",
+      "originalPath": "Locatie",
+      "expires": "Verloopt op",
+      "actions": "Acties",
+      "restore": "Herstellen",
+      "deletePermanently": "Permanent verwijderen",
+      "folder": "Map",
+      "asset": "Asset"
+    },
+    "retention": {
+      "label": "Bewaarbeleid",
+      "description": "Items worden na {{days}} dagen automatisch verwijderd",
+      "expires": "Nog {{days}} dagen",
+      "expired": "Verlopen"
+    },
+    "confirm": {
+      "restore": "{{count}} item(s) herstellen?",
+      "restoreBody": "Geselecteerde items worden teruggebracht naar hun oorspronkelijke locatie.",
+      "delete": "{{count}} item(s) permanent verwijderen?",
+      "deleteBody": "Deze actie kan niet ongedaan worden gemaakt.",
+      "emptyBin": "Prullenbak leegmaken?",
+      "emptyBinBody": "Alle {{count}} items worden permanent verwijderd. Dit kan niet ongedaan worden gemaakt.",
+      "confirm": "Bevestigen",
+      "cancel": "Annuleren"
+    },
+    "notifications": {
+      "restored": "{{count}} item(s) succesvol hersteld.",
+      "deleted": "{{count}} item(s) permanent verwijderd.",
+      "emptied": "Prullenbak leeggemaakt.",
+      "loadError": "Prullenbak kon niet worden geladen."
+    },
+    "pagination": {
+      "prev": "Vorige",
+      "next": "Volgende",
+      "info": "Pagina {{page}} van {{pages}}"
+    },
+    "purge": {
+      "title": "Automatische opschoning",
+      "subtitle": "Nachtelijke taak die verlopen items definitief uit de prullenbak verwijdert.",
+      "triggerButton": "Nu opschonen",
+      "policyButton": "Beleid configureren",
+      "policyTitle": "Bewaarbeleid",
+      "queued": "Opschoning is in de wachtrij geplaatst.",
+      "running": "Opschoning bezig…",
+      "policySaved": "Bewaarbeleid opgeslagen.",
+      "lastRan": "Laatste uitvoering:",
+      "skippedWarning": "{{count}} item(s) overgeslagen.",
+      "skippedDetail": "Deze assets hebben actieve workflow-instanties.",
+      "status": {
+        "idle": "Inactief",
+        "queued": "In wachtrij",
+        "running": "Actief",
+        "completed": "Voltooid",
+        "failed": "Mislukt"
+      },
+      "results": {
+        "deleted": "{{count}} verwijderd",
+        "skipped": "{{count}} overgeslagen",
+        "failed": "{{count}} mislukt"
+      },
+      "policy": {
+        "retentionDays": "Bewaardagen",
+        "retentionDaysHelp": "Oudere items worden opgeschoond",
+        "workflowBehavior": "Workflowgedrag",
+        "behaviorSkip": "Overslaan",
+        "behaviorForceTerminate": "Geforceerd beëindigen en verwijderen",
+        "batchSize": "Batchgrootte",
+        "notifyAdmins": "Beheerders na elke uitvoering melden",
+        "forceTerminateWarning": "Geforceerd beëindigen annuleert alle openstaande workflowtaken."
+      },
+      "triggeredBy": "Gestart door {{name}}",
+      "triggeredBySchedule": "Gestart door de nachtelijke planning"
+    },
+    "settings": {
+      "title": "Prullenbak & opschoning",
+      "subtitle": "Configureer hoe en wanneer verwijderde assets definitief worden verwijderd.",
+      "warningNote": "Opschonen verwijdert assets en al hun versies definitief uit de opslag. Dit kan niet ongedaan worden gemaakt.",
+      "policySubtitle": "Items ouder dan {{days}} dagen worden opgeschoond · Workflow: {{behavior}}",
+      "nextScheduled": "Volgende geplande uitvoering"
+    },
+    "activePurge": {
+      "runningTitle": "Prullenbak opschoning bezig",
+      "queuedTitle": "Prullenbak opschoning in wachtrij",
+      "hint": "Verlopen items worden definitief verwijderd. Deze pagina wordt vernieuwd wanneer voltooid."
+    },
+    "ai": {
+      "title": "AI-ondersteunde opschoning",
+      "comingSoon": "Binnenkort",
+      "description": "Eenmaal verbonden met de Capri AI Gateway krijgt de prullenbak intelligente mogelijkheden:",
+      "feature1": "Slimme suggesties voor veilig te verwijderen assets op basis van gebruik, leeftijd & duplicatie.",
+      "feature2": "Risicoscores om assets te markeren die mogelijk nog nodig zijn.",
+      "feature3": "Opschoningsrapporten in natuurlijke taal."
+    }
+  },
   "duplicateManager": {
     "title": "Dubbelbeheer",
     "subtitle": "Gedetecteerde dubbele assets bekijken en oplossen",

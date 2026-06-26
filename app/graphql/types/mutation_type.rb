@@ -36,5 +36,11 @@ module Types
     # Duplicate Manager
     field :resolve_duplicate_group, mutation: Mutations::ResolveDuplicateGroup
     field :trigger_duplicate_scan,  mutation: Mutations::TriggerDuplicateScan
+
+    # Recycle Bin
+    field :bulk_restore_from_bin,      mutation: Mutations::BulkRestoreFromBin
+    field :empty_bin,                  mutation: Mutations::EmptyBin
+    field :update_bin_retention_policy, mutation: Mutations::UpdateBinRetentionPolicy
+    field :trigger_bin_purge,          mutation: Mutations::TriggerBinPurge
   end
 end

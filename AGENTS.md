@@ -105,8 +105,11 @@ API responses, permitted params, serializers, or GraphQL types:
 | API spec coverage | `make check-api-specs` |
 | GraphQL docs present | `make check-graphql-docs` |
 
-A pre-commit hook (`make install-hooks`) runs RuboCop on staged Ruby and blocks
-API/GraphQL changes that ship without regenerated docs.
+A pre-commit hook (`make install-hooks`) runs RuboCop on staged Ruby, validates
+staged YAML/JSON syntax, compile-checks staged Python (and runs ruff/flake8 or
+ESLint when configured), and blocks API/GraphQL changes that ship without
+regenerated docs. A companion `commit-msg` hook enforces subject conventions
+(capitalised, ≤72 chars, no trailing period).
 
 ---
 

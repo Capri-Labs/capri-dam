@@ -269,5 +269,136 @@ module Types
         last_scan_at:  last_scan_at,
       }
     end
+
+    # Returns aggregate statistics for the Recycle Bin.
+    #
+    # @return [Types::BinStatsType]
+    field :bin_stats, Types::BinStatsType, null: false do
+      description "Aggregate statistics for the Recycle Bin (total items, storage used, retention policy)."
+    end
+
+    def bin_stats
+      trashed_assets  = Asset.trashed.includes(:active_version)
+      trashed_folders = Folder.trashed
+
+      total_size = trashed_assets.sum do |a|
+        (a.active_version&.properties&.dig("size") || a.properties&.dig("size") || 0).to_i
+      end
+
+      oldest_asset  = trashed_assets.minimum(:deleted_at)
+      oldest_folder = trashed_folders.minimum(:deleted_at)
+      oldest_at     = [ oldest_asset, oldest_folder ].compact.min
+
+      {
+        total_items:       trashed_assets.count + trashed_folders.count,
+        total_assets:      trashed_assets.count,
+        total_folders:     trashed_folders.count,
+        total_size_bytes:  total_size,
+        retention_days:    Api::V1::BinController::DEFAULT_RETENTION_DAYS,
+        oldest_deleted_at: oldest_at,
+      }
+    end
+
+    # Returns the current Recycle Bin purge retention policy.
+    #
+    # @return [Types::BinRetentionPolicyType]
+    field :bin_retention_policy, Types::BinRetentionPolicyType, null: false do
+      description "The current automatic purge retention policy for the Recycle Bin."
+    end
+
+    def bin_retention_policy
+      {
+        retention_days:    (Setting.get("bin_retention_days")    || BinPurgeWorker::DEFAULT_RETENTION_DAYS).to_i,
+        workflow_behavior: (Setting.get("bin_workflow_behavior") || BinPurgeWorker::DEFAULT_WORKFLOW_BEHAVIOR).to_s,
+        batch_size:        (Setting.get("bin_purge_batch_size")  || BinPurgeWorker::DEFAULT_BATCH_SIZE).to_i,
+        notify_admins:     Setting.get("bin_purge_notify_admins").nil? ? BinPurgeWorker::DEFAULT_NOTIFY_ADMINS : (Setting.get("bin_purge_notify_admins").to_s == "true"),
+        next_scheduled_at: nil,
+      }
+    end
+
+    # Returns the current bin purge job status and last-run results.
+    #
+    # @return [Types::BinPurgeStatusType]
+    field :bin_purge_status, Types::BinPurgeStatusType, null: false do
+      description "Current background purge job status and results of the last run."
+    end
+
+    def bin_purge_status
+      raw_results  = Setting.get("bin_purge_last_results")
+      triggered_by = Setting.get("bin_purge_triggered_by")
+      {
+        status:       Setting.get(BinPurgeWorker::LOCK_KEY).to_s.presence || "idle",
+        last_ran_at:  Setting.get("bin_purge_last_ran_at"),
+        started_at:   Setting.get("bin_purge_started_at"),
+        triggered_by: triggered_by.is_a?(Hash) ? triggered_by : {},
+        last_results: raw_results.is_a?(Hash) ? raw_results : {},
+        policy:       bin_retention_policy,
+      }
+    end
+
+    # AI-assisted bin cleanup suggestions (admin only).
+    #
+    # Heuristic-ranked until the Capri AI Gateway is integrated.
+    #
+    # @param limit [Integer] max suggestions to return (1–50, default 20)
+    # @return [Array<Types::BinAiSuggestionType>]
+    field :bin_ai_suggestions, [ Types::BinAiSuggestionType ], null: false do
+      description "AI-assisted suggestions for assets that are safe to permanently purge (admin only)."
+      argument :limit, Integer, required: false, default_value: 20
+    end
+
+    def bin_ai_suggestions(limit: 20)
+      user = context[:current_user]
+      raise GraphQL::ExecutionError, "Administrator privileges required." unless user&.admin?
+
+      limit     = limit.to_i.clamp(1, 50)
+      threshold = (Setting.get("bin_retention_days") || BinPurgeWorker::DEFAULT_RETENTION_DAYS).to_i.days.ago
+
+      candidates = Asset.trashed
+                        .where("deleted_at < ?", threshold)
+                        .includes(:collection_assets, :workflow_instances, :active_version)
+                        .order("deleted_at ASC")
+                        .limit(limit * 3)
+
+      suggestions = candidates.map do |a|
+        age_days   = ((Time.current - a.deleted_at) / 86_400).to_i
+        has_coll   = a.collection_assets.any?
+        has_wf     = a.workflow_instances.any? { |wi| BinPurgeService::ACTIVE_WORKFLOW_STATUSES.include?(wi.status.to_s) }
+        props      = a.active_version&.properties || a.properties
+        size_bytes = (props["size"] || 0).to_i
+
+        {
+          id:                  a.id,
+          title:               a.title,
+          deleted_at:          a.deleted_at,
+          age_days:            age_days,
+          size_bytes:          size_bytes,
+          size_human:          ActiveSupport::NumberHelper.number_to_human_size(size_bytes),
+          has_collection_pin:  has_coll,
+          has_active_workflow: has_wf,
+          heuristic_score:     bin_heuristic_score(age_days, size_bytes, has_coll, has_wf),
+          ai_risk_score:       nil,
+          ai_reason:           nil,
+          ai_tags:             [],
+        }
+      end
+
+      suggestions
+        .reject { |s| s[:has_active_workflow] }
+        .sort_by { |s| -s[:heuristic_score] }
+        .first(limit)
+    end
+
+    private
+
+    # Rule-based safe-to-delete score (0–100) used until AI gateway is live.
+    def bin_heuristic_score(age_days, size_bytes, has_collection_pin, has_active_workflow)
+      return 0 if has_active_workflow
+
+      age_score  = [ age_days.to_f / 365 * 40, 40 ].min
+      size_score = [ Math.log10([ size_bytes, 1 ].max) * 4, 30 ].min
+      pin_score  = has_collection_pin ? 0 : 20
+      (age_score + size_score + pin_score + 10).round
+    end
   end
 end

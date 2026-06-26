@@ -181,6 +181,136 @@
       "videoProfilesDesc": "Encodage vidéo adaptatif"
     }
   },
+  "bin": {
+    "title": "Corbeille",
+    "subtitle": "Eléments supprimés ces {{days}} derniers jours. Après cela, ils sont supprimés définitivement.",
+    "empty": "Votre corbeille est vide",
+    "emptySubtitle": "Les assets et dossiers supprimés apparaîtront ici.",
+    "emptyBin": "Vider la corbeille",
+    "restoreSelected": "Restaurer la sélection",
+    "deleteSelected": "Supprimer la sélection",
+    "search": "Rechercher dans la corbeille…",
+    "results": "Résultats",
+    "filters": {
+      "all": "Tous les éléments",
+      "assets": "Assets",
+      "folders": "Dossiers",
+      "images": "Images",
+      "videos": "Vidéos",
+      "documents": "Documents"
+    },
+    "sort": {
+      "deletedNewest": "Supprimé (Plus récent)",
+      "deletedOldest": "Supprimé (Plus ancien)",
+      "nameAZ": "Nom (A–Z)",
+      "nameZA": "Nom (Z–A)",
+      "sizeDesc": "Taille (Plus grande)",
+      "sizeAsc": "Taille (Plus petite)"
+    },
+    "stats": {
+      "totalItems": "Total des éléments",
+      "assets": "Assets",
+      "folders": "Dossiers",
+      "storageUsed": "Stockage utilisé"
+    },
+    "item": {
+      "type": "Type",
+      "name": "Nom",
+      "deletedAt": "Supprimé le",
+      "size": "Taille",
+      "originalPath": "Emplacement",
+      "expires": "Expire le",
+      "actions": "Actions",
+      "restore": "Restaurer",
+      "deletePermanently": "Supprimer définitivement",
+      "folder": "Dossier",
+      "asset": "Asset"
+    },
+    "retention": {
+      "label": "Politique de rétention",
+      "description": "Les éléments sont supprimés automatiquement après {{days}} jours",
+      "expires": "{{days}}j restants",
+      "expired": "Expiré"
+    },
+    "confirm": {
+      "restore": "Restaurer {{count}} élément(s) ?",
+      "restoreBody": "Les éléments sélectionnés seront remis à leur emplacement d'origine.",
+      "delete": "Supprimer définitivement {{count}} élément(s) ?",
+      "deleteBody": "Cette action est irréversible. Les fichiers seront supprimés du stockage.",
+      "emptyBin": "Vider la corbeille ?",
+      "emptyBinBody": "Tous les {{count}} éléments seront supprimés définitivement. Cette action est irréversible.",
+      "confirm": "Confirmer",
+      "cancel": "Annuler"
+    },
+    "notifications": {
+      "restored": "{{count}} élément(s) restauré(s) avec succès.",
+      "deleted": "{{count}} élément(s) supprimé(s) définitivement.",
+      "emptied": "Corbeille vidée.",
+      "loadError": "Impossible de charger la corbeille."
+    },
+    "pagination": {
+      "prev": "Précédent",
+      "next": "Suivant",
+      "info": "Page {{page}} sur {{pages}}"
+    },
+    "purge": {
+      "title": "Purge automatique",
+      "subtitle": "Tâche nocturne qui supprime définitivement les éléments expirés de la corbeille.",
+      "triggerButton": "Exécuter la purge",
+      "policyButton": "Configurer la politique",
+      "policyTitle": "Politique de rétention",
+      "queued": "La purge a été mise en file d'attente.",
+      "running": "Purge en cours…",
+      "policySaved": "Politique de rétention enregistrée.",
+      "lastRan": "Dernier exécution :",
+      "skippedWarning": "{{count}} élément(s) ignoré(s).",
+      "skippedDetail": "Ces assets ont des instances de workflow actives.",
+      "status": {
+        "idle": "Inactif",
+        "queued": "En attente",
+        "running": "En cours",
+        "completed": "Terminé",
+        "failed": "Échoué"
+      },
+      "results": {
+        "deleted": "{{count}} supprimé(s)",
+        "skipped": "{{count}} ignoré(s)",
+        "failed": "{{count}} échoué(s)"
+      },
+      "policy": {
+        "retentionDays": "Jours de rétention",
+        "retentionDaysHelp": "Les éléments plus anciens seront purgés",
+        "workflowBehavior": "Comportement des workflows",
+        "behaviorSkip": "Ignorer (protéger les workflows actifs)",
+        "behaviorForceTerminate": "Forcer et supprimer",
+        "batchSize": "Taille de lot",
+        "notifyAdmins": "Notifier les admins après chaque exécution",
+        "forceTerminateWarning": "Forcer annule toutes les tâches de workflow en attente sur les assets affectés."
+      },
+      "triggeredBy": "Déclenché par {{name}}",
+      "triggeredBySchedule": "Déclenché par la planification nocturne"
+    },
+    "settings": {
+      "title": "Corbeille et purge",
+      "subtitle": "Configurez comment et quand les assets supprimés sont définitivement retirés.",
+      "warningNote": "La purge supprime définitivement les assets et toutes leurs versions du stockage. Irréversible.",
+      "policySubtitle": "Éléments de plus de {{days}} jours purgés · Workflow : {{behavior}}",
+      "nextScheduled": "Prochaine exécution planifiée"
+    },
+    "activePurge": {
+      "runningTitle": "Purge de la corbeille en cours",
+      "queuedTitle": "Purge de la corbeille en file d'attente",
+      "hint": "Les éléments expirés sont définitivement supprimés. La page se rafraîchira une fois terminé."
+    },
+    "ai": {
+      "title": "Nettoyage assisté par IA",
+      "comingSoon": "Bientôt",
+      "description": "Une fois connectée au Capri AI Gateway, la corbeille gagnera des capacités intelligentes :",
+      "feature1": "Suggestions intelligentes d'assets supprimables selon usage, âge et duplication.",
+      "feature2": "Score de risque pour signaler les assets potentiellement encore nécessaires.",
+      "feature3": "Rapports de nettoyage en langage naturel."
+    }
+  },
   "duplicateManager": {
     "title": "Gestionnaire de doublons",
     "subtitle": "Vérifiez et résolvez les doublons détectés",

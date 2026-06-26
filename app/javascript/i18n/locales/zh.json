@@ -181,6 +181,136 @@
       "videoProfilesDesc": "自适应视频编码"
     }
   },
+  "bin": {
+    "title": "回收站",
+    "subtitle": "过去 {{days}} 天内删除的项目。之后将被永久删除。",
+    "empty": "回收站为空",
+    "emptySubtitle": "已删除的资源和文件夹将在此显示。",
+    "emptyBin": "清空回收站",
+    "restoreSelected": "恢复选中项目",
+    "deleteSelected": "删除选中项目",
+    "search": "搜索回收站…",
+    "results": "结果",
+    "filters": {
+      "all": "所有项目",
+      "assets": "资源",
+      "folders": "文件夹",
+      "images": "图片",
+      "videos": "视频",
+      "documents": "文档"
+    },
+    "sort": {
+      "deletedNewest": "删除时间（最新）",
+      "deletedOldest": "删除时间（最旧）",
+      "nameAZ": "名称 (A–Z)",
+      "nameZA": "名称 (Z–A)",
+      "sizeDesc": "大小（最大）",
+      "sizeAsc": "大小（最小）"
+    },
+    "stats": {
+      "totalItems": "总项目",
+      "assets": "资源",
+      "folders": "文件夹",
+      "storageUsed": "已用存储"
+    },
+    "item": {
+      "type": "类型",
+      "name": "名称",
+      "deletedAt": "删除时间",
+      "size": "大小",
+      "originalPath": "位置",
+      "expires": "到期",
+      "actions": "操作",
+      "restore": "恢复",
+      "deletePermanently": "永久删除",
+      "folder": "文件夹",
+      "asset": "资源"
+    },
+    "retention": {
+      "label": "保留策略",
+      "description": "项目将在 {{days}} 天后自动删除",
+      "expires": "还剩 {{days}} 天",
+      "expired": "已过期"
+    },
+    "confirm": {
+      "restore": "恢复 {{count}} 个项目？",
+      "restoreBody": "选中的项目将被移回其原始位置。",
+      "delete": "永久删除 {{count}} 个项目？",
+      "deleteBody": "此操作无法撤销。文件将从存储中永久删除。",
+      "emptyBin": "清空回收站？",
+      "emptyBinBody": "所有 {{count}} 个项目将被永久删除。此操作无法撤销。",
+      "confirm": "确认",
+      "cancel": "取消"
+    },
+    "notifications": {
+      "restored": "已成功恢复 {{count}} 个项目。",
+      "deleted": "已永久删除 {{count}} 个项目。",
+      "emptied": "回收站已清空。",
+      "loadError": "加载回收站失败。"
+    },
+    "pagination": {
+      "prev": "上一页",
+      "next": "下一页",
+      "info": "第 {{page}} 页，共 {{pages}} 页"
+    },
+    "purge": {
+      "title": "自动清除",
+      "subtitle": "每晚自动从回收站永久删除已过期项目的任务。",
+      "triggerButton": "立即执行清除",
+      "policyButton": "配置策略",
+      "policyTitle": "保留策略",
+      "queued": "清除已加入队列。",
+      "running": "清除进行中…",
+      "policySaved": "保留策略已保存。",
+      "lastRan": "上次运行：",
+      "skippedWarning": "已跳过 {{count}} 个项目。",
+      "skippedDetail": "这些资源具有活跍的工作流实例。",
+      "status": {
+        "idle": "空闲",
+        "queued": "队列中",
+        "running": "运行中",
+        "completed": "已完成",
+        "failed": "失败"
+      },
+      "results": {
+        "deleted": "已删除 {{count}} 个",
+        "skipped": "已跳过 {{count}} 个",
+        "failed": "{{count}} 个失败"
+      },
+      "policy": {
+        "retentionDays": "保留天数",
+        "retentionDaysHelp": "超过此天数的项目将被清除",
+        "workflowBehavior": "工作流行为",
+        "behaviorSkip": "跳过",
+        "behaviorForceTerminate": "强制终止并删除",
+        "batchSize": "批处理大小",
+        "notifyAdmins": "每次运行后通知管理员",
+        "forceTerminateWarning": "强制终止将取消受影响资源上所有待处理的工作流任务。"
+      },
+      "triggeredBy": "由 {{name}} 触发",
+      "triggeredBySchedule": "由夜间计划触发"
+    },
+    "settings": {
+      "title": "回收站与清除",
+      "subtitle": "配置删除资源的永久移除方式和时间。",
+      "warningNote": "清除会从存储中永久删除资源及其所有版本。此操作无法撤销。",
+      "policySubtitle": "超过 {{days}} 天的项目将被清除 · 工作流：{{behavior}}",
+      "nextScheduled": "下次计划运行"
+    },
+    "activePurge": {
+      "runningTitle": "回收站清除进行中",
+      "queuedTitle": "回收站清除已排队",
+      "hint": "正在永久删除过期项目。完成后此页面将刷新。"
+    },
+    "ai": {
+      "title": "AI 辅助清理",
+      "comingSoon": "即将推出",
+      "description": "连接 Capri AI Gateway 后，回收站将获得智能清理功能：",
+      "feature1": "基于使用情况、时长和重复性的安全删除资源智能建议。",
+      "feature2": "风险评分以标记可能仍需要的资源。",
+      "feature3": "总结已删除内容和回收存储的自然语言清理报告。"
+    }
+  },
   "duplicateManager": {
     "title": "重复管理器",
     "subtitle": "查看并解决检测到的重复资产",

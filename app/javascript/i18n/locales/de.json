@@ -180,6 +180,136 @@
       "videoProfilesDesc": "Adaptive Videocodierung"
     }
   },
+  "bin": {
+    "title": "Papierkorb",
+    "subtitle": "Gelöschte Elemente der letzten {{days}} Tage. Danach werden sie dauerhaft entfernt.",
+    "empty": "Ihr Papierkorb ist leer",
+    "emptySubtitle": "Gelöschte Assets und Ordner erscheinen hier.",
+    "emptyBin": "Papierkorb leeren",
+    "restoreSelected": "Ausgewählte wiederherstellen",
+    "deleteSelected": "Ausgewählte löschen",
+    "search": "Papierkorb durchsuchen…",
+    "results": "Ergebnisse",
+    "filters": {
+      "all": "Alle Elemente",
+      "assets": "Assets",
+      "folders": "Ordner",
+      "images": "Bilder",
+      "videos": "Videos",
+      "documents": "Dokumente"
+    },
+    "sort": {
+      "deletedNewest": "Gelöscht (Neueste zuerst)",
+      "deletedOldest": "Gelöscht (Älteste zuerst)",
+      "nameAZ": "Name (A–Z)",
+      "nameZA": "Name (Z–A)",
+      "sizeDesc": "Größe (Größte zuerst)",
+      "sizeAsc": "Größe (Kleinste zuerst)"
+    },
+    "stats": {
+      "totalItems": "Elemente gesamt",
+      "assets": "Assets",
+      "folders": "Ordner",
+      "storageUsed": "Speicher belegt"
+    },
+    "item": {
+      "type": "Typ",
+      "name": "Name",
+      "deletedAt": "Gelöscht am",
+      "size": "Größe",
+      "originalPath": "Speicherort",
+      "expires": "Läuft ab",
+      "actions": "Aktionen",
+      "restore": "Wiederherstellen",
+      "deletePermanently": "Dauerhaft löschen",
+      "folder": "Ordner",
+      "asset": "Asset"
+    },
+    "retention": {
+      "label": "Aufbewahrungsrichtlinie",
+      "description": "Elemente werden nach {{days}} Tagen automatisch gelöscht",
+      "expires": "Noch {{days}} Tage",
+      "expired": "Abgelaufen"
+    },
+    "confirm": {
+      "restore": "{{count}} Element(e) wiederherstellen?",
+      "restoreBody": "Ausgewählte Elemente werden an ihren ursprünglichen Speicherort zurückgebracht.",
+      "delete": "{{count}} Element(e) dauerhaft löschen?",
+      "deleteBody": "Dieser Vorgang kann nicht rückgängig gemacht werden.",
+      "emptyBin": "Papierkorb leeren?",
+      "emptyBinBody": "Alle {{count}} Elemente werden dauerhaft gelöscht. Dies kann nicht rückgängig gemacht werden.",
+      "confirm": "Bestätigen",
+      "cancel": "Abbrechen"
+    },
+    "notifications": {
+      "restored": "{{count}} Element(e) erfolgreich wiederhergestellt.",
+      "deleted": "{{count}} Element(e) dauerhaft gelöscht.",
+      "emptied": "Papierkorb wurde geleert.",
+      "loadError": "Papierkorb konnte nicht geladen werden."
+    },
+    "pagination": {
+      "prev": "Zurück",
+      "next": "Weiter",
+      "info": "Seite {{page}} von {{pages}}"
+    },
+    "purge": {
+      "title": "Automatische Bereinigung",
+      "subtitle": "Nächtlicher Job, der abgelaufene Elemente dauerhaft aus dem Papierkorb entfernt.",
+      "triggerButton": "Jetzt bereinigen",
+      "policyButton": "Richtlinie konfigurieren",
+      "policyTitle": "Aufbewahrungsrichtlinie",
+      "queued": "Bereinigung wurde in die Warteschlange gestellt.",
+      "running": "Bereinigung läuft…",
+      "policySaved": "Aufbewahrungsrichtlinie gespeichert.",
+      "lastRan": "Letzter Lauf:",
+      "skippedWarning": "{{count}} Element(e) wurden übersprungen.",
+      "skippedDetail": "Diese Assets haben aktive Workflow-Instanzen.",
+      "status": {
+        "idle": "Inaktiv",
+        "queued": "Wartend",
+        "running": "Läuft",
+        "completed": "Abgeschlossen",
+        "failed": "Fehlgeschlagen"
+      },
+      "results": {
+        "deleted": "{{count}} gelöscht",
+        "skipped": "{{count}} übersprungen",
+        "failed": "{{count}} fehlgeschlagen"
+      },
+      "policy": {
+        "retentionDays": "Aufbewahrungstage",
+        "retentionDaysHelp": "Ältere Elemente werden bereinigt",
+        "workflowBehavior": "Workflow-Verhalten",
+        "behaviorSkip": "Aktive Workflows schützen",
+        "behaviorForceTerminate": "Erzwingen und löschen",
+        "batchSize": "Chargengröße",
+        "notifyAdmins": "Admins nach jedem Lauf benachrichtigen",
+        "forceTerminateWarning": "Erzwingen bricht alle ausstehenden Workflow-Aufgaben ab. Diese Aktion ist unwiderruflich."
+      },
+      "triggeredBy": "Ausgelöst von {{name}}",
+      "triggeredBySchedule": "Vom nächtlichen Zeitplan ausgelöst"
+    },
+    "settings": {
+      "title": "Papierkorb & Bereinigung",
+      "subtitle": "Konfigurieren Sie, wie und wann gelöschte Assets dauerhaft entfernt werden.",
+      "warningNote": "Die Bereinigung löscht Assets und alle ihre Versionen dauerhaft aus dem Speicher. Dies kann nicht rückgängig gemacht werden.",
+      "policySubtitle": "Elemente älter als {{days}} Tage werden bereinigt · Workflow: {{behavior}}",
+      "nextScheduled": "Nächster geplanter Lauf"
+    },
+    "activePurge": {
+      "runningTitle": "Papierkorb-Bereinigung läuft",
+      "queuedTitle": "Papierkorb-Bereinigung in Warteschlange",
+      "hint": "Abgelaufene Elemente werden dauerhaft entfernt. Diese Seite wird nach Abschluss aktualisiert."
+    },
+    "ai": {
+      "title": "KI-gestützte Bereinigung",
+      "comingSoon": "Demnächst",
+      "description": "Nach Verbindung mit dem Capri AI Gateway erhält der Papierkorb intelligente Funktionen:",
+      "feature1": "Intelligente Vorschläge für sicher löschbare Assets basierend auf Nutzung, Alter & Duplikaten.",
+      "feature2": "Risikobewertung zur Kennzeichnung möglicherweise noch benötigter Assets.",
+      "feature3": "Bereinigungsberichte in natürlicher Sprache."
+    }
+  },
   "duplicateManager": {
     "title": "Duplikat-Manager",
     "subtitle": "Doppelte Assets überprüfen und auflösen",

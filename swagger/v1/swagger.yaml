@@ -2148,14 +2148,14 @@ paths:
                   description: Array of SHA-256 hex strings to check
   "/api/v1/bin":
     get:
-      summary: List all soft-deleted assets and folders in the Recycle Bin
+      summary: List all soft-deleted items
       tags:
-      - Assets
+      - Bin
       security:
       - Bearer: []
       responses:
         '200':
-          description: Recycle bin contents returned
+          description: Returns paginated bin contents
           content:
             application/json:
               schema:
@@ -2203,6 +2203,51 @@ paths:
                         name:
                           type: string
                           example: Trash Bin
+                  items:
+                    type: array
+                    items:
+                      type: object
+                  pagination:
+                    type: object
+                  retention_days:
+                    type: integer
+      description: Returns all trashed assets and folders with filtering, sorting,
+        and pagination.
+      parameters:
+      - name: q
+        in: query
+        required: false
+        description: Name/title search
+        schema:
+          type: string
+      - name: type
+        in: query
+        required: false
+        description: all | asset | folder | image | video | document
+        schema:
+          type: string
+      - name: sort
+        in: query
+        required: false
+        description: deleted_at | name | size
+        schema:
+          type: string
+      - name: direction
+        in: query
+        required: false
+        description: asc | desc
+        schema:
+          type: string
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+      - name: per_page
+        in: query
+        required: false
+        schema:
+          type: integer
   "/api/v1/assets/local/{uuid}":
     parameters:
     - name: uuid
@@ -2241,6 +2286,159 @@ paths:
                   looked_at:
                     type: string
                     nullable: true
+  "/api/v1/bin/stats":
+    get:
+      summary: Aggregate bin statistics
+      tags:
+      - Bin
+      description: Returns counts, storage usage, and retention policy for the bin.
+      responses:
+        '200':
+          description: Statistics returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total_items:
+                    type: integer
+                  total_assets:
+                    type: integer
+                  total_folders:
+                    type: integer
+                  total_size_bytes:
+                    type: integer
+                  retention_days:
+                    type: integer
+                  oldest_deleted_at:
+                    type: string
+                    nullable: true
+  "/api/v1/bin/bulk_restore":
+    post:
+      summary: Bulk restore items from bin
+      tags:
+      - Bin
+      description: Restores one or more soft-deleted assets or folders.
+      parameters: []
+      responses:
+        '200':
+          description: Items restored
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      type:
+                        type: string
+  "/api/v1/bin/empty":
+    delete:
+      summary: Empty the entire bin
+      tags:
+      - Bin
+      description: Permanently destroys every item in the bin (admin only).
+      responses:
+        '200':
+          description: Bin emptied
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted:
+                    type: integer
+                  message:
+                    type: string
+  "/api/v1/bin/retention_policy":
+    get:
+      summary: Fetch current retention policy
+      tags:
+      - Bin
+      description: Returns the current automatic purge policy.
+      responses:
+        '200':
+          description: Policy returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  retention_days:
+                    type: integer
+                  workflow_behavior:
+                    type: string
+                  batch_size:
+                    type: integer
+                  notify_admins:
+                    type: boolean
+    put:
+      summary: Update retention policy (admin only)
+      tags:
+      - Bin
+      description: Updates the retention policy. Admin only.
+      parameters: []
+      responses:
+        '200':
+          description: Policy updated
+        '403':
+          description: Non-admin rejected
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                retention_days:
+                  type: integer
+                workflow_behavior:
+                  type: string
+                batch_size:
+                  type: integer
+                notify_admins:
+                  type: boolean
+  "/api/v1/bin/trigger_purge":
+    post:
+      summary: Manually trigger a bin purge (admin only)
+      tags:
+      - Bin
+      description: Enqueues BinPurgeWorker. Returns 409 when already running.
+      responses:
+        '200':
+          description: Purge queued
+        '409':
+          description: Already running
+        '403':
+          description: Non-admin rejected
+  "/api/v1/bin/purge_status":
+    get:
+      summary: Get current purge status
+      tags:
+      - Bin
+      description: Returns the current purge job status and last run results.
+      responses:
+        '200':
+          description: Status returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  last_ran_at:
+                    type: string
+                    nullable: true
+                  last_results:
+                    type: object
+                  policy:
+                    type: object
   "/api/v1/cdn_configurations":
     get:
       summary: Retrieve CDN configuration for all supported providers

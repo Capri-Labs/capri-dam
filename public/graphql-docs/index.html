@@ -34,6 +34,9 @@
                 </h5>
                 <ul class="nav-group-section-items">
                   <li><a href="#query-assetDetail">assetDetail</a></li>
+                  <li><a href="#query-binPurgeStatus">binPurgeStatus</a></li>
+                  <li><a href="#query-binRetentionPolicy">binRetentionPolicy</a></li>
+                  <li><a href="#query-binStats">binStats</a></li>
                   <li><a href="#query-collection">collection</a></li>
                   <li><a href="#query-collections">collections</a></li>
                   <li><a href="#query-duplicateGroup">duplicateGroup</a></li>
@@ -53,16 +56,20 @@
                   <a href="#group-Operations-Mutations">Mutations</a>
                 </h5>
                 <ul class="nav-group-section-items">
+                  <li><a href="#mutation-bulkRestoreFromBin">bulkRestoreFromBin</a></li>
                   <li><a href="#mutation-createPersonalAccessToken">createPersonalAccessToken</a></li>
                   <li><a href="#mutation-createUser">createUser</a></li>
                   <li><a href="#mutation-createUserGroup">createUserGroup</a></li>
                   <li><a href="#mutation-createVideoProfile">createVideoProfile</a></li>
                   <li><a href="#mutation-deleteUserGroup">deleteUserGroup</a></li>
+                  <li><a href="#mutation-emptyBin">emptyBin</a></li>
                   <li><a href="#mutation-resolveDuplicateGroup">resolveDuplicateGroup</a></li>
                   <li><a href="#mutation-revokePersonalAccessToken">revokePersonalAccessToken</a></li>
                   <li><a href="#mutation-startImpersonation">startImpersonation</a></li>
                   <li><a href="#mutation-stopImpersonation">stopImpersonation</a></li>
+                  <li><a href="#mutation-triggerBinPurge">triggerBinPurge</a></li>
                   <li><a href="#mutation-triggerDuplicateScan">triggerDuplicateScan</a></li>
+                  <li><a href="#mutation-updateBinRetentionPolicy">updateBinRetentionPolicy</a></li>
                   <li><a href="#mutation-updateUser">updateUser</a></li>
                   <li><a href="#mutation-updateUserGroup">updateUserGroup</a></li>
                   <li><a href="#mutation-updateVideoProfile">updateVideoProfile</a></li>
@@ -76,6 +83,12 @@
             <ul class="nav-group-items">
               <li><a href="#definition-Asset">Asset</a></li>
               <li><a href="#definition-BigInt">BigInt</a></li>
+              <li><a href="#definition-BinItemInput">BinItemInput</a></li>
+              <li><a href="#definition-BinPurgeStatus">BinPurgeStatus</a></li>
+              <li><a href="#definition-BinRetentionPolicy">BinRetentionPolicy</a></li>
+              <li><a href="#definition-BinStats">BinStats</a></li>
+              <li><a href="#definition-BulkRestoreFromBinInput">BulkRestoreFromBinInput</a></li>
+              <li><a href="#definition-BulkRestoreFromBinPayload">BulkRestoreFromBinPayload</a></li>
               <li><a href="#definition-Collection">Collection</a></li>
               <li><a href="#definition-CreatePersonalAccessTokenInput">CreatePersonalAccessTokenInput</a></li>
               <li><a href="#definition-CreatePersonalAccessTokenPayload">CreatePersonalAccessTokenPayload</a></li>
@@ -91,6 +104,8 @@
               <li><a href="#definition-DuplicateGroupAsset">DuplicateGroupAsset</a></li>
               <li><a href="#definition-DuplicateGroupConnection">DuplicateGroupConnection</a></li>
               <li><a href="#definition-DuplicateGroupEdge">DuplicateGroupEdge</a></li>
+              <li><a href="#definition-EmptyBinInput">EmptyBinInput</a></li>
+              <li><a href="#definition-EmptyBinPayload">EmptyBinPayload</a></li>
               <li><a href="#definition-FolderPolicy">FolderPolicy</a></li>
               <li><a href="#definition-ImageProfile">ImageProfile</a></li>
               <li><a href="#definition-JSON">JSON</a></li>
@@ -103,8 +118,12 @@
               <li><a href="#definition-StartImpersonationPayload">StartImpersonationPayload</a></li>
               <li><a href="#definition-StopImpersonationInput">StopImpersonationInput</a></li>
               <li><a href="#definition-StopImpersonationPayload">StopImpersonationPayload</a></li>
+              <li><a href="#definition-TriggerBinPurgeInput">TriggerBinPurgeInput</a></li>
+              <li><a href="#definition-TriggerBinPurgePayload">TriggerBinPurgePayload</a></li>
               <li><a href="#definition-TriggerDuplicateScanInput">TriggerDuplicateScanInput</a></li>
               <li><a href="#definition-TriggerDuplicateScanPayload">TriggerDuplicateScanPayload</a></li>
+              <li><a href="#definition-UpdateBinRetentionPolicyInput">UpdateBinRetentionPolicyInput</a></li>
+              <li><a href="#definition-UpdateBinRetentionPolicyPayload">UpdateBinRetentionPolicyPayload</a></li>
               <li><a href="#definition-UpdateUserGroupInput">UpdateUserGroupInput</a></li>
               <li><a href="#definition-UpdateUserGroupPayload">UpdateUserGroupPayload</a></li>
               <li><a href="#definition-UpdateUserInput">UpdateUserInput</a></li>
@@ -186,6 +205,132 @@
                 <div class="example-section example-section-is-code operation-response-example">
                   <h5>Response</h5>
                   <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"data"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-attr">"assetDetail"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="query-binPurgeStatus" class="operation operation-query" data-traverse-target="query-binPurgeStatus">
+            <div class="operation-group-name">
+              <a href="#group-Operations-Queries">Queries</a>
+            </div>
+            <h2 class="operation-heading ">
+              <code>binPurgeStatus</code>
+            </h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Current background purge job status and results of the last run.</p>
+                </div>
+              </div>
+            </div>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-response doc-copy-section">
+                  <h5>Response</h5>
+                  <p> Returns a <a href="#definition-BinPurgeStatus"><code>BinPurgeStatus!</code></a>
+                  </p>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <h4 class="example-heading">Example</h4>
+                <div class="example-section example-section-is-code operation-query-example">
+                  <h5>Query</h5>
+                  <pre><code class="hljs language-gql"><span class="hljs-symbol"><span class="hljs-keyword">query</span> binPurgeStatus <span class="hljs-tag">{
+  <span class="hljs-symbol">binPurgeStatus <span class="hljs-tag">{
+    <span class="hljs-symbol">policy</span>
+  }</span></span>
+}</span></span>
+</code></pre>
+                </div>
+                <div class="example-section example-section-is-code operation-response-example">
+                  <h5>Response</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">"data"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">"binPurgeStatus"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-attr">"policy"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">BinRetentionPolicy</span><span class="hljs-punctuation">}</span>
+  <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="query-binRetentionPolicy" class="operation operation-query" data-traverse-target="query-binRetentionPolicy">
+            <div class="operation-group-name">
+              <a href="#group-Operations-Queries">Queries</a>
+            </div>
+            <h2 class="operation-heading ">
+              <code>binRetentionPolicy</code>
+            </h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>The current automatic purge retention policy for the Recycle Bin.</p>
+                </div>
+              </div>
+            </div>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-response doc-copy-section">
+                  <h5>Response</h5>
+                  <p> Returns a <a href="#definition-BinRetentionPolicy"><code>BinRetentionPolicy!</code></a>
+                  </p>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <h4 class="example-heading">Example</h4>
+                <div class="example-section example-section-is-code operation-query-example">
+                  <h5>Query</h5>
+                  <pre><code class="hljs language-gql"><span class="hljs-symbol"><span class="hljs-keyword">query</span> binRetentionPolicy <span class="hljs-tag">{
+  <span class="hljs-symbol">binRetentionPolicy</span>
+}</span></span>
+</code></pre>
+                </div>
+                <div class="example-section example-section-is-code operation-response-example">
+                  <h5>Response</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"data"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-attr">"binRetentionPolicy"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="query-binStats" class="operation operation-query" data-traverse-target="query-binStats">
+            <div class="operation-group-name">
+              <a href="#group-Operations-Queries">Queries</a>
+            </div>
+            <h2 class="operation-heading ">
+              <code>binStats</code>
+            </h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Aggregate statistics for the Recycle Bin (total items, storage used, retention policy).</p>
+                </div>
+              </div>
+            </div>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-response doc-copy-section">
+                  <h5>Response</h5>
+                  <p> Returns a <a href="#definition-BinStats"><code>BinStats!</code></a>
+                  </p>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <h4 class="example-heading">Example</h4>
+                <div class="example-section example-section-is-code operation-query-example">
+                  <h5>Query</h5>
+                  <pre><code class="hljs language-gql"><span class="hljs-symbol"><span class="hljs-keyword">query</span> binStats <span class="hljs-tag">{
+  <span class="hljs-symbol">binStats</span>
+}</span></span>
+</code></pre>
+                </div>
+                <div class="example-section example-section-is-code operation-response-example">
+                  <h5>Response</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"data"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-attr">"binStats"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span>
 </code></pre>
                 </div>
               </div>
@@ -796,7 +941,71 @@
             </div>
           </section>
           <h1 id="group-Operations-Mutations" class="group-heading" data-traverse-target="group-Operations-Mutations">Mutations</h1>
+          <section id="mutation-bulkRestoreFromBin" class="operation operation-mutation" data-traverse-target="mutation-bulkRestoreFromBin">
+            <h2 class="operation-heading ">
+              <code>bulkRestoreFromBin</code>
+            </h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Restore one or more items from the Recycle Bin to their original location.</p>
+                </div>
+              </div>
+            </div>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-response doc-copy-section">
+                  <h5>Response</h5>
+                  <p> Returns a <a href="#definition-BulkRestoreFromBinPayload"><code>BulkRestoreFromBinPayload</code></a>
+                  </p>
+                </div>
+                <div class="operation-arguments doc-copy-section">
+                  <h5>Arguments</h5>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>
+                          <span class="property-name"><code>input</code></span> - <span class="property-type"><a href="#definition-BulkRestoreFromBinInput"><code>BulkRestoreFromBinInput!</code></a></span>
+                        </td>
+                        <td> Parameters for BulkRestoreFromBin </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <h4 class="example-heading">Example</h4>
+                <div class="example-section example-section-is-code operation-query-example">
+                  <h5>Query</h5>
+                  <pre><code class="hljs language-gql"><span class="hljs-symbol"><span class="hljs-keyword">mutation</span> bulkRestoreFromBin<span class="hljs-tag">(<span class="hljs-code">$input</span>:<span class="hljs-type"> BulkRestoreFromBinInput!</span>)</span> <span class="hljs-tag">{
+  <span class="hljs-symbol">bulkRestoreFromBin<span class="hljs-tag">(input: <span class="hljs-code">$input</span>)</span></span>
+}</span></span>
+</code></pre>
+                </div>
+                <div class="example-section example-section-is-code operation-variables-example">
+                  <h5>Variables</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"input"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">BulkRestoreFromBinInput</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+                <div class="example-section example-section-is-code operation-response-example">
+                  <h5>Response</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"data"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-attr">"bulkRestoreFromBin"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
           <section id="mutation-createPersonalAccessToken" class="operation operation-mutation" data-traverse-target="mutation-createPersonalAccessToken">
+            <div class="operation-group-name">
+              <a href="#group-Operations-Mutations">Mutations</a>
+            </div>
             <h2 class="operation-heading ">
               <code>createPersonalAccessToken</code>
             </h2>
@@ -1137,6 +1346,70 @@
               </div>
             </div>
           </section>
+          <section id="mutation-emptyBin" class="operation operation-mutation" data-traverse-target="mutation-emptyBin">
+            <div class="operation-group-name">
+              <a href="#group-Operations-Mutations">Mutations</a>
+            </div>
+            <h2 class="operation-heading ">
+              <code>emptyBin</code>
+            </h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Permanently delete all items in the Recycle Bin (admin only).</p>
+                </div>
+              </div>
+            </div>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-response doc-copy-section">
+                  <h5>Response</h5>
+                  <p> Returns an <a href="#definition-EmptyBinPayload"><code>EmptyBinPayload</code></a>
+                  </p>
+                </div>
+                <div class="operation-arguments doc-copy-section">
+                  <h5>Arguments</h5>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>
+                          <span class="property-name"><code>input</code></span> - <span class="property-type"><a href="#definition-EmptyBinInput"><code>EmptyBinInput!</code></a></span>
+                        </td>
+                        <td> Parameters for EmptyBin </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <h4 class="example-heading">Example</h4>
+                <div class="example-section example-section-is-code operation-query-example">
+                  <h5>Query</h5>
+                  <pre><code class="hljs language-gql"><span class="hljs-symbol"><span class="hljs-keyword">mutation</span> emptyBin<span class="hljs-tag">(<span class="hljs-code">$input</span>:<span class="hljs-type"> EmptyBinInput!</span>)</span> <span class="hljs-tag">{
+  <span class="hljs-symbol">emptyBin<span class="hljs-tag">(input: <span class="hljs-code">$input</span>)</span></span>
+}</span></span>
+</code></pre>
+                </div>
+                <div class="example-section example-section-is-code operation-variables-example">
+                  <h5>Variables</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"input"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">EmptyBinInput</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+                <div class="example-section example-section-is-code operation-response-example">
+                  <h5>Response</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"data"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-attr">"emptyBin"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
           <section id="mutation-resolveDuplicateGroup" class="operation operation-mutation" data-traverse-target="mutation-resolveDuplicateGroup">
             <div class="operation-group-name">
               <a href="#group-Operations-Mutations">Mutations</a>
@@ -1409,6 +1682,70 @@
               </div>
             </div>
           </section>
+          <section id="mutation-triggerBinPurge" class="operation operation-mutation" data-traverse-target="mutation-triggerBinPurge">
+            <div class="operation-group-name">
+              <a href="#group-Operations-Mutations">Mutations</a>
+            </div>
+            <h2 class="operation-heading ">
+              <code>triggerBinPurge</code>
+            </h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Manually trigger the Recycle Bin purge job (admin only).</p>
+                </div>
+              </div>
+            </div>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-response doc-copy-section">
+                  <h5>Response</h5>
+                  <p> Returns a <a href="#definition-TriggerBinPurgePayload"><code>TriggerBinPurgePayload</code></a>
+                  </p>
+                </div>
+                <div class="operation-arguments doc-copy-section">
+                  <h5>Arguments</h5>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>
+                          <span class="property-name"><code>input</code></span> - <span class="property-type"><a href="#definition-TriggerBinPurgeInput"><code>TriggerBinPurgeInput!</code></a></span>
+                        </td>
+                        <td> Parameters for TriggerBinPurge </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <h4 class="example-heading">Example</h4>
+                <div class="example-section example-section-is-code operation-query-example">
+                  <h5>Query</h5>
+                  <pre><code class="hljs language-gql"><span class="hljs-symbol"><span class="hljs-keyword">mutation</span> triggerBinPurge<span class="hljs-tag">(<span class="hljs-code">$input</span>:<span class="hljs-type"> TriggerBinPurgeInput!</span>)</span> <span class="hljs-tag">{
+  <span class="hljs-symbol">triggerBinPurge<span class="hljs-tag">(input: <span class="hljs-code">$input</span>)</span></span>
+}</span></span>
+</code></pre>
+                </div>
+                <div class="example-section example-section-is-code operation-variables-example">
+                  <h5>Variables</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"input"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">TriggerBinPurgeInput</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+                <div class="example-section example-section-is-code operation-response-example">
+                  <h5>Response</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"data"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-attr">"triggerBinPurge"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
           <section id="mutation-triggerDuplicateScan" class="operation operation-mutation" data-traverse-target="mutation-triggerDuplicateScan">
             <div class="operation-group-name">
               <a href="#group-Operations-Mutations">Mutations</a>
@@ -1468,6 +1805,78 @@
                 <div class="example-section example-section-is-code operation-response-example">
                   <h5>Response</h5>
                   <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"data"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-attr">"triggerDuplicateScan"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="mutation-updateBinRetentionPolicy" class="operation operation-mutation" data-traverse-target="mutation-updateBinRetentionPolicy">
+            <div class="operation-group-name">
+              <a href="#group-Operations-Mutations">Mutations</a>
+            </div>
+            <h2 class="operation-heading ">
+              <code>updateBinRetentionPolicy</code>
+            </h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Update the Recycle Bin purge policy (admin only).</p>
+                </div>
+              </div>
+            </div>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-response doc-copy-section">
+                  <h5>Response</h5>
+                  <p> Returns an <a href="#definition-UpdateBinRetentionPolicyPayload"><code>UpdateBinRetentionPolicyPayload</code></a>
+                  </p>
+                </div>
+                <div class="operation-arguments doc-copy-section">
+                  <h5>Arguments</h5>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>
+                          <span class="property-name"><code>input</code></span> - <span class="property-type"><a href="#definition-UpdateBinRetentionPolicyInput"><code>UpdateBinRetentionPolicyInput!</code></a></span>
+                        </td>
+                        <td> Parameters for UpdateBinRetentionPolicy </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <h4 class="example-heading">Example</h4>
+                <div class="example-section example-section-is-code operation-query-example">
+                  <h5>Query</h5>
+                  <pre><code class="hljs language-gql"><span class="hljs-symbol"><span class="hljs-keyword">mutation</span> updateBinRetentionPolicy<span class="hljs-tag">(<span class="hljs-code">$input</span>:<span class="hljs-type"> UpdateBinRetentionPolicyInput!</span>)</span> <span class="hljs-tag">{
+  <span class="hljs-symbol">updateBinRetentionPolicy<span class="hljs-tag">(input: <span class="hljs-code">$input</span>)</span> <span class="hljs-tag">{
+    <span class="hljs-symbol">policy</span>
+  }</span></span>
+}</span></span>
+</code></pre>
+                </div>
+                <div class="example-section example-section-is-code operation-variables-example">
+                  <h5>Variables</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"input"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">UpdateBinRetentionPolicyInput</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+                <div class="example-section example-section-is-code operation-response-example">
+                  <h5>Response</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">"data"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">"updateBinRetentionPolicy"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+      <span class="hljs-attr">"policy"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">BinRetentionPolicy</span>
+    <span class="hljs-punctuation">}</span>
+  <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span>
 </code></pre>
                 </div>
               </div>
@@ -1710,6 +2119,169 @@
                 <div class="definition-description doc-copy-section">
                   <h5>Description</h5>
                   <p>Represents non-fractional signed whole numeric values. Since the value may exceed the size of a 32-bit integer, it&#39;s encoded as a string.</p>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <div class="example-section example-section-is-code">
+                  <h5>Example</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="definition-BinItemInput" class="definition definition-input-object" data-traverse-target="definition-BinItemInput">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">BinItemInput</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>A single Recycle Bin item identified by its database ID and resource type.</p>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <div class="example-section example-section-is-code">
+                  <h5>Example</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="definition-BinPurgeStatus" class="definition definition-object" data-traverse-target="definition-BinPurgeStatus">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">BinPurgeStatus</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Current state and last-run results for the automated Recycle Bin purge.</p>
+                </div>
+                <div class="definition-properties doc-copy-section">
+                  <h5>Fields</h5>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Field Name</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td data-property-name=""><span class="property-name"><code>policy</code></span> - <span class="property-type"><a href="#definition-BinRetentionPolicy"><code>BinRetentionPolicy!</code></a></span>
+                        </td>
+                        <td> The active retention policy that will be applied on the next run. </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <div class="example-section example-section-is-code">
+                  <h5>Example</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"policy"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">BinRetentionPolicy</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="definition-BinRetentionPolicy" class="definition definition-object" data-traverse-target="definition-BinRetentionPolicy">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">BinRetentionPolicy</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Configurable policy controlling automatic Recycle Bin purging.</p>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <div class="example-section example-section-is-code">
+                  <h5>Example</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="definition-BinStats" class="definition definition-object" data-traverse-target="definition-BinStats">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">BinStats</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Aggregate statistics for the Recycle Bin.</p>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <div class="example-section example-section-is-code">
+                  <h5>Example</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="definition-BulkRestoreFromBinInput" class="definition definition-input-object" data-traverse-target="definition-BulkRestoreFromBinInput">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">BulkRestoreFromBinInput</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Autogenerated input type of BulkRestoreFromBin</p>
+                </div>
+                <div class="definition-properties doc-copy-section">
+                  <h5>Fields</h5>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Input Field</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>
+                          <span class="property-name"><code>items</code></span> - <span class="property-type"><a href="#definition-BinItemInput"><code>[BinItemInput!]!</code></a></span>
+                        </td>
+                        <td> Array of { id, type } objects to restore. </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <div class="example-section example-section-is-code">
+                  <h5>Example</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"items"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-string">BinItemInput</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="definition-BulkRestoreFromBinPayload" class="definition definition-object" data-traverse-target="definition-BulkRestoreFromBinPayload">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">BulkRestoreFromBinPayload</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Autogenerated return type of BulkRestoreFromBin.</p>
                 </div>
               </div>
               <div class="doc-examples">
@@ -2217,6 +2789,48 @@
               </div>
             </div>
           </section>
+          <section id="definition-EmptyBinInput" class="definition definition-input-object" data-traverse-target="definition-EmptyBinInput">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">EmptyBinInput</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Autogenerated input type of EmptyBin</p>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <div class="example-section example-section-is-code">
+                  <h5>Example</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="definition-EmptyBinPayload" class="definition definition-object" data-traverse-target="definition-EmptyBinPayload">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">EmptyBinPayload</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Autogenerated return type of EmptyBin.</p>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <div class="example-section example-section-is-code">
+                  <h5>Example</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
           <section id="definition-FolderPolicy" class="definition definition-object" data-traverse-target="definition-FolderPolicy">
             <div class="definition-group-name">
               <a href="#group-Types">Types</a>
@@ -2507,6 +3121,48 @@
               </div>
             </div>
           </section>
+          <section id="definition-TriggerBinPurgeInput" class="definition definition-input-object" data-traverse-target="definition-TriggerBinPurgeInput">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">TriggerBinPurgeInput</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Autogenerated input type of TriggerBinPurge</p>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <div class="example-section example-section-is-code">
+                  <h5>Example</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="definition-TriggerBinPurgePayload" class="definition definition-object" data-traverse-target="definition-TriggerBinPurgePayload">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">TriggerBinPurgePayload</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Autogenerated return type of TriggerBinPurge.</p>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <div class="example-section example-section-is-code">
+                  <h5>Example</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
           <section id="definition-TriggerDuplicateScanInput" class="definition definition-input-object" data-traverse-target="definition-TriggerDuplicateScanInput">
             <div class="definition-group-name">
               <a href="#group-Types">Types</a>
@@ -2544,6 +3200,67 @@
                 <div class="example-section example-section-is-code">
                   <h5>Example</h5>
                   <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="definition-UpdateBinRetentionPolicyInput" class="definition definition-input-object" data-traverse-target="definition-UpdateBinRetentionPolicyInput">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">UpdateBinRetentionPolicyInput</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Autogenerated input type of UpdateBinRetentionPolicy</p>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <div class="example-section example-section-is-code">
+                  <h5>Example</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="definition-UpdateBinRetentionPolicyPayload" class="definition definition-object" data-traverse-target="definition-UpdateBinRetentionPolicyPayload">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">UpdateBinRetentionPolicyPayload</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Autogenerated return type of UpdateBinRetentionPolicy.</p>
+                </div>
+                <div class="definition-properties doc-copy-section">
+                  <h5>Fields</h5>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Field Name</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td data-property-name=""><span class="property-name"><code>policy</code></span> - <span class="property-type"><a href="#definition-BinRetentionPolicy"><code>BinRetentionPolicy</code></a></span>
+                        </td>
+                        <td>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <div class="example-section example-section-is-code">
+                  <h5>Example</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"policy"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">BinRetentionPolicy</span><span class="hljs-punctuation">}</span>
 </code></pre>
                 </div>
               </div>

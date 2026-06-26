@@ -181,6 +181,136 @@
       "videoProfilesDesc": "Codificação de vídeo adaptativa"
     }
   },
+  "bin": {
+    "title": "Lixeira",
+    "subtitle": "Itens excluídos nos últimos {{days}} dias. Após isso, são removidos permanentemente.",
+    "empty": "Sua lixeira está vazia",
+    "emptySubtitle": "Assets e pastas excluídos aparecerão aqui.",
+    "emptyBin": "Esvaziar lixeira",
+    "restoreSelected": "Restaurar selecionados",
+    "deleteSelected": "Excluir selecionados",
+    "search": "Pesquisar na lixeira…",
+    "results": "Resultados",
+    "filters": {
+      "all": "Todos os itens",
+      "assets": "Assets",
+      "folders": "Pastas",
+      "images": "Imagens",
+      "videos": "Vídeos",
+      "documents": "Documentos"
+    },
+    "sort": {
+      "deletedNewest": "Excluído (Mais recente)",
+      "deletedOldest": "Excluído (Mais antigo)",
+      "nameAZ": "Nome (A–Z)",
+      "nameZA": "Nome (Z–A)",
+      "sizeDesc": "Tamanho (Maior primeiro)",
+      "sizeAsc": "Tamanho (Menor primeiro)"
+    },
+    "stats": {
+      "totalItems": "Total de itens",
+      "assets": "Assets",
+      "folders": "Pastas",
+      "storageUsed": "Armazenamento usado"
+    },
+    "item": {
+      "type": "Tipo",
+      "name": "Nome",
+      "deletedAt": "Excluído em",
+      "size": "Tamanho",
+      "originalPath": "Localização",
+      "expires": "Expira em",
+      "actions": "Ações",
+      "restore": "Restaurar",
+      "deletePermanently": "Excluir permanentemente",
+      "folder": "Pasta",
+      "asset": "Asset"
+    },
+    "retention": {
+      "label": "Política de retenção",
+      "description": "Itens são excluídos automaticamente após {{days}} dias",
+      "expires": "{{days}} dias restantes",
+      "expired": "Expirado"
+    },
+    "confirm": {
+      "restore": "Restaurar {{count}} item(ns)?",
+      "restoreBody": "Os itens selecionados serão movidos de volta para o local de origem.",
+      "delete": "Excluir permanentemente {{count}} item(ns)?",
+      "deleteBody": "Esta ação não pode ser desfeita.",
+      "emptyBin": "Esvaziar a lixeira?",
+      "emptyBinBody": "Todos os {{count}} itens serão excluídos permanentemente. Não pode ser desfeito.",
+      "confirm": "Confirmar",
+      "cancel": "Cancelar"
+    },
+    "notifications": {
+      "restored": "{{count}} item(ns) restaurado(s) com sucesso.",
+      "deleted": "{{count}} item(ns) excluído(s) permanentemente.",
+      "emptied": "Lixeira esvaziada.",
+      "loadError": "Falha ao carregar a lixeira."
+    },
+    "pagination": {
+      "prev": "Anterior",
+      "next": "Próximo",
+      "info": "Página {{page}} de {{pages}}"
+    },
+    "purge": {
+      "title": "Limpeza automática",
+      "subtitle": "Tarefa noturna que remove permanentemente itens expirados da lixeira.",
+      "triggerButton": "Executar limpeza agora",
+      "policyButton": "Configurar política",
+      "policyTitle": "Política de retenção",
+      "queued": "Limpeza foi colocada na fila.",
+      "running": "Limpeza em andamento…",
+      "policySaved": "Política de retenção salva.",
+      "lastRan": "Última execução:",
+      "skippedWarning": "{{count}} item(ns) ignorado(s).",
+      "skippedDetail": "Esses assets têm instâncias de workflow ativas.",
+      "status": {
+        "idle": "Inativo",
+        "queued": "Na fila",
+        "running": "Executando",
+        "completed": "Concluído",
+        "failed": "Falhou"
+      },
+      "results": {
+        "deleted": "{{count}} excluídos",
+        "skipped": "{{count}} ignorados",
+        "failed": "{{count}} falharam"
+      },
+      "policy": {
+        "retentionDays": "Dias de retenção",
+        "retentionDaysHelp": "Itens mais antigos serão purgados",
+        "workflowBehavior": "Comportamento do workflow",
+        "behaviorSkip": "Ignorar",
+        "behaviorForceTerminate": "Forçar encerramento e excluir",
+        "batchSize": "Tamanho do lote",
+        "notifyAdmins": "Notificar administradores após cada execução",
+        "forceTerminateWarning": "Forçar encerramento cancelará todas as tarefas de workflow pendentes."
+      },
+      "triggeredBy": "Acionado por {{name}}",
+      "triggeredBySchedule": "Acionado pelo agendamento noturno"
+    },
+    "settings": {
+      "title": "Lixeira e limpeza",
+      "subtitle": "Configure como e quando os assets excluídos são removidos permanentemente.",
+      "warningNote": "A limpeza exclui permanentemente os assets e todas as suas versões do armazenamento. Não pode ser desfeito.",
+      "policySubtitle": "Itens com mais de {{days}} dias são removidos · Workflow: {{behavior}}",
+      "nextScheduled": "Próxima execução agendada"
+    },
+    "activePurge": {
+      "runningTitle": "Limpeza da lixeira em andamento",
+      "queuedTitle": "Limpeza da lixeira na fila",
+      "hint": "Itens expirados estão sendo removidos permanentemente. Esta página será atualizada quando concluída."
+    },
+    "ai": {
+      "title": "Limpeza assistida por IA",
+      "comingSoon": "Em breve",
+      "description": "Após conectar ao Capri AI Gateway, a lixeira ganhará recursos inteligentes:",
+      "feature1": "Sugestões inteligentes de assets removíveis com base em uso, idade e duplicação.",
+      "feature2": "Pontuação de risco para sinalizar assets que ainda podem ser necessários.",
+      "feature3": "Relatórios de limpeza em linguagem natural."
+    }
+  },
   "duplicateManager": {
     "title": "Gerenciador de duplicatas",
     "subtitle": "Revisar e resolver ativos duplicados detectados",
