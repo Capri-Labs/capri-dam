@@ -18,12 +18,13 @@ import {
 } from '@mui/material';
 import {
   Close, Block, CheckCircleOutlined, GroupAdd, Shield,
-  PersonOutlined, LockOutlined, NotificationsOutlined, PublicOutlined,
+  PersonOutlined, LockOutlined, PublicOutlined,
   DeleteOutlined, AddOutlined, SecurityOutlined, SupervisedUserCircle,
 } from '@mui/icons-material';
-import { apiFetch, formatDate } from '../../utils/adminUtils';
+import { apiFetch, formatDate, SYSTEM_SLUGS, groupPermissions } from '../../utils/adminUtils';
 import AclMatrix from './AclMatrix';
 import UserSearch from './UserSearch';
+import GroupSearch from './GroupSearch';
 import { useNotify } from '../../context/NotificationContext';
 
 const SUPPORTED_LANGS = [
@@ -46,9 +47,15 @@ export default function UserDrawer({
   const notify = useNotify();
   const [tab, setTab] = useState(0);
 
-  const [impersonators, setImpersonators]             = useState([]);
+  const [impersonators, setImpersonators]               = useState([]);
   const [impersonatorsLoading, setImpersonatorsLoading] = useState(false);
   const [startingImpersonation, setStartingImpersonation] = useState(false);
+
+  // Groups tab state
+  const [groupsData, setGroupsData]         = useState({ groups: [], all_groups: [], total: 0 });
+  const [groupsLoading, setGroupsLoading]   = useState(false);
+  const [groupFilter, setGroupFilter]       = useState('');
+  const [groupActionId, setGroupActionId]   = useState(null); // track which group is loading
 
   const [prefs, setPrefs]           = useState({ language: 'en', receive_mention_emails: true, receive_workflow_emails: true });
   const [prefsLoading, setPrefsLoading] = useState(false);
@@ -60,6 +67,7 @@ export default function UserDrawer({
 
   useEffect(() => { if (open) setTab(0); }, [open, user?.id]);
 
+  useEffect(() => { if (tab === 1 && user?.id) fetchGroups();        }, [tab, user?.id]);
   useEffect(() => { if (tab === 3 && user?.id) fetchImpersonators(); }, [tab, user?.id]);
   useEffect(() => { if (tab === 4 && user?.id) fetchPreferences();   }, [tab, user?.id]);
 
@@ -69,6 +77,45 @@ export default function UserDrawer({
       const data = await apiFetch(`/admin/users/${user.id}/impersonators.json`);
       setImpersonators(data.impersonators || []);
     } finally { setImpersonatorsLoading(false); }
+  };
+
+  const fetchGroups = async () => {
+    setGroupsLoading(true);
+    try {
+      const data = await apiFetch(`/admin/users/${user.id}/groups.json`);
+      setGroupsData({
+        groups:     data.groups     || [],
+        all_groups: data.all_groups || [],
+        total:      data.total      || 0,
+      });
+    } finally { setGroupsLoading(false); }
+  };
+
+  // Immediately adds user to a group; uses the inline /add_group endpoint
+  const handleAddGroupInline = async (group) => {
+    if (!group?.id) return;
+    setGroupActionId(group.id);
+    try {
+      const res = await apiFetch(`/admin/users/${user.id}/add_group`, {
+        method: 'POST', body: JSON.stringify({ group_id: group.id }),
+      });
+      if (res.success) {
+        notify(`Added to ${group.name}.`, 'success');
+        await fetchGroups();
+      } else notify(res.error || res.errors?.join(', ') || 'Failed.', 'error');
+    } finally { setGroupActionId(null); }
+  };
+
+  // Immediately removes user from a group
+  const handleRemoveGroupInline = async (group) => {
+    setGroupActionId(group.id);
+    try {
+      const res = await apiFetch(`/admin/users/${user.id}/remove_group/${group.id}`, { method: 'DELETE' });
+      if (res.success) {
+        notify(`Removed from ${group.name}.`, 'success');
+        await fetchGroups();
+      } else notify(res.error || 'Failed.', 'error');
+    } finally { setGroupActionId(null); }
   };
 
   const fetchPreferences = async () => {
@@ -169,14 +216,31 @@ export default function UserDrawer({
           </Box>
 
           {!isNew && (
-            <Tabs value={tab} onChange={(_, v) => setTab(v)} variant="scrollable" scrollButtons="auto"
-              sx={{ minHeight: 38, '& .MuiTab-root': { minHeight: 38, fontSize: '0.75rem', py: 0 } }}>
-              <Tab icon={<PersonOutlined sx={{ fontSize: 16 }} />} iconPosition="start" label="Properties" />
-              <Tab icon={<GroupAdd sx={{ fontSize: 16 }} />}       iconPosition="start" label="Groups" />
-              <Tab icon={<LockOutlined sx={{ fontSize: 16 }} />}   iconPosition="start" label="Permissions" />
-              <Tab icon={<SecurityOutlined sx={{ fontSize: 16 }} />} iconPosition="start" label="Impersonators" />
-              <Tab icon={<PublicOutlined sx={{ fontSize: 16 }} />} iconPosition="start" label="Preferences" />
-            </Tabs>
+              <Tabs value={tab} onChange={(_, v) => setTab(v)} variant="scrollable" scrollButtons="auto"
+                sx={{ minHeight: 38, '& .MuiTab-root': { minHeight: 38, fontSize: '0.75rem', py: 0 } }}>
+                <Tab icon={<PersonOutlined sx={{ fontSize: 16 }} />} iconPosition="start" label="Properties" />
+                <Tab
+                  icon={<GroupAdd sx={{ fontSize: 16 }} />}
+                  iconPosition="start"
+                  label={
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      Groups
+                      {groupsData.total > 0 && (
+                        <Box component="span" sx={{
+                          ml: 0.5, px: 0.75, py: 0.1, borderRadius: '999px',
+                          bgcolor: 'primary.main', color: 'white',
+                          fontSize: '0.6rem', fontWeight: 700, lineHeight: 1.6,
+                        }}>
+                          {groupsData.total}
+                        </Box>
+                      )}
+                    </Box>
+                  }
+                />
+                <Tab icon={<LockOutlined sx={{ fontSize: 16 }} />}   iconPosition="start" label="Permissions" />
+                <Tab icon={<SecurityOutlined sx={{ fontSize: 16 }} />} iconPosition="start" label="Impersonators" />
+                <Tab icon={<PublicOutlined sx={{ fontSize: 16 }} />} iconPosition="start" label="Preferences" />
+              </Tabs>
           )}
         </Box>
 
@@ -241,27 +305,163 @@ export default function UserDrawer({
             </Stack>
           )}
 
-          {/* Tab 1: Groups */}
+          {/* Tab 1: Groups (enhanced) */}
           {!isNew && tab === 1 && (
             <Stack spacing={2}>
-              <Typography variant="body2" color="text.secondary">
-                Groups this user belongs to.
-              </Typography>
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                {userGroups.length === 0
-                  ? <Typography variant="caption" color="text.secondary">No group memberships.</Typography>
-                  : userGroups.map(g => (
-                    <Chip key={g.id} label={g.name} size="small"
-                      icon={g.is_system ? <Shield sx={{ fontSize: 14 }} /> : undefined}
-                      color={g.is_system ? 'primary' : 'default'}
-                      variant={g.is_system ? 'filled' : 'outlined'} />
-                  ))
-                }
+
+              {/* Header row: total count + search filter */}
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Typography variant="subtitle2" fontWeight={700}>
+                    Group Memberships
+                  </Typography>
+                  <Chip
+                    label={groupsLoading ? '…' : groupsData.total}
+                    size="small"
+                    color={groupsData.total > 0 ? 'primary' : 'default'}
+                    sx={{ height: 20, fontSize: '0.7rem', fontWeight: 700 }}
+                  />
+                </Box>
+                {groupsData.total > 3 && (
+                  <TextField
+                    size="small"
+                    placeholder="Filter groups…"
+                    value={groupFilter}
+                    onChange={e => setGroupFilter(e.target.value)}
+                    sx={{ width: 180, '& .MuiInputBase-root': { fontSize: '0.8rem' } }}
+                  />
+                )}
               </Box>
-              <Alert severity="info" sx={{ borderRadius: 2 }}>
-                The <strong>everyone</strong> group is automatic.
-                Add users to other groups from the <em>User Groups</em> management page.
+
+              {/* Add group via autocomplete (admins only) */}
+              {isAdmin && (
+                <Box>
+                  <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: 'block' }}>
+                    Assign to a group:
+                  </Typography>
+                  <GroupSearch
+                    groups={groupsData.all_groups}
+                    disabledIds={groupsData.groups.map(g => g.id)}
+                    excludeIds={[]}
+                    placeholder="Search groups to assign…"
+                    onSelect={handleAddGroupInline}
+                  />
+                </Box>
+              )}
+
+              {/* The 'everyone' note */}
+              <Alert severity="info" sx={{ borderRadius: 2, py: 0.5 }}>
+                The <strong>everyone</strong> group is assigned automatically to all users.
+                {!isSuperAdmin && (
+                  <> <strong>administrators</strong> and <strong>super-administrators</strong> require super-admin rights.</>
+                )}
               </Alert>
+
+              {/* Loading skeleton */}
+              {groupsLoading ? (
+                <CircularProgress size={24} sx={{ alignSelf: 'center', my: 2 }} />
+              ) : groupsData.groups.length === 0 ? (
+                <Typography variant="body2" color="text.secondary">
+                  No group memberships (other than everyone).
+                </Typography>
+              ) : (
+                <Box>
+                  {/* Filtered group list */}
+                  {groupsData.groups
+                    .filter(g =>
+                      g.slug !== SYSTEM_SLUGS.EVERYONE &&
+                      (!groupFilter || g.name.toLowerCase().includes(groupFilter.toLowerCase()))
+                    )
+                    .map(g => {
+                      const isLoading = groupActionId === g.id;
+                      const canRemove = isAdmin && !g.everyone && !(g.slug === 'administrators' && !isSuperAdmin);
+                      const perms = groupPermissions(g, isAdmin, isSuperAdmin);
+
+                      return (
+                        <Box
+                          key={g.id}
+                          sx={{
+                            display: 'flex', alignItems: 'center', gap: 1.5,
+                            px: 1.5, py: 1, mb: 0.5,
+                            borderRadius: 2,
+                            border: '1px solid',
+                            borderColor: g.is_system ? 'warning.light' : 'divider',
+                            bgcolor: g.is_system ? '#fffbeb' : 'white',
+                            transition: 'all 0.15s',
+                          }}
+                        >
+                          {/* Icon */}
+                          <Box sx={{
+                            width: 32, height: 32, borderRadius: '50%',
+                            bgcolor: g.is_system ? 'warning.main' : 'primary.main',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            flexShrink: 0,
+                          }}>
+                            {g.is_system
+                              ? <Shield sx={{ fontSize: 16, color: 'white' }} />
+                              : <GroupAdd sx={{ fontSize: 16, color: 'white' }} />
+                            }
+                          </Box>
+
+                          {/* Group info */}
+                          <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flexWrap: 'wrap' }}>
+                              <Typography variant="body2" fontWeight={600} noWrap>{g.name}</Typography>
+                              {g.is_system && (
+                                <Chip label="system" size="small" color="warning" variant="outlined"
+                                  sx={{ height: 16, fontSize: '0.6rem' }} />
+                              )}
+                            </Box>
+                            <Typography variant="caption" color="text.secondary">
+                              {g.member_count != null ? `${g.member_count} member${g.member_count !== 1 ? 's' : ''}` : ''}
+                              {g.description ? ` · ${g.description}` : ''}
+                            </Typography>
+                          </Box>
+
+                          {/* Remove button */}
+                          {canRemove && (
+                            <Tooltip title={`Remove from ${g.name}`}>
+                              <IconButton
+                                size="small"
+                                color="error"
+                                onClick={() => handleRemoveGroupInline(g)}
+                                disabled={isLoading}
+                                sx={{ flexShrink: 0 }}
+                              >
+                                {isLoading
+                                  ? <CircularProgress size={14} />
+                                  : <DeleteOutlined fontSize="small" />
+                                }
+                              </IconButton>
+                            </Tooltip>
+                          )}
+                          {!canRemove && g.slug !== SYSTEM_SLUGS.EVERYONE && (
+                            <Tooltip title={
+                              g.is_system && !isSuperAdmin
+                                ? 'Only super-admins can modify this group'
+                                : 'System group — managed automatically'
+                            }>
+                              <LockOutlined fontSize="small" sx={{ color: 'text.disabled', flexShrink: 0 }} />
+                            </Tooltip>
+                          )}
+                        </Box>
+                      );
+                    })
+                  }
+
+                  {/* Show 'everyone' as read-only pill at the bottom */}
+                  {groupsData.groups.some(g => g.slug === SYSTEM_SLUGS.EVERYONE) && (
+                    <Chip
+                      icon={<Shield sx={{ fontSize: 14 }} />}
+                      label="everyone (automatic)"
+                      size="small"
+                      color="default"
+                      variant="outlined"
+                      sx={{ mt: 1, fontSize: '0.7rem', opacity: 0.7 }}
+                    />
+                  )}
+                </Box>
+              )}
             </Stack>
           )}
 

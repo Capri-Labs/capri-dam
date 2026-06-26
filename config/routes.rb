@@ -332,6 +332,8 @@ Rails.application.routes.draw do
         post   :toggle_status
         post   :change_password
         get    :groups
+        post   :add_group
+        delete "remove_group/:group_id", to: "users#remove_group", as: :remove_group
         get    :impersonators
         post   "impersonators",                   to: "users#add_impersonator",     as: :add_impersonator
         delete "impersonators/:impersonator_id",  to: "users#remove_impersonator",  as: :remove_impersonator

@@ -26,6 +26,8 @@ document.addEventListener('turbo:load', () => {
         const headerProps = {
             userName:         headerContainer.dataset.userName,
             isSignedIn:       headerContainer.dataset.signedIn === 'true',
+            isAdmin:          headerContainer.dataset.isAdmin === 'true',
+            isSuperAdmin:     headerContainer.dataset.isSuperAdmin === 'true',
             impersonating:    headerContainer.dataset.impersonating === 'true',
             impersonatedUser: headerContainer.dataset.impersonatedUser || null,
             trueUserName:     headerContainer.dataset.trueUserName || null,

@@ -4,24 +4,31 @@ import {
     IconButton, Avatar, Menu, MenuItem, ListItemIcon, Divider, Tooltip, Chip
 } from '@mui/material';
 import {
-    Logout, Login, Settings, Add, Person,
+    Logout, Settings, Add, Person,
     CloudUpload, AccountTree, HelpOutlined, SupervisedUserCircle
 } from '@mui/icons-material';
 
 import NotificationBell from '../NotificationBell';
 import GlobalSearchBar from '../Search/GlobalSearchBar';
 import ImpersonationBanner from './ImpersonationBanner';
+import ImpersonateUserDialog from './ImpersonateUserDialog';
 
 export default function Header(props) {
     const [profileAnchorEl, setProfileAnchorEl] = useState(null);
-    const [createAnchorEl, setCreateAnchorEl] = useState(null);
+    const [createAnchorEl, setCreateAnchorEl]   = useState(null);
+    const [impersonateOpen, setImpersonateOpen] = useState(false);
 
     // Impersonation state from Rails data attributes
-    const impersonating   = props.impersonating === true || props.impersonating === 'true';
+    const impersonating    = props.impersonating === true || props.impersonating === 'true';
+    const isAdmin          = props.isAdmin === true || props.isAdmin === 'true';
+    const isSuperAdmin     = props.isSuperAdmin === true || props.isSuperAdmin === 'true';
+    const canImpersonate   = (isAdmin || isSuperAdmin) && !impersonating;
+
     const impersonatedUser = (() => {
-        try { return props.impersonatedUser && props.impersonatedUser !== 'null'
-                ? JSON.parse(props.impersonatedUser) : null; }
-        catch { return null; }
+        try {
+            return props.impersonatedUser && props.impersonatedUser !== 'null'
+                ? JSON.parse(props.impersonatedUser) : null;
+        } catch { return null; }
     })();
 
     const handleLogout = () => {
@@ -39,7 +46,6 @@ export default function Header(props) {
         return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
     };
 
-    // Push AppBar down when impersonation banner is active (banner = 40px)
     const bannerOffset = impersonating ? '40px' : '0px';
 
     return (
@@ -66,33 +72,29 @@ export default function Header(props) {
             >
                 <Toolbar sx={{ display: 'flex', justifyContent: 'space-between', minHeight: '64px' }}>
 
-                    {/* 1. LOGO */}
+                    {/* LOGO */}
                     <Box
                         component="img"
                         src="/images/logo.png"
                         alt="Capri DAM Logo"
                         sx={{
-                            height: 64,
-                            width: 'auto',
-                            cursor: 'pointer',
-                            boxShadow: 2,
-                            borderRadius: '4px',
-                            transition: 'transform 0.2s',
+                            height: 64, width: 'auto', cursor: 'pointer',
+                            boxShadow: 2, borderRadius: '4px', transition: 'transform 0.2s',
                             '&:hover': { transform: 'scale(1.05)', boxShadow: 4 },
                         }}
                         onClick={() => window.location.href = '/dashboard'}
                     />
 
-                    {/* 2. CENTER SEARCH BAR */}
+                    {/* CENTER SEARCH */}
                     <Box sx={{ flexGrow: 1, display: 'flex', justifyContent: 'center', px: 2 }}>
                         {props.isSignedIn && <GlobalSearchBar />}
                     </Box>
 
-                    {/* 3. USER ACTIONS */}
+                    {/* RIGHT — actions */}
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         {props.isSignedIn && (
                             <>
-                                {/* Impersonation indicator chip */}
+                                {/* Active impersonation chip */}
                                 {impersonating && impersonatedUser && (
                                     <Chip
                                         icon={<SupervisedUserCircle sx={{ fontSize: 16 }} />}
@@ -104,12 +106,10 @@ export default function Header(props) {
                                     />
                                 )}
 
-                                {/* Quick Add Menu */}
-                                <Tooltip title="Create New...">
+                                {/* Quick Add */}
+                                <Tooltip title="Create New…">
                                     <Button
-                                        variant="contained"
-                                        color="primary"
-                                        size="small"
+                                        variant="contained" color="primary" size="small"
                                         startIcon={<Add />}
                                         onClick={(e) => setCreateAnchorEl(e.currentTarget)}
                                         sx={{ mr: 1, textTransform: 'none', borderRadius: '8px', boxShadow: 'none' }}
@@ -124,11 +124,11 @@ export default function Header(props) {
                                     onClose={() => setCreateAnchorEl(null)}
                                     PaperProps={{ elevation: 3, sx: { mt: 1.5, minWidth: 200, borderRadius: 2 } }}
                                 >
-                                    <MenuItem onClick={() => {}}>
+                                    <MenuItem onClick={() => setCreateAnchorEl(null)}>
                                         <ListItemIcon><CloudUpload fontSize="small" color="primary" /></ListItemIcon>
                                         Upload Asset
                                     </MenuItem>
-                                    <MenuItem onClick={() => {}}>
+                                    <MenuItem onClick={() => setCreateAnchorEl(null)}>
                                         <ListItemIcon><AccountTree fontSize="small" color="success" /></ListItemIcon>
                                         Start Workflow
                                     </MenuItem>
@@ -144,12 +144,14 @@ export default function Header(props) {
 
                                 <Divider orientation="vertical" flexItem sx={{ mx: 1, my: 1.5 }} />
 
-                                {/* User Profile Avatar Dropdown */}
-                                <Tooltip title={impersonating ? `Acting as ${impersonatedUser?.display_name}` : 'Account settings'}>
+                                {/* Profile Avatar */}
+                                <Tooltip title={impersonating
+                                    ? `Acting as ${impersonatedUser?.display_name}`
+                                    : 'Account settings'
+                                }>
                                     <IconButton
                                         onClick={(e) => setProfileAnchorEl(e.currentTarget)}
-                                        size="small"
-                                        sx={{ ml: 1 }}
+                                        size="small" sx={{ ml: 1 }}
                                     >
                                         <Avatar sx={{
                                             width: 36, height: 36,
@@ -165,10 +167,11 @@ export default function Header(props) {
                                     anchorEl={profileAnchorEl}
                                     open={Boolean(profileAnchorEl)}
                                     onClose={() => setProfileAnchorEl(null)}
-                                    PaperProps={{ elevation: 3, sx: { mt: 1.5, minWidth: 220, borderRadius: 2 } }}
+                                    PaperProps={{ elevation: 3, sx: { mt: 1.5, minWidth: 240, borderRadius: 2 } }}
                                     transformOrigin={{ horizontal: 'right', vertical: 'top' }}
                                     anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
                                 >
+                                    {/* User identity header */}
                                     <Box sx={{ px: 2, py: 1.5 }}>
                                         <Typography variant="subtitle2" fontWeight="bold" color="text.primary">
                                             {props.userName || 'System User'}
@@ -177,18 +180,55 @@ export default function Header(props) {
                                             {impersonating ? '⚠️ Impersonation active' : 'Active Session'}
                                         </Typography>
                                     </Box>
+
                                     <Divider />
-                                    <MenuItem onClick={() => window.location.href = '/profile'}>
+
+                                    {/* My Profile */}
+                                    <MenuItem onClick={() => {
+                                        setProfileAnchorEl(null);
+                                        window.location.href = '/profile';
+                                    }}>
                                         <ListItemIcon><Person fontSize="small" /></ListItemIcon>
                                         My Profile
                                     </MenuItem>
-                                    <MenuItem onClick={() => window.location.href = '/settings'}>
+
+                                    {/* ── Impersonate User — only for admins/super-admins ── */}
+                                    {canImpersonate && (
+                                        <MenuItem
+                                            onClick={() => {
+                                                setProfileAnchorEl(null);
+                                                setImpersonateOpen(true);
+                                            }}
+                                            sx={{
+                                                color: 'warning.dark',
+                                                '&:hover': { bgcolor: '#fffbeb' },
+                                            }}
+                                        >
+                                            <ListItemIcon>
+                                                <SupervisedUserCircle fontSize="small" sx={{ color: 'warning.main' }} />
+                                            </ListItemIcon>
+                                            Impersonate User
+                                        </MenuItem>
+                                    )}
+
+                                    <MenuItem onClick={() => {
+                                        setProfileAnchorEl(null);
+                                        window.location.href = '/settings';
+                                    }}>
                                         <ListItemIcon><Settings fontSize="small" /></ListItemIcon>
                                         System Settings
                                     </MenuItem>
+
                                     <Divider />
+
                                     <MenuItem onClick={handleLogout} sx={{ color: 'error.main' }}>
-                                        <ListItemIcon><Logout fontSize="small" color="error" /></ListItemIcon>
+                                        <ListItemIcon>
+                                            {/* inline SVG logout icon to avoid unused import */}
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18"
+                                                viewBox="0 0 24 24" fill="currentColor" style={{ color: '#d32f2f' }}>
+                                                <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5-5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/>
+                                            </svg>
+                                        </ListItemIcon>
                                         Sign Out
                                     </MenuItem>
                                 </Menu>
@@ -197,6 +237,14 @@ export default function Header(props) {
                     </Box>
                 </Toolbar>
             </AppBar>
+
+            {/* Impersonate User Dialog */}
+            {canImpersonate && (
+                <ImpersonateUserDialog
+                    open={impersonateOpen}
+                    onClose={() => setImpersonateOpen(false)}
+                />
+            )}
         </>
     );
 }

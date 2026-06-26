@@ -22,6 +22,7 @@ class Admin::UsersController < ApplicationController
                                          :groups, :change_password,
                                          :impersonators, :add_impersonator, :remove_impersonator,
                                          :start_impersonation,
+                                         :add_group, :remove_group,
                                          :preferences, :update_preferences ]
 
   # GET /admin/users(.json)
@@ -143,12 +144,90 @@ class Admin::UsersController < ApplicationController
   end
 
   # GET /admin/users/:id/groups.json
+  #
+  # Returns the user's current group memberships with rich metadata, plus the
+  # full list of available groups for the assignment autocomplete.
   def groups
+    member_ids = @target_user.user_groups.pluck(:id)
+
     render json: {
-      groups: @target_user.user_groups.map { |g|
-        { id: g.id, name: g.name, slug: g.slug, is_system: g.is_system }
+      # Groups the user is currently in (rich detail)
+      groups: @target_user.user_groups.map { |g| serialize_group_detail(g) },
+      # All groups (for the assignment autocomplete, exclude 'everyone')
+      all_groups: UserGroup.where.not(slug: "everyone").order(:name).map { |g|
+        serialize_group_detail(g)
       },
+      total: member_ids.size,
     }
+  end
+
+  # POST /admin/users/:id/add_group
+  # Body: { group_id: 42 }
+  #
+  # Adds the user to a single group immediately.  Delegates to the group's
+  # own add_member logic so that system-group protection is enforced in one place.
+  def add_group
+    group = UserGroup.find_by(id: params[:group_id])
+    return render json: { error: "Group not found." }, status: :not_found unless group
+
+    if group.everyone?
+      return render json: { error: "'everyone' is managed automatically." }, status: :forbidden
+    end
+
+    if group.super_administrators? && !current_user.super_admin?
+      return render json: { error: "Only super-administrators can assign to this group." },
+                    status: :forbidden
+    end
+
+    if @target_user == current_user && (group.administrators? || group.super_administrators?)
+      return render json: { error: "You cannot add yourself to the #{group.name} group." },
+                    status: :forbidden
+    end
+
+    unless group.users.include?(@target_user)
+      group.users << @target_user
+    end
+
+    AuditLog.record(
+      action:       "group_add",
+      auditable:    @target_user,
+      user:         current_user,
+      changes_data: { group: group.name },
+    )
+
+    render json: {
+      success: true,
+      message: "#{@target_user.display_name} added to #{group.name}.",
+      group:   serialize_group_detail(group),
+    }
+  rescue ActiveRecord::RecordInvalid => e
+    render json: { success: false, errors: [ e.message ] }, status: :unprocessable_entity
+  end
+
+  # DELETE /admin/users/:id/remove_group/:group_id
+  def remove_group
+    group = UserGroup.find_by(id: params[:group_id])
+    return render json: { error: "Group not found." }, status: :not_found unless group
+
+    if group.everyone?
+      return render json: { error: "Cannot remove users from 'everyone'." }, status: :forbidden
+    end
+
+    if group.administrators? && !current_user.super_admin?
+      return render json: { error: "Only super-administrators can modify the administrators group." },
+                    status: :forbidden
+    end
+
+    group.users.delete(@target_user)
+
+    AuditLog.record(
+      action:       "group_remove",
+      auditable:    @target_user,
+      user:         current_user,
+      changes_data: { group: group.name },
+    )
+
+    render json: { success: true, message: "#{@target_user.display_name} removed from #{group.name}." }
   end
 
   # GET /admin/users/:id/impersonators.json
@@ -317,6 +396,18 @@ class Admin::UsersController < ApplicationController
       language:                pref.language,
       receive_mention_emails:  pref.receive_mention_emails,
       receive_workflow_emails: pref.receive_workflow_emails,
+    }
+  end
+
+  def serialize_group_detail(group)
+    {
+      id:           group.id,
+      name:         group.name,
+      slug:         group.slug,
+      description:  group.description,
+      is_system:    group.is_system,
+      parent_id:    group.parent_id,
+      member_count: group.users.size,
     }
   end
 
