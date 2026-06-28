@@ -139,7 +139,11 @@ export default function WorkflowDesigner({ initialData, onSave, onCancel }) {
     }, [initialData, folders]); // Re-runs instantly when 'folders' finish downloading
 
     const handleSave = async () => {
-        const approvalNodes = nodes.filter(n => n.type === 'approvalNode');
+        // Interactive nodes = everything except the start/end sentinels.
+        const stepNodes = nodes.filter(n => n.type !== 'startNode' && n.type !== 'endNode');
+        const approvalNodes = stepNodes.filter(n => n.data?.step?.isApproval !== false && (n.type === 'approvalNode' || n.type === 'parallelApprovalNode' || n.type === 'sequentialApprovalNode'));
+
+        // Validate: approval nodes require an assignee.
         const invalidNode = approvalNodes.find(node => !node.data.step.assigneeId);
         if (invalidNode) {
             notify("All Approval Steps must have an Assignee selected.", "error");
@@ -148,24 +152,57 @@ export default function WorkflowDesigner({ initialData, onSave, onCancel }) {
 
         setStatus({ loading: true });
 
-        const activeStepsAttributes = approvalNodes.map((node, index) => {
+        // Map node-type → the WorkflowStep.node_type enum used by the backend.
+        const NODE_TYPE_MAP = {
+            approvalNode: 'approval',
+            parallelApprovalNode: 'approval',
+            sequentialApprovalNode: 'approval',
+            emailNode: 'email_notification',
+            inAppNotifyNode: 'in_app_notification',
+            slackNode: 'slack',
+            teamsNode: 'teams',
+            smsNode: 'sms',
+            webhookNode: 'webhook',
+            secureWebhookNode: 'secure_webhook',
+            apiCallNode: 'api_call',
+            setStatusNode: 'set_status',
+            addTagsNode: 'add_tags',
+            removeTagsNode: 'remove_tags',
+            moveAssetNode: 'move_asset',
+            copyAssetNode: 'copy_asset',
+            archiveNode: 'archive',
+            publishNode: 'publish',
+            metadataUpdateNode: 'update_metadata',
+            aiMetadataNode: 'ai_metadata',
+            generateThumbNode: 'generate_thumbnail',
+            cdnSyncNode: 'cdn_sync',
+            delayNode: 'delay',
+            conditionNode: 'condition',
+        };
+
+        const activeStepsAttributes = stepNodes.map((node, index) => {
             const s = node.data.step;
+            const isApproval = node.type === 'approvalNode' || node.type === 'parallelApprovalNode' || node.type === 'sequentialApprovalNode';
             const stepData = {
                 title: s.title || `Step ${index + 1}`,
                 description: s.description || '',
                 position: index + 1,
-                step_type: 'approval',
-                assignee_type: s.assigneeType,
-                assignee_id: s.assigneeId,
-                logic: s.logic,
-                deadline_days: s.deadline_days
+                step_type: isApproval ? 'approval' : 'automated_action',
+                node_type: NODE_TYPE_MAP[node.type] || 'approval',
+                step_config: s.config || {},
+                // Approval steps need a real assignee; automated steps default to a
+                // system placeholder so the NOT NULL columns are satisfied.
+                assignee_type: isApproval ? s.assigneeType : 'system',
+                assignee_id: isApproval ? s.assigneeId : '0',
+                logic: s.logic || 'any',
+                deadline_days: s.deadline_days || 2
             };
-            if (!s.isNew && s.id) stepData.id = s.id;
+            if (!s.isNew && s.id && typeof s.id === 'number') stepData.id = s.id;
             return stepData;
         });
 
         const initialStepIds = initialData?.workflow_steps?.map(s => s.id) || [];
-        const currentStepIds = approvalNodes.map(n => n.data.step.id);
+        const currentStepIds = stepNodes.map(n => n.data.step.id).filter(id => typeof id === 'number');
         const deletedStepsAttributes = initialStepIds
             .filter(id => !currentStepIds.includes(id))
             .map(id => ({ id: id, _destroy: 1 }));

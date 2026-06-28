@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_28_130001) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_28_140001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -858,6 +858,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_28_130001) do
     t.uuid "asset_id", null: false
     t.jsonb "audit_log"
     t.jsonb "blueprint_snapshot", default: {}
+    t.text "cancel_reason"
+    t.bigint "cancelled_by_id"
     t.datetime "completed_at"
     t.datetime "created_at", null: false
     t.integer "current_step_id"
@@ -867,6 +869,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_28_130001) do
     t.datetime "updated_at", null: false
     t.bigint "workflow_id", null: false
     t.index ["asset_id"], name: "index_workflow_instances_on_asset_id"
+    t.index ["cancelled_by_id"], name: "index_workflow_instances_on_cancelled_by_id"
     t.index ["completed_at"], name: "index_workflow_instances_on_completed_at"
     t.index ["started_at"], name: "index_workflow_instances_on_started_at"
     t.index ["workflow_id"], name: "index_workflow_instances_on_workflow_id"
@@ -880,12 +883,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_28_130001) do
     t.integer "deadline_days"
     t.text "description"
     t.string "logic"
+    t.string "node_type", default: "approval", null: false
     t.integer "position"
+    t.jsonb "step_config", default: {}, null: false
     t.string "step_type"
     t.string "title"
     t.datetime "updated_at", null: false
     t.integer "updated_by_id"
     t.bigint "workflow_id", null: false
+    t.index ["node_type"], name: "index_workflow_steps_on_node_type"
     t.index ["workflow_id"], name: "index_workflow_steps_on_workflow_id"
   end
 
@@ -973,6 +979,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_28_130001) do
   add_foreign_key "video_encoding_presets", "video_profiles"
   add_foreign_key "video_profile_folder_assignments", "video_profiles"
   add_foreign_key "workflow_instances", "assets"
+  add_foreign_key "workflow_instances", "users", column: "cancelled_by_id", on_delete: :nullify
   add_foreign_key "workflow_instances", "workflows"
   add_foreign_key "workflow_steps", "workflows"
   add_foreign_key "workflow_tasks", "users"

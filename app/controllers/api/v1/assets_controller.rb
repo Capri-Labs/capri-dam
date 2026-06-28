@@ -584,28 +584,65 @@ module Api
       # on this asset.
       #
       # @return [void] renders +200 OK+ with +{ active, instance_status, started_at, tasks }+
+      # GET /api/v1/assets/:id/workflow_history
+      #
+      # Returns ALL workflow instances for this asset (not just the latest).
+      # Each instance includes its own task list so the panel can render every
+      # concurrent workflow independently and allow independent approval/cancellation.
       def workflow_history
         @asset = Asset.find(params[:id])
-        instance = @asset.workflow_instances.order(created_at: :desc).first
+        instances = @asset.workflow_instances
+                          .includes(:workflow, { workflow_tasks: [ :user, :workflow_step ] })
+                          .order(created_at: :desc)
 
-        if instance
-          tasks = instance.workflow_tasks.includes(:user, :workflow_step).order(created_at: :asc)
-          history = tasks.map do |task|
+        if instances.empty?
+          return render json: { active: false, instances: [], tasks: [] }
+        end
+
+        current_user_id = active_resource_owner.id
+        is_admin        = current_user_admin?
+
+        serialized = instances.map do |inst|
+          tasks = inst.workflow_tasks.includes(:user, :workflow_step).order(created_at: :asc).map do |task|
             {
-              id: task.id,
-              step_name: task.workflow_step.title,
-              user_name: task.user.email,
-              status: task.status,
-              comment: task.comment,
-              completed_at: task.completed_at,
-              is_current_user: task.user_id == active_resource_owner.id,
-              is_pending: task.status == "pending",
+              id:              task.id,
+              step_name:       task.workflow_step.title,
+              user_name:       task.user.email,
+              status:          task.status,
+              comment:         task.comment,
+              completed_at:    task.completed_at,
+              is_current_user: task.user_id == current_user_id,
+              is_pending:      task.status == "pending",
             }
           end
-          render json: { active: true, instance_status: instance.status, started_at: instance.started_at, tasks: history }
-        else
-          render json: { active: false, tasks: [] }
+
+          {
+            instance_id:      inst.id,
+            workflow_id:      inst.workflow_id,
+            workflow_name:    inst.workflow.name,
+            instance_status:  inst.status,
+            started_at:       inst.started_at,
+            completed_at:     inst.completed_at,
+            cancel_reason:    inst.cancel_reason,
+            cancelled_by:     inst.cancelled_by&.email,
+            can_force_cancel: is_admin && !WorkflowInstance::TERMINAL_STATUSES.include?(inst.status),
+            tasks:            tasks,
+          }
         end
+
+        # Legacy single-instance shape for backward compat (first active instance)
+        active_instance = serialized.find { |i| i[:instance_status] == "in_progress" }
+
+        render json: {
+          active:    active_instance.present?,
+          instances: serialized,
+          # Provide flattened tasks from the FIRST active instance for the legacy
+          # approval action box.  This preserves WorkflowPanel's existing flow while
+          # the new multi-instance UI shows all of them.
+          instance_status: active_instance&.dig(:instance_status),
+          started_at:      active_instance&.dig(:started_at),
+          tasks:           active_instance&.dig(:tasks) || [],
+        }
       end
 
       # Accepts an array of SHA-256 checksums and returns any matching

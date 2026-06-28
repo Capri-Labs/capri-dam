@@ -1,113 +1,140 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     Box, Typography, Paper, Tabs, Tab, Table, TableBody, TableCell,
     TableContainer, TableHead, TableRow, Button, Avatar, Chip, CssBaseline,
-    Toolbar, Drawer, Checkbox, Stack, Tooltip
+    Checkbox, Stack, Tooltip, IconButton, Drawer, Grid,
 } from '@mui/material';
 import {
     Launch, Assignment, AdminPanelSettings, History, FactCheck,
-    StopCircle, Refresh, WarningAmber
+    StopCircle, Refresh, WarningAmber, Delete, PendingActions,
+    AccountTree, CheckCircle,
 } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 
-import Sidebar from "./Sidebar";
-import { navigateTo } from '../utils/globalutils';
 import { useNotify } from '../context/NotificationContext';
 import WorkflowPanel from './WorkflowPanel';
-
 import BulkReassignModal from './Workflows/BulkReassignModal';
-import BottleneckReport from './Workflows/BottleneckReport';
 
-export default function WorkflowDashboard({ onNavigateToAsset }) {
+// ─── Small stat card ──────────────────────────────────────────────────────────
+function StatCard({ icon: Icon, label, value, color, bg }) {
+    return (
+        <Paper elevation={0} sx={{ p: 2.5, border: '1px solid #e2e8f0', borderRadius: 3, display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Box sx={{ width: 44, height: 44, borderRadius: 2, bgcolor: bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Icon sx={{ color, fontSize: 24 }} />
+            </Box>
+            <Box>
+                <Typography variant="h5" sx={{ fontWeight: 800, color: '#1e293b', lineHeight: 1 }}>{value}</Typography>
+                <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600 }}>{label}</Typography>
+            </Box>
+        </Paper>
+    );
+}
+
+export default function WorkflowDashboard() {
     const notify = useNotify();
+    const { t } = useTranslation();
     const [tab, setTab] = useState(0);
     const [data, setData] = useState({ my_tasks: [], active_workflows: [], completed_workflows: [] });
     const [selectedWorkflows, setSelectedWorkflows] = useState([]);
-    const [activeView, setActiveView] = useState('My Tasks');
     const [selectedAsset, setSelectedAsset] = useState(null);
     const [reassignOpen, setReassignOpen] = useState(false);
-    const [bottleneckOpen, setBottleneckOpen] = useState(false);
-    const [users, setUsers] = useState([]);
+    const [users] = useState([]);
     const selectedWorkflowObjects = data.active_workflows.filter(w => selectedWorkflows.includes(w.instance_id));
 
-    const fetchDashboardData = () => {
+    const fetchDashboardData = useCallback(() => {
         fetch('/api/v1/workflows/dashboard')
             .then(res => res.json())
             .then(json => {
                 setData({
                     my_tasks: json.my_tasks || [],
                     active_workflows: json.active_workflows || [],
-                    completed_workflows: json.completed_workflows || []
+                    completed_workflows: json.completed_workflows || [],
                 });
                 setSelectedWorkflows([]);
             })
-            .catch(err => notify(err.message || "Failed to fetch dashboard data", "error"));
-    };
-
-    const handleBulkReassign = async (payload) => {
-        const csrfToken = document.querySelector('[name="csrf-token"]').content;
-        await fetch('/api/v1/workflows/bulk_reassign', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
-            body: JSON.stringify({ ids: selectedWorkflows, ...payload })
-        });
-        fetchDashboardData();
-    };
+            .catch(err => notify(err.message || t('workflowOps.fetchError', { defaultValue: 'Failed to fetch dashboard data' }), 'error'));
+    }, [notify, t]);
 
     useEffect(() => {
         fetchDashboardData();
         const params = new URLSearchParams(window.location.search);
         const urlAssetId = params.get('asset_id');
         if (urlAssetId) setSelectedAsset({ id: urlAssetId, thumb: null });
-    }, []);
+    }, [fetchDashboardData]);
 
-    const isOverdue = (startedAt, deadlineDays) => {
-        const start = new Date(startedAt);
-        const now = new Date();
-        const diffTime = Math.abs(now - start);
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        return diffDays > (deadlineDays || 2); // Assuming 2 days default
+    const csrf = () => document.querySelector('[name="csrf-token"]').content;
+
+    const isOverdue = (startedAt, deadlineDays = 2) => {
+        const diffDays = Math.ceil(Math.abs(new Date() - new Date(startedAt)) / 86400000);
+        return diffDays > deadlineDays;
     };
 
-    const getBottleneckStats = () => {
-        const counts = {};
-        data.active_workflows.forEach(w => {
-            counts[w.current_step] = (counts[w.current_step] || 0) + 1;
+    const handleBulkReassign = async (payload) => {
+        await fetch('/api/v1/workflows/bulk_reassign', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
+            body: JSON.stringify({ ids: selectedWorkflows, ...payload }),
         });
-        return Object.entries(counts).sort((a,b) => b[1] - a[1]).slice(0, 3);
+        fetchDashboardData();
     };
 
     const toggleAllWorkflows = () => {
-        if (selectedWorkflows.length === data.active_workflows.length) {
-            setSelectedWorkflows([]);
-        } else {
-            setSelectedWorkflows(data.active_workflows.map(w => w.instance_id));
-        }
-    };
-
-    const toggleWorkflowSelection = (id) => {
         setSelectedWorkflows(prev =>
-            prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]
+            prev.length === data.active_workflows.length ? [] : data.active_workflows.map(w => w.instance_id)
         );
     };
 
-    const handleBulkStop = async () => {
-        if (!window.confirm(`Are you sure you want to stop ${selectedWorkflows.length} workflows? This will cancel all pending tasks and archive these instances.`)) return;
+    const toggleWorkflowSelection = (id) => {
+        setSelectedWorkflows(prev => prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]);
+    };
 
+    const handleBulkStop = async () => {
+        if (!window.confirm(t('workflowOps.confirmBulkStop', { count: selectedWorkflows.length, defaultValue: `Stop ${selectedWorkflows.length} workflow(s)? This cancels all pending tasks.` }))) return;
         try {
-            const csrfToken = document.querySelector('[name="csrf-token"]').content;
             const res = await fetch('/api/v1/workflows/bulk_stop', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
-                body: JSON.stringify({ ids: selectedWorkflows })
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
+                body: JSON.stringify({ ids: selectedWorkflows }),
             });
             if (res.ok) {
-                notify("Workflows successfully canceled.", "success");
+                notify(t('workflowOps.stopSuccess', { defaultValue: 'Workflows cancelled.' }), 'success');
                 fetchDashboardData();
             } else {
-                notify("Failed to stop workflows", "error");
+                notify(t('workflowOps.stopFail', { defaultValue: 'Failed to stop workflows' }), 'error');
             }
-        } catch (err) {
-            notify("Network error occurred", "error");
+        } catch {
+            notify(t('workflowOps.networkError', { defaultValue: 'Network error occurred' }), 'error');
+        }
+    };
+
+    const handleForceCancel = async (instanceId) => {
+        const reason = window.prompt(t('workflowOps.cancelPrompt', { defaultValue: 'Reason for cancelling this workflow (optional):' }), '');
+        if (reason === null) return;
+        const res = await fetch(`/api/v1/workflow_instances/${instanceId}/force_cancel`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
+            body: JSON.stringify({ reason }),
+        });
+        if (res.ok) {
+            notify(t('workflowOps.cancelSuccess', { defaultValue: 'Workflow cancelled.' }), 'success');
+            fetchDashboardData();
+        } else {
+            notify(t('workflowOps.cancelFail', { defaultValue: 'Failed to cancel workflow.' }), 'error');
+        }
+    };
+
+    const handleDeleteInstance = async (instanceId) => {
+        if (!window.confirm(t('workflowOps.confirmDelete', { defaultValue: 'Permanently delete this workflow instance? This cannot be undone.' }))) return;
+        const res = await fetch(`/api/v1/workflow_instances/${instanceId}`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf() },
+        });
+        if (res.ok) {
+            notify(t('workflowOps.deleteSuccess', { defaultValue: 'Workflow instance deleted.' }), 'success');
+            fetchDashboardData();
+        } else {
+            const body = await res.json().catch(() => ({}));
+            notify(body.error || t('workflowOps.deleteFail', { defaultValue: 'Failed to delete instance.' }), 'error');
         }
     };
 
@@ -118,59 +145,80 @@ export default function WorkflowDashboard({ onNavigateToAsset }) {
 
     const handleCloseReviewPane = () => {
         setSelectedAsset(null);
-        window.history.replaceState({}, '', `/workflows/dashboard`);
+        window.history.replaceState({}, '', '/workflows/dashboard');
     };
 
     return (
         <Box sx={{ display: 'flex', bgcolor: '#f4f7fb', minHeight: '100vh' }}>
             <CssBaseline />
-
             <Box component="main" sx={{ flexGrow: 1, p: 4, width: '100%' }}>
                 <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
-                    <Typography variant="h5" fontWeight="bold" color="#1e293b">Workflow Operations Center</Typography>
-                    <Button startIcon={<Refresh />} onClick={fetchDashboardData}>Refresh</Button>
+                    <Box>
+                        <Typography variant="h4" sx={{ fontWeight: 800, color: '#1e293b', display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                            <AccountTree sx={{ color: '#5e35b1', fontSize: 34 }} />
+                            {t('workflowOps.title', { defaultValue: 'Workflow Operations Center' })}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                            {t('workflowOps.subtitle', { defaultValue: 'Review your tasks, monitor active workflows, and audit completed runs.' })}
+                        </Typography>
+                    </Box>
+                    <Button startIcon={<Refresh />} onClick={fetchDashboardData} variant="outlined">
+                        {t('workflowOps.refresh', { defaultValue: 'Refresh' })}
+                    </Button>
                 </Stack>
 
-                <Paper elevation={0} sx={{ border: '1px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden' }}>
-                    <Tabs
-                        value={tab}
-                        onChange={(e, val) => setTab(val)}
+                {/* Stat cards */}
+                <Grid container spacing={2} sx={{ mb: 3 }}>
+                    <Grid size={{ xs: 12, sm: 4 }}>
+                        <StatCard icon={PendingActions} label={t('workflowOps.statPending', { defaultValue: 'My Pending Tasks' })} value={data.my_tasks.length} color="#d97706" bg="#fef3c7" />
+                    </Grid>
+                    <Grid size={{ xs: 12, sm: 4 }}>
+                        <StatCard icon={AdminPanelSettings} label={t('workflowOps.statActive', { defaultValue: 'Active Workflows' })} value={data.active_workflows.length} color="#2563eb" bg="#dbeafe" />
+                    </Grid>
+                    <Grid size={{ xs: 12, sm: 4 }}>
+                        <StatCard icon={CheckCircle} label={t('workflowOps.statCompleted', { defaultValue: 'Completed (recent)' })} value={data.completed_workflows.length} color="#16a34a" bg="#dcfce7" />
+                    </Grid>
+                </Grid>
+
+                <Paper elevation={0} sx={{ border: '1px solid #e2e8f0', borderRadius: 3, overflow: 'hidden' }}>
+                    <Tabs value={tab} onChange={(e, val) => setTab(val)}
                         sx={{ borderBottom: 1, borderColor: 'divider', bgcolor: '#ffffff' }}
-                    >
-                        <Tab icon={<Assignment />} iconPosition="start" label={`My Pending Tasks (${data.my_tasks.length})`} />
-                        <Tab icon={<AdminPanelSettings />} iconPosition="start" label={`Active Workflows (${data.active_workflows.length})`} />
-                        <Tab icon={<History />} iconPosition="start" label="Audit History" />
+                        TabIndicatorProps={{ style: { backgroundColor: '#5e35b1' } }}>
+                        <Tab icon={<Assignment />} iconPosition="start" label={`${t('workflowOps.tabPending', { defaultValue: 'My Pending Tasks' })} (${data.my_tasks.length})`} sx={{ '&.Mui-selected': { color: '#5e35b1' } }} />
+                        <Tab icon={<AdminPanelSettings />} iconPosition="start" label={`${t('workflowOps.tabActive', { defaultValue: 'Active Workflows' })} (${data.active_workflows.length})`} sx={{ '&.Mui-selected': { color: '#5e35b1' } }} />
+                        <Tab icon={<History />} iconPosition="start" label={t('workflowOps.tabAudit', { defaultValue: 'Audit History' })} sx={{ '&.Mui-selected': { color: '#5e35b1' } }} />
                     </Tabs>
 
-                    {/* BULK ACTION TOOLBAR */}
+                    {/* Bulk action toolbar */}
                     {tab === 1 && selectedWorkflows.length > 0 && (
                         <Box sx={{ p: 2, display: 'flex', alignItems: 'center', bgcolor: '#fff1f1', borderBottom: '1px solid #ffdede' }}>
-                            <Typography sx={{ flexGrow: 1, fontWeight: 600, color: '#d32f2f' }}>{selectedWorkflows.length} Workflows Selected</Typography>
+                            <Typography sx={{ flexGrow: 1, fontWeight: 600, color: '#d32f2f' }}>
+                                {t('workflowOps.selectedCount', { count: selectedWorkflows.length, defaultValue: `${selectedWorkflows.length} Workflows Selected` })}
+                            </Typography>
                             <Stack direction="row" spacing={1}>
-                                <Button color="primary" variant="outlined" onClick={() => setReassignOpen(true)}>Re-assign</Button>
-                                <Button color="error" variant="contained" startIcon={<StopCircle />} onClick={handleBulkStop}>Stop</Button>
+                                <Button color="primary" variant="outlined" onClick={() => setReassignOpen(true)}>{t('workflowOps.reassign', { defaultValue: 'Re-assign' })}</Button>
+                                <Button color="error" variant="contained" startIcon={<StopCircle />} onClick={handleBulkStop}>{t('workflowOps.stop', { defaultValue: 'Stop' })}</Button>
                             </Stack>
-
                         </Box>
                     )}
 
-                    <Box sx={{ p: 0, bgcolor: '#ffffff' }}>
+                    <Box sx={{ bgcolor: '#ffffff' }}>
                         {/* TAB 0: MY TASKS */}
                         {tab === 0 && (
                             <TableContainer>
                                 <Table size="medium">
                                     <TableHead sx={{ bgcolor: '#f1f5f9' }}>
                                         <TableRow>
-                                            <TableCell>Asset</TableCell>
-                                            <TableCell>Asset Name</TableCell>
-                                            <TableCell>Required Action</TableCell>
-                                            <TableCell>Assigned Date</TableCell>
-                                            <TableCell align="right">Action</TableCell>
+                                            <TableCell>{t('workflowOps.colAsset', { defaultValue: 'Asset' })}</TableCell>
+                                            <TableCell>{t('workflowOps.colAssetName', { defaultValue: 'Asset Name' })}</TableCell>
+                                            <TableCell>{t('workflowOps.colAction', { defaultValue: 'Required Action' })}</TableCell>
+                                            <TableCell>{t('workflowOps.colAssigned', { defaultValue: 'Assigned Date' })}</TableCell>
+                                            <TableCell align="right">{t('workflowOps.colActionBtn', { defaultValue: 'Action' })}</TableCell>
                                         </TableRow>
                                     </TableHead>
                                     <TableBody>
                                         {data.my_tasks.length === 0 ? (
-                                            <TableRow><TableCell colSpan={5} align="center" sx={{ py: 4 }}>You have no pending tasks.</TableCell></TableRow>
+                                            <TableRow><TableCell colSpan={5} align="center" sx={{ py: 4, color: '#94a3b8' }}>{t('workflowOps.noTasks', { defaultValue: 'You have no pending tasks.' })}</TableCell></TableRow>
                                         ) : data.my_tasks.map((task) => (
                                             <TableRow key={task.task_id} hover>
                                                 <TableCell><Avatar variant="rounded" src={task.asset_thumb} /></TableCell>
@@ -178,8 +226,8 @@ export default function WorkflowDashboard({ onNavigateToAsset }) {
                                                 <TableCell><Chip label={task.step_title} color="warning" size="small" /></TableCell>
                                                 <TableCell>{new Date(task.assigned_at).toLocaleDateString()}</TableCell>
                                                 <TableCell align="right">
-                                                    <Button variant="contained" size="small" endIcon={<Launch />} onClick={() => handleOpenReviewPane(task.asset_id, task.asset_thumb)}>
-                                                        Review
+                                                    <Button variant="contained" size="small" endIcon={<Launch />} onClick={() => handleOpenReviewPane(task.asset_id, task.asset_thumb)} sx={{ bgcolor: '#5e35b1' }}>
+                                                        {t('workflowOps.review', { defaultValue: 'Review' })}
                                                     </Button>
                                                 </TableCell>
                                             </TableRow>
@@ -189,33 +237,40 @@ export default function WorkflowDashboard({ onNavigateToAsset }) {
                             </TableContainer>
                         )}
 
-                        {/* TAB 1: ADMIN OVERVIEW */}
+                        {/* TAB 1: ACTIVE WORKFLOWS */}
                         {tab === 1 && (
                             <TableContainer>
                                 <Table size="medium">
                                     <TableHead sx={{ bgcolor: '#f1f5f9' }}>
                                         <TableRow>
                                             <TableCell padding="checkbox"><Checkbox checked={selectedWorkflows.length > 0} indeterminate={selectedWorkflows.length > 0 && selectedWorkflows.length < data.active_workflows.length} onChange={toggleAllWorkflows} /></TableCell>
-                                            <TableCell>Blueprint</TableCell>
-                                            <TableCell>Asset</TableCell>
-                                            <TableCell>Current Status</TableCell>
-                                            <TableCell align="right">View Details</TableCell>
+                                            <TableCell>{t('workflowOps.colBlueprint', { defaultValue: 'Blueprint' })}</TableCell>
+                                            <TableCell>{t('workflowOps.colAsset', { defaultValue: 'Asset' })}</TableCell>
+                                            <TableCell>{t('workflowOps.colStatus', { defaultValue: 'Current Status' })}</TableCell>
+                                            <TableCell align="right">{t('workflowOps.colManage', { defaultValue: 'Manage' })}</TableCell>
                                         </TableRow>
                                     </TableHead>
                                     <TableBody>
-                                        {data.active_workflows.map((w) => (
+                                        {data.active_workflows.length === 0 ? (
+                                            <TableRow><TableCell colSpan={5} align="center" sx={{ py: 4, color: '#94a3b8' }}>{t('workflowOps.noActive', { defaultValue: 'No active workflows.' })}</TableCell></TableRow>
+                                        ) : data.active_workflows.map((w) => (
                                             <TableRow key={w.instance_id} hover>
-                                                <TableCell padding="checkbox">
-                                                    <Checkbox checked={selectedWorkflows.includes(w.instance_id)} onChange={() => toggleWorkflowSelection(w.instance_id)} />
-                                                </TableCell>
+                                                <TableCell padding="checkbox"><Checkbox checked={selectedWorkflows.includes(w.instance_id)} onChange={() => toggleWorkflowSelection(w.instance_id)} /></TableCell>
                                                 <TableCell sx={{ fontWeight: 500 }}>
                                                     {w.workflow_name}
-                                                    {isOverdue(w.started_at, 2) && <Tooltip title="SLA Breached"><WarningAmber color="error" fontSize="small" sx={{ ml: 1 }}/></Tooltip>}
+                                                    {isOverdue(w.started_at) && <Tooltip title={t('workflowOps.slaBreached', { defaultValue: 'SLA Breached' })}><WarningAmber color="error" fontSize="small" sx={{ ml: 1, verticalAlign: 'middle' }} /></Tooltip>}
                                                 </TableCell>
                                                 <TableCell>{w.asset_name}</TableCell>
-                                                <TableCell><Chip label={w.current_step} color={isOverdue(w.started_at, 2) ? 'error' : 'info'} size="small" /></TableCell>
+                                                <TableCell><Chip label={w.current_step} color={isOverdue(w.started_at) ? 'error' : 'info'} size="small" /></TableCell>
                                                 <TableCell align="right">
-                                                    <Button variant="outlined" size="small" onClick={() => handleOpenReviewPane(w.asset_id, null)}>Inspect</Button>
+                                                    <Stack direction="row" spacing={0.5} justifyContent="flex-end">
+                                                        <Tooltip title={t('workflowOps.inspect', { defaultValue: 'Inspect' })}>
+                                                            <IconButton size="small" onClick={() => handleOpenReviewPane(w.asset_id, null)}><Launch fontSize="small" /></IconButton>
+                                                        </Tooltip>
+                                                        <Tooltip title={t('workflowOps.forceCancel', { defaultValue: 'Force-cancel workflow' })}>
+                                                            <IconButton size="small" color="error" onClick={() => handleForceCancel(w.instance_id)}><StopCircle fontSize="small" /></IconButton>
+                                                        </Tooltip>
+                                                    </Stack>
                                                 </TableCell>
                                             </TableRow>
                                         ))}
@@ -230,22 +285,35 @@ export default function WorkflowDashboard({ onNavigateToAsset }) {
                                 <Table size="medium">
                                     <TableHead sx={{ bgcolor: '#f8fafc' }}>
                                         <TableRow>
-                                            <TableCell>Workflow Blueprint</TableCell>
-                                            <TableCell>Target Asset</TableCell>
-                                            <TableCell>Final Status</TableCell>
-                                            <TableCell>Completed Date</TableCell>
-                                            <TableCell align="right">Audit Trail</TableCell>
+                                            <TableCell>{t('workflowOps.colBlueprint', { defaultValue: 'Workflow Blueprint' })}</TableCell>
+                                            <TableCell>{t('workflowOps.colAsset', { defaultValue: 'Target Asset' })}</TableCell>
+                                            <TableCell>{t('workflowOps.colFinal', { defaultValue: 'Final Status' })}</TableCell>
+                                            <TableCell>{t('workflowOps.colCompleted', { defaultValue: 'Completed Date' })}</TableCell>
+                                            <TableCell align="right">{t('workflowOps.colManage', { defaultValue: 'Manage' })}</TableCell>
                                         </TableRow>
                                     </TableHead>
                                     <TableBody>
-                                        {data.completed_workflows.map((w) => (
+                                        {data.completed_workflows.length === 0 ? (
+                                            <TableRow><TableCell colSpan={5} align="center" sx={{ py: 4, color: '#94a3b8' }}>{t('workflowOps.noHistory', { defaultValue: 'No completed workflows yet.' })}</TableCell></TableRow>
+                                        ) : data.completed_workflows.map((w) => (
                                             <TableRow key={w.instance_id} hover>
                                                 <TableCell sx={{ fontWeight: 500, color: '#64748b' }}>{w.workflow_name}</TableCell>
                                                 <TableCell>{w.asset_name}</TableCell>
-                                                <TableCell><Chip label={w.status === 'completed' ? 'Approved' : 'Rejected'} color={w.status === 'completed' ? 'success' : 'error'} size="small" /></TableCell>
+                                                <TableCell>
+                                                    <Chip
+                                                        label={w.status === 'completed' ? t('workflowOps.approved', { defaultValue: 'Approved' }) : w.status === 'canceled' ? t('workflowOps.cancelled', { defaultValue: 'Cancelled' }) : t('workflowOps.rejected', { defaultValue: 'Rejected' })}
+                                                        color={w.status === 'completed' ? 'success' : w.status === 'canceled' ? 'default' : 'error'} size="small" />
+                                                </TableCell>
                                                 <TableCell>{new Date(w.completed_at).toLocaleString()}</TableCell>
                                                 <TableCell align="right">
-                                                    <Button variant="text" size="small" startIcon={<FactCheck />} onClick={() => handleOpenReviewPane(w.asset_id, null)}>View Audit</Button>
+                                                    <Stack direction="row" spacing={0.5} justifyContent="flex-end">
+                                                        <Tooltip title={t('workflowOps.viewAudit', { defaultValue: 'View Audit' })}>
+                                                            <IconButton size="small" onClick={() => handleOpenReviewPane(w.asset_id, null)}><FactCheck fontSize="small" /></IconButton>
+                                                        </Tooltip>
+                                                        <Tooltip title={t('workflowOps.delete', { defaultValue: 'Delete instance' })}>
+                                                            <IconButton size="small" color="error" onClick={() => handleDeleteInstance(w.instance_id)}><Delete fontSize="small" /></IconButton>
+                                                        </Tooltip>
+                                                    </Stack>
                                                 </TableCell>
                                             </TableRow>
                                         ))}
@@ -261,18 +329,11 @@ export default function WorkflowDashboard({ onNavigateToAsset }) {
                             onConfirm={handleBulkReassign}
                             users={users}
                         />
-
-                        <BottleneckReport
-                            open={bottleneckOpen}
-                            onClose={() => setBottleneckOpen(false)}
-                            stats={getBottleneckStats()}
-                            totalActive={data.active_workflows.length}
-                        />
                     </Box>
                 </Paper>
             </Box>
 
-            <Drawer anchor="right" open={!!selectedAsset} onClose={handleCloseReviewPane} PaperProps={{ sx: { width: 500, bgcolor: '#f8fafc' } }}>
+            <Drawer anchor="right" open={!!selectedAsset} onClose={handleCloseReviewPane} slotProps={{ paper: { sx: { width: 520, bgcolor: '#f8fafc' } } }}>
                 {selectedAsset && <WorkflowPanel assetId={selectedAsset.id} assetThumb={selectedAsset.thumb} onClose={handleCloseReviewPane} onWorkflowUpdate={fetchDashboardData} />}
             </Drawer>
         </Box>

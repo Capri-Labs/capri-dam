@@ -8295,6 +8295,64 @@ paths:
               type: object
               description: Provider-specific event payload (arbitrary JSON — passed
                 through to IngestionWorker)
+  "/api/v1/workflow_instances/{id}/force_cancel":
+    parameters:
+    - name: id
+      in: path
+      description: Workflow Instance ID
+      required: true
+      schema:
+        type: string
+    post:
+      summary: Force-cancels a running workflow instance (admin only)
+      tags:
+      - Workflows & Tasks
+      security:
+      - Bearer: []
+      parameters: []
+      responses:
+        '200':
+          description: instance cancelled
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  example: Asset withdrawn from campaign
+  "/api/v1/workflow_instances/{id}":
+    parameters:
+    - name: id
+      in: path
+      description: Workflow Instance ID
+      required: true
+      schema:
+        type: string
+    delete:
+      summary: Deletes a terminal workflow instance (admin only)
+      tags:
+      - Workflows & Tasks
+      security:
+      - Bearer: []
+      responses:
+        '200':
+          description: instance deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
   "/api/v1/workflow_tasks/{id}/submit":
     parameters:
     - name: id

@@ -308,9 +308,18 @@ Rails.application.routes.draw do
       end
 
       # Workflows API
-      get "workflows/dashboard", to: "workflow_tasks#dashboard"
+      get  "workflows/dashboard",   to: "workflow_tasks#dashboard"
+      post "workflows/bulk_stop",   to: "workflow_instances#bulk_stop"
+      post "workflows/bulk_reassign", to: "workflow_instances#bulk_reassign"
+
       resources :workflow_tasks, only: [] do
         post :submit, on: :member
+      end
+
+      resources :workflow_instances, only: %i[index show destroy] do
+        member do
+          post :force_cancel
+        end
       end
 
       # Notifications

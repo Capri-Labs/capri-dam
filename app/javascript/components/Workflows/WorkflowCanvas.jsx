@@ -9,11 +9,32 @@ import NodePalette from './NodePalette';
 import StartNode from '../nodes/StartNode';
 import EndNode from '../nodes/EndNode';
 import ApprovalNode from '../nodes/ApprovalNode';
+import GenericActionNode from '../nodes/GenericActionNode';
+
+// Approval-family node types reuse the ApprovalNode renderer.
+const APPROVAL_TYPES = ['approvalNode', 'parallelApprovalNode', 'sequentialApprovalNode'];
+
+// All other action/integration/flow nodes use the GenericActionNode renderer.
+const GENERIC_TYPES = [
+    'emailNode', 'inAppNotifyNode', 'slackNode', 'teamsNode', 'smsNode',
+    'webhookNode', 'secureWebhookNode', 'apiCallNode',
+    'setStatusNode', 'addTagsNode', 'removeTagsNode', 'moveAssetNode', 'copyAssetNode',
+    'archiveNode', 'publishNode', 'metadataUpdateNode',
+    'aiMetadataNode', 'generateThumbNode', 'cdnSyncNode',
+    'delayNode', 'conditionNode',
+];
 
 const nodeTypes = {
     startNode: StartNode,
     endNode: EndNode,
     approvalNode: ApprovalNode,
+    parallelApprovalNode: ApprovalNode,
+    sequentialApprovalNode: ApprovalNode,
+    // Generic action nodes — bind `type` through so the renderer can look up metadata
+    ...GENERIC_TYPES.reduce((acc, t) => {
+        acc[t] = (props) => <GenericActionNode {...props} type={t} />;
+        return acc;
+    }, {}),
 };
 
 export default function WorkflowCanvas({ nodes, setNodes, edges, setEdges, users = [], groups = [] }) {
@@ -42,10 +63,12 @@ export default function WorkflowCanvas({ nodes, setNodes, edges, setEdges, users
         );
     }, [setNodes]);
 
-    // Safety Net: Push users, groups, and the update function down to nodes when they change
+    // Safety Net: Push users, groups, and the update function down to ALL
+    // interactive nodes (approval + generic action) when they change.
     useEffect(() => {
         setNodes((nds) => nds.map(node => {
-            if (node.type === 'approvalNode' && (!node.data.updateNodeData || node.data.users !== users || node.data.groups !== groups)) {
+            const interactive = APPROVAL_TYPES.includes(node.type) || GENERIC_TYPES.includes(node.type);
+            if (interactive && (!node.data.updateNodeData || node.data.users !== users || node.data.groups !== groups)) {
                 return {
                     ...node,
                     data: { ...node.data, updateNodeData, users, groups }
@@ -75,6 +98,7 @@ export default function WorkflowCanvas({ nodes, setNodes, edges, setEdges, users
             });
 
             const newNodeId = `${type}_${Date.now()}`;
+            const isApproval = APPROVAL_TYPES.includes(type);
             const newNode = {
                 id: newNodeId,
                 type,
@@ -89,12 +113,17 @@ export default function WorkflowCanvas({ nodes, setNodes, edges, setEdges, users
                         isNew: true,
                         title: '',
                         description: '',
+                        // approval-specific defaults
                         assigneeType: 'user',
                         assigneeId: '',
                         fallback_assignee_type: 'user',
                         fallback_assignee_id: '',
                         logic: 'any',
-                        deadline_days: 2
+                        deadline_days: 2,
+                        // node taxonomy + generic action config
+                        nodeType: type,
+                        isApproval,
+                        config: {},
                     }
                 }
             };

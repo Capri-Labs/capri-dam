@@ -42,9 +42,9 @@ class WorkflowEngineWorker
           next_step = instance.workflow.workflow_steps.find_by(position: step.position + 1)
 
           if next_step
-            # MOVE FORWARD: Start the next step
-            instance.update!(current_step_id: next_step.id)
-            generate_tasks_for_step(instance, next_step)
+            # MOVE FORWARD: the advancer handles approval (tasks) + automated
+            # (run action and continue) steps uniformly.
+            WorkflowAdvancerService.new(instance).process_step(next_step)
             Rails.logger.info "⏭️ Workflow #{instance.id} advanced to Step #{next_step.position}"
           else
             # VICTORY: No more steps! The workflow is successfully finished.
@@ -86,54 +86,5 @@ class WorkflowEngineWorker
       status: "canceled",
       completed_at: Time.current
     )
-  end
-
-  # Generates the physical database tasks (Shared logic with InitiatorWorker)
-  def generate_tasks_for_step(instance, step)
-    users = resolve_assignees(step) || []
-
-    #  Restored the Failsafe if primary assignees are missing
-    if users.empty?
-      Rails.logger.warn "⚠️ No valid assignees found for step '#{step.title}'. Using workflow fallback."
-      workflow = instance.workflow
-
-      if workflow.fallback_assignee_type == "user"
-        users << User.find_by(id: workflow.fallback_assignee_id)
-      elsif workflow.fallback_assignee_type == "group"
-        group = UserGroup.find_by(id: workflow.fallback_assignee_id)
-        users = group.users if group
-      end
-
-      users = users.flatten.compact
-    end
-
-    if users.empty?
-      Rails.logger.error "💥 FATAL: Step '#{step.title}' has no assignees and no fallback! Skipping task creation."
-      return
-    end
-
-    users.each do |user|
-      task = WorkflowTask.create!(
-        workflow_instance: instance,
-        workflow_step: step,
-        user: user,
-        status: "pending"
-      )
-
-      #  Trigger the Email/In-App Notification Dispatcher
-      TaskNotificationWorker.perform_async(task.id)
-    end
-  end
-
-  def resolve_assignees(step)
-    #  Changed 'User' to 'user' to match the database payload
-    if step.assignee_type == "user"
-      [ User.find_by(id: step.assignee_id) ].compact
-    elsif step.assignee_type == "group"
-      group = UserGroup.find_by(id: step.assignee_id)
-      group ? group.users : []
-    else
-      []
-    end
   end
 end

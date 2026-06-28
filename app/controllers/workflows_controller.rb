@@ -121,11 +121,13 @@ class WorkflowsController < ApplicationController
         :description,
         :position,
         :step_type,
+        :node_type,
         :assignee_type,
         :assignee_id,
         :logic,
         :deadline_days,
         :_destroy,
+        { step_config: {} },
       ]
     )
 

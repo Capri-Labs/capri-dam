@@ -36,8 +36,9 @@ class WorkflowInitiatorWorker
       first_step = workflow.workflow_steps.order(:position).first
 
       if first_step
-        instance.update!(current_step_id: first_step.id)
-        generate_tasks_for_step(instance, first_step)
+        # The advancer handles approval steps (generate tasks + wait) and
+        # automated steps (run action + advance) uniformly.
+        WorkflowAdvancerService.new(instance).process_step(first_step)
         Rails.logger.info " Workflow #{workflow.name} initiated successfully for Asset #{asset.id}"
       else
         # Safety Valve: Workflow has no steps
@@ -55,50 +56,5 @@ class WorkflowInitiatorWorker
 
   def generate_snapshot(workflow)
     workflow.as_json(include: :workflow_steps)
-  end
-
-  def generate_tasks_for_step(instance, step)
-    users = resolve_assignees(step) || []
-
-    if users.empty?
-      Rails.logger.warn "⚠️ No primary assignees found. Attempting fallback..."
-      workflow = instance.workflow
-
-      if workflow.fallback_assignee_type == "user"
-        users << User.find_by(id: workflow.fallback_assignee_id)
-      elsif workflow.fallback_assignee_type == "group"
-        group = UserGroup.find_by(id: workflow.fallback_assignee_id)
-        users = group.users if group
-      end
-
-      users = users.flatten.compact
-    end
-
-    if users.empty?
-      Rails.logger.error "💥 FATAL: Step '#{step.title}' has no assignees and no fallback! Skipping task creation."
-      return
-    end
-
-    users.each do |user|
-      task = WorkflowTask.create!(
-        workflow_instance: instance,
-        workflow_step: step,
-        user: user,
-        status: "pending"
-      )
-
-      TaskNotificationWorker.perform_async(task.id)
-    end
-  end
-
-  def resolve_assignees(step)
-    if step.assignee_type == "user"
-      [ User.find_by(id: step.assignee_id) ].compact
-    elsif step.assignee_type == "group"
-      group = UserGroup.find_by(id: step.assignee_id)
-      group ? group.users : []
-    else
-      []
-    end
   end
 end
