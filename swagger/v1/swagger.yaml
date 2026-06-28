@@ -1842,6 +1842,291 @@ paths:
                       nullable: true
                     fallback_to_local:
                       type: boolean
+  "/api/v1/ai_model_configs":
+    get:
+      summary: List AI model configs
+      tags:
+      - Style & Model Hub
+      security:
+      - Bearer: []
+      description: Returns all registered AI model endpoint configurations. Admin
+        only.
+      parameters:
+      - name: capability
+        in: query
+        required: false
+        description: 'Filter by capability: embedding | generation | vision | style_transfer
+          | audio'
+        schema:
+          type: string
+      - name: enabled
+        in: query
+        required: false
+        description: Filter by enabled state
+        schema:
+          type: boolean
+      responses:
+        '200':
+          description: List of AI model configs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total:
+                    type: integer
+                  configs:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        name:
+                          type: string
+                        provider:
+                          type: string
+                          example: openai
+                        model_id:
+                          type: string
+                          example: gpt-4o
+                        capability:
+                          type: string
+                          example: generation
+                        enabled:
+                          type: boolean
+                        is_default:
+                          type: boolean
+                        health_status:
+                          type: string
+                          example: healthy
+                        health_latency_ms:
+                          type: integer
+                          nullable: true
+                        last_health_check_at:
+                          type: string
+                          format: date-time
+                          nullable: true
+                        created_at:
+                          type: string
+                          format: date-time
+                        updated_at:
+                          type: string
+                          format: date-time
+        '401':
+          description: Unauthenticated
+        '403':
+          description: Forbidden (admin only)
+    post:
+      summary: Create an AI model config
+      tags:
+      - Style & Model Hub
+      security:
+      - Bearer: []
+      description: Registers a new AI model endpoint. Admin only. Broadcasts model.config.updated
+        to the gateway on save.
+      parameters: []
+      responses:
+        '201':
+          description: Model config created
+        '422':
+          description: Validation error
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - ai_model_config
+              properties:
+                ai_model_config:
+                  type: object
+                  required:
+                  - name
+                  - provider
+                  - model_id
+                  - capability
+                  properties:
+                    name:
+                      type: string
+                      example: GPT-4o Vision
+                    provider:
+                      type: string
+                      example: openai
+                      description: openai | anthropic | ollama | huggingface | azure_openai
+                        | custom
+                    model_id:
+                      type: string
+                      example: gpt-4o
+                    capability:
+                      type: string
+                      example: generation
+                      description: embedding | generation | vision | style_transfer
+                        | audio
+                    enabled:
+                      type: boolean
+                      example: true
+                    config_params:
+                      type: object
+                      example: {}
+  "/api/v1/ai_model_configs/capabilities":
+    get:
+      summary: List capabilities, providers, and health statuses
+      tags:
+      - Style & Model Hub
+      security:
+      - Bearer: []
+      description: Returns valid enum values for AI model config fields. Used to populate
+        the Model Hub form.
+      responses:
+        '200':
+          description: Enum values
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  capabilities:
+                    type: array
+                    items:
+                      type: string
+                  providers:
+                    type: array
+                    items:
+                      type: string
+                  health_statuses:
+                    type: array
+                    items:
+                      type: string
+  "/api/v1/ai_model_configs/{id}":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      description: AI model config ID
+      schema:
+        type: integer
+    get:
+      summary: Fetch a single AI model config
+      tags:
+      - Style & Model Hub
+      security:
+      - Bearer: []
+      responses:
+        '200':
+          description: Model config found
+        '404':
+          description: Not found
+    patch:
+      summary: Update an AI model config
+      tags:
+      - Style & Model Hub
+      security:
+      - Bearer: []
+      parameters: []
+      responses:
+        '200':
+          description: Updated
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                ai_model_config:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    enabled:
+                      type: boolean
+                    config_params:
+                      type: object
+    delete:
+      summary: Delete an AI model config
+      tags:
+      - Style & Model Hub
+      security:
+      - Bearer: []
+      responses:
+        '200':
+          description: Deleted
+  "/api/v1/ai_model_configs/{id}/health_check":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+    post:
+      summary: Queue a gateway health-check ping
+      tags:
+      - Style & Model Hub
+      security:
+      - Bearer: []
+      description: Enqueues AiModelHealthCheckWorker to ping the gateway and report
+        back health status.
+      responses:
+        '200':
+          description: Health check queued
+  "/api/v1/ai_model_configs/{id}/set_default":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+    post:
+      summary: Promote model to default for its capability
+      tags:
+      - Style & Model Hub
+      security:
+      - Bearer: []
+      description: Sets is_default=true for this config and demotes the previous default
+        for the same capability.
+      responses:
+        '200':
+          description: Default updated
+  "/api/v1/ai_model_configs/{id}/health_callback":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+    post:
+      summary: Receive health status from AI Gateway (M2M)
+      tags:
+      - Style & Model Hub
+      security:
+      - GatewaySecret: []
+      description: Called by the AI Gateway after a health-check ping. Authenticated
+        by X-Gateway-Secret header.
+      parameters: []
+      responses:
+        '200':
+          description: Health status recorded
+        '401':
+          description: Invalid or missing gateway secret
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                health:
+                  type: object
+                  properties:
+                    health_status:
+                      type: string
+                      example: healthy
+                      description: healthy | degraded | unhealthy | unknown
+                    health_latency_ms:
+                      type: integer
+                      example: 95
+                    error_message:
+                      type: string
+                      nullable: true
   "/api/v1/assets/{asset_id}/embedding":
     put:
       summary: Upsert pgvector embedding for an asset (AI Gateway callback)
@@ -6498,6 +6783,208 @@ paths:
                         type: string
                       manifest_data:
                         type: object
+  "/api/v1/style_presets":
+    get:
+      summary: List style presets
+      tags:
+      - Style & Model Hub
+      security:
+      - Bearer: []
+      description: Returns all brand/style presets. Admin only.
+      parameters:
+      - name: active
+        in: query
+        required: false
+        description: Filter to active presets only
+        schema:
+          type: boolean
+      responses:
+        '200':
+          description: List of style presets
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total:
+                    type: integer
+                  presets:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        name:
+                          type: string
+                        slug:
+                          type: string
+                          example: editorial-dark
+                        description:
+                          type: string
+                          nullable: true
+                        active:
+                          type: boolean
+                        is_default:
+                          type: boolean
+                        style_params:
+                          type: object
+                        gateway_ref:
+                          type: string
+                          nullable: true
+                        synced_at:
+                          type: string
+                          format: date-time
+                          nullable: true
+                        stale:
+                          type: boolean
+                        created_by:
+                          type: string
+                          nullable: true
+                        created_at:
+                          type: string
+                          format: date-time
+                        updated_at:
+                          type: string
+                          format: date-time
+        '401':
+          description: Unauthenticated
+        '403':
+          description: Forbidden (admin only)
+    post:
+      summary: Create a style preset
+      tags:
+      - Style & Model Hub
+      security:
+      - Bearer: []
+      description: Creates a new brand/style preset. Slug is auto-derived from name
+        if omitted.
+      parameters: []
+      responses:
+        '201':
+          description: Style preset created
+        '422':
+          description: Validation error
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - style_preset
+              properties:
+                style_preset:
+                  type: object
+                  required:
+                  - name
+                  properties:
+                    name:
+                      type: string
+                      example: Editorial Dark
+                    description:
+                      type: string
+                      nullable: true
+                    active:
+                      type: boolean
+                      example: true
+                    style_params:
+                      type: object
+                      example:
+                        tone: editorial
+                        palette:
+                        - "#1a1a1a"
+                        - "#ffffff"
+  "/api/v1/style_presets/{id}":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      description: Style preset ID
+      schema:
+        type: integer
+    get:
+      summary: Fetch a single style preset
+      tags:
+      - Style & Model Hub
+      security:
+      - Bearer: []
+      responses:
+        '200':
+          description: Style preset found
+        '404':
+          description: Not found
+    patch:
+      summary: Update a style preset
+      tags:
+      - Style & Model Hub
+      security:
+      - Bearer: []
+      parameters: []
+      responses:
+        '200':
+          description: Updated
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                style_preset:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    description:
+                      type: string
+                      nullable: true
+                    active:
+                      type: boolean
+                    style_params:
+                      type: object
+    delete:
+      summary: Delete a style preset
+      tags:
+      - Style & Model Hub
+      security:
+      - Bearer: []
+      responses:
+        '200':
+          description: Deleted
+  "/api/v1/style_presets/{id}/sync":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+    post:
+      summary: Queue a gateway sync for a style preset
+      tags:
+      - Style & Model Hub
+      security:
+      - Bearer: []
+      description: Enqueues StylePresetSyncWorker to push this preset to the AI Gateway
+        via Redis pub/sub.
+      responses:
+        '200':
+          description: Sync queued
+  "/api/v1/style_presets/{id}/set_default":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+    post:
+      summary: Promote style preset to organisation default
+      tags:
+      - Style & Model Hub
+      security:
+      - Bearer: []
+      description: Sets is_default=true for this preset and demotes any existing default.
+      responses:
+        '200':
+          description: Default updated
   "/api/v1/system_connectors":
     get:
       summary: List all system connectors (ingestion bridges)

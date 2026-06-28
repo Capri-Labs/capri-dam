@@ -101,7 +101,7 @@ Rails.application.routes.draw do
     resources :workflow_steps, only: [ :index, :create, :update, :destroy ]
   end
 
-  # AI UI — all actions require Devise session; agents/tasks/playground/provenance are admin-only
+  # AI UI — all actions require Devise session; agents/tasks/playground/provenance/style_model_hub are admin-only
   namespace :ai do
     get "copilot",                to: "ui#copilot"
     get "agents",                 to: "ui#agents"
@@ -110,6 +110,8 @@ Rails.application.routes.draw do
     get "lab/playground",         to: "ui#playground"
     get "governance/provenance",  to: "ui#provenance"
     get "governance",             to: redirect("/ai/governance/provenance") # hub redirect
+    get "models/hub",             to: "ui#style_model_hub"
+    get "models",                 to: redirect("/ai/models/hub") # short alias
   end
 
   # ==========================================
@@ -176,6 +178,25 @@ Rails.application.routes.draw do
         collection do
           get  :stats
           post :bulk_upsert
+        end
+      end
+
+      # Style & Model Hub — model configs + style presets
+      resources :ai_model_configs, only: %i[index show create update destroy] do
+        collection do
+          get :capabilities
+        end
+        member do
+          post :health_check
+          post :set_default
+          post :health_callback
+        end
+      end
+
+      resources :style_presets, only: %i[index show create update destroy] do
+        member do
+          post :sync
+          post :set_default
         end
       end
 

@@ -271,6 +271,60 @@ module Types
     end
 
     # -------------------------------------------------------------------------
+    # Style & Model Hub (admin only)
+    # -------------------------------------------------------------------------
+
+    field :ai_model_configs, [ Types::AiModelConfigType ], null: false do
+      description "List registered AI model configs (admin only)"
+      argument :capability, String,  required: false, description: "Filter by capability"
+      argument :enabled,    Boolean, required: false, description: "Filter by enabled state"
+    end
+
+    def ai_model_configs(capability: nil, enabled: nil)
+      return [] unless context[:current_user]&.admin?
+
+      scope = AiModelConfig.order(capability: :asc, name: :asc)
+      scope = scope.where(capability: capability) if capability.present?
+      scope = scope.where(enabled: enabled)       unless enabled.nil?
+      scope
+    end
+
+    field :ai_model_config, Types::AiModelConfigType, null: true do
+      description "Find a single AI model config by ID (admin only)"
+      argument :id, ID, required: true
+    end
+
+    def ai_model_config(id:)
+      return nil unless context[:current_user]&.admin?
+
+      AiModelConfig.find_by(id: id)
+    end
+
+    field :style_presets, [ Types::StylePresetType ], null: false do
+      description "List style presets (admin only)"
+      argument :active, Boolean, required: false, description: "Filter by active state"
+    end
+
+    def style_presets(active: nil)
+      return [] unless context[:current_user]&.admin?
+
+      scope = StylePreset.includes(:created_by).recent
+      scope = scope.where(active: active) unless active.nil?
+      scope
+    end
+
+    field :style_preset, Types::StylePresetType, null: true do
+      description "Find a single style preset by ID (admin only)"
+      argument :id, ID, required: true
+    end
+
+    def style_preset(id:)
+      return nil unless context[:current_user]&.admin?
+
+      StylePreset.find_by(id: id)
+    end
+
+    # -------------------------------------------------------------------------
     # Users (admin only)
     # -------------------------------------------------------------------------
 

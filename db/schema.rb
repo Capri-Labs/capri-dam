@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_28_120001) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_28_130001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -110,6 +110,29 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_28_120001) do
     t.decimal "monthly_budget_usd"
     t.text "system_prompt"
     t.datetime "updated_at", null: false
+  end
+
+  create_table "ai_model_configs", force: :cascade do |t|
+    t.string "capability", default: "generation", null: false
+    t.jsonb "config_params", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.boolean "enabled", default: true, null: false
+    t.text "error_message"
+    t.integer "health_latency_ms"
+    t.string "health_status", default: "unknown", null: false
+    t.boolean "is_default", default: false, null: false
+    t.datetime "last_health_check_at"
+    t.jsonb "metadata", default: {}, null: false
+    t.string "model_id", null: false
+    t.string "name", null: false
+    t.string "provider", default: "openai", null: false
+    t.datetime "updated_at", null: false
+    t.index ["capability", "is_default"], name: "index_ai_model_configs_one_default_per_capability", unique: true, where: "(is_default = true)"
+    t.index ["capability"], name: "index_ai_model_configs_on_capability"
+    t.index ["enabled"], name: "index_ai_model_configs_on_enabled"
+    t.index ["health_status"], name: "index_ai_model_configs_on_health_status"
+    t.index ["is_default"], name: "index_ai_model_configs_on_is_default"
+    t.index ["provider"], name: "index_ai_model_configs_on_provider"
   end
 
   create_table "asset_embeddings", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -645,6 +668,24 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_28_120001) do
     t.datetime "updated_at", null: false
   end
 
+  create_table "style_presets", force: :cascade do |t|
+    t.boolean "active", default: true, null: false
+    t.datetime "created_at", null: false
+    t.bigint "created_by_id"
+    t.text "description"
+    t.string "gateway_ref"
+    t.boolean "is_default", default: false, null: false
+    t.string "name", null: false
+    t.string "slug", null: false
+    t.jsonb "style_params", default: {}, null: false
+    t.datetime "synced_at"
+    t.datetime "updated_at", null: false
+    t.index ["active"], name: "index_style_presets_on_active"
+    t.index ["created_by_id"], name: "index_style_presets_on_created_by_id"
+    t.index ["is_default"], name: "index_style_presets_on_is_default"
+    t.index ["slug"], name: "index_style_presets_on_slug", unique: true
+  end
+
   create_table "system_configurations", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "data_type", default: "string", null: false
@@ -922,6 +963,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_28_120001) do
   add_foreign_key "renditions", "assets"
   add_foreign_key "renditions", "storage_backends"
   add_foreign_key "report_snapshots", "report_definitions"
+  add_foreign_key "style_presets", "users", column: "created_by_id", on_delete: :nullify
   add_foreign_key "user_group_memberships", "user_groups"
   add_foreign_key "user_group_memberships", "users"
   add_foreign_key "user_groups", "user_groups", column: "parent_id"

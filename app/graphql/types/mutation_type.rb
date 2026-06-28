@@ -38,9 +38,15 @@ module Types
     field :trigger_duplicate_scan,  mutation: Mutations::TriggerDuplicateScan
 
     # Recycle Bin
-    field :bulk_restore_from_bin,      mutation: Mutations::BulkRestoreFromBin
-    field :empty_bin,                  mutation: Mutations::EmptyBin
+    field :bulk_restore_from_bin,       mutation: Mutations::BulkRestoreFromBin
+    field :empty_bin,                   mutation: Mutations::EmptyBin
     field :update_bin_retention_policy, mutation: Mutations::UpdateBinRetentionPolicy
-    field :trigger_bin_purge,          mutation: Mutations::TriggerBinPurge
+    field :trigger_bin_purge,           mutation: Mutations::TriggerBinPurge
+
+    # Style & Model Hub (admin only)
+    field :create_ai_model_config, mutation: Mutations::CreateAiModelConfig
+    field :update_ai_model_config, mutation: Mutations::UpdateAiModelConfig
+    field :create_style_preset,    mutation: Mutations::CreateStylePreset
+    field :update_style_preset,    mutation: Mutations::UpdateStylePreset
   end
 end

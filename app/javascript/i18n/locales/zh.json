@@ -708,5 +708,68 @@
       "removeTooltip": "从此文件夹中删除此策略",
       "removeWithCascadeTooltip": "从此文件夹及其所有子文件夹中删除此策略"
     }
+  },
+  "styleHub": {
+    "title": "风格与模型中心",
+    "subtitle": "管理AI模型端点、品牌风格预设，并在您的资产库中启动与风格相关的批量任务。",
+    "tabs": {
+      "models": "模型",
+      "styles": "风格预设",
+      "batch": "批量任务"
+    },
+    "health": {
+      "healthy": "健康",
+      "degraded": "降级",
+      "unhealthy": "不健康",
+      "unknown": "未知"
+    },
+    "models": {
+      "title": "已注册的AI模型",
+      "addModel": "添加模型",
+      "editModel": "编辑模型",
+      "name": "名称",
+      "provider": "提供商",
+      "modelId": "模型ID",
+      "modelIdHelp": "例如 gpt-4o, text-embedding-3-small, llava-1.6",
+      "capability": "功能",
+      "health": "健康状态",
+      "status": "状态",
+      "enabled": "已启用",
+      "isDefault": "此功能的默认模型",
+      "setDefault": "设为默认",
+      "healthCheck": "健康检查",
+      "confirmDelete": "删除\"{{name}}\"？",
+      "empty": "尚未注册任何模型。添加您的第一个AI模型。"
+    },
+    "presets": {
+      "title": "风格预设",
+      "addPreset": "新建预设",
+      "editPreset": "编辑风格预设",
+      "name": "名称",
+      "description": "描述",
+      "styleParams": "风格参数 (JSON)",
+      "styleParamsHelp": "例如 {\"tone\": \"editorial\", \"palette\": [\"#1a1a1a\",\"#ffffff\"], \"aspect_ratio\": \"16:9\"}",
+      "default": "默认",
+      "setDefault": "设为默认",
+      "synced": "已同步",
+      "stale": "已过期",
+      "notSynced": "未同步",
+      "syncToGateway": "同步到网关",
+      "confirmDelete": "删除\"{{name}}\"？",
+      "empty": "尚无风格预设。创建您的第一个品牌风格配置。"
+    },
+    "batch": {
+      "config": "启动批量任务",
+      "task": "风格任务",
+      "scope": "目标数据集",
+      "concurrency": "并发数",
+      "launch": "启动任务",
+      "launching": "启动中…",
+      "history": "批量历史",
+      "taskCol": "任务",
+      "statusCol": "状态",
+      "progressCol": "进度",
+      "empty": "尚未执行任何风格批量任务。"
+    }
   }
 }

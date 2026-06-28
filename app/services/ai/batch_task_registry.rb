@@ -108,6 +108,33 @@ module Ai
         default_tools:      %w[AIDisclosureChecker C2PAParser],
         gateway_capability: "disclosure.audit",
       ),
+
+      # ── Style & Model Hub tasks ───────────────────────────────────────────────
+
+      Task.new(
+        key:                "embed_regenerate",
+        label:              "Embedding Regeneration",
+        description:        "Regenerate semantic vectors for all assets using the current default embedding model.",
+        cost_tier:          "medium",
+        default_tools:      %w[EmbeddingGenerator],
+        gateway_capability: "embedding.regenerate",
+      ),
+      Task.new(
+        key:                "style_audit",
+        label:              "Style Audit",
+        description:        "Analyse asset visual style and match against active style presets. Tags assets with matching preset slugs.",
+        cost_tier:          "high",
+        default_tools:      %w[StyleAnalyser StylePresetMatcher MetadataTagger],
+        gateway_capability: "style.audit",
+      ),
+      Task.new(
+        key:                "style_tag",
+        label:              "Style Auto-Tag",
+        description:        "Automatically tag assets with the closest matching style preset label.",
+        cost_tier:          "medium",
+        default_tools:      %w[StyleAnalyser MetadataTagger],
+        gateway_capability: "style.tag",
+      ),
     ].freeze
 
     # -- Target datasets --------------------------------------------------------
@@ -183,6 +210,25 @@ module Ai
         resolver:    -> {
           signed_ids = AssetProvenanceRecord.where(manifest_status: "signed").select(:asset_id)
           Asset.active.where.not(id: signed_ids)
+        },
+      ),
+
+      # ── Style & Model Hub scopes ─────────────────────────────────────────────
+
+      Scope.new(
+        key:         "all_images_unembedded",
+        label:       "Images Without Embeddings",
+        description: "Active image assets that have no embedding or whose embedding used a non-default model.",
+        resolver:    -> { Asset.active.where("properties->>'content_type' ILIKE 'image/%'").where.missing(:asset_embedding) },
+      ),
+      Scope.new(
+        key:         "style_untagged",
+        label:       "Assets Without Style Tags",
+        description: "Active assets that have not yet been analysed against the style preset library.",
+        resolver:    -> {
+          Asset.active.where(
+            "NOT (properties->'tags' @> ?)", [ { type: "style_preset" } ].to_json
+          )
         },
       ),
     ].freeze

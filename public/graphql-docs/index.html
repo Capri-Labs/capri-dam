@@ -37,6 +37,8 @@
                   <li><a href="#query-agentWorkflows">agentWorkflows</a></li>
                   <li><a href="#query-aiBatchJob">aiBatchJob</a></li>
                   <li><a href="#query-aiBatchJobs">aiBatchJobs</a></li>
+                  <li><a href="#query-aiModelConfig">aiModelConfig</a></li>
+                  <li><a href="#query-aiModelConfigs">aiModelConfigs</a></li>
                   <li><a href="#query-assetDetail">assetDetail</a></li>
                   <li><a href="#query-assetProvenanceRecord">assetProvenanceRecord</a></li>
                   <li><a href="#query-assetProvenanceRecords">assetProvenanceRecords</a></li>
@@ -51,6 +53,8 @@
                   <li><a href="#query-duplicateGroups">duplicateGroups</a></li>
                   <li><a href="#query-imageProfile">imageProfile</a></li>
                   <li><a href="#query-imageProfiles">imageProfiles</a></li>
+                  <li><a href="#query-stylePreset">stylePreset</a></li>
+                  <li><a href="#query-stylePresets">stylePresets</a></li>
                   <li><a href="#query-user">user</a></li>
                   <li><a href="#query-userGroup">userGroup</a></li>
                   <li><a href="#query-userGroups">userGroups</a></li>
@@ -65,7 +69,9 @@
                 </h5>
                 <ul class="nav-group-section-items">
                   <li><a href="#mutation-bulkRestoreFromBin">bulkRestoreFromBin</a></li>
+                  <li><a href="#mutation-createAiModelConfig">createAiModelConfig</a></li>
                   <li><a href="#mutation-createPersonalAccessToken">createPersonalAccessToken</a></li>
+                  <li><a href="#mutation-createStylePreset">createStylePreset</a></li>
                   <li><a href="#mutation-createUser">createUser</a></li>
                   <li><a href="#mutation-createUserGroup">createUserGroup</a></li>
                   <li><a href="#mutation-createVideoProfile">createVideoProfile</a></li>
@@ -77,7 +83,9 @@
                   <li><a href="#mutation-stopImpersonation">stopImpersonation</a></li>
                   <li><a href="#mutation-triggerBinPurge">triggerBinPurge</a></li>
                   <li><a href="#mutation-triggerDuplicateScan">triggerDuplicateScan</a></li>
+                  <li><a href="#mutation-updateAiModelConfig">updateAiModelConfig</a></li>
                   <li><a href="#mutation-updateBinRetentionPolicy">updateBinRetentionPolicy</a></li>
+                  <li><a href="#mutation-updateStylePreset">updateStylePreset</a></li>
                   <li><a href="#mutation-updateUser">updateUser</a></li>
                   <li><a href="#mutation-updateUserGroup">updateUserGroup</a></li>
                   <li><a href="#mutation-updateVideoProfile">updateVideoProfile</a></li>
@@ -92,6 +100,7 @@
               <li><a href="#definition-AgentExecution">AgentExecution</a></li>
               <li><a href="#definition-AgentWorkflow">AgentWorkflow</a></li>
               <li><a href="#definition-AiBatchJob">AiBatchJob</a></li>
+              <li><a href="#definition-AiModelConfig">AiModelConfig</a></li>
               <li><a href="#definition-Asset">Asset</a></li>
               <li><a href="#definition-AssetProvenanceRecord">AssetProvenanceRecord</a></li>
               <li><a href="#definition-BigInt">BigInt</a></li>
@@ -104,8 +113,12 @@
               <li><a href="#definition-BulkRestoreFromBinPayload">BulkRestoreFromBinPayload</a></li>
               <li><a href="#definition-C2paConfiguration">C2paConfiguration</a></li>
               <li><a href="#definition-Collection">Collection</a></li>
+              <li><a href="#definition-CreateAiModelConfigInput">CreateAiModelConfigInput</a></li>
+              <li><a href="#definition-CreateAiModelConfigPayload">CreateAiModelConfigPayload</a></li>
               <li><a href="#definition-CreatePersonalAccessTokenInput">CreatePersonalAccessTokenInput</a></li>
               <li><a href="#definition-CreatePersonalAccessTokenPayload">CreatePersonalAccessTokenPayload</a></li>
+              <li><a href="#definition-CreateStylePresetInput">CreateStylePresetInput</a></li>
+              <li><a href="#definition-CreateStylePresetPayload">CreateStylePresetPayload</a></li>
               <li><a href="#definition-CreateUserGroupInput">CreateUserGroupInput</a></li>
               <li><a href="#definition-CreateUserGroupPayload">CreateUserGroupPayload</a></li>
               <li><a href="#definition-CreateUserInput">CreateUserInput</a></li>
@@ -132,12 +145,17 @@
               <li><a href="#definition-StartImpersonationPayload">StartImpersonationPayload</a></li>
               <li><a href="#definition-StopImpersonationInput">StopImpersonationInput</a></li>
               <li><a href="#definition-StopImpersonationPayload">StopImpersonationPayload</a></li>
+              <li><a href="#definition-StylePreset">StylePreset</a></li>
               <li><a href="#definition-TriggerBinPurgeInput">TriggerBinPurgeInput</a></li>
               <li><a href="#definition-TriggerBinPurgePayload">TriggerBinPurgePayload</a></li>
               <li><a href="#definition-TriggerDuplicateScanInput">TriggerDuplicateScanInput</a></li>
               <li><a href="#definition-TriggerDuplicateScanPayload">TriggerDuplicateScanPayload</a></li>
+              <li><a href="#definition-UpdateAiModelConfigInput">UpdateAiModelConfigInput</a></li>
+              <li><a href="#definition-UpdateAiModelConfigPayload">UpdateAiModelConfigPayload</a></li>
               <li><a href="#definition-UpdateBinRetentionPolicyInput">UpdateBinRetentionPolicyInput</a></li>
               <li><a href="#definition-UpdateBinRetentionPolicyPayload">UpdateBinRetentionPolicyPayload</a></li>
+              <li><a href="#definition-UpdateStylePresetInput">UpdateStylePresetInput</a></li>
+              <li><a href="#definition-UpdateStylePresetPayload">UpdateStylePresetPayload</a></li>
               <li><a href="#definition-UpdateUserGroupInput">UpdateUserGroupInput</a></li>
               <li><a href="#definition-UpdateUserGroupPayload">UpdateUserGroupPayload</a></li>
               <li><a href="#definition-UpdateUserInput">UpdateUserInput</a></li>
@@ -363,6 +381,86 @@
                 <div class="example-section example-section-is-code operation-response-example">
                   <h5>Response</h5>
                   <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"data"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-attr">"aiBatchJobs"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="query-aiModelConfig" class="operation operation-query" data-traverse-target="query-aiModelConfig">
+            <div class="operation-group-name">
+              <a href="#group-Operations-Queries">Queries</a>
+            </div>
+            <h2 class="operation-heading ">
+              <code>aiModelConfig</code>
+            </h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Find a single AI model config by ID (admin only)</p>
+                </div>
+              </div>
+            </div>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-response doc-copy-section">
+                  <h5>Response</h5>
+                  <p> Returns an <a href="#definition-AiModelConfig"><code>AiModelConfig</code></a>
+                  </p>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <h4 class="example-heading">Example</h4>
+                <div class="example-section example-section-is-code operation-query-example">
+                  <h5>Query</h5>
+                  <pre><code class="hljs language-gql"><span class="hljs-symbol"><span class="hljs-keyword">query</span> aiModelConfig <span class="hljs-tag">{
+  <span class="hljs-symbol">aiModelConfig</span>
+}</span></span>
+</code></pre>
+                </div>
+                <div class="example-section example-section-is-code operation-response-example">
+                  <h5>Response</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"data"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-attr">"aiModelConfig"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="query-aiModelConfigs" class="operation operation-query" data-traverse-target="query-aiModelConfigs">
+            <div class="operation-group-name">
+              <a href="#group-Operations-Queries">Queries</a>
+            </div>
+            <h2 class="operation-heading ">
+              <code>aiModelConfigs</code>
+            </h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>List registered AI model configs (admin only)</p>
+                </div>
+              </div>
+            </div>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-response doc-copy-section">
+                  <h5>Response</h5>
+                  <p> Returns <a href="#definition-AiModelConfig"><code>[AiModelConfig!]!</code></a>
+                  </p>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <h4 class="example-heading">Example</h4>
+                <div class="example-section example-section-is-code operation-query-example">
+                  <h5>Query</h5>
+                  <pre><code class="hljs language-gql"><span class="hljs-symbol"><span class="hljs-keyword">query</span> aiModelConfigs <span class="hljs-tag">{
+  <span class="hljs-symbol">aiModelConfigs</span>
+}</span></span>
+</code></pre>
+                </div>
+                <div class="example-section example-section-is-code operation-response-example">
+                  <h5>Response</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"data"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-attr">"aiModelConfigs"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span>
 </code></pre>
                 </div>
               </div>
@@ -962,6 +1060,86 @@
               </div>
             </div>
           </section>
+          <section id="query-stylePreset" class="operation operation-query" data-traverse-target="query-stylePreset">
+            <div class="operation-group-name">
+              <a href="#group-Operations-Queries">Queries</a>
+            </div>
+            <h2 class="operation-heading ">
+              <code>stylePreset</code>
+            </h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Find a single style preset by ID (admin only)</p>
+                </div>
+              </div>
+            </div>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-response doc-copy-section">
+                  <h5>Response</h5>
+                  <p> Returns a <a href="#definition-StylePreset"><code>StylePreset</code></a>
+                  </p>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <h4 class="example-heading">Example</h4>
+                <div class="example-section example-section-is-code operation-query-example">
+                  <h5>Query</h5>
+                  <pre><code class="hljs language-gql"><span class="hljs-symbol"><span class="hljs-keyword">query</span> stylePreset <span class="hljs-tag">{
+  <span class="hljs-symbol">stylePreset</span>
+}</span></span>
+</code></pre>
+                </div>
+                <div class="example-section example-section-is-code operation-response-example">
+                  <h5>Response</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"data"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-attr">"stylePreset"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="query-stylePresets" class="operation operation-query" data-traverse-target="query-stylePresets">
+            <div class="operation-group-name">
+              <a href="#group-Operations-Queries">Queries</a>
+            </div>
+            <h2 class="operation-heading ">
+              <code>stylePresets</code>
+            </h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>List style presets (admin only)</p>
+                </div>
+              </div>
+            </div>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-response doc-copy-section">
+                  <h5>Response</h5>
+                  <p> Returns <a href="#definition-StylePreset"><code>[StylePreset!]!</code></a>
+                  </p>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <h4 class="example-heading">Example</h4>
+                <div class="example-section example-section-is-code operation-query-example">
+                  <h5>Query</h5>
+                  <pre><code class="hljs language-gql"><span class="hljs-symbol"><span class="hljs-keyword">query</span> stylePresets <span class="hljs-tag">{
+  <span class="hljs-symbol">stylePresets</span>
+}</span></span>
+</code></pre>
+                </div>
+                <div class="example-section example-section-is-code operation-response-example">
+                  <h5>Response</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"data"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-attr">"stylePresets"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
           <section id="query-user" class="operation operation-query" data-traverse-target="query-user">
             <div class="operation-group-name">
               <a href="#group-Operations-Queries">Queries</a>
@@ -1352,6 +1530,78 @@
               </div>
             </div>
           </section>
+          <section id="mutation-createAiModelConfig" class="operation operation-mutation" data-traverse-target="mutation-createAiModelConfig">
+            <div class="operation-group-name">
+              <a href="#group-Operations-Mutations">Mutations</a>
+            </div>
+            <h2 class="operation-heading ">
+              <code>createAiModelConfig</code>
+            </h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Register a new AI model endpoint.</p>
+                </div>
+              </div>
+            </div>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-response doc-copy-section">
+                  <h5>Response</h5>
+                  <p> Returns a <a href="#definition-CreateAiModelConfigPayload"><code>CreateAiModelConfigPayload</code></a>
+                  </p>
+                </div>
+                <div class="operation-arguments doc-copy-section">
+                  <h5>Arguments</h5>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>
+                          <span class="property-name"><code>input</code></span> - <span class="property-type"><a href="#definition-CreateAiModelConfigInput"><code>CreateAiModelConfigInput!</code></a></span>
+                        </td>
+                        <td> Parameters for CreateAiModelConfig </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <h4 class="example-heading">Example</h4>
+                <div class="example-section example-section-is-code operation-query-example">
+                  <h5>Query</h5>
+                  <pre><code class="hljs language-gql"><span class="hljs-symbol"><span class="hljs-keyword">mutation</span> createAiModelConfig<span class="hljs-tag">(<span class="hljs-code">$input</span>:<span class="hljs-type"> CreateAiModelConfigInput!</span>)</span> <span class="hljs-tag">{
+  <span class="hljs-symbol">createAiModelConfig<span class="hljs-tag">(input: <span class="hljs-code">$input</span>)</span> <span class="hljs-tag">{
+    <span class="hljs-symbol">aiModelConfig</span>
+  }</span></span>
+}</span></span>
+</code></pre>
+                </div>
+                <div class="example-section example-section-is-code operation-variables-example">
+                  <h5>Variables</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"input"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">CreateAiModelConfigInput</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+                <div class="example-section example-section-is-code operation-response-example">
+                  <h5>Response</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">"data"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">"createAiModelConfig"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+      <span class="hljs-attr">"aiModelConfig"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">AiModelConfig</span>
+    <span class="hljs-punctuation">}</span>
+  <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
           <section id="mutation-createPersonalAccessToken" class="operation operation-mutation" data-traverse-target="mutation-createPersonalAccessToken">
             <div class="operation-group-name">
               <a href="#group-Operations-Mutations">Mutations</a>
@@ -1417,6 +1667,76 @@
     <span class="hljs-attr">"createPersonalAccessToken"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
       <span class="hljs-attr">"token"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">PersonalAccessToken</span>
     <span class="hljs-punctuation">}</span>
+  <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="mutation-createStylePreset" class="operation operation-mutation" data-traverse-target="mutation-createStylePreset">
+            <div class="operation-group-name">
+              <a href="#group-Operations-Mutations">Mutations</a>
+            </div>
+            <h2 class="operation-heading ">
+              <code>createStylePreset</code>
+            </h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Create a new brand/style preset.</p>
+                </div>
+              </div>
+            </div>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-response doc-copy-section">
+                  <h5>Response</h5>
+                  <p> Returns a <a href="#definition-CreateStylePresetPayload"><code>CreateStylePresetPayload</code></a>
+                  </p>
+                </div>
+                <div class="operation-arguments doc-copy-section">
+                  <h5>Arguments</h5>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>
+                          <span class="property-name"><code>input</code></span> - <span class="property-type"><a href="#definition-CreateStylePresetInput"><code>CreateStylePresetInput!</code></a></span>
+                        </td>
+                        <td> Parameters for CreateStylePreset </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <h4 class="example-heading">Example</h4>
+                <div class="example-section example-section-is-code operation-query-example">
+                  <h5>Query</h5>
+                  <pre><code class="hljs language-gql"><span class="hljs-symbol"><span class="hljs-keyword">mutation</span> createStylePreset<span class="hljs-tag">(<span class="hljs-code">$input</span>:<span class="hljs-type"> CreateStylePresetInput!</span>)</span> <span class="hljs-tag">{
+  <span class="hljs-symbol">createStylePreset<span class="hljs-tag">(input: <span class="hljs-code">$input</span>)</span> <span class="hljs-tag">{
+    <span class="hljs-symbol">stylePreset</span>
+  }</span></span>
+}</span></span>
+</code></pre>
+                </div>
+                <div class="example-section example-section-is-code operation-variables-example">
+                  <h5>Variables</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"input"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">CreateStylePresetInput</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+                <div class="example-section example-section-is-code operation-response-example">
+                  <h5>Response</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">"data"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">"createStylePreset"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-attr">"stylePreset"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">StylePreset</span><span class="hljs-punctuation">}</span>
   <span class="hljs-punctuation">}</span>
 <span class="hljs-punctuation">}</span>
 </code></pre>
@@ -2160,6 +2480,78 @@
               </div>
             </div>
           </section>
+          <section id="mutation-updateAiModelConfig" class="operation operation-mutation" data-traverse-target="mutation-updateAiModelConfig">
+            <div class="operation-group-name">
+              <a href="#group-Operations-Mutations">Mutations</a>
+            </div>
+            <h2 class="operation-heading ">
+              <code>updateAiModelConfig</code>
+            </h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Update an AI model endpoint.</p>
+                </div>
+              </div>
+            </div>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-response doc-copy-section">
+                  <h5>Response</h5>
+                  <p> Returns an <a href="#definition-UpdateAiModelConfigPayload"><code>UpdateAiModelConfigPayload</code></a>
+                  </p>
+                </div>
+                <div class="operation-arguments doc-copy-section">
+                  <h5>Arguments</h5>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>
+                          <span class="property-name"><code>input</code></span> - <span class="property-type"><a href="#definition-UpdateAiModelConfigInput"><code>UpdateAiModelConfigInput!</code></a></span>
+                        </td>
+                        <td> Parameters for UpdateAiModelConfig </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <h4 class="example-heading">Example</h4>
+                <div class="example-section example-section-is-code operation-query-example">
+                  <h5>Query</h5>
+                  <pre><code class="hljs language-gql"><span class="hljs-symbol"><span class="hljs-keyword">mutation</span> updateAiModelConfig<span class="hljs-tag">(<span class="hljs-code">$input</span>:<span class="hljs-type"> UpdateAiModelConfigInput!</span>)</span> <span class="hljs-tag">{
+  <span class="hljs-symbol">updateAiModelConfig<span class="hljs-tag">(input: <span class="hljs-code">$input</span>)</span> <span class="hljs-tag">{
+    <span class="hljs-symbol">aiModelConfig</span>
+  }</span></span>
+}</span></span>
+</code></pre>
+                </div>
+                <div class="example-section example-section-is-code operation-variables-example">
+                  <h5>Variables</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"input"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">UpdateAiModelConfigInput</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+                <div class="example-section example-section-is-code operation-response-example">
+                  <h5>Response</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">"data"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">"updateAiModelConfig"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+      <span class="hljs-attr">"aiModelConfig"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">AiModelConfig</span>
+    <span class="hljs-punctuation">}</span>
+  <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
           <section id="mutation-updateBinRetentionPolicy" class="operation operation-mutation" data-traverse-target="mutation-updateBinRetentionPolicy">
             <div class="operation-group-name">
               <a href="#group-Operations-Mutations">Mutations</a>
@@ -2225,6 +2617,76 @@
     <span class="hljs-attr">"updateBinRetentionPolicy"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
       <span class="hljs-attr">"policy"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">BinRetentionPolicy</span>
     <span class="hljs-punctuation">}</span>
+  <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="mutation-updateStylePreset" class="operation operation-mutation" data-traverse-target="mutation-updateStylePreset">
+            <div class="operation-group-name">
+              <a href="#group-Operations-Mutations">Mutations</a>
+            </div>
+            <h2 class="operation-heading ">
+              <code>updateStylePreset</code>
+            </h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Update an existing brand/style preset.</p>
+                </div>
+              </div>
+            </div>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-response doc-copy-section">
+                  <h5>Response</h5>
+                  <p> Returns an <a href="#definition-UpdateStylePresetPayload"><code>UpdateStylePresetPayload</code></a>
+                  </p>
+                </div>
+                <div class="operation-arguments doc-copy-section">
+                  <h5>Arguments</h5>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>
+                          <span class="property-name"><code>input</code></span> - <span class="property-type"><a href="#definition-UpdateStylePresetInput"><code>UpdateStylePresetInput!</code></a></span>
+                        </td>
+                        <td> Parameters for UpdateStylePreset </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <h4 class="example-heading">Example</h4>
+                <div class="example-section example-section-is-code operation-query-example">
+                  <h5>Query</h5>
+                  <pre><code class="hljs language-gql"><span class="hljs-symbol"><span class="hljs-keyword">mutation</span> updateStylePreset<span class="hljs-tag">(<span class="hljs-code">$input</span>:<span class="hljs-type"> UpdateStylePresetInput!</span>)</span> <span class="hljs-tag">{
+  <span class="hljs-symbol">updateStylePreset<span class="hljs-tag">(input: <span class="hljs-code">$input</span>)</span> <span class="hljs-tag">{
+    <span class="hljs-symbol">stylePreset</span>
+  }</span></span>
+}</span></span>
+</code></pre>
+                </div>
+                <div class="example-section example-section-is-code operation-variables-example">
+                  <h5>Variables</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"input"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">UpdateStylePresetInput</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+                <div class="example-section example-section-is-code operation-response-example">
+                  <h5>Response</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">"data"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">"updateStylePreset"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-attr">"stylePreset"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">StylePreset</span><span class="hljs-punctuation">}</span>
   <span class="hljs-punctuation">}</span>
 <span class="hljs-punctuation">}</span>
 </code></pre>
@@ -2508,6 +2970,27 @@
                 <div class="definition-description doc-copy-section">
                   <h5>Description</h5>
                   <p>An on-demand AI batch task run launched from the /ai/tasks screen.</p>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <div class="example-section example-section-is-code">
+                  <h5>Example</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="definition-AiModelConfig" class="definition definition-object" data-traverse-target="definition-AiModelConfig">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">AiModelConfig</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>A registered AI model endpoint used by the Capri DAM gateway.</p>
                 </div>
               </div>
               <div class="doc-examples">
@@ -2832,6 +3315,94 @@
               </div>
             </div>
           </section>
+          <section id="definition-CreateAiModelConfigInput" class="definition definition-input-object" data-traverse-target="definition-CreateAiModelConfigInput">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">CreateAiModelConfigInput</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Autogenerated input type of CreateAiModelConfig</p>
+                </div>
+                <div class="definition-properties doc-copy-section">
+                  <h5>Fields</h5>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Input Field</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>
+                          <span class="property-name"><code>configParams</code></span> - <span class="property-type"><a href="#definition-JSON"><code>JSON</code></a></span>
+                        </td>
+                        <td>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <span class="property-name"><code>metadata</code></span> - <span class="property-type"><a href="#definition-JSON"><code>JSON</code></a></span>
+                        </td>
+                        <td>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <div class="example-section example-section-is-code">
+                  <h5>Example</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"configParams"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">"metadata"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="definition-CreateAiModelConfigPayload" class="definition definition-object" data-traverse-target="definition-CreateAiModelConfigPayload">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">CreateAiModelConfigPayload</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Autogenerated return type of CreateAiModelConfig.</p>
+                </div>
+                <div class="definition-properties doc-copy-section">
+                  <h5>Fields</h5>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Field Name</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td data-property-name=""><span class="property-name"><code>aiModelConfig</code></span> - <span class="property-type"><a href="#definition-AiModelConfig"><code>AiModelConfig</code></a></span>
+                        </td>
+                        <td>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <div class="example-section example-section-is-code">
+                  <h5>Example</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"aiModelConfig"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">AiModelConfig</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
           <section id="definition-CreatePersonalAccessTokenInput" class="definition definition-input-object" data-traverse-target="definition-CreatePersonalAccessTokenInput">
             <div class="definition-group-name">
               <a href="#group-Types">Types</a>
@@ -2888,6 +3459,87 @@
                 <div class="example-section example-section-is-code">
                   <h5>Example</h5>
                   <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"token"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">PersonalAccessToken</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="definition-CreateStylePresetInput" class="definition definition-input-object" data-traverse-target="definition-CreateStylePresetInput">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">CreateStylePresetInput</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Autogenerated input type of CreateStylePreset</p>
+                </div>
+                <div class="definition-properties doc-copy-section">
+                  <h5>Fields</h5>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Input Field</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>
+                          <span class="property-name"><code>styleParams</code></span> - <span class="property-type"><a href="#definition-JSON"><code>JSON</code></a></span>
+                        </td>
+                        <td>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <div class="example-section example-section-is-code">
+                  <h5>Example</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"styleParams"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="definition-CreateStylePresetPayload" class="definition definition-object" data-traverse-target="definition-CreateStylePresetPayload">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">CreateStylePresetPayload</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Autogenerated return type of CreateStylePreset.</p>
+                </div>
+                <div class="definition-properties doc-copy-section">
+                  <h5>Fields</h5>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Field Name</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td data-property-name=""><span class="property-name"><code>stylePreset</code></span> - <span class="property-type"><a href="#definition-StylePreset"><code>StylePreset</code></a></span>
+                        </td>
+                        <td>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <div class="example-section example-section-is-code">
+                  <h5>Example</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"stylePreset"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">StylePreset</span><span class="hljs-punctuation">}</span>
 </code></pre>
                 </div>
               </div>
@@ -3615,6 +4267,27 @@
               </div>
             </div>
           </section>
+          <section id="definition-StylePreset" class="definition definition-object" data-traverse-target="definition-StylePreset">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">StylePreset</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>A brand/style profile used in AI-assisted generation and style-transfer tasks.</p>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <div class="example-section example-section-is-code">
+                  <h5>Example</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
           <section id="definition-TriggerBinPurgeInput" class="definition definition-input-object" data-traverse-target="definition-TriggerBinPurgeInput">
             <div class="definition-group-name">
               <a href="#group-Types">Types</a>
@@ -3699,6 +4372,94 @@
               </div>
             </div>
           </section>
+          <section id="definition-UpdateAiModelConfigInput" class="definition definition-input-object" data-traverse-target="definition-UpdateAiModelConfigInput">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">UpdateAiModelConfigInput</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Autogenerated input type of UpdateAiModelConfig</p>
+                </div>
+                <div class="definition-properties doc-copy-section">
+                  <h5>Fields</h5>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Input Field</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>
+                          <span class="property-name"><code>configParams</code></span> - <span class="property-type"><a href="#definition-JSON"><code>JSON</code></a></span>
+                        </td>
+                        <td>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <span class="property-name"><code>metadata</code></span> - <span class="property-type"><a href="#definition-JSON"><code>JSON</code></a></span>
+                        </td>
+                        <td>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <div class="example-section example-section-is-code">
+                  <h5>Example</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"configParams"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">"metadata"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="definition-UpdateAiModelConfigPayload" class="definition definition-object" data-traverse-target="definition-UpdateAiModelConfigPayload">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">UpdateAiModelConfigPayload</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Autogenerated return type of UpdateAiModelConfig.</p>
+                </div>
+                <div class="definition-properties doc-copy-section">
+                  <h5>Fields</h5>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Field Name</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td data-property-name=""><span class="property-name"><code>aiModelConfig</code></span> - <span class="property-type"><a href="#definition-AiModelConfig"><code>AiModelConfig</code></a></span>
+                        </td>
+                        <td>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <div class="example-section example-section-is-code">
+                  <h5>Example</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"aiModelConfig"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">AiModelConfig</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
           <section id="definition-UpdateBinRetentionPolicyInput" class="definition definition-input-object" data-traverse-target="definition-UpdateBinRetentionPolicyInput">
             <div class="definition-group-name">
               <a href="#group-Types">Types</a>
@@ -3755,6 +4516,87 @@
                 <div class="example-section example-section-is-code">
                   <h5>Example</h5>
                   <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"policy"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">BinRetentionPolicy</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="definition-UpdateStylePresetInput" class="definition definition-input-object" data-traverse-target="definition-UpdateStylePresetInput">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">UpdateStylePresetInput</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Autogenerated input type of UpdateStylePreset</p>
+                </div>
+                <div class="definition-properties doc-copy-section">
+                  <h5>Fields</h5>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Input Field</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>
+                          <span class="property-name"><code>styleParams</code></span> - <span class="property-type"><a href="#definition-JSON"><code>JSON</code></a></span>
+                        </td>
+                        <td>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <div class="example-section example-section-is-code">
+                  <h5>Example</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"styleParams"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="definition-UpdateStylePresetPayload" class="definition definition-object" data-traverse-target="definition-UpdateStylePresetPayload">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">UpdateStylePresetPayload</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Autogenerated return type of UpdateStylePreset.</p>
+                </div>
+                <div class="definition-properties doc-copy-section">
+                  <h5>Fields</h5>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Field Name</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td data-property-name=""><span class="property-name"><code>stylePreset</code></span> - <span class="property-type"><a href="#definition-StylePreset"><code>StylePreset</code></a></span>
+                        </td>
+                        <td>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <div class="example-section example-section-is-code">
+                  <h5>Example</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"stylePreset"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">StylePreset</span><span class="hljs-punctuation">}</span>
 </code></pre>
                 </div>
               </div>

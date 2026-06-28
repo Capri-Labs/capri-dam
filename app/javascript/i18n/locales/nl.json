@@ -708,5 +708,68 @@
       "removeTooltip": "Dit beleid uit deze map verwijderen",
       "removeWithCascadeTooltip": "Dit beleid uit deze map en alle submappen verwijderen"
     }
+  },
+  "styleHub": {
+    "title": "Stijl & Model Hub",
+    "subtitle": "Beheer AI-model-eindpunten, merkstijlprofielen en start stijlgerelateerde batchtaken in uw assetbibliotheek.",
+    "tabs": {
+      "models": "Modellen",
+      "styles": "Stijlprofielen",
+      "batch": "Batchtaken"
+    },
+    "health": {
+      "healthy": "Gezond",
+      "degraded": "Verslechterd",
+      "unhealthy": "Ongezond",
+      "unknown": "Onbekend"
+    },
+    "models": {
+      "title": "Geregistreerde AI-modellen",
+      "addModel": "Model toevoegen",
+      "editModel": "Model bewerken",
+      "name": "Naam",
+      "provider": "Aanbieder",
+      "modelId": "Model-ID",
+      "modelIdHelp": "bijv. gpt-4o, text-embedding-3-small, llava-1.6",
+      "capability": "Vermogen",
+      "health": "Gezondheid",
+      "status": "Status",
+      "enabled": "Ingeschakeld",
+      "isDefault": "Standaard voor dit vermogen",
+      "setDefault": "Als standaard instellen",
+      "healthCheck": "Gezondheid controleren",
+      "confirmDelete": "\"{{name}}\" verwijderen?",
+      "empty": "Nog geen modellen geregistreerd. Voeg uw eerste AI-model toe."
+    },
+    "presets": {
+      "title": "Stijlprofielen",
+      "addPreset": "Nieuw profiel",
+      "editPreset": "Stijlprofiel bewerken",
+      "name": "Naam",
+      "description": "Beschrijving",
+      "styleParams": "Stijlparameters (JSON)",
+      "styleParamsHelp": "bijv. {\"tone\": \"editorial\", \"palette\": [\"#1a1a1a\",\"#ffffff\"], \"aspect_ratio\": \"16:9\"}",
+      "default": "Standaard",
+      "setDefault": "Als standaard instellen",
+      "synced": "Gesynchroniseerd",
+      "stale": "Verouderd",
+      "notSynced": "Niet gesynchroniseerd",
+      "syncToGateway": "Synchroniseren met gateway",
+      "confirmDelete": "\"{{name}}\" verwijderen?",
+      "empty": "Nog geen stijlprofielen. Maak uw eerste merkstijlprofiel aan."
+    },
+    "batch": {
+      "config": "Batchtaak starten",
+      "task": "Stijltaak",
+      "scope": "Doeldataset",
+      "concurrency": "Gelijktijdigheid",
+      "launch": "Taak starten",
+      "launching": "Starten…",
+      "history": "Batchgeschiedenis",
+      "taskCol": "Taak",
+      "statusCol": "Status",
+      "progressCol": "Voortgang",
+      "empty": "Nog geen stijl-batchruns uitgevoerd."
+    }
   }
 }

@@ -708,5 +708,68 @@
     },
     "empty": "No provenance records yet. Run a C2PA Verification batch to analyse your library.",
     "error": "Failed to load provenance data."
+  },
+  "styleHub": {
+    "title": "Style & Model Hub",
+    "subtitle": "Manage AI model endpoints, brand style presets, and launch style-related batch tasks across your asset library.",
+    "tabs": {
+      "models": "Models",
+      "styles": "Style Presets",
+      "batch": "Batch Tasks"
+    },
+    "health": {
+      "healthy": "Healthy",
+      "degraded": "Degraded",
+      "unhealthy": "Unhealthy",
+      "unknown": "Unknown"
+    },
+    "models": {
+      "title": "Registered AI Models",
+      "addModel": "Add Model",
+      "editModel": "Edit Model",
+      "name": "Name",
+      "provider": "Provider",
+      "modelId": "Model ID",
+      "modelIdHelp": "e.g. gpt-4o, text-embedding-3-small, llava-1.6",
+      "capability": "Capability",
+      "health": "Health",
+      "status": "Status",
+      "enabled": "Enabled",
+      "isDefault": "Default for capability",
+      "setDefault": "Set as default",
+      "healthCheck": "Ping health",
+      "confirmDelete": "Delete \"{{name}}\"?",
+      "empty": "No models registered yet. Add your first AI model."
+    },
+    "presets": {
+      "title": "Style Presets",
+      "addPreset": "New Preset",
+      "editPreset": "Edit Style Preset",
+      "name": "Name",
+      "description": "Description",
+      "styleParams": "Style Parameters (JSON)",
+      "styleParamsHelp": "e.g. {\"tone\": \"editorial\", \"palette\": [\"#1a1a1a\",\"#ffffff\"], \"aspect_ratio\": \"16:9\"}",
+      "default": "Default",
+      "setDefault": "Set as default",
+      "synced": "Synced",
+      "stale": "Stale",
+      "notSynced": "Not synced",
+      "syncToGateway": "Sync to Gateway",
+      "confirmDelete": "Delete \"{{name}}\"?",
+      "empty": "No style presets yet. Create your first brand style profile."
+    },
+    "batch": {
+      "config": "Launch Batch Task",
+      "task": "Style Task",
+      "scope": "Target Dataset",
+      "concurrency": "Concurrency",
+      "launch": "Launch Task",
+      "launching": "Launching…",
+      "history": "Batch History",
+      "taskCol": "Task",
+      "statusCol": "Status",
+      "progressCol": "Progress",
+      "empty": "No style batch runs yet."
+    }
   }
 }

@@ -708,5 +708,68 @@
       "removeTooltip": "Supprimer cette politique de ce dossier",
       "removeWithCascadeTooltip": "Supprimer cette politique de ce dossier et de tous ses sous-dossiers"
     }
+  },
+  "styleHub": {
+    "title": "Hub Style & Modèles",
+    "subtitle": "Gérez les points de terminaison des modèles IA, les profils de style de marque et lancez des tâches de style par lot sur votre bibliothèque de ressources.",
+    "tabs": {
+      "models": "Modèles",
+      "styles": "Préensembles de style",
+      "batch": "Tâches par lot"
+    },
+    "health": {
+      "healthy": "Sain",
+      "degraded": "Dégradé",
+      "unhealthy": "Malsain",
+      "unknown": "Inconnu"
+    },
+    "models": {
+      "title": "Modèles IA enregistrés",
+      "addModel": "Ajouter un modèle",
+      "editModel": "Modifier le modèle",
+      "name": "Nom",
+      "provider": "Fournisseur",
+      "modelId": "ID du modèle",
+      "modelIdHelp": "ex. gpt-4o, text-embedding-3-small, llava-1.6",
+      "capability": "Capacité",
+      "health": "Santé",
+      "status": "Statut",
+      "enabled": "Activé",
+      "isDefault": "Par défaut pour cette capacité",
+      "setDefault": "Définir par défaut",
+      "healthCheck": "Vérifier la santé",
+      "confirmDelete": "Supprimer \"{{name}}\" ?",
+      "empty": "Aucun modèle enregistré. Ajoutez votre premier modèle IA."
+    },
+    "presets": {
+      "title": "Préensembles de style",
+      "addPreset": "Nouveau préensemble",
+      "editPreset": "Modifier le préensemble",
+      "name": "Nom",
+      "description": "Description",
+      "styleParams": "Paramètres de style (JSON)",
+      "styleParamsHelp": "ex. {\"tone\": \"editorial\", \"palette\": [\"#1a1a1a\",\"#ffffff\"], \"aspect_ratio\": \"16:9\"}",
+      "default": "Défaut",
+      "setDefault": "Définir par défaut",
+      "synced": "Synchronisé",
+      "stale": "Périmé",
+      "notSynced": "Non synchronisé",
+      "syncToGateway": "Synchroniser avec la passerelle",
+      "confirmDelete": "Supprimer \"{{name}}\" ?",
+      "empty": "Aucun préensemble de style. Créez votre premier profil de style de marque."
+    },
+    "batch": {
+      "config": "Lancer une tâche par lot",
+      "task": "Tâche de style",
+      "scope": "Jeu de données cible",
+      "concurrency": "Concurrence",
+      "launch": "Lancer la tâche",
+      "launching": "Lancement…",
+      "history": "Historique des lots",
+      "taskCol": "Tâche",
+      "statusCol": "Statut",
+      "progressCol": "Progression",
+      "empty": "Aucun lot de style exécuté pour l’instant."
+    }
   }
 }

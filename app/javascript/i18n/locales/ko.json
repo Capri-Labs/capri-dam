@@ -708,5 +708,68 @@
       "removeTooltip": "이 폴더에서 이 정책 제거",
       "removeWithCascadeTooltip": "이 폴더와 모든 하위 폴더에서 이 정책 제거"
     }
+  },
+  "styleHub": {
+    "title": "스타일 & 모델 허브",
+    "subtitle": "AI 모델 엔드포인트, 브랜드 스타일 프리셋을 관리하고 에셋 라이브러리 전체에서 스타일 관련 배치 작업을 실행합니다.",
+    "tabs": {
+      "models": "모델",
+      "styles": "스타일 프리셋",
+      "batch": "배치 작업"
+    },
+    "health": {
+      "healthy": "정상",
+      "degraded": "저하",
+      "unhealthy": "비정상",
+      "unknown": "알 수 없음"
+    },
+    "models": {
+      "title": "등록된 AI 모델",
+      "addModel": "모델 추가",
+      "editModel": "모델 편집",
+      "name": "이름",
+      "provider": "공급자",
+      "modelId": "모델 ID",
+      "modelIdHelp": "예: gpt-4o, text-embedding-3-small, llava-1.6",
+      "capability": "기능",
+      "health": "상태",
+      "status": "상태",
+      "enabled": "활성화",
+      "isDefault": "이 기능의 기본 모델",
+      "setDefault": "기본값으로 설정",
+      "healthCheck": "상태 확인",
+      "confirmDelete": "\"{{name}}\"을(를) 삭제하시겠습니까?",
+      "empty": "아직 등록된 모델이 없습니다. 첫 번째 AI 모델을 추가하세요."
+    },
+    "presets": {
+      "title": "스타일 프리셋",
+      "addPreset": "새 프리셋",
+      "editPreset": "스타일 프리셋 편집",
+      "name": "이름",
+      "description": "설명",
+      "styleParams": "스타일 매개변수 (JSON)",
+      "styleParamsHelp": "예: {\"tone\": \"editorial\", \"palette\": [\"#1a1a1a\",\"#ffffff\"], \"aspect_ratio\": \"16:9\"}",
+      "default": "기본값",
+      "setDefault": "기본값으로 설정",
+      "synced": "동기화됨",
+      "stale": "오래됨",
+      "notSynced": "동기화 안 됨",
+      "syncToGateway": "게이트웨이와 동기화",
+      "confirmDelete": "\"{{name}}\"을(를) 삭제하시겠습니까?",
+      "empty": "아직 스타일 프리셋이 없습니다. 첫 번째 브랜드 스타일 프로필을 만드세요."
+    },
+    "batch": {
+      "config": "배치 작업 실행",
+      "task": "스타일 작업",
+      "scope": "대상 데이터세트",
+      "concurrency": "동시성",
+      "launch": "작업 실행",
+      "launching": "실행 중…",
+      "history": "배치 기록",
+      "taskCol": "작업",
+      "statusCol": "상태",
+      "progressCol": "진행률",
+      "empty": "아직 실행된 스타일 배치 작업이 없습니다."
+    }
   }
 }

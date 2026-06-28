@@ -708,5 +708,68 @@
       "removeTooltip": "Remover esta política desta pasta",
       "removeWithCascadeTooltip": "Remover esta política desta pasta e de todas as suas subpastas"
     }
+  },
+  "styleHub": {
+    "title": "Hub de Estilos e Modelos",
+    "subtitle": "Gerencie endpoints de modelos de IA, perfis de estilo de marca e lance tarefas em lote relacionadas a estilos em sua biblioteca de recursos.",
+    "tabs": {
+      "models": "Modelos",
+      "styles": "Predefinições de estilo",
+      "batch": "Tarefas em lote"
+    },
+    "health": {
+      "healthy": "Saudável",
+      "degraded": "Degradado",
+      "unhealthy": "Insalubre",
+      "unknown": "Desconhecido"
+    },
+    "models": {
+      "title": "Modelos de IA registrados",
+      "addModel": "Adicionar modelo",
+      "editModel": "Editar modelo",
+      "name": "Nome",
+      "provider": "Provedor",
+      "modelId": "ID do modelo",
+      "modelIdHelp": "ex. gpt-4o, text-embedding-3-small, llava-1.6",
+      "capability": "Capacidade",
+      "health": "Saúde",
+      "status": "Status",
+      "enabled": "Habilitado",
+      "isDefault": "Padrão para esta capacidade",
+      "setDefault": "Definir como padrão",
+      "healthCheck": "Verificar saúde",
+      "confirmDelete": "Excluir \"{{name}}\"?",
+      "empty": "Nenhum modelo registrado ainda. Adicione seu primeiro modelo de IA."
+    },
+    "presets": {
+      "title": "Predefinições de estilo",
+      "addPreset": "Nova predefinição",
+      "editPreset": "Editar predefinição de estilo",
+      "name": "Nome",
+      "description": "Descrição",
+      "styleParams": "Parâmetros de estilo (JSON)",
+      "styleParamsHelp": "ex. {\"tone\": \"editorial\", \"palette\": [\"#1a1a1a\",\"#ffffff\"], \"aspect_ratio\": \"16:9\"}",
+      "default": "Padrão",
+      "setDefault": "Definir como padrão",
+      "synced": "Sincronizado",
+      "stale": "Desatualizado",
+      "notSynced": "Não sincronizado",
+      "syncToGateway": "Sincronizar com gateway",
+      "confirmDelete": "Excluir \"{{name}}\"?",
+      "empty": "Sem predefinições de estilo ainda. Crie seu primeiro perfil de estilo de marca."
+    },
+    "batch": {
+      "config": "Lançar tarefa em lote",
+      "task": "Tarefa de estilo",
+      "scope": "Conjunto de dados alvo",
+      "concurrency": "Concorrência",
+      "launch": "Lançar tarefa",
+      "launching": "Lançando…",
+      "history": "Histórico de lotes",
+      "taskCol": "Tarefa",
+      "statusCol": "Status",
+      "progressCol": "Progresso",
+      "empty": "Nenhum lote de estilo executado ainda."
+    }
   }
 }

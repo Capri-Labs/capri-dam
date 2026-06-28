@@ -708,5 +708,68 @@
       "removeTooltip": "このフォルダーからこのポリシーを削除",
       "removeWithCascadeTooltip": "このフォルダーとすべてのサブフォルダーからこのポリシーを削除"
     }
+  },
+  "styleHub": {
+    "title": "スタイル & モデルハブ",
+    "subtitle": "AIモデルのエンドポイント、ブランドスタイルプリセット、スタイル関連のバッチタスクをアセットライブラリ全体で管理します。",
+    "tabs": {
+      "models": "モデル",
+      "styles": "スタイルプリセット",
+      "batch": "バッチタスク"
+    },
+    "health": {
+      "healthy": "正常",
+      "degraded": "低下",
+      "unhealthy": "異常",
+      "unknown": "不明"
+    },
+    "models": {
+      "title": "登録済みAIモデル",
+      "addModel": "モデルを追加",
+      "editModel": "モデルを編集",
+      "name": "名前",
+      "provider": "プロバイダー",
+      "modelId": "モデルID",
+      "modelIdHelp": "例: gpt-4o, text-embedding-3-small, llava-1.6",
+      "capability": "機能",
+      "health": "ヘルス",
+      "status": "ステータス",
+      "enabled": "有効",
+      "isDefault": "この機能のデフォルト",
+      "setDefault": "デフォルトに設定",
+      "healthCheck": "ヘルスチェック",
+      "confirmDelete": "\"{{name}}\"を削除しますか？",
+      "empty": "モデルがまだ登録されていません。最初のAIモデルを追加してください。"
+    },
+    "presets": {
+      "title": "スタイルプリセット",
+      "addPreset": "新しいプリセット",
+      "editPreset": "スタイルプリセットを編集",
+      "name": "名前",
+      "description": "説明",
+      "styleParams": "スタイルパラメータ (JSON)",
+      "styleParamsHelp": "例: {\"tone\": \"editorial\", \"palette\": [\"#1a1a1a\",\"#ffffff\"], \"aspect_ratio\": \"16:9\"}",
+      "default": "デフォルト",
+      "setDefault": "デフォルトに設定",
+      "synced": "同期済み",
+      "stale": "古くなっています",
+      "notSynced": "未同期",
+      "syncToGateway": "ゲートウェイと同期",
+      "confirmDelete": "\"{{name}}\"を削除しますか？",
+      "empty": "スタイルプリセットがまだありません。最初のブランドスタイルプロファイルを作成してください。"
+    },
+    "batch": {
+      "config": "バッチタスクを起動",
+      "task": "スタイルタスク",
+      "scope": "ターゲットデータセット",
+      "concurrency": "並行性",
+      "launch": "タスクを起動",
+      "launching": "起動中…",
+      "history": "バッチ履歴",
+      "taskCol": "タスク",
+      "statusCol": "ステータス",
+      "progressCol": "進捗",
+      "empty": "スタイルバッチの実行がまだありません。"
+    }
   }
 }

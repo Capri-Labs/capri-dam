@@ -708,5 +708,68 @@
       "removeTooltip": "Diese Richtlinie aus diesem Ordner entfernen",
       "removeWithCascadeTooltip": "Diese Richtlinie aus diesem Ordner und allen Unterordnern entfernen"
     }
+  },
+  "styleHub": {
+    "title": "Stil & Modell-Hub",
+    "subtitle": "Verwalten Sie KI-Modell-Endpunkte, Marken-Stilprofile und starten Sie stilbezogene Batch-Aufgaben in Ihrer Asset-Bibliothek.",
+    "tabs": {
+      "models": "Modelle",
+      "styles": "Stilprofile",
+      "batch": "Batch-Aufgaben"
+    },
+    "health": {
+      "healthy": "Gesund",
+      "degraded": "Beeinträchtigt",
+      "unhealthy": "Ungesund",
+      "unknown": "Unbekannt"
+    },
+    "models": {
+      "title": "Registrierte KI-Modelle",
+      "addModel": "Modell hinzufügen",
+      "editModel": "Modell bearbeiten",
+      "name": "Name",
+      "provider": "Anbieter",
+      "modelId": "Modell-ID",
+      "modelIdHelp": "z.B. gpt-4o, text-embedding-3-small, llava-1.6",
+      "capability": "Fähigkeit",
+      "health": "Gesundheit",
+      "status": "Status",
+      "enabled": "Aktiviert",
+      "isDefault": "Standard für diese Fähigkeit",
+      "setDefault": "Als Standard festlegen",
+      "healthCheck": "Gesundheit prüfen",
+      "confirmDelete": "\"{{name}}\" löschen?",
+      "empty": "Noch keine Modelle registriert. Fügen Sie Ihr erstes KI-Modell hinzu."
+    },
+    "presets": {
+      "title": "Stilprofile",
+      "addPreset": "Neues Profil",
+      "editPreset": "Stilprofil bearbeiten",
+      "name": "Name",
+      "description": "Beschreibung",
+      "styleParams": "Stilparameter (JSON)",
+      "styleParamsHelp": "z.B. {\"tone\": \"editorial\", \"palette\": [\"#1a1a1a\",\"#ffffff\"], \"aspect_ratio\": \"16:9\"}",
+      "default": "Standard",
+      "setDefault": "Als Standard festlegen",
+      "synced": "Synchronisiert",
+      "stale": "Veraltet",
+      "notSynced": "Nicht synchronisiert",
+      "syncToGateway": "Mit Gateway synchronisieren",
+      "confirmDelete": "\"{{name}}\" löschen?",
+      "empty": "Noch keine Stilprofile vorhanden. Erstellen Sie Ihr erstes Markenstilprofil."
+    },
+    "batch": {
+      "config": "Batch-Aufgabe starten",
+      "task": "Stilaufgabe",
+      "scope": "Zieldatensatz",
+      "concurrency": "Parallelität",
+      "launch": "Aufgabe starten",
+      "launching": "Wird gestartet…",
+      "history": "Batch-Verlauf",
+      "taskCol": "Aufgabe",
+      "statusCol": "Status",
+      "progressCol": "Fortschritt",
+      "empty": "Noch keine Stil-Batch-Läufe vorhanden."
+    }
   }
 }

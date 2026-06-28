@@ -708,5 +708,68 @@
       "removeTooltip": "Eliminar esta política de esta carpeta",
       "removeWithCascadeTooltip": "Eliminar esta política de esta carpeta y todas sus subcarpetas"
     }
+  },
+  "styleHub": {
+    "title": "Hub de Estilos y Modelos",
+    "subtitle": "Gestione los puntos finales de modelos de IA, perfiles de estilo de marca y lance tareas por lotes relacionadas con estilos en su biblioteca de recursos.",
+    "tabs": {
+      "models": "Modelos",
+      "styles": "Presets de estilo",
+      "batch": "Tareas por lotes"
+    },
+    "health": {
+      "healthy": "Saludable",
+      "degraded": "Degradado",
+      "unhealthy": "No saludable",
+      "unknown": "Desconocido"
+    },
+    "models": {
+      "title": "Modelos de IA registrados",
+      "addModel": "Agregar modelo",
+      "editModel": "Editar modelo",
+      "name": "Nombre",
+      "provider": "Proveedor",
+      "modelId": "ID del modelo",
+      "modelIdHelp": "ej. gpt-4o, text-embedding-3-small, llava-1.6",
+      "capability": "Capacidad",
+      "health": "Salud",
+      "status": "Estado",
+      "enabled": "Habilitado",
+      "isDefault": "Predeterminado para esta capacidad",
+      "setDefault": "Establecer como predeterminado",
+      "healthCheck": "Verificar salud",
+      "confirmDelete": "¿Eliminar \"{{name}}\"?",
+      "empty": "Ningún modelo registrado aún. Agregue su primer modelo de IA."
+    },
+    "presets": {
+      "title": "Presets de estilo",
+      "addPreset": "Nuevo preset",
+      "editPreset": "Editar preset de estilo",
+      "name": "Nombre",
+      "description": "Descripción",
+      "styleParams": "Parámetros de estilo (JSON)",
+      "styleParamsHelp": "ej. {\"tone\": \"editorial\", \"palette\": [\"#1a1a1a\",\"#ffffff\"], \"aspect_ratio\": \"16:9\"}",
+      "default": "Predeterminado",
+      "setDefault": "Establecer como predeterminado",
+      "synced": "Sincronizado",
+      "stale": "Obsoleto",
+      "notSynced": "No sincronizado",
+      "syncToGateway": "Sincronizar con gateway",
+      "confirmDelete": "¿Eliminar \"{{name}}\"?",
+      "empty": "Sin presets de estilo aún. Cree su primer perfil de estilo de marca."
+    },
+    "batch": {
+      "config": "Lanzar tarea por lotes",
+      "task": "Tarea de estilo",
+      "scope": "Conjunto de datos objetivo",
+      "concurrency": "Concurrencia",
+      "launch": "Lanzar tarea",
+      "launching": "Lanzando…",
+      "history": "Historial de lotes",
+      "taskCol": "Tarea",
+      "statusCol": "Estado",
+      "progressCol": "Progreso",
+      "empty": "Aún no hay lotes de estilo ejecutados."
+    }
   }
 }
