@@ -1493,6 +1493,16 @@ type Query {
   List all active Video Processing Profiles
   """
   videoProfiles: [VideoProfile!]!
+
+  """
+  Workflow execution records for an asset (authenticated users only).
+  """
+  workflowInstances(assetId: ID!, limit: Int = 10): [WorkflowInstance!]!
+
+  """
+  Ordered list of steps in a workflow blueprint (authenticated users only).
+  """
+  workflowSteps(workflowId: ID!): [WorkflowStep!]!
 }
 
 """
@@ -2129,5 +2139,63 @@ type VideoProfile {
   Array of { name, crop_ratio } objects for smart crop processing
   """
   smartCropRatios: Json
+  updatedAt: ISO8601DateTime!
+}
+
+"""
+A runtime execution of a workflow blueprint against a specific asset.
+"""
+type WorkflowInstance {
+  assetId: ID!
+  auditLog: [Json!]!
+  cancelReason: String
+  completedAt: ISO8601DateTime
+  createdAt: ISO8601DateTime!
+  currentStep: WorkflowStep
+  id: ID!
+
+  """
+  Tasks still awaiting a decision
+  """
+  pendingTasks: Int!
+  startedAt: ISO8601DateTime
+  status: String!
+
+  """
+  Total tasks created for this instance
+  """
+  taskCount: Int!
+  updatedAt: ISO8601DateTime!
+  workflowId: ID!
+}
+
+"""
+A single step within a workflow blueprint.
+"""
+type WorkflowStep {
+  assigneeId: String!
+  assigneeType: String!
+  createdAt: ISO8601DateTime!
+  deadlineDays: Int
+  description: String
+  id: ID!
+
+  """
+  'any' or 'all'
+  """
+  logic: String!
+
+  """
+  Visual canvas node type (e.g. email_notification, condition)
+  """
+  nodeType: String
+  position: Int!
+
+  """
+  Node-specific configuration JSON
+  """
+  stepConfig: Json
+  stepType: String!
+  title: String
   updatedAt: ISO8601DateTime!
 }

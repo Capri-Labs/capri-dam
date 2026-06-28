@@ -1,5 +1,5 @@
 import React from 'react';
-import { Handle, Position } from 'reactflow';
+import { Handle, Position } from '@xyflow/react';
 import { Box, Typography } from '@mui/material';
 import { PlayArrow } from '@mui/icons-material';
 

@@ -552,6 +552,46 @@ module Types
         .first(limit)
     end
 
+    # ── Workflow queries ─────────────────────────────────────────────────────
+
+    # All steps for a given workflow blueprint.
+    #
+    # @param workflow_id [ID] the Workflow's database ID
+    # @return [Array<Types::WorkflowStepType>]
+    field :workflow_steps, [ Types::WorkflowStepType ], null: false do
+      description "Ordered list of steps in a workflow blueprint (authenticated users only)."
+      argument :workflow_id, ID, required: true
+    end
+
+    def workflow_steps(workflow_id:)
+      raise GraphQL::ExecutionError, "Authentication required." unless context[:current_user]
+
+      workflow = Workflow.find_by(id: workflow_id)
+      return [] unless workflow
+
+      workflow.workflow_steps.order(:position)
+    end
+
+    # Active and recent workflow instances for a given asset.
+    #
+    # @param asset_id [ID] the Asset's database ID
+    # @param limit    [Integer] max results (1–50, default 10)
+    # @return [Array<Types::WorkflowInstanceType>]
+    field :workflow_instances, [ Types::WorkflowInstanceType ], null: false do
+      description "Workflow execution records for an asset (authenticated users only)."
+      argument :asset_id, ID, required: true
+      argument :limit,    Integer, required: false, default_value: 10
+    end
+
+    def workflow_instances(asset_id:, limit: 10)
+      raise GraphQL::ExecutionError, "Authentication required." unless context[:current_user]
+
+      Asset.find_by(id: asset_id)
+           &.workflow_instances
+           &.order(created_at: :desc)
+           &.limit(limit.to_i.clamp(1, 50)) || []
+    end
+
     private
 
     # Rule-based safe-to-delete score (0–100) used until AI gateway is live.

@@ -31,9 +31,9 @@ RSpec.describe WorkflowAdvancerService do
 
       described_class.new(instance).process_step(auto)
 
-      expect(asset.reload.read_attribute_before_type_cast('status')).to eq(Asset.statuses['approved'].to_s) # action ran
-      expect(instance.reload.current_step_id).to eq(gate.id) # advanced to approval
-      expect(instance.workflow_tasks.count).to eq(1)         # task created for the gate
+      expect(asset.reload.read_attribute_before_type_cast('status')).to eq(Asset.statuses['approved'].to_s)
+      expect(instance.reload.current_step_id).to eq(gate.id)
+      expect(instance.workflow_tasks.count).to eq(1)
     end
 
     it 'completes the instance when the chain ends on an automated step' do
@@ -55,6 +55,29 @@ RSpec.describe WorkflowAdvancerService do
       described_class.new(instance).process_step(step)
 
       expect(instance.workflow_tasks.last.user).to eq(fallback)
+    end
+
+    it 'stops advancing when a delay step is encountered (WorkflowDelayWorker scheduled)' do
+      allow(WorkflowDelayWorker).to receive(:perform_in)
+      delay = automated_step(1, 'delay', { 'delayValue' => 1, 'delayUnit' => 'hours' })
+      gate  = approval_step(2)
+
+      described_class.new(instance).process_step(delay)
+
+      # Should have stopped — gate task not yet created
+      expect(instance.workflow_tasks.count).to eq(0)
+      expect(WorkflowDelayWorker).to have_received(:perform_in)
+    end
+
+    it 'raises when the automated chain exceeds MAX_AUTOMATED_CHAIN' do
+      # Build a long chain of set_status steps with the same position
+      # by stubbing next_step_after to always return the same step.
+      step = automated_step(1, 'set_status', { 'status' => 'approved' })
+      allow_any_instance_of(described_class).to receive(:next_step_after).and_return(step)
+
+      expect {
+        described_class.new(instance).process_step(step)
+      }.to raise_error(/cycle/)
     end
   end
 end

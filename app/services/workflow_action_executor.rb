@@ -52,6 +52,7 @@ class WorkflowActionExecutor
     when "ai_metadata"          then run_ai_metadata
     when "generate_thumbnail"   then regenerate_thumbnail
     when "cdn_sync"             then cdn_sync
+    when "delay"                then handle_delay
     when "condition"            then evaluate_condition
     else
       Rails.logger.warn("[WorkflowActionExecutor] Unknown node_type '#{@step.node_type}' — skipping")
@@ -72,14 +73,26 @@ class WorkflowActionExecutor
     body       = render_tokens(@config[:body])
 
     recipients.each do |user|
-      # Always drop an in-app record so the message is never silently lost,
-      # then attempt a real email via WorkflowMailer when available.
       Notification.create!(
         user:       user,
         title:      subject,
         message:    body,
         action_url: "/dashboard?view=asset_explorer&asset=#{@asset.id}",
       )
+    end
+
+    # Fire the real email through WorkflowMailer when available
+    # (deliver_later uses Sidekiq under the hood)
+    if defined?(WorkflowMailer) && WorkflowMailer.respond_to?(:workflow_email)
+      recipients.each do |user|
+        WorkflowMailer.workflow_email(
+          to:       user.email,
+          cc:       @config[:cc].presence,
+          subject:  subject,
+          body:     body,
+          priority: @config[:priority].presence || "normal",
+        ).deliver_later
+      end
     end
     nil
   end
@@ -100,7 +113,14 @@ class WorkflowActionExecutor
     url = @config[:channel].presence
     return nil if url.blank?
 
-    faraday_post(url, { text: render_tokens(@config[:message]) })
+    payload = {
+      attachments: [ {
+        color:    @config[:color].presence || "good",
+        text:     render_tokens(@config[:message]),
+        fallback: render_tokens(@config[:message]),
+      } ],
+    }
+    faraday_post(url, payload)
     nil
   end
 
@@ -108,7 +128,14 @@ class WorkflowActionExecutor
     url = @config[:channel].presence
     return nil if url.blank?
 
-    faraday_post(url, { text: render_tokens(@config[:message]) })
+    payload = {
+      "@type": "MessageCard",
+      "@context": "https://schema.org/extensions",
+      themeColor: teams_theme_color(@config[:color]),
+      title:     render_tokens(@config[:teamsTitle] || @config[:title] || "Workflow Update"),
+      text:      render_tokens(@config[:message]),
+    }
+    faraday_post(url, payload)
     nil
   end
 
@@ -201,17 +228,31 @@ class WorkflowActionExecutor
   end
 
   def publish_asset
-    # "Published" maps to the approved/ready state in the asset lifecycle.
     @asset.update!(status: "approved")
+    # If the PublishNode configured CDN sync, fire it immediately
+    cdn_sync if @config[:cdnSync] != false
     nil
   end
 
   def update_metadata
-    key = @config[:metadataKey].presence
-    return nil if key.blank?
+    props = @asset.properties || {}
 
-    props      = @asset.properties || {}
-    props[key] = render_tokens(@config[:metadataValue])
+    # Multi-pair format from MetadataUpdateNode: { pairs: [{key, value}, …] }
+    if @config[:pairs].is_a?(Array)
+      @config[:pairs].each do |pair|
+        key = pair[:key].presence || pair["key"].presence
+        next if key.blank?
+
+        props[key] = render_tokens(pair[:value].presence || pair["value"])
+      end
+    else
+      # Legacy single key-value from old step configs
+      key = @config[:metadataKey].presence
+      return nil if key.blank?
+
+      props[key] = render_tokens(@config[:metadataValue])
+    end
+
     @asset.update!(properties: props)
     nil
   end
@@ -249,6 +290,25 @@ class WorkflowActionExecutor
 
   # ── Flow control ────────────────────────────────────────────────────────────
 
+  # Schedules WorkflowDelayWorker to resume the instance after the configured
+  # duration.  Returns a sentinel symbol so the advancer knows to stop
+  # advancing — the delay worker will re-enqueue the advancer.
+  def handle_delay
+    value = (@config[:delayValue].presence || 1).to_i
+    unit  = @config[:delayUnit].presence || "hours"
+
+    delay_seconds =
+      case unit
+      when "minutes" then value * 60
+      when "hours"   then value * 3600
+      when "days"    then value * 86_400
+      else                value * 3600
+      end
+
+    WorkflowDelayWorker.perform_in(delay_seconds, @instance.id, @step.id)
+    :delay_scheduled
+  end
+
   def evaluate_condition
     actual   = asset_field_value(@config[:field])
     expected = @config[:value].to_s
@@ -257,7 +317,10 @@ class WorkflowActionExecutor
       when "equals"        then actual.to_s == expected
       when "not_equals"    then actual.to_s != expected
       when "contains"      then actual.to_s.include?(expected)
+      when "starts_with"   then actual.to_s.start_with?(expected)
+      when "ends_with"     then actual.to_s.end_with?(expected)
       when "greater_than"  then actual.to_f > expected.to_f
+      when "less_than"     then actual.to_f < expected.to_f
       else                      false
       end
 
@@ -289,11 +352,22 @@ class WorkflowActionExecutor
   def render_tokens(text)
     return "" if text.blank?
 
+    asset_url = "/assets/#{@asset.id}"
+
     text.to_s
-        .gsub("{{asset.title}}", @asset.title.to_s)
-        .gsub("{{asset.id}}", @asset.id.to_s)
-        .gsub("{{asset.status}}", @asset.status.to_s)
-        .gsub("{{workflow.name}}", @instance.workflow.name.to_s)
+        .gsub("{{asset.title}}",      @asset.title.to_s)
+        .gsub("{{asset.id}}",         @asset.id.to_s)
+        .gsub("{{asset.status}}",     @asset.status.to_s)
+        .gsub("{{asset.url}}",        asset_url)
+        .gsub("{{workflow.name}}",    @instance.workflow.name.to_s)
+  end
+
+  def teams_theme_color(color)
+    case color
+    when "warning"   then "FF8C00"
+    when "attention" then "FF0000"
+    else                  "00B050" # good / green
+    end
   end
 
   def faraday_post(url, body)

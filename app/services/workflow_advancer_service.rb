@@ -44,7 +44,11 @@ class WorkflowAdvancerService
       end
 
       # Automated step: run the side effect, then continue to the next step.
+      # A :delay_scheduled return means a WorkflowDelayWorker has been queued
+      # and will resume the chain — stop advancing here.
       branch = WorkflowActionExecutor.new(@instance, current).call
+      return if branch == :delay_scheduled
+
       current = next_step_after(current, branch)
     end
 
@@ -59,9 +63,32 @@ class WorkflowAdvancerService
     step.node_type.nil? || step.node_type == "approval"
   end
 
-  def next_step_after(step, _branch = nil)
-    # Linear advance by position. (Branch-aware routing via graph edges is a
-    # future enhancement; conditions currently fall through to the next step.)
+  def next_step_after(step, branch = nil)
+    # For condition nodes, branch is :true_branch or :false_branch.
+    # The graph edges are stored in the workflow's graph_data JSON:
+    #   edges: [{ source: "nodeId", sourceHandle: "true"|"false", target: "nodeId" }]
+    # We attempt to follow the correct edge; if graph_data is absent we fall
+    # back to linear position advance (safe for simple non-branching workflows).
+    if branch == :true_branch || branch == :false_branch
+      handle = branch == :true_branch ? "true" : "false"
+      graph = @workflow.graph_data || {}
+      edges = Array(graph["edges"] || graph[:edges])
+      edge  = edges.find { |e|
+        (e["source"] == step.id.to_s || e[:source] == step.id.to_s) &&
+        (e["sourceHandle"] == handle || e[:sourceHandle] == handle)
+      }
+      if edge
+        target_id = (edge["target"] || edge[:target]).to_s
+        # Find the workflow_step whose canvas node id matches.  The canvas node
+        # id is stored in step.node_id (populated by the designer on save) or
+        # we fall back to position-based lookup.
+        next_s = @workflow.workflow_steps.find_by(node_id: target_id) ||
+                 @workflow.workflow_steps.find_by(position: step.position + 1)
+        return next_s
+      end
+    end
+
+    # Linear advance by position
     @workflow.workflow_steps.find_by(position: step.position + 1)
   end
 
