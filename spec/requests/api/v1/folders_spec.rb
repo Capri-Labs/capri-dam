@@ -287,30 +287,151 @@ RSpec.describe 'Api::V1::Folders', type: :request do
                      tabs:   { type: :array, items: { type: :object } },
                    }
                  },
-                 policies: {
-                   type: :array,
-                   items: {
-                     type: :object,
-                     properties: {
-                       group_id:   { type: :integer },
-                       group_name: { type: :string, nullable: true },
-                       read:       { type: :boolean },
-                       write:      { type: :boolean },
-                       delete:     { type: :boolean },
-                       manage:     { type: :boolean },
-                       deny:       { type: :boolean },
-                     },
-                   },
-                 },
-               }
+                  policies: {
+                    type: :array,
+                    items: {
+                      type: :object,
+                      properties: {
+                        id:               { type: :integer },
+                        group_id:         { type: :integer },
+                        group_name:       { type: :string, nullable: true },
+                        read_access:      { type: :boolean },
+                        modify_access:    { type: :boolean },
+                        create_access:    { type: :boolean },
+                        delete_access:    { type: :boolean },
+                        replicate_access: { type: :boolean },
+                        manage_access:    { type: :boolean },
+                        explicit_deny:    { type: :boolean },
+                      },
+                    },
+                  },
+                }
         run_test!
       end
     end
   end
 
   # ===========================================================================
-  # RESTORE — POST /api/v1/folders/{id}/restore
+  # FOLDER POLICIES — GET /api/v1/folders/{id}/policies
   # ===========================================================================
+  path '/api/v1/folders/{id}/policies' do
+    parameter name: :id, in: :path, type: :string, required: true, description: 'Folder UUID'
+
+    get 'Retrieve explicit and inherited access-control policies for a folder' do
+      tags 'Folders'
+      produces 'application/json'
+      security [ Bearer: [] ]
+      description <<~DESC
+        Returns two arrays: `explicit_policies` (rules set directly on this folder)
+        and `inherited_policies` (rules propagated from ancestor folders).
+        Inherited policies include `source_folder_name` and `source_folder_id`.
+      DESC
+
+      response '200', 'Policies returned' do
+        let(:id) { FactoryBot.create(:folder, user: admin_user).id }
+        schema type: :object,
+               properties: {
+                 explicit_policies:  {
+                   type: :array, items: { '$ref' => '#/components/schemas/FolderPolicy' }
+                 },
+                 inherited_policies: {
+                   type: :array, items: { '$ref' => '#/components/schemas/FolderPolicy' }
+                 },
+               }
+        run_test!
+      end
+
+      response '404', 'Folder not found' do
+        let(:id) { 'non-existent-uuid' }
+        schema type: :object, properties: { error: { type: :string } }
+        run_test!
+      end
+    end
+
+    post 'Upsert an access-control policy for a group on a folder' do
+      tags 'Folders'
+      consumes 'application/json'
+      produces 'application/json'
+      security [ Bearer: [] ]
+      description <<~DESC
+        Creates or updates the permission matrix for a user group on this folder.
+        Pass `cascade: true` to enqueue background propagation to all child folders.
+        Requires the calling user to have `manage_access` on the folder (or be an admin).
+      DESC
+
+      parameter name: :body, in: :body, schema: {
+        type: :object,
+        required: %w[group_id],
+        properties: {
+          group_id:         { type: :integer, description: 'UserGroup ID' },
+          read_access:      { type: :boolean },
+          modify_access:    { type: :boolean },
+          create_access:    { type: :boolean },
+          delete_access:    { type: :boolean },
+          replicate_access: { type: :boolean },
+          manage_access:    { type: :boolean },
+          explicit_deny:    { type: :boolean },
+          cascade:          { type: :boolean, description: 'When true, propagate to all child folders in the background' },
+        },
+      }
+
+      response '200', 'Policy saved' do
+        let(:id)   { FactoryBot.create(:folder, user: admin_user).id }
+        let(:body) { { group_id: FactoryBot.create(:user_group).id, read_access: true } }
+        schema type: :object,
+               properties: {
+                 success: { type: :boolean },
+                 policy:  { '$ref' => '#/components/schemas/FolderPolicy' },
+               }
+        run_test!
+      end
+
+      response '403', 'Insufficient permission' do
+        let(:id)   { FactoryBot.create(:folder, user: admin_user).id }
+        let(:body) { { group_id: 999 } }
+        run_test!
+      end
+
+      response '404', 'Folder or group not found' do
+        let(:id)   { 'non-existent-uuid' }
+        let(:body) { { group_id: 1 } }
+        run_test!
+      end
+    end
+  end
+
+  # ===========================================================================
+  # FOLDER POLICY DELETE — DELETE /api/v1/folders/{id}/policies/{group_id}
+  # ===========================================================================
+  path '/api/v1/folders/{id}/policies/{group_id}' do
+    parameter name: :id,       in: :path,  type: :string,  required: true, description: 'Folder UUID'
+    parameter name: :group_id, in: :path,  type: :integer, required: true, description: 'UserGroup ID'
+    parameter name: :cascade,  in: :query, type: :boolean, required: false,
+                               description: 'When true, remove the policy from all child folders too'
+
+    delete 'Remove an explicit access-control policy from a folder' do
+      tags 'Folders'
+      produces 'application/json'
+      security [ Bearer: [] ]
+
+      response '200', 'Policy removed' do
+        let(:id)       { FactoryBot.create(:folder, user: admin_user).id }
+        let(:group_id) { 999 } # no policy → graceful 404
+        schema type: :object,
+               properties: {
+                 success: { type: :boolean },
+                 message: { type: :string },
+               }
+        run_test!
+      end
+
+      response '404', 'Folder or policy not found' do
+        let(:id)       { 'non-existent-uuid' }
+        let(:group_id) { 1 }
+        run_test!
+      end
+    end
+  end
   path '/api/v1/folders/{id}/restore' do
     parameter name: :id, in: :path, type: :string, required: true, description: 'Folder ID'
 

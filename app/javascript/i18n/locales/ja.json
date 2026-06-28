@@ -179,6 +179,52 @@
       "imageProfilesDesc": "アップロード時の自動クロップ",
       "videoProfiles": "ビデオプロファイル",
       "videoProfilesDesc": "アダプティブビデオエンコード"
+    },
+    "collectionSettings": {
+      "title": "コレクション設定",
+      "subtitle": "スマートルール、TTL、CDN",
+      "savedSuccess": "保存しました。",
+      "adminNote": "管理者権限が必要です。",
+      "smartRules": {
+        "title": "スマートルール",
+        "subtitle": "新しいAIコレクション",
+        "threshold": "コサイン類似度閾値",
+        "thresholdHint": "高い値=厳格なマッチング。",
+        "schedule": "スケジュール",
+        "scheduleHint": "再スキャン頻度。",
+        "scheduleHourly": "毎時",
+        "scheduleDaily": "毎日",
+        "scheduleWeekly": "毎週",
+        "scheduleManual": "手動のみ"
+      },
+      "access": {
+        "title": "アクセス制御",
+        "subtitle": "デフォルト表示",
+        "visibility": "表示設定",
+        "public": "パブリック",
+        "private": "プライベート",
+        "hint": "上書き可能。"
+      },
+      "limits": {
+        "title": "アセット制限",
+        "subtitle": "過大なコレクション防止",
+        "maxAssets": "最大アセット数",
+        "maxAssetsHint": "0=無制限。"
+      },
+      "ttl": {
+        "title": "TTLと有効期限",
+        "subtitle": "N日後に自動アーカイブ",
+        "defaultDays": "デフォルトTTL(日)",
+        "hint": "0=有効期限なし。"
+      },
+      "cdn": {
+        "title": "CDNとコンプライアンス",
+        "subtitle": "エッジキャッシュ",
+        "autoPurge": "CDN自動パージ",
+        "autoPurgeHint": "キャッシュを無効化。",
+        "complianceScan": "TDMスキャン有効化",
+        "complianceScanHint": "利用権チェック。"
+      }
     }
   },
   "bin": {

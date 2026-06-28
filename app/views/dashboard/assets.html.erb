@@ -1,0 +1,7 @@
+<%# /assets?id=UUID deep-link shell.
+  # The React FoldersManager component reads `data-initial-target-asset-id`
+  # and passes it to AssetExplorer, which fetches the asset and opens AssetViewer. %>
+<div id="root"
+     data-view="folders"
+     <%= "data-initial-target-asset-id=\"#{html_escape(@asset_id)}\"" if @asset_id.present? %>></div>
+

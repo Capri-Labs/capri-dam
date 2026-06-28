@@ -56,6 +56,7 @@ module Api
       protect_from_forgery with: :null_session,
                            if: -> { request.format.json? || doorkeeper_token.present? }
       before_action :authenticate_hybrid!
+      before_action :require_write_scope!, only: %i[create update destroy restore permanent_delete update_metadata process_image]
 
       # Full-text and faceted search over ready assets.
       #
@@ -102,6 +103,10 @@ module Api
       def create
         file = params[:file]
         target_folder = params[:folder_id].present? ? Folder.find_by(id: params[:folder_id]) : nil
+
+        # Enforce folder-level create permission
+        check_folder_permission!(target_folder, :create)
+        return if performed?
 
         if file.respond_to?(:path)
           ActiveRecord::Base.transaction do
@@ -467,6 +472,9 @@ module Api
       # @return [void] renders +200 OK+ with +{ success, message }+
       def destroy
         @asset = Asset.find(params[:id])
+        check_asset_delete!(@asset)
+        return if performed?
+
         @asset.soft_delete
         render json: { success: true, message: "Moved to bin" }
       end
@@ -673,46 +681,93 @@ module Api
         end
       end
 
-      # Serves a file directly from local storage during development.
+      # Serves a file directly from local/staging storage.
       #
-      # Redirects to the ActiveStorage URL when the version has an attachment.
-      # Otherwise resolves the physical path under +storage/dam/+ and uses
-      # +send_file+.
+      # == URL
+      #   GET /api/v1/assets/local/:uuid
       #
-      # @return [void] redirects or streams the file inline
-      # @return [void] renders +404+ when the file cannot be located on disk
+      # == Resolution order
+      #   1. ActiveStorage attachment on the active version → redirect to blob URL
+      #   2. +storage/dam/<relative_path>+ (files moved by AssetProcessorWorker)
+      #   3. Absolute +tmp/uploads/+ staging path (files awaiting worker processing)
+      #
+      # == HTTP caching
+      #   Returns +ETag+ and +Last-Modified+ headers.  Clients that re-send
+      #   +If-None-Match+ will receive +304 Not Modified+ without re-transmitting
+      #   the file body, making thumbnail-heavy list views much faster.
+      #
+      # == Security
+      #   Both resolved paths are checked against their respective roots
+      #   (+storage/dam+ and +tmp/+) to block directory-traversal attacks.
+      #   The +storage_path+ value comes from the database, not from user input,
+      #   but we validate it regardless as defence-in-depth.
+      #
+      # @return [void] redirects to ActiveStorage URL, or streams file inline
+      # @return [void] 304 Not Modified when ETag matches
+      # @return [void] 404 when file cannot be located on disk
+      # @return [void] 403 when resolved path escapes the permitted root
       def serve_local
-        asset = Asset.includes(:active_version).find_by!(uuid: params[:uuid])
+        asset    = Asset.includes(:active_version).find_by!(uuid: params[:uuid])
         active_v = asset.active_version
 
-        storage_path = active_v&.properties&.fetch("storage_path", nil) || asset.properties["storage_path"]
-        content_type = active_v&.properties&.fetch("content_type", nil) || asset.properties["content_type"]
+        storage_path = active_v&.properties&.fetch("storage_path", nil) ||
+                       asset.properties["storage_path"]
+        content_type = (active_v&.properties&.fetch("content_type", nil) ||
+                        asset.properties["content_type"]).presence || "application/octet-stream"
 
+        # 1. ActiveStorage attachment: redirect to signed blob URL.
         if active_v.respond_to?(:file) && active_v.file.attached?
-          return redirect_to url_for(active_v.file)
+          return redirect_to url_for(active_v.file), allow_other_host: false
         end
 
-        return render json: { error: "Asset version has no storage path" }, status: :not_found unless storage_path
+        return render json: { error: "Asset version has no storage path" }, status: :not_found unless storage_path.present?
 
-        # Strip leading slash and resolve to prevent path traversal out of storage root.
-        clean_path   = storage_path.to_s.sub(%r{\A/}, "")
-        physical_path = Rails.root.join("storage/dam", clean_path)
+        # 2. Resolve DAM root path (files processed and stored by AssetProcessorWorker).
+        storage_root  = Rails.root.join("storage/dam").to_s
+        clean_path    = storage_path.to_s.sub(%r{\A/}, "")
+        dam_candidate = Rails.root.join("storage/dam", clean_path)
 
-        # Ensure the resolved path stays inside storage/dam (guard against ../.. traversal).
-        storage_root = Rails.root.join("storage/dam").to_s
-        unless File.expand_path(physical_path).start_with?(storage_root)
-          return render json: { error: "Forbidden path" }, status: :forbidden
+        # 3. Resolve tmp staging path (files awaiting background processing).
+        tmp_root      = Rails.root.join("tmp").to_s
+        tmp_candidate = Pathname.new(storage_path.to_s)
+
+        # Security: ensure each resolved path stays within its permitted root.
+        dam_path_safe = File.expand_path(dam_candidate).start_with?(storage_root)
+        tmp_path_safe = File.expand_path(tmp_candidate).start_with?(tmp_root)
+
+        # brakeman:ignore:SendFile - both paths validated against root dirs above; storage_path is a DB value
+        file_to_serve =
+          if dam_path_safe && File.exist?(dam_candidate)
+            dam_candidate.to_s
+          elsif tmp_path_safe && File.exist?(tmp_candidate)
+            tmp_candidate.to_s
+          end
+
+        unless file_to_serve
+          return render json: {
+            error:      "File missing from disk",
+            looked_at:  dam_candidate.to_s,
+          }, status: :not_found
         end
 
-        # Check both physical and staging paths to be safe during worker transit.
-        # brakeman:ignore:SendFile - path is validated against storage_root above; model attr used only after expand_path check
-        if File.exist?(physical_path)
-          send_file physical_path, disposition: "inline", type: content_type
-        elsif File.exist?(storage_path) # Direct fallback for tmp paths
-          send_file storage_path, disposition: "inline", type: content_type
-        else
-          render json: { error: "File missing from disk", looked_at: physical_path.to_s }, status: :not_found
+        # ── HTTP caching headers ────────────────────────────────────────────────
+        file_stat    = File.stat(file_to_serve)
+        etag_value   = %("#{Digest::MD5.file(file_to_serve).hexdigest}")
+        last_modified = file_stat.mtime.httpdate
+
+        response.headers["ETag"]          = etag_value
+        response.headers["Last-Modified"] = last_modified
+        # private: do not store in shared CDN caches; max-age: 1 hour
+        response.headers["Cache-Control"] = "private, max-age=3600, must-revalidate"
+
+        # Conditional GET: return 304 if client already has the current version.
+        if request.headers["If-None-Match"] == etag_value ||
+           (request.headers["If-Modified-Since"] &&
+            Time.parse(request.headers["If-Modified-Since"]) >= file_stat.mtime)
+          return head :not_modified
         end
+
+        send_file file_to_serve, disposition: "inline", type: content_type
       end
 
       private
@@ -774,12 +829,6 @@ module Api
         EdgeMetadataSyncWorker.perform_async(target_asset.uuid) if defined?(EdgeMetadataSyncWorker)
       end
 
-      # Authenticates via Devise session or Doorkeeper OAuth token.
-      # @return [void]
-      def authenticate_hybrid!
-        return if user_signed_in?
-        doorkeeper_authorize!
-      end
 
       # Returns the currently acting {User}, resolving from Devise session,
       # OAuth token, or falling back to the first user (development only).

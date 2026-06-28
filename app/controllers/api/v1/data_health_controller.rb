@@ -1,6 +1,6 @@
 class Api::V1::DataHealthController < ApplicationController
-  # Ensure only administrators can access TDM metrics
-  # before_action :require_admin_privileges!
+  before_action :authenticate_hybrid!
+  before_action :require_admin!
 
   def metrics
     # In a production environment, these queries should be cached

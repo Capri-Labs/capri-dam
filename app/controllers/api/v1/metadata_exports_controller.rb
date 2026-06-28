@@ -2,7 +2,7 @@ module Api
   module V1
     class MetadataExportsController < ApplicationController
       include Rails.application.routes.url_helpers
-      before_action :authenticate_user!
+      before_action :authenticate_hybrid!
       before_action :set_export, only: [ :show, :download, :destroy ]
 
       # GET /api/v1/metadata_exports

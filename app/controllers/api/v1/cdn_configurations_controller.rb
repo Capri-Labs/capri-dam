@@ -1,7 +1,8 @@
 module Api
   module V1
     class CdnConfigurationsController < ApplicationController
-      before_action :authenticate_user! # Ensure only admins can access this
+      before_action :authenticate_hybrid!
+      before_action :require_admin!, only: %i[update]
 
       def index
         configs = CdnConfiguration.all.index_by(&:provider)

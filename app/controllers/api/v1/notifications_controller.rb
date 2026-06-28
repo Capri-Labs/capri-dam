@@ -1,7 +1,7 @@
 module Api
   module V1
     class NotificationsController < ApplicationController
-      before_action :authenticate_user!
+      before_action :authenticate_hybrid!
 
       # GET /api/v1/notifications
       def index

@@ -179,6 +179,52 @@
       "imageProfilesDesc": "Automatisch bijsnijden bij upload",
       "videoProfiles": "Videoprofielen",
       "videoProfilesDesc": "Adaptieve videocodering"
+    },
+    "collectionSettings": {
+      "title": "Collectie-instellingen",
+      "subtitle": "Slimme regels, TTL, CDN",
+      "savedSuccess": "Opgeslagen.",
+      "adminNote": "Vereist beheerdersrechten.",
+      "smartRules": {
+        "title": "Standaard Slimme Regels",
+        "subtitle": "Nieuwe AI-collectie",
+        "threshold": "Cosinus-drempel",
+        "thresholdHint": "Hoger = strenger.",
+        "schedule": "Schema",
+        "scheduleHint": "Hoe vaak re-scant.",
+        "scheduleHourly": "Elk uur",
+        "scheduleDaily": "Dagelijks",
+        "scheduleWeekly": "Wekelijks",
+        "scheduleManual": "Alleen handmatig"
+      },
+      "access": {
+        "title": "Toegangscontrole",
+        "subtitle": "Standaard zichtbaarheid",
+        "visibility": "Zichtbaarheid",
+        "public": "Openbaar",
+        "private": "Privé",
+        "hint": "Overschrijfbaar."
+      },
+      "limits": {
+        "title": "Asset-limieten",
+        "subtitle": "Voorkom te grote collecties",
+        "maxAssets": "Max assets",
+        "maxAssetsHint": "0 = onbeperkt."
+      },
+      "ttl": {
+        "title": "TTL & Verlopen",
+        "subtitle": "Na N dagen archiveren",
+        "defaultDays": "Standaard TTL (dagen)",
+        "hint": "0 = geen verloopdatum."
+      },
+      "cdn": {
+        "title": "CDN & Compliance",
+        "subtitle": "Edge-cache",
+        "autoPurge": "CDN auto-leegmaken",
+        "autoPurgeHint": "Cache invalideren.",
+        "complianceScan": "TDM-scan activeren",
+        "complianceScanHint": "Gebruiksrechten controleren."
+      }
     }
   },
   "bin": {

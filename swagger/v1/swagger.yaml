@@ -2254,28 +2254,48 @@ paths:
       in: path
       format: uuid
       required: true
-      description: Asset UUID (not the integer primary key)
+      description: Asset UUID (public identifier — **not** the integer PK)
       schema:
         type: string
     get:
-      summary: Stream the active version file from local/staging storage
+      summary: Stream the active-version file from local/staging storage
       tags:
       - Assets
       security:
       - Bearer: []
-      description: |
-        **Development & staging use only.** Streams the physical file from disk with
-        the correct `Content-Type`. In production, assets are served via CDN URL.
-        Falls back through two path resolution strategies:
-        1. `storage/dam/<relative_path>` (DAM root)
-        2. Direct absolute path (e.g., `tmp/uploads/...`)
+      description: Returned when `If-None-Match` matches the current `ETag`. No body
+        is sent.
       responses:
         '200':
           description: File streamed inline
+          headers:
+            ETag:
+              schema:
+                type: string
+              description: MD5 fingerprint of the file
+            Last-Modified:
+              schema:
+                type: string
+              description: RFC 7231 last-modified date
+            Cache-Control:
+              schema:
+                type: string
+              description: private, max-age=3600, must-revalidate
+            Content-Type:
+              schema:
+                type: string
+              description: MIME type of the asset
+          content:
+            "*/*":
+              schema:
+                type: string
+                format: binary
         '302':
-          description: Redirected to ActiveStorage URL (when AS attachment present)
-        '404':
-          description: File not found on disk
+          description: Redirected to ActiveStorage signed blob URL
+        '304':
+          description: Not Modified — client already has the current version
+        '403':
+          description: Forbidden — resolved path escapes the permitted storage root
           content:
             "*/*":
               schema:
@@ -2283,9 +2303,21 @@ paths:
                 properties:
                   error:
                     type: string
+        '404':
+          description: Asset not found or file missing from disk
+          content:
+            "*/*":
+              schema:
+                type: object
+                required:
+                - error
+                properties:
+                  error:
+                    type: string
                   looked_at:
                     type: string
                     nullable: true
+                    description: Absolute path that was checked
   "/api/v1/bin/stats":
     get:
       summary: Aggregate bin statistics
@@ -2539,6 +2571,152 @@ paths:
                   example:
                     service_id: svc_abc123
                     api_key: sk_live_xyz
+  "/api/v1/collection_settings":
+    get:
+      summary: Retrieve global collection / workspace settings
+      tags:
+      - Tools - Collection Settings
+      security:
+      - Bearer: []
+      description: |
+        Returns the global configuration defaults applied to all new collections
+        and smart workspaces. Falls back to built-in defaults when no settings
+        have been explicitly persisted.
+      responses:
+        '200':
+          description: Settings returned
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - default_similarity_threshold
+                - default_visibility
+                - max_assets_per_collection
+                - auto_cdn_purge
+                - smart_rule_schedule
+                - ttl_default_days
+                - enable_compliance_scan
+                properties:
+                  default_similarity_threshold:
+                    type: number
+                    format: float
+                    example: 0.8
+                    description: Cosine similarity threshold used for new smart collections
+                      (0.5 – 0.99)
+                  default_visibility:
+                    type: string
+                    example: public
+                    enum:
+                    - public
+                    - private
+                    description: Default access level for newly created collections
+                  max_assets_per_collection:
+                    type: integer
+                    example: 500
+                    description: 0 = unlimited
+                  auto_cdn_purge:
+                    type: boolean
+                    example: true
+                    description: Invalidate CDN edge cache on every collection modification
+                  smart_rule_schedule:
+                    type: string
+                    example: daily
+                    enum:
+                    - hourly
+                    - daily
+                    - weekly
+                    - manual
+                    description: How often the AI engine re-evaluates active smart
+                      rules
+                  ttl_default_days:
+                    type: integer
+                    example: 0
+                    description: 0 = no default TTL; positive values auto-archive
+                      after N days
+                  enable_compliance_scan:
+                    type: boolean
+                    example: false
+                    description: Run automated TDM usage-rights scan after each collection
+                      modification
+    put:
+      summary: Update global collection / workspace settings (admin only)
+      tags:
+      - Tools - Collection Settings
+      security:
+      - Bearer: []
+      description: |
+        Persists new global defaults for collection and workspace behaviour.
+        Partial updates are supported — only the keys provided will be changed.
+
+        **Requires administrator privileges.**
+      parameters: []
+      responses:
+        '200':
+          description: Settings saved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Collection settings saved successfully.
+                  settings:
+                    type: object
+        '403':
+          description: Forbidden — administrator privileges required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Administrator privileges required.
+        '422':
+          description: Unprocessable entity
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - settings
+              properties:
+                settings:
+                  type: object
+                  description: Subset of settings to update. Unknown keys are ignored.
+                  properties:
+                    default_similarity_threshold:
+                      type: number
+                      format: float
+                      example: 0.75
+                    default_visibility:
+                      type: string
+                      example: private
+                    max_assets_per_collection:
+                      type: integer
+                      example: 250
+                    auto_cdn_purge:
+                      type: boolean
+                      example: false
+                    smart_rule_schedule:
+                      type: string
+                      example: weekly
+                    ttl_default_days:
+                      type: integer
+                      example: 90
+                    enable_compliance_scan:
+                      type: boolean
+                      example: true
   "/api/v1/collections":
     get:
       summary: List all active collections / workspaces

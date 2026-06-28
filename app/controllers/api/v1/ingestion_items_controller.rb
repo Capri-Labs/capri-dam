@@ -1,6 +1,9 @@
 class Api::V1::IngestionItemsController < ApplicationController
   skip_before_action :verify_authenticity_token
-  # before_action :verify_microservice_token! # Crucial for security
+  # Ingestion items are updated by the connector microservice via PAT (admin scope)
+  # or by authenticated admin users.
+  before_action :authenticate_hybrid!
+  before_action :require_admin!
 
   # GET /api/v1/ingestion_items/:id
   def show

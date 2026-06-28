@@ -94,11 +94,6 @@ module Api
 
       private
 
-      def authenticate_hybrid!
-        return if user_signed_in? # Accept Devise web session
-
-        doorkeeper_authorize! # Enforce OAuth token if not on web
-      end
 
       def format_task(task)
         asset = task.workflow_instance.asset

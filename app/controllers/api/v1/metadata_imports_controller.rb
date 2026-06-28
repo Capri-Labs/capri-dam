@@ -4,7 +4,7 @@ module Api
   module V1
     class MetadataImportsController < ApplicationController
       include Rails.application.routes.url_helpers
-      before_action :authenticate_user!
+      before_action :authenticate_hybrid!
       before_action :set_import, only: [ :show, :download, :destroy ]
 
       # GET /api/v1/metadata_imports

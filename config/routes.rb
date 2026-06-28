@@ -65,6 +65,7 @@ Rails.application.routes.draw do
   get "/reports", to: "admin/reports#index"
   get "/bin", to: "dashboard#bin"
   get "/folders", to: "dashboard#folders"
+  get "/assets", to: "dashboard#assets"     # /assets?id=UUID deep-link
   get "/duplicates", to: "dashboard#duplicates"
   get "/search", to: "dashboard#search"
   get "up" => "rails/health#show", as: :rails_health_check
@@ -86,6 +87,9 @@ Rails.application.routes.draw do
   end
 
   resources :collections, only: [ :index ]
+  # Catch-all: serves the same React SPA shell for any /collections/* deep-link.
+  # React Router (BrowserRouter basename="/collections") handles client-side routing.
+  get "/collections/*path", to: "collections#index", as: :collection_workspace
 
   # Workflows UI
   get "/workflows", to: "workflows#index"
@@ -196,6 +200,10 @@ Rails.application.routes.draw do
           delete :remove_schema, to: "folders#remove_schema"
           # Profile assignments (info panel)
           get    :profiles,      to: "folders#profiles"
+          # Access-control policies
+          get    :policies,                to: "folders#folder_policies"
+          post   :policies,                to: "folders#upsert_folder_policy"
+          delete "policies/:group_id",     to: "folders#remove_folder_policy", as: :folder_policy
         end
       end
 
@@ -249,6 +257,7 @@ Rails.application.routes.draw do
       # Notifications
       resource :ai_configuration, only: [ :show, :update ]
       resource :upload_restrictions, only: [ :show, :update ]
+      resource :collection_settings, only: [ :show, :update ]
 
       # Duplicate Manager
       resource :duplicate_manager_settings, only: [ :show, :update ] do
@@ -304,6 +313,9 @@ Rails.application.routes.draw do
           get :folders
         end
       end
+
+      # User Groups (read-only search; write operations live in /admin/user_groups)
+      resources :user_groups, only: [ :index ]
 
       # Metadata Export (async CSV export of asset metadata)
       resources :metadata_exports, only: [ :index, :show, :create, :destroy ] do

@@ -170,7 +170,7 @@ export default function DuplicateResolutionModal({
     };
 
     const handleNavigateToAsset = (asset) => {
-        navigateTo(`/assets/${asset.asset_id}`);
+        navigateTo(`/assets?id=${asset.asset_id}`);
     };
 
     const handleGoToFolder = (asset) => {

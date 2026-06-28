@@ -1,6 +1,9 @@
 class Api::V1::AssetEmbeddingsController < ApplicationController
   skip_before_action :verify_authenticity_token
-  # before_action :verify_microservice_token!
+  # This endpoint is called by the AI microservice.
+  # Accept either a PAT with admin scope OR a Doorkeeper OAuth token.
+  before_action :authenticate_hybrid!
+  before_action :require_admin!
 
   # PUT/PATCH /api/v1/assets/:asset_id/embedding
   def update

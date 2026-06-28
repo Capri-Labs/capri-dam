@@ -2,6 +2,8 @@ class Api::V1::CollectionsController < ApplicationController
   # Ensure your API controllers skip CSRF if they are using token auth
   skip_before_action :verify_authenticity_token, if: -> { request.format.json? }
 
+  before_action :authenticate_hybrid!
+  before_action :require_write_scope!, only: %i[create update destroy bulk_delete bulk_update add_asset remove_asset toggle_pin configure_rule]
   before_action :set_collection, only: [
     :show,
     :update,

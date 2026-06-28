@@ -102,13 +102,15 @@ export default function ApplySchemaDialog({
         if (!selected) return;
         setApplying(true);
 
+        const csrfToken = document.querySelector('[name="csrf-token"]')?.content;
+
         try {
             if (targetType === 'folder') {
                 // Apply to each selected folder
                 const promises = targetIds.map(folderId =>
                     fetch(`/api/v1/folders/${folderId}/apply_schema`, {
                         method:  'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
                         body:    JSON.stringify({ schema_id: selected.id, cascade }),
                     })
                 );
@@ -123,7 +125,7 @@ export default function ApplySchemaDialog({
                 const promises = targetIds.map(assetId =>
                     fetch(`/api/v1/assets/${assetId}/metadata`, {
                         method:  'PATCH',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
                         body:    JSON.stringify({ schema_id: selected.id, metadata: {} }),
                     })
                 );

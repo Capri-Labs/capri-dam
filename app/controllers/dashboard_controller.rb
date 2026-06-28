@@ -40,6 +40,15 @@ class DashboardController < ApplicationController
     # Renders app/views/dashboard/folders.html.erb
   end
 
+  # Serves the /assets?id=UUID deep-link.
+  # The HTML shell is identical to /folders; the React component reads
+  # `data-initial-target-asset-id` to open the AssetViewer automatically.
+  def assets
+    @active_view = "All Assets"
+    @asset_id    = params[:id].presence
+    # Renders app/views/dashboard/assets.html.erb
+  end
+
   def duplicates
     @active_view = "Duplicate Manager"
   end

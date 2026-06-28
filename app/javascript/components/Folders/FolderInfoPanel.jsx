@@ -1,18 +1,19 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
     Box, Typography, IconButton, Drawer, Tab, Tabs, TextField,
-    Button, Chip, Stack, Divider, CircularProgress, Paper,
-    Alert, Tooltip, List, ListItem, ListItemText
+    Button, Chip, Stack, CircularProgress, Paper,
+    Alert, Tooltip
 } from '@mui/material';
 import {
     CloseOutlined, FolderOutlined, SaveOutlined, EditOutlined,
     ImageOutlined, VideoFileOutlined, SchemaOutlined, SecurityOutlined,
-    CheckCircleOutlined, LinkOffOutlined, InfoOutlined
+    LinkOffOutlined, InfoOutlined
 } from '@mui/icons-material';
 import { useNotify } from '../../context/NotificationContext';
 import { ApplyImageProfileDialog } from '../Tools/AssetConfigurations/ImageProfiles';
 import { ApplyVideoProfileDialog } from '../Tools/AssetConfigurations/VideoProfiles';
 import ApplySchemaDialog from './ApplySchemaDialog';
+import FolderAccessTab from './FolderAccessTab';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // General Tab
@@ -409,75 +410,6 @@ function MetadataTab({ folder, profiles, onRefresh }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Access Tab
-// ─────────────────────────────────────────────────────────────────────────────
-function AccessTab({ profiles }) {
-    const policies = profiles?.policies || [];
-
-    if (policies.length === 0) {
-        return (
-            <Box sx={{ p: 3 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                    <SecurityOutlined sx={{ color: '#7c3aed', fontSize: 20 }} />
-                    <Typography variant="subtitle2" fontWeight={700} sx={{ color: '#1e293b' }}>Access Policies</Typography>
-                </Box>
-                <Alert severity="info" icon={<InfoOutlined />}
-                       sx={{ bgcolor: '#f0f9ff', border: '1px solid #bae6fd', fontSize: '0.8rem' }}>
-                    No access policies defined. Default access rules apply.
-                    <br />
-                    <Typography variant="caption" sx={{ color: '#475569', mt: 0.5, display: 'block' }}>
-                        Manage group policies under Admin → User Groups.
-                    </Typography>
-                </Alert>
-            </Box>
-        );
-    }
-
-    const PermBadge = ({ label, active, deny }) => (
-        <Chip label={label} size="small"
-              sx={{
-                  fontSize: '0.62rem', height: 18,
-                  bgcolor: deny ? '#fee2e2' : active ? '#dcfce7' : '#f1f5f9',
-                  color:   deny ? '#991b1b' : active ? '#166534' : '#94a3b8',
-                  fontWeight: active || deny ? 700 : 400,
-              }} />
-    );
-
-    return (
-        <Box sx={{ p: 3 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                <SecurityOutlined sx={{ color: '#7c3aed', fontSize: 20 }} />
-                <Typography variant="subtitle2" fontWeight={700} sx={{ color: '#1e293b' }}>
-                    Access Policies ({policies.length})
-                </Typography>
-            </Box>
-
-            <Stack spacing={1.5}>
-                {policies.map((p, i) => (
-                    <Paper key={i} variant="outlined" sx={{ p: 2, borderRadius: 2, borderColor: p.deny ? '#fecaca' : '#e2e8f0' }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-                            <Typography variant="body2" fontWeight={700} sx={{ color: '#1e293b' }}>
-                                {p.group_name || `Group ${p.group_id}`}
-                            </Typography>
-                            {p.deny && (
-                                <Chip label="Explicit Deny" size="small"
-                                      sx={{ fontSize: '0.62rem', height: 18, bgcolor: '#fee2e2', color: '#991b1b', fontWeight: 700 }} />
-                            )}
-                        </Box>
-                        <Stack direction="row" spacing={0.5} flexWrap="wrap">
-                            <PermBadge label="Read"   active={p.read}   deny={p.deny} />
-                            <PermBadge label="Write"  active={p.write}  deny={p.deny} />
-                            <PermBadge label="Delete" active={p.delete} deny={p.deny} />
-                            <PermBadge label="Manage" active={p.manage} deny={p.deny} />
-                        </Stack>
-                    </Paper>
-                ))}
-            </Stack>
-        </Box>
-    );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
 // FolderInfoPanel — main export
 // ─────────────────────────────────────────────────────────────────────────────
 export default function FolderInfoPanel({ folder, open, onClose, onFolderUpdated }) {
@@ -520,12 +452,14 @@ export default function FolderInfoPanel({ folder, open, onClose, onFolderUpdated
             anchor="right"
             open={open}
             onClose={onClose}
-            PaperProps={{
-                sx: {
-                    width: 420,
-                    boxShadow: '-4px 0 24px rgba(0,0,0,0.08)',
-                    display: 'flex', flexDirection: 'column',
-                }
+            slotProps={{
+                paper: {
+                    sx: {
+                        width: 420,
+                        boxShadow: '-4px 0 24px rgba(0,0,0,0.08)',
+                        display: 'flex', flexDirection: 'column',
+                    },
+                },
             }}
         >
             {/* Header */}
@@ -578,7 +512,7 @@ export default function FolderInfoPanel({ folder, open, onClose, onFolderUpdated
                         {tab === 1 && <ImageProfilesTab folder={folder} profiles={profiles} onRefresh={fetchProfiles} />}
                         {tab === 2 && <VideoProfilesTab folder={folder} profiles={profiles} onRefresh={fetchProfiles} />}
                         {tab === 3 && <MetadataTab folder={folder} profiles={profiles} onRefresh={fetchProfiles} />}
-                        {tab === 4 && <AccessTab profiles={profiles} />}
+                        {tab === 4 && <FolderAccessTab folder={folder} />}
                     </>
                 )}
             </Box>

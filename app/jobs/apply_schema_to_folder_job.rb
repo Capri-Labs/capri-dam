@@ -18,12 +18,20 @@ class ApplySchemaToFolderJob < ApplicationJob
   private
 
   def apply_to_folder(folder_id, schema, cascade:, user_id:)
-    # 1. Upsert the folder → schema assignment
+    # 1. Upsert the folder → schema assignment.
+    #
+    # NOTE: We must NOT use find_or_create_by!(folder_id, metadata_schema_id).
+    # That compound key means "changing" the schema creates a second row (the
+    # old assignment stays, find_by(folder_id:) returns the stale one, so the
+    # UI never reflects the change).  We replace any existing assignment first.
     if folder_id.present? && folder_id != "root"
-      MetadataSchemaFolderAssignment.find_or_create_by!(
-        folder_id:          folder_id,
-        metadata_schema_id: schema.id
-      )
+      ActiveRecord::Base.transaction do
+        MetadataSchemaFolderAssignment.where(folder_id: folder_id).destroy_all
+        MetadataSchemaFolderAssignment.create!(
+          folder_id:          folder_id,
+          metadata_schema_id: schema.id
+        )
+      end
     end
 
     # 2. Apply schema_id to all assets directly in this folder

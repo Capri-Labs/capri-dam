@@ -2,7 +2,7 @@ module Api
   module V1
     class SearchController < ApplicationController
       include AssetUrlHelper
-      before_action :authenticate_user!
+      before_action :authenticate_hybrid!
 
       def index
         query = params[:q]

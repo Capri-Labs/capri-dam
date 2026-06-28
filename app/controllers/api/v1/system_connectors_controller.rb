@@ -1,5 +1,6 @@
 class Api::V1::SystemConnectorsController < ApplicationController
-  before_action :authenticate_user!
+  before_action :authenticate_hybrid!
+  before_action :require_admin!, only: %i[create update test_connection pre_flight_analysis start_migration]
 
   def index
     connectors = SystemConnector.all.order(created_at: :desc)

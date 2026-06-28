@@ -24,7 +24,7 @@ type AddAssetToCollectionPayload {
 }
 
 """
-Represents a core cryptographic digital asset within the ecosystem.
+Represents a core digital asset within the Capri DAM platform.
 """
 type Asset {
   createdAt: ISO8601DateTime!
@@ -36,10 +36,31 @@ type Asset {
   properties: Json
 
   """
-  The human-readable title of the asset.
+  Processing / approval lifecycle status (draft, pending, ready, …).
+  """
+  status: String!
+
+  """
+  Human-readable display name.
   """
   title: String!
+
+  """
+  Public URL to the active version of the asset. Returns the CDN URL in
+  production or the authenticated local-serve endpoint
+  (/api/v1/assets/local/:uuid) in development.
+  """
+  url: String
+
+  """
+  Public UUID used in all external references.
+  """
   uuid: String!
+
+  """
+  Active version number (1-based).
+  """
+  versionNumber: Int
 }
 
 """

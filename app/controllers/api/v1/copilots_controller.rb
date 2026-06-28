@@ -2,7 +2,7 @@ require "net/http"
 require "uri"
 
 class Api::V1::CopilotsController < ApplicationController
-  # before_action :authenticate_user!
+  before_action :authenticate_hybrid!
 
   # POST /api/v1/copilot/search
   def search

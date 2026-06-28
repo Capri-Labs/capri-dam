@@ -1,17 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     Box, Typography, Button, Grid, Card, CardContent,
     IconButton, Chip, Stack, CircularProgress, Menu, MenuItem, Paper,
     Dialog, DialogTitle, DialogContent, DialogActions, TextField, Slider, Divider, ImageListItemBar, ImageListItem,
-    ImageList
+    ImageList, Tooltip
 } from '@mui/material';
 import {
     ArrowBack, Share, MoreVert, SettingsSuggest,
     AutoAwesome, Image as ImageIcon, CloudDownload, DeleteOutlined, PushPin, Analytics, PlayArrow,
-    Shield, WarningAmber, AutoFixHigh
+    Shield, WarningAmber, AutoFixHigh, LaunchOutlined, AddPhotoAlternate
 } from '@mui/icons-material';
 import { useNotify } from '../../context/NotificationContext';
 import { useCollections } from './CollectionContext';
+import { navigateTo } from '../../utils/globalutils';
 import SemanticClusterMap from './SemanticClusterMap';
 
 export default function CollectionDetail({ slug, onBack }) {
@@ -28,6 +29,7 @@ export default function CollectionDetail({ slug, onBack }) {
 
     const [anchorEl, setAnchorEl] = useState(null);
     const [selectedAsset, setSelectedAsset] = useState(null);
+    const [removingAssetId, setRemovingAssetId] = useState(null);
 
     // AI Insights State
     const [aiDialogOpen, setAiDialogOpen] = useState(false);
@@ -36,28 +38,28 @@ export default function CollectionDetail({ slug, onBack }) {
 
     const [mapDialogOpen, setMapDialogOpen] = useState(false);
 
-    useEffect(() => {
-        const fetchCollectionDetail = async () => {
-            setLoading(true);
-            try {
-                const queryParam = temporalDate ? `?as_of=${temporalDate}` : '';
-                const res = await fetch(`/api/v1/collections/${slug}${queryParam}`);
-                if (res.ok) {
-                    const data = await res.json();
-                    setCollection(data);
-                } else {
-                    notify("Failed to load collection.", "error");
-                    onBack();
-                }
-            } catch (error) {
-                notify("Network error.", "error");
-            } finally {
-                setLoading(false);
+    const fetchCollectionDetail = useCallback(async () => {
+        setLoading(true);
+        try {
+            const queryParam = temporalDate ? `?as_of=${temporalDate}` : '';
+            const res = await fetch(`/api/v1/collections/${slug}${queryParam}`);
+            if (res.ok) {
+                const data = await res.json();
+                setCollection(data);
+            } else {
+                notify("Failed to load collection.", "error");
+                onBack();
             }
-        };
-
-        fetchCollectionDetail();
+        } catch (error) {
+            notify("Network error.", "error");
+        } finally {
+            setLoading(false);
+        }
     }, [slug, notify, onBack, temporalDate]);
+
+    useEffect(() => {
+        fetchCollectionDetail();
+    }, [fetchCollectionDetail]);
 
     const handleMenuOpen = (event, asset) => {
         setAnchorEl(event.currentTarget);
@@ -67,6 +69,44 @@ export default function CollectionDetail({ slug, onBack }) {
     const handleMenuClose = () => {
         setAnchorEl(null);
         setSelectedAsset(null);
+    };
+
+    const handleNavigateToAsset = () => {
+        if (!selectedAsset) return;
+        const assetId = selectedAsset.id || selectedAsset.asset_id;
+        handleMenuClose();
+        navigateTo(`/assets?id=${assetId}`);
+    };
+
+    const handleRemoveAsset = async () => {
+        if (!selectedAsset) return;
+        const assetId = selectedAsset.id || selectedAsset.asset_id;
+        handleMenuClose();
+        setRemovingAssetId(assetId);
+        try {
+            const csrfToken = document.querySelector('[name="csrf-token"]')?.content;
+            const res = await fetch(`/api/v1/collections/${slug}/assets/${assetId}`, {
+                method: 'DELETE',
+                headers: { 'X-CSRF-Token': csrfToken },
+            });
+            if (res.ok) {
+                // Optimistic remove from local state
+                setCollection(prev => ({
+                    ...prev,
+                    collection_assets: prev.collection_assets.filter(
+                        a => (a.id || a.asset_id) !== assetId
+                    ),
+                }));
+                notify("Asset removed from collection.", "success");
+            } else {
+                const data = await res.json();
+                notify(data.error || "Failed to remove asset.", "error");
+            }
+        } catch {
+            notify("Network error removing asset.", "error");
+        } finally {
+            setRemovingAssetId(null);
+        }
     };
 
     const handleTogglePin = async () => {
@@ -171,7 +211,7 @@ export default function CollectionDetail({ slug, onBack }) {
                         <Button variant="outlined" startIcon={<AutoFixHigh />} onClick={() => setMapDialogOpen(true)} sx={{ borderColor: '#e3e8ef', color: '#0ea5e9' }}>
                             View AI Map
                         </Button>
-                        {/* Existing Configurator Button */}
+                        {/* Smart Rule / Upgrade Button */}
                         <Button variant="outlined" startIcon={<SettingsSuggest />} onClick={openConfigurator} sx={{ borderColor: '#e3e8ef', color: '#5e35b1' }}>
                             {isSmart ? 'Configure Rules' : 'Upgrade to Smart Collection'}
                         </Button>
@@ -180,16 +220,6 @@ export default function CollectionDetail({ slug, onBack }) {
                         <Button variant="outlined" startIcon={<AutoAwesome />} onClick={runAiAnalysis} sx={{ borderColor: '#e3e8ef', color: '#5e35b1' }}>
                             Ask AI about this Collection
                         </Button>
-
-                        {isSmart ? (
-                            <Button variant="outlined" startIcon={<SettingsSuggest />} onClick={openConfigurator} sx={{ borderColor: '#e3e8ef', color: '#5e35b1' }}>
-                                Configure Rules
-                            </Button>
-                        ) : (
-                            <Button variant="outlined" startIcon={<SettingsSuggest />} onClick={openConfigurator} sx={{ borderColor: '#e3e8ef', color: '#5e35b1' }}>
-                                Upgrade to Smart Collection
-                            </Button>
-                        )}
                     </Stack>
                 </Box>
             </Paper>
@@ -226,37 +256,81 @@ export default function CollectionDetail({ slug, onBack }) {
                 </Paper>
             ) : (
                 <Grid container spacing={3}>
-                    {assets.map((asset) => (
-                        <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={asset.id}>
-                            <Card elevation={0} sx={{ border: '1px solid', borderColor: asset.pinned ? '#5e35b1' : '#e3e8ef', borderRadius: 2, position: 'relative' }}>
+                    {assets.map((asset) => {
+                        const assetData = asset.asset || asset;
+                        const assetId = assetData.id || asset.asset_id;
+                        const thumbnail = assetData.url || assetData.thumbnail_url;
+                        const isRemoving = removingAssetId === assetId;
+                        return (
+                        <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={asset.id || assetId}>
+                            <Card elevation={0} sx={{
+                                border: '1px solid',
+                                borderColor: asset.pinned ? '#5e35b1' : '#e3e8ef',
+                                borderRadius: 2,
+                                position: 'relative',
+                                opacity: isRemoving ? 0.5 : 1,
+                                transition: 'opacity 0.2s',
+                            }}>
                                 {asset.pinned && (
                                     <Box sx={{ position: 'absolute', top: 8, right: 8, bgcolor: '#fff', borderRadius: '50%', p: 0.5, boxShadow: 1, zIndex: 1 }}>
                                         <PushPin sx={{ fontSize: 16, color: '#5e35b1' }} />
                                     </Box>
                                 )}
-                                <Box sx={{ height: 160, bgcolor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '1px solid #e3e8ef' }}>
-                                    <ImageIcon sx={{ fontSize: 40, color: '#cbd5e1' }} />
+                                <Box
+                                    sx={{
+                                        height: 160,
+                                        bgcolor: '#f1f5f9',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        borderBottom: '1px solid #e3e8ef',
+                                        overflow: 'hidden',
+                                        cursor: 'pointer',
+                                    }}
+                                    onClick={() => navigateTo(`/assets?id=${assetId}`)}
+                                >
+                                    {thumbnail ? (
+                                        <Box
+                                            component="img"
+                                            src={thumbnail}
+                                            alt={assetData.title || assetData.original_filename || 'Asset'}
+                                            sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                        />
+                                    ) : (
+                                        <ImageIcon sx={{ fontSize: 40, color: '#cbd5e1' }} />
+                                    )}
                                 </Box>
                                 <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
                                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                        <Box sx={{ overflow: 'hidden' }}>
-                                            {/* Note: Adjust properties below based on your actual Asset model JSON */}
-                                            <Typography variant="subtitle2" sx={{ fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{asset.original_filename || asset.title || 'Unknown File'}</Typography>
-                                            <Typography variant="caption" color="textSecondary">{asset.file_size || asset.size || 'N/A'}</Typography>
+                                        <Box sx={{ overflow: 'hidden', flex: 1 }}>
+                                            <Typography
+                                                variant="subtitle2"
+                                                sx={{ fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', cursor: 'pointer', '&:hover': { color: '#5e35b1' } }}
+                                                onClick={() => navigateTo(`/assets?id=${assetId}`)}
+                                            >
+                                                {assetData.original_filename || assetData.title || 'Unknown File'}
+                                            </Typography>
+                                            <Typography variant="caption" color="textSecondary">
+                                                {assetData.file_size || assetData.size || ''}
+                                            </Typography>
                                         </Box>
-                                        <IconButton size="small" onClick={(e) => handleMenuOpen(e, asset)} sx={{ ml: 1, mt: -0.5, mr: -0.5 }}>
+                                        <IconButton size="small" onClick={(e) => handleMenuOpen(e, { ...assetData, id: assetId, pinned: asset.pinned })} sx={{ ml: 1, mt: -0.5, mr: -0.5 }}>
                                             <MoreVert fontSize="small" />
                                         </IconButton>
                                     </Box>
                                 </CardContent>
                             </Card>
                         </Grid>
-                    ))}
+                        );
+                    })}
                 </Grid>
             )}
 
             {/* Asset Actions Menu */}
             <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose} elevation={2} PaperProps={{ sx: { borderRadius: 2, minWidth: 180 } }}>
+                <MenuItem onClick={handleNavigateToAsset}>
+                    <LaunchOutlined fontSize="small" sx={{ mr: 1.5, color: '#3b82f6' }} /> View Asset
+                </MenuItem>
                 <MenuItem onClick={handleMenuClose}>
                     <CloudDownload fontSize="small" sx={{ mr: 1.5, color: '#64748b' }} /> Download
                 </MenuItem>
@@ -266,8 +340,9 @@ export default function CollectionDetail({ slug, onBack }) {
                         {selectedAsset.pinned ? 'Unpin Asset' : 'Pin to Collection'}
                     </MenuItem>
                 )}
-                <MenuItem onClick={handleMenuClose} sx={{ color: '#d32f2f' }}>
-                    <DeleteOutlined fontSize="small" sx={{ mr: 1.5 }} /> Remove
+                <Divider />
+                <MenuItem onClick={handleRemoveAsset} sx={{ color: '#d32f2f' }}>
+                    <DeleteOutlined fontSize="small" sx={{ mr: 1.5 }} /> Remove from Collection
                 </MenuItem>
             </Menu>
 

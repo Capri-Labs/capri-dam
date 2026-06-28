@@ -2,7 +2,8 @@ module Api
   module V1
     class FoldersController < ApplicationController
       include AssetUrlHelper
-      before_action :authenticate_user!
+      before_action :authenticate_hybrid!
+      before_action :require_write_scope!, only: %i[create update destroy restore permanent_delete apply_schema remove_schema upsert_folder_policy remove_folder_policy]
 
       def index
         @active_view = "All Assets"
@@ -48,6 +49,10 @@ module Api
         else
           # Ensure a user cannot hack the URL to view a deleted folder
           current_folder = Folder.active.find(params[:id])
+
+          # Enforce folder-level read permission
+          check_folder_permission!(current_folder, :read)
+          return if performed?
 
           # Filter subfolders and assets by active scope
           @folders = Folder.active.where(parent_id: current_folder.id)
@@ -135,17 +140,7 @@ module Api
             preset_count: video_profile.encoding_presets.size
           } : nil,
           metadata_schema: schema ? serialize_schema(schema).merge(source: assignment_source(folder_id, schema_assignment)) : nil,
-          policies: policies.map { |p|
-            {
-              group_id:   p.user_group_id,
-              group_name: p.user_group&.name,
-              read:       p.read_access,
-              write:      p.write_access,
-              delete:     p.delete_access,
-              manage:     p.manage_access,
-              deny:       p.explicit_deny,
-            }
-          },
+          policies: policies.map { |p| serialize_policy(p) },
         }
       end
       def purge_folder_cdn
@@ -215,6 +210,98 @@ module Api
         folder_id = params[:id] == "root" ? nil : params[:id]
         MetadataSchemaFolderAssignment.where(folder_id: folder_id.to_s).destroy_all
         render json: { message: "Schema assignment removed." }, status: :ok
+      end
+
+      # GET /api/v1/folders/:id/policies
+      # Returns explicit + inherited access-control policies for a folder.
+      def folder_policies
+        folder = Folder.active.find(params[:id])
+
+        explicit = FolderPolicy.where(folder_id: folder.id)
+                               .includes(:user_group)
+                               .map { |p| serialize_policy(p) }
+
+        inherited = []
+        current = Folder.active.find_by(id: folder.parent_id)
+        while current
+          current.folder_policies.includes(:user_group).each do |p|
+            next if explicit.any? { |ep| ep[:group_id] == p.user_group_id }
+
+            inherited << serialize_policy(p).merge(
+              source_folder_name: current.name,
+              source_folder_id:   current.id
+            )
+          end
+          current = Folder.active.find_by(id: current.parent_id)
+        end
+
+        render json: { explicit_policies: explicit, inherited_policies: inherited }
+      rescue ActiveRecord::RecordNotFound
+        render json: { error: "Folder not found" }, status: :not_found
+      end
+
+      # POST /api/v1/folders/:id/policies
+      # Upserts an access-control policy for a group on a folder.
+      # Requires :manage permission on the folder (admins bypass).
+      # Body params:
+      #   group_id [Integer]
+      #   read_access, modify_access, create_access, delete_access,
+      #   replicate_access, manage_access, explicit_deny [Boolean]
+      #   cascade [Boolean] — queue cascade to all child folders
+      def upsert_folder_policy
+        folder = Folder.active.find(params[:id])
+        check_folder_permission!(folder, :manage)
+        return if performed?
+
+        group = UserGroup.find_by(id: params[:group_id])
+        return render json: { error: "Group not found" }, status: :not_found unless group
+
+        policy = FolderPolicy.find_or_initialize_by(folder_id: folder.id, user_group_id: group.id)
+        policy.assign_attributes(policy_permission_params)
+        policy.save!
+
+        if ActiveModel::Type::Boolean.new.cast(params[:cascade])
+          PropagateAccessPolicyJob.perform_later(
+            folder_id:   folder.id,
+            group_id:    group.id,
+            permissions: policy_permission_params.to_h,
+            operation:   "upsert"
+          )
+        end
+
+        render json: { success: true, policy: serialize_policy(policy) }
+      rescue ActiveRecord::RecordInvalid => e
+        render json: { errors: e.record.errors.full_messages }, status: :unprocessable_entity
+      rescue ActiveRecord::RecordNotFound
+        render json: { error: "Folder not found" }, status: :not_found
+      end
+
+      # DELETE /api/v1/folders/:id/policies/:group_id
+      # Removes an explicit access-control policy for a group.
+      # Query param:
+      #   cascade [Boolean] — queue removal from all child folders too
+      def remove_folder_policy
+        folder = Folder.active.find(params[:id])
+        check_folder_permission!(folder, :manage)
+        return if performed?
+
+        policy = FolderPolicy.find_by(folder_id: folder.id, user_group_id: params[:group_id])
+        return render json: { error: "Policy not found" }, status: :not_found unless policy
+
+        policy.destroy!
+
+        if ActiveModel::Type::Boolean.new.cast(params[:cascade])
+          PropagateAccessPolicyJob.perform_later(
+            folder_id:   folder.id,
+            group_id:    params[:group_id].to_i,
+            permissions: {},
+            operation:   "remove"
+          )
+        end
+
+        render json: { success: true, message: "Policy removed." }
+      rescue ActiveRecord::RecordNotFound
+        render json: { error: "Folder not found" }, status: :not_found
       end
 
       # DELETE /api/v1/folders/:id/permanent
@@ -333,6 +420,13 @@ module Api
         params.require(:folder).permit(:name, :parent_id, :description)
       end
 
+      def policy_permission_params
+        params.permit(
+          :read_access, :modify_access, :create_access,
+          :delete_access, :replicate_access, :manage_access, :explicit_deny
+        )
+      end
+
       # ── Schema helpers ──────────────────────────────────────────────────────
       def find_schema_assignment(folder_id)
         # First check direct assignment
@@ -363,6 +457,21 @@ module Api
           description: schema.description,
           is_builtin:  schema.is_builtin,
           tabs:        schema.tabs || [],
+        }
+      end
+
+      def serialize_policy(policy)
+        {
+          id:               policy.id,
+          group_id:         policy.user_group_id,
+          group_name:       policy.user_group&.name,
+          read_access:      policy.read_access,
+          modify_access:    policy.modify_access,
+          create_access:    policy.create_access,
+          delete_access:    policy.delete_access,
+          replicate_access: policy.replicate_access,
+          manage_access:    policy.manage_access,
+          explicit_deny:    policy.explicit_deny,
         }
       end
     end

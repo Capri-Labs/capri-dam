@@ -1,5 +1,7 @@
 class Api::V1::AiConfigurationsController < ApplicationController
-  # Require admin privileges in production
+  before_action :authenticate_hybrid!
+  before_action :require_admin!, only: %i[update]
+  before_action :require_admin_scope!, only: %i[update]
 
   def show
     render json: AiConfiguration.current

@@ -23,14 +23,28 @@ export const navigateTo = (url, options = {}) => {
 
 /**
  * Returns the correct base URL for asset access.
+ *
+ * Priority for CDN base URL (production only):
+ *   1. window.CAPRI_CDN_BASE_URL   — injected by the Rails layout via a <meta> tag
+ *   2. Hard-coded fallback          — used only when the meta tag is absent
+ *
+ * The development path always routes through the authenticated Rails endpoint
+ * `GET /api/v1/assets/local/:uuid` which resolves the UUID to a physical file.
+ *
  * Usage: getAssetUrl(asset.uuid)
+ *        getAssetUrl(asset.uuid, "?w=400")
  */
 export const getAssetUrl = (uuid, params = "") => {
+    if (!uuid) return null;
     if (isProduction) {
-        return `https://cdn.yourdam.com/assets/${uuid}${params}`;
+        const cdnBase =
+            (typeof window !== "undefined" && window.CAPRI_CDN_BASE_URL) ||
+            "https://cdn.yourdam.com";
+        return `${cdnBase}/assets/${uuid}${params}`;
     }
-    // In local dev, point to your Rails API's local serving endpoint
-    return `/api/v1/assets/${uuid}/serve${params}`;
+    // Development / staging: use the authenticated local-serve endpoint.
+    // Route: GET /api/v1/assets/local/:uuid  →  Api::V1::AssetsController#serve_local
+    return `/api/v1/assets/local/${uuid}${params}`;
 };
 
 /**

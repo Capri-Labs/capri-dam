@@ -179,6 +179,52 @@
       "imageProfilesDesc": "Automatisches Zuschneiden beim Upload",
       "videoProfiles": "Videoprofile",
       "videoProfilesDesc": "Adaptive Videocodierung"
+    },
+    "collectionSettings": {
+      "title": "Sammlungseinstellungen",
+      "subtitle": "Smart Rules, TTL, CDN & Standardwerte",
+      "savedSuccess": "Sammlungseinstellungen gespeichert.",
+      "adminNote": "Erfordert Administratorrechte.",
+      "smartRules": {
+        "title": "Smart-Rule-Standards",
+        "subtitle": "Neue KI-Sammlung",
+        "threshold": "Kosinus-Schwelle",
+        "thresholdHint": "Hohe Werte = strenges Matching.",
+        "schedule": "Zeitplan",
+        "scheduleHint": "Wie oft re-scannt.",
+        "scheduleHourly": "Stündlich",
+        "scheduleDaily": "Täglich",
+        "scheduleWeekly": "Wöchentlich",
+        "scheduleManual": "Nur manuell"
+      },
+      "access": {
+        "title": "Zugangskontrolle",
+        "subtitle": "Standard-Sichtbarkeit",
+        "visibility": "Sichtbarkeit",
+        "public": "Öffentlich",
+        "private": "Privat",
+        "hint": "Überschreibbar."
+      },
+      "limits": {
+        "title": "Asset-Limits",
+        "subtitle": "Keine riesigen Sammlungen",
+        "maxAssets": "Max Assets",
+        "maxAssetsHint": "0 = unbegrenzt."
+      },
+      "ttl": {
+        "title": "TTL & Ablauf",
+        "subtitle": "Automatisch archivieren",
+        "defaultDays": "Standard-TTL (Tage)",
+        "hint": "0 = kein Ablauf."
+      },
+      "cdn": {
+        "title": "CDN & Compliance",
+        "subtitle": "Edge-Cache",
+        "autoPurge": "CDN auto-leeren",
+        "autoPurgeHint": "Bei Änderungen invalidieren.",
+        "complianceScan": "TDM-Scan aktivieren",
+        "complianceScanHint": "Prüfung bei Änderungen."
+      }
     }
   },
   "bin": {

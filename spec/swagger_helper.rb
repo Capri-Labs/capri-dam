@@ -56,6 +56,23 @@ RSpec.configure do |config|
             description: 'Enter your OAuth 2.0 Bearer token to authenticate requests.',
           },
         },
+        schemas: {
+          FolderPolicy: {
+            type: :object,
+            properties: {
+              id:               { type: :integer },
+              group_id:         { type: :integer },
+              group_name:       { type: :string, nullable: true },
+              read_access:      { type: :boolean },
+              modify_access:    { type: :boolean },
+              create_access:    { type: :boolean },
+              delete_access:    { type: :boolean },
+              replicate_access: { type: :boolean },
+              manage_access:    { type: :boolean },
+              explicit_deny:    { type: :boolean },
+            },
+          },
+        },
       },
     },
   }

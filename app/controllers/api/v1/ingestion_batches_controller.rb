@@ -1,5 +1,6 @@
 class Api::V1::IngestionBatchesController < ApplicationController
-  before_action :authenticate_user!
+  before_action :authenticate_hybrid!
+  before_action :require_admin!, only: %i[commit abort]
   before_action :set_batch, only: [ :show, :commit, :abort, :report ]
 
   # GET /api/v1/ingestion_batches

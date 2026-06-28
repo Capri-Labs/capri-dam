@@ -14,12 +14,30 @@ module StorageAdapters
       File.delete(full_path) if File.exist?(full_path)
     end
 
+    # Returns a URL for a raw storage *path*.
+    #
+    # NOTE: This method is intentionally **not** used by {AssetUrlHelper#asset_url_for}
+    # because the public `GET /api/v1/assets/local/:uuid` endpoint resolves files by
+    # asset UUID (database lookup), not by raw storage path.  Use
+    # {AssetUrlHelper#asset_url_for} when you have an {Asset} record.
+    #
+    # This method is kept for internal/presign flows where only a path is available.
+    #
+    # @param path [String] relative storage path (e.g. "tenant/image.jpg")
+    # @return [String] internal URL pointing to the local serve route
     def url(path)
       "/api/v1/assets/local/#{path}"
     end
 
-    # Local presign: issues a signed Rails URL valid for expires_in seconds.
-    # Falls back to a plain serve path if verifier is unavailable.
+    # Issues a time-limited signed URL for the given storage *path*.
+    # Falls back to a plain serve path if the message verifier is unavailable.
+    #
+    # @param path        [String]  relative storage path
+    # @param expires_in  [Integer] TTL in seconds (default: 3600)
+    # @param method      [Symbol]  HTTP method (:get, :put)
+    # @param content_type [String, nil]
+    # @param filename    [String, nil] suggested download filename
+    # @return [String] signed URL
     def presign_url(path, expires_in: 3600, method: :get, content_type: nil, filename: nil)
       signed = Rails.application.message_verifier(:storage_presign).generate(
         { path: path, method: method.to_s, exp: Time.current.to_i + expires_in },

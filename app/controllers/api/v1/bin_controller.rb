@@ -27,6 +27,9 @@ module Api
       protect_from_forgery with: :null_session,
                            if: -> { request.format.json? || doorkeeper_token.present? }
       before_action :authenticate_hybrid!
+      before_action :require_write_scope!, only: %i[bulk_restore bulk_destroy empty]
+      before_action :require_admin!,       only: %i[update_retention_policy trigger_purge]
+      before_action :require_admin_scope!, only: %i[update_retention_policy trigger_purge]
 
       DEFAULT_RETENTION_DAYS = 30
       VALID_SORT_FIELDS      = %w[deleted_at name size].freeze

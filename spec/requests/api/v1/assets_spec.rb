@@ -607,33 +607,68 @@ RSpec.describe 'Api::V1::Assets', type: :request do
   # ===========================================================================
   path '/api/v1/assets/local/{uuid}' do
     parameter name: :uuid, in: :path, type: :string, format: :uuid, required: true,
-              description: 'Asset UUID (not the integer primary key)'
+              description: 'Asset UUID (public identifier — **not** the integer PK)'
 
-    get 'Stream the active version file from local/staging storage' do
+    get 'Stream the active-version file from local/staging storage' do
       tags 'Assets'
       produces '*/*'
       security [ Bearer: [] ]
       description <<~DESC
-        **Development & staging use only.** Streams the physical file from disk with
-        the correct `Content-Type`. In production, assets are served via CDN URL.
-        Falls back through two path resolution strategies:
-        1. `storage/dam/<relative_path>` (DAM root)
-        2. Direct absolute path (e.g., `tmp/uploads/...`)
+        **Development & staging use only.**
+
+        Resolves the UUID to the asset's active version and streams the physical
+        binary with the correct `Content-Type`.  In production, assets are served
+        via the CDN URL returned in the `url` field of every asset response.
+
+        ### Resolution order
+        1. **ActiveStorage attachment** on the active version → `302 Found` to the
+           signed blob URL.
+        2. **`storage/dam/<relative_path>`** — files moved here by
+           `AssetProcessorWorker` after ingestion.
+        3. **`tmp/uploads/<uuid>_v1_<filename>`** — files awaiting worker
+           processing (staging path).
+
+        ### HTTP caching
+        Responses include `ETag` (MD5 of the file) and `Last-Modified` headers.
+        Clients that re-send `If-None-Match` receive `304 Not Modified` without
+        re-transmitting the body — recommended for thumbnail-heavy list views.
+
+        ### Security
+        Both resolved paths are validated against their permitted roots
+        (`storage/dam` and `tmp/`) to prevent directory-traversal attacks.
       DESC
 
       response '200', 'File streamed inline' do
+        schema type: :string, format: :binary
+        header 'ETag',          schema: { type: :string },  description: 'MD5 fingerprint of the file'
+        header 'Last-Modified', schema: { type: :string },  description: 'RFC 7231 last-modified date'
+        header 'Cache-Control', schema: { type: :string },  description: 'private, max-age=3600, must-revalidate'
+        header 'Content-Type',  schema: { type: :string },  description: 'MIME type of the asset'
         run_test!
       end
 
-      response '302', 'Redirected to ActiveStorage URL (when AS attachment present)' do
+      response '302', 'Redirected to ActiveStorage signed blob URL' do
+        description 'Issued when the active version has an ActiveStorage attachment.'
         run_test!
       end
 
-      response '404', 'File not found on disk' do
+      response '304', 'Not Modified — client already has the current version' do
+        description 'Returned when `If-None-Match` matches the current `ETag`. No body is sent.'
+        run_test!
+      end
+
+      response '403', 'Forbidden — resolved path escapes the permitted storage root' do
+        schema type: :object, properties: { error: { type: :string } }
+        run_test!
+      end
+
+      response '404', 'Asset not found or file missing from disk' do
         schema type: :object,
+               required: [ 'error' ],
                properties: {
                  error:     { type: :string },
-                 looked_at: { type: :string, nullable: true },
+                 looked_at: { type: :string, nullable: true,
+                              description: 'Absolute path that was checked' },
                }
         run_test!
       end

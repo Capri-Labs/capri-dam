@@ -179,6 +179,52 @@
       "imageProfilesDesc": "Recadrage automatique au téléversement",
       "videoProfiles": "Profils vidéo",
       "videoProfilesDesc": "Encodage vidéo adaptatif"
+    },
+    "collectionSettings": {
+      "title": "Paramètres des Collections",
+      "subtitle": "Règles, TTL, CDN",
+      "savedSuccess": "Enregistré.",
+      "adminNote": "Nécessite des droits d'administrateur.",
+      "smartRules": {
+        "title": "Règles par Défaut",
+        "subtitle": "Nouvelle Collection IA",
+        "threshold": "Seuil",
+        "thresholdHint": "Plus élevé = plus strict.",
+        "schedule": "Calendrier",
+        "scheduleHint": "Fréquence de re-scan.",
+        "scheduleHourly": "Toutes les heures",
+        "scheduleDaily": "Quotidien",
+        "scheduleWeekly": "Hebdomadaire",
+        "scheduleManual": "Manuel"
+      },
+      "access": {
+        "title": "Contrôle d'accès",
+        "subtitle": "Visibilité par défaut",
+        "visibility": "Visibilité",
+        "public": "Public",
+        "private": "Privé",
+        "hint": "Peut être remplacé."
+      },
+      "limits": {
+        "title": "Limites d'actifs",
+        "subtitle": "Éviter les trop grandes collections",
+        "maxAssets": "Max actifs",
+        "maxAssetsHint": "0 = illimité."
+      },
+      "ttl": {
+        "title": "TTL et Expiration",
+        "subtitle": "Archiver après N jours",
+        "defaultDays": "TTL par défaut (jours)",
+        "hint": "0 = pas d'expiration."
+      },
+      "cdn": {
+        "title": "CDN et Conformité",
+        "subtitle": "Cache",
+        "autoPurge": "Purger CDN",
+        "autoPurgeHint": "Invalider le cache.",
+        "complianceScan": "Scan TDM",
+        "complianceScanHint": "Vérifier les droits."
+      }
     }
   },
   "bin": {

@@ -179,6 +179,52 @@
       "imageProfilesDesc": "上传时自动裁剪",
       "videoProfiles": "视频配置文件",
       "videoProfilesDesc": "自适应视频编码"
+    },
+    "collectionSettings": {
+      "title": "集合设置",
+      "subtitle": "智能规则、TTL、CDN",
+      "savedSuccess": "保存成功。",
+      "adminNote": "需要管理员权限。",
+      "smartRules": {
+        "title": "智能规则默认值",
+        "subtitle": "新建AI集合时应用",
+        "threshold": "余弦相似度阈值",
+        "thresholdHint": "较高的值=更严格的匹配。",
+        "schedule": "重新评估计划",
+        "scheduleHint": "重新扫描频率。",
+        "scheduleHourly": "每小时",
+        "scheduleDaily": "每天",
+        "scheduleWeekly": "每周",
+        "scheduleManual": "仅手动"
+      },
+      "access": {
+        "title": "访问控制默认值",
+        "subtitle": "新集合的默认可见性",
+        "visibility": "默认可见性",
+        "public": "公开",
+        "private": "私有",
+        "hint": "可覆盖。"
+      },
+      "limits": {
+        "title": "资产限制",
+        "subtitle": "防止集合过大",
+        "maxAssets": "每个集合最大资产数",
+        "maxAssetsHint": "0=无限制。"
+      },
+      "ttl": {
+        "title": "TTL和自动过期",
+        "subtitle": "N天后自动归档",
+        "defaultDays": "默认TTL（天）",
+        "hint": "0=无默认过期。"
+      },
+      "cdn": {
+        "title": "CDN和合规性",
+        "subtitle": "边缘缓存",
+        "autoPurge": "修改时自动清除CDN",
+        "autoPurgeHint": "集合更新时使缓存失效。",
+        "complianceScan": "启用TDM合规扫描",
+        "complianceScanHint": "运行使用权检查。"
+      }
     }
   },
   "bin": {

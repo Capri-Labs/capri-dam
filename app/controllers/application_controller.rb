@@ -24,6 +24,8 @@
 # @see GraphqlController
 # @see Api::V1::AssetsController
 class ApplicationController < ActionController::Base
+  include Authorization
+
   allow_browser versions: :modern
   protect_from_forgery with: :null_session, if: -> { request.format.json? }
 

@@ -88,10 +88,17 @@ class Api::V1::VideoProfilesController < ApplicationController
     folder_id = params[:folder_id]
     return render json: { error: "folder_id is required" }, status: :bad_request if folder_id.blank?
 
-    assignment = VideoProfileFolderAssignment.find_or_create_by!(
-      video_profile_id: @profile.id,
-      folder_id:        folder_id
-    )
+    # Replace any existing video profile assignment for this folder.
+    # find_or_create_by!(video_profile_id, folder_id) would create a duplicate row
+    # when changing the profile, leaving the old one visible via find_by(folder_id:).
+    assignment = nil
+    ActiveRecord::Base.transaction do
+      VideoProfileFolderAssignment.where(folder_id: folder_id).destroy_all
+      assignment = VideoProfileFolderAssignment.create!(
+        video_profile_id: @profile.id,
+        folder_id:        folder_id
+      )
+    end
     render json: { profile_id: @profile.id, folder_id: assignment.folder_id }, status: :created
   rescue ActiveRecord::RecordInvalid => e
     render json: { error: e.message }, status: :unprocessable_entity

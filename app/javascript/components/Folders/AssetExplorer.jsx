@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Box, Divider, Typography, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button } from '@mui/material';
 import { useNotify } from '../../context/NotificationContext';
 import AssetViewer from './AssetViewer';
@@ -37,6 +37,10 @@ export default function AssetExplorer({ initialTargetAssetId }) {
     const [infoFolder,    setInfoFolder]    = useState(null);
     const [infoPanelOpen, setInfoPanelOpen] = useState(false);
 
+    // Track whether we have already auto-opened the deep-linked asset so
+    // folder navigation does not re-trigger the AssetViewer on every load.
+    const deepLinkProcessed = useRef(false);
+
     const handleFolderInfo = (folder) => {
         setInfoFolder(folder);
         setInfoPanelOpen(true);
@@ -62,20 +66,7 @@ export default function AssetExplorer({ initialTargetAssetId }) {
     }, []);
 
     // --- DATA LOADING ---
-    useEffect(() => {
-        if (initialTargetAssetId) {
-            const targetAsset = viewData.assets?.find(a => a.id === initialTargetAssetId);
-            if (targetAsset) {
-                setSelectedAsset(targetAsset);
-            } else {
-                fetch(`/api/v1/assets/${initialTargetAssetId}`)
-                    .then(res => res.json())
-                    .then(data => setSelectedAsset(data));
-            }
-        }
-    }, [initialTargetAssetId, viewData.assets]);
-
-    const loadContent = () => {
+    const loadContent = useCallback(() => {
         const sortQuery = `sort=${sort.field}&direction=${sort.direction}`;
         const endpoint = viewMode === 'bin'
             ? '/api/v1/bin'
@@ -84,9 +75,42 @@ export default function AssetExplorer({ initialTargetAssetId }) {
             setViewData(data);
             setSelectedItems({ folders: [], assets: [] });
         });
-    };
+    }, [currentId, viewMode, sort]);
 
-    useEffect(() => { loadContent(); }, [currentId, viewMode, sort]);
+    useEffect(() => { loadContent(); }, [loadContent]);
+
+    // --- DEEP-LINK: open a specific asset by ID ---
+    // Only fires once per mount (deepLinkProcessed guards against re-triggers
+    // when viewData changes due to folder navigation).
+    useEffect(() => {
+        if (!initialTargetAssetId || deepLinkProcessed.current) return;
+
+        // Try to find it in the already-loaded folder first (cache-friendly)
+        const inView = viewData.assets?.find(
+            a => a.id === initialTargetAssetId || a.uuid === initialTargetAssetId
+        );
+        if (inView) {
+            setSelectedAsset(inView);
+            deepLinkProcessed.current = true;
+            return;
+        }
+
+        // Otherwise fetch the asset directly and open the viewer
+        fetch(`/api/v1/assets/${initialTargetAssetId}`)
+            .then(res => {
+                if (!res.ok) throw new Error(`Asset not found (${res.status})`);
+                return res.json();
+            })
+            .then(data => {
+                setSelectedAsset(data);
+                deepLinkProcessed.current = true;
+            })
+            .catch(err => {
+                notify(`Could not open asset: ${err.message}`, 'error');
+                deepLinkProcessed.current = true; // prevent infinite retry
+            });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [initialTargetAssetId, viewData.assets]);
 
     // --- ACTIONS ---
     const handleCopyPath = () => {

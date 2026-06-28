@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { Box, Typography, Chip } from '@mui/material';
-import { SettingsOutlined, SecurityOutlined, BlockOutlined, ImageOutlined, VideoFileOutlined, ContentCopyOutlined, DeleteForeverOutlined } from '@mui/icons-material';
+import { SettingsOutlined, SecurityOutlined, BlockOutlined, ImageOutlined, VideoFileOutlined, ContentCopyOutlined, DeleteForeverOutlined, CollectionsBookmark } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import UploadRestrictionsPanel from './UploadRestrictions';
 import ImageProfilesManager from './ImageProfiles';
 import VideoProfilesManager from './VideoProfiles';
 import DuplicateManagerSettings from './DuplicateManagerSettings';
 import BinPurgeSettings from './BinPurgeSettings';
+import CollectionSettingsPanel from './CollectionSettings';
 
 const NAV_ITEMS = [
     {
@@ -49,6 +50,15 @@ const NAV_ITEMS = [
         icon: <DeleteForeverOutlined sx={{ fontSize: 18 }} />,
         descriptionKey: 'bin.settings.subtitle',
         descriptionFallback: 'Auto-purge policy & retention for deleted assets',
+        badge: 'New',
+    },
+    {
+        id: 'collection_settings',
+        labelKey: 'tools.collectionSettings.title',
+        labelFallback: 'Collection Settings',
+        icon: <CollectionsBookmark sx={{ fontSize: 18 }} />,
+        descriptionKey: 'tools.collectionSettings.subtitle',
+        descriptionFallback: 'Smart rules, TTL, CDN & workspace defaults',
         badge: 'New',
     },
 ];
@@ -131,6 +141,7 @@ export default function AssetConfigurationsManager() {
                     {activeSection === 'video_profiles'      && <VideoProfilesManager />}
                     {activeSection === 'duplicate_manager'   && <DuplicateManagerSettings />}
                     {activeSection === 'bin_purge'           && <BinPurgeSettings />}
+                    {activeSection === 'collection_settings' && <CollectionSettingsPanel />}
                 </Box>
             </Box>
         </Box>

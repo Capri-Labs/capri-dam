@@ -179,6 +179,52 @@
       "imageProfilesDesc": "Automatic crop & sharpening on upload",
       "videoProfiles": "Video Profiles",
       "videoProfilesDesc": "Adaptive & progressive video encoding"
+    },
+    "collectionSettings": {
+      "title": "Collection Settings",
+      "subtitle": "Smart rules, TTL, CDN & workspace defaults",
+      "savedSuccess": "Collection settings saved successfully.",
+      "adminNote": "These settings require Admin privileges. Changes apply globally and take effect immediately for all new collections.",
+      "smartRules": {
+        "title": "Smart Rule Defaults",
+        "subtitle": "Applied when creating a new Smart (AI) Collection",
+        "threshold": "Default Cosine Similarity Threshold",
+        "thresholdHint": "Higher values = stricter semantic matching. 0.8 is recommended.",
+        "schedule": "Re-evaluation Schedule",
+        "scheduleHint": "How often the AI engine re-scans assets against active smart rules.",
+        "scheduleHourly": "Hourly",
+        "scheduleDaily": "Daily",
+        "scheduleWeekly": "Weekly",
+        "scheduleManual": "Manual Only"
+      },
+      "access": {
+        "title": "Access Control Defaults",
+        "subtitle": "Default visibility for newly created collections",
+        "visibility": "Default Visibility",
+        "public": "Public — accessible to all authenticated users",
+        "private": "Private — restricted to whitelisted groups only",
+        "hint": "Individual collections can override this default in their properties."
+      },
+      "limits": {
+        "title": "Asset Limits",
+        "subtitle": "Prevent oversized collections from degrading performance",
+        "maxAssets": "Max Assets per Collection",
+        "maxAssetsHint": "0 = unlimited. Recommended: 500."
+      },
+      "ttl": {
+        "title": "TTL & Auto-Expiration",
+        "subtitle": "Automatically archive collections after N days",
+        "defaultDays": "Default TTL (days)",
+        "hint": "0 = no default expiration. Applied at collection creation time."
+      },
+      "cdn": {
+        "title": "CDN & Compliance",
+        "subtitle": "Edge cache and automated governance settings",
+        "autoPurge": "Auto-purge CDN on collection modification",
+        "autoPurgeHint": "Invalidates edge cache whenever assets are added, removed, or the collection is updated.",
+        "complianceScan": "Enable automated TDM compliance scan",
+        "complianceScanHint": "Runs a usage-rights and metadata completeness check on every collection after modification."
+      }
     }
   },
   "bin": {
@@ -388,6 +434,61 @@
         "completed": "Completed",
         "failed": "Failed"
       }
+    }
+  },
+  "asset": {
+    "serve": {
+      "noStoragePath": "This asset has no file attached yet. Processing may still be in progress.",
+      "fileMissing": "The asset file could not be located on the server.",
+      "forbidden": "Access to this asset file is not permitted.",
+      "loadError": "Could not load asset preview. Please try refreshing.",
+      "loading": "Loading asset…",
+      "notFound": "Asset not found."
+    },
+    "status": {
+      "draft": "Draft",
+      "pending": "Pending",
+      "processing": "Processing",
+      "ready": "Ready",
+      "in_review": "In Review",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "failed": "Failed"
+    },
+    "url": {
+      "copyLink": "Copy asset link",
+      "linkCopied": "Link copied to clipboard",
+      "openInNewTab": "Open in new tab",
+      "download": "Download"
+    }
+  },
+  "folder": {
+    "access": {
+      "title": "Access Policies",
+      "addGroup": "Add Group",
+      "group": "Group",
+      "permissions": "Permissions",
+      "applyToSubfolders": "Apply to all subfolders",
+      "cascadeWarning": "This policy will also be applied to all direct and nested subfolders of \"{{name}}\". Existing subfolder-specific overrides will be preserved.",
+      "savePolicy": "Add Policy",
+      "saveError": "Failed to save access policy.",
+      "saved": "Access policy saved.",
+      "savedWithCascade": "Access policy saved and is being propagated to all subfolders.",
+      "removed": "Access policy removed.",
+      "removedWithCascade": "Access policy removed and is being removed from all subfolders.",
+      "removeError": "Failed to remove access policy.",
+      "loadError": "Failed to load access policies.",
+      "selectGroup": "Please select a group first.",
+      "noPolicies": "No access policies defined. Default access rules apply.",
+      "defaultAccessNote": "Click \"Add Group\" to grant or restrict access for a specific group.",
+      "explicit": "Explicit policies",
+      "inherited": "Inherited from parent folder",
+      "deny": "Explicit Deny",
+      "explicitDeny": "Explicit Deny — overrides all grants",
+      "removeFromSubfolders": "Also subfolders",
+      "removeFromSubfoldersHint": "When checked, the remove action will also cascade to all child folders.",
+      "removeTooltip": "Remove this policy from this folder",
+      "removeWithCascadeTooltip": "Remove this policy from this folder and all its subfolders"
     }
   }
 }

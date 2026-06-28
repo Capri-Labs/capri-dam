@@ -179,6 +179,52 @@
       "imageProfilesDesc": "업로드 시 자동 자르기",
       "videoProfiles": "비디오 프로파일",
       "videoProfilesDesc": "적응형 비디오 인코딩"
+    },
+    "collectionSettings": {
+      "title": "컬렉션 설정",
+      "subtitle": "스마트 규칙, TTL, CDN",
+      "savedSuccess": "저장되었습니다.",
+      "adminNote": "관리자 권한 필요.",
+      "smartRules": {
+        "title": "스마트 규칙",
+        "subtitle": "새 AI 컬렉션",
+        "threshold": "코사인 유사도 임계값",
+        "thresholdHint": "높은 값=엄격한 매칭.",
+        "schedule": "일정",
+        "scheduleHint": "재스캔 빈도.",
+        "scheduleHourly": "매시간",
+        "scheduleDaily": "매일",
+        "scheduleWeekly": "매주",
+        "scheduleManual": "수동만"
+      },
+      "access": {
+        "title": "접근 제어",
+        "subtitle": "기본 가시성",
+        "visibility": "가시성",
+        "public": "공개",
+        "private": "비공개",
+        "hint": "재정의 가능."
+      },
+      "limits": {
+        "title": "자산 한도",
+        "subtitle": "과대 컬렉션 방지",
+        "maxAssets": "최대 자산 수",
+        "maxAssetsHint": "0=무제한."
+      },
+      "ttl": {
+        "title": "TTL 및 만료",
+        "subtitle": "N일 후 자동 보관",
+        "defaultDays": "기본 TTL (일)",
+        "hint": "0=만료 없음."
+      },
+      "cdn": {
+        "title": "CDN 및 준수",
+        "subtitle": "엣지 캐시",
+        "autoPurge": "CDN 자동 제거",
+        "autoPurgeHint": "캐시 무효화.",
+        "complianceScan": "TDM 스캔 활성화",
+        "complianceScanHint": "사용권 검사."
+      }
     }
   },
   "bin": {

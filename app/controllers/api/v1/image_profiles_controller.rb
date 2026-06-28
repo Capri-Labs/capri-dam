@@ -47,10 +47,18 @@ class Api::V1::ImageProfilesController < ApplicationController
     folder_id = params[:folder_id]
     return render json: { error: "folder_id is required" }, status: :bad_request if folder_id.blank?
 
-    assignment = ImageProfileFolderAssignment.find_or_create_by!(
-      image_profile_id: @profile.id,
-      folder_id:        folder_id
-    )
+    # Replace any existing profile assignment for this folder — do NOT use
+    # find_or_create_by!(image_profile_id, folder_id): that compound key means
+    # "changing" a profile creates a duplicate row; the old row is then returned
+    # by find_by(folder_id:), so the UI never reflects the change.
+    assignment = nil
+    ActiveRecord::Base.transaction do
+      ImageProfileFolderAssignment.where(folder_id: folder_id).destroy_all
+      assignment = ImageProfileFolderAssignment.create!(
+        image_profile_id: @profile.id,
+        folder_id:        folder_id
+      )
+    end
     render json: { profile_id: @profile.id, folder_id: assignment.folder_id }, status: :created
   rescue ActiveRecord::RecordInvalid => e
     render json: { error: e.message }, status: :unprocessable_entity

@@ -1,7 +1,7 @@
 module Api
   module V1
     class EdgeOperationsController < ApplicationController
-      before_action :authenticate_user!
+      before_action :authenticate_hybrid!
 
       # POST /api/v1/edge_operations/sync
       def sync
