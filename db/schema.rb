@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_28_110000) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_28_120001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -122,6 +122,26 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_28_110000) do
     t.index ["embedding"], name: "index_asset_embeddings_on_embedding", opclass: :vector_cosine_ops, using: :hnsw
   end
 
+  create_table "asset_provenance_records", force: :cascade do |t|
+    t.jsonb "ai_tools_used", default: [], null: false
+    t.uuid "asset_id", null: false
+    t.string "claim_generator"
+    t.datetime "created_at", null: false
+    t.text "error_detail"
+    t.boolean "is_ai_modified", default: false, null: false
+    t.jsonb "manifest_data", default: {}, null: false
+    t.string "manifest_status", default: "unchecked", null: false
+    t.datetime "signed_at"
+    t.string "signer_cert_fingerprint"
+    t.string "signer_name"
+    t.datetime "updated_at", null: false
+    t.datetime "verified_at"
+    t.index ["asset_id"], name: "index_asset_provenance_records_on_asset_id", unique: true
+    t.index ["is_ai_modified"], name: "index_asset_provenance_records_on_is_ai_modified"
+    t.index ["manifest_status"], name: "index_asset_provenance_records_on_manifest_status"
+    t.index ["verified_at"], name: "index_asset_provenance_records_on_verified_at"
+  end
+
   create_table "asset_versions", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.string "action_type", default: "initial_upload"
     t.uuid "asset_id", null: false
@@ -169,6 +189,21 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_28_110000) do
     t.index ["auditable_type", "auditable_id", "ip_address", "user_id"], name: "idx_audit_logs_polymorphic_ip_user"
     t.index ["true_user_id"], name: "index_audit_logs_on_true_user_id"
     t.index ["user_id"], name: "index_audit_logs_on_user_id"
+  end
+
+  create_table "c2pa_configurations", force: :cascade do |t|
+    t.boolean "ai_disclosure_required", default: true, null: false
+    t.boolean "auto_sign_on_ingest", default: false, null: false
+    t.boolean "auto_verify_on_ingest", default: false, null: false
+    t.datetime "created_at", null: false
+    t.boolean "gateway_c2pa_enabled", default: false, null: false
+    t.text "policy_notes"
+    t.boolean "require_c2pa_on_import", default: false, null: false
+    t.string "signing_issuer_name"
+    t.string "signing_org"
+    t.jsonb "trust_store_urls", default: [], null: false
+    t.datetime "updated_at", null: false
+    t.string "verification_strictness", default: "lenient", null: false
   end
 
   create_table "cdn_configurations", force: :cascade do |t|
@@ -852,6 +887,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_28_110000) do
   add_foreign_key "agent_workflows", "users", column: "created_by_id"
   add_foreign_key "ai_batch_jobs", "users", column: "created_by_id"
   add_foreign_key "asset_embeddings", "assets"
+  add_foreign_key "asset_provenance_records", "assets"
   add_foreign_key "asset_versions", "assets"
   add_foreign_key "asset_versions", "users", column: "created_by_id"
   add_foreign_key "assets", "asset_versions", column: "active_version_id"

@@ -543,7 +543,8 @@
   },
   "copilot": {
     "title": "Semantic Copilot",
-    "poweredBy": "Powered by pgvector + HuggingFace MiniLM",    "greeting": "Hello. I am your Semantic Copilot. Describe the visual assets you need, or ask me to find media based on a conceptual theme.",
+    "poweredBy": "Powered by pgvector + HuggingFace MiniLM",
+    "greeting": "Hello. I am your Semantic Copilot. Describe the visual assets you need, or ask me to find media based on a conceptual theme.",
     "clearSession": "Clear conversation",
     "searching": "Traversing vector space…",
     "send": "Send",
@@ -643,5 +644,69 @@
       "removeTooltip": "Remove this policy from this folder",
       "removeWithCascadeTooltip": "Remove this policy from this folder and all its subfolders"
     }
+  },
+  "provenance": {
+    "title": "Provenance & C2PA",
+    "subtitle": "Track content credentials, verify C2PA manifests, and enforce AI disclosure across your asset library.",
+    "stats": {
+      "verified": "Verified",
+      "aiModified": "AI-Modified",
+      "missing": "No Manifest",
+      "invalid": "Invalid Manifest",
+      "signed": "DAM-Signed"
+    },
+    "tabs": {
+      "records": "Provenance Records",
+      "policy": "Policy Settings",
+      "batch": "Batch Actions"
+    },
+    "policy": {
+      "gatewaySection": "Gateway Integration",
+      "ingestSection": "Ingest Hooks",
+      "signingSection": "Signing Identity",
+      "gatewayEnabled": "Enable C2PA Gateway Integration",
+      "autoVerify": "Auto-verify on Ingest",
+      "autoSign": "Auto-sign on Ingest",
+      "requireOnImport": "Require C2PA on Imports",
+      "aiDisclosureRequired": "Require AI Disclosure",
+      "signingIssuerName": "Signing Issuer Name",
+      "signingOrg": "Signing Organisation",
+      "strictness": "Verification Strictness",
+      "lenient": "Lenient",
+      "strict": "Strict",
+      "policyNotes": "Policy Notes",
+      "save": "Save Policy",
+      "saving": "Saving…",
+      "saved": "Policy saved successfully."
+    },
+    "table": {
+      "asset": "Asset",
+      "status": "Manifest Status",
+      "claimGenerator": "Claim Generator",
+      "aiModified": "AI-Modified",
+      "verifiedAt": "Verified At",
+      "filterStatus": "Filter by status",
+      "total": "{{count}} records"
+    },
+    "statusLabel": {
+      "unchecked": "Unchecked",
+      "verified": "Verified",
+      "ai_generated": "AI-Generated",
+      "ai_modified": "AI-Modified",
+      "missing": "No Manifest",
+      "invalid": "Invalid",
+      "signed": "Signed",
+      "error": "Error"
+    },
+    "batch": {
+      "task": "C2PA Task",
+      "scope": "Target Dataset",
+      "concurrency": "Concurrency",
+      "launch": "Launch Batch Task",
+      "launching": "Launching…",
+      "launched": "Job #{{id}} queued — {{task}}"
+    },
+    "empty": "No provenance records yet. Run a C2PA Verification batch to analyse your library.",
+    "error": "Failed to load provenance data."
   }
 }

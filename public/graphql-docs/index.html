@@ -38,10 +38,13 @@
                   <li><a href="#query-aiBatchJob">aiBatchJob</a></li>
                   <li><a href="#query-aiBatchJobs">aiBatchJobs</a></li>
                   <li><a href="#query-assetDetail">assetDetail</a></li>
+                  <li><a href="#query-assetProvenanceRecord">assetProvenanceRecord</a></li>
+                  <li><a href="#query-assetProvenanceRecords">assetProvenanceRecords</a></li>
                   <li><a href="#query-binAiSuggestions">binAiSuggestions</a></li>
                   <li><a href="#query-binPurgeStatus">binPurgeStatus</a></li>
                   <li><a href="#query-binRetentionPolicy">binRetentionPolicy</a></li>
                   <li><a href="#query-binStats">binStats</a></li>
+                  <li><a href="#query-c2paConfiguration">c2paConfiguration</a></li>
                   <li><a href="#query-collection">collection</a></li>
                   <li><a href="#query-collections">collections</a></li>
                   <li><a href="#query-duplicateGroup">duplicateGroup</a></li>
@@ -90,6 +93,7 @@
               <li><a href="#definition-AgentWorkflow">AgentWorkflow</a></li>
               <li><a href="#definition-AiBatchJob">AiBatchJob</a></li>
               <li><a href="#definition-Asset">Asset</a></li>
+              <li><a href="#definition-AssetProvenanceRecord">AssetProvenanceRecord</a></li>
               <li><a href="#definition-BigInt">BigInt</a></li>
               <li><a href="#definition-BinAiSuggestion">BinAiSuggestion</a></li>
               <li><a href="#definition-BinItemInput">BinItemInput</a></li>
@@ -98,6 +102,7 @@
               <li><a href="#definition-BinStats">BinStats</a></li>
               <li><a href="#definition-BulkRestoreFromBinInput">BulkRestoreFromBinInput</a></li>
               <li><a href="#definition-BulkRestoreFromBinPayload">BulkRestoreFromBinPayload</a></li>
+              <li><a href="#definition-C2paConfiguration">C2paConfiguration</a></li>
               <li><a href="#definition-Collection">Collection</a></li>
               <li><a href="#definition-CreatePersonalAccessTokenInput">CreatePersonalAccessTokenInput</a></li>
               <li><a href="#definition-CreatePersonalAccessTokenPayload">CreatePersonalAccessTokenPayload</a></li>
@@ -395,6 +400,86 @@
               </div>
             </div>
           </section>
+          <section id="query-assetProvenanceRecord" class="operation operation-query" data-traverse-target="query-assetProvenanceRecord">
+            <div class="operation-group-name">
+              <a href="#group-Operations-Queries">Queries</a>
+            </div>
+            <h2 class="operation-heading ">
+              <code>assetProvenanceRecord</code>
+            </h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Find a C2PA provenance record by ID (admin only)</p>
+                </div>
+              </div>
+            </div>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-response doc-copy-section">
+                  <h5>Response</h5>
+                  <p> Returns an <a href="#definition-AssetProvenanceRecord"><code>AssetProvenanceRecord</code></a>
+                  </p>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <h4 class="example-heading">Example</h4>
+                <div class="example-section example-section-is-code operation-query-example">
+                  <h5>Query</h5>
+                  <pre><code class="hljs language-gql"><span class="hljs-symbol"><span class="hljs-keyword">query</span> assetProvenanceRecord <span class="hljs-tag">{
+  <span class="hljs-symbol">assetProvenanceRecord</span>
+}</span></span>
+</code></pre>
+                </div>
+                <div class="example-section example-section-is-code operation-response-example">
+                  <h5>Response</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"data"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-attr">"assetProvenanceRecord"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="query-assetProvenanceRecords" class="operation operation-query" data-traverse-target="query-assetProvenanceRecords">
+            <div class="operation-group-name">
+              <a href="#group-Operations-Queries">Queries</a>
+            </div>
+            <h2 class="operation-heading ">
+              <code>assetProvenanceRecords</code>
+            </h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>List C2PA provenance records (admin only)</p>
+                </div>
+              </div>
+            </div>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-response doc-copy-section">
+                  <h5>Response</h5>
+                  <p> Returns <a href="#definition-AssetProvenanceRecord"><code>[AssetProvenanceRecord!]!</code></a>
+                  </p>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <h4 class="example-heading">Example</h4>
+                <div class="example-section example-section-is-code operation-query-example">
+                  <h5>Query</h5>
+                  <pre><code class="hljs language-gql"><span class="hljs-symbol"><span class="hljs-keyword">query</span> assetProvenanceRecords <span class="hljs-tag">{
+  <span class="hljs-symbol">assetProvenanceRecords</span>
+}</span></span>
+</code></pre>
+                </div>
+                <div class="example-section example-section-is-code operation-response-example">
+                  <h5>Response</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"data"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-attr">"assetProvenanceRecords"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
           <section id="query-binAiSuggestions" class="operation operation-query" data-traverse-target="query-binAiSuggestions">
             <div class="operation-group-name">
               <a href="#group-Operations-Queries">Queries</a>
@@ -556,6 +641,46 @@
                 <div class="example-section example-section-is-code operation-response-example">
                   <h5>Response</h5>
                   <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"data"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-attr">"binStats"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="query-c2paConfiguration" class="operation operation-query" data-traverse-target="query-c2paConfiguration">
+            <div class="operation-group-name">
+              <a href="#group-Operations-Queries">Queries</a>
+            </div>
+            <h2 class="operation-heading ">
+              <code>c2paConfiguration</code>
+            </h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>The organisation&#39;s C2PA policy configuration (admin only)</p>
+                </div>
+              </div>
+            </div>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-response doc-copy-section">
+                  <h5>Response</h5>
+                  <p> Returns a <a href="#definition-C2paConfiguration"><code>C2paConfiguration!</code></a>
+                  </p>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <h4 class="example-heading">Example</h4>
+                <div class="example-section example-section-is-code operation-query-example">
+                  <h5>Query</h5>
+                  <pre><code class="hljs language-gql"><span class="hljs-symbol"><span class="hljs-keyword">query</span> c2paConfiguration <span class="hljs-tag">{
+  <span class="hljs-symbol">c2paConfiguration</span>
+}</span></span>
+</code></pre>
+                </div>
+                <div class="example-section example-section-is-code operation-response-example">
+                  <h5>Response</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"data"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-attr">"c2paConfiguration"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span>
 </code></pre>
                 </div>
               </div>
@@ -2415,6 +2540,27 @@
               </div>
             </div>
           </section>
+          <section id="definition-AssetProvenanceRecord" class="definition definition-object" data-traverse-target="definition-AssetProvenanceRecord">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">AssetProvenanceRecord</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>C2PA manifest and AI-provenance data for a single asset.</p>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <div class="example-section example-section-is-code">
+                  <h5>Example</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
           <section id="definition-BigInt" class="definition definition-scalar" data-traverse-target="definition-BigInt">
             <div class="definition-group-name">
               <a href="#group-Types">Types</a>
@@ -2609,6 +2755,27 @@
                 <div class="definition-description doc-copy-section">
                   <h5>Description</h5>
                   <p>Autogenerated return type of BulkRestoreFromBin.</p>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <div class="example-section example-section-is-code">
+                  <h5>Example</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="definition-C2paConfiguration" class="definition definition-object" data-traverse-target="definition-C2paConfiguration">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">C2paConfiguration</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Organisation-wide C2PA / Content Provenance policy configuration.</p>
                 </div>
               </div>
               <div class="doc-examples">

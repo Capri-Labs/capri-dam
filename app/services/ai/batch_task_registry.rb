@@ -81,6 +81,33 @@ module Ai
         default_tools:      %w[EmbeddingGenerator],
         gateway_capability: "embedding.generate",
       ),
+
+      # ── Content Provenance / C2PA tasks ─────────────────────────────────────
+
+      Task.new(
+        key:                "c2pa_verify",
+        label:              "C2PA Verification",
+        description:        "Parse and cryptographically verify C2PA manifests. Flags AI-generated and AI-modified assets.",
+        cost_tier:          "low",
+        default_tools:      %w[C2PAParser TrustStoreVerifier],
+        gateway_capability: "c2pa.verify",
+      ),
+      Task.new(
+        key:                "c2pa_sign",
+        label:              "C2PA Signing",
+        description:        "Embed a new C2PA manifest signed with the configured DAM identity.",
+        cost_tier:          "medium",
+        default_tools:      %w[C2PASigner ManifestBuilder],
+        gateway_capability: "c2pa.sign",
+      ),
+      Task.new(
+        key:                "ai_disclosure_audit",
+        label:              "AI Disclosure Audit",
+        description:        "Identify assets that are AI-generated or AI-modified but lack required disclosure in their C2PA manifest.",
+        cost_tier:          "low",
+        default_tools:      %w[AIDisclosureChecker C2PAParser],
+        gateway_capability: "disclosure.audit",
+      ),
     ].freeze
 
     # -- Target datasets --------------------------------------------------------
@@ -118,6 +145,45 @@ module Ai
         label:       "Assets Without Embeddings",
         description: "Active assets that have never been vectorised for semantic search.",
         resolver:    -> { Asset.active.where.missing(:asset_embedding) },
+      ),
+
+      # ── C2PA / Provenance scopes ─────────────────────────────────────────────
+
+      Scope.new(
+        key:         "unverified_assets",
+        label:       "Assets Without C2PA Verification",
+        description: "Active assets that have no provenance record or have never been C2PA-verified.",
+        resolver:    -> {
+          verified_ids = AssetProvenanceRecord.where.not(manifest_status: "unchecked").select(:asset_id)
+          Asset.active.where.not(id: verified_ids)
+        },
+      ),
+      Scope.new(
+        key:         "invalid_manifests",
+        label:       "Assets With Invalid Manifests",
+        description: "Active assets whose C2PA manifests failed cryptographic verification.",
+        resolver:    -> {
+          Asset.active.joins(:asset_provenance_record)
+               .where(asset_provenance_records: { manifest_status: "invalid" })
+        },
+      ),
+      Scope.new(
+        key:         "ai_modified_assets",
+        label:       "AI-Modified Assets",
+        description: "Active assets flagged as AI-generated or AI-modified via their C2PA manifest.",
+        resolver:    -> {
+          Asset.active.joins(:asset_provenance_record)
+               .where(asset_provenance_records: { is_ai_modified: true })
+        },
+      ),
+      Scope.new(
+        key:         "unsigned_assets",
+        label:       "Assets Not Signed by DAM",
+        description: "Active assets that have not yet been signed with the DAM's own C2PA identity.",
+        resolver:    -> {
+          signed_ids = AssetProvenanceRecord.where(manifest_status: "signed").select(:asset_id)
+          Asset.active.where.not(id: signed_ids)
+        },
       ),
     ].freeze
 

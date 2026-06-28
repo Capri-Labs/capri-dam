@@ -230,6 +230,47 @@ module Types
     end
 
     # -------------------------------------------------------------------------
+    # C2PA / Content Provenance (admin only)
+    # -------------------------------------------------------------------------
+
+    field :c2pa_configuration, Types::C2paConfigurationType, null: false do
+      description "The organisation's C2PA policy configuration (admin only)"
+    end
+
+    def c2pa_configuration
+      return nil unless context[:current_user]&.admin?
+
+      C2paConfiguration.current
+    end
+
+    field :asset_provenance_records, [ Types::AssetProvenanceRecordType ], null: false do
+      description "List C2PA provenance records (admin only)"
+      argument :status,      String,  required: false, description: "Filter by manifest_status"
+      argument :ai_modified, Boolean, required: false, description: "Filter to AI-modified assets only"
+      argument :limit,       Integer, required: false, default_value: 25
+    end
+
+    def asset_provenance_records(status: nil, ai_modified: nil, limit: 25)
+      return [] unless context[:current_user]&.admin?
+
+      scope = AssetProvenanceRecord.includes(:asset).recent.limit(limit.to_i.clamp(1, 100))
+      scope = scope.where(manifest_status: status)  if status.present?
+      scope = scope.where(is_ai_modified: true)     if ai_modified
+      scope
+    end
+
+    field :asset_provenance_record, Types::AssetProvenanceRecordType, null: true do
+      description "Find a C2PA provenance record by ID (admin only)"
+      argument :id, ID, required: true
+    end
+
+    def asset_provenance_record(id:)
+      return nil unless context[:current_user]&.admin?
+
+      AssetProvenanceRecord.find_by(id: id)
+    end
+
+    # -------------------------------------------------------------------------
     # Users (admin only)
     # -------------------------------------------------------------------------
 

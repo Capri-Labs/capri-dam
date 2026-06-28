@@ -101,13 +101,15 @@ Rails.application.routes.draw do
     resources :workflow_steps, only: [ :index, :create, :update, :destroy ]
   end
 
-  # AI UI — all actions require Devise session; agents/tasks/playground are admin-only
+  # AI UI — all actions require Devise session; agents/tasks/playground/provenance are admin-only
   namespace :ai do
-    get "copilot",        to: "ui#copilot"
-    get "agents",         to: "ui#agents"
-    get "tasks",          to: "ui#tasks"
-    get "batch",          to: redirect("/ai/tasks") # legacy alias
-    get "lab/playground", to: "ui#playground"
+    get "copilot",                to: "ui#copilot"
+    get "agents",                 to: "ui#agents"
+    get "tasks",                  to: "ui#tasks"
+    get "batch",                  to: redirect("/ai/tasks") # legacy alias
+    get "lab/playground",         to: "ui#playground"
+    get "governance/provenance",  to: "ui#provenance"
+    get "governance",             to: redirect("/ai/governance/provenance") # hub redirect
   end
 
   # ==========================================
@@ -165,6 +167,15 @@ Rails.application.routes.draw do
         member do
           post :cancel
           post :progress
+        end
+      end
+
+      # C2PA / Content Provenance
+      resource  :c2pa_configuration,      only: %i[show update]
+      resources :asset_provenance_records, only: %i[index show] do
+        collection do
+          get  :stats
+          post :bulk_upsert
         end
       end
 

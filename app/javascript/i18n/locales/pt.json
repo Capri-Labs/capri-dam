@@ -589,5 +589,124 @@
       "failed": "Failed",
       "cancelled": "Cancelled"
     }
+  },
+  "provenance": {
+    "title": "Proveniência & C2PA",
+    "subtitle": "Rastreie credenciais de conteúdo, verifique manifestos C2PA e aplique divulgação de IA.",
+    "stats": {
+      "verified": "Verified",
+      "aiModified": "AI-Modified",
+      "missing": "No Manifest",
+      "invalid": "Invalid Manifest",
+      "signed": "DAM-Signed"
+    },
+    "tabs": {
+      "records": "Registros de proveniência",
+      "policy": "Política",
+      "batch": "Ações em lote"
+    },
+    "policy": {
+      "gatewaySection": "Gateway Integration",
+      "ingestSection": "Ingest Hooks",
+      "signingSection": "Signing Identity",
+      "gatewayEnabled": "Enable C2PA Gateway Integration",
+      "autoVerify": "Auto-verify on Ingest",
+      "autoSign": "Auto-sign on Ingest",
+      "requireOnImport": "Require C2PA on Imports",
+      "aiDisclosureRequired": "Require AI Disclosure",
+      "signingIssuerName": "Signing Issuer Name",
+      "signingOrg": "Signing Organisation",
+      "strictness": "Verification Strictness",
+      "lenient": "Lenient",
+      "strict": "Strict",
+      "policyNotes": "Policy Notes",
+      "save": "Salvar política",
+      "saving": "Salvando…",
+      "saved": "Política salva."
+    },
+    "table": {
+      "asset": "Asset",
+      "status": "Manifest Status",
+      "claimGenerator": "Claim Generator",
+      "aiModified": "AI-Modified",
+      "verifiedAt": "Verified At",
+      "filterStatus": "Filter by status",
+      "total": "{{count}} records"
+    },
+    "statusLabel": {
+      "unchecked": "Unchecked",
+      "verified": "Verified",
+      "ai_generated": "AI-Generated",
+      "ai_modified": "AI-Modified",
+      "missing": "No Manifest",
+      "invalid": "Invalid",
+      "signed": "Signed",
+      "error": "Error"
+    },
+    "batch": {
+      "task": "C2PA Task",
+      "scope": "Target Dataset",
+      "concurrency": "Concurrency",
+      "launch": "Launch Batch Task",
+      "launching": "Launching…",
+      "launched": "Job #{{id}} queued — {{task}}"
+    },
+    "empty": "Nenhum registro de proveniência. Execute uma verificação C2PA.",
+    "error": "Failed to load provenance data."
+  },
+  "asset": {
+    "serve": {
+      "noStoragePath": "Este recurso ainda não tem um arquivo anexado. O processamento pode ainda estar em andamento.",
+      "fileMissing": "O arquivo do recurso não foi encontrado no servidor.",
+      "forbidden": "O acesso a este arquivo de recurso não é permitido.",
+      "loadError": "Não foi possível carregar a pré-visualização. Tente atualizar a página.",
+      "loading": "Carregando recurso…",
+      "notFound": "Recurso não encontrado."
+    },
+    "status": {
+      "draft": "Rascunho",
+      "pending": "Pendente",
+      "processing": "Processando",
+      "ready": "Pronto",
+      "in_review": "Em revisão",
+      "approved": "Aprovado",
+      "rejected": "Rejeitado",
+      "failed": "Falhou"
+    },
+    "url": {
+      "copyLink": "Copiar link do recurso",
+      "linkCopied": "Link copiado para a área de transferência",
+      "openInNewTab": "Abrir em nova guia",
+      "download": "Baixar"
+    }
+  },
+  "folder": {
+    "access": {
+      "title": "Políticas de acesso",
+      "addGroup": "Adicionar grupo",
+      "group": "Grupo",
+      "permissions": "Permissões",
+      "applyToSubfolders": "Aplicar a todas as subpastas",
+      "cascadeWarning": "Esta política também será aplicada a todas as subpastas diretas e aninhadas de \"{{name}}\". As substituições específicas de subpastas existentes serão preservadas.",
+      "savePolicy": "Adicionar política",
+      "saveError": "Falha ao salvar a política de acesso.",
+      "saved": "Política de acesso salva.",
+      "savedWithCascade": "Política de acesso salva e sendo propagada para todas as subpastas.",
+      "removed": "Política de acesso removida.",
+      "removedWithCascade": "Política de acesso removida e sendo retirada de todas as subpastas.",
+      "removeError": "Falha ao remover a política de acesso.",
+      "loadError": "Falha ao carregar as políticas de acesso.",
+      "selectGroup": "Por favor, selecione um grupo primeiro.",
+      "noPolicies": "Nenhuma política de acesso definida. Regras de acesso padrão aplicam-se.",
+      "defaultAccessNote": "Clique em \"Adicionar grupo\" para conceder ou restringir o acesso a um grupo específico.",
+      "explicit": "Políticas explícitas",
+      "inherited": "Herdado da pasta pai",
+      "deny": "Negação explícita",
+      "explicitDeny": "Negação explícita — substitui todas as concessões",
+      "removeFromSubfolders": "Também subpastas",
+      "removeFromSubfoldersHint": "Quando marcado, a ação de remover também será propagada para todas as pastas filhas.",
+      "removeTooltip": "Remover esta política desta pasta",
+      "removeWithCascadeTooltip": "Remover esta política desta pasta e de todas as suas subpastas"
+    }
   }
 }

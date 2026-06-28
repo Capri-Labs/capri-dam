@@ -589,5 +589,124 @@
       "failed": "Failed",
       "cancelled": "Cancelled"
     }
+  },
+  "provenance": {
+    "title": "Herkomst & C2PA",
+    "subtitle": "Content-referenties bijhouden, C2PA-manifesten verifiëren en AI-openbaarmaking afdwingen.",
+    "stats": {
+      "verified": "Verified",
+      "aiModified": "AI-Modified",
+      "missing": "No Manifest",
+      "invalid": "Invalid Manifest",
+      "signed": "DAM-Signed"
+    },
+    "tabs": {
+      "records": "Herkomstrecords",
+      "policy": "Beleid",
+      "batch": "Bulkacties"
+    },
+    "policy": {
+      "gatewaySection": "Gateway Integration",
+      "ingestSection": "Ingest Hooks",
+      "signingSection": "Signing Identity",
+      "gatewayEnabled": "Enable C2PA Gateway Integration",
+      "autoVerify": "Auto-verify on Ingest",
+      "autoSign": "Auto-sign on Ingest",
+      "requireOnImport": "Require C2PA on Imports",
+      "aiDisclosureRequired": "Require AI Disclosure",
+      "signingIssuerName": "Signing Issuer Name",
+      "signingOrg": "Signing Organisation",
+      "strictness": "Verification Strictness",
+      "lenient": "Lenient",
+      "strict": "Strict",
+      "policyNotes": "Policy Notes",
+      "save": "Beleid opslaan",
+      "saving": "Opslaan…",
+      "saved": "Beleid opgeslagen."
+    },
+    "table": {
+      "asset": "Asset",
+      "status": "Manifest Status",
+      "claimGenerator": "Claim Generator",
+      "aiModified": "AI-Modified",
+      "verifiedAt": "Verified At",
+      "filterStatus": "Filter by status",
+      "total": "{{count}} records"
+    },
+    "statusLabel": {
+      "unchecked": "Unchecked",
+      "verified": "Verified",
+      "ai_generated": "AI-Generated",
+      "ai_modified": "AI-Modified",
+      "missing": "No Manifest",
+      "invalid": "Invalid",
+      "signed": "Signed",
+      "error": "Error"
+    },
+    "batch": {
+      "task": "C2PA Task",
+      "scope": "Target Dataset",
+      "concurrency": "Concurrency",
+      "launch": "Launch Batch Task",
+      "launching": "Launching…",
+      "launched": "Job #{{id}} queued — {{task}}"
+    },
+    "empty": "Geen herkomstrecords. Voer een C2PA-verificatiebatch uit.",
+    "error": "Failed to load provenance data."
+  },
+  "asset": {
+    "serve": {
+      "noStoragePath": "Dit asset heeft nog geen bestand bijgevoegd. Verwerking kan nog bezig zijn.",
+      "fileMissing": "Het assetbestand kon niet worden gevonden op de server.",
+      "forbidden": "Toegang tot dit assetbestand is niet toegestaan.",
+      "loadError": "Voorvertoning kon niet worden geladen. Probeer de pagina te vernieuwen.",
+      "loading": "Asset laden…",
+      "notFound": "Asset niet gevonden."
+    },
+    "status": {
+      "draft": "Concept",
+      "pending": "In afwachting",
+      "processing": "Verwerken",
+      "ready": "Klaar",
+      "in_review": "In beoordeling",
+      "approved": "Goedgekeurd",
+      "rejected": "Afgewezen",
+      "failed": "Mislukt"
+    },
+    "url": {
+      "copyLink": "Assetlink kopiëren",
+      "linkCopied": "Link gekopieerd naar klembord",
+      "openInNewTab": "Openen in nieuw tabblad",
+      "download": "Downloaden"
+    }
+  },
+  "folder": {
+    "access": {
+      "title": "Toegangsbeleid",
+      "addGroup": "Groep toevoegen",
+      "group": "Groep",
+      "permissions": "Machtigingen",
+      "applyToSubfolders": "Toepassen op alle submappen",
+      "cascadeWarning": "Dit beleid wordt ook toegepast op alle directe en geneste submappen van \"{{name}}\". Bestaande mapspecifieke overschrijvingen worden bewaard.",
+      "savePolicy": "Beleid toevoegen",
+      "saveError": "Opslaan van toegangsbeleid mislukt.",
+      "saved": "Toegangsbeleid opgeslagen.",
+      "savedWithCascade": "Toegangsbeleid opgeslagen en wordt doorgevoerd naar alle submappen.",
+      "removed": "Toegangsbeleid verwijderd.",
+      "removedWithCascade": "Toegangsbeleid verwijderd en wordt verwijderd uit alle submappen.",
+      "removeError": "Verwijderen van toegangsbeleid mislukt.",
+      "loadError": "Laden van toegangsbeleid mislukt.",
+      "selectGroup": "Selecteer eerst een groep.",
+      "noPolicies": "Geen toegangsbeleid gedefinieerd. Standaard toegangsregels zijn van toepassing.",
+      "defaultAccessNote": "Klik op \"Groep toevoegen\" om toegang te verlenen of te beperken voor een specifieke groep.",
+      "explicit": "Expliciet beleid",
+      "inherited": "Overgeërfd van bovenliggende map",
+      "deny": "Expliciete weigering",
+      "explicitDeny": "Expliciete weigering — overschrijft alle toekenningen",
+      "removeFromSubfolders": "Ook submappen",
+      "removeFromSubfoldersHint": "Indien aangevinkt, wordt de verwijderactie ook doorgevoerd naar alle onderliggende mappen.",
+      "removeTooltip": "Dit beleid uit deze map verwijderen",
+      "removeWithCascadeTooltip": "Dit beleid uit deze map en alle submappen verwijderen"
+    }
   }
 }

@@ -183,6 +183,40 @@ type AssetEdge {
 }
 
 """
+C2PA manifest and AI-provenance data for a single asset.
+"""
+type AssetProvenanceRecord {
+  aiToolsUsed: [String!]!
+
+  """
+  UUID of the owning asset
+  """
+  assetId: String!
+  assetTitle: String
+  assetUuid: String
+  claimGenerator: String
+  createdAt: ISO8601DateTime!
+  errorDetail: String
+  id: ID!
+  isAiModified: Boolean!
+
+  """
+  Full parsed C2PA manifest payload
+  """
+  manifestData: Json
+
+  """
+  unchecked | verified | ai_generated | ai_modified | missing | invalid | signed | error
+  """
+  manifestStatus: String!
+  signedAt: ISO8601DateTime
+  signerCertFingerprint: String
+  signerName: String
+  updatedAt: ISO8601DateTime!
+  verifiedAt: ISO8601DateTime
+}
+
+"""
 Represents non-fractional signed whole numeric values. Since the value may
 exceed the size of a 32-bit integer, it's encoded as a string.
 """
@@ -370,6 +404,28 @@ type BulkRestoreFromBinPayload {
   clientMutationId: String
   errors: [String!]!
   restored: Int
+}
+
+"""
+Organisation-wide C2PA / Content Provenance policy configuration.
+"""
+type C2paConfiguration {
+  aiDisclosureRequired: Boolean!
+  autoSignOnIngest: Boolean!
+  autoVerifyOnIngest: Boolean!
+  gatewayC2paEnabled: Boolean!
+  id: ID!
+  policyNotes: String
+  requireC2paOnImport: Boolean!
+  signingIssuerName: String
+  signingOrg: String
+  trustStoreUrls: [String!]!
+  updatedAt: ISO8601DateTime!
+
+  """
+  lenient | strict
+  """
+  verificationStrictness: String!
 }
 
 """
@@ -1099,6 +1155,27 @@ type Query {
   assetDetail(uuid: String!): Asset
 
   """
+  Find a C2PA provenance record by ID (admin only)
+  """
+  assetProvenanceRecord(id: ID!): AssetProvenanceRecord
+
+  """
+  List C2PA provenance records (admin only)
+  """
+  assetProvenanceRecords(
+    """
+    Filter to AI-modified assets only
+    """
+    aiModified: Boolean
+    limit: Int = 25
+
+    """
+    Filter by manifest_status
+    """
+    status: String
+  ): [AssetProvenanceRecord!]!
+
+  """
   AI-assisted suggestions for assets that are safe to permanently purge (admin only).
   """
   binAiSuggestions(limit: Int = 20): [BinAiSuggestion!]!
@@ -1117,6 +1194,11 @@ type Query {
   Aggregate statistics for the Recycle Bin (total items, storage used, retention policy).
   """
   binStats: BinStats!
+
+  """
+  The organisation's C2PA policy configuration (admin only)
+  """
+  c2paConfiguration: C2paConfiguration!
 
   """
   Find a specific collection by its URL-friendly slug

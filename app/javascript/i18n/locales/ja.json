@@ -589,5 +589,124 @@
       "failed": "Failed",
       "cancelled": "Cancelled"
     }
+  },
+  "provenance": {
+    "title": "プロベナンス & C2PA",
+    "subtitle": "C2PAマニフェストの検証とAI開示の強制を行います。",
+    "stats": {
+      "verified": "Verified",
+      "aiModified": "AI-Modified",
+      "missing": "No Manifest",
+      "invalid": "Invalid Manifest",
+      "signed": "DAM-Signed"
+    },
+    "tabs": {
+      "records": "プロベナンスレコード",
+      "policy": "ポリシー",
+      "batch": "バッチ操作"
+    },
+    "policy": {
+      "gatewaySection": "Gateway Integration",
+      "ingestSection": "Ingest Hooks",
+      "signingSection": "Signing Identity",
+      "gatewayEnabled": "Enable C2PA Gateway Integration",
+      "autoVerify": "Auto-verify on Ingest",
+      "autoSign": "Auto-sign on Ingest",
+      "requireOnImport": "Require C2PA on Imports",
+      "aiDisclosureRequired": "Require AI Disclosure",
+      "signingIssuerName": "Signing Issuer Name",
+      "signingOrg": "Signing Organisation",
+      "strictness": "Verification Strictness",
+      "lenient": "Lenient",
+      "strict": "Strict",
+      "policyNotes": "Policy Notes",
+      "save": "ポリシーを保存",
+      "saving": "保存中…",
+      "saved": "ポリシーを保存しました。"
+    },
+    "table": {
+      "asset": "Asset",
+      "status": "Manifest Status",
+      "claimGenerator": "Claim Generator",
+      "aiModified": "AI-Modified",
+      "verifiedAt": "Verified At",
+      "filterStatus": "Filter by status",
+      "total": "{{count}} records"
+    },
+    "statusLabel": {
+      "unchecked": "Unchecked",
+      "verified": "Verified",
+      "ai_generated": "AI-Generated",
+      "ai_modified": "AI-Modified",
+      "missing": "No Manifest",
+      "invalid": "Invalid",
+      "signed": "Signed",
+      "error": "Error"
+    },
+    "batch": {
+      "task": "C2PA Task",
+      "scope": "Target Dataset",
+      "concurrency": "Concurrency",
+      "launch": "Launch Batch Task",
+      "launching": "Launching…",
+      "launched": "Job #{{id}} queued — {{task}}"
+    },
+    "empty": "プロベナンスレコードなし。C2PA検証バッチを実行してください。",
+    "error": "Failed to load provenance data."
+  },
+  "asset": {
+    "serve": {
+      "noStoragePath": "このアセットにはまだファイルが添付されていません。処理がまだ進行中の可能性があります。",
+      "fileMissing": "アセットファイルがサーバーで見つかりませんでした。",
+      "forbidden": "このアセットファイルへのアクセスは許可されていません。",
+      "loadError": "アセットのプレビューを読み込めませんでした。ページを更新してください。",
+      "loading": "アセットを読み込み中…",
+      "notFound": "アセットが見つかりません。"
+    },
+    "status": {
+      "draft": "下書き",
+      "pending": "保留中",
+      "processing": "処理中",
+      "ready": "準備完了",
+      "in_review": "レビュー中",
+      "approved": "承認済み",
+      "rejected": "却下済み",
+      "failed": "失敗"
+    },
+    "url": {
+      "copyLink": "アセットリンクをコピー",
+      "linkCopied": "リンクをクリップボードにコピーしました",
+      "openInNewTab": "新しいタブで開く",
+      "download": "ダウンロード"
+    }
+  },
+  "folder": {
+    "access": {
+      "title": "アクセスポリシー",
+      "addGroup": "グループを追加",
+      "group": "グループ",
+      "permissions": "権限",
+      "applyToSubfolders": "すべてのサブフォルダーに適用",
+      "cascadeWarning": "このポリシーは「{{name}}」のすべての直接および入れ子になったサブフォルダーにも適用されます。既存のサブフォルダー固有の上書き設定は保持されます。",
+      "savePolicy": "ポリシーを追加",
+      "saveError": "アクセスポリシーの保存に失敗しました。",
+      "saved": "アクセスポリシーが保存されました。",
+      "savedWithCascade": "アクセスポリシーが保存され、すべてのサブフォルダーに伝播されています。",
+      "removed": "アクセスポリシーが削除されました。",
+      "removedWithCascade": "アクセスポリシーが削除され、すべてのサブフォルダーから削除されています。",
+      "removeError": "アクセスポリシーの削除に失敗しました。",
+      "loadError": "アクセスポリシーの読み込みに失敗しました。",
+      "selectGroup": "最初にグループを選択してください。",
+      "noPolicies": "アクセスポリシーが定義されていません。デフォルトのアクセスルールが適用されます。",
+      "defaultAccessNote": "「グループを追加」をクリックして、特定のグループへのアクセスを許可または制限してください。",
+      "explicit": "明示的なポリシー",
+      "inherited": "親フォルダーから継承",
+      "deny": "明示的な拒否",
+      "explicitDeny": "明示的な拒否 — すべての許可を上書き",
+      "removeFromSubfolders": "サブフォルダーも含む",
+      "removeFromSubfoldersHint": "チェックすると、削除アクションがすべての子フォルダーにも伝播されます。",
+      "removeTooltip": "このフォルダーからこのポリシーを削除",
+      "removeWithCascadeTooltip": "このフォルダーとすべてのサブフォルダーからこのポリシーを削除"
+    }
   }
 }

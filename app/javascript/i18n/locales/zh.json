@@ -589,5 +589,124 @@
       "failed": "Failed",
       "cancelled": "Cancelled"
     }
+  },
+  "provenance": {
+    "title": "来源 & C2PA",
+    "subtitle": "追踪内容凭据，验证C2PA清单，并在资产库中强制AI公开声明。",
+    "stats": {
+      "verified": "Verified",
+      "aiModified": "AI-Modified",
+      "missing": "No Manifest",
+      "invalid": "Invalid Manifest",
+      "signed": "DAM-Signed"
+    },
+    "tabs": {
+      "records": "来源记录",
+      "policy": "政策",
+      "batch": "批量操作"
+    },
+    "policy": {
+      "gatewaySection": "Gateway Integration",
+      "ingestSection": "Ingest Hooks",
+      "signingSection": "Signing Identity",
+      "gatewayEnabled": "Enable C2PA Gateway Integration",
+      "autoVerify": "Auto-verify on Ingest",
+      "autoSign": "Auto-sign on Ingest",
+      "requireOnImport": "Require C2PA on Imports",
+      "aiDisclosureRequired": "Require AI Disclosure",
+      "signingIssuerName": "Signing Issuer Name",
+      "signingOrg": "Signing Organisation",
+      "strictness": "Verification Strictness",
+      "lenient": "Lenient",
+      "strict": "Strict",
+      "policyNotes": "Policy Notes",
+      "save": "保存政策",
+      "saving": "保存中…",
+      "saved": "政策已保存。"
+    },
+    "table": {
+      "asset": "Asset",
+      "status": "Manifest Status",
+      "claimGenerator": "Claim Generator",
+      "aiModified": "AI-Modified",
+      "verifiedAt": "Verified At",
+      "filterStatus": "Filter by status",
+      "total": "{{count}} records"
+    },
+    "statusLabel": {
+      "unchecked": "Unchecked",
+      "verified": "Verified",
+      "ai_generated": "AI-Generated",
+      "ai_modified": "AI-Modified",
+      "missing": "No Manifest",
+      "invalid": "Invalid",
+      "signed": "Signed",
+      "error": "Error"
+    },
+    "batch": {
+      "task": "C2PA Task",
+      "scope": "Target Dataset",
+      "concurrency": "Concurrency",
+      "launch": "Launch Batch Task",
+      "launching": "Launching…",
+      "launched": "Job #{{id}} queued — {{task}}"
+    },
+    "empty": "暂无来源记录。请运行C2PA验证批处理。",
+    "error": "Failed to load provenance data."
+  },
+  "asset": {
+    "serve": {
+      "noStoragePath": "此资产尚未附加文件。处理可能仍在进行中。",
+      "fileMissing": "无法在服务器上找到资产文件。",
+      "forbidden": "不允许访问此资产文件。",
+      "loadError": "无法加载资产预览。请尝试刷新。",
+      "loading": "正在加载资产…",
+      "notFound": "未找到资产。"
+    },
+    "status": {
+      "draft": "草稿",
+      "pending": "待处理",
+      "processing": "处理中",
+      "ready": "就绪",
+      "in_review": "审核中",
+      "approved": "已批准",
+      "rejected": "已拒绝",
+      "failed": "失败"
+    },
+    "url": {
+      "copyLink": "复制资产链接",
+      "linkCopied": "链接已复制到剪贴板",
+      "openInNewTab": "在新标签页中打开",
+      "download": "下载"
+    }
+  },
+  "folder": {
+    "access": {
+      "title": "访问策略",
+      "addGroup": "添加组",
+      "group": "组",
+      "permissions": "权限",
+      "applyToSubfolders": "应用于所有子文件夹",
+      "cascadeWarning": "此策略也将应用于\"{{name}}\"的所有直接和嵌套子文件夹。现有的子文件夹特定覆盖将被保留。",
+      "savePolicy": "添加策略",
+      "saveError": "保存访问策略失败。",
+      "saved": "访问策略已保存。",
+      "savedWithCascade": "访问策略已保存并正在传播到所有子文件夹。",
+      "removed": "访问策略已删除。",
+      "removedWithCascade": "访问策略已删除并正在从所有子文件夹中删除。",
+      "removeError": "删除访问策略失败。",
+      "loadError": "加载访问策略失败。",
+      "selectGroup": "请先选择一个组。",
+      "noPolicies": "未定义访问策略。适用默认访问规则。",
+      "defaultAccessNote": "点击\"添加组\"以授予或限制特定组的访问权限。",
+      "explicit": "显式策略",
+      "inherited": "从父文件夹继承",
+      "deny": "显式拒绝",
+      "explicitDeny": "显式拒绝 — 覆盖所有授权",
+      "removeFromSubfolders": "同时包括子文件夹",
+      "removeFromSubfoldersHint": "选中后，删除操作也将传播到所有子文件夹。",
+      "removeTooltip": "从此文件夹中删除此策略",
+      "removeWithCascadeTooltip": "从此文件夹及其所有子文件夹中删除此策略"
+    }
   }
 }

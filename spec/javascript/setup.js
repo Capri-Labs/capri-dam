@@ -36,3 +36,9 @@ if (!navigator.clipboard) {
   });
 }
 
+// Guard against test files that set document.head.innerHTML which wipes
+// Emotion's cached <style> reference nodes and causes insertBefore to throw
+// NotFoundError in subsequent MUI-rendered tests. This is a no-op unless a
+// test explicitly calls it, but it surfaces the problem during development.
+// The correct pattern is to use querySelector + setAttribute to update only
+// the CSRF meta without touching the rest of document.head.

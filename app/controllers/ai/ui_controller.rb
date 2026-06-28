@@ -10,7 +10,7 @@
 #   - The Semantic Copilot is available to every authenticated user.
 class Ai::UiController < ApplicationController
   before_action :authenticate_user!
-  before_action :require_admin!, only: %i[agents tasks playground]
+  before_action :require_admin!, only: %i[agents tasks playground provenance]
 
   def copilot
     @active_view = "Semantic Search"
@@ -26,5 +26,9 @@ class Ai::UiController < ApplicationController
 
   def playground
     @active_view = "Prompt Playground"
+  end
+
+  def provenance
+    @active_view = "Provenance & C2PA"
   end
 end

@@ -589,5 +589,124 @@
       "failed": "Failed",
       "cancelled": "Cancelled"
     }
+  },
+  "provenance": {
+    "title": "Herkunft & C2PA",
+    "subtitle": "Content Credentials verfolgen, C2PA-Manifeste prüfen und KI-Offenlegung in der Asset-Bibliothek durchsetzen.",
+    "stats": {
+      "verified": "Verified",
+      "aiModified": "AI-Modified",
+      "missing": "No Manifest",
+      "invalid": "Invalid Manifest",
+      "signed": "DAM-Signed"
+    },
+    "tabs": {
+      "records": "Herkunftsdaten",
+      "policy": "Richtlinien",
+      "batch": "Massenaktionen"
+    },
+    "policy": {
+      "gatewaySection": "Gateway Integration",
+      "ingestSection": "Ingest Hooks",
+      "signingSection": "Signing Identity",
+      "gatewayEnabled": "Enable C2PA Gateway Integration",
+      "autoVerify": "Auto-verify on Ingest",
+      "autoSign": "Auto-sign on Ingest",
+      "requireOnImport": "Require C2PA on Imports",
+      "aiDisclosureRequired": "Require AI Disclosure",
+      "signingIssuerName": "Signing Issuer Name",
+      "signingOrg": "Signing Organisation",
+      "strictness": "Verification Strictness",
+      "lenient": "Lenient",
+      "strict": "Strict",
+      "policyNotes": "Policy Notes",
+      "save": "Richtlinie speichern",
+      "saving": "Speichern…",
+      "saved": "Richtlinie gespeichert."
+    },
+    "table": {
+      "asset": "Asset",
+      "status": "Manifest Status",
+      "claimGenerator": "Claim Generator",
+      "aiModified": "AI-Modified",
+      "verifiedAt": "Verified At",
+      "filterStatus": "Filter by status",
+      "total": "{{count}} records"
+    },
+    "statusLabel": {
+      "unchecked": "Unchecked",
+      "verified": "Verified",
+      "ai_generated": "AI-Generated",
+      "ai_modified": "AI-Modified",
+      "missing": "No Manifest",
+      "invalid": "Invalid",
+      "signed": "Signed",
+      "error": "Error"
+    },
+    "batch": {
+      "task": "C2PA Task",
+      "scope": "Target Dataset",
+      "concurrency": "Concurrency",
+      "launch": "Launch Batch Task",
+      "launching": "Launching…",
+      "launched": "Job #{{id}} queued — {{task}}"
+    },
+    "empty": "Keine Herkunftsdaten vorhanden. Starten Sie eine C2PA-Verifizierung.",
+    "error": "Failed to load provenance data."
+  },
+  "asset": {
+    "serve": {
+      "noStoragePath": "Diese Ressource hat noch keine Datei. Die Verarbeitung ist möglicherweise noch im Gange.",
+      "fileMissing": "Die Ressourcendatei konnte auf dem Server nicht gefunden werden.",
+      "forbidden": "Der Zugriff auf diese Ressourcendatei ist nicht gestattet.",
+      "loadError": "Vorschau konnte nicht geladen werden. Bitte aktualisieren Sie die Seite.",
+      "loading": "Ressource wird geladen…",
+      "notFound": "Ressource nicht gefunden."
+    },
+    "status": {
+      "draft": "Entwurf",
+      "pending": "Ausstehend",
+      "processing": "Wird verarbeitet",
+      "ready": "Bereit",
+      "in_review": "In Prüfung",
+      "approved": "Genehmigt",
+      "rejected": "Abgelehnt",
+      "failed": "Fehlgeschlagen"
+    },
+    "url": {
+      "copyLink": "Ressourcenlink kopieren",
+      "linkCopied": "Link in die Zwischenablage kopiert",
+      "openInNewTab": "In neuem Tab öffnen",
+      "download": "Herunterladen"
+    }
+  },
+  "folder": {
+    "access": {
+      "title": "Zugriffsrichtlinien",
+      "addGroup": "Gruppe hinzufügen",
+      "group": "Gruppe",
+      "permissions": "Berechtigungen",
+      "applyToSubfolders": "Auf alle Unterordner anwenden",
+      "cascadeWarning": "Diese Richtlinie wird auch auf alle direkten und verschachtelten Unterordner von „{{name}}\" angewendet. Vorhandene ordnerspezifische Überschreibungen bleiben erhalten.",
+      "savePolicy": "Richtlinie hinzufügen",
+      "saveError": "Zugriffsrichtlinie konnte nicht gespeichert werden.",
+      "saved": "Zugriffsrichtlinie gespeichert.",
+      "savedWithCascade": "Zugriffsrichtlinie gespeichert und wird auf alle Unterordner übertragen.",
+      "removed": "Zugriffsrichtlinie entfernt.",
+      "removedWithCascade": "Zugriffsrichtlinie entfernt und wird aus allen Unterordnern entfernt.",
+      "removeError": "Zugriffsrichtlinie konnte nicht entfernt werden.",
+      "loadError": "Zugriffsrichtlinien konnten nicht geladen werden.",
+      "selectGroup": "Bitte zuerst eine Gruppe auswählen.",
+      "noPolicies": "Keine Zugriffsrichtlinien definiert. Standardzugriffsregeln gelten.",
+      "defaultAccessNote": "Klicken Sie auf „Gruppe hinzufügen\", um Zugriff für eine bestimmte Gruppe zu gewähren oder einzuschränken.",
+      "explicit": "Explizite Richtlinien",
+      "inherited": "Vom übergeordneten Ordner geerbt",
+      "deny": "Explizite Ablehnung",
+      "explicitDeny": "Explizite Ablehnung — überschreibt alle Gewährungen",
+      "removeFromSubfolders": "Auch Unterordner",
+      "removeFromSubfoldersHint": "Wenn aktiviert, wird die Entfernaktion auch auf alle untergeordneten Ordner übertragen.",
+      "removeTooltip": "Diese Richtlinie aus diesem Ordner entfernen",
+      "removeWithCascadeTooltip": "Diese Richtlinie aus diesem Ordner und allen Unterordnern entfernen"
+    }
   }
 }

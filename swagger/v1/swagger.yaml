@@ -6279,6 +6279,225 @@ paths:
                 properties:
                   error:
                     type: string
+  "/api/v1/c2pa_configuration":
+    get:
+      summary: Show C2PA policy configuration (admin only)
+      tags:
+      - Content Provenance / C2PA
+      security:
+      - Bearer: []
+      responses:
+        '200':
+          description: Configuration returned
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/C2paConfiguration"
+    patch:
+      summary: Update C2PA policy configuration (admin only)
+      tags:
+      - Content Provenance / C2PA
+      security:
+      - Bearer: []
+      parameters: []
+      responses:
+        '200':
+          description: Configuration updated
+        '422':
+          description: Validation failed
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                c2pa_configuration:
+                  type: object
+                  properties:
+                    gateway_c2pa_enabled:
+                      type: boolean
+                    auto_verify_on_ingest:
+                      type: boolean
+                    auto_sign_on_ingest:
+                      type: boolean
+                    require_c2pa_on_import:
+                      type: boolean
+                    ai_disclosure_required:
+                      type: boolean
+                    signing_issuer_name:
+                      type: string
+                    signing_org:
+                      type: string
+                    verification_strictness:
+                      type: string
+                      enum:
+                      - lenient
+                      - strict
+                    policy_notes:
+                      type: string
+                    trust_store_urls:
+                      type: array
+                      items:
+                        type: string
+  "/api/v1/asset_provenance_records":
+    get:
+      summary: List provenance records (admin only)
+      tags:
+      - Content Provenance / C2PA
+      security:
+      - Bearer: []
+      parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: ai_modified
+        in: query
+        required: false
+        schema:
+          type: boolean
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: Records returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total:
+                    type: integer
+                  page:
+                    type: integer
+                  per_page:
+                    type: integer
+                  records:
+                    type: array
+                    items:
+                      "$ref": "#/components/schemas/AssetProvenanceRecord"
+  "/api/v1/asset_provenance_records/stats":
+    get:
+      summary: Dashboard statistics (admin only)
+      tags:
+      - Content Provenance / C2PA
+      security:
+      - Bearer: []
+      responses:
+        '200':
+          description: Stats returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total_assets:
+                    type: integer
+                  verified:
+                    type: integer
+                  ai_modified:
+                    type: integer
+                  missing:
+                    type: integer
+                  invalid:
+                    type: integer
+                  signed:
+                    type: integer
+                  unchecked:
+                    type: integer
+  "/api/v1/asset_provenance_records/{id}":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+    get:
+      summary: Fetch a single provenance record (admin only)
+      tags:
+      - Content Provenance / C2PA
+      security:
+      - Bearer: []
+      responses:
+        '200':
+          description: Record returned
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AssetProvenanceRecord"
+        '404':
+          description: Not found
+  "/api/v1/asset_provenance_records/bulk_upsert":
+    post:
+      summary: Bulk-upsert provenance results (AI Gateway, secret-authenticated)
+      tags:
+      - Content Provenance / C2PA
+      description: Internal endpoint called by the AI Gateway to write per-asset C2PA
+        results. Authenticated via X-Gateway-Secret header.
+      parameters:
+      - name: X-Gateway-Secret
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Records upserted
+        '401':
+          description: Invalid or missing gateway secret
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - records
+              properties:
+                records:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      asset_id:
+                        type: string
+                        description: Asset UUID
+                      manifest_status:
+                        type: string
+                        enum:
+                        - unchecked
+                        - verified
+                        - ai_generated
+                        - ai_modified
+                        - missing
+                        - invalid
+                        - signed
+                        - error
+                      claim_generator:
+                        type: string
+                      is_ai_modified:
+                        type: boolean
+                      ai_tools_used:
+                        type: array
+                        items:
+                          type: string
+                      verified_at:
+                        type: string
+                        format: date-time
+                      signed_at:
+                        type: string
+                        format: date-time
+                      signer_name:
+                        type: string
+                      signer_cert_fingerprint:
+                        type: string
+                      error_detail:
+                        type: string
+                      manifest_data:
+                        type: object
   "/api/v1/system_connectors":
     get:
       summary: List all system connectors (ingestion bridges)
@@ -8422,6 +8641,101 @@ components:
         completed_at:
           type: string
           format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    C2paConfiguration:
+      type: object
+      properties:
+        id:
+          type: integer
+        gateway_c2pa_enabled:
+          type: boolean
+        auto_verify_on_ingest:
+          type: boolean
+        auto_sign_on_ingest:
+          type: boolean
+        require_c2pa_on_import:
+          type: boolean
+        ai_disclosure_required:
+          type: boolean
+        signing_issuer_name:
+          type: string
+          nullable: true
+        signing_org:
+          type: string
+          nullable: true
+        trust_store_urls:
+          type: array
+          items:
+            type: string
+        verification_strictness:
+          type: string
+          enum:
+          - lenient
+          - strict
+        policy_notes:
+          type: string
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+    AssetProvenanceRecord:
+      type: object
+      properties:
+        id:
+          type: integer
+        asset_id:
+          type: string
+          format: uuid
+        asset_uuid:
+          type: string
+          nullable: true
+        asset_title:
+          type: string
+          nullable: true
+        manifest_status:
+          type: string
+          enum:
+          - unchecked
+          - verified
+          - ai_generated
+          - ai_modified
+          - missing
+          - invalid
+          - signed
+          - error
+        manifest_data:
+          type: object
+        claim_generator:
+          type: string
+          nullable: true
+        is_ai_modified:
+          type: boolean
+        ai_tools_used:
+          type: array
+          items:
+            type: string
+        verified_at:
+          type: string
+          format: date-time
+          nullable: true
+        signed_at:
+          type: string
+          format: date-time
+          nullable: true
+        signer_name:
+          type: string
+          nullable: true
+        signer_cert_fingerprint:
+          type: string
+          nullable: true
+        error_detail:
+          type: string
           nullable: true
         created_at:
           type: string

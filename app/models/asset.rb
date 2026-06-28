@@ -63,7 +63,8 @@ class Asset < ApplicationRecord
 
   # @!attribute [r] asset_embedding
   #   @return [AssetEmbedding, nil] the AI vector for semantic similarity search
-  has_one :asset_embedding, dependent: :destroy
+  has_one :asset_embedding,          dependent: :destroy
+  has_one :asset_provenance_record,  dependent: :destroy, foreign_key: :asset_id, primary_key: :id
 
   has_many :collection_assets, dependent: :destroy
 

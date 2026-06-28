@@ -589,5 +589,124 @@
       "failed": "Failed",
       "cancelled": "Cancelled"
     }
+  },
+  "provenance": {
+    "title": "Provenance & C2PA",
+    "subtitle": "Suivez les informations d’authenticité, vérifiez les manifestes C2PA et appliquez la divulgation IA.",
+    "stats": {
+      "verified": "Verified",
+      "aiModified": "AI-Modified",
+      "missing": "No Manifest",
+      "invalid": "Invalid Manifest",
+      "signed": "DAM-Signed"
+    },
+    "tabs": {
+      "records": "Enregistrements",
+      "policy": "Politique",
+      "batch": "Actions groupées"
+    },
+    "policy": {
+      "gatewaySection": "Gateway Integration",
+      "ingestSection": "Ingest Hooks",
+      "signingSection": "Signing Identity",
+      "gatewayEnabled": "Enable C2PA Gateway Integration",
+      "autoVerify": "Auto-verify on Ingest",
+      "autoSign": "Auto-sign on Ingest",
+      "requireOnImport": "Require C2PA on Imports",
+      "aiDisclosureRequired": "Require AI Disclosure",
+      "signingIssuerName": "Signing Issuer Name",
+      "signingOrg": "Signing Organisation",
+      "strictness": "Verification Strictness",
+      "lenient": "Lenient",
+      "strict": "Strict",
+      "policyNotes": "Policy Notes",
+      "save": "Enregistrer la politique",
+      "saving": "Enregistrement…",
+      "saved": "Politique sauvegardée."
+    },
+    "table": {
+      "asset": "Asset",
+      "status": "Manifest Status",
+      "claimGenerator": "Claim Generator",
+      "aiModified": "AI-Modified",
+      "verifiedAt": "Verified At",
+      "filterStatus": "Filter by status",
+      "total": "{{count}} records"
+    },
+    "statusLabel": {
+      "unchecked": "Unchecked",
+      "verified": "Verified",
+      "ai_generated": "AI-Generated",
+      "ai_modified": "AI-Modified",
+      "missing": "No Manifest",
+      "invalid": "Invalid",
+      "signed": "Signed",
+      "error": "Error"
+    },
+    "batch": {
+      "task": "C2PA Task",
+      "scope": "Target Dataset",
+      "concurrency": "Concurrency",
+      "launch": "Launch Batch Task",
+      "launching": "Launching…",
+      "launched": "Job #{{id}} queued — {{task}}"
+    },
+    "empty": "Aucun enregistrement de provenance. Lancez une vérification C2PA.",
+    "error": "Failed to load provenance data."
+  },
+  "asset": {
+    "serve": {
+      "noStoragePath": "Cette ressource n'a pas encore de fichier joint. Le traitement est peut-être encore en cours.",
+      "fileMissing": "Le fichier de la ressource est introuvable sur le serveur.",
+      "forbidden": "L'accès à ce fichier de ressource n'est pas autorisé.",
+      "loadError": "Impossible de charger l'aperçu. Veuillez actualiser la page.",
+      "loading": "Chargement de la ressource…",
+      "notFound": "Ressource introuvable."
+    },
+    "status": {
+      "draft": "Brouillon",
+      "pending": "En attente",
+      "processing": "En cours de traitement",
+      "ready": "Prêt",
+      "in_review": "En révision",
+      "approved": "Approuvé",
+      "rejected": "Rejeté",
+      "failed": "Échec"
+    },
+    "url": {
+      "copyLink": "Copier le lien de la ressource",
+      "linkCopied": "Lien copié dans le presse-papiers",
+      "openInNewTab": "Ouvrir dans un nouvel onglet",
+      "download": "Télécharger"
+    }
+  },
+  "folder": {
+    "access": {
+      "title": "Politiques d'accès",
+      "addGroup": "Ajouter un groupe",
+      "group": "Groupe",
+      "permissions": "Permissions",
+      "applyToSubfolders": "Appliquer à tous les sous-dossiers",
+      "cascadeWarning": "Cette politique sera également appliquée à tous les sous-dossiers directs et imbriqués de « {{name}} ». Les remplacements spécifiques aux sous-dossiers existants seront préservés.",
+      "savePolicy": "Ajouter une politique",
+      "saveError": "Impossible d'enregistrer la politique d'accès.",
+      "saved": "Politique d'accès enregistrée.",
+      "savedWithCascade": "Politique d'accès enregistrée et propagée à tous les sous-dossiers.",
+      "removed": "Politique d'accès supprimée.",
+      "removedWithCascade": "Politique d'accès supprimée et retirée de tous les sous-dossiers.",
+      "removeError": "Impossible de supprimer la politique d'accès.",
+      "loadError": "Impossible de charger les politiques d'accès.",
+      "selectGroup": "Veuillez d'abord sélectionner un groupe.",
+      "noPolicies": "Aucune politique d'accès définie. Les règles d'accès par défaut s'appliquent.",
+      "defaultAccessNote": "Cliquez sur « Ajouter un groupe » pour accorder ou restreindre l'accès à un groupe spécifique.",
+      "explicit": "Politiques explicites",
+      "inherited": "Hérité du dossier parent",
+      "deny": "Refus explicite",
+      "explicitDeny": "Refus explicite — remplace tous les accords",
+      "removeFromSubfolders": "Aussi les sous-dossiers",
+      "removeFromSubfoldersHint": "Si coché, l'action de suppression sera également propagée à tous les dossiers enfants.",
+      "removeTooltip": "Supprimer cette politique de ce dossier",
+      "removeWithCascadeTooltip": "Supprimer cette politique de ce dossier et de tous ses sous-dossiers"
+    }
   }
 }
