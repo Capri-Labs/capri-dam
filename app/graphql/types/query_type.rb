@@ -162,6 +162,37 @@ module Types
     end
 
     # -------------------------------------------------------------------------
+    # Agent Workflows (AI Automations)
+    # -------------------------------------------------------------------------
+
+    # Returns all agent workflows, most-recently-updated first.
+    #
+    # @return [Array<Types::AgentWorkflowType>]
+    field :agent_workflows, [ Types::AgentWorkflowType ], null: false do
+      description "List all AI agent workflows"
+      argument :active, Boolean, required: false, description: "Filter by active state"
+    end
+
+    def agent_workflows(active: nil)
+      scope = AgentWorkflow.order(updated_at: :desc)
+      scope = scope.where(active: active) unless active.nil?
+      scope
+    end
+
+    # Finds a single agent workflow by its database ID.
+    #
+    # @param id [ID] the workflow's database primary key
+    # @return [Types::AgentWorkflowType, nil]
+    field :agent_workflow, Types::AgentWorkflowType, null: true do
+      description "Find an AI agent workflow by ID"
+      argument :id, ID, required: true
+    end
+
+    def agent_workflow(id:)
+      AgentWorkflow.find_by(id: id)
+    end
+
+    # -------------------------------------------------------------------------
     # Users (admin only)
     # -------------------------------------------------------------------------
 

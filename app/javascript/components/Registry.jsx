@@ -21,6 +21,7 @@ import DataHealthDashboard from "./Admin/Migrations/DataHealthDashboard";
 import SemanticCopilot from "./Admin/Intelligence/SemanticCopilot";
 import AgentWorkflows from "./Admin/Intelligence/AgentWorkflows";
 import BatchProcessing from "./Admin/Intelligence/BatchProcessing";
+import PromptPlayground from "./Admin/Intelligence/PromptPlayground";
 import MetadataSchemasManager from "./Tools/MetadataSchemas";
 import MetadataExportManager from "./Tools/MetadataExport";
 import MetadataImportManager from "./Tools/MetadataImport";
@@ -51,6 +52,7 @@ export const COMPONENT_REGISTRY = {
     'semantic-copilot-screen': SemanticCopilot,
     'ai-automations-screen': AgentWorkflows,
     'ai-batch-processing-screen': BatchProcessing,
+    'ai-lab-playground-screen': PromptPlayground,
     'metadata-schemas-screen': MetadataSchemasManager,
     'metadata-exports-screen': MetadataExportManager,
     'metadata-imports-screen': MetadataImportManager,

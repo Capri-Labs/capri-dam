@@ -435,5 +435,123 @@
         "failed": "Falhou"
       }
     }
+  },
+  "aiLab": {
+    "playground": {
+      "title": "Prompt Playground",
+      "subtitle": "Build, test & iterate prompts against the AI Gateway",
+      "reset": "Reset conversation",
+      "run": "Run Prompt",
+      "running": "Running…",
+      "waiting": "Waiting for AI Gateway…",
+      "copyResponse": "Copy response",
+      "restore": "Restore",
+      "noHistory": "No runs yet in this session.",
+      "emptyTitle": "Ready to run",
+      "emptyBody": "Write your prompts on the left, then click Run Prompt.",
+      "parameters": "Parameters",
+      "model": "Model",
+      "temperature": "Temperature",
+      "tempHintFocused": "More focused & deterministic",
+      "tempHintCreative": "More creative & random",
+      "tempHintBalanced": "Balanced",
+      "maxTokens": "Max Tokens",
+      "messageIndex": "#{{index}}",
+      "roles": {
+        "system": "System",
+        "user": "User",
+        "assistant": "Assistant"
+      },
+      "placeholder": {
+        "system": "Define the AI persona or task constraints…",
+        "user": "Enter the user message to test…",
+        "assistant": "Optional: seed an assistant turn…"
+      },
+      "tabs": {
+        "response": "Response",
+        "history": "History"
+      }
+    }
+  },
+  "copilot": {
+    "title": "Semantic Copilot",
+    "poweredBy": "Powered by pgvector + HuggingFace MiniLM",
+    "greeting": "Hello. I am your Semantic Copilot. Describe the visual assets you need.",
+    "clearSession": "Clear conversation",
+    "searching": "Traversing vector space…",
+    "send": "Send",
+    "inputPlaceholder": "e.g. Wide shots of urban architecture at night…",
+    "inputAriaLabel": "Search query",
+    "imageSearch": "Reverse image search (coming soon)",
+    "emptyCanvas": "The canvas is empty",
+    "emptyCanvasHint": "Ask the Copilot to retrieve assets to begin.",
+    "foundAssets_one": "Found 1 asset matching your query.",
+    "foundAssets_other": "Found {{count}} assets matching your query.",
+    "noAssets": "No assets matched that query. Try different keywords.",
+    "viewInDam": "View in DAM",
+    "copyUrl": "Copy URL",
+    "resultsHeader": "{{count}} result(s)",
+    "suggestionsLabel": "Try asking:",
+    "suggestions": {
+      "0": "Summer campaign visuals",
+      "1": "Product shots on white background",
+      "2": "Team headshots for about pages",
+      "3": "Urban architecture wide shots"
+    },
+    "filter": {
+      "label": "Filter by type",
+      "all": "All",
+      "images": "Images",
+      "videos": "Videos",
+      "documents": "Documents",
+      "audio": "Audio"
+    },
+    "error": {
+      "generic": "Search failed.",
+      "connection": "Error connecting to the vector database."
+    }
+  },
+  "agents": {
+    "title": "Agent Automations",
+    "subtitle": "Orchestrate autonomous AI agents. Map system events to AI operational workflows.",
+    "createNew": "Create New Workflow",
+    "emptyTitle": "No workflows yet",
+    "emptyBody": "Create your first autonomous agent to start automating DAM operations.",
+    "telemetry": "Agent Telemetry",
+    "noTelemetry": "No agent activity yet.",
+    "triggerNow": "Trigger now",
+    "reliability": "Reliability",
+    "avgLatency": "Avg Latency",
+    "runs_one": "{{count}} run",
+    "runs_other": "{{count}} runs",
+    "toolsLoaded_one": "{{count}} tool",
+    "toolsLoaded_other": "{{count}} tools",
+    "confirmDelete": "Delete \"{{name}}\"? This cannot be undone.",
+    "status": {
+      "listening": "Listening",
+      "halted": "Halted"
+    },
+    "statusLabel": {
+      "running": "Running…",
+      "success": "Completed successfully",
+      "warning": "Completed with warnings",
+      "failed": "Failed"
+    },
+    "node": {
+      "trigger": "Event Trigger",
+      "agent": "AI Agent",
+      "tools": "Capabilities"
+    },
+    "form": {
+      "createTitle": "Create New Workflow",
+      "editTitle": "Edit Workflow",
+      "name": "Name",
+      "nameRequired": "Name is required.",
+      "description": "Description",
+      "trigger": "Trigger Event",
+      "model": "Agent Model",
+      "tools": "Capabilities (Tools)",
+      "activeOnSave": "Activate immediately on save"
+    }
   }
 }

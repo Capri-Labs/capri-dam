@@ -101,11 +101,12 @@ Rails.application.routes.draw do
     resources :workflow_steps, only: [ :index, :create, :update, :destroy ]
   end
 
-  # AI UI
+  # AI UI — all actions require Devise session; agents/batch/playground are admin-only
   namespace :ai do
-    get "copilot", to: "ui#copilot"
-    get "agents",  to: "ui#agents"
-    get "batch",   to: "ui#batch"
+    get "copilot",        to: "ui#copilot"
+    get "agents",         to: "ui#agents"
+    get "batch",          to: "ui#batch"
+    get "lab/playground", to: "ui#playground"
   end
 
   # ==========================================
@@ -140,6 +141,20 @@ Rails.application.routes.draw do
       # Global Search & AI
       get "search", to: "search#index"
       post "copilot/search", to: "copilots#search"
+
+      # AI Lab (Prompt Playground) — routes into Api::V1::Ai::LabController
+      get  "ai/lab/models", to: "ai/lab#models", as: :ai_lab_models
+      post "ai/lab/chat",   to: "ai/lab#chat",   as: :ai_lab_chat
+
+      # Agent Workflows
+      resources :agent_workflows, only: %i[index show create update destroy] do
+        member do
+          patch :toggle
+          post  :trigger
+          get   :executions
+          post  :executions, to: "agent_workflows#log_execution", as: :log_execution
+        end
+      end
 
       # Dynamic CDN Configuration Routes
       get "cdn_configurations", to: "cdn_configurations#index"

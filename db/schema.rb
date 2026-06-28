@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_26_130000) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_28_100000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -42,6 +42,40 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_26_130000) do
     t.bigint "blob_id", null: false
     t.string "variation_digest", null: false
     t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
+  end
+
+  create_table "agent_executions", force: :cascade do |t|
+    t.bigint "agent_workflow_id", null: false
+    t.datetime "completed_at"
+    t.datetime "created_at", null: false
+    t.integer "duration_ms"
+    t.text "error_message"
+    t.jsonb "output", default: {}, null: false
+    t.datetime "started_at", default: -> { "CURRENT_TIMESTAMP" }, null: false
+    t.string "status", default: "running", null: false
+    t.text "summary"
+    t.jsonb "trigger_payload", default: {}, null: false
+    t.string "trigger_type", default: "event", null: false
+    t.datetime "updated_at", null: false
+    t.index ["agent_workflow_id"], name: "index_agent_executions_on_agent_workflow_id"
+    t.index ["started_at"], name: "index_agent_executions_on_started_at"
+    t.index ["status"], name: "index_agent_executions_on_status"
+  end
+
+  create_table "agent_workflows", force: :cascade do |t|
+    t.boolean "active", default: false, null: false
+    t.string "agent_model", null: false
+    t.datetime "created_at", null: false
+    t.bigint "created_by_id"
+    t.text "description"
+    t.jsonb "metadata", default: {}, null: false
+    t.string "name", null: false
+    t.jsonb "tools_enabled", default: [], null: false
+    t.string "trigger_event", null: false
+    t.datetime "updated_at", null: false
+    t.index ["active"], name: "index_agent_workflows_on_active"
+    t.index ["created_by_id"], name: "index_agent_workflows_on_created_by_id"
+    t.index ["trigger_event"], name: "index_agent_workflows_on_trigger_event"
   end
 
   create_table "ai_configurations", force: :cascade do |t|
@@ -792,6 +826,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_26_130000) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "agent_executions", "agent_workflows"
+  add_foreign_key "agent_workflows", "users", column: "created_by_id"
   add_foreign_key "asset_embeddings", "assets"
   add_foreign_key "asset_versions", "assets"
   add_foreign_key "asset_versions", "users", column: "created_by_id"

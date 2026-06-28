@@ -495,4 +495,84 @@ RSpec.describe "GraphQL endpoint", type: :request do
       expect(json["errors"]).not_to be_nil
     end
   end
+
+  # ─────────────────────────── agent workflows ────────────────────────────────
+
+  describe "agentWorkflows query" do
+    let(:query) do
+      <<~GQL
+        query($active: Boolean) {
+          agentWorkflows(active: $active) {
+            id
+            name
+            triggerEvent
+            agentModel
+            toolsEnabled
+            active
+            executionCount
+            reliability
+          }
+        }
+      GQL
+    end
+
+    it "returns all workflows for an authenticated user" do
+      create(:agent_workflow, name: "SEO Bot", active: true)
+      create(:agent_workflow, name: "Compliance", active: false)
+
+      gql_post(query: query, user: viewer_user)
+      expect(response).to have_http_status(:ok)
+      names = json.dig("data", "agentWorkflows").map { |w| w["name"] }
+      expect(names).to contain_exactly("SEO Bot", "Compliance")
+    end
+
+    it "filters by active state" do
+      create(:agent_workflow, name: "SEO Bot", active: true)
+      create(:agent_workflow, name: "Compliance", active: false)
+
+      gql_post(query: query, variables: { active: true }, user: viewer_user)
+      data = json.dig("data", "agentWorkflows")
+      expect(data.map { |w| w["name"] }).to eq([ "SEO Bot" ])
+    end
+
+    it "exposes computed reliability and executionCount" do
+      wf = create(:agent_workflow)
+      create_list(:agent_execution, 4, agent_workflow: wf, status: "success")
+      create(:agent_execution, agent_workflow: wf, status: "failed")
+
+      gql_post(query: query, user: viewer_user)
+      row = json.dig("data", "agentWorkflows").first
+      expect(row["executionCount"]).to eq(5)
+      expect(row["reliability"]).to eq(80.0)
+    end
+  end
+
+  describe "agentWorkflow(id:) query" do
+    let(:query) do
+      <<~GQL
+        query($id: ID!) {
+          agentWorkflow(id: $id) {
+            id
+            name
+            recentExecutions(limit: 5) { id status summary }
+          }
+        }
+      GQL
+    end
+
+    it "returns a single workflow with recent executions" do
+      wf = create(:agent_workflow, name: "SEO Bot")
+      create_list(:agent_execution, 3, agent_workflow: wf)
+
+      gql_post(query: query, variables: { id: wf.id.to_s }, user: viewer_user)
+      data = json.dig("data", "agentWorkflow")
+      expect(data["name"]).to eq("SEO Bot")
+      expect(data["recentExecutions"].size).to eq(3)
+    end
+
+    it "returns null for a missing workflow" do
+      gql_post(query: query, variables: { id: "0" }, user: viewer_user)
+      expect(json.dig("data", "agentWorkflow")).to be_nil
+    end
+  end
 end

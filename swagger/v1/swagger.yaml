@@ -1168,6 +1168,393 @@ paths:
                       type: boolean
                     receive_workflow_emails:
                       type: boolean
+  "/api/v1/agent_workflows":
+    get:
+      summary: List all agent workflows
+      tags:
+      - AI Agents
+      security:
+      - Bearer: []
+      description: Returns every agent workflow with computed reliability/latency
+        stats. Available to any authenticated user.
+      responses:
+        '200':
+          description: Workflows returned
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  "$ref": "#/components/schemas/AgentWorkflow"
+    post:
+      summary: Create an agent workflow (admin only)
+      tags:
+      - AI Agents
+      security:
+      - Bearer: []
+      parameters: []
+      responses:
+        '201':
+          description: Workflow created
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AgentWorkflow"
+        '422':
+          description: Validation failed
+        '403':
+          description: Non-admin forbidden
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - agent_workflow
+              properties:
+                agent_workflow:
+                  type: object
+                  required:
+                  - name
+                  - trigger_event
+                  - agent_model
+                  properties:
+                    name:
+                      type: string
+                      example: Auto-SEO Enrichment
+                    description:
+                      type: string
+                    trigger_event:
+                      type: string
+                      enum:
+                      - asset.staged
+                      - asset.updated
+                      - schedule.nightly
+                      - manual
+                    agent_model:
+                      type: string
+                      example: gpt-4o-mini
+                    tools_enabled:
+                      type: array
+                      items:
+                        type: string
+                    active:
+                      type: boolean
+  "/api/v1/agent_workflows/{id}":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+    get:
+      summary: Fetch a single workflow
+      tags:
+      - AI Agents
+      security:
+      - Bearer: []
+      responses:
+        '200':
+          description: Workflow returned
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AgentWorkflow"
+        '404':
+          description: Not found
+    patch:
+      summary: Update a workflow (admin only)
+      tags:
+      - AI Agents
+      security:
+      - Bearer: []
+      parameters: []
+      responses:
+        '200':
+          description: Workflow updated
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AgentWorkflow"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                agent_workflow:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    active:
+                      type: boolean
+    delete:
+      summary: Delete a workflow (admin only)
+      tags:
+      - AI Agents
+      security:
+      - Bearer: []
+      responses:
+        '204':
+          description: Workflow deleted
+  "/api/v1/agent_workflows/{id}/toggle":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+    patch:
+      summary: Toggle the active flag (admin only)
+      tags:
+      - AI Agents
+      security:
+      - Bearer: []
+      responses:
+        '200':
+          description: Toggled
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  active:
+                    type: boolean
+  "/api/v1/agent_workflows/{id}/trigger":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+    post:
+      summary: Manually trigger a workflow (admin only)
+      tags:
+      - AI Agents
+      security:
+      - Bearer: []
+      responses:
+        '200':
+          description: Trigger signal sent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  workflow_id:
+                    type: integer
+  "/api/v1/agent_workflows/{id}/executions":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+    get:
+      summary: List execution history
+      tags:
+      - AI Agents
+      security:
+      - Bearer: []
+      responses:
+        '200':
+          description: Executions returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total:
+                    type: integer
+                  page:
+                    type: integer
+                  per_page:
+                    type: integer
+                  executions:
+                    type: array
+                    items:
+                      type: object
+    post:
+      summary: Record an execution (AI Gateway, secret-authenticated)
+      tags:
+      - AI Agents
+      description: Internal endpoint called by the AI Gateway with the X-Gateway-Secret
+        header to log execution results.
+      parameters:
+      - name: X-Gateway-Secret
+        in: header
+        required: true
+        description: Shared secret for machine-to-machine auth from the AI Gateway.
+        schema:
+          type: string
+      responses:
+        '201':
+          description: Execution logged
+        '401':
+          description: Missing/invalid gateway secret
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - agent_execution
+              properties:
+                agent_execution:
+                  type: object
+                  properties:
+                    status:
+                      type: string
+                      enum:
+                      - running
+                      - success
+                      - warning
+                      - failed
+                    summary:
+                      type: string
+                    duration_ms:
+                      type: integer
+                    trigger_type:
+                      type: string
+  "/api/v1/ai/lab/models":
+    get:
+      summary: List available AI models for the active provider
+      tags:
+      - AI Lab
+      security:
+      - Bearer: []
+      description: |
+        Returns the active provider from `AiConfiguration`, the default generation
+        model, and the model list for that provider. Used by the Prompt Playground
+        to populate the model selector without hard-coding provider info in the
+        frontend.
+      responses:
+        '200':
+          description: Model list returned
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - active_provider
+                - default_model
+                - models
+                properties:
+                  active_provider:
+                    type: string
+                    example: openai
+                  default_model:
+                    type: string
+                    example: gpt-4o
+                  models:
+                    type: array
+                    items:
+                      type: string
+                  all_providers:
+                    type: object
+        '401':
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+  "/api/v1/ai/lab/chat":
+    post:
+      summary: Send a prompt conversation to the AI Gateway
+      tags:
+      - AI Lab
+      security:
+      - Bearer: []
+      description: |
+        Proxies a chat-completion request to the configured AI Gateway
+        (`AI_GATEWAY_URL`). The request body mirrors the OpenAI chat completions
+        format. Returns the raw gateway response including `choices` and `usage`.
+      parameters: []
+      responses:
+        '200':
+          description: Completion returned by AI Gateway
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  choices:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        message:
+                          type: object
+                          properties:
+                            role:
+                              type: string
+                            content:
+                              type: string
+                  usage:
+                    type: object
+                    properties:
+                      prompt_tokens:
+                        type: integer
+                      completion_tokens:
+                        type: integer
+                      total_tokens:
+                        type: integer
+                  model:
+                    type: string
+        '422':
+          description: Messages parameter missing
+        '401':
+          description: Unauthenticated
+        '503':
+          description: AI Gateway unavailable
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - messages
+              properties:
+                messages:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                    - role
+                    - content
+                    properties:
+                      role:
+                        type: string
+                        enum:
+                        - system
+                        - user
+                        - assistant
+                      content:
+                        type: string
+                model:
+                  type: string
+                  example: gpt-4o-mini
+                temperature:
+                  type: number
+                  example: 0.7
+                max_tokens:
+                  type: integer
+                  example: 1024
   "/api/v1/ai_configuration":
     get:
       summary: Retrieve the current AI Gateway configuration
@@ -3472,41 +3859,45 @@ paths:
       security:
       - Bearer: []
       description: |
-        Translates a natural-language query into a 1536-dimension vector via the
-        Python AI Gateway (`POST /api/embed_query`) and performs an HNSW nearest-
-        neighbour search using pgvector. Returns the top 20 most semantically
-        similar assets regardless of filename or metadata text.
+        Translates a natural-language query into a dense vector via the AI Gateway
+        (`POST /api/embed_query`) and performs an HNSW nearest-neighbour search
+        using pgvector.
+
+        Returns the top N most semantically similar assets (default 20, max 50)
+        enriched with `similarity_score` (0–1, higher = closer match),
+        `content_type`, `folder_name`, `tags`, and a resolved `url`.
 
         **Requires the Python AI Gateway to be running** (default: `localhost:8000`).
-        Falls back gracefully with a 500 response if the gateway is unavailable.
+        Falls back with `503` when the gateway is unreachable.
 
-        Use this endpoint to power "find me something like…" search experiences
-        in your product.
+        ## Optional params
+        - `limit`        — 1–50 (default 20)
+        - `content_type` — filter prefix: `"image"`, `"video"`, `"document"`, `"audio"`
       parameters: []
       responses:
         '200':
-          description: Semantic search results returned (may be empty array)
+          description: Empty result when query is blank
           content:
             application/json:
               schema:
                 type: object
+                required:
+                - query
+                - count
+                - results
                 properties:
+                  query:
+                    type: string
+                  count:
+                    type: integer
                   results:
                     type: array
                     items:
                       type: object
-                      properties:
-                        id:
-                          type: integer
-                        original_filename:
-                          type: string
-                        file_url:
-                          type: string
-                          nullable: true
-                        properties:
-                          type: object
-        '500':
-          description: AI Gateway is unreachable or returned an error
+        '401':
+          description: Unauthenticated
+        '503':
+          description: AI Gateway unreachable
           content:
             application/json:
               schema:
@@ -3514,20 +3905,28 @@ paths:
                 properties:
                   error:
                     type: string
-                    example: Failed to process semantic query.
       requestBody:
         content:
           application/json:
             schema:
               type: object
               required:
-              - query
+              - messages
               properties:
                 query:
                   type: string
                   example: outdoor lifestyle photography with warm autumn tones
-                  description: Natural language description of the assets you are
+                  description: Natural-language description of the assets you are
                     looking for
+                limit:
+                  type: integer
+                  example: 20
+                  description: Maximum results to return (1–50). Defaults to 20.
+                content_type:
+                  type: string
+                  example: image
+                  description: 'Optional MIME-type prefix filter: image | video |
+                    document | audio'
   "/api/v1/data_health/metrics":
     get:
       summary: Retrieve TDM storage health and technical-debt metrics
@@ -4296,21 +4695,165 @@ paths:
                     items:
                       type: object
                       properties:
+                        id:
+                          type: integer
                         group_id:
                           type: integer
                         group_name:
                           type: string
                           nullable: true
-                        read:
+                        read_access:
                           type: boolean
-                        write:
+                        modify_access:
                           type: boolean
-                        delete:
+                        create_access:
                           type: boolean
-                        manage:
+                        delete_access:
                           type: boolean
-                        deny:
+                        replicate_access:
                           type: boolean
+                        manage_access:
+                          type: boolean
+                        explicit_deny:
+                          type: boolean
+  "/api/v1/folders/{id}/policies":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      description: Folder UUID
+      schema:
+        type: string
+    get:
+      summary: Retrieve explicit and inherited access-control policies for a folder
+      tags:
+      - Folders
+      security:
+      - Bearer: []
+      description: |
+        Returns two arrays: `explicit_policies` (rules set directly on this folder)
+        and `inherited_policies` (rules propagated from ancestor folders).
+        Inherited policies include `source_folder_name` and `source_folder_id`.
+      responses:
+        '200':
+          description: Policies returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  explicit_policies:
+                    type: array
+                    items:
+                      "$ref": "#/components/schemas/FolderPolicy"
+                  inherited_policies:
+                    type: array
+                    items:
+                      "$ref": "#/components/schemas/FolderPolicy"
+        '404':
+          description: Folder not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+    post:
+      summary: Upsert an access-control policy for a group on a folder
+      tags:
+      - Folders
+      security:
+      - Bearer: []
+      description: |
+        Creates or updates the permission matrix for a user group on this folder.
+        Pass `cascade: true` to enqueue background propagation to all child folders.
+        Requires the calling user to have `manage_access` on the folder (or be an admin).
+      parameters: []
+      responses:
+        '200':
+          description: Policy saved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  policy:
+                    "$ref": "#/components/schemas/FolderPolicy"
+        '403':
+          description: Insufficient permission
+        '404':
+          description: Folder or group not found
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - group_id
+              properties:
+                group_id:
+                  type: integer
+                  description: UserGroup ID
+                read_access:
+                  type: boolean
+                modify_access:
+                  type: boolean
+                create_access:
+                  type: boolean
+                delete_access:
+                  type: boolean
+                replicate_access:
+                  type: boolean
+                manage_access:
+                  type: boolean
+                explicit_deny:
+                  type: boolean
+                cascade:
+                  type: boolean
+                  description: When true, propagate to all child folders in the background
+  "/api/v1/folders/{id}/policies/{group_id}":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      description: Folder UUID
+      schema:
+        type: string
+    - name: group_id
+      in: path
+      required: true
+      description: UserGroup ID
+      schema:
+        type: integer
+    - name: cascade
+      in: query
+      required: false
+      description: When true, remove the policy from all child folders too
+      schema:
+        type: boolean
+    delete:
+      summary: Remove an explicit access-control policy from a folder
+      tags:
+      - Folders
+      security:
+      - Bearer: []
+      responses:
+        '200':
+          description: Policy removed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        '404':
+          description: Folder or policy not found
   "/api/v1/folders/{id}/restore":
     parameters:
     - name: id
@@ -7571,3 +8114,71 @@ components:
       type: http
       scheme: bearer
       description: Enter your OAuth 2.0 Bearer token to authenticate requests.
+  schemas:
+    FolderPolicy:
+      type: object
+      properties:
+        id:
+          type: integer
+        group_id:
+          type: integer
+        group_name:
+          type: string
+          nullable: true
+        read_access:
+          type: boolean
+        modify_access:
+          type: boolean
+        create_access:
+          type: boolean
+        delete_access:
+          type: boolean
+        replicate_access:
+          type: boolean
+        manage_access:
+          type: boolean
+        explicit_deny:
+          type: boolean
+    AgentWorkflow:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        trigger_event:
+          type: string
+          example: asset.staged
+        agent_model:
+          type: string
+          example: gpt-4o-mini
+        tools_enabled:
+          type: array
+          items:
+            type: string
+        active:
+          type: boolean
+        metadata:
+          type: object
+        created_by:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        reliability:
+          type: number
+          nullable: true
+          example: 99.2
+        avg_duration_ms:
+          type: integer
+          nullable: true
+          example: 1400
+        execution_count:
+          type: integer

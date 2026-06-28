@@ -33,6 +33,8 @@
                   <a href="#group-Operations-Queries">Queries</a>
                 </h5>
                 <ul class="nav-group-section-items">
+                  <li><a href="#query-agentWorkflow">agentWorkflow</a></li>
+                  <li><a href="#query-agentWorkflows">agentWorkflows</a></li>
                   <li><a href="#query-assetDetail">assetDetail</a></li>
                   <li><a href="#query-binAiSuggestions">binAiSuggestions</a></li>
                   <li><a href="#query-binPurgeStatus">binPurgeStatus</a></li>
@@ -82,6 +84,8 @@
           <div class="nav-group">
             <h4 class="nav-group-title">Types</h4>
             <ul class="nav-group-items">
+              <li><a href="#definition-AgentExecution">AgentExecution</a></li>
+              <li><a href="#definition-AgentWorkflow">AgentWorkflow</a></li>
               <li><a href="#definition-Asset">Asset</a></li>
               <li><a href="#definition-BigInt">BigInt</a></li>
               <li><a href="#definition-BinAiSuggestion">BinAiSuggestion</a></li>
@@ -183,7 +187,103 @@
             </div>
           </div>
           <h1 id="group-Operations-Queries" class="group-heading" data-traverse-target="group-Operations-Queries">Queries</h1>
+          <section id="query-agentWorkflow" class="operation operation-query" data-traverse-target="query-agentWorkflow">
+            <h2 class="operation-heading ">
+              <code>agentWorkflow</code>
+            </h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Find an AI agent workflow by ID</p>
+                </div>
+              </div>
+            </div>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-response doc-copy-section">
+                  <h5>Response</h5>
+                  <p> Returns an <a href="#definition-AgentWorkflow"><code>AgentWorkflow</code></a>
+                  </p>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <h4 class="example-heading">Example</h4>
+                <div class="example-section example-section-is-code operation-query-example">
+                  <h5>Query</h5>
+                  <pre><code class="hljs language-gql"><span class="hljs-symbol"><span class="hljs-keyword">query</span> agentWorkflow <span class="hljs-tag">{
+  <span class="hljs-symbol">agentWorkflow <span class="hljs-tag">{
+    <span class="hljs-symbol">recentExecutions</span>
+  }</span></span>
+}</span></span>
+</code></pre>
+                </div>
+                <div class="example-section example-section-is-code operation-response-example">
+                  <h5>Response</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">"data"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">"agentWorkflow"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+      <span class="hljs-attr">"recentExecutions"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-string">AgentExecution</span><span class="hljs-punctuation">]</span>
+    <span class="hljs-punctuation">}</span>
+  <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="query-agentWorkflows" class="operation operation-query" data-traverse-target="query-agentWorkflows">
+            <div class="operation-group-name">
+              <a href="#group-Operations-Queries">Queries</a>
+            </div>
+            <h2 class="operation-heading ">
+              <code>agentWorkflows</code>
+            </h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>List all AI agent workflows</p>
+                </div>
+              </div>
+            </div>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-response doc-copy-section">
+                  <h5>Response</h5>
+                  <p> Returns <a href="#definition-AgentWorkflow"><code>[AgentWorkflow!]!</code></a>
+                  </p>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <h4 class="example-heading">Example</h4>
+                <div class="example-section example-section-is-code operation-query-example">
+                  <h5>Query</h5>
+                  <pre><code class="hljs language-gql"><span class="hljs-symbol"><span class="hljs-keyword">query</span> agentWorkflows <span class="hljs-tag">{
+  <span class="hljs-symbol">agentWorkflows <span class="hljs-tag">{
+    <span class="hljs-symbol">recentExecutions</span>
+  }</span></span>
+}</span></span>
+</code></pre>
+                </div>
+                <div class="example-section example-section-is-code operation-response-example">
+                  <h5>Response</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">"data"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">"agentWorkflows"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span>
+      <span class="hljs-punctuation">{</span><span class="hljs-attr">"recentExecutions"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-string">AgentExecution</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">}</span>
+    <span class="hljs-punctuation">]</span>
+  <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
           <section id="query-assetDetail" class="operation operation-query" data-traverse-target="query-assetDetail">
+            <div class="operation-group-name">
+              <a href="#group-Operations-Queries">Queries</a>
+            </div>
             <h2 class="operation-heading ">
               <code>assetDetail</code>
             </h2>
@@ -2133,7 +2233,67 @@
             </div>
           </section>
           <h1 id="group-Types" class="group-heading" data-traverse-target="group-Types">Types</h1>
+          <section id="definition-AgentExecution" class="definition definition-object" data-traverse-target="definition-AgentExecution">
+            <h2 class="definition-heading">AgentExecution</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>A single execution record of an agent workflow run.</p>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <div class="example-section example-section-is-code">
+                  <h5>Example</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="definition-AgentWorkflow" class="definition definition-object" data-traverse-target="definition-AgentWorkflow">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">AgentWorkflow</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>An autonomous AI agent pipeline that fires on DAM system events or on schedule.</p>
+                </div>
+                <div class="definition-properties doc-copy-section">
+                  <h5>Fields</h5>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Field Name</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td data-property-name=""><span class="property-name"><code>recentExecutions</code></span> - <span class="property-type"><a href="#definition-AgentExecution"><code>[AgentExecution!]!</code></a></span>
+                        </td>
+                        <td> The 20 most recent execution records. </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <div class="example-section example-section-is-code">
+                  <h5>Example</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"recentExecutions"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-string">AgentExecution</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
           <section id="definition-Asset" class="definition definition-object" data-traverse-target="definition-Asset">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
             <h2 class="definition-heading">Asset</h2>
             <div class="doc-row">
               <div class="doc-copy">

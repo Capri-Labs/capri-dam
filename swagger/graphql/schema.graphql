@@ -24,6 +24,58 @@ type AddAssetToCollectionPayload {
 }
 
 """
+A single execution record of an agent workflow run.
+"""
+type AgentExecution {
+  completedAt: ISO8601DateTime
+  durationMs: Int
+  errorMessage: String
+  id: ID!
+  output: Json
+  startedAt: ISO8601DateTime!
+
+  """
+  running | success | warning | failed
+  """
+  status: String!
+  summary: String
+  triggerPayload: Json
+  triggerType: String!
+}
+
+"""
+An autonomous AI agent pipeline that fires on DAM system events or on schedule.
+"""
+type AgentWorkflow {
+  active: Boolean!
+  agentModel: String!
+  avgDurationMs: Int
+  createdAt: ISO8601DateTime!
+  description: String
+  executionCount: Int!
+  id: ID!
+  metadata: Json
+  name: String!
+
+  """
+  The 20 most recent execution records.
+  """
+  recentExecutions(limit: Int = 20): [AgentExecution!]!
+
+  """
+  Success rate (0–100) over the last 100 runs.
+  """
+  reliability: Float
+  toolsEnabled: [String!]!
+
+  """
+  asset.staged | asset.updated | schedule.nightly | manual
+  """
+  triggerEvent: String!
+  updatedAt: ISO8601DateTime!
+}
+
+"""
 Represents a core digital asset within the Capri DAM platform.
 """
 type Asset {
@@ -981,6 +1033,20 @@ type PersonalAccessToken {
 The master query entry point for data recovery.
 """
 type Query {
+  """
+  Find an AI agent workflow by ID
+  """
+  agentWorkflow(id: ID!): AgentWorkflow
+
+  """
+  List all AI agent workflows
+  """
+  agentWorkflows(
+    """
+    Filter by active state
+    """
+    active: Boolean
+  ): [AgentWorkflow!]!
   assetDetail(uuid: String!): Asset
 
   """
