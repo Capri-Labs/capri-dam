@@ -70,7 +70,8 @@
     "warning": "Warning",
     "info": "Info",
     "copyDismiss": "Copy & Dismiss",
-    "refresh": "Refresh"
+    "refresh": "Refresh",
+    "actions": "Actions"
   },
   "header": {
     "myProfile": "My Profile",
@@ -503,6 +504,41 @@
       "model": "Agent Model",
       "tools": "Capabilities (Tools)",
       "activeOnSave": "Activate immediately on save"
+    }
+  },
+  "aiBatch": {
+    "title": "AI Batch Tasks",
+    "subtitle": "Run AI tasks across whole segments of the library. Configure once, dispatch to the AI Gateway, and track progress live.",
+    "config": {
+      "title": "Batch Configuration",
+      "task": "AI Task",
+      "target": "Target Dataset",
+      "concurrency": "Concurrency / Batch Size",
+      "concurrencyHelp": "Number of items the gateway processes in parallel (1-500).",
+      "execute": "Execute Batch Task",
+      "dispatching": "Dispatching…"
+    },
+    "cost": {
+      "low": "low cost",
+      "medium": "medium cost",
+      "high": "high cost"
+    },
+    "history": {
+      "title": "Batch Runs",
+      "task": "Task",
+      "status": "Status",
+      "progress": "Progress",
+      "cancel": "Cancel",
+      "empty": "No batch runs yet. Configure a task to begin.",
+      "progressDetail": "{{processed}}/{{total}} processed, {{failed}} failed"
+    },
+    "statusLabel": {
+      "queued": "Queued",
+      "running": "Running",
+      "paused": "Paused",
+      "completed": "Completed",
+      "failed": "Failed",
+      "cancelled": "Cancelled"
     }
   },
   "copilot": {

@@ -5,12 +5,12 @@
 #
 # Authentication:
 #   - All actions require a valid Devise session (authenticate_user!).
-#   - Screens that configure AI behaviour (Agent Automations, Batch Processing,
+#   - Screens that configure AI behaviour (Agent Automations, AI Batch Tasks,
 #     Prompt Playground) are restricted to admin users (require_admin!).
 #   - The Semantic Copilot is available to every authenticated user.
 class Ai::UiController < ApplicationController
   before_action :authenticate_user!
-  before_action :require_admin!, only: %i[agents batch playground]
+  before_action :require_admin!, only: %i[agents tasks playground]
 
   def copilot
     @active_view = "Semantic Search"
@@ -20,8 +20,8 @@ class Ai::UiController < ApplicationController
     @active_view = "Agent Automations"
   end
 
-  def batch
-    @active_view = "Metadata Extraction"
+  def tasks
+    @active_view = "AI Batch Tasks"
   end
 
   def playground

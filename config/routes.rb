@@ -101,11 +101,12 @@ Rails.application.routes.draw do
     resources :workflow_steps, only: [ :index, :create, :update, :destroy ]
   end
 
-  # AI UI — all actions require Devise session; agents/batch/playground are admin-only
+  # AI UI — all actions require Devise session; agents/tasks/playground are admin-only
   namespace :ai do
     get "copilot",        to: "ui#copilot"
     get "agents",         to: "ui#agents"
-    get "batch",          to: "ui#batch"
+    get "tasks",          to: "ui#tasks"
+    get "batch",          to: redirect("/ai/tasks") # legacy alias
     get "lab/playground", to: "ui#playground"
   end
 
@@ -153,6 +154,17 @@ Rails.application.routes.draw do
           post  :trigger
           get   :executions
           post  :executions, to: "agent_workflows#log_execution", as: :log_execution
+        end
+      end
+
+      # AI Batch Tasks (on-demand batch AI runs — /ai/tasks screen)
+      resources :ai_batch_jobs, only: %i[index show create] do
+        collection do
+          get :task_types
+        end
+        member do
+          post :cancel
+          post :progress
         end
       end
 

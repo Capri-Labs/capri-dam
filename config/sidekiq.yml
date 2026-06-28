@@ -14,11 +14,13 @@
   - [bin_purge, 3] # to Delete assets
 
   # Medium Priority (System Processing)
-  - [workflow, 2]      # Transitioning states, creating audit logs
-  - [metadata, 2]      # AI tagging, EXIF extraction
-  - [smartai, 2]      # AI tagging, EXIF extraction
-  - [cdn_invalidation, 2] # CDN Purge
+  - [workflow, 2]           # Transitioning states, creating audit logs
+  - [metadata, 2]           # AI tagging, EXIF extraction
+  - [smartai, 2]            # On-demand AI batch tasks + smart collection routing
+  - [cdn_invalidation, 2]   # CDN purge
+  - [edge_metadata, 2]      # Per-asset edge/CDN metadata sync (EdgeMetadataSyncWorker)
 
   # Low Priority (Heavy CPU/Memory, Background Tasks)
-  - [reports, 1]       # PDF/Excel generation
-  - [ingest, 1]        # 50k batch uploads
+  - [reports, 1]            # PDF/Excel generation
+  - [ingest, 1]             # 50k batch uploads
+  - [edge_metadata_bulk, 1] # Mass folder metadata sync (FolderMetadataSyncWorker)

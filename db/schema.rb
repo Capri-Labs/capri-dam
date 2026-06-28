@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_28_100000) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_28_110000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -76,6 +76,28 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_28_100000) do
     t.index ["active"], name: "index_agent_workflows_on_active"
     t.index ["created_by_id"], name: "index_agent_workflows_on_created_by_id"
     t.index ["trigger_event"], name: "index_agent_workflows_on_trigger_event"
+  end
+
+  create_table "ai_batch_jobs", force: :cascade do |t|
+    t.datetime "completed_at"
+    t.integer "concurrency", default: 25, null: false
+    t.datetime "created_at", null: false
+    t.bigint "created_by_id"
+    t.text "error_message"
+    t.integer "failed_count", default: 0, null: false
+    t.jsonb "options", default: {}, null: false
+    t.integer "processed_count", default: 0, null: false
+    t.datetime "started_at"
+    t.string "status", default: "queued", null: false
+    t.integer "succeeded_count", default: 0, null: false
+    t.string "target_scope", null: false
+    t.string "task_type", null: false
+    t.integer "total_count", default: 0, null: false
+    t.datetime "updated_at", null: false
+    t.index ["created_at"], name: "index_ai_batch_jobs_on_created_at"
+    t.index ["created_by_id"], name: "index_ai_batch_jobs_on_created_by_id"
+    t.index ["status"], name: "index_ai_batch_jobs_on_status"
+    t.index ["task_type"], name: "index_ai_batch_jobs_on_task_type"
   end
 
   create_table "ai_configurations", force: :cascade do |t|
@@ -828,6 +850,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_28_100000) do
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "agent_executions", "agent_workflows"
   add_foreign_key "agent_workflows", "users", column: "created_by_id"
+  add_foreign_key "ai_batch_jobs", "users", column: "created_by_id"
   add_foreign_key "asset_embeddings", "assets"
   add_foreign_key "asset_versions", "assets"
   add_foreign_key "asset_versions", "users", column: "created_by_id"

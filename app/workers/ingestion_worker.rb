@@ -34,7 +34,7 @@ class IngestionWorker
   include Sidekiq::Worker
   include Sidekiq::Throttled::Worker
 
-  sidekiq_options retry: 3, queue: "ingestion"
+  sidekiq_options retry: 3, queue: "ingest"
 
   # Hard concurrency ceiling shared across all instances of this worker.
   sidekiq_throttle(concurrency: { limit: 10 })

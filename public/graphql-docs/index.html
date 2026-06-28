@@ -35,6 +35,8 @@
                 <ul class="nav-group-section-items">
                   <li><a href="#query-agentWorkflow">agentWorkflow</a></li>
                   <li><a href="#query-agentWorkflows">agentWorkflows</a></li>
+                  <li><a href="#query-aiBatchJob">aiBatchJob</a></li>
+                  <li><a href="#query-aiBatchJobs">aiBatchJobs</a></li>
                   <li><a href="#query-assetDetail">assetDetail</a></li>
                   <li><a href="#query-binAiSuggestions">binAiSuggestions</a></li>
                   <li><a href="#query-binPurgeStatus">binPurgeStatus</a></li>
@@ -86,6 +88,7 @@
             <ul class="nav-group-items">
               <li><a href="#definition-AgentExecution">AgentExecution</a></li>
               <li><a href="#definition-AgentWorkflow">AgentWorkflow</a></li>
+              <li><a href="#definition-AiBatchJob">AiBatchJob</a></li>
               <li><a href="#definition-Asset">Asset</a></li>
               <li><a href="#definition-BigInt">BigInt</a></li>
               <li><a href="#definition-BinAiSuggestion">BinAiSuggestion</a></li>
@@ -275,6 +278,86 @@
     <span class="hljs-punctuation">]</span>
   <span class="hljs-punctuation">}</span>
 <span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="query-aiBatchJob" class="operation operation-query" data-traverse-target="query-aiBatchJob">
+            <div class="operation-group-name">
+              <a href="#group-Operations-Queries">Queries</a>
+            </div>
+            <h2 class="operation-heading ">
+              <code>aiBatchJob</code>
+            </h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Find an AI batch job by ID (admin only)</p>
+                </div>
+              </div>
+            </div>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-response doc-copy-section">
+                  <h5>Response</h5>
+                  <p> Returns an <a href="#definition-AiBatchJob"><code>AiBatchJob</code></a>
+                  </p>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <h4 class="example-heading">Example</h4>
+                <div class="example-section example-section-is-code operation-query-example">
+                  <h5>Query</h5>
+                  <pre><code class="hljs language-gql"><span class="hljs-symbol"><span class="hljs-keyword">query</span> aiBatchJob <span class="hljs-tag">{
+  <span class="hljs-symbol">aiBatchJob</span>
+}</span></span>
+</code></pre>
+                </div>
+                <div class="example-section example-section-is-code operation-response-example">
+                  <h5>Response</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"data"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-attr">"aiBatchJob"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="query-aiBatchJobs" class="operation operation-query" data-traverse-target="query-aiBatchJobs">
+            <div class="operation-group-name">
+              <a href="#group-Operations-Queries">Queries</a>
+            </div>
+            <h2 class="operation-heading ">
+              <code>aiBatchJobs</code>
+            </h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>List AI batch task runs (admin only)</p>
+                </div>
+              </div>
+            </div>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-response doc-copy-section">
+                  <h5>Response</h5>
+                  <p> Returns <a href="#definition-AiBatchJob"><code>[AiBatchJob!]!</code></a>
+                  </p>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <h4 class="example-heading">Example</h4>
+                <div class="example-section example-section-is-code operation-query-example">
+                  <h5>Query</h5>
+                  <pre><code class="hljs language-gql"><span class="hljs-symbol"><span class="hljs-keyword">query</span> aiBatchJobs <span class="hljs-tag">{
+  <span class="hljs-symbol">aiBatchJobs</span>
+}</span></span>
+</code></pre>
+                </div>
+                <div class="example-section example-section-is-code operation-response-example">
+                  <h5>Response</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"data"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-attr">"aiBatchJobs"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span>
 </code></pre>
                 </div>
               </div>
@@ -2285,6 +2368,27 @@
                 <div class="example-section example-section-is-code">
                   <h5>Example</h5>
                   <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"recentExecutions"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-string">AgentExecution</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="definition-AiBatchJob" class="definition definition-object" data-traverse-target="definition-AiBatchJob">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">AiBatchJob</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>An on-demand AI batch task run launched from the /ai/tasks screen.</p>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <div class="example-section example-section-is-code">
+                  <h5>Example</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span>
 </code></pre>
                 </div>
               </div>

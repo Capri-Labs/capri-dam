@@ -1,5 +1,15 @@
+# frozen_string_literal: true
+
+# Runs a pre-flight metadata analysis against a remote connector (e.g. AEM, S3)
+# before a bulk migration is committed.  Inspects remote record headers, counts
+# items with missing mandatory metadata or invalid schemas, and stores the
+# findings as a JSON report on the {SystemConnector}.
+#
+# Enqueued by the Migrations UI when an admin triggers a pre-flight check.
 class PreFlightAnalysisWorker
   include Sidekiq::Worker
+
+  sidekiq_options queue: "ingest", retry: 2
 
   def perform(connector_id)
     connector = SystemConnector.find(connector_id)

@@ -1555,6 +1555,192 @@ paths:
                 max_tokens:
                   type: integer
                   example: 1024
+  "/api/v1/ai_batch_jobs":
+    get:
+      summary: List AI batch jobs (admin only)
+      tags:
+      - AI Batch Tasks
+      security:
+      - Bearer: []
+      description: Returns recent AI batch task runs with live progress counters.
+      responses:
+        '200':
+          description: Jobs returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total:
+                    type: integer
+                  page:
+                    type: integer
+                  per_page:
+                    type: integer
+                  jobs:
+                    type: array
+                    items:
+                      "$ref": "#/components/schemas/AiBatchJob"
+    post:
+      summary: Launch an AI batch job (admin only)
+      tags:
+      - AI Batch Tasks
+      security:
+      - Bearer: []
+      parameters: []
+      responses:
+        '201':
+          description: Job created and queued
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AiBatchJob"
+        '422':
+          description: Validation failed
+        '403':
+          description: Non-admin forbidden
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - ai_batch_job
+              properties:
+                ai_batch_job:
+                  type: object
+                  required:
+                  - task_type
+                  - target_scope
+                  properties:
+                    task_type:
+                      type: string
+                      example: metadata_extraction
+                    target_scope:
+                      type: string
+                      example: missing_metadata
+                    concurrency:
+                      type: integer
+                      example: 25
+                    options:
+                      type: object
+  "/api/v1/ai_batch_jobs/task_types":
+    get:
+      summary: List available AI task types and datasets (admin only)
+      tags:
+      - AI Batch Tasks
+      security:
+      - Bearer: []
+      description: Registry metadata used to drive the data-driven batch configuration
+        form.
+      responses:
+        '200':
+          description: Registry returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tasks:
+                    type: array
+                    items:
+                      type: object
+                  scopes:
+                    type: array
+                    items:
+                      type: object
+  "/api/v1/ai_batch_jobs/{id}":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+    get:
+      summary: Fetch a single job
+      tags:
+      - AI Batch Tasks
+      security:
+      - Bearer: []
+      responses:
+        '200':
+          description: Job returned
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AiBatchJob"
+        '404':
+          description: Not found
+  "/api/v1/ai_batch_jobs/{id}/cancel":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+    post:
+      summary: Cancel a running job (admin only)
+      tags:
+      - AI Batch Tasks
+      security:
+      - Bearer: []
+      responses:
+        '200':
+          description: Job cancelled
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/AiBatchJob"
+  "/api/v1/ai_batch_jobs/{id}/progress":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+    post:
+      summary: Stream progress (AI Gateway, secret-authenticated)
+      tags:
+      - AI Batch Tasks
+      description: Internal endpoint called by the AI Gateway with the X-Gateway-Secret
+        header to update progress counters.
+      parameters:
+      - name: X-Gateway-Secret
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Progress recorded
+        '401':
+          description: Missing/invalid gateway secret
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - ai_batch_job
+              properties:
+                ai_batch_job:
+                  type: object
+                  properties:
+                    status:
+                      type: string
+                      enum:
+                      - queued
+                      - running
+                      - paused
+                      - completed
+                      - failed
+                      - cancelled
+                    processed_count:
+                      type: integer
+                    succeeded_count:
+                      type: integer
+                    failed_count:
+                      type: integer
   "/api/v1/ai_configuration":
     get:
       summary: Retrieve the current AI Gateway configuration
@@ -8182,3 +8368,64 @@ components:
           example: 1400
         execution_count:
           type: integer
+    AiBatchJob:
+      type: object
+      properties:
+        id:
+          type: integer
+        task_type:
+          type: string
+          example: metadata_extraction
+        task_label:
+          type: string
+          nullable: true
+          example: Metadata Extraction
+        target_scope:
+          type: string
+          example: missing_metadata
+        status:
+          type: string
+          example: running
+          enum:
+          - queued
+          - running
+          - paused
+          - completed
+          - failed
+          - cancelled
+        concurrency:
+          type: integer
+          example: 25
+        options:
+          type: object
+        total_count:
+          type: integer
+        processed_count:
+          type: integer
+        succeeded_count:
+          type: integer
+        failed_count:
+          type: integer
+        progress_percent:
+          type: integer
+          example: 42
+        error_message:
+          type: string
+          nullable: true
+        created_by:
+          type: string
+          nullable: true
+        started_at:
+          type: string
+          format: date-time
+          nullable: true
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time

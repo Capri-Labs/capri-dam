@@ -193,6 +193,43 @@ module Types
     end
 
     # -------------------------------------------------------------------------
+    # AI Batch Tasks (admin only)
+    # -------------------------------------------------------------------------
+
+    # Returns AI batch jobs, most-recent first (admin only).
+    #
+    # @param status [String, nil] optional status filter
+    # @return [Array<Types::AiBatchJobType>]
+    field :ai_batch_jobs, [ Types::AiBatchJobType ], null: false do
+      description "List AI batch task runs (admin only)"
+      argument :status, String, required: false, description: "Filter by status"
+      argument :limit, Integer, required: false, default_value: 25
+    end
+
+    def ai_batch_jobs(status: nil, limit: 25)
+      return [] unless context[:current_user]&.admin?
+
+      scope = AiBatchJob.recent.limit(limit.to_i.clamp(1, 100))
+      scope = scope.where(status: status) if status.present?
+      scope
+    end
+
+    # Finds a single AI batch job by ID (admin only).
+    #
+    # @param id [ID]
+    # @return [Types::AiBatchJobType, nil]
+    field :ai_batch_job, Types::AiBatchJobType, null: true do
+      description "Find an AI batch job by ID (admin only)"
+      argument :id, ID, required: true
+    end
+
+    def ai_batch_job(id:)
+      return nil unless context[:current_user]&.admin?
+
+      AiBatchJob.find_by(id: id)
+    end
+
+    # -------------------------------------------------------------------------
     # Users (admin only)
     # -------------------------------------------------------------------------
 

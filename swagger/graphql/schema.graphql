@@ -76,6 +76,38 @@ type AgentWorkflow {
 }
 
 """
+An on-demand AI batch task run launched from the /ai/tasks screen.
+"""
+type AiBatchJob {
+  completedAt: ISO8601DateTime
+  concurrency: Int!
+  createdAt: ISO8601DateTime!
+  createdBy: String
+  errorMessage: String
+  failedCount: Int!
+  id: ID!
+  options: Json
+  processedCount: Int!
+  progressPercent: Int!
+  startedAt: ISO8601DateTime
+
+  """
+  queued | running | paused | completed | failed | cancelled
+  """
+  status: String!
+  succeededCount: Int!
+  targetScope: String!
+  taskLabel: String
+
+  """
+  Registry key, e.g. metadata_extraction
+  """
+  taskType: String!
+  totalCount: Int!
+  updatedAt: ISO8601DateTime!
+}
+
+"""
 Represents a core digital asset within the Capri DAM platform.
 """
 type Asset {
@@ -1047,6 +1079,23 @@ type Query {
     """
     active: Boolean
   ): [AgentWorkflow!]!
+
+  """
+  Find an AI batch job by ID (admin only)
+  """
+  aiBatchJob(id: ID!): AiBatchJob
+
+  """
+  List AI batch task runs (admin only)
+  """
+  aiBatchJobs(
+    limit: Int = 25
+
+    """
+    Filter by status
+    """
+    status: String
+  ): [AiBatchJob!]!
   assetDetail(uuid: String!): Asset
 
   """
