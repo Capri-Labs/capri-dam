@@ -19,6 +19,20 @@ class Workflow < ApplicationRecord
   # Advanced logic: ensure at least one step exists for active workflows
   validate :must_have_steps, if: :active?
 
+  # ---------------------------------------------------------------------------
+  # DEPRECATED: workflow-level escalation
+  #
+  # `fallback_assignee_type` / `fallback_assignee_id` are retained ONLY for
+  # backward-compatibility with workflows authored before the Visual Designer
+  # v2 refactor.  Escalation is now configured per step (see
+  # WorkflowStep#fallback_assignee_*), surfaced on each ApprovalNode.
+  #
+  # These columns are no longer exposed in the designer UI, are not permitted
+  # in WorkflowsController#workflow_params, and WorkflowAdvancerService only
+  # consults them as a last resort when neither the step assignee nor the
+  # step-level fallback can be resolved.  Do not reintroduce them to the UI.
+  # ---------------------------------------------------------------------------
+
   private
 
   def must_have_steps

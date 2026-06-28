@@ -77,4 +77,47 @@ RSpec.describe WorkflowStep, type: :model do
       expect(step.resolve_assignee).to be_nil
     end
   end
+
+  describe 'step-level fallback assignee' do
+    describe '#has_step_fallback?' do
+      it 'is false when fallback_assignee_id is blank' do
+        step = build(:workflow_step, fallback_assignee_id: '')
+        expect(step.has_step_fallback?).to be(false)
+      end
+
+      it 'is false when fallback_assignee_id is the system placeholder "0"' do
+        step = build(:workflow_step, fallback_assignee_id: '0')
+        expect(step.has_step_fallback?).to be(false)
+      end
+
+      it 'is true when a real fallback id is present' do
+        step = build(:workflow_step, fallback_assignee_id: '42')
+        expect(step.has_step_fallback?).to be(true)
+      end
+    end
+
+    describe '#resolve_fallback_assignee' do
+      it 'returns the fallback User when fallback_assignee_type is user' do
+        user = create(:user)
+        step = create(:workflow_step, fallback_assignee_type: 'user', fallback_assignee_id: user.id.to_s)
+        expect(step.resolve_fallback_assignee).to eq(user)
+      end
+
+      it 'returns the fallback UserGroup when fallback_assignee_type is group' do
+        group = create(:user_group)
+        step  = create(:workflow_step, fallback_assignee_type: 'group', fallback_assignee_id: group.id.to_s)
+        expect(step.resolve_fallback_assignee).to eq(group)
+      end
+
+      it 'returns nil for an unknown fallback id' do
+        step = create(:workflow_step, fallback_assignee_type: 'user', fallback_assignee_id: '0')
+        expect(step.resolve_fallback_assignee).to be_nil
+      end
+    end
+
+    it 'defaults fallback_assignee_type to "user"' do
+      step = create(:workflow_step)
+      expect(step.fallback_assignee_type).to eq('user')
+    end
+  end
 end

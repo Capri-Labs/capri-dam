@@ -2178,6 +2178,16 @@ type WorkflowStep {
   createdAt: ISO8601DateTime!
   deadlineDays: Int
   description: String
+
+  """
+  Step-level escalation assignee id (used when the primary assignee is unavailable)
+  """
+  fallbackAssigneeId: String
+
+  """
+  Step-level escalation assignee type ('user' or 'group')
+  """
+  fallbackAssigneeType: String
   id: ID!
 
   """

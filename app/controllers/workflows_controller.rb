@@ -104,14 +104,15 @@ class WorkflowsController < ApplicationController
   end
 
   def workflow_params
-    # Permit all the standard flat attributes and known arrays
+    # Permit all the standard flat attributes and known arrays.
+    # Note: fallback_assignee_type / fallback_assignee_id are intentionally
+    # omitted from the workflow-level params — escalation is now managed per
+    # step via workflow_steps_attributes (see below).
     permitted = params.require(:workflow).permit(
       :name,
       :description,
       :status,
       :trigger_type,
-      :fallback_assignee_type,
-      :fallback_assignee_id,
       :folder_scope,
       target_folder_ids: [],
       exclude_folder_ids: [],
@@ -124,6 +125,8 @@ class WorkflowsController < ApplicationController
         :node_type,
         :assignee_type,
         :assignee_id,
+        :fallback_assignee_type,
+        :fallback_assignee_id,
         :logic,
         :deadline_days,
         :_destroy,

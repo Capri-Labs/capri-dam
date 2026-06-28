@@ -30,12 +30,26 @@ class WorkflowStep < ApplicationRecord
   # Config-level validations for automated steps
   validate :step_config_complete, if: -> { node_type.present? && !APPROVAL_NODE_TYPES.include?(node_type) }
 
-  # Logic to determine who can perform this step
+  # Resolve the primary assignee for this step.
   def resolve_assignee
     case assignee_type
     when "user"  then User.find_by(id: assignee_id)
     when "group" then UserGroup.find_by(id: assignee_id)
     end
+  end
+
+  # Resolve the per-step fallback assignee (used when the primary assignee
+  # cannot be found or is unavailable).
+  def resolve_fallback_assignee
+    case fallback_assignee_type
+    when "user"  then User.find_by(id: fallback_assignee_id)
+    when "group" then UserGroup.find_by(id: fallback_assignee_id)
+    end
+  end
+
+  # Returns true when a meaningful step-level fallback has been configured.
+  def has_step_fallback?
+    fallback_assignee_id.present? && fallback_assignee_id != "0"
   end
 
   private

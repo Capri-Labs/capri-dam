@@ -104,12 +104,23 @@ class WorkflowAdvancerService
     users = resolve_assignees(step)
 
     if users.empty?
-      users = resolve_fallback(instance)
-      Rails.logger.warn("[WorkflowAdvancer] Step '#{step.title}' fell back to workflow escalation") if users.any?
+      # Step-level fallback (configured on the step's ApprovalNode in the
+      # Visual Designer — takes precedence over the legacy workflow-level field).
+      users = resolve_step_fallback(step)
+      if users.any?
+        Rails.logger.info("[WorkflowAdvancer] Step '#{step.title}' using step-level fallback assignee")
+      end
     end
 
     if users.empty?
-      Rails.logger.error("[WorkflowAdvancer] FATAL: Step '#{step.title}' has no assignees or fallback")
+      # Legacy workflow-level fallback (kept for backward-compat with workflows
+      # saved before the step-level fallback columns were added).
+      users = resolve_workflow_fallback(instance)
+      Rails.logger.warn("[WorkflowAdvancer] Step '#{step.title}' fell back to workflow-level escalation") if users.any?
+    end
+
+    if users.empty?
+      Rails.logger.error("[WorkflowAdvancer] FATAL: Step '#{step.title}' has no assignees or any fallback")
       return
     end
 
@@ -136,7 +147,23 @@ class WorkflowAdvancerService
     end
   end
 
-  def resolve_fallback(instance)
+  # Step-level escalation — configured per ApprovalNode in the designer.
+  def resolve_step_fallback(step)
+    return [] unless step.respond_to?(:has_step_fallback?) && step.has_step_fallback?
+
+    case step.fallback_assignee_type
+    when "user"
+      [ User.find_by(id: step.fallback_assignee_id) ].compact
+    when "group"
+      group = UserGroup.find_by(id: step.fallback_assignee_id)
+      group ? group.users.to_a : []
+    else
+      []
+    end
+  end
+
+  # Legacy workflow-level escalation — still honoured for backward-compat.
+  def resolve_workflow_fallback(instance)
     workflow = instance.workflow
     case workflow.fallback_assignee_type
     when "user"

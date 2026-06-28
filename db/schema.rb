@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_28_140001) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_28_200001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -882,6 +882,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_28_140001) do
     t.datetime "created_at", null: false
     t.integer "deadline_days"
     t.text "description"
+    t.string "fallback_assignee_id", default: ""
+    t.string "fallback_assignee_type", default: "user"
     t.string "logic"
     t.string "node_type", default: "approval", null: false
     t.integer "position"
@@ -891,6 +893,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_28_140001) do
     t.datetime "updated_at", null: false
     t.integer "updated_by_id"
     t.bigint "workflow_id", null: false
+    t.index ["fallback_assignee_type"], name: "index_workflow_steps_on_fallback_assignee_type"
     t.index ["node_type"], name: "index_workflow_steps_on_node_type"
     t.index ["workflow_id"], name: "index_workflow_steps_on_workflow_id"
   end

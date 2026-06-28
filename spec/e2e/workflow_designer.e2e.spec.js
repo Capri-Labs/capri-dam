@@ -89,6 +89,18 @@ test.describe('Workflow Designer — blueprint save', () => {
     await openWorkflowDesigner(page);
   });
 
+  test('no longer shows the removed System-Wide Escalation block', async ({ page }) => {
+    // The workflow-level escalation panel was removed in the Designer v2 refactor;
+    // escalation is now configured per ApprovalNode instead.
+    await expect(page.locator('text=System-Wide Escalation')).toHaveCount(0);
+    await expect(page.locator('text=Fallback User')).toHaveCount(0);
+  });
+
+  test('renders the redesigned section headers', async ({ page }) => {
+    await expect(page.locator('text=Blueprint Definition').first()).toBeVisible();
+    await expect(page.locator('text=Trigger & Scope').first()).toBeVisible();
+  });
+
   test('fills in blueprint name and publishes successfully', async ({ page }) => {
     await page.fill('[label="Blueprint Name"]', 'E2E Test Workflow');
 

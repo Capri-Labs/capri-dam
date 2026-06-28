@@ -12,6 +12,8 @@ module Types
     field :position,     Integer,              null: false
     field :assignee_type, String,              null: false
     field :assignee_id,  String,               null: false
+    field :fallback_assignee_type, String,     null: true,  description: "Step-level escalation assignee type ('user' or 'group')"
+    field :fallback_assignee_id,   String,     null: true,  description: "Step-level escalation assignee id (used when the primary assignee is unavailable)"
     field :logic,        String,               null: false,  description: "'any' or 'all'"
     field :deadline_days, Integer,             null: true
     field :step_config,  Types::JsonType,      null: true,  description: "Node-specific configuration JSON"
