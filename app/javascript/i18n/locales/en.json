@@ -1090,6 +1090,47 @@
     "fetchError": "Failed to fetch dashboard data",
     "networkError": "Network error occurred"
   },
+  "dataHealth": {
+    "title": "TDM & Storage Health",
+    "subtitle": "Proactively monitor technical debt, optimise storage footprint, and resolve metadata compliance issues.",
+    "manageConnectors": "Connectors",
+    "viewPipeline": "Migration Pipeline",
+    "metrics": {
+      "pendingDuplicates": "Pending Duplicates",
+      "storageSaved": "Storage Saved",
+      "costSavings": "Monthly Savings",
+      "activeConnectors": "Active Connectors",
+      "batchesMigrated": "Batches Completed",
+      "lastScan": "Last Repo Scan"
+    },
+    "tabs": {
+      "storage": "Storage Overview",
+      "connectors": "Connector Health",
+      "debt": "Debt Remediation"
+    },
+    "storage": {
+      "compositionTitle": "Cloud Storage Composition",
+      "pipelineTitle": "Migration Pipeline Summary"
+    },
+    "scan": {
+      "trigger": "Trigger Repo Scan",
+      "running": "Scan Running…",
+      "inProgress": "Duplicate Repository Scan in Progress",
+      "inProgressSub": "The full-repository duplicate scan is running in the background. Metrics will refresh automatically.",
+      "failed": "Failed to trigger scan."
+    },
+    "preFlight": {
+      "queued": "Pre-flight analysis queued. The report will appear here when complete.",
+      "failed": "Failed to queue pre-flight analysis."
+    },
+    "remediate": {
+      "failed": "Failed to queue remediation job."
+    },
+    "connectors": {
+      "none": "No connectors configured. Add a connector to enable pre-flight health analysis.",
+      "healthScoreExplain": "Health Score = 100 minus penalties for inactive status, missing sync, stale data, and poor metadata quality."
+    }
+  },
   "ingestion": {
     "title": "Migration Pipeline",
     "subtitle": "Monitor, transform, and commit legacy enterprise assets into Capri DAM.",

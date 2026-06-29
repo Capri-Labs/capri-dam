@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_28_200001) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_29_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -701,6 +701,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_28_200001) do
   end
 
   create_table "system_connectors", force: :cascade do |t|
+    t.jsonb "analysis_report"
     t.integer "assets_imported"
     t.string "auth_token"
     t.integer "concurrency_limit"

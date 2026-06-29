@@ -286,6 +286,15 @@ Rails.application.routes.draw do
         end
       end
 
+      # Data Health — TDM & Storage Health dashboard API
+      resources :data_health, only: [] do
+        collection do
+          get  :overview
+          get  :connectors
+          post :remediate
+        end
+      end
+
       # Connectors & Ingestion
       resources :system_connectors, only: [ :index, :create, :update ] do
         collection do

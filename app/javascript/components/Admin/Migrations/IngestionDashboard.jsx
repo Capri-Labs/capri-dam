@@ -37,7 +37,7 @@ function MetricCard({ label, value, sub, icon, color, loading }) {
         <Card elevation={0} sx={{ border: '1px solid #e3e8ef', borderRadius: 3, height: '100%' }}>
             <CardContent>
                 <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
-                    <Box>
+                    <Box sx={{ minWidth: '75%' }}>
                         <Typography color="textSecondary" variant="caption" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                             {label}
                         </Typography>
