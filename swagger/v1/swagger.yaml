@@ -5801,30 +5801,43 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    id:
-                      type: integer
-                    name:
-                      type: string
-                      example: Cloudinary Migration — 2026-06-20 14:30
-                    source_type:
-                      type: string
-                      example: cloudinary
-                    status:
-                      type: string
-                      example: review_needed
-                      description: initializing | extracting | transforming | review_needed
-                        | committed | failed
-                    started_at:
-                      type: string
-                      format: date-time
-                    completed_at:
-                      type: string
-                      format: date-time
-                      nullable: true
+                type: object
+                properties:
+                  batches:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        name:
+                          type: string
+                          example: Cloudinary Migration — 2026-06-20 14:30
+                        source_type:
+                          type: string
+                          example: cloudinary
+                        status:
+                          type: string
+                          example: review_needed
+                          description: initializing | extracting | transforming |
+                            review_needed | committed | failed
+                        started_at:
+                          type: string
+                          format: date-time
+                        completed_at:
+                          type: string
+                          format: date-time
+                          nullable: true
+                  meta:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                      page:
+                        type: integer
+                      per_page:
+                        type: integer
     post:
       summary: Initialize a new migration batch
       tags:
@@ -5898,14 +5911,91 @@ paths:
                       example:
                         endpoint: https://api.cloudinary.com/v1_1/mycloud
                         auth_token: sk_test_abc
+  "/api/v1/ingestion_batches/stats":
+    get:
+      summary: Aggregate migration statistics across all batches
+      tags:
+      - Ingestion & Migration
+      security:
+      - Bearer: []
+      description: |
+        Returns roll-up metrics used by the ingestion dashboard: total/active/
+        completed/failed batch counts, asset counts, duplicate blocks, and
+        estimated storage/cost savings. Safe to poll frequently (read-only).
+      responses:
+        '200':
+          description: Aggregate stats returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total_batches:
+                    type: integer
+                  active_batches:
+                    type: integer
+                  completed_batches:
+                    type: integer
+                  failed_batches:
+                    type: integer
+                  total_assets_staged:
+                    type: integer
+                  total_assets_committed:
+                    type: integer
+                  total_duplicates_blocked:
+                    type: integer
+                  total_errors:
+                    type: integer
+                  estimated_storage_saved_gb:
+                    type: number
+                    format: float
+                  estimated_cost_savings_usd:
+                    type: number
+                    format: float
   "/api/v1/ingestion_batches/{id}":
     parameters:
     - name: id
       in: path
       required: true
-      description: IngestionBatch database ID
+      description: IngestionBatch UUID
       schema:
-        type: integer
+        type: string
+    delete:
+      summary: Delete a failed migration batch
+      tags:
+      - Ingestion & Migration
+      security:
+      - Bearer: []
+      description: Permanently removes a batch and all its ingestion items. Only batches
+        in `failed` state can be deleted.
+      responses:
+        '200':
+          description: Batch deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '422':
+          description: Batch is not in failed state
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '404':
+          description: Batch not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
     get:
       summary: Retrieve a batch with its paginated ingestion items
       tags:

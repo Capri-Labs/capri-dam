@@ -1,25 +1,39 @@
 class Api::V1::IngestionBatchesController < ApplicationController
   before_action :authenticate_hybrid!
-  before_action :require_admin!, only: %i[commit abort]
-  before_action :set_batch, only: [ :show, :commit, :abort, :report ]
+  before_action :require_admin!, only: %i[commit abort destroy]
+  before_action :set_batch, only: %i[show commit abort report destroy]
 
   # GET /api/v1/ingestion_batches
+  # Supports: ?status=committed&source_type=aem&search=Q&page=1
   def index
-    batches = IngestionBatch.order(created_at: :desc).limit(50)
-    render json: batches.map(&:summary)
+    scope = IngestionBatch.order(created_at: :desc)
+    scope = scope.where(status: params[:status])                    if params[:status].present?
+    scope = scope.where(source_type: params[:source_type])          if params[:source_type].present?
+    scope = scope.search_by_name(params[:search])                   if params[:search].present?
+
+    page     = [ params[:page].to_i, 1 ].max
+    per_page = 50
+    batches  = scope.limit(per_page).offset((page - 1) * per_page)
+
+    render json: {
+      batches: batches.map(&:summary),
+      meta:    { total: scope.count, page: page, per_page: per_page },
+    }
+  end
+
+  # GET /api/v1/ingestion_batches/stats
+  def stats
+    render json: IngestionBatch.aggregate_stats
   end
 
   # GET /api/v1/ingestion_batches/:id
   def show
     items_scope = @batch.ingestion_items.order(:id)
-
-    # Filtering
     items_scope = items_scope.where(status: params[:status]) if params[:status].present?
 
-    # Pagination (cursor)
     page     = [ params[:page].to_i, 1 ].max
     per_page = 50
-    items    = items_scope.page(page).per(per_page) rescue items_scope.limit(per_page).offset((page - 1) * per_page)
+    items    = items_scope.limit(per_page).offset((page - 1) * per_page)
 
     render json: {
       batch: @batch.summary,
@@ -60,7 +74,6 @@ class Api::V1::IngestionBatchesController < ApplicationController
   end
 
   # POST /api/v1/ingestion_batches/:id/commit
-  # Human approves the batch after reviewing it in BatchReviewWorkspace.
   def commit
     unless @batch.review_needed?
       return render json: { error: "Batch must be in 'review_needed' state to commit. Current: #{@batch.status}" },
@@ -72,7 +85,6 @@ class Api::V1::IngestionBatchesController < ApplicationController
   end
 
   # POST /api/v1/ingestion_batches/:id/abort
-  # Abandon the migration without committing.
   def abort
     if @batch.committed?
       return render json: { error: "Cannot abort a committed batch." }, status: :unprocessable_entity
@@ -82,8 +94,18 @@ class Api::V1::IngestionBatchesController < ApplicationController
     render json: { message: "Migration batch aborted.", batch: @batch.summary }
   end
 
+  # DELETE /api/v1/ingestion_batches/:id
+  # Only failed batches may be deleted.
+  def destroy
+    unless @batch.failed?
+      return render json: { error: "Only failed batches can be deleted." }, status: :unprocessable_entity
+    end
+
+    @batch.destroy!
+    render json: { message: "Migration batch deleted." }
+  end
+
   # GET /api/v1/ingestion_batches/:id/report
-  # Returns the migration report stats. Triggers generation if not yet done.
   def report
     if @batch.report_snapshot_id.present?
       snapshot = ReportSnapshot.find_by(id: @batch.report_snapshot_id)
@@ -93,7 +115,6 @@ class Api::V1::IngestionBatchesController < ApplicationController
     end
 
     if stats.empty? && @batch.committed?
-      # Trigger generation in background if not yet done
       MigrationReportWorker.perform_async(@batch.id)
       return render json: { message: "Report is being generated. Check back shortly." }, status: :accepted
     end

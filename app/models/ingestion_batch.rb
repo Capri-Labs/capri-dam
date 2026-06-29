@@ -5,9 +5,6 @@ class IngestionBatch < ApplicationRecord
   validates :name, :source_type, presence: true
 
   # ── State Machine ─────────────────────────────────────────────────────────
-  # `instance_methods: false` avoids a clash between the `committed` state and
-  # ActiveRecord's internal `committed!` transaction callback. We re-add the
-  # read-only `?` predicates (the unused `!` bang setters are what collided).
   enum :status, {
     initializing:  0,
     extracting:    1,
@@ -20,6 +17,14 @@ class IngestionBatch < ApplicationRecord
   statuses.each_key do |state|
     define_method("#{state}?") { status == state }
   end
+
+  # ── Named Scopes ──────────────────────────────────────────────────────────
+  IN_PROGRESS_STATUSES = %w[initializing extracting transforming review_needed].freeze
+
+  scope :in_progress,       -> { where(status: IN_PROGRESS_STATUSES.map { |s| statuses[s] }) }
+  scope :committed_batches, -> { where(status: statuses["committed"]) }
+  scope :failed_batches,    -> { where(status: statuses["failed"]) }
+  scope :search_by_name,    ->(q) { where("name ILIKE ?", "%#{sanitize_sql_like(q)}%") }
 
   # ── Progress ──────────────────────────────────────────────────────────────
   def calculate_progress!
@@ -38,6 +43,23 @@ class IngestionBatch < ApplicationRecord
 
   def source_label
     DamProviders.label_for(source_type)
+  end
+
+  # ── Aggregate Stats (dashboard metrics endpoint) ──────────────────────────
+  def self.aggregate_stats
+    rel = all
+    {
+      total_batches:              rel.count,
+      active_batches:             rel.in_progress.count,
+      completed_batches:          rel.committed_batches.count,
+      failed_batches:             rel.failed_batches.count,
+      total_assets_staged:        rel.sum(:total_count),
+      total_assets_committed:     rel.sum(:committed_count),
+      total_duplicates_blocked:   rel.sum(:duplicate_count),
+      total_errors:               rel.sum(:error_count),
+      estimated_storage_saved_gb: (rel.sum(:duplicate_count) * 5.0 / 1024).round(2),
+      estimated_cost_savings_usd: (rel.sum(:duplicate_count) * 5.0 / 1024 * 0.023).round(2),
+    }
   end
 
   # ── Summary Stats ─────────────────────────────────────────────────────────

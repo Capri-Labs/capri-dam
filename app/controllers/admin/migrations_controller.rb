@@ -1,6 +1,6 @@
 class Admin::MigrationsController < ApplicationController
-  # before_action :authenticate_user!
-  # before_action :require_admin_privileges! # Ensure standard users can't access this
+  before_action :authenticate_hybrid!
+  before_action :require_admin!
 
   def ingestion
     # This must perfectly match the `id` in your MenuConfig.js

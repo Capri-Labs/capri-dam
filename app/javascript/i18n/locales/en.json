@@ -71,7 +71,8 @@
     "info": "Info",
     "copyDismiss": "Copy & Dismiss",
     "refresh": "Refresh",
-    "actions": "Actions"
+    "actions": "Actions",
+    "back": "Back"
   },
   "header": {
     "myProfile": "My Profile",
@@ -1088,5 +1089,69 @@
     "deleteFail": "Failed to delete instance.",
     "fetchError": "Failed to fetch dashboard data",
     "networkError": "Network error occurred"
+  },
+  "ingestion": {
+    "title": "Migration Pipeline",
+    "subtitle": "Monitor, transform, and commit legacy enterprise assets into Capri DAM.",
+    "startMigration": "Start Migration",
+    "manageConnectors": "Connectors",
+    "goToConnectors": "Configure Connectors",
+    "activeBatches": "Active Migrations",
+    "allBatches": "All Migration Batches",
+    "noBatches": "No migration batches yet.",
+    "noBatchesSub": "Configure a legacy connector and start your first migration to see pipeline activity here.",
+    "fetchError": "Failed to load batches",
+    "phaseBanner": {
+      "title": "Migration Phases:"
+    },
+    "stats": {
+      "totalBatches": "Total Batches",
+      "completed": "Completed",
+      "assetsCommitted": "Assets Committed",
+      "duplicatesBlocked": "Duplicates Blocked",
+      "storageSaved": "Storage Saved",
+      "costSavings": "Cost Savings"
+    },
+    "batch": {
+      "name": "Batch Name",
+      "source": "Source",
+      "status": "Status",
+      "progress": "Progress",
+      "duplicates": "Duplicates",
+      "errors": "Errors",
+      "audit": "Audit",
+      "viewReport": "View Report",
+      "abort": "Abort migration",
+      "delete": "Delete failed batch",
+      "abortConfirm": "Abort this migration? All staged items will be discarded.",
+      "abortSuccess": "Migration aborted.",
+      "abortFail": "Failed to abort migration.",
+      "deleteConfirm": "Permanently delete this failed batch? This cannot be undone.",
+      "deleteSuccess": "Migration batch deleted.",
+      "deleteFail": "Failed to delete batch."
+    },
+    "wizard": {
+      "title": "Start New Migration",
+      "step1Title": "Select Source",
+      "step2Title": "Configure Batch",
+      "step3Title": "Confirm & Launch",
+      "step1Desc": "Choose an active connector as the migration source.",
+      "batchName": "Batch Name",
+      "batchNameHelper": "A descriptive name for this migration run (minimum 3 characters).",
+      "notes": "Notes (Optional)",
+      "notesHelper": "Internal notes visible only to admins.",
+      "tdmSanitation": "Apply AI / TDM Sanitization",
+      "tdmSanitationDesc": "Route each asset through the AI Gateway for metadata normalization and compliance scanning.",
+      "concurrency": "Max Concurrent Threads",
+      "concurrencyHelper": "Number of parallel download threads (1–10).",
+      "confirmInfo": "Clicking 'Initialize' will immediately start the extraction pipeline. The process runs in the background.",
+      "launch": "Initialize Migration Pipeline",
+      "launching": "Initializing…",
+      "launchSuccess": "Migration '{{name}}' pipeline started.",
+      "launchSuccessGeneric": "Migration pipeline initialized. Monitor progress in the Active Migrations section.",
+      "launchError": "Failed to start migration. Please try again.",
+      "noActiveConnectors": "No active connectors found.",
+      "connectorFetchError": "Failed to load connectors."
+    }
   }
 }

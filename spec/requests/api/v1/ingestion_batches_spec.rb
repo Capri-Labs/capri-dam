@@ -17,17 +17,30 @@ RSpec.describe 'Api::V1::IngestionBatches', type: :request do
       DESC
 
       response '200', 'Batch list returned' do
-        schema type: :array,
-               items: {
-                 type: :object,
-                 properties: {
-                   id:             { type: :integer },
-                   name:           { type: :string, example: 'Cloudinary Migration — 2026-06-20 14:30' },
-                   source_type:    { type: :string, example: 'cloudinary' },
-                   status:         { type: :string, example: 'review_needed',
-                                     description: 'initializing | extracting | transforming | review_needed | committed | failed' },
-                   started_at:     { type: :string, format: 'date-time' },
-                   completed_at:   { type: :string, format: 'date-time', nullable: true },
+        schema type: :object,
+               properties: {
+                 batches: {
+                   type: :array,
+                   items: {
+                     type: :object,
+                     properties: {
+                       id:             { type: :string, format: 'uuid' },
+                       name:           { type: :string, example: 'Cloudinary Migration — 2026-06-20 14:30' },
+                       source_type:    { type: :string, example: 'cloudinary' },
+                       status:         { type: :string, example: 'review_needed',
+                                         description: 'initializing | extracting | transforming | review_needed | committed | failed' },
+                       started_at:     { type: :string, format: 'date-time' },
+                       completed_at:   { type: :string, format: 'date-time', nullable: true },
+                     },
+                   },
+                 },
+                 meta: {
+                   type: :object,
+                   properties: {
+                     total:    { type: :integer },
+                     page:     { type: :integer },
+                     per_page: { type: :integer },
+                   },
                  },
                }
         run_test!
@@ -92,11 +105,72 @@ RSpec.describe 'Api::V1::IngestionBatches', type: :request do
   end
 
   # ===========================================================================
-  # SHOW — GET /api/v1/ingestion_batches/{id}
+  # STATS — GET /api/v1/ingestion_batches/stats
+  # ===========================================================================
+  path '/api/v1/ingestion_batches/stats' do
+    get 'Aggregate migration statistics across all batches' do
+      tags 'Ingestion & Migration'
+      produces 'application/json'
+      security [ Bearer: [] ]
+      description <<~DESC
+        Returns roll-up metrics used by the ingestion dashboard: total/active/
+        completed/failed batch counts, asset counts, duplicate blocks, and
+        estimated storage/cost savings. Safe to poll frequently (read-only).
+      DESC
+
+      response '200', 'Aggregate stats returned' do
+        schema type: :object,
+               properties: {
+                 total_batches:              { type: :integer },
+                 active_batches:             { type: :integer },
+                 completed_batches:          { type: :integer },
+                 failed_batches:             { type: :integer },
+                 total_assets_staged:        { type: :integer },
+                 total_assets_committed:     { type: :integer },
+                 total_duplicates_blocked:   { type: :integer },
+                 total_errors:               { type: :integer },
+                 estimated_storage_saved_gb: { type: :number, format: :float },
+                 estimated_cost_savings_usd: { type: :number, format: :float },
+               }
+        run_test!
+      end
+    end
+  end
+
+  # ===========================================================================
+  # DESTROY — DELETE /api/v1/ingestion_batches/{id}
   # ===========================================================================
   path '/api/v1/ingestion_batches/{id}' do
-    parameter name: :id, in: :path, type: :integer, required: true,
-              description: 'IngestionBatch database ID'
+    parameter name: :id, in: :path, type: :string, required: true,
+              description: 'IngestionBatch UUID'
+
+    delete 'Delete a failed migration batch' do
+      tags 'Ingestion & Migration'
+      produces 'application/json'
+      security [ Bearer: [] ]
+      description 'Permanently removes a batch and all its ingestion items. Only batches in `failed` state can be deleted.'
+
+      response '200', 'Batch deleted' do
+        schema type: :object, properties: { message: { type: :string } }
+        run_test!
+      end
+
+      response '422', 'Batch is not in failed state' do
+        schema type: :object, properties: { error: { type: :string } }
+        run_test!
+      end
+
+      response '404', 'Batch not found' do
+        schema type: :object, properties: { error: { type: :string } }
+        run_test!
+      end
+    end
+  end
+
+
+  path '/api/v1/ingestion_batches/{id}' do
+    parameter name: :id, in: :path, type: :string, required: true,
+              description: 'IngestionBatch UUID'
 
     get 'Retrieve a batch with its paginated ingestion items' do
       tags 'Ingestion & Migration'

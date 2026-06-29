@@ -299,7 +299,10 @@ Rails.application.routes.draw do
       post "webhooks/connectors/:connector_id/receive", to: "webhooks#receive"
 
       resources :ingestion_items, only: [ :show, :update, :index ]
-      resources :ingestion_batches, only: [ :create, :index, :show ] do
+      resources :ingestion_batches, only: [ :create, :index, :show, :destroy ] do
+        collection do
+          get :stats
+        end
         member do
           post :commit
           post :abort
