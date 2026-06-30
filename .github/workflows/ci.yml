@@ -85,7 +85,7 @@ jobs:
           bundle exec brakeman \
             --no-pager \
             --format github \
-            --ignore-file .brakeman/ignore.json \
+            --ignore-config .brakeman/ignore.json \
             --exit-on-warn
 
       - name: Brakeman — SARIF output for Security tab
@@ -95,7 +95,7 @@ jobs:
             --no-pager \
             --format sarif \
             --output tmp/brakeman.sarif \
-            --ignore-file .brakeman/ignore.json \
+            --ignore-config .brakeman/ignore.json \
             || true
 
       - name: Upload Brakeman SARIF

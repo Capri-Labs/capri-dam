@@ -160,8 +160,20 @@ class DuplicateRepositoryScanWorker
     return if asset_ids.size < 2
 
     ActiveRecord::Base.transaction do
-      group = DuplicateGroup.find_or_initialize_by(checksum: checksum, status: "pending")
-      group.save! if group.new_record?
+      # The checksum column has a unique index, so only one group per checksum
+      # can exist at a time.  Find by checksum alone and reopen it if resolved.
+      group = DuplicateGroup.find_or_initialize_by(checksum: checksum)
+      if group.new_record?
+        group.status = "pending"
+        group.save!
+      elsif group.status != "pending"
+        group.update!(
+          status:            "pending",
+          resolved_at:       nil,
+          resolution_action: nil,
+          resolved_by_id:    nil,
+        )
+      end
 
       asset_ids.each { |aid| safe_register_member(group, aid) }
 

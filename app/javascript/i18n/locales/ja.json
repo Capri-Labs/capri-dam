@@ -71,7 +71,8 @@
     "info": "情報",
     "copyDismiss": "コピーして閉じる",
     "refresh": "更新",
-    "actions": "Actions"
+    "actions": "Actions",
+    "back": "戻る"
   },
   "header": {
     "myProfile": "マイプロフィール",
@@ -1087,6 +1088,111 @@
       "advancedSettings": "Advanced Settings & Escalation",
       "onApprove": "ON APPROVE",
       "onDecline": "ON DECLINE"
+    }
+  },
+  "dataHealth": {
+    "title": "TDMとストレージの健全性",
+    "subtitle": "技術的負債を事前に監視し、ストレージ使用量を最適化し、メタデータ準拠の問題を解消します。",
+    "manageConnectors": "コネクタ",
+    "viewPipeline": "移行パイプライン",
+    "metrics": {
+      "pendingDuplicates": "保留中の重複",
+      "storageSaved": "削減済みストレージ",
+      "costSavings": "月間削減額",
+      "activeConnectors": "有効なコネクタ",
+      "batchesMigrated": "完了したバッチ",
+      "lastScan": "前回のリポジトリスキャン"
+    },
+    "tabs": {
+      "storage": "ストレージ概要",
+      "connectors": "コネクタ健全性",
+      "debt": "負債の是正"
+    },
+    "storage": {
+      "compositionTitle": "クラウドストレージ構成",
+      "pipelineTitle": "移行パイプライン概要"
+    },
+    "scan": {
+      "trigger": "リポジトリスキャンを実行",
+      "running": "スキャン実行中…",
+      "inProgress": "リポジトリ重複スキャンを実行中",
+      "inProgressSub": "リポジトリ全体の重複スキャンがバックグラウンドで実行されています。指標は自動的に更新されます。",
+      "failed": "スキャンの開始に失敗しました。"
+    },
+    "preFlight": {
+      "queued": "事前分析をキューに追加しました。完了するとレポートがここに表示されます。",
+      "failed": "事前分析のキュー追加に失敗しました。"
+    },
+    "remediate": {
+      "failed": "修復ジョブのキュー追加に失敗しました。"
+    },
+    "connectors": {
+      "none": "設定済みのコネクタがありません。事前健全性分析を有効にするにはコネクタを追加してください。",
+      "healthScoreExplain": "健全性スコア = 100 から、非アクティブ状態、同期欠如、古いデータ、低いメタデータ品質に対する減点を差し引いた値です。"
+    }
+  },
+  "ingestion": {
+    "title": "移行パイプライン",
+    "subtitle": "レガシー企業アセットを監視、変換し、Capri DAM に取り込みます。",
+    "startMigration": "移行を開始",
+    "manageConnectors": "コネクタ",
+    "goToConnectors": "コネクタを設定",
+    "activeBatches": "進行中の移行",
+    "allBatches": "すべての移行バッチ",
+    "noBatches": "移行バッチはまだありません。",
+    "noBatchesSub": "レガシーコネクタを設定して最初の移行を開始すると、ここにパイプラインのアクティビティが表示されます。",
+    "fetchError": "バッチの読み込みに失敗しました",
+    "phaseBanner": {
+      "title": "移行フェーズ:"
+    },
+    "stats": {
+      "totalBatches": "総バッチ数",
+      "completed": "完了",
+      "assetsCommitted": "取り込み済みアセット",
+      "duplicatesBlocked": "ブロックされた重複",
+      "storageSaved": "削減済みストレージ",
+      "costSavings": "コスト削減"
+    },
+    "batch": {
+      "name": "バッチ名",
+      "source": "ソース",
+      "status": "ステータス",
+      "progress": "進捗",
+      "duplicates": "重複",
+      "errors": "エラー",
+      "audit": "監査",
+      "viewReport": "レポートを表示",
+      "abort": "移行を中止",
+      "delete": "失敗したバッチを削除",
+      "abortConfirm": "この移行を中止しますか？ ステージされた項目はすべて破棄されます。",
+      "abortSuccess": "移行を中止しました。",
+      "abortFail": "移行の中止に失敗しました。",
+      "deleteConfirm": "この失敗したバッチを完全に削除しますか？ この操作は元に戻せません。",
+      "deleteSuccess": "移行バッチを削除しました。",
+      "deleteFail": "バッチの削除に失敗しました。"
+    },
+    "wizard": {
+      "title": "新しい移行を開始",
+      "step1Title": "ソースを選択",
+      "step2Title": "バッチを設定",
+      "step3Title": "確認して開始",
+      "step1Desc": "移行元として有効なコネクタを選択してください。",
+      "batchName": "バッチ名",
+      "batchNameHelper": "この移行実行の説明的な名前（3文字以上）。",
+      "notes": "メモ（任意）",
+      "notesHelper": "管理者のみに表示される内部メモです。",
+      "tdmSanitation": "AI / TDM サニタイズを適用",
+      "tdmSanitationDesc": "各アセットを AI Gateway に通し、メタデータの正規化とコンプライアンススキャンを行います。",
+      "concurrency": "最大同時スレッド数",
+      "concurrencyHelper": "並列ダウンロードスレッド数（1～10）。",
+      "confirmInfo": "「初期化」をクリックすると、抽出パイプラインがすぐに開始されます。処理はバックグラウンドで実行されます。",
+      "launch": "移行パイプラインを初期化",
+      "launching": "初期化中…",
+      "launchSuccess": "移行 '{{name}}' パイプラインを開始しました。",
+      "launchSuccessGeneric": "移行パイプラインを初期化しました。進行状況は「進行中の移行」セクションで確認できます。",
+      "launchError": "移行の開始に失敗しました。もう一度お試しください。",
+      "noActiveConnectors": "有効なコネクタが見つかりません。",
+      "connectorFetchError": "コネクタの読み込みに失敗しました。"
     }
   },
   "imageEditor": {

@@ -89,6 +89,8 @@ class ImageProcessingService
 
     logger.info("Image processing complete: #{source_path} -> #{output_file}")
     output_file
+  rescue ValidationError
+    raise
   rescue MiniMagick::Error => e
     logger.error("ImageMagick error: #{e.message}")
     raise ProcessingError, "Image processing failed: #{e.message}"
@@ -136,9 +138,9 @@ class ImageProcessingService
 
     # Validate focal point
     if adjustments[:focal_point].present?
-      fp = adjustments[:focal_point]
-      raise ValidationError, "focal_point must have x and y coordinates" unless fp.is_a?(Hash) && fp["x"].present? && fp["y"].present?
-      x, y = fp["x"].to_f, fp["y"].to_f
+      fp = adjustments[:focal_point].is_a?(Hash) ? adjustments[:focal_point].with_indifferent_access : adjustments[:focal_point]
+      raise ValidationError, "focal_point must have x and y coordinates" unless fp.is_a?(Hash) && fp[:x].present? && fp[:y].present?
+      x, y = fp[:x].to_f, fp[:y].to_f
       raise ValidationError, "focal_point x must be between 0 and 100" unless (0..100).include?(x)
       raise ValidationError, "focal_point y must be between 0 and 100" unless (0..100).include?(y)
     end
@@ -371,11 +373,11 @@ class ImageProcessingService
     custom_cli = adjustments[:custom_cli].to_s.strip
     return if custom_cli.blank?
 
-    # Parse and inject raw ImageMagick commands
-    # Expected format: "-operation1 arg1 -operation2 arg2"
-    # Safety: only allow operations starting with a dash and alphanumeric operations
-    custom_cli.scan(/-[a-z_]+[^-]*/).each do |arg|
-      cmd << arg.strip
+    # Parse into individual tokens so each flag and its argument are passed
+    # separately to mogrify (e.g. "-modulate 120,100,100" → ["-modulate", "120,100,100"]).
+    # Safety: only allow tokens that start with a dash OR look like option values.
+    custom_cli.scan(/-[a-z_]+[^-]*/).each do |segment|
+      segment.strip.split(/\s+/, 2).each { |token| cmd << token unless token.empty? }
     end
   end
 

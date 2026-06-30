@@ -71,7 +71,8 @@
     "info": "정보",
     "copyDismiss": "복사하고 닫기",
     "refresh": "새로 고침",
-    "actions": "Actions"
+    "actions": "Actions",
+    "back": "뒤로"
   },
   "header": {
     "myProfile": "내 프로필",
@@ -1087,6 +1088,111 @@
       "advancedSettings": "Advanced Settings & Escalation",
       "onApprove": "ON APPROVE",
       "onDecline": "ON DECLINE"
+    }
+  },
+  "dataHealth": {
+    "title": "TDM 및 스토리지 상태",
+    "subtitle": "기술 부채를 사전에 모니터링하고, 스토리지 사용량을 최적화하며, 메타데이터 규정 준수 문제를 해결하세요.",
+    "manageConnectors": "커넥터",
+    "viewPipeline": "마이그레이션 파이프라인",
+    "metrics": {
+      "pendingDuplicates": "대기 중인 중복",
+      "storageSaved": "절감된 스토리지",
+      "costSavings": "월간 절감액",
+      "activeConnectors": "활성 커넥터",
+      "batchesMigrated": "완료된 배치",
+      "lastScan": "최근 리포지토리 스캔"
+    },
+    "tabs": {
+      "storage": "스토리지 개요",
+      "connectors": "커넥터 상태",
+      "debt": "부채 개선"
+    },
+    "storage": {
+      "compositionTitle": "클라우드 스토리지 구성",
+      "pipelineTitle": "마이그레이션 파이프라인 요약"
+    },
+    "scan": {
+      "trigger": "리포지토리 스캔 실행",
+      "running": "스캔 실행 중…",
+      "inProgress": "리포지토리 중복 스캔 진행 중",
+      "inProgressSub": "전체 리포지토리 중복 스캔이 백그라운드에서 실행되고 있습니다. 지표는 자동으로 새로고침됩니다.",
+      "failed": "스캔 실행에 실패했습니다."
+    },
+    "preFlight": {
+      "queued": "사전 분석이 대기열에 추가되었습니다. 완료되면 보고서가 여기에 표시됩니다.",
+      "failed": "사전 분석을 대기열에 추가하지 못했습니다."
+    },
+    "remediate": {
+      "failed": "개선 작업을 대기열에 추가하지 못했습니다."
+    },
+    "connectors": {
+      "none": "구성된 커넥터가 없습니다. 사전 상태 분석을 사용하려면 커넥터를 추가하세요.",
+      "healthScoreExplain": "상태 점수 = 100에서 비활성 상태, 누락된 동기화, 오래된 데이터, 낮은 메타데이터 품질에 대한 감점을 뺀 값입니다."
+    }
+  },
+  "ingestion": {
+    "title": "마이그레이션 파이프라인",
+    "subtitle": "레거시 엔터프라이즈 자산을 Capri DAM으로 모니터링, 변환, 커밋합니다.",
+    "startMigration": "마이그레이션 시작",
+    "manageConnectors": "커넥터",
+    "goToConnectors": "커넥터 구성",
+    "activeBatches": "활성 마이그레이션",
+    "allBatches": "모든 마이그레이션 배치",
+    "noBatches": "아직 마이그레이션 배치가 없습니다.",
+    "noBatchesSub": "레거시 커넥터를 구성하고 첫 마이그레이션을 시작하면 여기에서 파이프라인 활동을 볼 수 있습니다.",
+    "fetchError": "배치를 불러오지 못했습니다",
+    "phaseBanner": {
+      "title": "마이그레이션 단계:"
+    },
+    "stats": {
+      "totalBatches": "전체 배치",
+      "completed": "완료됨",
+      "assetsCommitted": "커밋된 자산",
+      "duplicatesBlocked": "차단된 중복",
+      "storageSaved": "절감된 스토리지",
+      "costSavings": "비용 절감"
+    },
+    "batch": {
+      "name": "배치 이름",
+      "source": "소스",
+      "status": "상태",
+      "progress": "진행률",
+      "duplicates": "중복",
+      "errors": "오류",
+      "audit": "감사",
+      "viewReport": "보고서 보기",
+      "abort": "마이그레이션 중단",
+      "delete": "실패한 배치 삭제",
+      "abortConfirm": "이 마이그레이션을 중단하시겠습니까? 준비된 모든 항목이 삭제됩니다.",
+      "abortSuccess": "마이그레이션이 중단되었습니다.",
+      "abortFail": "마이그레이션 중단에 실패했습니다.",
+      "deleteConfirm": "이 실패한 배치를 영구 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.",
+      "deleteSuccess": "마이그레이션 배치가 삭제되었습니다.",
+      "deleteFail": "배치 삭제에 실패했습니다."
+    },
+    "wizard": {
+      "title": "새 마이그레이션 시작",
+      "step1Title": "소스 선택",
+      "step2Title": "배치 구성",
+      "step3Title": "확인 및 실행",
+      "step1Desc": "마이그레이션 소스로 활성 커넥터를 선택하세요.",
+      "batchName": "배치 이름",
+      "batchNameHelper": "이 마이그레이션 실행을 설명하는 이름(최소 3자).",
+      "notes": "메모(선택 사항)",
+      "notesHelper": "관리자에게만 표시되는 내부 메모입니다.",
+      "tdmSanitation": "AI / TDM 정제 적용",
+      "tdmSanitationDesc": "각 자산을 AI Gateway로 전달하여 메타데이터 정규화 및 규정 준수 검사를 수행합니다.",
+      "concurrency": "최대 동시 스레드 수",
+      "concurrencyHelper": "병렬 다운로드 스레드 수(1~10).",
+      "confirmInfo": "'초기화'를 클릭하면 추출 파이프라인이 즉시 시작됩니다. 프로세스는 백그라운드에서 실행됩니다.",
+      "launch": "마이그레이션 파이프라인 초기화",
+      "launching": "초기화 중…",
+      "launchSuccess": "마이그레이션 '{{name}}' 파이프라인이 시작되었습니다.",
+      "launchSuccessGeneric": "마이그레이션 파이프라인이 초기화되었습니다. 활성 마이그레이션 섹션에서 진행 상황을 확인하세요.",
+      "launchError": "마이그레이션을 시작하지 못했습니다. 다시 시도하세요.",
+      "noActiveConnectors": "활성 커넥터를 찾을 수 없습니다.",
+      "connectorFetchError": "커넥터를 불러오지 못했습니다."
     }
   },
   "imageEditor": {

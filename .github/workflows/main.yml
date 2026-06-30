@@ -57,7 +57,7 @@ jobs:
         run: bundle exec rubocop --format github
 
       - name: Brakeman (security scan)
-        run: bundle exec brakeman -q --no-pager --exit-on-warn --ignore-file .brakeman/ignore.json
+        run: bundle exec brakeman -q --no-pager --exit-on-warn --ignore-config .brakeman/ignore.json
 
       - name: bundler-audit (CVE check)
         run: bundle exec bundler-audit check --update

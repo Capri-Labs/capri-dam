@@ -165,7 +165,7 @@ jobs:
             --no-pager \
             --format sarif \
             --output tmp/brakeman.sarif \
-            --ignore-file .brakeman/ignore.json \
+            --ignore-config .brakeman/ignore.json \
             --exit-on-warn \
             || true
         # We use || true here because --exit-on-warn exits non-zero for *new* warnings
@@ -176,7 +176,7 @@ jobs:
           bundle exec brakeman \
             --no-pager \
             --format github \
-            --ignore-file .brakeman/ignore.json \
+            --ignore-config .brakeman/ignore.json \
             --exit-on-warn
         # This step fails the job for any unacknowledged warnings.
 

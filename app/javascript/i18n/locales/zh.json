@@ -71,7 +71,8 @@
     "info": "信息",
     "copyDismiss": "复制并关闭",
     "refresh": "刷新",
-    "actions": "Actions"
+    "actions": "Actions",
+    "back": "返回"
   },
   "header": {
     "myProfile": "我的个人资料",
@@ -1087,6 +1088,111 @@
       "advancedSettings": "Advanced Settings & Escalation",
       "onApprove": "ON APPROVE",
       "onDecline": "ON DECLINE"
+    }
+  },
+  "dataHealth": {
+    "title": "TDM 与存储健康状况",
+    "subtitle": "主动监控技术债务，优化存储占用，并解决元数据合规问题。",
+    "manageConnectors": "连接器",
+    "viewPipeline": "迁移流水线",
+    "metrics": {
+      "pendingDuplicates": "待处理重复项",
+      "storageSaved": "已节省存储",
+      "costSavings": "每月节省",
+      "activeConnectors": "活跃连接器",
+      "batchesMigrated": "已完成批次",
+      "lastScan": "上次仓库扫描"
+    },
+    "tabs": {
+      "storage": "存储概览",
+      "connectors": "连接器健康状况",
+      "debt": "债务修复"
+    },
+    "storage": {
+      "compositionTitle": "云存储构成",
+      "pipelineTitle": "迁移流水线摘要"
+    },
+    "scan": {
+      "trigger": "触发仓库扫描",
+      "running": "扫描进行中…",
+      "inProgress": "仓库重复扫描进行中",
+      "inProgressSub": "全仓库重复扫描正在后台运行。指标将自动刷新。",
+      "failed": "触发扫描失败。"
+    },
+    "preFlight": {
+      "queued": "预检分析已排队。完成后报告将显示在此处。",
+      "failed": "预检分析排队失败。"
+    },
+    "remediate": {
+      "failed": "修复作业排队失败。"
+    },
+    "connectors": {
+      "none": "尚未配置连接器。添加连接器以启用预检健康分析。",
+      "healthScoreExplain": "健康分数 = 100 减去因状态未激活、缺少同步、数据陈旧和元数据质量差而产生的扣分。"
+    }
+  },
+  "ingestion": {
+    "title": "迁移流水线",
+    "subtitle": "监控、转换并将遗留企业资产提交到 Capri DAM。",
+    "startMigration": "开始迁移",
+    "manageConnectors": "连接器",
+    "goToConnectors": "配置连接器",
+    "activeBatches": "活动迁移",
+    "allBatches": "所有迁移批次",
+    "noBatches": "尚无迁移批次。",
+    "noBatchesSub": "配置一个遗留连接器并启动您的首次迁移，即可在此查看流水线活动。",
+    "fetchError": "加载批次失败",
+    "phaseBanner": {
+      "title": "迁移阶段："
+    },
+    "stats": {
+      "totalBatches": "批次总数",
+      "completed": "已完成",
+      "assetsCommitted": "已提交资产",
+      "duplicatesBlocked": "已拦截重复项",
+      "storageSaved": "已节省存储",
+      "costSavings": "成本节省"
+    },
+    "batch": {
+      "name": "批次名称",
+      "source": "来源",
+      "status": "状态",
+      "progress": "进度",
+      "duplicates": "重复项",
+      "errors": "错误",
+      "audit": "审计",
+      "viewReport": "查看报告",
+      "abort": "中止迁移",
+      "delete": "删除失败批次",
+      "abortConfirm": "中止此次迁移？所有暂存项都将被丢弃。",
+      "abortSuccess": "迁移已中止。",
+      "abortFail": "中止迁移失败。",
+      "deleteConfirm": "永久删除此失败批次？此操作无法撤销。",
+      "deleteSuccess": "迁移批次已删除。",
+      "deleteFail": "删除批次失败。"
+    },
+    "wizard": {
+      "title": "开始新迁移",
+      "step1Title": "选择来源",
+      "step2Title": "配置批次",
+      "step3Title": "确认并启动",
+      "step1Desc": "选择一个活动连接器作为迁移来源。",
+      "batchName": "批次名称",
+      "batchNameHelper": "为此次迁移运行设置一个描述性名称（至少 3 个字符）。",
+      "notes": "备注（可选）",
+      "notesHelper": "仅管理员可见的内部备注。",
+      "tdmSanitation": "应用 AI / TDM 清理",
+      "tdmSanitationDesc": "将每个资产路由到 AI Gateway 进行元数据规范化和合规扫描。",
+      "concurrency": "最大并发线程数",
+      "concurrencyHelper": "并行下载线程数（1–10）。",
+      "confirmInfo": "点击“初始化”将立即启动提取流水线。该过程将在后台运行。",
+      "launch": "初始化迁移流水线",
+      "launching": "初始化中…",
+      "launchSuccess": "迁移“{{name}}”流水线已启动。",
+      "launchSuccessGeneric": "迁移流水线已初始化。请在“活动迁移”部分监控进度。",
+      "launchError": "启动迁移失败。请重试。",
+      "noActiveConnectors": "未找到活动连接器。",
+      "connectorFetchError": "加载连接器失败。"
     }
   },
   "imageEditor": {

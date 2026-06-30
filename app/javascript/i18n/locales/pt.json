@@ -71,7 +71,8 @@
     "info": "Info",
     "copyDismiss": "Copiar e fechar",
     "refresh": "Atualizar",
-    "actions": "Actions"
+    "actions": "Actions",
+    "back": "Voltar"
   },
   "header": {
     "myProfile": "Meu perfil",
@@ -1087,6 +1088,111 @@
       "advancedSettings": "Advanced Settings & Escalation",
       "onApprove": "ON APPROVE",
       "onDecline": "ON DECLINE"
+    }
+  },
+  "dataHealth": {
+    "title": "Saúde do TDM e do armazenamento",
+    "subtitle": "Monitore proativamente a dívida técnica, otimize a pegada de armazenamento e resolva problemas de conformidade de metadados.",
+    "manageConnectors": "Conectores",
+    "viewPipeline": "Pipeline de migração",
+    "metrics": {
+      "pendingDuplicates": "Duplicados pendentes",
+      "storageSaved": "Armazenamento economizado",
+      "costSavings": "Economia mensal",
+      "activeConnectors": "Conectores ativos",
+      "batchesMigrated": "Lotes concluídos",
+      "lastScan": "Última varredura do repositório"
+    },
+    "tabs": {
+      "storage": "Visão geral do armazenamento",
+      "connectors": "Saúde dos conectores",
+      "debt": "Remediação de dívida"
+    },
+    "storage": {
+      "compositionTitle": "Composição do armazenamento em nuvem",
+      "pipelineTitle": "Resumo do pipeline de migração"
+    },
+    "scan": {
+      "trigger": "Executar varredura do repositório",
+      "running": "Varredura em execução…",
+      "inProgress": "Varredura de duplicados do repositório em andamento",
+      "inProgressSub": "A varredura completa de duplicados do repositório está sendo executada em segundo plano. As métricas serão atualizadas automaticamente.",
+      "failed": "Falha ao acionar a varredura."
+    },
+    "preFlight": {
+      "queued": "Análise preliminar enfileirada. O relatório aparecerá aqui quando estiver concluído.",
+      "failed": "Falha ao enfileirar a análise preliminar."
+    },
+    "remediate": {
+      "failed": "Falha ao enfileirar o trabalho de remediação."
+    },
+    "connectors": {
+      "none": "Nenhum conector configurado. Adicione um conector para ativar a análise preliminar de saúde.",
+      "healthScoreExplain": "Pontuação de saúde = 100 menos penalidades por status inativo, sincronização ausente, dados desatualizados e baixa qualidade de metadados."
+    }
+  },
+  "ingestion": {
+    "title": "Pipeline de migração",
+    "subtitle": "Monitore, transforme e confirme ativos empresariais legados no Capri DAM.",
+    "startMigration": "Iniciar migração",
+    "manageConnectors": "Conectores",
+    "goToConnectors": "Configurar conectores",
+    "activeBatches": "Migrações ativas",
+    "allBatches": "Todos os lotes de migração",
+    "noBatches": "Ainda não há lotes de migração.",
+    "noBatchesSub": "Configure um conector legado e inicie sua primeira migração para ver a atividade do pipeline aqui.",
+    "fetchError": "Falha ao carregar os lotes",
+    "phaseBanner": {
+      "title": "Fases da migração:"
+    },
+    "stats": {
+      "totalBatches": "Total de lotes",
+      "completed": "Concluídos",
+      "assetsCommitted": "Ativos confirmados",
+      "duplicatesBlocked": "Duplicados bloqueados",
+      "storageSaved": "Armazenamento economizado",
+      "costSavings": "Economia de custos"
+    },
+    "batch": {
+      "name": "Nome do lote",
+      "source": "Origem",
+      "status": "Status",
+      "progress": "Progresso",
+      "duplicates": "Duplicados",
+      "errors": "Erros",
+      "audit": "Auditoria",
+      "viewReport": "Ver relatório",
+      "abort": "Abortar migração",
+      "delete": "Excluir lote com falha",
+      "abortConfirm": "Abortar esta migração? Todos os itens preparados serão descartados.",
+      "abortSuccess": "Migração abortada.",
+      "abortFail": "Falha ao abortar a migração.",
+      "deleteConfirm": "Excluir permanentemente este lote com falha? Esta ação não pode ser desfeita.",
+      "deleteSuccess": "Lote de migração excluído.",
+      "deleteFail": "Falha ao excluir o lote."
+    },
+    "wizard": {
+      "title": "Iniciar nova migração",
+      "step1Title": "Selecionar origem",
+      "step2Title": "Configurar lote",
+      "step3Title": "Confirmar e iniciar",
+      "step1Desc": "Escolha um conector ativo como origem da migração.",
+      "batchName": "Nome do lote",
+      "batchNameHelper": "Um nome descritivo para esta execução de migração (mínimo de 3 caracteres).",
+      "notes": "Notas (opcional)",
+      "notesHelper": "Notas internas visíveis apenas para administradores.",
+      "tdmSanitation": "Aplicar saneamento de IA / TDM",
+      "tdmSanitationDesc": "Encaminhe cada ativo pelo AI Gateway para normalização de metadados e verificação de conformidade.",
+      "concurrency": "Máximo de threads simultâneas",
+      "concurrencyHelper": "Número de threads paralelas de download (1–10).",
+      "confirmInfo": "Ao clicar em 'Inicializar', o pipeline de extração começará imediatamente. O processo é executado em segundo plano.",
+      "launch": "Inicializar pipeline de migração",
+      "launching": "Inicializando…",
+      "launchSuccess": "O pipeline de migração '{{name}}' foi iniciado.",
+      "launchSuccessGeneric": "Pipeline de migração inicializado. Acompanhe o progresso na seção Migrações ativas.",
+      "launchError": "Falha ao iniciar a migração. Tente novamente.",
+      "noActiveConnectors": "Nenhum conector ativo encontrado.",
+      "connectorFetchError": "Falha ao carregar os conectores."
     }
   },
   "imageEditor": {

@@ -76,7 +76,7 @@ class DuplicateDetectionService
     # version that belongs to the current asset.
     matching_versions = AssetVersion
       .includes(:asset)
-      .where("properties->>'checksum_sha256' = ?", @checksum)
+      .where("asset_versions.properties->>'checksum_sha256' = ?", @checksum)
       .where.not(asset_id: @asset.id)
       .joins(:asset)
       .merge(Asset.where(deleted_at: nil)) # exclude soft-deleted

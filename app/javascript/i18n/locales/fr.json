@@ -71,7 +71,8 @@
     "info": "Info",
     "copyDismiss": "Copier & Fermer",
     "refresh": "Actualiser",
-    "actions": "Actions"
+    "actions": "Actions",
+    "back": "Retour"
   },
   "header": {
     "myProfile": "Mon profil",
@@ -1087,6 +1088,111 @@
       "advancedSettings": "Advanced Settings & Escalation",
       "onApprove": "ON APPROVE",
       "onDecline": "ON DECLINE"
+    }
+  },
+  "dataHealth": {
+    "title": "Santé TDM et stockage",
+    "subtitle": "Surveillez de manière proactive la dette technique, optimisez l'empreinte de stockage et résolvez les problèmes de conformité des métadonnées.",
+    "manageConnectors": "Connecteurs",
+    "viewPipeline": "Pipeline de migration",
+    "metrics": {
+      "pendingDuplicates": "Doublons en attente",
+      "storageSaved": "Stockage économisé",
+      "costSavings": "Économies mensuelles",
+      "activeConnectors": "Connecteurs actifs",
+      "batchesMigrated": "Lots terminés",
+      "lastScan": "Dernière analyse du dépôt"
+    },
+    "tabs": {
+      "storage": "Vue d'ensemble du stockage",
+      "connectors": "État des connecteurs",
+      "debt": "Résorption de la dette"
+    },
+    "storage": {
+      "compositionTitle": "Composition du stockage cloud",
+      "pipelineTitle": "Résumé du pipeline de migration"
+    },
+    "scan": {
+      "trigger": "Lancer l'analyse du dépôt",
+      "running": "Analyse en cours…",
+      "inProgress": "Analyse des doublons du dépôt en cours",
+      "inProgressSub": "L'analyse complète des doublons du dépôt s'exécute en arrière-plan. Les métriques seront actualisées automatiquement.",
+      "failed": "Échec du déclenchement de l'analyse."
+    },
+    "preFlight": {
+      "queued": "Analyse préalable mise en file d'attente. Le rapport apparaîtra ici une fois terminé.",
+      "failed": "Échec de la mise en file d'attente de l'analyse préalable."
+    },
+    "remediate": {
+      "failed": "Échec de la mise en file d'attente du travail de remédiation."
+    },
+    "connectors": {
+      "none": "Aucun connecteur configuré. Ajoutez un connecteur pour activer l'analyse préalable de santé.",
+      "healthScoreExplain": "Score de santé = 100 moins des pénalités pour statut inactif, synchronisation manquante, données obsolètes et mauvaise qualité des métadonnées."
+    }
+  },
+  "ingestion": {
+    "title": "Pipeline de migration",
+    "subtitle": "Surveillez, transformez et validez les ressources d'entreprise héritées dans Capri DAM.",
+    "startMigration": "Démarrer la migration",
+    "manageConnectors": "Connecteurs",
+    "goToConnectors": "Configurer les connecteurs",
+    "activeBatches": "Migrations actives",
+    "allBatches": "Tous les lots de migration",
+    "noBatches": "Aucun lot de migration pour le moment.",
+    "noBatchesSub": "Configurez un connecteur hérité et démarrez votre première migration pour voir l'activité du pipeline ici.",
+    "fetchError": "Échec du chargement des lots",
+    "phaseBanner": {
+      "title": "Phases de migration :"
+    },
+    "stats": {
+      "totalBatches": "Total des lots",
+      "completed": "Terminés",
+      "assetsCommitted": "Ressources validées",
+      "duplicatesBlocked": "Doublons bloqués",
+      "storageSaved": "Stockage économisé",
+      "costSavings": "Économies de coûts"
+    },
+    "batch": {
+      "name": "Nom du lot",
+      "source": "Source",
+      "status": "Statut",
+      "progress": "Progression",
+      "duplicates": "Doublons",
+      "errors": "Erreurs",
+      "audit": "Audit",
+      "viewReport": "Voir le rapport",
+      "abort": "Annuler la migration",
+      "delete": "Supprimer le lot en échec",
+      "abortConfirm": "Annuler cette migration ? Tous les éléments préparés seront supprimés.",
+      "abortSuccess": "Migration annulée.",
+      "abortFail": "Échec de l'annulation de la migration.",
+      "deleteConfirm": "Supprimer définitivement ce lot en échec ? Cette action est irréversible.",
+      "deleteSuccess": "Lot de migration supprimé.",
+      "deleteFail": "Échec de la suppression du lot."
+    },
+    "wizard": {
+      "title": "Démarrer une nouvelle migration",
+      "step1Title": "Sélectionner la source",
+      "step2Title": "Configurer le lot",
+      "step3Title": "Confirmer et lancer",
+      "step1Desc": "Choisissez un connecteur actif comme source de migration.",
+      "batchName": "Nom du lot",
+      "batchNameHelper": "Un nom descriptif pour cette exécution de migration (minimum 3 caractères).",
+      "notes": "Notes (facultatif)",
+      "notesHelper": "Notes internes visibles uniquement par les administrateurs.",
+      "tdmSanitation": "Appliquer l'assainissement IA / TDM",
+      "tdmSanitationDesc": "Faites passer chaque ressource par la passerelle IA pour la normalisation des métadonnées et l'analyse de conformité.",
+      "concurrency": "Nombre maximal de threads simultanés",
+      "concurrencyHelper": "Nombre de threads de téléchargement parallèles (1 à 10).",
+      "confirmInfo": "En cliquant sur 'Initialiser', le pipeline d'extraction démarrera immédiatement. Le processus s'exécute en arrière-plan.",
+      "launch": "Initialiser le pipeline de migration",
+      "launching": "Initialisation…",
+      "launchSuccess": "Le pipeline de migration '{{name}}' a démarré.",
+      "launchSuccessGeneric": "Pipeline de migration initialisé. Suivez la progression dans la section Migrations actives.",
+      "launchError": "Échec du démarrage de la migration. Veuillez réessayer.",
+      "noActiveConnectors": "Aucun connecteur actif trouvé.",
+      "connectorFetchError": "Échec du chargement des connecteurs."
     }
   },
   "imageEditor": {

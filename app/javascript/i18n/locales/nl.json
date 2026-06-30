@@ -71,7 +71,8 @@
     "info": "Info",
     "copyDismiss": "Kopiëren & Sluiten",
     "refresh": "Vernieuwen",
-    "actions": "Actions"
+    "actions": "Actions",
+    "back": "Terug"
   },
   "header": {
     "myProfile": "Mijn profiel",
@@ -1087,6 +1088,111 @@
       "advancedSettings": "Advanced Settings & Escalation",
       "onApprove": "ON APPROVE",
       "onDecline": "ON DECLINE"
+    }
+  },
+  "dataHealth": {
+    "title": "TDM- en opslagstatus",
+    "subtitle": "Bewaak technische schuld proactief, optimaliseer de opslagvoetafdruk en los nalevingsproblemen met metadata op.",
+    "manageConnectors": "Connectoren",
+    "viewPipeline": "Migratiepipeline",
+    "metrics": {
+      "pendingDuplicates": "Openstaande duplicaten",
+      "storageSaved": "Bespaarde opslag",
+      "costSavings": "Maandelijkse besparingen",
+      "activeConnectors": "Actieve connectoren",
+      "batchesMigrated": "Voltooide batches",
+      "lastScan": "Laatste reposcan"
+    },
+    "tabs": {
+      "storage": "Opslagoverzicht",
+      "connectors": "Connectorstatus",
+      "debt": "Schuldherstel"
+    },
+    "storage": {
+      "compositionTitle": "Samenstelling van cloudopslag",
+      "pipelineTitle": "Samenvatting van migratiepipeline"
+    },
+    "scan": {
+      "trigger": "Reposcan starten",
+      "running": "Scan wordt uitgevoerd…",
+      "inProgress": "Duplicaatscan van repository bezig",
+      "inProgressSub": "De volledige duplicaatscan van de repository wordt op de achtergrond uitgevoerd. Statistieken worden automatisch vernieuwd.",
+      "failed": "Kan scan niet starten."
+    },
+    "preFlight": {
+      "queued": "Pre-flightanalyse in wachtrij geplaatst. Het rapport verschijnt hier zodra het klaar is.",
+      "failed": "Kan pre-flightanalyse niet in wachtrij plaatsen."
+    },
+    "remediate": {
+      "failed": "Kan hersteltaak niet in wachtrij plaatsen."
+    },
+    "connectors": {
+      "none": "Er zijn geen connectoren geconfigureerd. Voeg een connector toe om pre-flightstatusanalyse in te schakelen.",
+      "healthScoreExplain": "Gezondheidsscore = 100 minus strafpunten voor inactieve status, ontbrekende synchronisatie, verouderde gegevens en slechte metadatakwaliteit."
+    }
+  },
+  "ingestion": {
+    "title": "Migratiepipeline",
+    "subtitle": "Bewaak, transformeer en commit oudere bedrijfsassets naar Capri DAM.",
+    "startMigration": "Migratie starten",
+    "manageConnectors": "Connectoren",
+    "goToConnectors": "Connectoren configureren",
+    "activeBatches": "Actieve migraties",
+    "allBatches": "Alle migratiebatches",
+    "noBatches": "Nog geen migratiebatches.",
+    "noBatchesSub": "Configureer een legacy-connector en start uw eerste migratie om hier pipeline-activiteit te zien.",
+    "fetchError": "Kan batches niet laden",
+    "phaseBanner": {
+      "title": "Migratiefasen:"
+    },
+    "stats": {
+      "totalBatches": "Totaal aantal batches",
+      "completed": "Voltooid",
+      "assetsCommitted": "Vastgelegde assets",
+      "duplicatesBlocked": "Geblokkeerde duplicaten",
+      "storageSaved": "Bespaarde opslag",
+      "costSavings": "Kostenbesparingen"
+    },
+    "batch": {
+      "name": "Batchnaam",
+      "source": "Bron",
+      "status": "Status",
+      "progress": "Voortgang",
+      "duplicates": "Duplicaten",
+      "errors": "Fouten",
+      "audit": "Audit",
+      "viewReport": "Rapport bekijken",
+      "abort": "Migratie afbreken",
+      "delete": "Mislukte batch verwijderen",
+      "abortConfirm": "Deze migratie afbreken? Alle voorbereide items worden verwijderd.",
+      "abortSuccess": "Migratie afgebroken.",
+      "abortFail": "Kan migratie niet afbreken.",
+      "deleteConfirm": "Deze mislukte batch permanent verwijderen? Dit kan niet ongedaan worden gemaakt.",
+      "deleteSuccess": "Migratiebatch verwijderd.",
+      "deleteFail": "Kan batch niet verwijderen."
+    },
+    "wizard": {
+      "title": "Nieuwe migratie starten",
+      "step1Title": "Bron selecteren",
+      "step2Title": "Batch configureren",
+      "step3Title": "Bevestigen en starten",
+      "step1Desc": "Kies een actieve connector als migratiebron.",
+      "batchName": "Batchnaam",
+      "batchNameHelper": "Een beschrijvende naam voor deze migratieronde (minimaal 3 tekens).",
+      "notes": "Notities (optioneel)",
+      "notesHelper": "Interne notities die alleen zichtbaar zijn voor beheerders.",
+      "tdmSanitation": "AI- / TDM-sanering toepassen",
+      "tdmSanitationDesc": "Leid elk asset via de AI Gateway voor normalisatie van metadata en nalevingsscan.",
+      "concurrency": "Maximaal aantal gelijktijdige threads",
+      "concurrencyHelper": "Aantal parallelle downloadthreads (1–10).",
+      "confirmInfo": "Wanneer u op 'Initialiseren' klikt, start de extractiepipeline direct. Het proces draait op de achtergrond.",
+      "launch": "Migratiepipeline initialiseren",
+      "launching": "Initialiseren…",
+      "launchSuccess": "Migratiepipeline '{{name}}' gestart.",
+      "launchSuccessGeneric": "Migratiepipeline geïnitialiseerd. Volg de voortgang in het gedeelte Actieve migraties.",
+      "launchError": "Kan migratie niet starten. Probeer het opnieuw.",
+      "noActiveConnectors": "Geen actieve connectoren gevonden.",
+      "connectorFetchError": "Kan connectoren niet laden."
     }
   },
   "imageEditor": {

@@ -71,7 +71,8 @@
     "info": "Info",
     "copyDismiss": "Copiar y cerrar",
     "refresh": "Actualizar",
-    "actions": "Actions"
+    "actions": "Actions",
+    "back": "Volver"
   },
   "header": {
     "myProfile": "Mi perfil",
@@ -1087,6 +1088,111 @@
       "advancedSettings": "Advanced Settings & Escalation",
       "onApprove": "ON APPROVE",
       "onDecline": "ON DECLINE"
+    }
+  },
+  "dataHealth": {
+    "title": "Estado de TDM y almacenamiento",
+    "subtitle": "Supervise de forma proactiva la deuda técnica, optimice la huella de almacenamiento y resuelva problemas de cumplimiento de metadatos.",
+    "manageConnectors": "Conectores",
+    "viewPipeline": "Canal de migración",
+    "metrics": {
+      "pendingDuplicates": "Duplicados pendientes",
+      "storageSaved": "Almacenamiento ahorrado",
+      "costSavings": "Ahorro mensual",
+      "activeConnectors": "Conectores activos",
+      "batchesMigrated": "Lotes completados",
+      "lastScan": "Último escaneo del repositorio"
+    },
+    "tabs": {
+      "storage": "Resumen de almacenamiento",
+      "connectors": "Estado de los conectores",
+      "debt": "Remediación de deuda"
+    },
+    "storage": {
+      "compositionTitle": "Composición del almacenamiento en la nube",
+      "pipelineTitle": "Resumen del canal de migración"
+    },
+    "scan": {
+      "trigger": "Iniciar escaneo del repositorio",
+      "running": "Escaneo en curso…",
+      "inProgress": "Escaneo de duplicados del repositorio en progreso",
+      "inProgressSub": "El escaneo completo de duplicados del repositorio se está ejecutando en segundo plano. Las métricas se actualizarán automáticamente.",
+      "failed": "No se pudo iniciar el escaneo."
+    },
+    "preFlight": {
+      "queued": "Análisis previo en cola. El informe aparecerá aquí cuando se complete.",
+      "failed": "No se pudo poner en cola el análisis previo."
+    },
+    "remediate": {
+      "failed": "No se pudo poner en cola el trabajo de remediación."
+    },
+    "connectors": {
+      "none": "No hay conectores configurados. Agregue un conector para habilitar el análisis previo de estado.",
+      "healthScoreExplain": "Puntuación de estado = 100 menos penalizaciones por estado inactivo, sincronización faltante, datos obsoletos y mala calidad de metadatos."
+    }
+  },
+  "ingestion": {
+    "title": "Canal de migración",
+    "subtitle": "Supervise, transforme y confirme activos empresariales heredados en Capri DAM.",
+    "startMigration": "Iniciar migración",
+    "manageConnectors": "Conectores",
+    "goToConnectors": "Configurar conectores",
+    "activeBatches": "Migraciones activas",
+    "allBatches": "Todos los lotes de migración",
+    "noBatches": "Aún no hay lotes de migración.",
+    "noBatchesSub": "Configure un conector heredado e inicie su primera migración para ver aquí la actividad del canal.",
+    "fetchError": "No se pudieron cargar los lotes",
+    "phaseBanner": {
+      "title": "Fases de migración:"
+    },
+    "stats": {
+      "totalBatches": "Lotes totales",
+      "completed": "Completados",
+      "assetsCommitted": "Activos confirmados",
+      "duplicatesBlocked": "Duplicados bloqueados",
+      "storageSaved": "Almacenamiento ahorrado",
+      "costSavings": "Ahorro de costos"
+    },
+    "batch": {
+      "name": "Nombre del lote",
+      "source": "Origen",
+      "status": "Estado",
+      "progress": "Progreso",
+      "duplicates": "Duplicados",
+      "errors": "Errores",
+      "audit": "Auditoría",
+      "viewReport": "Ver informe",
+      "abort": "Abortar migración",
+      "delete": "Eliminar lote fallido",
+      "abortConfirm": "¿Abortar esta migración? Todos los elementos preparados se descartarán.",
+      "abortSuccess": "Migración abortada.",
+      "abortFail": "No se pudo abortar la migración.",
+      "deleteConfirm": "¿Eliminar permanentemente este lote fallido? Esta acción no se puede deshacer.",
+      "deleteSuccess": "Lote de migración eliminado.",
+      "deleteFail": "No se pudo eliminar el lote."
+    },
+    "wizard": {
+      "title": "Iniciar nueva migración",
+      "step1Title": "Seleccionar origen",
+      "step2Title": "Configurar lote",
+      "step3Title": "Confirmar y lanzar",
+      "step1Desc": "Elija un conector activo como origen de la migración.",
+      "batchName": "Nombre del lote",
+      "batchNameHelper": "Un nombre descriptivo para esta ejecución de migración (mínimo 3 caracteres).",
+      "notes": "Notas (opcional)",
+      "notesHelper": "Notas internas visibles solo para administradores.",
+      "tdmSanitation": "Aplicar saneamiento de IA / TDM",
+      "tdmSanitationDesc": "Dirija cada activo a través de la puerta de enlace de IA para la normalización de metadatos y el escaneo de cumplimiento.",
+      "concurrency": "Máximo de hilos simultáneos",
+      "concurrencyHelper": "Número de hilos de descarga en paralelo (1–10).",
+      "confirmInfo": "Al hacer clic en 'Inicializar', el canal de extracción se iniciará inmediatamente. El proceso se ejecuta en segundo plano.",
+      "launch": "Inicializar canal de migración",
+      "launching": "Inicializando…",
+      "launchSuccess": "Se inició el canal de migración '{{name}}'.",
+      "launchSuccessGeneric": "Canal de migración inicializado. Supervise el progreso en la sección Migraciones activas.",
+      "launchError": "No se pudo iniciar la migración. Inténtelo de nuevo.",
+      "noActiveConnectors": "No se encontraron conectores activos.",
+      "connectorFetchError": "No se pudieron cargar los conectores."
     }
   },
   "imageEditor": {

@@ -71,7 +71,8 @@
     "info": "Info",
     "copyDismiss": "Kopieren & Schließen",
     "refresh": "Aktualisieren",
-    "actions": "Actions"
+    "actions": "Actions",
+    "back": "Zurück"
   },
   "header": {
     "myProfile": "Mein Profil",
@@ -1087,6 +1088,111 @@
       "advancedSettings": "Advanced Settings & Escalation",
       "onApprove": "ON APPROVE",
       "onDecline": "ON DECLINE"
+    }
+  },
+  "dataHealth": {
+    "title": "TDM- & Speicherzustand",
+    "subtitle": "Technische Schulden proaktiv überwachen, Speicherbedarf optimieren und Probleme bei der Metadaten-Compliance beheben.",
+    "manageConnectors": "Konnektoren",
+    "viewPipeline": "Migrations-Pipeline",
+    "metrics": {
+      "pendingDuplicates": "Ausstehende Duplikate",
+      "storageSaved": "Eingesparter Speicher",
+      "costSavings": "Monatliche Einsparungen",
+      "activeConnectors": "Aktive Konnektoren",
+      "batchesMigrated": "Abgeschlossene Batches",
+      "lastScan": "Letzter Repository-Scan"
+    },
+    "tabs": {
+      "storage": "Speicherübersicht",
+      "connectors": "Konnektor-Zustand",
+      "debt": "Schuldenabbau"
+    },
+    "storage": {
+      "compositionTitle": "Zusammensetzung des Cloud-Speichers",
+      "pipelineTitle": "Zusammenfassung der Migrations-Pipeline"
+    },
+    "scan": {
+      "trigger": "Repository-Scan starten",
+      "running": "Scan läuft…",
+      "inProgress": "Duplikat-Repository-Scan läuft",
+      "inProgressSub": "Der vollständige Duplikat-Scan des Repositorys läuft im Hintergrund. Kennzahlen werden automatisch aktualisiert.",
+      "failed": "Scan konnte nicht gestartet werden."
+    },
+    "preFlight": {
+      "queued": "Vorabanalyse in Warteschlange. Der Bericht erscheint hier, sobald sie abgeschlossen ist.",
+      "failed": "Vorabanalyse konnte nicht in die Warteschlange gestellt werden."
+    },
+    "remediate": {
+      "failed": "Behebungsauftrag konnte nicht in die Warteschlange gestellt werden."
+    },
+    "connectors": {
+      "none": "Keine Konnektoren konfiguriert. Fügen Sie einen Konnektor hinzu, um die Vorab-Gesundheitsanalyse zu aktivieren.",
+      "healthScoreExplain": "Gesundheitswert = 100 minus Abzüge für inaktiven Status, fehlende Synchronisierung, veraltete Daten und schlechte Metadatenqualität."
+    }
+  },
+  "ingestion": {
+    "title": "Migrations-Pipeline",
+    "subtitle": "Legacy-Unternehmens-Assets in Capri DAM überwachen, transformieren und übernehmen.",
+    "startMigration": "Migration starten",
+    "manageConnectors": "Konnektoren",
+    "goToConnectors": "Konnektoren konfigurieren",
+    "activeBatches": "Aktive Migrationen",
+    "allBatches": "Alle Migrations-Batches",
+    "noBatches": "Noch keine Migrations-Batches.",
+    "noBatchesSub": "Konfigurieren Sie einen Legacy-Konnektor und starten Sie Ihre erste Migration, um hier Pipeline-Aktivität zu sehen.",
+    "fetchError": "Batches konnten nicht geladen werden",
+    "phaseBanner": {
+      "title": "Migrationsphasen:"
+    },
+    "stats": {
+      "totalBatches": "Gesamte Batches",
+      "completed": "Abgeschlossen",
+      "assetsCommitted": "Übernommene Assets",
+      "duplicatesBlocked": "Blockierte Duplikate",
+      "storageSaved": "Eingesparter Speicher",
+      "costSavings": "Kosteneinsparungen"
+    },
+    "batch": {
+      "name": "Batch-Name",
+      "source": "Quelle",
+      "status": "Status",
+      "progress": "Fortschritt",
+      "duplicates": "Duplikate",
+      "errors": "Fehler",
+      "audit": "Prüfprotokoll",
+      "viewReport": "Bericht anzeigen",
+      "abort": "Migration abbrechen",
+      "delete": "Fehlgeschlagenen Batch löschen",
+      "abortConfirm": "Diese Migration abbrechen? Alle vorbereiteten Elemente werden verworfen.",
+      "abortSuccess": "Migration abgebrochen.",
+      "abortFail": "Migration konnte nicht abgebrochen werden.",
+      "deleteConfirm": "Diesen fehlgeschlagenen Batch dauerhaft löschen? Dies kann nicht rückgängig gemacht werden.",
+      "deleteSuccess": "Migrations-Batch gelöscht.",
+      "deleteFail": "Batch konnte nicht gelöscht werden."
+    },
+    "wizard": {
+      "title": "Neue Migration starten",
+      "step1Title": "Quelle auswählen",
+      "step2Title": "Batch konfigurieren",
+      "step3Title": "Bestätigen & starten",
+      "step1Desc": "Wählen Sie einen aktiven Konnektor als Migrationsquelle.",
+      "batchName": "Batch-Name",
+      "batchNameHelper": "Ein beschreibender Name für diesen Migrationslauf (mindestens 3 Zeichen).",
+      "notes": "Notizen (optional)",
+      "notesHelper": "Interne Notizen, die nur für Administratoren sichtbar sind.",
+      "tdmSanitation": "KI- / TDM-Bereinigung anwenden",
+      "tdmSanitationDesc": "Leiten Sie jedes Asset über das KI-Gateway zur Metadaten-Normalisierung und Compliance-Prüfung.",
+      "concurrency": "Maximale gleichzeitige Threads",
+      "concurrencyHelper": "Anzahl paralleler Download-Threads (1–10).",
+      "confirmInfo": "Ein Klick auf 'Initialisieren' startet die Extraktions-Pipeline sofort. Der Prozess läuft im Hintergrund.",
+      "launch": "Migrations-Pipeline initialisieren",
+      "launching": "Wird initialisiert…",
+      "launchSuccess": "Migrations-Pipeline '{{name}}' gestartet.",
+      "launchSuccessGeneric": "Migrations-Pipeline initialisiert. Überwachen Sie den Fortschritt im Bereich „Aktive Migrationen“.",
+      "launchError": "Migration konnte nicht gestartet werden. Bitte versuchen Sie es erneut.",
+      "noActiveConnectors": "Keine aktiven Konnektoren gefunden.",
+      "connectorFetchError": "Konnektoren konnten nicht geladen werden."
     }
   },
   "imageEditor": {
