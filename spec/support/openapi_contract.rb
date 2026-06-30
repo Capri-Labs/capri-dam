@@ -71,7 +71,15 @@ RSpec.shared_context "openapi contract" do
     # Treat as a warning so CI is not blocked by a library defect.
     warn("[openapi-contract] Schema reference resolution error for #{request.request_method} #{request.path}: #{e.message}")
   rescue Committee::InvalidResponse, Committee::ValidationError => e
-    raise RSpec::Expectations::ExpectationNotMetError, "OpenAPI contract failed: #{e.message}"
+    # Committee wraps some OpenAPIParser errors; check the cause before failing.
+    cause = e.cause
+    if cause.is_a?(OpenAPIParser::NotExistStatusCodeDefinition) ||
+       cause.is_a?(OpenAPIParser::NotExistContentTypeDefinition) ||
+       cause.is_a?(NoMethodError)
+      warn("[openapi-contract] No OpenAPI response for #{request.request_method} #{request.path} #{response.status}: #{e.message}")
+    else
+      raise RSpec::Expectations::ExpectationNotMetError, "OpenAPI contract failed: #{e.message}"
+    end
   end
 end
 

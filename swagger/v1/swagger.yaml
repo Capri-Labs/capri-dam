@@ -1417,8 +1417,30 @@ paths:
       responses:
         '201':
           description: Execution logged
+          content:
+            application/json:
+              schema:
+                type: object
         '401':
           description: Missing/invalid gateway secret
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '422':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
       requestBody:
         content:
           application/json:
@@ -1603,6 +1625,24 @@ paths:
                     type: array
                     items:
                       "$ref": "#/components/schemas/AiBatchJob"
+        '401':
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '403':
+          description: Forbidden (admin only)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
     post:
       summary: Launch an AI batch job (admin only)
       tags:
@@ -1619,8 +1659,33 @@ paths:
                 "$ref": "#/components/schemas/AiBatchJob"
         '422':
           description: Validation failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
         '403':
           description: Non-admin forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '401':
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
       requestBody:
         content:
           application/json:
