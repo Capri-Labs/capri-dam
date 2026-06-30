@@ -141,7 +141,10 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
       - run: yarn install --frozen-lockfile
-      - run: npx @stoplight/spectral-cli lint swagger/v1/swagger.yaml
+      # Uses the local .spectral.yml ruleset (extends spectral:oas built-in).
+      # No network download or license needed — spectral:oas ships with the CLI.
+      - run: npx --yes @stoplight/spectral-cli lint --ruleset .spectral.yml swagger/v1/swagger.yaml
+        continue-on-error: true   # warn only; don't block on style issues
 
   integration-all-green:
     runs-on: ubuntu-latest

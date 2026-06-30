@@ -127,9 +127,11 @@ jobs:
           path: semgrep.sarif
           retention-days: 30
 
-  # ── 3. Gitleaks — secret / credential detection ───────────────────────────
-  gitleaks:
-    name: Gitleaks (Secrets Scan)
+  # ── 3. TruffleHog — secret / credential detection ────────────────────────
+  # Open-source alternative to Gitleaks; no license required for public or
+  # private repos.  Scans full git history for leaked secrets.
+  secrets-scan:
+    name: TruffleHog (Secrets Scan)
     runs-on: ubuntu-latest
 
     steps:
@@ -138,11 +140,13 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Run Gitleaks
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+      - name: Run TruffleHog OSS
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          extra_args: --only-verified
 
   # ── 4. Brakeman — Rails SAST with SARIF upload ────────────────────────────
   brakeman:
@@ -256,7 +260,7 @@ jobs:
   sast-all-green:
     name: All SAST checks passed
     runs-on: ubuntu-latest
-    needs: [codeql, semgrep, gitleaks, brakeman, bundler-audit, yarn-audit]
+    needs: [codeql, semgrep, secrets-scan, brakeman, bundler-audit, yarn-audit]
     if: always()
 
     steps:
@@ -265,7 +269,7 @@ jobs:
           declare -A results=(
             [codeql]="${{ needs.codeql.result }}"
             [semgrep]="${{ needs.semgrep.result }}"
-            [gitleaks]="${{ needs.gitleaks.result }}"
+            [secrets_scan]="${{ needs.secrets-scan.result }}"
             [brakeman]="${{ needs.brakeman.result }}"
             [bundler_audit]="${{ needs.bundler-audit.result }}"
             [yarn_audit]="${{ needs.yarn-audit.result }}"

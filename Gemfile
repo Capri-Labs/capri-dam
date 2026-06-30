@@ -42,6 +42,10 @@ gem "thruster", require: false
 # Use Active Storage variants [https://guides.rubyonrails.org/active_storage_overview.html#transforming-images]
 gem "image_processing", "~> 2.0"
 
+# Ruby 4.0 removed several stdlib network libs from default gems — declare them
+# explicitly so they are available both locally and in CI.
+gem "net-ftp"   # used by ingestion_adapters/ftp_adapter.rb
+
 group :development, :test do
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
   gem "debug", platforms: %i[ mri windows ], require: "debug/prelude"

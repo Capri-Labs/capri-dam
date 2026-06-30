@@ -1,0 +1,23 @@
+# Spectral OpenAPI linting ruleset for Capri DAM
+# Docs: https://docs.stoplight.io/docs/spectral/
+extends:
+  - "spectral:oas"   # built-in OpenAPI 2/3 ruleset (no network download needed)
+
+rules:
+  # Downgrade noisy info-level rules to warnings so they don't block CI
+  info-contact:
+    severity: warn
+  info-license:
+    severity: warn
+  tag-description:
+    severity: warn
+  operation-tag-defined:
+    severity: warn
+
+  # Keep errors for structural issues that break clients
+  oas3-valid-media-example:
+    severity: error
+  no-$ref-siblings:
+    severity: error
+  oas3-unused-component:
+    severity: warn

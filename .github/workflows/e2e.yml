@@ -101,6 +101,7 @@ jobs:
       - name: Prepare E2E database & seed
         env:
           RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY }}
+          SECRET_KEY_BASE: ${{ secrets.RAILS_MASTER_KEY || 'ci_e2e_placeholder_secret_key_base_32chars_min' }}
         run: |
           bundle exec rails db:create
           bundle exec rails db:migrate
@@ -109,22 +110,31 @@ jobs:
       - name: Start Rails server in background
         env:
           RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY }}
+          SECRET_KEY_BASE: ${{ secrets.RAILS_MASTER_KEY || 'ci_e2e_placeholder_secret_key_base_32chars_min' }}
         run: |
-          bundle exec rails server -p 3000 -e test > /tmp/rails-server.log 2>&1 &
-          echo "Rails server PID: $!"
-          # Wait up to 60 s (30 × 2 s) for the /up health-check to respond
-          for i in $(seq 1 30); do
+          # Bind to 0.0.0.0 so the health-check curl can reach it
+          bundle exec rails server -b 0.0.0.0 -p 3000 -e test > /tmp/rails-server.log 2>&1 &
+          SERVER_PID=$!
+          echo "Rails server PID: $SERVER_PID"
+          # Wait up to 90 s (45 × 2 s) for the /up health-check to respond
+          for i in $(seq 1 45); do
             if curl -sf --max-time 2 http://localhost:3000/up; then
               echo "Rails server is ready (attempt $i)"
               break
             fi
-            echo "Waiting for server... attempt $i/30"
+            # If the process already exited, bail out early
+            if ! kill -0 "$SERVER_PID" 2>/dev/null; then
+              echo "::error::Rails server process exited unexpectedly (attempt $i)"
+              break
+            fi
+            echo "Waiting for server... attempt $i/45"
             sleep 2
           done
           # Hard-fail the step if the server still isn't answering
           if ! curl -sf --max-time 2 http://localhost:3000/up; then
-            echo "::error::Rails server did not start within 60 s"
-            echo "=== Server log ===" && cat /tmp/rails-server.log || true
+            echo "::error::Rails server did not start within 90 s"
+            echo "=== Last 100 lines of server log ==="
+            tail -100 /tmp/rails-server.log || true
             exit 1
           fi
 
@@ -133,6 +143,7 @@ jobs:
           E2E_EMAIL: ${{ secrets.E2E_EMAIL || 'admin@admin.com' }}
           E2E_PASSWORD: ${{ secrets.E2E_PASSWORD || 'AdminUser' }}
           RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY }}
+          SECRET_KEY_BASE: ${{ secrets.RAILS_MASTER_KEY || 'ci_e2e_placeholder_secret_key_base_32chars_min' }}
         run: yarn playwright test --reporter=html
 
       - name: Upload Playwright HTML report

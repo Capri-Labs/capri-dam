@@ -306,10 +306,9 @@ test-openapi-contract: ## Validate all API responses against swagger.yaml (reque
 	  --format progress \
 	  --tag ~api_doc
 
-lint-openapi: ## Lint the OpenAPI swagger.yaml using Spectral
+lint-openapi: ## Lint the OpenAPI swagger.yaml using Spectral (local .spectral.yml ruleset)
 	@echo "--- Linting OpenAPI spec ---"
-	npx --yes @stoplight/spectral-cli lint swagger/v1/swagger.yaml \
-	  --ruleset https://unpkg.com/@stoplight/spectral-rulesets/dist/oas/index.mjs
+	npx --yes @stoplight/spectral-cli lint --ruleset .spectral.yml swagger/v1/swagger.yaml
 
 test-contracts: test-openapi-contract test-pact lint-openapi ## Run all contract tests
 
