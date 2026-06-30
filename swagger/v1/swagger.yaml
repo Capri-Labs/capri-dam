@@ -2702,32 +2702,118 @@ paths:
       schema:
         type: string
     post:
-      summary: Apply non-destructive image edits via the baking pipeline
+      summary: Process image with adjustments (brightness, contrast, saturation, geometry)
       tags:
       - Assets
       security:
       - Bearer: []
       description: |
-        Runs the **Image Baking Pipeline** (ImageMagick/MiniMagick).
-
-        **Save Modes**:
-        - `version` — creates a new immutable version on the same asset (default)
-        - `overwrite` — replaces the active version in-place (**destructive**)
-        - `new` — forks the asset as an independent copy (`title (Copy)`)
-
-        When `target_folder_id` differs from the current folder and `save_mode` is
-        `version` or `new`, the result is placed in that target folder.
-      parameters: []
+        Applies adjustments (brightness, contrast, saturation) and geometric transformations
+        (rotation, flips) to an image using the ImageProcessingService. Supports multiple
+        save modes: `new` (creates asset), `version` (creates new version), `overwrite` (replaces current).
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: Asset UUID
+        schema:
+          type: string
+      - name: adjustments
+        in: query
+        type: object
+        required: false
+        schema:
+          type: object
+          properties:
+            brightness:
+              type: integer
+              example: 20
+              description: 'Range: -100 to 100'
+            contrast:
+              type: integer
+              example: -15
+              description: 'Range: -100 to 100'
+            saturation:
+              type: integer
+              example: 30
+              description: 'Range: -100 to 100'
+        description: Image adjustment parameters
+      - name: geometry
+        in: query
+        type: object
+        required: false
+        schema:
+          type: object
+          properties:
+            rotate:
+              type: integer
+              example: 90
+              description: Rotation degrees
+            flip_horizontal:
+              type: boolean
+              example: false
+            flip_vertical:
+              type: boolean
+              example: false
+            focal_point:
+              type: object
+              properties:
+                x:
+                  type: number
+                  example: 50.0
+                "y":
+                  type: number
+                  example: 50.0
+        description: Geometric transformation parameters
+      - name: crop_aspect
+        in: query
+        required: false
+        example: free
+        description: Crop aspect ratio (e.g., "free", "16:9", "4:3")
+        schema:
+          type: string
+      - name: filter
+        in: query
+        required: false
+        example: None
+        description: Image filter to apply
+        schema:
+          type: string
+      - name: custom_cli
+        in: query
+        required: false
+        description: Raw ImageMagick CLI flags (e.g., "-monochrome -charcoal 2")
+        schema:
+          type: string
+      - name: save_mode
+        in: query
+        required: false
+        enum:
+        - new
+        - version
+        - overwrite
+        example: version
+        description: "Where to save: `new` (create asset), `version` (new version),
+          `overwrite` (replace):\n * `new` \n * `version` \n * `overwrite` \n "
+        schema:
+          type: string
+      - name: target_folder_id
+        in: query
+        required: false
+        description: 'Folder ID to move output to (save_mode: new only)'
+        schema:
+          type: integer
       responses:
         '200':
-          description: Image baked — overwrite or in-place version save
+          description: Image processed and version created
           content:
             application/json:
               schema:
                 type: object
                 properties:
                   id:
-                    type: integer
+                    type: string
+                    format: uuid
                   uuid:
                     type: string
                     format: uuid
@@ -2735,20 +2821,29 @@ paths:
                     type: string
                   version:
                     type: integer
+                    example: 2
                   metadata:
                     type: object
                   url:
                     type: string
                     nullable: true
+                  storage_path:
+                    type: string
+                  file_size:
+                    type: integer
+                required:
+                - id
+                - version
         '201':
-          description: Fork created — new asset or branch to target folder
+          description: 'New asset created with processed image (save_mode: new)'
           content:
             application/json:
               schema:
                 type: object
                 properties:
                   id:
-                    type: integer
+                    type: string
+                    format: uuid
                   uuid:
                     type: string
                     format: uuid
@@ -2762,8 +2857,10 @@ paths:
                   url:
                     type: string
                     nullable: true
+                required:
+                - id
         '422':
-          description: Source file missing from disk
+          description: Validation error or source file missing
           content:
             application/json:
               schema:
@@ -2771,6 +2868,8 @@ paths:
                 properties:
                   error:
                     type: string
+                    example: 'Invalid image parameters: brightness must be between
+                      -100 and 100'
         '404':
           description: Asset not found
           content:
@@ -2780,63 +2879,7 @@ paths:
                 properties:
                   error:
                     type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                save_mode:
-                  type: string
-                  enum:
-                  - version
-                  - overwrite
-                  - new
-                  example: version
-                target_folder_id:
-                  type: string
-                  nullable: true
-                  example: '42'
-                  description: Destination folder ID, or "root"
-                adjustments:
-                  type: object
-                  properties:
-                    brightness:
-                      type: integer
-                      example: 10
-                    contrast:
-                      type: integer
-                      example: 5
-                    saturation:
-                      type: integer
-                      example: -20
-                geometry:
-                  type: object
-                  properties:
-                    rotate:
-                      type: integer
-                      example: 90
-                    flip_horizontal:
-                      type: boolean
-                      example: false
-                    focal_point:
-                      type: object
-                      properties:
-                        x:
-                          type: number
-                          example: 50.0
-                        "y":
-                          type: number
-                          example: 50.0
-                filter:
-                  type: string
-                  nullable: true
-                  example: None
-                custom_cli:
-                  type: string
-                  nullable: true
-                  example: "-monochrome -charcoal 2"
-                  description: Raw ImageMagick CLI flags. Use with caution.
+                    example: Asset not found.
   "/api/v1/assets/{id}/workflow_history":
     parameters:
     - name: id

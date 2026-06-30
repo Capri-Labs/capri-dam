@@ -279,74 +279,50 @@ module Api
         @asset = Asset.find(params[:id])
         return render json: { error: "Asset not found." }, status: :not_found if @asset.nil?
 
-        editor_state = {
-          adjustments: params[:adjustments] || {},
-          crop_aspect: params[:crop_aspect],
-          filter: params[:filter],
-          geometry: params.permit(geometry: [ :rotate, :flip_horizontal, focal_point: [ :x, :y ] ])[:geometry] || {},
-          custom_cli: params[:custom_cli],
-        }
-
-        active_v = @asset.active_version
-        base_properties = active_v&.properties || @asset.properties || {}
-
-        new_version_props = base_properties.deep_dup
-        # new_version_props['editor_state'] = editor_state
-        new_version_props["editor_state"] = {
-          adjustments: {},
-          crop_aspect: "free",
-          filter: "None",
-          geometry: { focal_point: editor_state[:geometry][:focal_point] || { x: 50, y: 50 } },
-        }
+        # ==========================================
+        #  PREPARE EDITOR STATE
+        # ==========================================
+        editor_state = build_editor_state_from_params
 
         # ==========================================
-        #  PHYSICAL IMAGE BAKING PIPELINE
+        #  RESOLVE SOURCE FILE PATH
         # ==========================================
-        source_path = base_properties["storage_path"].to_s
-
-        #  SMART PATH RESOLUTION:
-        # Check if it's already a valid absolute path first (like a tmp file).
-        # If not, assume it's a relative path from the DAM root.
-        file_path = if File.exist?(source_path)
-                      source_path
-        else
-                      clean_path = source_path.sub(%r{\A/}, "")
-                      Rails.root.join("storage/dam", clean_path).to_s
-        end
-
-        # Fail gracefully if the physical file is totally missing from disk
-        unless File.exist?(file_path)
+        source_path = resolve_source_file_path(@asset)
+        unless File.exist?(source_path)
           return render json: { error: "Source file not found on disk." }, status: :unprocessable_entity
         end
 
-        new_file_tmp_path = Rails.root.join("tmp", "baked_#{@asset.uuid}_#{SecureRandom.hex(4)}.jpg")
-
-        require "mini_magick"
-        image = MiniMagick::Image.open(file_path)
-
-        image.combine_options do |cmd|
-          # 1. Bake Geometry
-          cmd.flop if editor_state[:geometry][:flip_horizontal]
-          cmd.rotate(editor_state[:geometry][:rotate].to_s) if editor_state[:geometry][:rotate].to_i != 0
-
-          # 2. Bake Lighting
-          b = editor_state[:adjustments][:brightness].to_i
-          c = editor_state[:adjustments][:contrast].to_i
-          cmd.brightness_contrast "#{b}x#{c}" if b != 0 || c != 0
-
-          s = editor_state[:adjustments][:saturation].to_i
-          cmd.modulate "100,#{100 + s},100" if s != 0
-
-          #  3. FULL POWER: Inject raw ImageMagick commands
-          if editor_state[:custom_cli].present?
-            # Splits commands like "-monochrome -charcoal 2" and injects them
-            editor_state[:custom_cli].scan(/-[a-z]+[^-]*/).each do |arg|
-              cmd << arg.strip
-            end
-          end
+        # ==========================================
+        #  PROCESS IMAGE WITH SERVICE
+        # ==========================================
+        begin
+          processor = ImageProcessingService.new(source_path, logger: Rails.logger)
+          new_file_tmp_path = processor.process(editor_state[:adjustments])
+        rescue ImageProcessingService::ValidationError => e
+          return render json: { error: "Invalid image parameters: #{e.message}" }, status: :unprocessable_entity
+        rescue ImageProcessingService::ProcessingError => e
+          Rails.logger.error("Image processing failed: #{e.message}")
+          return render json: { error: "Image processing failed. Please try again." }, status: :unprocessable_entity
         end
 
-        image.write(new_file_tmp_path)
+        # ==========================================
+        #  BUILD VERSION PROPERTIES
+        # ==========================================
+        active_v = @asset.active_version
+        base_properties = active_v&.properties || @asset.properties || {}
+        new_version_props = base_properties.deep_dup
+
+        # Store the applied editor state for audit trail
+        new_version_props["editor_state"] = {
+          adjustments: editor_state[:adjustments],
+          crop_aspect: editor_state[:crop_aspect],
+          filter: editor_state[:filter],
+          geometry: editor_state[:geometry],
+          custom_cli: editor_state[:custom_cli],
+        }
+
+        new_version_props["storage_path"] = new_file_tmp_path.to_s
+        new_version_props["file_size"] = File.size(new_file_tmp_path)
 
         new_version_props["storage_path"] = new_file_tmp_path.to_s
         new_version_props["file_size"] = File.size(new_file_tmp_path)
@@ -866,6 +842,46 @@ module Api
         EdgeMetadataSyncWorker.perform_async(target_asset.uuid) if defined?(EdgeMetadataSyncWorker)
       end
 
+      # Builds the editor state from request parameters with proper permission parsing.
+      #
+      # @return [Hash] Editor state with normalized parameters
+      def build_editor_state_from_params
+        permitted_geometry = params.permit(geometry: [ :rotate, :flip_horizontal, :flip_vertical, focal_point: [ :x, :y ] ])[:geometry] || {}
+        permitted_adjustments = params.permit(adjustments: {})[:adjustments] || {}
+
+        {
+          adjustments: permitted_adjustments.transform_keys(&:to_sym),
+          crop_aspect: params[:crop_aspect].to_s.presence || "free",
+          filter: params[:filter].to_s.presence || "None",
+          geometry: {
+            rotate: permitted_geometry[:rotate].to_i,
+            flip_horizontal: permitted_geometry[:flip_horizontal].present? && permitted_geometry[:flip_horizontal] != "false",
+            flip_vertical: permitted_geometry[:flip_vertical].present? && permitted_geometry[:flip_vertical] != "false",
+            focal_point: permitted_geometry[:focal_point].present? ? {
+              x: permitted_geometry[:focal_point][:x].to_f,
+              y: permitted_geometry[:focal_point][:y].to_f,
+            } : { x: 50, y: 50 },
+          },
+          custom_cli: params[:custom_cli].to_s.presence,
+        }
+      end
+
+      # Resolves the absolute file path for a source image, handling both
+      # absolute paths (tmp files) and relative paths (storage/dam).
+      #
+      # @param asset [Asset]
+      # @return [String] Absolute file path
+      def resolve_source_file_path(asset)
+        active_v = asset.active_version
+        source_path = active_v&.properties&.dig("storage_path").to_s || asset.properties&.dig("storage_path").to_s
+
+        # If it's already an absolute path (like a tmp file), use it directly
+        return source_path if File.exist?(source_path)
+
+        # Otherwise, treat it as relative to storage/dam
+        clean_path = source_path.sub(%r{\A/}, "")
+        Rails.root.join("storage/dam", clean_path).to_s
+      end
 
       # Returns the currently acting {User}, resolving from Devise session,
       # OAuth token, or falling back to the first user (development only).

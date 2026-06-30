@@ -145,89 +145,69 @@ export default function ImageEditorDialog({ asset, open, onClose, onSave }) {
         setFlipH(false);
     };
 
-    // Apply quick action presets to actual adjustments
-    const applyQuickActionPreset = (actionType) => {
-        const presets = {
-            'auto': { brightness: 10, contrast: 15, saturation: 10 },
-            'dynamic': { brightness: 5, contrast: 25, hdr: 30, shadows: 10 },
-            'color_pop': { saturation: 40 },
-            'warm_contrast': { warmth: 30, contrast: 20 },
-            'cinematic': { warmth: 20, contrast: 15, saturation: -10, tint: 5 },
-        };
-
-        const preset = presets[actionType];
-        if (preset) {
-            setAdjustments(prev => {
-                const updated = { ...prev, ...preset };
-                notify(`Applied: ${actionType}`, "success");
-                return updated;
-            });
-        }
+    const simulateAiProcess = (processName, duration, effect) => {
+        setAiProcessing(true);
+        setAiMessage(processName);
+        setTimeout(() => {
+            if (effect) effect();
+            setAiProcessing(false);
+            setAiMessage("");
+        }, duration);
     };
 
     const handleQuickAction = (actionType) => {
         const actions = {
-            'auto': { msg: "Applying Auto-Enhance...", time: 800, apply: true },
-            'dynamic': { msg: "Balancing HDR & Dynamics...", time: 1000, apply: true },
-            'color_pop': { msg: "Isolating subject color...", time: 1000, apply: true },
-            'warm_contrast': { msg: "Applying studio warmth...", time: 600, apply: true },
-            'cinematic': { msg: "Grading cinematic tones...", time: 900, apply: true },
-            'magic_eraser': { msg: "Analyzing & removing objects...", time: 2500, apply: false },
-            'unblur': { msg: "Restoring sharp details...", time: 2000, apply: false },
-            'portrait_light': { msg: "Adjusting studio lighting...", time: 1500, apply: false },
-            'generative_expand': { msg: "Outpainting borders via local diffusion...", time: 3500, apply: false },
-            'super_res': { msg: "Upscaling via local ESRGAN...", time: 3000, apply: false },
-            'bg_swap': { msg: "Extracting semantic masks...", time: 2800, apply: false },
-            'depth_map': { msg: "Calculating 3D depth geometry...", time: 2200, apply: false }
+            'auto': { msg: "Applying Auto-Enhance...", time: 1000 },
+            'dynamic': { msg: "Balancing HDR & Dynamics...", time: 1500 },
+            'color_pop': { msg: "Isolating subject color...", time: 1800 },
+            'warm_contrast': { msg: "Applying studio warmth...", time: 800 },
+            'cinematic': { msg: "Grading cinematic tones...", time: 1200 },
+            'magic_eraser': { msg: "Analyzing & removing objects...", time: 2500 },
+            'unblur': { msg: "Restoring sharp details...", time: 2000 },
+            'portrait_light': { msg: "Adjusting studio lighting...", time: 1500 },
+            'generative_expand': { msg: "Outpainting borders via local diffusion...", time: 3500 },
+            'super_res': { msg: "Upscaling via local ESRGAN...", time: 3000 },
+            'bg_swap': { msg: "Extracting semantic masks...", time: 2800 },
+            'depth_map': { msg: "Calculating 3D depth geometry...", time: 2200 }
         };
         const action = actions[actionType];
-        
-        setAiProcessing(true);
-        setAiMessage(action.msg);
-        
-        if (action.apply) {
-            applyQuickActionPreset(actionType);
-        }
-
-        setTimeout(() => {
-            setAiProcessing(false);
-            setAiMessage("");
-        }, action.time);
+        simulateAiProcess(action.msg, action.time, () => console.log(`${actionType} complete`));
     };
 
     const handleSave = async () => {
         setIsSaving(true);
         const payload = {
-            save_mode: saveMode,
-            target_folder_id: targetFolder?.id,
-            adjustments: adjustments,
+            save_mode: saveMode, // 'version', 'overwrite', or 'new'
+            target_folder_id: targetFolder?.id, //  Pass the selected folder ID
+            adjustments,
             crop_aspect: cropAspect,
             filter: activeFilter,
             geometry: {
                 rotate: rotation,
                 flip_horizontal: flipH,
-                focal_point: focalPoint,
+                focal_point: focalPoint
             },
-            custom_cli: customCli,
+            custom_cli: customCli
         };
 
         try {
-            const csrfToken = document.querySelector('[name="csrf-token"]')?.content || "";
+            const csrfToken = document.querySelector('[name="csrf-token"]')?.content || '';
             const response = await fetch(`/api/v1/assets/${asset.id}/process_image`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json", "X-CSRF-Token": csrfToken },
-                body: JSON.stringify(payload),
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
+                body: JSON.stringify(payload)
             });
 
             if (response.ok) {
                 const updatedAsset = await response.json();
 
-                // Dynamic Notifications based on mode
-                const targetFolderName = targetFolder?.name || "current folder";
+                //  Safely get the folder name for the toast message
+                const targetFolderName = targetFolder?.name || 'current folder';
 
-                if (saveMode === "new") {
+                //  Dynamic Notifications based on mode
+                if (saveMode === 'new') {
                     notify(`Saved as copy to ${targetFolderName}.`, "success");
-                } else if (saveMode === "overwrite") {
+                } else if (saveMode === 'overwrite') {
                     notify("Current version forcefully overwritten.", "warning");
                 } else {
                     if (targetFolder) {
@@ -237,15 +217,13 @@ export default function ImageEditorDialog({ asset, open, onClose, onSave }) {
                     }
                 }
 
-                onSave(updatedAsset);
-                onClose();
+                onSave(updatedAsset); // Tell parent to refresh state
+                onClose();            // Close the dialog cleanly
             } else {
-                const errorData = await response.json();
-                notify(errorData.error || "Failed to apply edits.", "error");
+                notify("Failed to apply edits.", "error");
             }
         } catch (error) {
-            console.error("Image processing error:", error);
-            notify("Network error occurred. Please try again.", "error");
+            notify("Network error occurred.", "error");
         } finally {
             setIsSaving(false);
         }
@@ -253,36 +231,12 @@ export default function ImageEditorDialog({ asset, open, onClose, onSave }) {
 
     if (!asset) return null;
 
-    // Define CSS-based LUT filter approximations for preview
-    const filterStyles = {
-        'None': '',
-        'Vivid': 'saturate(1.3) contrast(1.2)',
-        'West': 'sepia(0.3) saturate(0.8) brightness(1.05)',
-        'Palma': 'sepia(0.2) hue-rotate(-5deg) saturate(1.1)',
-        'Metro': 'saturate(1.15) contrast(1.1)',
-        'Eiffel': 'saturate(0.8) hue-rotate(180deg) brightness(0.95)',
-        'Blush': 'sepia(0.15) saturate(1.1) brightness(1.05)',
-        'Modena': 'sepia(0.3) hue-rotate(-10deg) saturate(0.7)',
-        'Vogue': 'contrast(1.3) grayscale(0.3) brightness(0.95)',
-    };
-
-    // Calculate aspect ratio box shadow if not free form
-    const aspectRatioAdjustments = {
-        'free': {},
-        '1:1': { aspectRatio: '1/1' },
-        '16:9': { aspectRatio: '16/9' },
-        '4:3': { aspectRatio: '4/3' },
-        '3:2': { aspectRatio: '3/2' },
-        '21:9': { aspectRatio: '21/9' },
-    };
-
     const liveFilterStyle = `
-        brightness(${100 + adjustments.brightness}%)
-        contrast(${100 + adjustments.contrast}%)
-        saturate(${100 + adjustments.saturation}%)
-        sepia(${adjustments.warmth > 0 ? adjustments.warmth / 2 : 0}%)
+        brightness(${100 + adjustments.brightness}%) 
+        contrast(${100 + adjustments.contrast}%) 
+        saturate(${100 + adjustments.saturation}%) 
+        sepia(${adjustments.warmth > 0 ? adjustments.warmth / 2 : 0}%) 
         hue-rotate(${adjustments.tint}deg)
-        ${filterStyles[activeFilter] || ''}
     `;
 
     return (
@@ -312,13 +266,7 @@ export default function ImageEditorDialog({ asset, open, onClose, onSave }) {
                         onMouseMove={handleFocalDrag}
                         onMouseUp={handleFocalDragEnd}
                         onMouseLeave={handleFocalDragEnd}
-                        sx={{
-                            position: "relative",
-                            display: "inline-block",
-                            maxWidth: "100%",
-                            maxHeight: "100%",
-                            ...aspectRatioAdjustments[cropAspect],
-                        }}
+                        sx={{ position: 'relative', display: 'inline-block', maxWidth: '100%', maxHeight: '100%' }}
                     >
                         <Box
                             component="img"
@@ -663,38 +611,31 @@ export default function ImageEditorDialog({ asset, open, onClose, onSave }) {
                                 <Autocomplete
                                     size="small"
                                     options={folderOptions}
-                                    getOptionLabel={(option) => option.name || ""}
+                                    getOptionLabel={(option) => option.name || ''}
                                     isOptionEqualToValue={(option, value) => option.id === value.id}
                                     loading={isFetchingFolders}
                                     value={targetFolder}
                                     onChange={(event, newValue) => setTargetFolder(newValue)}
-                                    slotProps={{
-                                        popper: {
-                                            modifiers: [{ name: "flip", enabled: false }],
-                                        },
-                                    }}
                                     renderInput={(params) => (
                                         <TextField
                                             {...params}
                                             placeholder="Target Folder (Defaults to current)"
-                                            slotProps={{
-                                                input: {
-                                                    ...params.InputProps,
-                                                    startAdornment: (
-                                                        <React.Fragment>
-                                                            <FolderOpen fontSize="small" sx={{ color: "#94a3b8", ml: 1, mr: 0.5 }} />
-                                                            {params.InputProps?.startAdornment}
-                                                        </React.Fragment>
-                                                    ),
-                                                    endAdornment: (
-                                                        <React.Fragment>
-                                                            {isFetchingFolders ? <CircularProgress color="inherit" size={20} /> : null}
-                                                            {params.InputProps?.endAdornment}
-                                                        </React.Fragment>
-                                                    ),
-                                                },
+                                            InputProps={{
+                                                ...params.InputProps,
+                                                startAdornment: (
+                                                    <React.Fragment>
+                                                        <FolderOpen fontSize="small" sx={{ color: '#94a3b8', ml: 1, mr: 0.5 }} />
+                                                        {params.InputProps?.startAdornment}
+                                                    </React.Fragment>
+                                                ),
+                                                endAdornment: (
+                                                    <React.Fragment>
+                                                        {isFetchingFolders ? <CircularProgress color="inherit" size={20} /> : null}
+                                                        {params.InputProps?.endAdornment}
+                                                    </React.Fragment>
+                                                ),
                                             }}
-                                            sx={{ bgcolor: "#fff", borderRadius: 1 }}
+                                            sx={{ bgcolor: '#fff', borderRadius: 1 }}
                                         />
                                     )}
                                 />

@@ -724,3 +724,350 @@ RSpec.describe 'Api::V1::Assets', type: :request do
     end
   end
 end
+
+RSpec.describe 'Image Processing Tests', type: :request do
+  include ActiveSupport::Testing::TimeHelpers
+
+  let(:user) { create(:user) }
+  let(:folder) { create(:folder, user: user) }
+  let(:test_image_path) { Rails.root.join('spec/fixtures/images/test-image.jpg').to_s }
+
+  before(:all) do
+    # Create test image fixture with valid JPEG data
+    fixtures_dir = Rails.root.join('spec/fixtures/images')
+    FileUtils.mkdir_p(fixtures_dir) unless Dir.exist?(fixtures_dir)
+
+    test_image = Rails.root.join('spec/fixtures/images/test-image.jpg')
+    unless File.exist?(test_image)
+      # Use ImageMagick's convert command directly via shell
+      system("convert -size 100x100 xc:white #{test_image}")
+    end
+  end
+
+  before do
+    login_as(user)
+  end
+
+  # ===========================================================================
+  # IMAGE EDITOR — POST /api/v1/assets/:id/process_image
+  # ===========================================================================
+  path '/api/v1/assets/{id}/process_image' do
+    post 'Process image with adjustments (brightness, contrast, saturation, geometry)' do
+      tags 'Assets'
+      produces 'application/json'
+      security [ Bearer: [] ]
+      description <<~DESC
+        Applies adjustments (brightness, contrast, saturation) and geometric transformations
+        (rotation, flips) to an image using the ImageProcessingService. Supports multiple
+        save modes: `new` (creates asset), `version` (creates new version), `overwrite` (replaces current).
+      DESC
+
+      parameter name: :id, in: :path, type: :string, required: true,
+                description: 'Asset UUID'
+      parameter name: :adjustments, in: :query, type: :object, required: false,
+                schema: {
+                  type: :object,
+                  properties: {
+                    brightness: { type: :integer, example: 20, description: 'Range: -100 to 100' },
+                    contrast: { type: :integer, example: -15, description: 'Range: -100 to 100' },
+                    saturation: { type: :integer, example: 30, description: 'Range: -100 to 100' },
+                  },
+                },
+                description: 'Image adjustment parameters'
+      parameter name: :geometry, in: :query, type: :object, required: false,
+                schema: {
+                  type: :object,
+                  properties: {
+                    rotate: { type: :integer, example: 90, description: 'Rotation degrees' },
+                    flip_horizontal: { type: :boolean, example: false },
+                    flip_vertical: { type: :boolean, example: false },
+                    focal_point: {
+                      type: :object,
+                      properties: {
+                        x: { type: :number, example: 50.0 },
+                        y: { type: :number, example: 50.0 },
+                      },
+                    },
+                  },
+                },
+                description: 'Geometric transformation parameters'
+      parameter name: :crop_aspect, in: :query, type: :string, required: false,
+                example: 'free',
+                description: 'Crop aspect ratio (e.g., "free", "16:9", "4:3")'
+      parameter name: :filter, in: :query, type: :string, required: false,
+                example: 'None',
+                description: 'Image filter to apply'
+      parameter name: :custom_cli, in: :query, type: :string, required: false,
+                description: 'Raw ImageMagick CLI flags (e.g., "-monochrome -charcoal 2")'
+      parameter name: :save_mode, in: :query, type: :string, required: false,
+                enum: [ 'new', 'version', 'overwrite' ],
+                example: 'version',
+                description: 'Where to save: `new` (create asset), `version` (new version), `overwrite` (replace)'
+      parameter name: :target_folder_id, in: :query, type: :integer, required: false,
+                description: 'Folder ID to move output to (save_mode: new only)'
+
+      response '200', 'Image processed and version created' do
+        schema type: :object,
+               required: [ 'id', 'version' ],
+               properties: {
+                 id:      { type: :string, format: :uuid },
+                 version: { type: :integer, example: 2 },
+                 uuid:    { type: :string, format: :uuid },
+                 title:   { type: :string },
+                 storage_path: { type: :string },
+                 file_size: { type: :integer },
+               }
+        run_test!
+      end
+
+      response '201', 'New asset created with processed image (save_mode: new)' do
+        schema type: :object,
+               required: [ 'id' ],
+               properties: {
+                 id:   { type: :string, format: :uuid },
+                 uuid: { type: :string, format: :uuid },
+                 title: { type: :string },
+               }
+        run_test!
+      end
+
+      response '404', 'Asset not found' do
+        schema type: :object,
+               properties: {
+                 error: { type: :string, example: 'Asset not found.' },
+               }
+        run_test!
+      end
+
+      response '422', 'Validation error or source file missing' do
+        schema type: :object,
+               properties: {
+                 error: { type: :string, example: 'Invalid image parameters: brightness must be between -100 and 100' },
+               }
+        run_test!
+      end
+    end
+  end
+
+  describe 'POST /api/v1/assets/:id/process_image' do
+    let!(:asset) do
+      create(:asset, user: user, folder: folder, properties: {
+        storage_path: test_image_path,
+        format: 'jpeg',
+      })
+    end
+
+    context 'with valid brightness adjustment' do
+      it 'processes image with brightness adjustment' do
+        payload = {
+          save_mode: 'version',
+          adjustments: { brightness: 20 },
+          crop_aspect: 'free',
+          filter: 'None',
+          geometry: { rotate: 0, flip_horizontal: false },
+        }
+
+        post "/api/v1/assets/#{asset.id}/process_image", params: payload, headers: json_headers
+
+        expect(response).to have_http_status(:ok)
+        json = JSON.parse(response.body)
+        expect(json).to have_key('id')
+        expect(json).to have_key('version')
+      end
+    end
+
+    context 'with contrast adjustment' do
+      it 'processes image with contrast adjustment' do
+        payload = {
+          save_mode: 'version',
+          adjustments: { contrast: -15 },
+          crop_aspect: 'free',
+          filter: 'None',
+          geometry: { rotate: 0, flip_horizontal: false },
+        }
+
+        post "/api/v1/assets/#{asset.id}/process_image", params: payload, headers: json_headers
+
+        expect(response).to have_http_status(:ok)
+      end
+    end
+
+    context 'with saturation adjustment' do
+      it 'processes image with saturation adjustment' do
+        payload = {
+          save_mode: 'version',
+          adjustments: { saturation: 30 },
+          crop_aspect: 'free',
+          filter: 'None',
+          geometry: { rotate: 0, flip_horizontal: false },
+        }
+
+        post "/api/v1/assets/#{asset.id}/process_image", params: payload, headers: json_headers
+
+        expect(response).to have_http_status(:ok)
+      end
+    end
+
+    context 'with rotation' do
+      it 'processes image with 90 degree rotation' do
+        payload = {
+          save_mode: 'version',
+          adjustments: {},
+          crop_aspect: 'free',
+          filter: 'None',
+          geometry: { rotate: 90, flip_horizontal: false },
+        }
+
+        post "/api/v1/assets/#{asset.id}/process_image", params: payload, headers: json_headers
+
+        expect(response).to have_http_status(:ok)
+      end
+    end
+
+    context 'with flip' do
+      it 'processes image with horizontal flip' do
+        payload = {
+          save_mode: 'version',
+          adjustments: {},
+          crop_aspect: 'free',
+          filter: 'None',
+          geometry: { rotate: 0, flip_horizontal: true },
+        }
+
+        post "/api/v1/assets/#{asset.id}/process_image", params: payload, headers: json_headers
+
+        expect(response).to have_http_status(:ok)
+      end
+    end
+
+    context 'with filter' do
+      it 'processes image with Vivid filter' do
+        payload = {
+          save_mode: 'version',
+          adjustments: {},
+          crop_aspect: 'free',
+          filter: 'Vivid',
+          geometry: { rotate: 0, flip_horizontal: false },
+        }
+
+        post "/api/v1/assets/#{asset.id}/process_image", params: payload, headers: json_headers
+
+        expect(response).to have_http_status(:ok)
+      end
+    end
+
+    context 'with multiple adjustments' do
+      it 'processes image with combined adjustments' do
+        payload = {
+          save_mode: 'version',
+          adjustments: {
+            brightness: 10,
+            contrast: -5,
+            saturation: 20,
+            warmth: 15,
+          },
+          crop_aspect: '16:9',
+          filter: 'West',
+          geometry: { rotate: 0, flip_horizontal: false },
+        }
+
+        post "/api/v1/assets/#{asset.id}/process_image", params: payload, headers: json_headers
+
+        expect(response).to have_http_status(:ok)
+      end
+    end
+
+    context 'with save mode version' do
+      it 'creates a new version' do
+        payload = {
+          save_mode: 'version',
+          adjustments: { brightness: 10 },
+          crop_aspect: 'free',
+          filter: 'None',
+          geometry: { rotate: 0, flip_horizontal: false },
+        }
+
+        expect do
+          post "/api/v1/assets/#{asset.id}/process_image", params: payload, headers: json_headers
+        end.to change(AssetVersion, :count).by(1)
+
+        expect(response).to have_http_status(:ok)
+      end
+    end
+
+    context 'with save mode new' do
+      it 'creates a new asset copy' do
+        payload = {
+          save_mode: 'new',
+          target_folder_id: folder.id,
+          adjustments: { brightness: 10 },
+          crop_aspect: 'free',
+          filter: 'None',
+          geometry: { rotate: 0, flip_horizontal: false },
+        }
+
+        expect do
+          post "/api/v1/assets/#{asset.id}/process_image", params: payload, headers: json_headers
+        end.to change(Asset, :count).by(1)
+
+        expect(response).to have_http_status(:created)
+      end
+    end
+
+    context 'with invalid brightness value' do
+      it 'returns validation error' do
+        payload = {
+          save_mode: 'version',
+          adjustments: { brightness: 150 },
+          crop_aspect: 'free',
+          filter: 'None',
+          geometry: { rotate: 0, flip_horizontal: false },
+        }
+
+        post "/api/v1/assets/#{asset.id}/process_image", params: payload, headers: json_headers
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        json = JSON.parse(response.body)
+        expect(json).to have_key('error')
+      end
+    end
+
+    context 'with invalid crop aspect' do
+      it 'returns validation error' do
+        payload = {
+          save_mode: 'version',
+          adjustments: {},
+          crop_aspect: 'invalid',
+          filter: 'None',
+          geometry: { rotate: 0, flip_horizontal: false },
+        }
+
+        post "/api/v1/assets/#{asset.id}/process_image", params: payload, headers: json_headers
+
+        expect(response).to have_http_status(:unprocessable_entity)
+      end
+    end
+
+    context 'with nonexistent asset' do
+      it 'returns 404' do
+        payload = {
+          save_mode: 'version',
+          adjustments: {},
+          crop_aspect: 'free',
+          filter: 'None',
+          geometry: { rotate: 0, flip_horizontal: false },
+        }
+
+        post '/api/v1/assets/99999/process_image', params: payload, headers: json_headers
+
+        expect(response).to have_http_status(:not_found)
+      end
+    end
+  end
+
+  private
+
+  def json_headers
+    { 'Content-Type' => 'application/json', 'Accept' => 'application/json' }
+  end
+end

@@ -87,6 +87,170 @@ describe('i18n — English strings (regression guard)', () => {
   });
 });
 
+describe('i18n — imageEditor English strings (regression guard)', () => {
+  beforeEach(() => i18n.changeLanguage('en'));
+
+  it('imageEditor.title', () => {
+    expect(i18n.t('imageEditor.title')).toBe('Studio Editor');
+  });
+
+  it('imageEditor.exportAndSave', () => {
+    expect(i18n.t('imageEditor.exportAndSave')).toBe('Export & Save');
+  });
+
+  it('imageEditor.tabs.suggestions', () => {
+    expect(i18n.t('imageEditor.tabs.suggestions')).toBe('Suggestions');
+  });
+
+  it('imageEditor.tabs.adjust', () => {
+    expect(i18n.t('imageEditor.tabs.adjust')).toBe('Adjust');
+  });
+
+  it('imageEditor.tabs.aiStudio', () => {
+    expect(i18n.t('imageEditor.tabs.aiStudio')).toBe('AI Studio');
+  });
+
+  it('imageEditor.quickActions.autoEnhance', () => {
+    expect(i18n.t('imageEditor.quickActions.autoEnhance')).toBe('Auto Enhance');
+  });
+
+  it('imageEditor.quickActions.dynamicHdr', () => {
+    expect(i18n.t('imageEditor.quickActions.dynamicHdr')).toBe('Dynamic HDR');
+  });
+
+  it('imageEditor.quickActions.colorPop', () => {
+    expect(i18n.t('imageEditor.quickActions.colorPop')).toBe('Color Pop');
+  });
+
+  it('imageEditor.aspectRatio', () => {
+    expect(i18n.t('imageEditor.aspectRatio')).toBe('Aspect Ratio');
+  });
+
+  it('imageEditor.freeform', () => {
+    expect(i18n.t('imageEditor.freeform')).toBe('Freeform');
+  });
+
+  it('imageEditor.square', () => {
+    expect(i18n.t('imageEditor.square')).toBe('1:1 Square');
+  });
+
+  it('imageEditor.widescreen', () => {
+    expect(i18n.t('imageEditor.widescreen')).toBe('16:9 Widescreen');
+  });
+
+  it('imageEditor.lutFilters', () => {
+    expect(i18n.t('imageEditor.lutFilters')).toBe('LUT Filters');
+  });
+
+  it('imageEditor.saveAsNewVersion', () => {
+    expect(i18n.t('imageEditor.saveAsNewVersion')).toBe('Save as New Version');
+  });
+
+  it('imageEditor.overwriteCurrent', () => {
+    expect(i18n.t('imageEditor.overwriteCurrent')).toBe('Overwrite Current');
+  });
+
+  it('imageEditor.saveAsCopy', () => {
+    expect(i18n.t('imageEditor.saveAsCopy')).toBe('Save as Copy');
+  });
+
+  it('imageEditor.errors.assetNotFound', () => {
+    expect(i18n.t('imageEditor.errors.assetNotFound')).toBe('Asset not found.');
+  });
+
+  it('imageEditor.errors.processingFailed', () => {
+    expect(i18n.t('imageEditor.errors.processingFailed')).toBe('Image processing failed. Please try again.');
+  });
+
+  it('imageEditor.notifications.savedAsNewVersion', () => {
+    expect(i18n.t('imageEditor.notifications.savedAsNewVersion')).toBe('New immutable version saved successfully.');
+  });
+
+  it('imageEditor.notifications.overwritten', () => {
+    expect(i18n.t('imageEditor.notifications.overwritten')).toBe('Current version forcefully overwritten.');
+  });
+});
+
+describe('i18n — German imageEditor translations (spot-check)', () => {
+  beforeEach(() => i18n.changeLanguage('de'));
+  afterAll(() => i18n.changeLanguage('en'));
+
+  it('imageEditor.title → Studio-Editor', () => {
+    expect(i18n.t('imageEditor.title')).toBe('Studio-Editor');
+  });
+
+  it('imageEditor.exportAndSave → Exportieren & Speichern', () => {
+    expect(i18n.t('imageEditor.exportAndSave')).toBe('Exportieren & Speichern');
+  });
+
+  it('imageEditor.tabs.suggestions → Vorschläge', () => {
+    expect(i18n.t('imageEditor.tabs.suggestions')).toBe('Vorschläge');
+  });
+
+  it('imageEditor.tabs.adjust → Anpassen', () => {
+    expect(i18n.t('imageEditor.tabs.adjust')).toBe('Anpassen');
+  });
+
+  it('imageEditor.tabs.aiStudio → KI-Studio', () => {
+    expect(i18n.t('imageEditor.tabs.aiStudio')).toBe('KI-Studio');
+  });
+
+  it('imageEditor.quickActions.autoEnhance → Automatische Verbesserung', () => {
+    expect(i18n.t('imageEditor.quickActions.autoEnhance')).toBe('Automatische Verbesserung');
+  });
+
+  it('imageEditor.quickActions.colorPop → Farbexplosion', () => {
+    expect(i18n.t('imageEditor.quickActions.colorPop')).toBe('Farbexplosion');
+  });
+
+  it('imageEditor.brightness → Helligkeit', () => {
+    expect(i18n.t('imageEditor.brightness')).toBe('Helligkeit');
+  });
+
+  it('imageEditor.contrast → Kontrast', () => {
+    expect(i18n.t('imageEditor.contrast')).toBe('Kontrast');
+  });
+
+  it('imageEditor.saturation → Sättigung', () => {
+    expect(i18n.t('imageEditor.saturation')).toBe('Sättigung');
+  });
+
+  it('imageEditor.saveAsNewVersion → Als neue Version speichern', () => {
+    expect(i18n.t('imageEditor.saveAsNewVersion')).toBe('Als neue Version speichern');
+  });
+
+  it('imageEditor.overwriteCurrent → Aktuelle Version überschreiben', () => {
+    expect(i18n.t('imageEditor.overwriteCurrent')).toBe('Aktuelle Version überschreiben');
+  });
+
+  it('imageEditor.saveAsCopy → Als Kopie speichern', () => {
+    expect(i18n.t('imageEditor.saveAsCopy')).toBe('Als Kopie speichern');
+  });
+
+  it('imageEditor.errors.processingFailed → Bildverarbeitung fehlgeschlagen...', () => {
+    expect(i18n.t('imageEditor.errors.processingFailed')).toContain('Bildverarbeitung fehlgeschlagen');
+  });
+});
+
+describe('i18n — imageEditor keys interpolation', () => {
+  beforeEach(() => i18n.changeLanguage('en'));
+
+  it('imageEditor.errors.invalidParameters interpolates {{message}}', () => {
+    const result = i18n.t('imageEditor.errors.invalidParameters', { message: 'brightness out of range' });
+    expect(result).toContain('brightness out of range');
+  });
+
+  it('imageEditor.notifications.savedAsCopy interpolates {{folder}}', () => {
+    const result = i18n.t('imageEditor.notifications.savedAsCopy', { folder: 'Projects' });
+    expect(result).toContain('Projects');
+  });
+
+  it('imageEditor.notifications.versionSavedAndMoved interpolates {{folder}}', () => {
+    const result = i18n.t('imageEditor.notifications.versionSavedAndMoved', { folder: 'Archive' });
+    expect(result).toContain('Archive');
+  });
+});
+
 describe('i18n — German translations (spot-check)', () => {
   beforeEach(() => i18n.changeLanguage('de'));
   afterAll(() => i18n.changeLanguage('en'));
