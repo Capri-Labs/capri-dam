@@ -249,6 +249,20 @@ RSpec.describe 'Admin::UserGroups', type: :request do
         schema type: :object, properties: { success: { type: :boolean }, message: { type: :string } }
         run_test!
       end
+
+      response '404', 'parent or child group not found' do
+        schema type: :object, properties: { error: { type: :string } }
+        run_test!
+      end
+
+      response '422', 'validation failed (e.g. circular nesting)' do
+        schema type: :object,
+               properties: {
+                 success: { type: :boolean },
+                 errors:  { type: :array, items: { type: :string } },
+               }
+        run_test!
+      end
     end
   end
 

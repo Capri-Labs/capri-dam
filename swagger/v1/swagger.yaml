@@ -550,6 +550,28 @@ paths:
                     type: boolean
                   message:
                     type: string
+        '404':
+          description: parent or child group not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '422':
+          description: validation failed (e.g. circular nesting)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  errors:
+                    type: array
+                    items:
+                      type: string
       requestBody:
         content:
           application/json:
@@ -9335,6 +9357,58 @@ components:
       scheme: bearer
       description: Enter your OAuth 2.0 Bearer token to authenticate requests.
   schemas:
+    UserGroup:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        slug:
+          type: string
+        description:
+          type: string
+          nullable: true
+        is_system:
+          type: boolean
+        parent_id:
+          type: integer
+          nullable: true
+        member_count:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        members:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              display_name:
+                type: string
+              email:
+                type: string
+              avatar_url:
+                type: string
+                nullable: true
+        child_groups:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              name:
+                type: string
+              slug:
+                type: string
+              description:
+                type: string
+                nullable: true
+              is_system:
+                type: boolean
     FolderPolicy:
       type: object
       properties:
