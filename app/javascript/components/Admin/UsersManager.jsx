@@ -216,7 +216,11 @@ export default function UsersManager({ isAdmin = false, isSuperAdmin = false }) 
       <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
 
         {/* Header */}
-        <Stack direction="row" justifyContent="space-between" alignItems="flex-start" sx={{ mb: 3 }}>
+        <Stack direction="row" sx={{
+  mb: 3,
+  alignItems: "flex-start",
+  justifyContent: "space-between"
+}}>
           <Box>
             <Typography variant="h4" sx={{ fontWeight: 700 }}>System Users</Typography>
             <Typography variant="body2" color="text.secondary">

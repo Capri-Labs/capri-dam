@@ -99,7 +99,9 @@ export default function ReportBuilderDrawer({ open, onClose, onExportStarted }) 
             <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
                 {/* Header */}
                 <Box sx={{ px: 3, py: 2.5, borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Stack direction="row" spacing={1.5} alignItems="center">
+                    <Stack direction="row" spacing={1.5} sx={{
+  alignItems: "center"
+}}>
                         <Description sx={{ color: '#5e35b1' }} />
                         <Box>
                             <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.2 }}>Create Export</Typography>

@@ -144,7 +144,11 @@ export default function EmailEngineManager() {
                     </Box>
 
                     {/* RIGHT SIDE */}
-                    <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+                    <Stack direction="row" sx={{
+  mb: 2,
+  alignItems: "center",
+  justifyContent: "space-between"
+}}>
                         {currentTab === 0 && (
                             <Button variant="contained" startIcon={<AddCircleOutlined />} onClick={() => handleOpenEditor()}>
                                 Create Template

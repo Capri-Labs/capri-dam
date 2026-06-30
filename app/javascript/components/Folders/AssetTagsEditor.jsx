@@ -94,21 +94,11 @@ export default function AssetTagsEditor({ asset, open, onClose, onSave }) {
                         <Typography variant="subtitle1" fontWeight="700" sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                             <LabelOutlined sx={{ mr: 1, color: '#475569' }} /> Manual Tags
                         </Typography>
-                        <Autocomplete
-                            multiple
-                            freeSolo
-                            options={EXISTING_DATABASE_TAGS}
-                            value={manualTags}
-                            onChange={(event, newValue) => setManualTags(newValue)}
-                            renderTags={(value, getTagProps) =>
-                                value.map((option, index) => (
-                                    <Chip variant="outlined" label={option} {...getTagProps({ index })} sx={{ borderRadius: 1 }} />
-                                ))
-                            }
-                            renderInput={(params) => (
-                                <TextField {...params} variant="outlined" placeholder="Search or type new tag..." helperText="Press enter to add custom tags not in the database." />
-                            )}
-                        />
+                        <Autocomplete multiple freeSolo options={EXISTING_DATABASE_TAGS} value={manualTags} onChange={(event, newValue) => setManualTags(newValue)} renderValue={(value, getTagProps) => value.map((option, index) => <Chip variant="outlined" label={option} {...getTagProps({
+  index
+})} sx={{
+  borderRadius: 1
+}} />)} renderInput={params => <TextField {...params} variant="outlined" placeholder="Search or type new tag..." helperText="Press enter to add custom tags not in the database." />} />
                     </Box>
 
                     <Divider sx={{ mb: 4 }} />
@@ -130,7 +120,9 @@ export default function AssetTagsEditor({ asset, open, onClose, onSave }) {
                                 <Face fontSize="small" sx={{ mr: 1 }} /> Face Recognition ({aiTags.faces.length})
                             </Typography>
                             {aiTags.faces.length === 0 ? <Typography variant="caption" color="textSecondary">No faces detected.</Typography> : (
-                                <Stack direction="row" spacing={1} flexWrap="wrap">
+                                <Stack direction="row" spacing={1} sx={{
+  flexWrap: "wrap"
+}}>
                                     {aiTags.faces.map((tag, i) => <Chip key={i} label={tag} size="small" sx={{ bgcolor: '#f1f5f9' }} />)}
                                 </Stack>
                             )}
@@ -142,7 +134,9 @@ export default function AssetTagsEditor({ asset, open, onClose, onSave }) {
                                 <TextFields fontSize="small" sx={{ mr: 1 }} /> Text-in-Image ({aiTags.text.length})
                             </Typography>
                             {aiTags.text.length === 0 ? <Typography variant="caption" color="textSecondary">No text detected.</Typography> : (
-                                <Stack direction="row" spacing={1} flexWrap="wrap">
+                                <Stack direction="row" spacing={1} sx={{
+  flexWrap: "wrap"
+}}>
                                     {aiTags.text.map((tag, i) => <Chip key={i} label={tag} size="small" sx={{ bgcolor: '#fef2f2', color: '#b91c1c' }} />)}
                                 </Stack>
                             )}
@@ -154,7 +148,9 @@ export default function AssetTagsEditor({ asset, open, onClose, onSave }) {
                                 <LabelOutlined fontSize="small" sx={{ mr: 1 }} /> Semantic Objects ({aiTags.general.length})
                             </Typography>
                             {aiTags.general.length === 0 ? <Typography variant="caption" color="textSecondary">No objects detected.</Typography> : (
-                                <Stack direction="row" spacing={1} flexWrap="wrap">
+                                <Stack direction="row" spacing={1} sx={{
+  flexWrap: "wrap"
+}}>
                                     {aiTags.general.map((tag, i) => <Chip key={i} label={tag} size="small" sx={{ bgcolor: '#f3e8ff', color: '#7e22ce' }} />)}
                                 </Stack>
                             )}

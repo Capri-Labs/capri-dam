@@ -134,19 +134,11 @@ export default function GlobalSearchBar() {
 
             {/* Text Input */}
             <Tooltip title={searchMode === 'agentic' ? "Type a natural language command..." : "Press Enter to search"} placement="bottom-start" arrow disableInteractive>
-                <StyledInputBase
-                    placeholder={
-                        searchMode === 'visual' ? "Drop an image or paste a URL..." :
-                            searchMode === 'agentic' ? "E.g., Find summer photos without logos..." :
-                                "Search assets, folders, or tags..."
-                    }
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onKeyDown={handleSearchSubmit}
-                    onFocus={() => setIsFocused(true)}
-                    onBlur={() => setIsFocused(false)}
-                    inputProps={{ 'aria-label': 'global search' }}
-                />
+                <StyledInputBase placeholder={searchMode === 'visual' ? "Drop an image or paste a URL..." : searchMode === 'agentic' ? "E.g., Find summer photos without logos..." : "Search assets, folders, or tags..."} value={searchQuery} onChange={e => setSearchQuery(e.target.value)} onKeyDown={handleSearchSubmit} onFocus={() => setIsFocused(true)} onBlur={() => setIsFocused(false)} slotProps={{
+  input: {
+    'aria-label': 'global search'
+  }
+}} />
             </Tooltip>
 
             {/* Keyboard Shortcut Hint (Hides on smaller screens) */}

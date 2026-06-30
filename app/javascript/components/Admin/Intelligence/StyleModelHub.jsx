@@ -173,7 +173,11 @@ function ModelsPanel({ t }) {
   return (
     <Box>
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
-      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+      <Stack direction="row" sx={{
+  mb: 2,
+  alignItems: "center",
+  justifyContent: "space-between"
+}}>
         <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
           {t('styleHub.models.title', { defaultValue: 'Registered AI Models' })}
         </Typography>
@@ -214,7 +218,9 @@ function ModelsPanel({ t }) {
               configs.map((cfg) => (
                 <TableRow key={cfg.id} hover>
                   <TableCell>
-                    <Stack direction="row" alignItems="center" spacing={0.5}>
+                    <Stack direction="row" spacing={0.5} sx={{
+  alignItems: "center"
+}}>
                       {cfg.is_default && <Tooltip title={t('styleHub.models.isDefault', { defaultValue: 'Default for capability' })}><Star sx={{ fontSize: 14, color: '#f59e0b' }} /></Tooltip>}
                       <Box>
                         <Typography variant="body2" sx={{ fontWeight: 600 }}>{cfg.name}</Typography>
@@ -236,7 +242,9 @@ function ModelsPanel({ t }) {
                       variant="outlined" />
                   </TableCell>
                   <TableCell align="right">
-                    <Stack direction="row" justifyContent="flex-end" spacing={0.5}>
+                    <Stack direction="row" spacing={0.5} sx={{
+  justifyContent: "flex-end"
+}}>
                       <Tooltip title={t('styleHub.models.setDefault', { defaultValue: 'Set as default' })}>
                         <IconButton size="small" onClick={() => handleSetDefault(cfg)} aria-label={t('styleHub.models.setDefault', { defaultValue: 'Set as default' })}>
                           {cfg.is_default ? <Star sx={{ color: '#f59e0b', fontSize: 16 }} /> : <StarBorder sx={{ fontSize: 16 }} />}
@@ -388,7 +396,11 @@ function StylePresetsPanel({ t }) {
   return (
     <Box>
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>{error}</Alert>}
-      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+      <Stack direction="row" sx={{
+  mb: 2,
+  alignItems: "center",
+  justifyContent: "space-between"
+}}>
         <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
           {t('styleHub.presets.title', { defaultValue: 'Style Presets' })}
         </Typography>
@@ -418,7 +430,10 @@ function StylePresetsPanel({ t }) {
                 {preset.is_default && (
                   <Chip size="small" icon={<Star sx={{ fontSize: 12 }} />} label={t('styleHub.presets.default', { defaultValue: 'Default' })} color="primary" sx={{ position: 'absolute', top: 8, right: 8, height: 20, fontSize: 11 }} />
                 )}
-                <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
+                <Stack direction="row" spacing={1} sx={{
+  mb: 1,
+  alignItems: "center"
+}}>
                   <Palette sx={{ color: '#8b5cf6', fontSize: 20 }} />
                   <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>{preset.name}</Typography>
                 </Stack>
@@ -586,13 +601,20 @@ function BatchPanel({ t }) {
         </Grid>
         <Grid size={{ xs: 12, md: 8 }}>
           <Paper elevation={0} sx={{ p: 3, border: '1px solid #e3e8ef', borderRadius: 2 }}>
-            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+            <Stack direction="row" sx={{
+  mb: 2,
+  alignItems: "center",
+  justifyContent: "space-between"
+}}>
               <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>{t('styleHub.batch.history', { defaultValue: 'Batch History' })}</Typography>
               <IconButton size="small" onClick={loadJobs} aria-label={t('common.refresh')}><Refresh fontSize="small" /></IconButton>
             </Stack>
             {activeJob && (
               <Box sx={{ mb: 2, p: 2, bgcolor: '#f5f3ff', borderRadius: 2, border: '1px solid #ddd6fe' }}>
-                <Stack direction="row" justifyContent="space-between" sx={{ mb: 1 }}>
+                <Stack direction="row" sx={{
+  mb: 1,
+  justifyContent: "space-between"
+}}>
                   <Typography variant="body2" sx={{ fontWeight: 600 }}>{activeJob.task_label || activeJob.task_type}</Typography>
                   <Chip label={`${activeJob.progress_percent}%`} color="secondary" size="small" />
                 </Stack>
@@ -661,12 +683,16 @@ export default function StyleModelHub() {
         {t('styleHub.subtitle', { defaultValue: 'Manage AI model endpoints, brand style presets, and launch style-related batch tasks across your asset library.' })}
       </Typography>
 
-      <Tabs
-        value={tab}
-        onChange={(_, v) => setTab(v)}
-        sx={{ mb: 3, borderBottom: '1px solid #e3e8ef' }}
-        TabIndicatorProps={{ style: { backgroundColor: '#8b5cf6' } }}
-      >
+      <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{
+  mb: 3,
+  borderBottom: '1px solid #e3e8ef'
+}} slotProps={{
+  indicator: {
+    style: {
+      backgroundColor: '#8b5cf6'
+    }
+  }
+}}>
         <Tab icon={<SmartToy fontSize="small" />} iconPosition="start" label={t('styleHub.tabs.models', { defaultValue: 'Models' })} sx={{ '&.Mui-selected': { color: '#8b5cf6' } }} />
         <Tab icon={<Palette fontSize="small" />} iconPosition="start" label={t('styleHub.tabs.styles', { defaultValue: 'Style Presets' })} sx={{ '&.Mui-selected': { color: '#8b5cf6' } }} />
         <Tab icon={<RocketLaunch fontSize="small" />} iconPosition="start" label={t('styleHub.tabs.batch', { defaultValue: 'Batch Tasks' })} sx={{ '&.Mui-selected': { color: '#8b5cf6' } }} />

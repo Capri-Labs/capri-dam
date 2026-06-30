@@ -133,26 +133,24 @@ export default function CollectionPropertiesDialog({ open, onClose, selectedColl
 
                 {/* Taxonomy & Metadata */}
                 <Box sx={{ mb: 4 }}>
-                    <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
+                    <Stack direction="row" spacing={1} sx={{
+  mb: 2,
+  alignItems: "center"
+}}>
                         {isBulk && <Checkbox checked={modifyFlags.tags} onChange={(e) => setModifyFlags({...modifyFlags, tags: e.target.checked})} />}
                         <Label sx={{ color: '#64748b' }} />
                         <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>Taxonomy & Tags</Typography>
                     </Stack>
                     <Box sx={{ pl: isBulk ? 5 : 0 }}>
-                        <Autocomplete
-                            multiple
-                            disabled={isBulk && !modifyFlags.tags}
-                            options={SUGGESTED_TAGS}
-                            freeSolo
-                            value={formData.tags || []}
-                            onChange={(e, newValue) => setFormData({...formData, tags: newValue || []})}
-                            renderTags={(value, getTagProps) =>
-                                value.map((option, index) => (
-                                    <Chip variant="outlined" label={option} {...getTagProps({ index })} size="small" sx={{ borderColor: '#5e35b1', color: '#5e35b1' }} />
-                                ))
-                            }
-                            renderInput={(params) => <TextField {...params} placeholder="Add tags..." />}
-                        />
+                        <Autocomplete multiple disabled={isBulk && !modifyFlags.tags} options={SUGGESTED_TAGS} freeSolo value={formData.tags || []} onChange={(e, newValue) => setFormData({
+  ...formData,
+  tags: newValue || []
+})} renderValue={(value, getTagProps) => value.map((option, index) => <Chip variant="outlined" label={option} {...getTagProps({
+  index
+})} size="small" sx={{
+  borderColor: '#5e35b1',
+  color: '#5e35b1'
+}} />)} renderInput={params => <TextField {...params} placeholder="Add tags..." />} />
                     </Box>
                 </Box>
 
@@ -160,7 +158,10 @@ export default function CollectionPropertiesDialog({ open, onClose, selectedColl
 
                 {/* Access & Security */}
                 <Box sx={{ mb: 2 }}>
-                    <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
+                    <Stack direction="row" spacing={1} sx={{
+  mb: 2,
+  alignItems: "center"
+}}>
                         {isBulk && <Checkbox checked={modifyFlags.access} onChange={(e) => setModifyFlags({...modifyFlags, access: e.target.checked})} />}
                         <Security sx={{ color: '#059669' }} />
                         <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>Access Governance</Typography>

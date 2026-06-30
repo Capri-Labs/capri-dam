@@ -25,7 +25,8 @@ class HeadlessDamSchema < GraphQL::Schema
 
   # Suppress internal error details from API consumers.
   # In development the controller's own handler provides the full backtrace.
-  rescue_from(StandardError) do |err, ctx, ast_node, path|
+  rescue_from(StandardError) do |err, _ctx, _ast_node, _path|
+    Rails.logger.error("[GraphQL] #{err.class}: #{err.message}\n#{err.backtrace&.first(5)&.join("\n")}")
     GraphQL::ExecutionError.new("Internal server error: Operational noise suppressed.")
   end
 end

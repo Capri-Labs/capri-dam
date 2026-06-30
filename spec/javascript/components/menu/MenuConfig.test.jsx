@@ -12,7 +12,7 @@
  */
 
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, act } from '@testing-library/react';
 import { I18nextProvider } from 'react-i18next';
 import i18n from '../../../../app/javascript/i18n/index';
 import { MENU_GROUPS } from '../../../../app/javascript/components/MenuConfig';
@@ -72,7 +72,7 @@ describe('MENU_GROUPS structure', () => {
 // ─── MenuConfig i18n key resolution tests ────────────────────────────────────
 
 describe('MENU_GROUPS — i18n key resolution (English)', () => {
-  beforeAll(() => i18n.changeLanguage('en'));
+  beforeAll(async () => { await act(async () => { await i18n.changeLanguage('en'); }); });
 
   it('group titleKeys resolve to non-empty English strings', () => {
     MENU_GROUPS.forEach(group => {
@@ -99,8 +99,8 @@ describe('MENU_GROUPS — i18n key resolution (English)', () => {
 });
 
 describe('MENU_GROUPS — i18n key resolution (German)', () => {
-  beforeAll(() => i18n.changeLanguage('de'));
-  afterAll(() => i18n.changeLanguage('en'));
+  beforeAll(async () => { await act(async () => { await i18n.changeLanguage('de'); }); });
+  afterAll(async () => { await act(async () => { await i18n.changeLanguage('en'); }); });
 
   it('group titleKeys return German strings (not equal to English)', () => {
     MENU_GROUPS.forEach(group => {
@@ -134,8 +134,8 @@ describe('MENU_GROUPS — i18n key resolution (German)', () => {
 
 // ─── Sidebar rendering tests ──────────────────────────────────────────────────
 
-function renderSidebar(language = 'en') {
-  i18n.changeLanguage(language);
+async function renderSidebar(language = 'en') {
+  await act(async () => { await i18n.changeLanguage(language); });
   return render(
     <I18nextProvider i18n={i18n}>
       <Sidebar activeView="Overview" onNavigate={() => {}} />
@@ -144,53 +144,53 @@ function renderSidebar(language = 'en') {
 }
 
 describe('Sidebar — English rendering', () => {
-  afterEach(() => i18n.changeLanguage('en'));
+  afterEach(async () => { await act(async () => { await i18n.changeLanguage('en'); }); });
 
-  it('renders the English label for Overview', () => {
-    renderSidebar('en');
+  it('renders the English label for Overview', async () => {
+    await renderSidebar('en');
     expect(screen.getByText('Overview')).toBeInTheDocument();
   });
 
-  it('renders the English group title for Core Application', () => {
-    renderSidebar('en');
+  it('renders the English group title for Core Application', async () => {
+    await renderSidebar('en');
     expect(screen.getByText('Core Application')).toBeInTheDocument();
   });
 
-  it('renders the English label for Advanced Search', () => {
-    renderSidebar('en');
+  it('renders the English label for Advanced Search', async () => {
+    await renderSidebar('en');
     expect(screen.getByText('Advanced Search')).toBeInTheDocument();
   });
 });
 
 describe('Sidebar — German rendering (language switch)', () => {
-  afterEach(() => i18n.changeLanguage('en'));
+  afterEach(async () => { await act(async () => { await i18n.changeLanguage('en'); }); });
 
-  it('renders German label for Overview (Übersicht) when language is de', () => {
-    renderSidebar('de');
+  it('renders German label for Overview (Übersicht) when language is de', async () => {
+    await renderSidebar('de');
     expect(screen.getByText('Übersicht')).toBeInTheDocument();
   });
 
-  it('renders German group title Kernanwendung when language is de', () => {
-    renderSidebar('de');
+  it('renders German group title Kernanwendung when language is de', async () => {
+    await renderSidebar('de');
     expect(screen.getByText('Kernanwendung')).toBeInTheDocument();
   });
 
-  it('renders German label for Advanced Search (Erweiterte Suche) when language is de', () => {
+  it('renders German label for Advanced Search (Erweiterte Suche) when language is de', async () => {
     // Top-level item — always visible (not inside a Collapse)
-    renderSidebar('de');
+    await renderSidebar('de');
     expect(screen.getByText('Erweiterte Suche')).toBeInTheDocument();
   });
 
-  it('does NOT show English "Overview" when language is de', () => {
-    renderSidebar('de');
+  it('does NOT show English "Overview" when language is de', async () => {
+    await renderSidebar('de');
     // In collapsed mode, items may be hidden — check the translated version is present
     expect(screen.queryByText('Overview')).not.toBeInTheDocument();
   });
 });
 
 describe('Sidebar — graceful degradation (missing key)', () => {
-  it('falls back to English label when i18n key is not found', () => {
-    i18n.changeLanguage('en');
+  it('falls back to English label when i18n key is not found', async () => {
+    await act(async () => { await i18n.changeLanguage('en'); });
     // Simulate a missing key by checking an item that would fall through
     // The Sidebar uses: t(item.labelKey, { defaultValue: item.label })
     const result = i18n.t('menu.item.NonExistentKey', { defaultValue: 'Fallback Label' });

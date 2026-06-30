@@ -36,7 +36,10 @@ function MetricCard({ label, value, sub, icon, color, loading }) {
     return (
         <Card elevation={0} sx={{ border: '1px solid #e3e8ef', borderRadius: 3, height: '100%' }}>
             <CardContent>
-                <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+                <Stack direction="row" sx={{
+  alignItems: "flex-start",
+  justifyContent: "space-between"
+}}>
                     <Box sx={{ minWidth: '75%' }}>
                         <Typography color="textSecondary" variant="caption" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                             {label}
@@ -69,9 +72,15 @@ function ActiveBatchCard({ batch, onAudit, onAbort }) {
 
     return (
         <Paper elevation={0} sx={{ border: `1px solid ${isReview ? '#fde68a' : '#e3e8ef'}`, borderRadius: 3, p: 2.5, bgcolor: isReview ? '#fffbeb' : 'white' }}>
-            <Stack direction="row" justifyContent="space-between" alignItems="flex-start" sx={{ mb: 1.5 }}>
+            <Stack direction="row" sx={{
+  mb: 1.5,
+  alignItems: "flex-start",
+  justifyContent: "space-between"
+}}>
                 <Box>
-                    <Stack direction="row" spacing={1} alignItems="center">
+                    <Stack direction="row" spacing={1} sx={{
+  alignItems: "center"
+}}>
                         <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>{batch.name}</Typography>
                         <Chip label={cfg.label} color={cfg.color} size="small" variant="outlined"
                             sx={{ height: 20, fontSize: '0.65rem', fontWeight: 700 }} />
@@ -104,7 +113,10 @@ function ActiveBatchCard({ batch, onAudit, onAbort }) {
             {/* Progress bar */}
             {batch.total_count > 0 && (
                 <Box sx={{ mt: 1.5 }}>
-                    <Stack direction="row" justifyContent="space-between" sx={{ mb: 0.5 }}>
+                    <Stack direction="row" sx={{
+  mb: 0.5,
+  justifyContent: "space-between"
+}}>
                         <Typography variant="caption" color="textSecondary">
                             {batch.processed_count}/{batch.total_count} processed
                         </Typography>
@@ -253,10 +265,18 @@ export default function IngestionDashboard() {
         <Box sx={{ p: 4, bgcolor: '#f4f7fb', minHeight: '100vh' }}>
 
             {/* ── Page header ── */}
-            <Stack direction="row" justifyContent="space-between" alignItems="flex-start" sx={{ mb: 4 }} flexWrap="wrap" gap={2}>
+            <Stack direction="row" sx={{
+  mb: 4,
+  alignItems: "flex-start",
+  justifyContent: "space-between",
+  flexWrap: "wrap"
+}} gap={2}>
                 <Box>
                     {/* Breadcrumb */}
-                    <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mb: 0.5 }}>
+                    <Stack direction="row" spacing={0.5} sx={{
+  mb: 0.5,
+  alignItems: "center"
+}}>
                         <Typography variant="caption" color="textSecondary">Data &amp; Migrations</Typography>
                         <Typography variant="caption" color="textSecondary">›</Typography>
                         <Typography
@@ -278,7 +298,10 @@ export default function IngestionDashboard() {
                     <Typography variant="body2" color="textSecondary">{t('ingestion.subtitle')}</Typography>
                 </Box>
 
-                <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap">
+                <Stack direction="row" spacing={1.5} sx={{
+  alignItems: "center",
+  flexWrap: "wrap"
+}}>
                     <Button
                         variant="outlined"
                         startIcon={<LinkOutlined />}
@@ -382,7 +405,10 @@ export default function IngestionDashboard() {
             {/* ── Active / in-progress batches ── */}
             <Collapse in={activeBatches.length > 0}>
                 <Box sx={{ mb: 4 }}>
-                    <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
+                    <Stack direction="row" spacing={1} sx={{
+  mb: 2,
+  alignItems: "center"
+}}>
                         <Typography variant="h6" sx={{ fontWeight: 700 }}>
                             {t('ingestion.activeBatches')}
                         </Typography>
@@ -404,7 +430,12 @@ export default function IngestionDashboard() {
 
             {/* ── Batch history table ── */}
             <Box>
-                <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }} flexWrap="wrap" gap={1}>
+                <Stack direction="row" sx={{
+  mb: 2,
+  alignItems: "center",
+  justifyContent: "space-between",
+  flexWrap: "wrap"
+}} gap={1}>
                     <Typography variant="h6" sx={{ fontWeight: 700 }}>
                         {t('ingestion.allBatches')}
                         {batchMeta.total > 0 && (
@@ -413,7 +444,9 @@ export default function IngestionDashboard() {
                             </Typography>
                         )}
                     </Typography>
-                    <Stack direction="row" spacing={1} flexWrap="wrap">
+                    <Stack direction="row" spacing={1} sx={{
+  flexWrap: "wrap"
+}}>
                         <TextField
                             size="small"
                             placeholder={t('common.search')}
@@ -447,7 +480,9 @@ export default function IngestionDashboard() {
                         <Typography variant="body2" color="textSecondary" sx={{ mb: 3 }}>
                             {t('ingestion.noBatchesSub')}
                         </Typography>
-                        <Stack direction="row" spacing={1.5} justifyContent="center">
+                        <Stack direction="row" spacing={1.5} sx={{
+  justifyContent: "center"
+}}>
                             <Button variant="outlined" href="/admin/migrations/connectors" sx={{ textTransform: 'none' }}>
                                 {t('ingestion.goToConnectors')}
                             </Button>
@@ -502,7 +537,9 @@ export default function IngestionDashboard() {
                                                     />
                                                 </TableCell>
                                                 <TableCell>
-                                                    <Stack direction="row" alignItems="center" spacing={1}>
+                                                    <Stack direction="row" spacing={1} sx={{
+  alignItems: "center"
+}}>
                                                         <Box sx={{ flex: 1 }}>
                                                             <LinearProgress
                                                                 variant={isActive ? 'indeterminate' : 'determinate'}
@@ -528,7 +565,9 @@ export default function IngestionDashboard() {
                                                     <Chip label={batch.error_count || 0} size="small" color={batch.error_count > 0 ? 'error' : 'default'} variant="outlined" />
                                                 </TableCell>
                                                 <TableCell align="right">
-                                                    <Stack direction="row" spacing={0.5} justifyContent="flex-end">
+                                                    <Stack direction="row" spacing={0.5} sx={{
+  justifyContent: "flex-end"
+}}>
                                                         {batch.status === 'review_needed' && (
                                                             <Button variant="contained" size="small" startIcon={<Visibility />}
                                                                 onClick={() => setSelectedBatchId(batch.id)}
@@ -568,7 +607,10 @@ export default function IngestionDashboard() {
 
                         {/* Pagination */}
                         {totalPages > 1 && (
-                            <Stack direction="row" justifyContent="center" spacing={1} sx={{ mt: 2 }}>
+                            <Stack direction="row" spacing={1} sx={{
+  mt: 2,
+  justifyContent: "center"
+}}>
                                 <Button size="small" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>← Prev</Button>
                                 <Typography variant="caption" sx={{ alignSelf: 'center', px: 1 }}>
                                     Page {page} of {totalPages}

@@ -210,15 +210,14 @@ export default function CollectionSettings() {
                 icon={<CollectionsBookmark />}
             >
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <TextField
-                        size="small"
-                        type="number"
-                        label={t('tools.collectionSettings.limits.maxAssets', 'Max Assets per Collection')}
-                        value={settings.max_assets_per_collection}
-                        onChange={e => set('max_assets_per_collection', parseInt(e.target.value, 10) || 0)}
-                        inputProps={{ min: 0, max: 10000 }}
-                        sx={{ width: 220 }}
-                    />
+                    <TextField size="small" type="number" label={t('tools.collectionSettings.limits.maxAssets', 'Max Assets per Collection')} value={settings.max_assets_per_collection} onChange={e => set('max_assets_per_collection', parseInt(e.target.value, 10) || 0)} sx={{
+  width: 220
+}} slotProps={{
+  htmlInput: {
+    min: 0,
+    max: 10000
+  }
+}} />
                     <Typography variant="caption" sx={{ color: '#94a3b8' }}>
                         {t('tools.collectionSettings.limits.maxAssetsHint', '0 = unlimited. Recommended: 500.')}
                     </Typography>
@@ -232,15 +231,13 @@ export default function CollectionSettings() {
                 icon={<TimerOutlined />}
             >
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <TextField
-                        size="small"
-                        type="number"
-                        label={t('tools.collectionSettings.ttl.defaultDays', 'Default TTL (days)')}
-                        value={settings.ttl_default_days}
-                        onChange={e => set('ttl_default_days', parseInt(e.target.value, 10) || 0)}
-                        inputProps={{ min: 0 }}
-                        sx={{ width: 200 }}
-                    />
+                    <TextField size="small" type="number" label={t('tools.collectionSettings.ttl.defaultDays', 'Default TTL (days)')} value={settings.ttl_default_days} onChange={e => set('ttl_default_days', parseInt(e.target.value, 10) || 0)} sx={{
+  width: 200
+}} slotProps={{
+  htmlInput: {
+    min: 0
+  }
+}} />
                     <Typography variant="caption" sx={{ color: '#94a3b8' }}>
                         {t('tools.collectionSettings.ttl.hint', '0 = no default expiration. Applied at collection creation time.')}
                     </Typography>

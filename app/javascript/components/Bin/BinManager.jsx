@@ -182,7 +182,10 @@ export default function BinManager() {
                         </Typography>
                     </Box>
 
-                    <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap">
+                    <Stack direction="row" spacing={1.5} sx={{
+  alignItems: "center",
+  flexWrap: "wrap"
+}}>
                         <Tooltip title={t('common.refresh')}>
                             <IconButton onClick={refresh} size="small" sx={{ border: '1px solid #e2e8f0' }}>
                                 <RefreshOutlined fontSize="small" />

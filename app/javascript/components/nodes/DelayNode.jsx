@@ -41,7 +41,9 @@ export default function DelayNode({ data, isConnectable }) {
           className="nodrag"
         />
 
-        <Stack direction="row" spacing={1} alignItems="center">
+        <Stack direction="row" spacing={1} sx={{
+  alignItems: "center"
+}}>
           <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>
             {t('nodes.delay.duration')}
           </Typography>

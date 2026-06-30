@@ -110,20 +110,28 @@ class User < ApplicationRecord
   def self.from_omniauth(auth)
     user = where(provider: auth.provider, uid: auth.uid).first_or_initialize
 
+    # Use hash-style access (auth.info[:name]) to get the raw stored value from
+    # the OmniAuth::AuthHash::InfoHash.  The method-style (auth.info.name) runs
+    # through OmniAuth's cascading fallback chain (nickname → display_name →
+    # first+last → email), so it never returns nil even when name is absent.
+    raw_name       = auth.info[:name]
+    raw_first_name = auth.info[:first_name]
+    raw_last_name  = auth.info[:last_name]
+
     if user.new_record?
       user.email      = auth.info.email
       user.password   = Devise.friendly_token[0, 20]
-      user.name       = auth.info.name.presence || auth.info.email.split("@").first
-      user.first_name = auth.info.first_name.presence
-      user.last_name  = auth.info.last_name.presence
-      user.avatar_url = auth.info.image.presence
+      user.name       = raw_name.presence || auth.info.email.split("@").first
+      user.first_name = raw_first_name.presence
+      user.last_name  = raw_last_name.presence
+      user.avatar_url = auth.info[:image].presence
       user.username   = unique_sso_username(auth.info.email)
     else
-      # Sync mutable fields on every login
-      user.name       = auth.info.name.presence || user.name
-      user.first_name = auth.info.first_name.presence || user.first_name
-      user.last_name  = auth.info.last_name.presence  || user.last_name
-      user.avatar_url = auth.info.image.presence      || user.avatar_url
+      # Sync mutable fields on every login; fall back to existing value if token is blank
+      user.name       = raw_name.presence       || user.name
+      user.first_name = raw_first_name.presence || user.first_name
+      user.last_name  = raw_last_name.presence  || user.last_name
+      user.avatar_url = auth.info[:image].presence || user.avatar_url
     end
 
     user.save!

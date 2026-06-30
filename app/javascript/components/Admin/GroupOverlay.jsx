@@ -362,7 +362,11 @@ export default function GroupOverlay({
 
               {/* ── Section A: Child Groups (this group's direct children) ── */}
               <Box>
-                <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1.5 }}>
+                <Stack direction="row" sx={{
+  mb: 1.5,
+  alignItems: "center",
+  justifyContent: "space-between"
+}}>
                   <Box>
                     <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
                       Child Groups

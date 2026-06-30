@@ -92,23 +92,11 @@ function MetadataField({ field, value, onChange, readOnly }) {
 
         case 'tags':
             return (
-                <Autocomplete
-                    multiple freeSolo size="small"
-                    disabled={isLocked}
-                    value={Array.isArray(value) ? value : (value ? [value] : [])}
-                    onChange={(_, newVal) => onChange(newVal)}
-                    options={[]}
-                    renderTags={(val, getTagProps) =>
-                        val.map((opt, i) => (
-                            <Chip label={opt} size="small" {...getTagProps({ index: i })} key={i} />
-                        ))
-                    }
-                    renderInput={(params) => (
-                        <TextField {...params} label={label}
-                                   helperText={`${field.map_to_property} — press Enter to add`}
-                                   sx={{ mb: 2 }} />
-                    )}
-                />
+                <Autocomplete multiple freeSolo size="small" disabled={isLocked} value={Array.isArray(value) ? value : value ? [value] : []} onChange={(_, newVal) => onChange(newVal)} options={[]} renderValue={(val, getTagProps) => val.map((opt, i) => <Chip label={opt} size="small" {...getTagProps({
+  index: i
+})} key={i} />)} renderInput={params => <TextField {...params} label={label} helperText={`${field.map_to_property} — press Enter to add`} sx={{
+  mb: 2
+}} />} />
             );
 
         default: // text

@@ -66,13 +66,17 @@ RSpec.describe 'Folders API (functional)', type: :request do
   end
 
   # ── Sorting ──────────────────────────────────────────────────────────────────
+  # Sorting tests use an admin user so check_folder_permission! is bypassed
+  # (non-admin users need explicit folder policies even for folders they created).
   describe 'GET /api/v1/folders/:id with sorting' do
-    let!(:parent) { create(:folder, user: user, name: 'Parent') }
+    let(:admin_user) { create(:user, :admin) }
+    let!(:parent) { create(:folder, user: admin_user, name: 'Parent') }
 
     before do
-      create(:folder, user: user, parent: parent, name: 'Banana')
-      create(:folder, user: user, parent: parent, name: 'Apple')
-      create(:folder, user: user, parent: parent, name: 'Cherry')
+      sign_in admin_user
+      create(:folder, user: admin_user, parent: parent, name: 'Banana')
+      create(:folder, user: admin_user, parent: parent, name: 'Apple')
+      create(:folder, user: admin_user, parent: parent, name: 'Cherry')
     end
 
     it 'sorts folders by name ascending by default' do
@@ -99,8 +103,8 @@ RSpec.describe 'Folders API (functional)', type: :request do
     end
 
     it 'sorts assets by size when requested' do
-      small = create(:asset, user: user, folder: parent, title: 'Small')
-      large = create(:asset, user: user, folder: parent, title: 'Large')
+      small = create(:asset, user: admin_user, folder: parent, title: 'Small')
+      large = create(:asset, user: admin_user, folder: parent, title: 'Large')
       small.update!(properties: small.properties.merge('size' => 100))
       large.update!(properties: large.properties.merge('size' => 5000))
 

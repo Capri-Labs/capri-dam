@@ -86,14 +86,15 @@ export default function UploadSidebar({
                 <Typography variant="subtitle2" fontWeight="700" sx={{ mb: 2, display: 'flex', alignItems: 'center' }}>
                     <CategoryOutlined fontSize="small" sx={{ mr: 1, color: '#64748b' }}/> Tags
                 </Typography>
-                <Autocomplete
-                    multiple freeSolo size="small" options={[]} value={globalMeta.manualTags}
-                    onChange={(e, val) => setGlobalMeta({ ...globalMeta, manualTags: val })}
-                    renderTags={(value, getTagProps) => value.map((option, index) => (
-                        <Chip variant="outlined" label={option} {...getTagProps({ index })} size="small" />
-                    ))}
-                    renderInput={(params) => <TextField {...params} placeholder="Type and press enter" sx={{ mb: 2, bgcolor: '#f8fafc' }} />}
-                />
+                <Autocomplete multiple freeSolo size="small" options={[]} value={globalMeta.manualTags} onChange={(e, val) => setGlobalMeta({
+  ...globalMeta,
+  manualTags: val
+})} renderValue={(value, getTagProps) => value.map((option, index) => <Chip variant="outlined" label={option} {...getTagProps({
+  index
+})} size="small" />)} renderInput={params => <TextField {...params} placeholder="Type and press enter" sx={{
+  mb: 2,
+  bgcolor: '#f8fafc'
+}} />} />
                 <FormControlLabel
                     control={<Checkbox checked={globalMeta.aiTagsEnabled} onChange={(e) => setGlobalMeta({ ...globalMeta, aiTagsEnabled: e.target.checked })} size="small" sx={{ color: '#4f46e5' }} />}
                     label={<Typography variant="body2" fontWeight="600">Generate AI Tags on Upload</Typography>}

@@ -103,7 +103,9 @@ export default function CollectionsBoard({ onSelectCollection, selectedIds, setS
                         position: 'sticky', top: 16, zIndex: 10
                     }}
                 >
-                    <Stack direction="row" alignItems="center" spacing={2}>
+                    <Stack direction="row" spacing={2} sx={{
+  alignItems: "center"
+}}>
                         <IconButton size="small" onClick={clearSelection} sx={{ color: '#94a3b8' }}>
                             <Close fontSize="small" />
                         </IconButton>
@@ -278,7 +280,9 @@ export default function CollectionsBoard({ onSelectCollection, selectedIds, setS
                                         {collection.description || 'No description provided.'}
                                     </Typography>
 
-                                    <Stack direction="row" alignItems="center" spacing={1}>
+                                    <Stack direction="row" spacing={1} sx={{
+  alignItems: "center"
+}}>
                                         <ImageIcon sx={{ color: '#94a3b8', fontSize: '1.2rem' }} />
                                         <Typography variant="caption" sx={{ fontWeight: 600, color: '#475569' }}>
                                             {assetCount} Assets

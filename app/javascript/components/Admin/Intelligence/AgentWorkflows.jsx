@@ -124,15 +124,16 @@ function WorkflowDialog({ open, initial, onClose, onSaved, t }) {
       <DialogContent dividers>
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
         <Stack spacing={2.5} sx={{ mt: 0.5 }}>
-          <TextField
-            label={t('agents.form.name', { defaultValue: 'Name' })}
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
-            fullWidth
-            required
-            autoFocus
-            inputProps={{ maxLength: 120 }}
-          />
+          <TextField label={t('agents.form.name', {
+  defaultValue: 'Name'
+})} value={form.name} onChange={e => setForm({
+  ...form,
+  name: e.target.value
+})} fullWidth required autoFocus slotProps={{
+  htmlInput: {
+    maxLength: 120
+  }
+}} />
           <TextField
             label={t('agents.form.description', { defaultValue: 'Description' })}
             value={form.description || ''}
@@ -190,7 +191,9 @@ function WorkflowDialog({ open, initial, onClose, onSaved, t }) {
             </Box>
           </Box>
 
-          <Stack direction="row" alignItems="center" spacing={1}>
+          <Stack direction="row" spacing={1} sx={{
+  alignItems: "center"
+}}>
             <Switch
               checked={form.active}
               onChange={(e) => setForm({ ...form, active: e.target.checked })}
@@ -236,9 +239,16 @@ function WorkflowCard({ wf, onToggle, onEdit, onDelete, onTrigger, busy, t }) {
       }}
     >
       <CardContent sx={{ p: 3 }}>
-        <Stack direction="row" justifyContent="space-between" alignItems="flex-start" sx={{ mb: 2 }}>
+        <Stack direction="row" sx={{
+  mb: 2,
+  alignItems: "flex-start",
+  justifyContent: "space-between"
+}}>
           <Box>
-            <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 0.5 }}>
+            <Stack direction="row" spacing={1.5} sx={{
+  mb: 0.5,
+  alignItems: "center"
+}}>
               <Typography variant="h6" sx={{ fontWeight: 600 }}>{wf.name}</Typography>
               {wf.active ? (
                 <Chip label={t('agents.status.listening', { defaultValue: 'Listening' })}
@@ -252,7 +262,9 @@ function WorkflowCard({ wf, onToggle, onEdit, onDelete, onTrigger, busy, t }) {
             </Stack>
             <Typography variant="body2" color="text.secondary">{wf.description}</Typography>
           </Box>
-          <Stack direction="row" alignItems="center" spacing={0.5}>
+          <Stack direction="row" spacing={0.5} sx={{
+  alignItems: "center"
+}}>
             {wf.trigger_event === 'manual' && (
               <Tooltip title={t('agents.triggerNow', { defaultValue: 'Trigger now' })}>
                 <span>
@@ -281,7 +293,7 @@ function WorkflowCard({ wf, onToggle, onEdit, onDelete, onTrigger, busy, t }) {
 
         {/* Pipeline visualiser */}
         <Box sx={{ mt: 3, p: 2, bgcolor: '#f8fafc', borderRadius: 2, border: '1px dashed #cbd5e1' }}>
-          <Grid container alignItems="center" spacing={2}>
+          <Grid container spacing={2} sx={{ alignItems: 'center' }}>
             <Grid size={3}>
               <Paper elevation={0} sx={{ p: 1.5, textAlign: 'center', border: '1px solid #e2e8f0', bgcolor: '#fff' }}>
                 <Sensors sx={{ color: '#64748b', mb: 0.5 }} />
@@ -459,7 +471,11 @@ export default function AgentWorkflows() {
 
   return (
     <Box sx={{ p: 4, bgcolor: '#f4f7fb', minHeight: '100vh' }}>
-      <Stack direction="row" justifyContent="space-between" alignItems="flex-end" sx={{ mb: 4 }}>
+      <Stack direction="row" sx={{
+  mb: 4,
+  alignItems: "flex-end",
+  justifyContent: "space-between"
+}}>
         <Box>
           <Typography variant="h4" sx={{ fontWeight: 700, color: '#121926', mb: 1, display: 'flex', alignItems: 'center' }}>
             <Route sx={{ mr: 1.5, color: '#0ea5e9', fontSize: 32 }} />
@@ -549,7 +565,10 @@ export default function AgentWorkflows() {
                       </ListItemIcon>
                       <ListItemText
                         primary={
-                          <Stack direction="row" justifyContent="space-between" sx={{ mb: 0.5 }}>
+                          <Stack direction="row" sx={{
+  mb: 0.5,
+  justifyContent: "space-between"
+}}>
                             <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
                               {log.workflow_name}
                             </Typography>
@@ -581,4 +600,3 @@ export default function AgentWorkflows() {
     </Box>
   );
 }
-

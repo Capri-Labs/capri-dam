@@ -189,13 +189,19 @@ export default function UploadRestrictionsPanel() {
                 <Paper variant="outlined" sx={{ p: 3, mb: 3, borderRadius: 2 }}>
                     <Typography variant="subtitle2" fontWeight={700} sx={{ color: '#334155', mb: 2 }}>Allowed MIME Types</Typography>
                     <Box sx={{ display: 'flex', gap: 1, mb: 1.5 }}>
-                        <TextField size="small" fullWidth placeholder="e.g. image/jpeg, image/*, application/pdf"
-                                   value={newMimeInput}
-                                   onChange={(e) => { setNewMimeInput(e.target.value); setInputError(''); }}
-                                   onKeyDown={handleKeyDown}
-                                   error={Boolean(inputError)} helperText={inputError}
-                                   sx={{ bgcolor: '#f8fafc' }}
-                                   inputProps={{ style: { fontFamily: 'monospace', fontSize: '0.875rem' } }} />
+                        <TextField size="small" fullWidth placeholder="e.g. image/jpeg, image/*, application/pdf" value={newMimeInput} onChange={e => {
+  setNewMimeInput(e.target.value);
+  setInputError('');
+}} onKeyDown={handleKeyDown} error={Boolean(inputError)} helperText={inputError} sx={{
+  bgcolor: '#f8fafc'
+}} slotProps={{
+  htmlInput: {
+    style: {
+      fontFamily: 'monospace',
+      fontSize: '0.875rem'
+    }
+  }
+}} />
                         <Button variant="contained" startIcon={<AddOutlined />} onClick={handleAdd}
                                 sx={{ bgcolor: '#5e35b1', '&:hover': { bgcolor: '#4527a0' }, textTransform: 'none', whiteSpace: 'nowrap', minWidth: 90 }}>
                             Add
@@ -204,7 +210,9 @@ export default function UploadRestrictionsPanel() {
 
                     <Box sx={{ mb: 2.5 }}>
                         <Typography variant="caption" sx={{ color: '#94a3b8', display: 'block', mb: 1 }}>Quick add common types:</Typography>
-                        <Stack direction="row" flexWrap="wrap" gap={0.75}>
+                        <Stack direction="row" gap={0.75} sx={{
+  flexWrap: "wrap"
+}}>
                             {COMMON_MIME_SUGGESTIONS.map(({ label, value }) => (
                                 <Chip key={value} label={label} size="small" clickable
                                       onClick={() => handleAddSuggestion(value)}
@@ -252,13 +260,18 @@ export default function UploadRestrictionsPanel() {
                     <Collapse in={showExamples}>
                         <Box sx={{ p: 3, pt: 2 }}>
                             <Typography variant="body2" fontWeight={600} sx={{ color: '#1e293b', mb: 1 }}>Example 1: Allow all images and PDF files</Typography>
-                            <Stack direction="row" gap={1} flexWrap="wrap" sx={{ mb: 2 }}>
+                            <Stack direction="row" gap={1} sx={{
+  mb: 2,
+  flexWrap: "wrap"
+}}>
                                 <Chip label="image/*" size="small" sx={{ fontFamily: 'monospace', bgcolor: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0' }} />
                                 <Chip label="application/pdf" size="small" sx={{ fontFamily: 'monospace', bgcolor: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0' }} />
                             </Stack>
                             <Divider sx={{ mb: 2 }} />
                             <Typography variant="body2" fontWeight={600} sx={{ color: '#1e293b', mb: 1 }}>Example 2: Allow specific image formats only</Typography>
-                            <Stack direction="row" gap={1} flexWrap="wrap">
+                            <Stack direction="row" gap={1} sx={{
+  flexWrap: "wrap"
+}}>
                                 {['image/jpeg', 'image/png', 'image/gif'].map(m => (
                                     <Chip key={m} label={m} size="small" sx={{ fontFamily: 'monospace', bgcolor: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe' }} />
                                 ))}

@@ -323,7 +323,10 @@ export default function Settings(props) {
                 {/* ── System Service Accounts ── */}
                 {isAdmin && (
                     <Paper elevation={0} sx={{ p: 3, border: '2px solid #5e35b1', borderRadius: 3, bgcolor: '#f9f8ff', mb: 4 }}>
-                        <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 3 }}>
+                        <Stack direction="row" spacing={1} sx={{
+  mb: 3,
+  alignItems: "center"
+}}>
                             <Shield sx={{ color: '#5e35b1' }} />
                             <Typography variant="h6" sx={{ fontWeight: 700, color: '#5e35b1' }}>
                                 System Administration
@@ -368,8 +371,14 @@ export default function Settings(props) {
                 {/* ── Storage Backend Configuration ── */}
                 {isAdmin && (
                     <Paper elevation={0} sx={{ p: 3, border: '2px solid #5e35b1', borderRadius: 3, bgcolor: '#f9f8ff' }}>
-                        <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 3 }}>
-                            <Stack direction="row" alignItems="center" spacing={1}>
+                        <Stack direction="row" sx={{
+  mb: 3,
+  alignItems: "center",
+  justifyContent: "space-between"
+}}>
+                            <Stack direction="row" spacing={1} sx={{
+  alignItems: "center"
+}}>
                                 <CloudUpload sx={{ color: '#5e35b1' }} />
                                 <Typography variant="h6" sx={{ fontWeight: 700, color: '#5e35b1' }}>
                                     Storage Backend Configuration
@@ -401,7 +410,9 @@ export default function Settings(props) {
                                     >
                                         {Object.entries(PROVIDERS).map(([key, def]) => (
                                             <MenuItem key={key} value={key}>
-                                                <Stack direction="row" alignItems="center" spacing={1}>
+                                                <Stack direction="row" spacing={1} sx={{
+  alignItems: "center"
+}}>
                                                     <span>{def.icon}</span>
                                                     <span>{def.label}</span>
                                                     {def.supportsPresign && (
@@ -500,7 +511,10 @@ export default function Settings(props) {
                         <Divider sx={{ my: 2 }} />
 
                         {/* Action Buttons */}
-                        <Stack direction="row" spacing={2} justifyContent="flex-end" flexWrap="wrap" useFlexGap>
+                        <Stack direction="row" spacing={2} useFlexGap sx={{
+  justifyContent: "flex-end",
+  flexWrap: "wrap"
+}}>
                             <Button
                                 variant="outlined" color="primary"
                                 onClick={handleTestConnection}

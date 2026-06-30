@@ -73,7 +73,9 @@ export default function SearchScreen() {
                         <Typography variant="h4" sx={{ fontWeight: 700, color: '#0f172a', mb: 1 }}>
                             Search Results
                         </Typography>
-                        <Stack direction="row" spacing={1} alignItems="center">
+                        <Stack direction="row" spacing={1} sx={{
+  alignItems: "center"
+}}>
                             <Typography variant="body1" color="textSecondary">
                                 Found {meta.total} results for
                             </Typography>

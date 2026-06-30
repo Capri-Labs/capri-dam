@@ -35,7 +35,11 @@ export default function ConnectorCard({ conn, onEdit, onToggleStatus, onStartMig
     return (
         <Card elevation={0} sx={{ border: '1px solid #e3e8ef', borderRadius: 3, opacity: conn.status === 'disabled' ? 0.7 : 1, transition: 'opacity 0.2s' }}>
             <CardContent sx={{ p: 3 }}>
-                <Stack direction="row" justifyContent="space-between" alignItems="flex-start" sx={{ mb: 1.5 }}>
+                <Stack direction="row" sx={{
+  mb: 1.5,
+  alignItems: "flex-start",
+  justifyContent: "space-between"
+}}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                         <Box sx={{ p: 1, bgcolor: '#f8fafc', borderRadius: 2, border: '1px solid #e2e8f0', display: 'flex' }}>
                             {getSystemIcon(conn.provider_type)}
@@ -53,7 +57,10 @@ export default function ConnectorCard({ conn, onEdit, onToggleStatus, onStartMig
                     </Tooltip>
                 </Stack>
 
-                <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
+                <Stack direction="row" spacing={1} sx={{
+  mb: 2,
+  alignItems: "center"
+}}>
                     <Chip
                         label={conn.status?.toUpperCase()} size="small"
                         color={conn.status === 'active' ? 'success' : conn.status === 'disabled' ? 'error' : 'warning'}

@@ -16,6 +16,12 @@ class Users::SessionsController < Devise::SessionsController
     # 2. Check if the user exists and the password is correct
     if resource&.valid_password?(params[:user][:password])
 
+      # Guard: deactivated accounts must be rejected before session creation
+      unless resource.active?
+        render json: { success: false, error: "Account is deactivated." }, status: :unauthorized
+        return
+      end
+
       #  PHASE 1: Intercept if forced password change is required
       if resource.try(:force_password_change?)
         render json: {

@@ -304,7 +304,9 @@ export default function WorkflowDesigner({ initialData, onSave, onCancel }) {
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 boxShadow: '0 1px 4px 0 rgb(0 0 0 / 0.06)',
             }}>
-                <Stack direction="row" alignItems="center" spacing={1.5}>
+                <Stack direction="row" spacing={1.5} sx={{
+  alignItems: "center"
+}}>
                     <AccountTree sx={{ color: '#5e35b1', fontSize: 22 }} />
                     <Typography variant="h6" sx={{ fontWeight: 700, color: '#1e293b', fontSize: '1rem' }}>
                         {isEditing ? t('workflowDesigner.editTitle') : t('workflowDesigner.title')}
@@ -316,7 +318,9 @@ export default function WorkflowDesigner({ initialData, onSave, onCancel }) {
                     )}
                 </Stack>
 
-                <Stack direction="row" spacing={1.5} alignItems="center">
+                <Stack direction="row" spacing={1.5} sx={{
+  alignItems: "center"
+}}>
                     {/* Live step-count badge */}
                     {stepCount > 0 && (
                         <Chip
@@ -398,7 +402,10 @@ export default function WorkflowDesigner({ initialData, onSave, onCancel }) {
 
                     {/* ── Section 2: Trigger & Scope ───────────────────── */}
                     <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2, borderLeft: '3px solid #3b82f6' }}>
-                        <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
+                        <Stack direction="row" spacing={1} sx={{
+  mb: 2,
+  alignItems: "center"
+}}>
                             <BoltOutlined sx={{ color: '#3b82f6', fontSize: 18 }} />
                             <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#475569', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                                 {t('workflowDesigner.triggerScopeSection')}
@@ -417,7 +424,9 @@ export default function WorkflowDesigner({ initialData, onSave, onCancel }) {
                                     >
                                         {TRIGGER_OPTIONS.map(opt => (
                                             <MenuItem key={opt.value} value={opt.value}>
-                                                <Stack direction="row" spacing={1} alignItems="center">
+                                                <Stack direction="row" spacing={1} sx={{
+  alignItems: "center"
+}}>
                                                     <span>{opt.icon}</span>
                                                     <span>{t(`workflowDesigner.${opt.labelKey}`)}</span>
                                                 </Stack>
@@ -429,7 +438,10 @@ export default function WorkflowDesigner({ initialData, onSave, onCancel }) {
 
                             {/* Folder scope */}
                             <Box sx={{ flexGrow: 1, pl: { md: 2 }, borderLeft: { md: '1px solid #e2e8f0' } }}>
-                                <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
+                                <Stack direction="row" spacing={1} sx={{
+  mb: 1,
+  alignItems: "center"
+}}>
                                     <FolderSpecial sx={{ color: '#64748b', fontSize: 16 }} />
                                     <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600 }}>
                                         {t('workflowDesigner.folderScopeLabel')}
@@ -460,41 +472,19 @@ export default function WorkflowDesigner({ initialData, onSave, onCancel }) {
                                 </FormControl>
 
                                 {meta.folder_scope === 'all' && (
-                                    <Autocomplete
-                                        multiple size="small" sx={{ mt: 1 }}
-                                        options={folders}
-                                        getOptionLabel={opt => opt.name || 'Unknown'}
-                                        value={meta.exclude_folders}
-                                        onChange={(_, val) => setField('exclude_folders', val)}
-                                        isOptionEqualToValue={(o, v) => String(o.id) === String(v.id)}
-                                        renderTags={(value, getTagProps) =>
-                                            value.map((opt, i) => (
-                                                <Chip key={opt.id} variant="outlined" color="error" label={opt.name} size="small" {...getTagProps({ index: i })} />
-                                            ))
-                                        }
-                                        renderInput={params => (
-                                            <TextField {...params} label={t('workflowDesigner.excludeFolders')} placeholder={t('workflowDesigner.excludeFoldersPlaceholder')} />
-                                        )}
-                                    />
+                                    <Autocomplete multiple size="small" sx={{
+  mt: 1
+}} options={folders} getOptionLabel={opt => opt.name || 'Unknown'} value={meta.exclude_folders} onChange={(_, val) => setField('exclude_folders', val)} isOptionEqualToValue={(o, v) => String(o.id) === String(v.id)} renderValue={(value, getTagProps) => value.map((opt, i) => <Chip key={opt.id} variant="outlined" color="error" label={opt.name} size="small" {...getTagProps({
+  index: i
+})} />)} renderInput={params => <TextField {...params} label={t('workflowDesigner.excludeFolders')} placeholder={t('workflowDesigner.excludeFoldersPlaceholder')} />} />
                                 )}
 
                                 {meta.folder_scope === 'specific' && (
-                                    <Autocomplete
-                                        multiple size="small" sx={{ mt: 1 }}
-                                        options={folders}
-                                        getOptionLabel={opt => opt.name || 'Unknown'}
-                                        value={meta.target_folders}
-                                        onChange={(_, val) => setField('target_folders', val)}
-                                        isOptionEqualToValue={(o, v) => String(o.id) === String(v.id)}
-                                        renderTags={(value, getTagProps) =>
-                                            value.map((opt, i) => (
-                                                <Chip key={opt.id} variant="filled" color="primary" label={opt.name} size="small" {...getTagProps({ index: i })} />
-                                            ))
-                                        }
-                                        renderInput={params => (
-                                            <TextField {...params} label={t('workflowDesigner.targetFolders')} placeholder={t('workflowDesigner.targetFoldersPlaceholder')} />
-                                        )}
-                                    />
+                                    <Autocomplete multiple size="small" sx={{
+  mt: 1
+}} options={folders} getOptionLabel={opt => opt.name || 'Unknown'} value={meta.target_folders} onChange={(_, val) => setField('target_folders', val)} isOptionEqualToValue={(o, v) => String(o.id) === String(v.id)} renderValue={(value, getTagProps) => value.map((opt, i) => <Chip key={opt.id} variant="filled" color="primary" label={opt.name} size="small" {...getTagProps({
+  index: i
+})} />)} renderInput={params => <TextField {...params} label={t('workflowDesigner.targetFolders')} placeholder={t('workflowDesigner.targetFoldersPlaceholder')} />} />
                                 )}
                             </Box>
                         </Stack>
@@ -503,7 +493,9 @@ export default function WorkflowDesigner({ initialData, onSave, onCancel }) {
                     {/* ── Section 3: Canvas ─────────────────────────────── */}
                     <Box>
                         <Divider sx={{ mb: 1.5 }}>
-                            <Stack direction="row" spacing={1} alignItems="center">
+                            <Stack direction="row" spacing={1} sx={{
+  alignItems: "center"
+}}>
                                 <RadioButtonChecked sx={{ fontSize: 14, color: '#94a3b8' }} />
                                 <Typography variant="caption" sx={{ fontWeight: 700, color: '#94a3b8', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
                                     {t('workflowDesigner.canvasSectionLabel')}

@@ -365,6 +365,13 @@ module Api
         # ==========================================
         editor_state = build_editor_state_from_params
 
+        # Validate crop_aspect early so we can return 422 before I/O work
+        valid_crop_aspects = %w[free 1:1 16:9 4:3 3:2 5:4]
+        if editor_state[:crop_aspect].present? && !valid_crop_aspects.include?(editor_state[:crop_aspect])
+          return render json: { error: "Invalid crop aspect: must be one of #{valid_crop_aspects.join(", ")}" },
+                        status: :unprocessable_entity
+        end
+
         # ==========================================
         #  RESOLVE SOURCE FILE PATH
         # ==========================================
@@ -954,7 +961,8 @@ module Api
       # @return [String] Absolute file path
       def resolve_source_file_path(asset)
         active_v = asset.active_version
-        source_path = active_v&.properties&.dig("storage_path").to_s || asset.properties&.dig("storage_path").to_s
+        source_path = active_v&.properties&.dig("storage_path").presence ||
+                      asset.properties&.dig("storage_path").to_s
 
         # If it's already an absolute path (like a tmp file), use it directly
         return source_path if File.exist?(source_path)

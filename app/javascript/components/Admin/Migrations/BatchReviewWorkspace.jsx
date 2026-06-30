@@ -109,7 +109,9 @@ export default function BatchReviewWorkspace({ batchId, onBack }) {
             {/* ── Toolbar ── */}
             <Paper elevation={0} sx={{ p: 2, mb: 3, borderRadius: 2, border: '1px solid #e3e8ef' }}>
                 <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }} gap={1}>
-                    <Stack direction="row" alignItems="center" spacing={1}>
+                    <Stack direction="row" spacing={1} sx={{
+  alignItems: "center"
+}}>
                         <Button startIcon={<ArrowBack />} onClick={onBack} color="inherit" sx={{ textTransform: 'none' }}>Back</Button>
                         <Divider orientation="vertical" flexItem />
                         <Box>
@@ -158,7 +160,10 @@ export default function BatchReviewWorkspace({ batchId, onBack }) {
             {/* ── Migration Report (shown after commit) ── */}
             {isCommitted && report && (
                 <Paper elevation={0} sx={{ p: 3, mb: 3, border: '1px solid #bbf7d0', bgcolor: '#f0fdf4', borderRadius: 3 }}>
-                    <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
+                    <Stack direction="row" spacing={1} sx={{
+  mb: 2,
+  alignItems: "center"
+}}>
                         <BarChart sx={{ color: '#15803d' }} />
                         <Typography variant="h6" sx={{ fontWeight: 700, color: '#15803d' }}>Migration Report</Typography>
                     </Stack>
@@ -232,7 +237,9 @@ export default function BatchReviewWorkspace({ batchId, onBack }) {
                             {/* Pagination */}
                             {meta.total > meta.per_page && (
                                 <Box sx={{ p: 1.5, textAlign: 'center', borderTop: '1px solid #f1f5f9' }}>
-                                    <Stack direction="row" justifyContent="center" spacing={1}>
+                                    <Stack direction="row" spacing={1} sx={{
+  justifyContent: "center"
+}}>
                                         <Button size="small" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>← Prev</Button>
                                         <Typography variant="caption" sx={{ alignSelf: 'center' }}>{page} / {Math.ceil(meta.total / meta.per_page)}</Typography>
                                         <Button size="small" disabled={page >= Math.ceil(meta.total / meta.per_page)} onClick={() => setPage(p => p + 1)}>Next →</Button>
@@ -264,7 +271,9 @@ export default function BatchReviewWorkspace({ batchId, onBack }) {
                             {selectedItem.status === 'flagged_duplicate' ? (
                                 <Card elevation={0} sx={{ bgcolor: '#fdf2f2', border: '1px solid #fde2e2', mt: 2 }}>
                                     <CardContent>
-                                        <Stack direction="row" spacing={2} alignItems="flex-start">
+                                        <Stack direction="row" spacing={2} sx={{
+  alignItems: "flex-start"
+}}>
                                             <Block color="error" />
                                             <Box>
                                                 <Typography variant="subtitle2" color="error" sx={{ fontWeight: 600 }}>Deduplication Interception</Typography>
@@ -293,7 +302,10 @@ export default function BatchReviewWorkspace({ batchId, onBack }) {
                                     </Grid>
                                     {/* AI Normalized Schema */}
                                     <Grid size={{ xs: 12, sm: 6 }}>
-                                        <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1.5 }}>
+                                        <Stack direction="row" spacing={1} sx={{
+  mb: 1.5,
+  alignItems: "center"
+}}>
                                             <AutoAwesome sx={{ color: '#8e24aa', fontSize: 18 }} />
                                             <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#8e24aa' }}>AI Normalized Schema</Typography>
                                         </Stack>

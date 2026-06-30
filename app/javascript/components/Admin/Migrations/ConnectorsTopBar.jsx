@@ -15,7 +15,9 @@ export default function ConnectorsTopBar({ onAddClick, onRefresh }) {
                 </Typography>
             </Box>
 
-            <Stack direction="row" spacing={1.5} alignItems="center">
+            <Stack direction="row" spacing={1.5} sx={{
+  alignItems: "center"
+}}>
                 <Button
                     variant="outlined"
                     startIcon={<Refresh />}

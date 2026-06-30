@@ -43,7 +43,7 @@ describe('<PromptPlayground />', () => {
   it('renders the title and default messages on mount', async () => {
     global.fetch = mockFetch({ '/api/v1/ai/lab/models': MODELS_RESPONSE });
 
-    render(<PromptPlayground />);
+    await act(async () => { render(<PromptPlayground />); });
 
     expect(screen.getByText(/Prompt Playground/i)).toBeInTheDocument();
     expect(screen.getAllByText(/Run Prompt/i).length).toBeGreaterThan(0);
@@ -55,7 +55,7 @@ describe('<PromptPlayground />', () => {
 
   it('populates the model selector from the API', async () => {
     global.fetch = mockFetch({ '/api/v1/ai/lab/models': MODELS_RESPONSE });
-    render(<PromptPlayground />);
+    await act(async () => { render(<PromptPlayground />); });
 
     // Wait for config load
     await waitFor(() => expect(global.fetch).toHaveBeenCalledWith(
@@ -66,7 +66,7 @@ describe('<PromptPlayground />', () => {
 
   it('disables Run button when all message content is empty', async () => {
     global.fetch = mockFetch({ '/api/v1/ai/lab/models': MODELS_RESPONSE });
-    render(<PromptPlayground />);
+    await act(async () => { render(<PromptPlayground />); });
 
     // The user message starts empty; system has content — button should be enabled
     const runBtn = await screen.findByRole('button', { name: /Run Prompt/i });
@@ -81,7 +81,7 @@ describe('<PromptPlayground />', () => {
         Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(CHAT_RESPONSE) }),
     });
 
-    render(<PromptPlayground />);
+    await act(async () => { render(<PromptPlayground />); });
     await screen.findByRole('button', { name: /Run Prompt/i });
 
     const runBtn = screen.getByRole('button', { name: /Run Prompt/i });
@@ -106,7 +106,7 @@ describe('<PromptPlayground />', () => {
         }),
     });
 
-    render(<PromptPlayground />);
+    await act(async () => { render(<PromptPlayground />); });
     const runBtn = await screen.findByRole('button', { name: /Run Prompt/i });
     await act(async () => { fireEvent.click(runBtn); });
 
@@ -122,7 +122,7 @@ describe('<PromptPlayground />', () => {
         Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(CHAT_RESPONSE) }),
     });
 
-    render(<PromptPlayground />);
+    await act(async () => { render(<PromptPlayground />); });
     const runBtn = await screen.findByRole('button', { name: /Run Prompt/i });
     await act(async () => { fireEvent.click(runBtn); });
 
@@ -136,7 +136,7 @@ describe('<PromptPlayground />', () => {
 
   it('resets messages when Reset button is clicked', async () => {
     global.fetch = mockFetch({ '/api/v1/ai/lab/models': MODELS_RESPONSE });
-    render(<PromptPlayground />);
+    await act(async () => { render(<PromptPlayground />); });
     await waitFor(() => screen.getByText(/Prompt Playground/i));
 
     const resetBtn = screen.getByRole('button', { name: /Reset conversation/i });

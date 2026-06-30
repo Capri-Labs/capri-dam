@@ -43,7 +43,9 @@ function MessageBlock({ msg, index, onDelete, onChange, disabled }) {
           justifyContent: 'space-between',
         }}
       >
-        <Stack direction="row" spacing={1} alignItems="center">
+        <Stack direction="row" spacing={1} sx={{
+  alignItems: "center"
+}}>
           <Chip
             label={t(`aiLab.playground.roles.${msg.role}`, { defaultValue: msg.role })}
             size="small"
@@ -94,7 +96,9 @@ function TokenBadge({ usage }) {
   if (!usage) return null;
   return (
     <Stack direction="row" spacing={2}>
-      <Stack direction="row" spacing={0.5} alignItems="center">
+      <Stack direction="row" spacing={0.5} sx={{
+  alignItems: "center"
+}}>
         <Token sx={{ fontSize: 14, color: '#64748b' }} />
         <Typography variant="caption" color="text.secondary">
           Prompt: <strong>{usage.prompt_tokens ?? '—'}</strong>
@@ -378,7 +382,11 @@ export default function PromptPlayground() {
 
           {/* Temperature */}
           <Box>
-            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
+            <Stack direction="row" sx={{
+  mb: 1,
+  alignItems: "center",
+  justifyContent: "space-between"
+}}>
               <Typography variant="caption" sx={{ fontWeight: 600 }}>
                 {t('aiLab.playground.temperature', { defaultValue: 'Temperature' })}
               </Typography>
@@ -410,16 +418,12 @@ export default function PromptPlayground() {
             <Typography variant="caption" sx={{ fontWeight: 600, mb: 1, display: 'block' }}>
               {t('aiLab.playground.maxTokens', { defaultValue: 'Max Tokens' })}
             </Typography>
-            <TextField
-              fullWidth
-              size="small"
-              type="number"
-              value={maxTokens}
-              onChange={(e) => setMaxTokens(Math.max(1, Math.min(8192, parseInt(e.target.value) || 1024)))}
-              disabled={loading}
-              inputProps={{ min: 1, max: 8192 }}
-              helperText="1 – 8 192"
-            />
+            <TextField fullWidth size="small" type="number" value={maxTokens} onChange={e => setMaxTokens(Math.max(1, Math.min(8192, parseInt(e.target.value) || 1024)))} disabled={loading} helperText="1 – 8 192" slotProps={{
+  htmlInput: {
+    min: 1,
+    max: 8192
+  }
+}} />
           </Box>
         </Stack>
       </Paper>
@@ -427,12 +431,15 @@ export default function PromptPlayground() {
       {/* ── RIGHT: Response / History ──────────────────────────────── */}
       <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <Box sx={{ borderBottom: '1px solid #e2e8f0', bgcolor: '#fff' }}>
-          <Tabs
-            value={activeTab}
-            onChange={(_, v) => setActiveTab(v)}
-            sx={{ px: 2 }}
-            TabIndicatorProps={{ sx: { bgcolor: '#8e24aa' } }}
-          >
+          <Tabs value={activeTab} onChange={(_, v) => setActiveTab(v)} sx={{
+  px: 2
+}} slotProps={{
+  indicator: {
+    sx: {
+      bgcolor: '#8e24aa'
+    }
+  }
+}}>
             <Tab
               label={t('aiLab.playground.tabs.response', { defaultValue: 'Response' })}
               sx={{ textTransform: 'none', fontWeight: 600 }}
@@ -489,7 +496,9 @@ export default function PromptPlayground() {
                 >
                   {/* Response header */}
                   <Box sx={{ px: 2.5, py: 1.5, borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', bgcolor: '#f8fafc' }}>
-                    <Stack direction="row" spacing={1.5} alignItems="center">
+                    <Stack direction="row" spacing={1.5} sx={{
+  alignItems: "center"
+}}>
                       <CheckCircleOutlined sx={{ color: '#10b981', fontSize: 18 }} />
                       <Typography variant="caption" sx={{ fontWeight: 600 }}>
                         {response.model}
@@ -553,7 +562,9 @@ export default function PromptPlayground() {
                       sx={{ border: '1px solid #e2e8f0', borderRadius: 2, overflow: 'hidden' }}
                     >
                       <Box sx={{ px: 2, py: 1, bgcolor: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <Stack direction="row" spacing={1} alignItems="center">
+                        <Stack direction="row" spacing={1} sx={{
+  alignItems: "center"
+}}>
                           <Typography variant="caption" sx={{ fontWeight: 600 }}>
                             #{history.length - i}
                           </Typography>

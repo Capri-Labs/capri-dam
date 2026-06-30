@@ -126,7 +126,9 @@ export default function EmailNode({ data, isConnectable }) {
               <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 0.5 }}>
                 {t('nodes.tokenHint')}
               </Typography>
-              <Stack direction="row" flexWrap="wrap" gap={0.5}>
+              <Stack direction="row" gap={0.5} sx={{
+  flexWrap: "wrap"
+}}>
                 {['{{asset.title}}', '{{asset.url}}', '{{asset.status}}', '{{workflow.name}}'].map((tok) => (
                   <Chip key={tok} label={tok} size="small" variant="outlined" sx={{ fontSize: '0.65rem' }} />
                 ))}

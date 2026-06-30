@@ -163,7 +163,9 @@ export default function SmtpSettingsTab({ incomingConfigs }) {
 
                             {testResult && (
                                 <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, bgcolor: testResult.success ? '#f6ffed' : '#fff1f0', borderColor: testResult.success ? '#b7eb8f' : '#ffccc7' }}>
-                                    <Stack direction="row" spacing={1.5} alignItems="flex-start">
+                                    <Stack direction="row" spacing={1.5} sx={{
+  alignItems: "flex-start"
+}}>
                                         {testResult.success ? <CheckCircle sx={{ color: '#389e0d' }} /> : <PriorityHigh sx={{ color: '#cf1322' }} />}
                                         <Box>
                                             <Typography variant="subtitle2" sx={{ color: testResult.success ? '#389e0d' : '#cf1322', fontWeight: 600 }}>

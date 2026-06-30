@@ -93,7 +93,10 @@ function MetricCard({ label, value, sub, icon, color, loading, onClick }) {
             }}
         >
             <CardContent>
-                <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+                <Stack direction="row" sx={{
+  alignItems: "flex-start",
+  justifyContent: "space-between"
+}}>
                     <Box>
                         <Typography color="textSecondary" variant="caption"
                             sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
@@ -145,14 +148,20 @@ function StorageCompositionBar({ storage }) {
                     <Box sx={{ flexGrow: 1, bgcolor: '#f1f5f9' }} />
                 </Tooltip>
             </Box>
-            <Stack direction="row" spacing={3} flexWrap="wrap" gap={1}>
+            <Stack direction="row" spacing={3} gap={1} sx={{
+  flexWrap: "wrap"
+}}>
                 {segments.map(seg => (
-                    <Stack key={seg.label} direction="row" spacing={0.5} alignItems="center">
+                    <Stack key={seg.label} direction="row" spacing={0.5} sx={{
+  alignItems: "center"
+}}>
                         <FiberManualRecord sx={{ fontSize: 10, color: seg.color }} />
                         <Typography variant="caption" color="textSecondary">{seg.label}</Typography>
                     </Stack>
                 ))}
-                <Stack direction="row" spacing={0.5} alignItems="center">
+                <Stack direction="row" spacing={0.5} sx={{
+  alignItems: "center"
+}}>
                     <FiberManualRecord sx={{ fontSize: 10, color: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '50%' }} />
                     <Typography variant="caption" color="textSecondary">Free</Typography>
                 </Stack>
@@ -175,7 +184,9 @@ function ConnectorHealthTableRow({ conn, onPreFlight, preFlight }) {
     return (
         <TableRow hover>
             <TableCell>
-                <Stack direction="row" spacing={1.5} alignItems="center">
+                <Stack direction="row" spacing={1.5} sx={{
+  alignItems: "center"
+}}>
                     <HealthScoreCircle score={conn.health_score} size={38} />
                     <Box>
                         <Typography variant="subtitle2" sx={{ fontWeight: 700, lineHeight: 1.2 }}>{conn.name}</Typography>
@@ -230,7 +241,9 @@ function ConnectorHealthTableRow({ conn, onPreFlight, preFlight }) {
                 )}
             </TableCell>
             <TableCell align="right">
-                <Stack direction="row" spacing={0.5} justifyContent="flex-end">
+                <Stack direction="row" spacing={0.5} sx={{
+  justifyContent: "flex-end"
+}}>
                     <Tooltip title="Run Pre-Flight Analysis">
                         <IconButton size="small" onClick={() => onPreFlight(conn.id)}
                             disabled={preFlight === conn.id}>
@@ -278,7 +291,11 @@ function DebtFlagRow({ flag, onRemediate, isRemediating }) {
             </ListItemIcon>
             <ListItemText
                 primary={
-                    <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 0.5 }} flexWrap="wrap">
+                    <Stack direction="row" spacing={1.5} sx={{
+  mb: 0.5,
+  alignItems: "center",
+  flexWrap: "wrap"
+}}>
                         <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>{flag.title}</Typography>
                         {flag.impact !== 'None' && (
                             <Chip label={`${flag.impact} Impact`} size="small"
@@ -456,9 +473,17 @@ export default function DataHealthDashboard() {
         <Box sx={{ p: 4, bgcolor: '#f4f7fb', minHeight: '100vh' }}>
 
             {/* ── Page Header ── */}
-            <Stack direction="row" justifyContent="space-between" alignItems="flex-start" sx={{ mb: 4 }} flexWrap="wrap" gap={2}>
+            <Stack direction="row" sx={{
+  mb: 4,
+  alignItems: "flex-start",
+  justifyContent: "space-between",
+  flexWrap: "wrap"
+}} gap={2}>
                 <Box>
-                    <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mb: 0.5 }}>
+                    <Stack direction="row" spacing={0.5} sx={{
+  mb: 0.5,
+  alignItems: "center"
+}}>
                         <Typography variant="caption" color="textSecondary">Data &amp; Migrations</Typography>
                         <Typography variant="caption" color="textSecondary">›</Typography>
                         <Typography component="a" href="/admin/migrations/connectors" variant="caption"
@@ -476,7 +501,9 @@ export default function DataHealthDashboard() {
                     <Typography variant="body2" color="textSecondary">{t('dataHealth.subtitle')}</Typography>
                 </Box>
 
-                <Stack direction="row" spacing={1.5} flexWrap="wrap">
+                <Stack direction="row" spacing={1.5} sx={{
+  flexWrap: "wrap"
+}}>
                     <Button variant="outlined" startIcon={<LinkOutlined />} href="/admin/migrations/connectors"
                         sx={{ textTransform: 'none', borderRadius: '8px', color: '#475569', borderColor: '#cbd5e1', bgcolor: 'white' }}>
                         {t('dataHealth.manageConnectors')}
@@ -589,12 +616,17 @@ export default function DataHealthDashboard() {
 
             {/* ── Tabbed Content ── */}
             <Paper elevation={0} sx={{ border: '1px solid #e3e8ef', borderRadius: 3, overflow: 'hidden' }}>
-                <Tabs
-                    value={activeTab}
-                    onChange={(_, v) => setActiveTab(v)}
-                    sx={{ px: 2, borderBottom: '1px solid #e3e8ef', bgcolor: '#f8fafc' }}
-                    TabIndicatorProps={{ style: { backgroundColor: '#5e35b1' } }}
-                >
+                <Tabs value={activeTab} onChange={(_, v) => setActiveTab(v)} sx={{
+  px: 2,
+  borderBottom: '1px solid #e3e8ef',
+  bgcolor: '#f8fafc'
+}} slotProps={{
+  indicator: {
+    style: {
+      backgroundColor: '#5e35b1'
+    }
+  }
+}}>
                     <Tab label={t('dataHealth.tabs.storage')}   sx={{ textTransform: 'none', fontWeight: 600 }} />
                     <Tab label={
                         <Badge badgeContent={connsMeta?.active || 0} color="info" sx={{ '& .MuiBadge-badge': { fontSize: '0.6rem' } }}>
@@ -661,7 +693,11 @@ export default function DataHealthDashboard() {
                                                 { label: 'Failed Migrations',    value: batches?.failed,    color: '#ef4444' },
                                                 { label: 'Total Batches',        value: batches?.total,     color: '#121926' },
                                             ].map(({ label, value, color }) => (
-                                                <Stack key={label} direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.5 }}>
+                                                <Stack key={label} direction="row" sx={{
+  mb: 1.5,
+  alignItems: "center",
+  justifyContent: "space-between"
+}}>
                                                     <Typography variant="body2" color="textSecondary">{label}</Typography>
                                                     <Typography variant="body2" sx={{ fontWeight: 700, color }}>{value ?? '—'}</Typography>
                                                 </Stack>
@@ -686,7 +722,10 @@ export default function DataHealthDashboard() {
                                 {/* Cost Savings Banner */}
                                 <Grid size={{ xs: 12 }}>
                                     <Paper elevation={0} sx={{ p: 2.5, border: '1px solid #bbf7d0', bgcolor: '#f0fdf4', borderRadius: 2 }}>
-                                        <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
+                                        <Stack direction="row" spacing={2} sx={{
+  alignItems: "center",
+  flexWrap: "wrap"
+}}>
                                             <TrendingDown sx={{ color: '#15803d', fontSize: 32 }} />
                                             <Box>
                                                 <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#15803d' }}>

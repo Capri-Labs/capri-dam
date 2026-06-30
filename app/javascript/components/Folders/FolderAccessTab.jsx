@@ -252,7 +252,9 @@ function AddPolicyForm({ folderId, folderName, onSaved, onCancel }) {
                 </Collapse>
             </Box>
 
-            <Stack direction="row" spacing={1} justifyContent="flex-end">
+            <Stack direction="row" spacing={1} sx={{
+  justifyContent: "flex-end"
+}}>
                 <Button size="small" onClick={onCancel} sx={{ textTransform: 'none', color: '#64748b' }}>
                     {t('common.cancel')}
                 </Button>
@@ -363,7 +365,10 @@ function PolicyRow({ policy, folderId, inherited, onRemoved }) {
                 )}
             </Box>
 
-            <Stack direction="row" spacing={0.5} flexWrap="wrap" sx={{ gap: '4px !important' }}>
+            <Stack direction="row" spacing={0.5} sx={{
+  gap: '4px !important',
+  flexWrap: "wrap"
+}}>
                 <PermissionBadge label="Read"      active={policy.read_access}      deny={policy.explicit_deny} />
                 <PermissionBadge label="Modify"    active={policy.modify_access}    deny={policy.explicit_deny} />
                 <PermissionBadge label="Create"    active={policy.create_access}    deny={policy.explicit_deny} />

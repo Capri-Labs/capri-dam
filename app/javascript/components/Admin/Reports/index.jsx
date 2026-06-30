@@ -25,7 +25,11 @@ export default function ReportsHub() {
             <CssBaseline />
 
             {/* Page header */}
-            <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
+            <Stack direction="row" sx={{
+  mb: 2,
+  alignItems: "center",
+  justifyContent: "space-between"
+}}>
                 <Box>
                     <Typography variant="h4" sx={{ fontWeight: 800, color: '#0f172a' }}>Reports & Analytics</Typography>
                     <Typography variant="body2" color="textSecondary">
@@ -36,8 +40,13 @@ export default function ReportsHub() {
 
             {/* Navigation Tabs */}
             <Box sx={{ borderBottom: 1, borderColor: '#e2e8f0', mb: 0 }}>
-                <Tabs value={tab} onChange={(_, v) => setTab(v)}
-                    TabIndicatorProps={{ style: { backgroundColor: '#5e35b1' } }}>
+                <Tabs value={tab} onChange={(_, v) => setTab(v)} slotProps={{
+  indicator: {
+    style: {
+      backgroundColor: '#5e35b1'
+    }
+  }
+}}>
                     <Tab icon={<BarChart fontSize="small" />} iconPosition="start"
                         label="Analytics Dashboard"
                         sx={{ textTransform: 'none', fontWeight: 600, minHeight: 44, gap: 0.5,

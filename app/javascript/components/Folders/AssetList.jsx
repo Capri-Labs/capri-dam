@@ -54,7 +54,9 @@ export default function AssetList({ assets, viewMode, selectedItems, toggleSelec
                                 <TableCell sx={{ color: '#64748b' }}>{metadata.content_type || 'Unknown'}</TableCell>
                                 <TableCell sx={{ color: '#64748b' }}>{new Date(asset.created_at).toLocaleDateString()}</TableCell>
                                 <TableCell align="right">
-                                    <Stack direction="row" spacing={0.5} justifyContent="flex-end">
+                                    <Stack direction="row" spacing={0.5} sx={{
+  justifyContent: "flex-end"
+}}>
                                         <Tooltip title="Pin to Collection">
                                             <IconButton
                                                 size="small"

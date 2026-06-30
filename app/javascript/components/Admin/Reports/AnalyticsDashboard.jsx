@@ -118,10 +118,16 @@ export default function AnalyticsDashboard({ onCreateExport }) {
             {/* ── AI Insights Panel ─────────────────────────────────────── */}
             {totalInsights > 0 && (
                 <Paper elevation={0} sx={{ mb: 3, border: '1px solid #e0d7ff', bgcolor: '#faf5ff', borderRadius: 3, overflow: 'hidden' }}>
-                    <Stack direction="row" alignItems="center" justifyContent="space-between"
-                        sx={{ px: 2.5, py: 1.5, cursor: 'pointer' }}
-                        onClick={() => setInsightsOpen(v => !v)}>
-                        <Stack direction="row" alignItems="center" spacing={1}>
+                    <Stack direction="row" sx={{
+  px: 2.5,
+  py: 1.5,
+  cursor: 'pointer',
+  alignItems: "center",
+  justifyContent: "space-between"
+}} onClick={() => setInsightsOpen(v => !v)}>
+                        <Stack direction="row" spacing={1} sx={{
+  alignItems: "center"
+}}>
                             <AutoAwesome sx={{ color: '#7c3aed', fontSize: 18 }} />
                             <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#5b21b6' }}>
                                 AI Insights &amp; Anomaly Detection
@@ -210,9 +216,15 @@ export default function AnalyticsDashboard({ onCreateExport }) {
                         ) : (
                             <Box>
                                 {(bkd.by_user || []).slice(0, 8).map((u, i) => (
-                                    <Stack key={i} direction="row" justifyContent="space-between" alignItems="center"
-                                        sx={{ py: 0.8, borderBottom: '1px solid #f8fafc' }}>
-                                        <Stack direction="row" alignItems="center" spacing={1}>
+                                    <Stack key={i} direction="row" sx={{
+  py: 0.8,
+  borderBottom: '1px solid #f8fafc',
+  alignItems: "center",
+  justifyContent: "space-between"
+}}>
+                                        <Stack direction="row" spacing={1} sx={{
+  alignItems: "center"
+}}>
                                             <Box sx={{ width: 24, height: 24, borderRadius: '50%', bgcolor: '#e0d7ff',
                                                 display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                                 <Typography variant="caption" sx={{ fontWeight: 700, color: '#5e35b1', fontSize: 10 }}>

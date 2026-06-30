@@ -867,7 +867,7 @@ RSpec.describe 'Image Processing Tests', type: :request do
           geometry: { rotate: 0, flip_horizontal: false },
         }
 
-        post "/api/v1/assets/#{asset.id}/process_image", params: payload, headers: json_headers
+        post "/api/v1/assets/#{asset.id}/process_image", params: payload, as: :json
 
         expect(response).to have_http_status(:ok)
         json = JSON.parse(response.body)
@@ -886,7 +886,7 @@ RSpec.describe 'Image Processing Tests', type: :request do
           geometry: { rotate: 0, flip_horizontal: false },
         }
 
-        post "/api/v1/assets/#{asset.id}/process_image", params: payload, headers: json_headers
+        post "/api/v1/assets/#{asset.id}/process_image", params: payload, as: :json
 
         expect(response).to have_http_status(:ok)
       end
@@ -902,7 +902,7 @@ RSpec.describe 'Image Processing Tests', type: :request do
           geometry: { rotate: 0, flip_horizontal: false },
         }
 
-        post "/api/v1/assets/#{asset.id}/process_image", params: payload, headers: json_headers
+        post "/api/v1/assets/#{asset.id}/process_image", params: payload, as: :json
 
         expect(response).to have_http_status(:ok)
       end
@@ -918,7 +918,7 @@ RSpec.describe 'Image Processing Tests', type: :request do
           geometry: { rotate: 90, flip_horizontal: false },
         }
 
-        post "/api/v1/assets/#{asset.id}/process_image", params: payload, headers: json_headers
+        post "/api/v1/assets/#{asset.id}/process_image", params: payload, as: :json
 
         expect(response).to have_http_status(:ok)
       end
@@ -934,7 +934,7 @@ RSpec.describe 'Image Processing Tests', type: :request do
           geometry: { rotate: 0, flip_horizontal: true },
         }
 
-        post "/api/v1/assets/#{asset.id}/process_image", params: payload, headers: json_headers
+        post "/api/v1/assets/#{asset.id}/process_image", params: payload, as: :json
 
         expect(response).to have_http_status(:ok)
       end
@@ -950,7 +950,7 @@ RSpec.describe 'Image Processing Tests', type: :request do
           geometry: { rotate: 0, flip_horizontal: false },
         }
 
-        post "/api/v1/assets/#{asset.id}/process_image", params: payload, headers: json_headers
+        post "/api/v1/assets/#{asset.id}/process_image", params: payload, as: :json
 
         expect(response).to have_http_status(:ok)
       end
@@ -971,7 +971,7 @@ RSpec.describe 'Image Processing Tests', type: :request do
           geometry: { rotate: 0, flip_horizontal: false },
         }
 
-        post "/api/v1/assets/#{asset.id}/process_image", params: payload, headers: json_headers
+        post "/api/v1/assets/#{asset.id}/process_image", params: payload, as: :json
 
         expect(response).to have_http_status(:ok)
       end
@@ -988,7 +988,7 @@ RSpec.describe 'Image Processing Tests', type: :request do
         }
 
         expect do
-          post "/api/v1/assets/#{asset.id}/process_image", params: payload, headers: json_headers
+          post "/api/v1/assets/#{asset.id}/process_image", params: payload, as: :json
         end.to change(AssetVersion, :count).by(1)
 
         expect(response).to have_http_status(:ok)
@@ -1007,7 +1007,7 @@ RSpec.describe 'Image Processing Tests', type: :request do
         }
 
         expect do
-          post "/api/v1/assets/#{asset.id}/process_image", params: payload, headers: json_headers
+          post "/api/v1/assets/#{asset.id}/process_image", params: payload, as: :json
         end.to change(Asset, :count).by(1)
 
         expect(response).to have_http_status(:created)
@@ -1024,7 +1024,7 @@ RSpec.describe 'Image Processing Tests', type: :request do
           geometry: { rotate: 0, flip_horizontal: false },
         }
 
-        post "/api/v1/assets/#{asset.id}/process_image", params: payload, headers: json_headers
+        post "/api/v1/assets/#{asset.id}/process_image", params: payload, as: :json
 
         expect(response).to have_http_status(:unprocessable_entity)
         json = JSON.parse(response.body)
@@ -1042,7 +1042,7 @@ RSpec.describe 'Image Processing Tests', type: :request do
           geometry: { rotate: 0, flip_horizontal: false },
         }
 
-        post "/api/v1/assets/#{asset.id}/process_image", params: payload, headers: json_headers
+        post "/api/v1/assets/#{asset.id}/process_image", params: payload, as: :json
 
         expect(response).to have_http_status(:unprocessable_entity)
       end
@@ -1058,7 +1058,7 @@ RSpec.describe 'Image Processing Tests', type: :request do
           geometry: { rotate: 0, flip_horizontal: false },
         }
 
-        post '/api/v1/assets/99999/process_image', params: payload, headers: json_headers
+        post '/api/v1/assets/99999/process_image', params: payload, as: :json
 
         expect(response).to have_http_status(:not_found)
       end

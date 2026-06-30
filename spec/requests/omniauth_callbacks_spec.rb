@@ -25,12 +25,14 @@ RSpec.describe "Users::OmniauthCallbacks", type: :request do
         ),
       }.deep_merge(overrides)
     )
+    # Always sync env_config after updating mock_auth so the OmniAuth middleware
+    # sees the current hash regardless of before-block execution order.
+    Rails.application.env_config["omniauth.auth"] =
+      OmniAuth.config.mock_auth[:keycloak_openid]
   end
 
   before do
     OmniAuth.config.test_mode = true
-    Rails.application.env_config["omniauth.auth"] =
-      OmniAuth.config.mock_auth[:keycloak_openid]
   end
 
   after do

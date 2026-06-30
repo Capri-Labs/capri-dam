@@ -714,7 +714,9 @@ function VideoProfileDetailPanel({ profile, onEdit, onDelete, onCopy }) {
                     {data.description && (
                         <Typography variant="body2" sx={{ color: '#64748b', mb: 1 }}>{data.description}</Typography>
                     )}
-                    <Stack direction="row" spacing={1} flexWrap="wrap">
+                    <Stack direction="row" spacing={1} sx={{
+  flexWrap: "wrap"
+}}>
                         {data.encode_for_adaptive_streaming
                             ? <Chip label="Adaptive Streaming" size="small" sx={{ bgcolor: '#ede9fe', color: '#6d28d9', fontSize: '0.7rem' }} />
                             : <Chip label="Progressive" size="small" sx={{ bgcolor: '#f1f5f9', color: '#64748b', fontSize: '0.7rem' }} />
@@ -802,7 +804,9 @@ function VideoProfileDetailPanel({ profile, onEdit, onDelete, onCopy }) {
                     <Typography variant="caption" fontWeight={700} sx={{ color: '#475569', textTransform: 'uppercase', letterSpacing: 0.5, mb: 1.5, display: 'block' }}>
                         Smart Crop Ratios
                     </Typography>
-                    <Stack direction="row" spacing={1} flexWrap="wrap">
+                    <Stack direction="row" spacing={1} sx={{
+  flexWrap: "wrap"
+}}>
                         {data.smart_crop_ratios.map((r, i) => (
                             <Chip key={i} label={`${r.name} (${r.crop_ratio})`} size="small"
                                   sx={{ bgcolor: '#ede9fe', color: '#6d28d9', fontFamily: 'monospace', fontSize: '0.72rem' }} />

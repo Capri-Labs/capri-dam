@@ -174,7 +174,9 @@ function ImageProfilesTab({ folder, profiles, onRefresh }) {
                     <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
                         <Box>
                             <Typography variant="body1" fontWeight={700} sx={{ color: '#1e293b', mb: 0.5 }}>{profile.name}</Typography>
-                            <Stack direction="row" spacing={0.75} flexWrap="wrap">
+                            <Stack direction="row" spacing={0.75} sx={{
+  flexWrap: "wrap"
+}}>
                                 {profile.crop_type === 'smart_crop' && (
                                     <Chip label="Smart Crop" size="small" sx={{ fontSize: '0.65rem', height: 18, bgcolor: '#ede9fe', color: '#6d28d9' }} />
                                 )}
@@ -368,7 +370,10 @@ function MetadataTab({ folder, profiles, onRefresh }) {
                                 <Typography variant="caption" sx={{ color: '#64748b', display: 'block', mb: 1 }}>{schema.description}</Typography>
                             )}
                             {schema.tabs && schema.tabs.length > 0 && (
-                                <Stack direction="row" spacing={0.5} flexWrap="wrap" sx={{ gap: '4px !important' }}>
+                                <Stack direction="row" spacing={0.5} sx={{
+  gap: '4px !important',
+  flexWrap: "wrap"
+}}>
                                     {schema.tabs.map((tab, i) => (
                                         <Chip key={i} label={tab.label || tab.name || `Tab ${i+1}`} size="small"
                                               sx={{ fontSize: '0.62rem', height: 16, bgcolor: '#e0e7ff', color: '#3730a3' }} />

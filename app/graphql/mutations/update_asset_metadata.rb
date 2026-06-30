@@ -14,11 +14,15 @@ module Mutations
         return { asset: nil, errors: [ "Unauthorized operational modification attempt." ] }
       end
 
+      # When called via HTTP, `updates` may arrive as ActionController::Parameters.
+      # Convert to a plain Hash so JSONB merging works correctly.
+      safe_updates = updates.respond_to?(:to_unsafe_h) ? updates.to_unsafe_h : updates.to_h
+
       asset = Asset.find_by(uuid: uuid)
       if asset
         # Merges new updates safely into the existing JSONB hash
         existing_properties = asset.properties || {}
-        asset.update!(properties: existing_properties.merge(updates))
+        asset.update!(properties: existing_properties.merge(safe_updates))
         { asset: asset, errors: [] }
       else
         { asset: nil, errors: [ "Target asset structural signature not found." ] }

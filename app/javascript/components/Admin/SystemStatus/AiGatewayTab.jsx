@@ -168,7 +168,10 @@ export default function AiGatewayTab() {
                         </Typography>
 
                         <Box sx={{ mb: 4 }}>
-                            <Stack direction="row" justifyContent="space-between" sx={{ mb: 1 }}>
+                            <Stack direction="row" sx={{
+  mb: 1,
+  justifyContent: "space-between"
+}}>
                                 <Typography variant="body2" color="textSecondary">Current Pipeline Spend (MTD)</Typography>
                                 <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>${config.current_spend_usd.toFixed(2)} / ${config.monthly_budget_usd}</Typography>
                             </Stack>

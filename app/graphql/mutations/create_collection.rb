@@ -11,8 +11,8 @@ module Mutations
     def resolve(name:, description: nil)
       collection = Collection.new(
         name: name,
-        description: description
-        # user: context[:current_user] # Uncomment when authentication context is ready
+        description: description,
+        user: context[:current_user],
       )
 
       if collection.save

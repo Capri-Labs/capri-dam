@@ -300,7 +300,8 @@ RSpec.describe "Bin API", type: :request do
 
     it "includes required fields for assets" do
       get "/api/v1/bin", params: { type: "asset" }
-      item = JSON.parse(response.body)["items"].find { |i| i["id"] == trashed_asset.id }
+      # serialize_asset sets id: asset.uuid (the separate uuid column, not the PK)
+      item = JSON.parse(response.body)["items"].find { |i| i["id"] == trashed_asset.uuid }
 
       expect(item).to include(
         "id", "grid_id", "item_type", "name", "media_type",
@@ -323,7 +324,8 @@ RSpec.describe "Bin API", type: :request do
 
     it "calculates expires_at 30 days after deleted_at" do
       get "/api/v1/bin"
-      item = JSON.parse(response.body)["items"].find { |i| i["id"] == trashed_asset.id && i["item_type"] == "asset" }
+      # Use asset.uuid (public API identifier) to match what serialize_asset returns
+      item = JSON.parse(response.body)["items"].find { |i| i["id"] == trashed_asset.uuid && i["item_type"] == "asset" }
       deleted  = Time.parse(item["deleted_at"])
       expires  = Time.parse(item["expires_at"])
       expect(expires).to be_within(1.second).of(deleted + 30.days)

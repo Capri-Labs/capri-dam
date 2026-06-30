@@ -68,7 +68,10 @@ export default function ObservabilityTab() {
                 </Button>
             </Box>
 
-            <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 3 }}>
+            <Stack direction="row" spacing={1} sx={{
+  mb: 3,
+  alignItems: "center"
+}}>
                 {loadingHealth ? (
                     <Box sx={{ display: 'flex', justifyContent: 'center', width: '100%', py: 8 }}><CircularProgress /></Box>
                 ) : (

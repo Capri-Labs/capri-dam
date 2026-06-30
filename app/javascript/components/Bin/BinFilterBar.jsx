@@ -91,7 +91,9 @@ export default function BinFilterBar({
                 <Divider orientation="vertical" flexItem />
 
                 {/* Type filter chips */}
-                <Stack direction="row" spacing={0.75} flexWrap="wrap">
+                <Stack direction="row" spacing={0.75} sx={{
+  flexWrap: "wrap"
+}}>
                     {TYPE_FILTERS.map(({ key, labelKey, icon }) => (
                         <Chip
                             key={key}

@@ -48,6 +48,8 @@ Rails.application.routes.draw do
 
   devise_scope :user do
     post "users/force_password_update", to: "users/sessions#force_password_update"
+    # OmniAuth failure endpoint — redirects to sign-in with an alert
+    get "users/auth/failure", to: "users/omniauth_callbacks#failure", as: :omniauth_failure
   end
 
   authenticated :user do

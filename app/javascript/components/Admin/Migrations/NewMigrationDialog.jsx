@@ -146,7 +146,9 @@ export default function NewMigrationDialog({ open, onClose, onSuccess }) {
                                     }}
                                 >
                                     <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-                                        <Stack direction="row" spacing={1.5} alignItems="center">
+                                        <Stack direction="row" spacing={1.5} sx={{
+  alignItems: "center"
+}}>
                                             <Box sx={{ p: 0.8, bgcolor: '#f1f5f9', borderRadius: 1.5, display: 'flex' }}>
                                                 {getConnectorIcon(conn.provider_type)}
                                             </Box>
@@ -231,15 +233,17 @@ export default function NewMigrationDialog({ open, onClose, onSuccess }) {
                 />
             </Box>
 
-            <TextField
-                type="number"
-                label={t('ingestion.wizard.concurrency')}
-                value={formData.concurrency}
-                onChange={e => setFormData(prev => ({ ...prev, concurrency: parseInt(e.target.value, 10) || 1 }))}
-                inputProps={{ min: 1, max: 10 }}
-                helperText={t('ingestion.wizard.concurrencyHelper')}
-                sx={{ width: 200 }}
-            />
+            <TextField type="number" label={t('ingestion.wizard.concurrency')} value={formData.concurrency} onChange={e => setFormData(prev => ({
+  ...prev,
+  concurrency: parseInt(e.target.value, 10) || 1
+}))} helperText={t('ingestion.wizard.concurrencyHelper')} sx={{
+  width: 200
+}} slotProps={{
+  htmlInput: {
+    min: 1,
+    max: 10
+  }
+}} />
         </Stack>
     );
 
@@ -295,7 +299,9 @@ export default function NewMigrationDialog({ open, onClose, onSuccess }) {
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                 fontWeight: 700, borderBottom: '1px solid #e2e8f0', pb: 2, pt: 3, px: 3
             }}>
-                <Stack direction="row" alignItems="center" spacing={1.5}>
+                <Stack direction="row" spacing={1.5} sx={{
+  alignItems: "center"
+}}>
                     <RocketLaunch sx={{ color: '#5e35b1' }} />
                     <span>{t('ingestion.wizard.title')}</span>
                 </Stack>

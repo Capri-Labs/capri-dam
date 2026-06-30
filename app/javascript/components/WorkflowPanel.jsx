@@ -33,7 +33,9 @@ function InstanceCard({ instance, onSubmit, onForceCancel, submitting }) {
     <Paper elevation={0} sx={{ mb: 3, border: '1px solid #e2e8f0', borderRadius: 2, overflow: 'hidden' }}>
       {/* Instance header */}
       <Box sx={{ px: 2.5, py: 1.5, bgcolor: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Stack direction="row" spacing={1} alignItems="center">
+        <Stack direction="row" spacing={1} sx={{
+  alignItems: "center"
+}}>
           <AccountTree sx={{ color: '#5e35b1', fontSize: 18 }} />
           <Box>
             <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#1e293b', lineHeight: 1.2 }}>
@@ -45,7 +47,9 @@ function InstanceCard({ instance, onSubmit, onForceCancel, submitting }) {
           </Box>
         </Stack>
 
-        <Stack direction="row" spacing={1} alignItems="center">
+        <Stack direction="row" spacing={1} sx={{
+  alignItems: "center"
+}}>
           <Chip label={instance.instance_status} size="small" color={statusColor} sx={{ textTransform: 'capitalize', fontWeight: 600, height: 22 }} />
           {instance.can_force_cancel && (
             <Tooltip title="Force-cancel this workflow (admin)">
@@ -86,7 +90,9 @@ function InstanceCard({ instance, onSubmit, onForceCancel, submitting }) {
               sx={{ mb: 2, bgcolor: '#f8fafc' }}
               disabled={submitting}
             />
-            <Stack direction="row" spacing={2} justifyContent="flex-end">
+            <Stack direction="row" spacing={2} sx={{
+  justifyContent: "flex-end"
+}}>
               <Button variant="outlined" color="error" startIcon={<Cancel />}
                 disabled={submitting || !comment.trim()}
                 onClick={() => handleDecision('rejected')}
@@ -118,7 +124,11 @@ function InstanceCard({ instance, onSubmit, onForceCancel, submitting }) {
                     bgcolor: task.status === 'approved' ? '#22c55e' : task.status === 'rejected' ? '#ef4444' : task.status === 'canceled' ? '#94a3b8' : '#cbd5e1',
                     border: '4px solid #ffffff',
                   }} />
-                  <Stack direction="row" justifyContent="space-between" alignItems="flex-start" sx={{ mb: 0.5 }}>
+                  <Stack direction="row" sx={{
+  mb: 0.5,
+  alignItems: "flex-start",
+  justifyContent: "space-between"
+}}>
                     <Box>
                       <Typography variant="body2" fontWeight="bold" sx={{ color: '#1e293b' }}>{task.step_name}</Typography>
                       <Typography variant="caption" sx={{ color: '#64748b' }}>Assigned to: {task.user_name}</Typography>

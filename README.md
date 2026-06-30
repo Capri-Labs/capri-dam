@@ -6,6 +6,31 @@ islands**, exposing both a **REST API** (`/api/v1/**`) and a **GraphQL API**
 (`/graphql`). Background processing runs on **Sidekiq**, and semantic search is
 powered by **PostgreSQL + pgvector**.
 
+<!-- CI/CD -->
+[![CI](https://github.com/Capri-Labs/capri-dam/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/Capri-Labs/capri-dam/actions/workflows/ci.yml)
+[![Integration & Contract Tests](https://github.com/Capri-Labs/capri-dam/actions/workflows/integration.yml/badge.svg?branch=master)](https://github.com/Capri-Labs/capri-dam/actions/workflows/integration.yml)
+[![E2E Tests](https://github.com/Capri-Labs/capri-dam/actions/workflows/e2e.yml/badge.svg?branch=master)](https://github.com/Capri-Labs/capri-dam/actions/workflows/e2e.yml)
+[![SAST & Security](https://github.com/Capri-Labs/capri-dam/actions/workflows/sast.yml/badge.svg?branch=master)](https://github.com/Capri-Labs/capri-dam/actions/workflows/sast.yml)
+[![Docker](https://github.com/Capri-Labs/capri-dam/actions/workflows/docker.yml/badge.svg?branch=master)](https://github.com/Capri-Labs/capri-dam/actions/workflows/docker.yml)
+
+<!-- Code quality -->
+[![Ruby Style: rubocop-rails-omakase](https://img.shields.io/badge/code%20style-rubocop--rails--omakase-red.svg)](https://github.com/rails/rubocop-rails-omakase)
+[![Security: Brakeman](https://img.shields.io/badge/security-brakeman-orange.svg)](https://brakemanscanner.org)
+[![JS Style: ESLint](https://img.shields.io/badge/code%20style-ESLint-4B32C3.svg)](https://eslint.org)
+
+<!-- Stack -->
+[![Ruby](https://img.shields.io/badge/Ruby-4.0.3-CC342D.svg?logo=ruby&logoColor=white)](https://www.ruby-lang.org)
+[![Rails](https://img.shields.io/badge/Rails-8.1-CC0000.svg?logo=rubyonrails&logoColor=white)](https://rubyonrails.org)
+[![React](https://img.shields.io/badge/React-19-61DAFB.svg?logo=react&logoColor=black)](https://react.dev)
+[![Node](https://img.shields.io/badge/Node.js-22.x-339933.svg?logo=node.js&logoColor=white)](https://nodejs.org)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14%20%2B%20pgvector-4169E1.svg?logo=postgresql&logoColor=white)](https://www.postgresql.org)
+
+<!-- Tests -->
+[![RSpec](https://img.shields.io/badge/tests-RSpec-9B2335.svg)](https://rspec.info)
+[![Jest](https://img.shields.io/badge/tests-Jest-C21325.svg?logo=jest&logoColor=white)](https://jestjs.io)
+[![Playwright](https://img.shields.io/badge/e2e-Playwright-2EAD33.svg?logo=playwright&logoColor=white)](https://playwright.dev)
+
+<!-- License -->
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 
 ---

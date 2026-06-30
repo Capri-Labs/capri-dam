@@ -218,7 +218,9 @@ export default function ProfilePage(props) {
           <Typography variant="h5" fontWeight={700}>
             {[form.first_name, form.last_name].filter(Boolean).join(' ') || props.userEmail}
           </Typography>
-          <Stack direction="row" spacing={1} alignItems="center">
+          <Stack direction="row" spacing={1} sx={{
+  alignItems: "center"
+}}>
             <Typography variant="body2" color="text.secondary">{props.userEmail}</Typography>
             {ssoManaged && (
               <Chip label={`SSO: ${props.ssoProvider}`} size="small" color="primary" variant="outlined"

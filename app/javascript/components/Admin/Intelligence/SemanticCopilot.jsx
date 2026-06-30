@@ -371,7 +371,10 @@ export default function SemanticCopilot() {
           <>
             {/* Results header */}
             {results.length > 0 && (
-              <Stack direction="row" alignItems="center" sx={{ mb: 2.5 }} spacing={1.5}>
+              <Stack direction="row" sx={{
+  mb: 2.5,
+  alignItems: "center"
+}} spacing={1.5}>
                 <Typography variant="body2" sx={{ fontWeight: 600, color: '#475569' }}>
                   {t('copilot.resultsHeader', {
                     count:       results.length,

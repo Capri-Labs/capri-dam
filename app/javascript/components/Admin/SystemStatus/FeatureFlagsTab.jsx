@@ -18,7 +18,9 @@ export default function FeatureFlagsTab() {
                             Decouple deployment from release. This control plane will allow administrators to toggle global maintenance mode, enable beta UI components, and manage A/B testing rollouts.
                         </Typography>
 
-                        <Stack direction="row" spacing={2} justifyContent="center">
+                        <Stack direction="row" spacing={2} sx={{
+  justifyContent: "center"
+}}>
                             <Button variant="outlined" startIcon={<Science />} disabled>
                                 View Active Flags
                             </Button>

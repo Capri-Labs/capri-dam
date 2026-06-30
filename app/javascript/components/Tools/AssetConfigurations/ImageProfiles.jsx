@@ -460,7 +460,9 @@ function ProfileDetailPanel({ profile, onEdit, onDelete }) {
             <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 3 }}>
                 <Box>
                     <Typography variant="h5" fontWeight={700} sx={{ color: '#1e293b', mb: 0.5 }}>{profile.name}</Typography>
-                    <Stack direction="row" spacing={1} flexWrap="wrap">
+                    <Stack direction="row" spacing={1} sx={{
+  flexWrap: "wrap"
+}}>
                         {profile.crop_type === 'smart_crop' && (
                             <Chip label="Smart Crop" size="small"
                                   sx={{ bgcolor: '#ede9fe', color: '#6d28d9', fontSize: '0.7rem' }} />

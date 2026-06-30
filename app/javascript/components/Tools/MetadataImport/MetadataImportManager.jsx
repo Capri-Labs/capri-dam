@@ -121,9 +121,12 @@ function ImportDialog({ open, onClose, onCreate }) {
 
                     <Grid container spacing={2}>
                         <Grid size={6}>
-                            <TextField label="Batch size" type="number" size="small" fullWidth
-                                value={batchSize} onChange={e => setBatchSize(e.target.value)}
-                                inputProps={{ min: 1, max: 100 }} helperText="Default 50, max 100" />
+                            <TextField label="Batch size" type="number" size="small" fullWidth value={batchSize} onChange={e => setBatchSize(e.target.value)} helperText="Default 50, max 100" slotProps={{
+  htmlInput: {
+    min: 1,
+    max: 100
+  }
+}} />
                         </Grid>
                         <Grid size={6}>
                             <Autocomplete
@@ -136,14 +139,18 @@ function ImportDialog({ open, onClose, onCreate }) {
                             />
                         </Grid>
                         <Grid size={6}>
-                            <TextField label="Field separator" size="small" fullWidth
-                                value={fieldSeparator} onChange={e => setFieldSeparator(e.target.value)}
-                                inputProps={{ maxLength: 3 }} helperText="Default ," />
+                            <TextField label="Field separator" size="small" fullWidth value={fieldSeparator} onChange={e => setFieldSeparator(e.target.value)} helperText="Default ," slotProps={{
+  htmlInput: {
+    maxLength: 3
+  }
+}} />
                         </Grid>
                         <Grid size={6}>
-                            <TextField label="Multi-value delimiter" size="small" fullWidth
-                                value={multiDelimiter} onChange={e => setMultiDelimiter(e.target.value)}
-                                inputProps={{ maxLength: 3 }} helperText="Default |" />
+                            <TextField label="Multi-value delimiter" size="small" fullWidth value={multiDelimiter} onChange={e => setMultiDelimiter(e.target.value)} helperText="Default |" slotProps={{
+  htmlInput: {
+    maxLength: 3
+  }
+}} />
                         </Grid>
                     </Grid>
 
@@ -394,7 +401,9 @@ export default function MetadataImportManager() {
                                                 <Typography variant="caption" sx={{ color: '#64748b' }}>{imp.expires_at || '—'}</Typography>
                                             </TableCell>
                                             <TableCell align="right">
-                                                <Stack direction="row" spacing={1} justifyContent="flex-end">
+                                                <Stack direction="row" spacing={1} sx={{
+  justifyContent: "flex-end"
+}}>
                                                     {imp.source_file && (
                                                         <Link href={imp.source_file.download_url} underline="hover"
                                                               sx={{ fontSize: '0.8rem', color: '#5e35b1', display: 'flex', alignItems: 'center', gap: 0.3 }}>

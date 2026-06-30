@@ -239,7 +239,9 @@ function SchemaDetailPanel({ schema, onEdit, onDuplicate, onDelete }) {
                             </Box>
                             {(tab.fields ?? []).length > 0 && (
                                 <Box sx={{ px: 2, py: 1 }}>
-                                    <Stack direction="row" flexWrap="wrap" gap={0.75}>
+                                    <Stack direction="row" gap={0.75} sx={{
+  flexWrap: "wrap"
+}}>
                                         {tab.fields.map((f, fi) => (
                                             <Chip key={f.id ?? fi}
                                                   label={f.label}

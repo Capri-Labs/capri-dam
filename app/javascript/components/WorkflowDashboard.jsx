@@ -152,7 +152,11 @@ export default function WorkflowDashboard() {
         <Box sx={{ display: 'flex', bgcolor: '#f4f7fb', minHeight: '100vh' }}>
             <CssBaseline />
             <Box component="main" sx={{ flexGrow: 1, p: 4, width: '100%' }}>
-                <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
+                <Stack direction="row" sx={{
+  mb: 3,
+  alignItems: "center",
+  justifyContent: "space-between"
+}}>
                     <Box>
                         <Typography variant="h4" sx={{ fontWeight: 800, color: '#1e293b', display: 'flex', alignItems: 'center', gap: 1.5 }}>
                             <AccountTree sx={{ color: '#5e35b1', fontSize: 34 }} />
@@ -181,9 +185,17 @@ export default function WorkflowDashboard() {
                 </Grid>
 
                 <Paper elevation={0} sx={{ border: '1px solid #e2e8f0', borderRadius: 3, overflow: 'hidden' }}>
-                    <Tabs value={tab} onChange={(e, val) => setTab(val)}
-                        sx={{ borderBottom: 1, borderColor: 'divider', bgcolor: '#ffffff' }}
-                        TabIndicatorProps={{ style: { backgroundColor: '#5e35b1' } }}>
+                    <Tabs value={tab} onChange={(e, val) => setTab(val)} sx={{
+  borderBottom: 1,
+  borderColor: 'divider',
+  bgcolor: '#ffffff'
+}} slotProps={{
+  indicator: {
+    style: {
+      backgroundColor: '#5e35b1'
+    }
+  }
+}}>
                         <Tab icon={<Assignment />} iconPosition="start" label={`${t('workflowOps.tabPending', { defaultValue: 'My Pending Tasks' })} (${data.my_tasks.length})`} sx={{ '&.Mui-selected': { color: '#5e35b1' } }} />
                         <Tab icon={<AdminPanelSettings />} iconPosition="start" label={`${t('workflowOps.tabActive', { defaultValue: 'Active Workflows' })} (${data.active_workflows.length})`} sx={{ '&.Mui-selected': { color: '#5e35b1' } }} />
                         <Tab icon={<History />} iconPosition="start" label={t('workflowOps.tabAudit', { defaultValue: 'Audit History' })} sx={{ '&.Mui-selected': { color: '#5e35b1' } }} />
@@ -263,7 +275,9 @@ export default function WorkflowDashboard() {
                                                 <TableCell>{w.asset_name}</TableCell>
                                                 <TableCell><Chip label={w.current_step} color={isOverdue(w.started_at) ? 'error' : 'info'} size="small" /></TableCell>
                                                 <TableCell align="right">
-                                                    <Stack direction="row" spacing={0.5} justifyContent="flex-end">
+                                                    <Stack direction="row" spacing={0.5} sx={{
+  justifyContent: "flex-end"
+}}>
                                                         <Tooltip title={t('workflowOps.inspect', { defaultValue: 'Inspect' })}>
                                                             <IconButton size="small" onClick={() => handleOpenReviewPane(w.asset_id, null)}><Launch fontSize="small" /></IconButton>
                                                         </Tooltip>
@@ -306,7 +320,9 @@ export default function WorkflowDashboard() {
                                                 </TableCell>
                                                 <TableCell>{new Date(w.completed_at).toLocaleString()}</TableCell>
                                                 <TableCell align="right">
-                                                    <Stack direction="row" spacing={0.5} justifyContent="flex-end">
+                                                    <Stack direction="row" spacing={0.5} sx={{
+  justifyContent: "flex-end"
+}}>
                                                         <Tooltip title={t('workflowOps.viewAudit', { defaultValue: 'View Audit' })}>
                                                             <IconButton size="small" onClick={() => handleOpenReviewPane(w.asset_id, null)}><FactCheck fontSize="small" /></IconButton>
                                                         </Tooltip>

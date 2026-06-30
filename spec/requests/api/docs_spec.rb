@@ -16,9 +16,9 @@ RSpec.describe "Api::Docs", type: :request do
         expect(response.content_type).to include("text/html")
       end
 
-      it "renders the Redoc widget" do
+      it "renders the Swagger UI widget" do
         get "/api/rest"
-        expect(response.body).to include("redoc.standalone.js")
+        expect(response.body).to include("swagger-ui-bundle.js")
       end
 
       it "points to the correct OpenAPI spec URL" do

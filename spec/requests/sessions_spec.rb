@@ -50,7 +50,7 @@ RSpec.describe "Users::Sessions", type: :request do
     end
 
     context "when force_password_change is required" do
-      let(:user) { create(:user, password: "temp_pass", force_password_change: true) }
+      let(:user) { create(:user, password: "temp_pass", password_confirmation: "temp_pass", force_password_change: true) }
 
       it "returns a force_password_change indicator without signing in" do
         post "/users/sign_in.json",
@@ -69,7 +69,7 @@ RSpec.describe "Users::Sessions", type: :request do
   # ── Force password update ─────────────────────────────────────────────────
 
   describe "POST /users/force_password_update" do
-    let(:user) { create(:user, password: "temp_pass", force_password_change: true) }
+    let(:user) { create(:user, password: "temp_pass", password_confirmation: "temp_pass", force_password_change: true) }
 
     it "updates the password and signs the user in when credentials are valid" do
       post "/users/force_password_update",

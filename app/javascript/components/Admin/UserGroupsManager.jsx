@@ -193,7 +193,11 @@ export default function UserGroupsManager({
       <CssBaseline />
       <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
 
-        <Stack direction="row" justifyContent="space-between" alignItems="flex-start" sx={{ mb: 3 }}>
+        <Stack direction="row" sx={{
+  mb: 3,
+  alignItems: "flex-start",
+  justifyContent: "space-between"
+}}>
           <Box>
             <Typography variant="h4" sx={{ fontWeight: 700 }}>User Groups</Typography>
             <Typography variant="body2" color="text.secondary">
@@ -250,7 +254,12 @@ export default function UserGroupsManager({
 
               {/* Custom groups tree */}
               <Box sx={{ px: 1.5, pt: 1 }}>
-                <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ px: 1, mb: 0.5 }}>
+                <Stack direction="row" sx={{
+  px: 1,
+  mb: 0.5,
+  alignItems: "center",
+  justifyContent: "space-between"
+}}>
                   <Typography variant="overline" sx={{ color: 'text.secondary', fontSize: '0.62rem' }}>
                     Custom Groups
                   </Typography>

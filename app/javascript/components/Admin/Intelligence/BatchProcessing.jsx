@@ -191,7 +191,10 @@ export default function BatchProcessing() {
                 </TextField>
 
                 {selectedTask && (
-                  <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: -1 }}>
+                  <Stack direction="row" spacing={1} sx={{
+  mt: -1,
+  alignItems: "center"
+}}>
                     <Chip
                       size="small"
                       label={t(`aiBatch.cost.${selectedTask.cost_tier}`, { defaultValue: `${selectedTask.cost_tier} cost` })}
@@ -250,7 +253,11 @@ export default function BatchProcessing() {
         {/* Execution / history Panel */}
         <Grid size={{ xs: 12, md: 8 }}>
           <Paper elevation={0} sx={{ p: 3, border: '1px solid #e3e8ef', borderRadius: 3, height: '100%', display: 'flex', flexDirection: 'column' }}>
-            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+            <Stack direction="row" sx={{
+  mb: 2,
+  alignItems: "center",
+  justifyContent: "space-between"
+}}>
               <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
                 {t('aiBatch.history.title', { defaultValue: 'Batch Runs' })}
               </Typography>
@@ -265,7 +272,11 @@ export default function BatchProcessing() {
             {/* Live progress for the most recent active job */}
             {activeJob && (
               <Box sx={{ mb: 3, p: 2, bgcolor: '#f5f3ff', borderRadius: 2, border: '1px solid #ddd6fe' }}>
-                <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
+                <Stack direction="row" sx={{
+  mb: 1,
+  alignItems: "center",
+  justifyContent: "space-between"
+}}>
                   <Typography variant="body2" sx={{ fontWeight: 600 }}>
                     {activeJob.task_label || activeJob.task_type}
                   </Typography>

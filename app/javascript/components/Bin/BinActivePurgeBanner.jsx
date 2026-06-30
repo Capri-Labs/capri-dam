@@ -90,7 +90,10 @@ export default function BinActivePurgeBanner({ onComplete }) {
                         </Box>
 
                         {/* Who triggered */}
-                        <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mt: 0.25 }}>
+                        <Stack direction="row" spacing={0.75} sx={{
+  mt: 0.25,
+  alignItems: "center"
+}}>
                             {isScheduled
                                 ? <ScheduleOutlined sx={{ fontSize: 13, color: '#64748b' }} />
                                 : <PersonOutlined sx={{ fontSize: 13, color: '#64748b' }} />}

@@ -69,14 +69,22 @@ export default function DownloadCenter({ refreshTrigger }) {
     return (
         <Paper elevation={0} sx={{ border: '1px solid #e3e8ef', borderRadius: 3, overflow: 'hidden' }}>
             {/* Header */}
-            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ px: 2.5, py: 2, borderBottom: '1px solid #f1f5f9' }}>
+            <Stack direction="row" sx={{
+  px: 2.5,
+  py: 2,
+  borderBottom: '1px solid #f1f5f9',
+  alignItems: "center",
+  justifyContent: "space-between"
+}}>
                 <Box>
                     <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>Download Center</Typography>
                     <Typography variant="caption" color="textSecondary">
                         {filtered.length} export{filtered.length !== 1 ? 's' : ''} · auto-refreshes every 8s while jobs are running
                     </Typography>
                 </Box>
-                <Stack direction="row" spacing={1} alignItems="center">
+                <Stack direction="row" spacing={1} sx={{
+  alignItems: "center"
+}}>
                     {/* Filter bar */}
                     <TextField size="small" placeholder="Search reports…" value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
@@ -134,7 +142,9 @@ export default function DownloadCenter({ refreshTrigger }) {
                                             <Typography variant="body2" sx={{ fontWeight: 600 }}>{snap.report_name}</Typography>
                                         </TableCell>
                                         <TableCell>
-                                            <Stack direction="row" alignItems="center" spacing={0.5}>
+                                            <Stack direction="row" spacing={0.5} sx={{
+  alignItems: "center"
+}}>
                                                 {FORMAT_ICONS[snap.format] || null}
                                                 <Typography variant="caption" sx={{ fontWeight: 600 }}>{snap.format}</Typography>
                                             </Stack>

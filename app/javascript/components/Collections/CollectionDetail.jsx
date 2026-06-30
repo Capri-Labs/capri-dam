@@ -184,7 +184,10 @@ export default function CollectionDetail({ slug, onBack }) {
 
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <Box>
-                        <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 1 }}>
+                        <Stack direction="row" spacing={2} sx={{
+  mb: 1,
+  alignItems: "center"
+}}>
                             <Typography variant="h4" sx={{ fontWeight: 700, color: '#121926' }}>
                                 {collection.name}
                             </Typography>
