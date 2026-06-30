@@ -9,8 +9,9 @@ RSpec.describe "GraphQL — Style & Model Hub queries", type: :request do
   def gql(query, variables: {}, user: admin)
     sign_in user if user
     post "/graphql",
-         params:  { query: query, variables: variables.to_json }.to_json,
-         headers: { "Content-Type" => "application/json", "Accept" => "application/json" }
+         params:  { query: query, variables: variables },
+         headers: { "Accept" => "application/json" },
+         as:      :json
     JSON.parse(response.body)
   end
 
@@ -145,10 +146,12 @@ RSpec.describe "GraphQL — Style & Model Hub queries", type: :request do
   # ---------------------------------------------------------------------------
 
   describe "createAiModelConfig mutation" do
+    # BaseMutation extends RelayClassicMutation → all arguments are wrapped
+    # in a single `input:` argument as per the Relay Classic spec.
     let(:mutation) do
       <<~GQL
-        mutation($name: String!, $provider: String!, $modelId: String!, $capability: String!) {
-          createAiModelConfig(name: $name, provider: $provider, modelId: $modelId, capability: $capability) {
+        mutation($input: CreateAiModelConfigInput!) {
+          createAiModelConfig(input: $input) {
             aiModelConfig { id name capability }
             errors
           }
@@ -157,13 +160,13 @@ RSpec.describe "GraphQL — Style & Model Hub queries", type: :request do
     end
 
     it "creates a model config" do
-      result = gql(mutation, variables: { name: "New Model", provider: "anthropic", modelId: "claude-3-haiku", capability: "generation" })
+      result = gql(mutation, variables: { input: { name: "New Model", provider: "anthropic", modelId: "claude-3-haiku", capability: "generation" } })
       expect(result.dig("data", "createAiModelConfig", "errors")).to eq([])
       expect(result.dig("data", "createAiModelConfig", "aiModelConfig", "name")).to eq("New Model")
     end
 
     it "fails for non-admin" do
-      result = gql(mutation, variables: { name: "X", provider: "openai", modelId: "gpt-4", capability: "generation" }, user: member)
+      result = gql(mutation, variables: { input: { name: "X", provider: "openai", modelId: "gpt-4", capability: "generation" } }, user: member)
       expect(result["errors"]).not_to be_empty
     end
   end
@@ -175,8 +178,8 @@ RSpec.describe "GraphQL — Style & Model Hub queries", type: :request do
   describe "createStylePreset mutation" do
     let(:mutation) do
       <<~GQL
-        mutation($name: String!) {
-          createStylePreset(name: $name) {
+        mutation($input: CreateStylePresetInput!) {
+          createStylePreset(input: $input) {
             stylePreset { id name slug }
             errors
           }
@@ -185,7 +188,7 @@ RSpec.describe "GraphQL — Style & Model Hub queries", type: :request do
     end
 
     it "creates a style preset with auto-slug" do
-      result = gql(mutation, variables: { name: "Neon Night Market" })
+      result = gql(mutation, variables: { input: { name: "Neon Night Market" } })
       expect(result.dig("data", "createStylePreset", "errors")).to eq([])
       expect(result.dig("data", "createStylePreset", "stylePreset", "slug")).to eq("neon-night-market")
     end

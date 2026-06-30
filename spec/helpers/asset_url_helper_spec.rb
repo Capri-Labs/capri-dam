@@ -2,9 +2,12 @@
 
 require "rails_helper"
 
-# AssetUrlHelper is a controller concern, but its logic is environment-driven
-# and easily exercised through a plain object.  We extend an anonymous object
-# so we get the module's behaviour without spinning up a full controller stack.
+# AssetUrlHelper is a controller concern; its logic is environment-driven and
+# easily exercised without spinning up a full controller stack.
+#
+# We create an anonymous class that *includes* the concern (triggering the
+# `included do` block which brings in Rails route URL helpers, so `url_for` is
+# actually defined on the object and verify_partial_doubles passes).
 #
 # Coverage:
 #   - Returns nil when no storage path or ActiveStorage attachment is present
@@ -13,9 +16,17 @@ require "rails_helper"
 #   - Falls back to the hard-coded CDN placeholder when ENV is absent
 #   - asset_download_url_for delegates correctly
 RSpec.describe AssetUrlHelper, type: :helper do
-  let(:helper_obj) { Object.new.extend(described_class) }
+  let(:helper_class) do
+    Class.new do
+      include AssetUrlHelper
+    end
+  end
+
+  let(:helper_obj) { helper_class.new }
 
   # Stub route helpers so specs don't need a full request context.
+  # Because helper_obj now *includes* AssetUrlHelper (which includes url_helpers),
+  # url_for is genuinely defined → verify_partial_doubles is satisfied.
   before do
     allow(helper_obj).to receive(:url_for) { |arg| "http://example.com/rails/active_storage/#{arg}" }
   end

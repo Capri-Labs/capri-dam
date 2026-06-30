@@ -16,8 +16,12 @@ env:
   DATABASE_URL: postgres://capri:capri@localhost:5432/headless_dam_test
   REDIS_URL: redis://localhost:6379/0
   OPENAPI_CONTRACT: "1"
-  SECRET_KEY_BASE: ci_placeholder
+  SECRET_KEY_BASE: ci_placeholder_secret_key_base_that_is_at_least_64_chars_long_required
   BUNDLE_WITHOUT: "production"
+  # Fixed test-only AR encryption keys — never used in production
+  ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY: "test-ar-enc-primary-key-32bytes!"
+  ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY: "test-ar-enc-det-key-32bytes!!!!!"
+  ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT: "test-ar-enc-derivation-salt32b!!"
 
 jobs:
   openapi-contract:
@@ -53,9 +57,16 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: yarn
-      - run: yarn install --frozen-lockfile
-      - run: bundle exec rails db:test:prepare
-      - run: bundle exec rspec spec/requests
+      - name: Install JS dependencies
+        run: yarn install --frozen-lockfile
+      - name: Build JS assets (esbuild → app/assets/builds/)
+        run: yarn build
+      - name: Precompile assets for Propshaft (test env)
+        run: bundle exec rails assets:precompile
+      - name: Prepare test database
+        run: bundle exec rails db:test:prepare
+      - name: Run request specs with OpenAPI contract validation
+        run: bundle exec rspec spec/requests
 
   integration-tests:
     runs-on: ubuntu-latest
