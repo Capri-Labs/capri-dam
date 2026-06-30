@@ -14,7 +14,7 @@ help: ## Show this help message
 bootstrap: ## Force install system dependencies (macOS/Homebrew only)
 	@echo "--- 1. Bootstrapping System Packages ---"
 	@command -v brew >/dev/null 2>&1 || { echo "Homebrew not found. Install it first."; exit 1; }
-	brew install redis rbenv ruby-build node yarn exiv2 pkg-config postgresql@14
+	brew install redis rbenv ruby-build node yarn exiv2 pkg-config postgresql@14 imagemagick
 	@echo "--- 2. Ensuring Ruby $(RUBY_VERSION) is installed ---"
 	rbenv install -s $(RUBY_VERSION)
 	rbenv global $(RUBY_VERSION)
@@ -32,6 +32,10 @@ check-system: ## Verify if we are on the right Ruby and have Yarn
 	fi
 	@command -v rails >/dev/null 2>&1 || { echo "Rails gem missing. Installing..."; gem install rails --no-document; }
 	@command -v $(YARN) >/dev/null 2>&1 || { echo "Yarn missing. Running bootstrap..."; make bootstrap; exit 1; }
+	@if ! command -v convert >/dev/null 2>&1 && ! command -v magick >/dev/null 2>&1; then \
+		echo "\033[31mImageMagick not found (required by MiniMagick). Run: make bootstrap\033[0m"; \
+		exit 1; \
+	fi
 	@echo "\033[32mEnvironment OK.\033[0m"
 
 repair-lockfile: ## Force update the lockfile for modern Ruby
