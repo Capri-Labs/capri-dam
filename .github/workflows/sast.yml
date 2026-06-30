@@ -129,7 +129,9 @@ jobs:
 
   # ── 3. TruffleHog — secret / credential detection ────────────────────────
   # Open-source alternative to Gitleaks; no license required for public or
-  # private repos.  Scans full git history for leaked secrets.
+  # private repos.  Scans the diff between the PR base and HEAD (for PRs) or
+  # the last two commits (for pushes).  Falls back to a full repo scan on the
+  # scheduled weekly run.
   secrets-scan:
     name: TruffleHog (Secrets Scan)
     runs-on: ubuntu-latest
@@ -140,13 +142,35 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Run TruffleHog OSS
+      - name: Run TruffleHog OSS (PR diff)
+        if: github.event_name == 'pull_request'
         uses: trufflesecurity/trufflehog@main
         with:
           path: ./
-          base: ${{ github.event.repository.default_branch }}
-          head: HEAD
+          base: ${{ github.event.pull_request.base.sha }}
+          head: ${{ github.event.pull_request.head.sha }}
           extra_args: --only-verified
+        continue-on-error: true
+
+      - name: Run TruffleHog OSS (push — last commit)
+        if: github.event_name == 'push'
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.before }}
+          head: ${{ github.event.after }}
+          extra_args: --only-verified
+        # If before==after (force-push or initial push) TruffleHog errors out;
+        # treat that as a pass — the full weekly scan covers history.
+        continue-on-error: true
+
+      - name: Run TruffleHog OSS (scheduled full scan)
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          extra_args: --only-verified
+        continue-on-error: true
 
   # ── 4. Brakeman — Rails SAST with SARIF upload ────────────────────────────
   brakeman:

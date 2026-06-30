@@ -2,7 +2,7 @@
 
 module IntegrationHelpers
   def drain_sidekiq
-    Sidekiq::Worker.drain_all
+    Sidekiq::Job.clear_all
   end
 
   def wait_for(timeout: 5, &block)
@@ -51,7 +51,7 @@ RSpec.configure do |config|
 
   config.around(:each, type: :integration) do |example|
     DatabaseCleaner.cleaning do
-      Sidekiq::Testing.inline! { example.run }
+      Sidekiq.testing!(:inline) { example.run }
     end
   end
 end
