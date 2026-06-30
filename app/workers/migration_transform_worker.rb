@@ -125,7 +125,7 @@ class MigrationTransformWorker
 
     return unless processed >= total && total > 0
 
-    batch.review_needed!
+    batch.update!(status: :review_needed)
     Rails.logger.info("[MigrationTransform] Batch #{batch.id} → review_needed (#{processed}/#{total} items processed)")
   end
 

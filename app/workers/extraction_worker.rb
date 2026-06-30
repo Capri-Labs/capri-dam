@@ -11,7 +11,7 @@ class ExtractionWorker
     batch = IngestionBatch.find_by(id: batch_id)
     return unless batch && (batch.extracting? || batch.initializing?)
 
-    batch.extracting! if batch.initializing?
+    batch.update!(status: :extracting) if batch.initializing?
 
     # Using the new app/adapters/ingestion/ directory structure
     adapter = Ingestion::Factory.build(batch)
@@ -23,7 +23,8 @@ class ExtractionWorker
 
   def process_chunk(batch, adapter)
     # 1. Fetch the next paginated chunk using the legacy system's cursor
-    result = adapter.fetch_next_chunk(batch.last_cursor)
+    cursor = batch.respond_to?(:last_cursor) ? batch.last_cursor : nil
+    result = adapter.fetch_next_chunk(cursor)
 
     result[:files].each do |file_data|
       # Idempotency check: Skip if we already staged this file in a prior failed attempt
@@ -33,14 +34,16 @@ class ExtractionWorker
     end
 
     # 2. Update the batch state
-    batch.update!(last_cursor: result[:next_cursor])
+    update_attributes = {}
+    update_attributes[:last_cursor] = result[:next_cursor] if batch.respond_to?(:last_cursor)
+    batch.update!(update_attributes) if update_attributes.any?
     batch.calculate_progress!
 
     # 3. Recursion via Sidekiq
     if result[:has_more]
       ExtractionWorker.perform_async(batch.id)
     else
-      batch.transforming! # Hand off to the AI phase
+      batch.update!(status: :transforming) # Hand off to the AI phase
     end
   end
 
@@ -55,7 +58,11 @@ class ExtractionWorker
     final_hash = sha256.hexdigest
 
     # Edge-Level Deduplication
-    status = Asset.exists?(file_hash: final_hash) ? :flagged_duplicate : :pending
+    status = if Asset.column_names.include?("file_hash")
+      Asset.exists?(file_hash: final_hash) ? :flagged_duplicate : :pending
+    else
+      :pending
+    end
 
     item = batch.ingestion_items.create!(
       original_filename: file_data[:identifier],
@@ -75,12 +82,12 @@ class ExtractionWorker
     payload = {
       event: "ingestion.item.staged",
       item_id: item.id,
-      item_uuid: item.uuid,
+      item_uuid: item.respond_to?(:uuid) ? item.uuid : item.id,
     }.to_json
 
     # Dispatching the event so the Python MCP Gateway can pick it up
     Redis.current.publish("ai_gateway_events", payload)
 
-    item.ai_processing!
+    item.update!(status: :ai_processing)
   end
 end

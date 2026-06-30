@@ -1,0 +1,160 @@
+name: Integration & Contract Tests
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  schedule:
+    - cron: "0 3 * * 1"
+  workflow_dispatch:
+
+env:
+  RUBY_VERSION: "4.0.3"
+  NODE_VERSION: "22"
+  RAILS_ENV: test
+  DATABASE_URL: postgres://capri:capri@localhost:5432/headless_dam_test
+  REDIS_URL: redis://localhost:6379/0
+  OPENAPI_CONTRACT: "1"
+  SECRET_KEY_BASE: ci_placeholder
+  BUNDLE_WITHOUT: "production"
+
+jobs:
+  openapi-contract:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg14
+        env:
+          POSTGRES_USER: capri
+          POSTGRES_PASSWORD: capri
+          POSTGRES_DB: headless_dam_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U capri -d headless_dam_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ env.RUBY_VERSION }}
+          bundler-cache: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: yarn
+      - run: yarn install --frozen-lockfile
+      - run: bundle exec rails db:test:prepare
+      - run: bundle exec rspec spec/requests
+
+  integration-tests:
+    runs-on: ubuntu-latest
+    needs: openapi-contract
+    services:
+      postgres:
+        image: pgvector/pgvector:pg14
+        env:
+          POSTGRES_USER: capri
+          POSTGRES_PASSWORD: capri
+          POSTGRES_DB: headless_dam_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U capri -d headless_dam_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ env.RUBY_VERSION }}
+          bundler-cache: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: yarn
+      - run: yarn install --frozen-lockfile
+      - run: bundle exec rails db:test:prepare
+      - run: bundle exec rspec spec/integration
+
+  pact-provider:
+    runs-on: ubuntu-latest
+    needs: openapi-contract
+    services:
+      postgres:
+        image: pgvector/pgvector:pg14
+        env:
+          POSTGRES_USER: capri
+          POSTGRES_PASSWORD: capri
+          POSTGRES_DB: headless_dam_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U capri -d headless_dam_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ env.RUBY_VERSION }}
+          bundler-cache: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: yarn
+      - run: yarn install --frozen-lockfile
+      - run: bundle exec rails db:test:prepare
+      - run: bundle exec rspec spec/pact/provider
+
+  api-schema-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - run: yarn install --frozen-lockfile
+      - run: npx @stoplight/spectral-cli lint swagger/v1/swagger.yaml
+
+  integration-all-green:
+    runs-on: ubuntu-latest
+    if: always()
+    needs:
+      - openapi-contract
+      - integration-tests
+      - pact-provider
+      - api-schema-lint
+    steps:
+      - name: Verify all integration jobs passed
+        run: |
+          test "${{ needs.openapi-contract.result }}" = "success"
+          test "${{ needs.integration-tests.result }}" = "success"
+          test "${{ needs.pact-provider.result }}" = "success"
+          test "${{ needs.api-schema-lint.result }}" = "success"

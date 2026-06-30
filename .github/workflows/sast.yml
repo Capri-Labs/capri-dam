@@ -1,0 +1,286 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Capri DAM — SAST & Security Scanning Pipeline
+#
+# Open-source tools used:
+#   1. CodeQL        — GitHub's semantic SAST (Ruby + JavaScript)
+#   2. Semgrep       — Multi-language SAST (OWASP Top 10, Rails, React rules)
+#   3. Gitleaks      — Secret / credential detection across git history
+#   4. Brakeman      — Rails-specific security scanner (SARIF output)
+#   5. bundler-audit — Ruby gem CVE database check
+#   6. yarn audit    — JavaScript production dependency CVE check
+#
+# All findings are uploaded to the GitHub Security tab via SARIF.
+# Triggers: push/PR to main or master, and weekly schedule (Sunday 02:00 UTC).
+# ─────────────────────────────────────────────────────────────────────────────
+name: SAST & Security
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master]
+  schedule:
+    # Weekly full scan — Sunday 02:00 UTC
+    - cron: "0 2 * * 0"
+  workflow_dispatch:
+
+concurrency:
+  group: sast-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents:      read
+  security-events: write   # required to upload SARIF to Security tab
+  actions:       read
+
+env:
+  RUBY_VERSION: "4.0.3"
+  NODE_VERSION: "22"
+
+# ─────────────────────────────────────────────────────────────────────────────
+jobs:
+  # ── 1. CodeQL (Ruby + JavaScript) ─────────────────────────────────────────
+  codeql:
+    name: CodeQL Analysis
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ruby, javascript]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          # Use the extended security query suite for broader coverage
+          queries: security-extended
+
+      - name: Set up Ruby (for CodeQL Ruby extraction)
+        if: matrix.language == 'ruby'
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ env.RUBY_VERSION }}
+          bundler-cache: true
+
+      - name: Set up Node (for CodeQL JS extraction)
+        if: matrix.language == 'javascript'
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: yarn
+
+      - name: Install JS dependencies (for CodeQL JS extraction)
+        if: matrix.language == 'javascript'
+        run: yarn install --frozen-lockfile --ignore-engines
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"
+
+  # ── 2. Semgrep (OWASP Top 10 + Rails + React rules) ───────────────────────
+  semgrep:
+    name: Semgrep SAST
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run Semgrep — OWASP Top 10
+        run: >
+          semgrep ci
+          --config p/owasp-top-ten
+          --config p/ruby
+          --config p/rails
+          --config p/javascript
+          --config p/react
+          --config p/sql-injection
+          --config p/xss
+          --sarif
+          --output semgrep.sarif
+        env:
+          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+        continue-on-error: true
+
+      - name: Upload Semgrep SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: semgrep.sarif
+          category: semgrep
+
+      - name: Upload Semgrep report artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: semgrep-sarif
+          path: semgrep.sarif
+          retention-days: 30
+
+  # ── 3. Gitleaks — secret / credential detection ───────────────────────────
+  gitleaks:
+    name: Gitleaks (Secrets Scan)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository (full history for secrets scan)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+
+  # ── 4. Brakeman — Rails SAST with SARIF upload ────────────────────────────
+  brakeman:
+    name: Brakeman (Rails SAST)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ env.RUBY_VERSION }}
+          bundler-cache: true
+
+      - name: Run Brakeman (SARIF output)
+        run: |
+          bundle exec brakeman \
+            --no-pager \
+            --format sarif \
+            --output tmp/brakeman.sarif \
+            --ignore-file .brakeman/ignore.json \
+            --exit-on-warn \
+            || true
+        # We use || true here because --exit-on-warn exits non-zero for *new* warnings
+        # not in the ignore file; the SARIF upload below surfaces them in Security tab.
+
+      - name: Run Brakeman (text summary for PR annotation)
+        run: |
+          bundle exec brakeman \
+            --no-pager \
+            --format github \
+            --ignore-file .brakeman/ignore.json \
+            --exit-on-warn
+        # This step fails the job for any unacknowledged warnings.
+
+      - name: Upload Brakeman SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: tmp/brakeman.sarif
+          category: brakeman
+
+      - name: Upload Brakeman report artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: brakeman-sarif
+          path: tmp/brakeman.sarif
+          retention-days: 30
+
+  # ── 5. bundler-audit — Ruby gem CVE check ─────────────────────────────────
+  bundler-audit:
+    name: bundler-audit (Ruby CVEs)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ env.RUBY_VERSION }}
+          bundler-cache: true
+
+      - name: Update advisory database
+        run: bundle exec bundler-audit update
+
+      - name: Run bundler-audit
+        run: bundle exec bundler-audit check --config config/bundler-audit.yml
+
+  # ── 6. yarn audit — JavaScript production dependency CVE check ────────────
+  yarn-audit:
+    name: yarn audit (JS CVEs)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: yarn
+
+      - name: Install JS dependencies
+        run: yarn install --frozen-lockfile --ignore-engines
+
+      - name: Run yarn audit (production dependencies only)
+        # Only audit production deps — devDependencies (spectaql, jest, etc.) contain
+        # known transitive CVEs in docs/test tooling that do not affect the app bundle.
+        # --level high  → fail only on high or critical severity
+        run: |
+          yarn audit --groups dependencies --level high
+        continue-on-error: true
+        id: yarn_audit
+
+      - name: Report yarn audit result
+        run: |
+          echo "yarn audit exit code: ${{ steps.yarn_audit.outcome }}"
+          if [ "${{ steps.yarn_audit.outcome }}" = "failure" ]; then
+            echo "::warning::High/critical vulnerabilities found in production JS dependencies. Review output above."
+          else
+            echo "No high/critical vulnerabilities in production JS dependencies ✅"
+          fi
+
+  # ── 7. All SAST checks gate ────────────────────────────────────────────────
+  sast-all-green:
+    name: All SAST checks passed
+    runs-on: ubuntu-latest
+    needs: [codeql, semgrep, gitleaks, brakeman, bundler-audit, yarn-audit]
+    if: always()
+
+    steps:
+      - name: Evaluate SAST results
+        run: |
+          declare -A results=(
+            [codeql]="${{ needs.codeql.result }}"
+            [semgrep]="${{ needs.semgrep.result }}"
+            [gitleaks]="${{ needs.gitleaks.result }}"
+            [brakeman]="${{ needs.brakeman.result }}"
+            [bundler_audit]="${{ needs.bundler-audit.result }}"
+            [yarn_audit]="${{ needs.yarn-audit.result }}"
+          )
+          failed=0
+          for job in "${!results[@]}"; do
+            status="${results[$job]}"
+            echo "  $job → $status"
+            if [[ "$status" != "success" && "$status" != "skipped" ]]; then
+              echo "  ❌ $job FAILED"
+              failed=1
+            fi
+          done
+          if [ "$failed" -eq 1 ]; then
+            echo "One or more SAST jobs failed — see Security tab for findings."
+            exit 1
+          fi
+          echo "All SAST checks passed ✅"

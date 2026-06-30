@@ -265,3 +265,51 @@ clean: ## Remove logs, temp files and compiled assets
 	$(RAILS) log:clear tmp:clear
 	rm -rf public/assets
 	rm -rf app/assets/builds/*
+
+# ─── Integration & Contract Tests ────────────────────────────────────────────
+
+integration-up: ## Start integration test services (PostgreSQL + Redis via Docker Compose)
+	@echo "--- Starting integration services ---"
+	docker compose -f docker-compose.integration.yml up -d --wait
+	@echo "\033[32m✓ Integration stack ready\033[0m (db → 5433, redis → 6380)"
+
+integration-down: ## Tear down integration test services and remove volumes
+	@echo "--- Stopping integration services ---"
+	docker compose -f docker-compose.integration.yml down -v
+	@echo "\033[32m✓ Integration stack torn down\033[0m"
+
+integration-db-setup: ## Prepare the integration test database
+	DATABASE_URL=postgres://capri:capri@localhost:5433/headless_dam_integration \
+	REDIS_URL=redis://localhost:6380/0 \
+	RAILS_ENV=test bundle exec rails db:test:prepare
+
+test-integration: integration-up integration-db-setup ## Run integration test suite (spins up Docker services)
+	@echo "--- Running integration specs ---"
+	DATABASE_URL=postgres://capri:capri@localhost:5433/headless_dam_integration \
+	REDIS_URL=redis://localhost:6380/0 \
+	RAILS_ENV=test bundle exec rspec spec/integration/ \
+	  --format documentation \
+	  --format RspecJunitFormatter --out tmp/integration-results.xml
+	$(MAKE) integration-down
+
+test-pact: integration-up integration-db-setup ## Run PACT provider verification tests
+	@echo "--- Running PACT provider specs ---"
+	DATABASE_URL=postgres://capri:capri@localhost:5433/headless_dam_integration \
+	REDIS_URL=redis://localhost:6380/0 \
+	RAILS_ENV=test bundle exec rspec spec/pact/ \
+	  --format documentation
+	$(MAKE) integration-down
+
+test-openapi-contract: ## Validate all API responses against swagger.yaml (request specs with committee)
+	@echo "--- Running OpenAPI contract validation ---"
+	OPENAPI_CONTRACT=1 RAILS_ENV=test bundle exec rspec spec/requests/ \
+	  --format progress \
+	  --tag ~api_doc
+
+lint-openapi: ## Lint the OpenAPI swagger.yaml using Spectral
+	@echo "--- Linting OpenAPI spec ---"
+	npx --yes @stoplight/spectral-cli lint swagger/v1/swagger.yaml \
+	  --ruleset https://unpkg.com/@stoplight/spectral-rulesets/dist/oas/index.mjs
+
+test-contracts: test-openapi-contract test-pact lint-openapi ## Run all contract tests
+

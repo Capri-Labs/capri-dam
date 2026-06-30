@@ -28,6 +28,8 @@ module Api
           {
             id: folder.id,
             name: "/" + path_names.join("/"), # e.g., "/Marketing/2026/Campaigns"
+            slug: folder.slug,
+            path: "/" + path_names.join("/"),
           }
         end
 

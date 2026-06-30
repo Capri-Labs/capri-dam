@@ -1,0 +1,222 @@
+{
+  "consumer": {
+    "name": "Capri DAM Frontend"
+  },
+  "provider": {
+    "name": "Capri DAM API"
+  },
+  "interactions": [
+    {
+      "description": "list assets",
+      "providerStates": [
+        {
+          "name": "an admin user exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/assets"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": [
+          {
+            "id": "5d8f6f8a-9e72-4fdd-a3f4-5e4bc6430c8d",
+            "uuid": "5d8f6f8a-9e72-4fdd-a3f4-5e4bc6430c8d",
+            "title": "Provider Asset",
+            "status": "ready",
+            "content_type": "image/jpeg",
+            "thumb_url": "/api/v1/assets/local/5d8f6f8a-9e72-4fdd-a3f4-5e4bc6430c8d"
+          }
+        ]
+      }
+    },
+    {
+      "description": "show asset",
+      "providerStates": [
+        {
+          "name": "an admin user exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/assets/5d8f6f8a-9e72-4fdd-a3f4-5e4bc6430c8d"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "id": "5d8f6f8a-9e72-4fdd-a3f4-5e4bc6430c8d",
+          "uuid": "5d8f6f8a-9e72-4fdd-a3f4-5e4bc6430c8d",
+          "title": "Provider Asset",
+          "status": "ready",
+          "version": 1,
+          "content_type": "image/jpeg",
+          "thumb_url": "/api/v1/assets/local/5d8f6f8a-9e72-4fdd-a3f4-5e4bc6430c8d",
+          "metadata": {
+            "content_type": "image/jpeg",
+            "tags": []
+          },
+          "url": "/api/v1/assets/local/5d8f6f8a-9e72-4fdd-a3f4-5e4bc6430c8d"
+        }
+      }
+    },
+    {
+      "description": "list folders",
+      "providerStates": [
+        {
+          "name": "a folder with assets exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/folders"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "folders": [
+            {
+              "id": 1,
+              "name": "/Provider Folder",
+              "slug": "provider-folder",
+              "path": "/Provider Folder"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "description": "upload asset",
+      "providerStates": [
+        {
+          "name": "asset uploads are accepted"
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "path": "/api/v1/assets",
+        "headers": {
+          "X-Pact-Stub": "true"
+        }
+      },
+      "response": {
+        "status": 202,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "id": "c4fb3aa2-11f7-4d7e-819e-0fca5fb1c6f4",
+          "status": "processing"
+        }
+      }
+    },
+    {
+      "description": "search assets",
+      "providerStates": [
+        {
+          "name": "an admin user exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/search",
+        "query": "q=test"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "meta": {
+            "query": "test",
+            "mode": "images",
+            "total_found": 1,
+            "facets": {
+              "content_type": [
+                "image/jpeg"
+              ]
+            }
+          },
+          "results": [
+            {
+              "id": "5d8f6f8a-9e72-4fdd-a3f4-5e4bc6430c8d",
+              "uuid": "5d8f6f8a-9e72-4fdd-a3f4-5e4bc6430c8d",
+              "title": "Provider Asset",
+              "type": "image/jpeg",
+              "size": "0 KB",
+              "thumb_url": "/api/v1/assets/local/5d8f6f8a-9e72-4fdd-a3f4-5e4bc6430c8d"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "description": "list notifications",
+      "providerStates": [
+        {
+          "name": "notifications exist"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/notifications"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": [
+          {
+            "id": 1,
+            "message": "Provider notification",
+            "read_at": null,
+            "created_at": "2026-06-30T08:00:00Z"
+          }
+        ]
+      }
+    },
+    {
+      "description": "list collections",
+      "providerStates": [
+        {
+          "name": "collections exist"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/collections"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": [
+          {
+            "id": 1,
+            "name": "Provider Collection",
+            "slug": "provider-collection",
+            "collection_type": "manual",
+            "assets_count": 0
+          }
+        ]
+      }
+    }
+  ],
+  "metadata": {
+    "pactSpecification": {
+      "version": "3.0.0"
+    }
+  }
+}

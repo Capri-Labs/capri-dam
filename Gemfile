@@ -65,6 +65,19 @@ group :test do
   # Use system testing [https://guides.rubyonrails.org/testing.html#system-testing]
   gem "capybara"
   gem "selenium-webdriver"
+
+  # OpenAPI contract testing — validates every API response against swagger.yaml
+  gem "committee"
+
+  # Consumer-driven contract testing (PACT) — provider verification
+  gem "pact"
+  gem "pact-support"
+
+  # Database cleanup strategy between integration tests
+  gem "database_cleaner-active_record"
+
+  # HTTP stubbing for PACT consumer tests
+  gem "webmock"
 end
 
 # Database and Authentication Logic

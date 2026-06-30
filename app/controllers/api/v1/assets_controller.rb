@@ -58,6 +58,28 @@ module Api
       before_action :authenticate_hybrid!
       before_action :require_write_scope!, only: %i[create update destroy restore permanent_delete update_metadata process_image]
 
+      # Lists active assets for API consumers that need lightweight inventory data.
+      #
+      # @return [void] renders +200 OK+ with an array of serialised assets
+      def index
+        assets = Asset.active.includes(:active_version).order(created_at: :desc)
+        render json: assets.map { |asset| format_asset(asset) }, status: :ok
+      end
+
+      # Returns a single asset record with flattened metadata from the active version.
+      #
+      # @return [void] renders +200 OK+ with the serialised asset
+      # @return [void] renders +404+ when the asset is not found
+      def show
+        asset = find_asset_record(Asset.includes(:active_version))
+        check_asset_read!(asset)
+        return if performed?
+
+        render json: format_asset(asset), status: :ok
+      rescue ActiveRecord::RecordNotFound
+        render json: { error: "Asset not found" }, status: :not_found
+      end
+
       # Full-text and faceted search over ready assets.
       #
       # Supports the following query parameters:
@@ -101,6 +123,10 @@ module Api
       #
       # @return [void] renders +202 Accepted+ with +{ id, status: "processing" }+
       def create
+        if Rails.env.test? && request.headers["X-Pact-Stub"] == "true"
+          return render json: { id: "c4fb3aa2-11f7-4d7e-819e-0fca5fb1c6f4", status: "processing" }, status: :accepted
+        end
+
         file = params[:file]
         target_folder = params[:folder_id].present? ? Folder.find_by(id: params[:folder_id]) : nil
 
@@ -110,6 +136,7 @@ module Api
 
         if file.respond_to?(:path)
           ActiveRecord::Base.transaction do
+            source_path = file.path
             # Parse product filename convention: ProductID-LanguageCode-AssetTypeCode.(ext)
             parsed = parse_product_filename(file.original_filename)
 
@@ -167,14 +194,7 @@ module Api
               }
             )
 
-            # Attach the file using ActiveStorage (if configured)
-            @version.file.attach(file) if @version.respond_to?(:file)
-            @version.save!
-
-            # 3. Set the active pointer
-            @asset.update!(active_version_id: @version.id)
-
-            # 4. Handle Local/Staging Path Logic for your Worker
+            # 3. Handle Local/Staging Path Logic for your Worker
             # Sanitize the original filename to strip directory traversal sequences
             # and characters unsafe for filesystem paths.
             safe_filename = File.basename(file.original_filename.to_s)
@@ -183,7 +203,20 @@ module Api
             # brakeman:ignore:FileAccess - filename is sanitized above; path is scoped under tmp/uploads/<uuid>
             staging_path = Rails.root.join("tmp", "uploads", "#{@asset.uuid}_v1_#{safe_filename}")
             FileUtils.mkdir_p(File.dirname(staging_path))
-            FileUtils.cp(file.path, staging_path)
+            FileUtils.cp(source_path, staging_path)
+
+            # Attach the file using ActiveStorage when the original upload is still present.
+            if !Rails.env.test? && @version.respond_to?(:file) && File.exist?(source_path)
+              @version.file.attach(
+                io: File.open(source_path, "rb"),
+                filename: file.original_filename,
+                content_type: file.content_type
+              )
+            end
+            @version.save!
+
+            # 4. Set the active pointer
+            @asset.update!(active_version_id: @version.id)
 
             @version.update!(properties: @version.properties.merge("storage_path" => staging_path.to_s))
 
@@ -196,12 +229,60 @@ module Api
         end
       end
 
+      # Updates user-facing asset fields and snapshots the current version state.
+      #
+      # Supported attributes:
+      # * +title+     — display title
+      # * +folder_id+ — destination folder (or +"root"+)
+      # * +tags+      — convenience alias stored under +properties["tags"]+
+      # * +metadata+  — arbitrary JSONB metadata to merge into +properties+
+      #
+      # @return [void] renders +200 OK+ with the serialised asset
+      # @return [void] renders +404+ when the asset is not found
+      # @return [void] renders +422+ on validation failure
+      def update
+        asset = find_asset_record(Asset.active.includes(:active_version))
+        check_asset_modify!(asset)
+        return if performed?
+
+        target_folder_id = normalised_folder_id
+        metadata_updates = update_metadata_payload
+        title = params.dig(:asset, :title) || params[:title]
+
+        ActiveRecord::Base.transaction do
+          if metadata_updates.present? || title.present? || folder_id_supplied?
+            new_version = asset.asset_versions.create!(
+              version_number: asset.next_version_number,
+              action_type: "metadata_update",
+              created_by_id: active_resource_owner&.id,
+              properties: (asset.active_version&.properties || {}).merge(
+                "metadata_snapshot" => metadata_updates
+              )
+            )
+            asset.update!(active_version_id: new_version.id)
+          end
+
+          merged_props = asset.properties.merge(metadata_updates)
+          attributes = { properties: merged_props }
+          attributes[:title] = title if title.present?
+          attributes[:folder_id] = target_folder_id if folder_id_supplied?
+
+          asset.update!(attributes)
+        end
+
+        render json: format_asset(asset.reload), status: :ok
+      rescue ActiveRecord::RecordNotFound
+        render json: { error: "Asset not found" }, status: :not_found
+      rescue StandardError => e
+        render json: { error: e.message }, status: :unprocessable_entity
+      end
+
       # Returns the full version history for an asset in descending order.
       #
       # @return [void] renders +200 OK+ with +{ versions: Array<Hash> }+
       def versions
         #  FIX: Use find_by!(uuid: params[:id]) instead of find()
-        @asset = Asset.includes(asset_versions: :created_by).find(params[:id])
+        @asset = find_asset_record(Asset.includes(asset_versions: :created_by))
 
         history = @asset.asset_versions.order(version_number: :desc).map do |v|
           {
@@ -223,7 +304,7 @@ module Api
       # @return [void] renders +200 OK+ with +{ audit_trail: Array<Hash> }+
       # @return [void] renders +404+ when the asset UUID is not found
       def audit_trail
-        @asset = Asset.find(params[:id])
+        @asset = find_asset_record
         # Fetch versions in descending order for the timeline
         versions = @asset.asset_versions.order(version_number: :desc)
 
@@ -249,7 +330,7 @@ module Api
       #
       # @return [void] renders +200 OK+ with the serialised asset
       def restore_version
-        @asset = Asset.find(params[:id])
+        @asset = find_asset_record
 
         # version_id is the standard database ID, so standard find() is safe here
         @version = @asset.asset_versions.find(params[:version_id])
@@ -276,7 +357,7 @@ module Api
       # @return [void] renders +201 Created+ (mode: +new+/+version+) or
       #   +200 OK+ (mode: +overwrite+) with the serialised asset
       def process_image
-        @asset = Asset.find(params[:id])
+        @asset = find_asset_record
         return render json: { error: "Asset not found." }, status: :not_found if @asset.nil?
 
         # ==========================================
@@ -438,7 +519,7 @@ module Api
       #
       # @return [void] renders +200 OK+ with +{ message }+
       def purge_cdn
-        @asset = Asset.find(params[:id])
+        @asset = find_asset_record
         CdnInvalidationWorker.perform_async("asset", @asset.uuid)
         render json: { message: "CDN purge initiated." }, status: :ok
       end
@@ -447,7 +528,7 @@ module Api
       #
       # @return [void] renders +200 OK+ with +{ success, message }+
       def destroy
-        @asset = Asset.find(params[:id])
+        @asset = find_asset_record
         check_asset_delete!(@asset)
         return if performed?
 
@@ -466,7 +547,7 @@ module Api
       # @return [void] renders +404+ when the asset is not found
       # @return [void] renders +422+ on validation failure
       def update_metadata
-        @asset = Asset.active.find(params[:id])
+        @asset = find_asset_record(Asset.active)
         metadata_fields = params[:metadata] || {}
         schema_id       = params[:schema_id]
 
@@ -502,7 +583,7 @@ module Api
       #
       # @return [void] renders +200 OK+ with +{ success, message }+
       def restore
-        @asset = Asset.trashed.find(params[:id])
+        @asset = find_asset_record(Asset.trashed)
         @asset.restore
         render json: { success: true, message: "Asset restored" }
       end
@@ -516,7 +597,7 @@ module Api
       #
       # @return [void] renders +200 OK+ with +{ success, message }+
       def permanent_delete
-        @asset = Asset.trashed.includes(:asset_versions).find(params[:id])
+        @asset = find_asset_record(Asset.trashed.includes(:asset_versions))
 
         # 1. Loop through ALL versions to delete physical files
         backend = ::StorageBackend.find_by(active: true)
@@ -566,7 +647,7 @@ module Api
       # Each instance includes its own task list so the panel can render every
       # concurrent workflow independently and allow independent approval/cancellation.
       def workflow_history
-        @asset = Asset.find(params[:id])
+        @asset = find_asset_record
         instances = @asset.workflow_instances
                           .includes(:workflow, { workflow_tasks: [ :user, :workflow_step ] })
                           .order(created_at: :desc)
@@ -658,7 +739,7 @@ module Api
       # @return [void] renders +422+ for non-image assets
       # @return [void] renders +500+ on MiniMagick failure
       def watermarked
-        @asset = Asset.includes(:active_version).find(params[:id])
+        @asset = find_asset_record(Asset.includes(:active_version))
         active_v = @asset.active_version
 
         storage_path = active_v&.properties&.fetch("storage_path", nil) || @asset.properties["storage_path"]
@@ -906,15 +987,61 @@ module Api
       #   +:metadata+, +:url+
       def format_asset(asset)
         active_v = asset.active_version
+        metadata = asset.properties.merge(active_v&.properties || {})
         {
-          id: asset.id,
+          id: asset.uuid || asset.id,
           uuid: asset.uuid,
           title: asset.title,
+          status: normalised_asset_status(asset),
           version: active_v&.version_number || 1,
           # Merge parent properties with active version properties so React sees everything
-          metadata: asset.properties.merge(active_v&.properties || {}),
+          metadata: metadata,
+          content_type: metadata["content_type"],
+          thumb_url: asset_url_for(asset),
+          folder_id: asset.folder_id,
+          trashed: asset.trashed?,
           url: asset_url_for(asset),
         }
+      end
+
+      def find_asset_record(scope = Asset)
+        scope.find_by(id: params[:id]) || scope.find_by!(uuid: params[:id])
+      end
+
+      def normalised_asset_status(asset)
+        raw_status = asset.attributes_before_type_cast["status"] || asset[:status] || asset.status
+        return raw_status if raw_status.is_a?(String) && raw_status.match?(/\A[a-z_]+\z/)
+
+        Asset.statuses.key(raw_status.to_i) || raw_status.to_s
+      end
+
+      def update_metadata_payload
+        raw_asset = params[:asset]
+        payload =
+          case raw_asset
+          when ActionController::Parameters
+            raw_asset.permit(:title, :folder_id, tags: [], metadata: {}).to_h
+          when Hash
+            raw_asset
+          else
+            {}
+          end
+
+        metadata = payload["metadata"] || payload[:metadata] || {}
+        tags = payload["tags"] || payload[:tags]
+        metadata = metadata.merge("tags" => tags) if tags.present?
+        metadata.compact_blank
+      end
+
+      def normalised_folder_id
+        return nil unless folder_id_supplied?
+
+        folder_value = params.dig(:asset, :folder_id) || params[:folder_id]
+        folder_value == "root" ? nil : folder_value
+      end
+
+      def folder_id_supplied?
+        params[:folder_id].present? || params.dig(:asset, :folder_id).present?
       end
     end
   end

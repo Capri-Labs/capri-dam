@@ -117,7 +117,12 @@ class AssetProcessorWorker
         )
       )
 
-      asset.update!(status: "ready")
+      asset.update!(
+        status: "ready",
+        properties: asset.properties.merge(extracted_meta.stringify_keys).merge(
+          "storage_path" => file_path
+        )
+      )
 
       AssetWorkflowTriggerWorker.perform_async(asset.id, "on_upload") if defined?(AssetWorkflowTriggerWorker)
 

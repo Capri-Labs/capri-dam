@@ -425,7 +425,8 @@ module Api
         expires_at   = asset.deleted_at + DEFAULT_RETENTION_DAYS.days if asset.deleted_at
 
         {
-          id:           asset.id,
+          id:           asset.uuid,
+          uuid:         asset.uuid,
           grid_id:      "asset_#{asset.id}",
           item_type:    "asset",
           media_type:   derive_media_type(content_type),

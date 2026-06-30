@@ -71,19 +71,46 @@ jobs:
           ruby-version: ${{ env.RUBY_VERSION }}
           bundler-cache: true
 
-      - name: Brakeman — static analysis
-        run: bin/brakeman --no-pager --format json --output tmp/brakeman.json
-        continue-on-error: true
+      - name: Set up Node ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: yarn
 
-      - name: Upload Brakeman report
+      - name: Install JS dependencies
+        run: yarn install --frozen-lockfile --ignore-engines
+
+      - name: Brakeman — Rails static analysis
+        run: |
+          bundle exec brakeman \
+            --no-pager \
+            --format github \
+            --ignore-file .brakeman/ignore.json \
+            --exit-on-warn
+
+      - name: Brakeman — SARIF output for Security tab
+        if: always()
+        run: |
+          bundle exec brakeman \
+            --no-pager \
+            --format sarif \
+            --output tmp/brakeman.sarif \
+            --ignore-file .brakeman/ignore.json \
+            || true
+
+      - name: Upload Brakeman SARIF
         uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: brakeman-report
-          path: tmp/brakeman.json
+          name: brakeman-sarif
+          path: tmp/brakeman.sarif
 
-      - name: bundler-audit — gem CVE check
-        run: bin/bundler-audit check --update --config config/bundler-audit.yml
+      - name: bundler-audit — Ruby gem CVE check
+        run: bundle exec bundler-audit check --update --config config/bundler-audit.yml
+
+      - name: yarn audit — JS production dependency CVE check
+        run: yarn audit --groups dependencies --level high
+        continue-on-error: true
 
   # ─── 3. Backend tests (RSpec) ───────────────────────────────────────────────
   rspec:

@@ -5,6 +5,29 @@ class Api::V1::IngestionItemsController < ApplicationController
   before_action :authenticate_hybrid!
   before_action :require_admin!
 
+  # GET /api/v1/ingestion_items
+  def index
+    scope = IngestionItem.includes(:ingestion_batch).order(created_at: :desc)
+    scope = scope.where(ingestion_batch_id: params[:batch_id]) if params[:batch_id].present?
+
+    render json: {
+      items: scope.map { |item|
+        {
+          id: item.id,
+          ingestion_batch_id: item.ingestion_batch_id,
+          original_filename: item.original_filename,
+          file_hash: item.file_hash,
+          file_size: item.file_size,
+          status: item.status,
+          error_log: item.error_log,
+          legacy_metadata: item.legacy_metadata,
+          clean_properties: item.clean_properties,
+          created_at: item.created_at,
+        }
+      },
+    }, status: :ok
+  end
+
   # GET /api/v1/ingestion_items/:id
   def show
     item = IngestionItem.find(params[:id])
@@ -36,7 +59,7 @@ class Api::V1::IngestionItemsController < ApplicationController
     active_items = batch.ingestion_items.where(status: [ :pending, :ai_processing ]).count
 
     if active_items.zero? && batch.transforming?
-      batch.review_needed!
+      batch.update!(status: :review_needed)
     end
   end
 end

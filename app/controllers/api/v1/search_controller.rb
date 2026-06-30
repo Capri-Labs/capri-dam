@@ -58,7 +58,7 @@ module Api
 
         results = assets_scope.includes(:active_version).limit(100).map do |asset|
           {
-            id:            asset.id,
+            id:            asset.uuid || asset.id,
             uuid:          asset.uuid,
             title:         asset.title || "Untitled Asset",
             type:          asset.properties&.dig("content_type") || "Unknown",

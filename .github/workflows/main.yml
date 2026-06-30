@@ -57,7 +57,7 @@ jobs:
         run: bundle exec rubocop --format github
 
       - name: Brakeman (security scan)
-        run: bundle exec brakeman -q --no-pager --exit-on-warn -i .brakeman/ignore.json
+        run: bundle exec brakeman -q --no-pager --exit-on-warn --ignore-file .brakeman/ignore.json
 
       - name: bundler-audit (CVE check)
         run: bundle exec bundler-audit check --update
@@ -355,27 +355,40 @@ jobs:
       # ── Developer Guide ───────────────────────────────────────────────────
       - name: Build developer guide (unified book)
         run: |
-          asciidoctor $ADOC_BASE \
-            -a stylesdir=../theme \
-            -a stylesheet=capri.css \
-            -a docinfodir=docs \
-            -a docinfo=shared-head \
+          asciidoctor -r asciidoctor-diagram \
+            $ADOC_BASE \
+            -a toclevels=4 \
+            -a stylesdir=docs/developer-guide/theme \
+            -a stylesheet=arc42.css \
+            -a docinfodir=docs/developer-guide \
+            -a docinfo=shared \
             -D _site/developer-guide -o index.html \
             docs/developer-guide/index.adoc
+          mkdir -p _site/developer-guide/theme
+          cp -r docs/developer-guide/theme/. _site/developer-guide/theme/
 
-      - name: Build developer guide (standalone section pages)
+      - name: Build developer guide PDF
         run: |
-          for s in models api-reference graphql ui-components authentication \
-                   storage workers-and-jobs workflows search testing; do
-            f="docs/developer-guide/${s}.adoc"
-            [ -f "$f" ] || { echo "Skipping missing: $f"; continue; }
-            asciidoctor $ADOC_BASE \
-              -a stylesdir=../theme \
-              -a stylesheet=capri.css \
-              -a docinfodir=docs \
-              -a docinfo=shared-head \
+          asciidoctor-pdf \
+            -a allow-uri-read \
+            -a pdf-themesdir=docs/developer-guide/theme \
+            -a pdf-theme=arc42 \
+            -o _site/developer-guide/headless-dam-developer-guide.pdf \
+            docs/developer-guide/index.adoc
+
+      - name: Build developer guide standalone section pages
+        run: |
+          for f in docs/developer-guide/src/*.adoc; do
+            name=$(basename "$f" .adoc)
+            asciidoctor -r asciidoctor-diagram \
+              $ADOC_BASE \
+              -a toclevels=4 \
+              -a stylesdir=../../developer-guide/theme \
+              -a stylesheet=arc42.css \
+              -a docinfodir=docs/developer-guide \
+              -a docinfo=shared \
               -D _site/developer-guide \
-              -o "${s}.html" \
+              -o "${name}.html" \
               "$f"
           done
 
