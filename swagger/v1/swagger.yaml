@@ -2386,14 +2386,8 @@ paths:
                       type: object
                       properties:
                         id:
-                          type: integer
-                          example: 1
-                        uuid:
                           type: string
                           format: uuid
-                        title:
-                          type: string
-                          example: Brand Logo Final
                         type:
                           type: string
                           example: image/png
@@ -5073,8 +5067,9 @@ paths:
                       - name
                       properties:
                         id:
-                          type: integer
-                          example: 42
+                          type: string
+                          format: uuid
+                          example: "351be284-bc76-4529-a9cf-1683dd4be450"
                         name:
                           type: string
                           example: "/Marketing/2026"
