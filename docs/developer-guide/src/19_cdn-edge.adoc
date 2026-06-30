@@ -1,0 +1,33 @@
+[[section-cdn-edge]]
+= CDN and Edge Operations
+
+CDN support is abstracted behind adapter classes and coordinated through
+`CdnManager`.
+
+== Providers and adapter contract
+
+[cols="1,3", options="header"]
+|===
+| Adapter | Notes
+| `CdnAdapters::FastlyAdapter` | Supports invalidation, surrogate keys, and signed delivery patterns.
+| `CdnAdapters::CloudflareAdapter` | Supports zone-oriented purge operations.
+| Akamai-style support | The configuration model anticipates additional provider implementations even where the adapter class is not yet primary in this repo snapshot.
+|===
+
+== Core capabilities
+
+* HMAC URL signing for protected delivery URLs
+* cache invalidation by object or surrogate key
+* metadata sync to edge provider APIs
+* provider-specific purge semantics hidden behind `CdnManager`
+
+== Endpoints
+
+[cols="1,2,3", options="header"]
+|===
+| Method | Path | Description
+| `GET/PATCH` | `/api/v1/cdn_configurations` | Read/update CDN settings.
+| `POST` | `/api/v1/edge_operations/purge` | Purge objects or surrogate keys.
+| `POST` | `/api/v1/edge_operations/sign_url` | Generate signed delivery URL.
+| `POST` | `/api/v1/edge_operations/sync_metadata` | Push metadata refresh to edge.
+|===

@@ -1,0 +1,36 @@
+[[section-metadata-tools]]
+= Metadata Tools
+
+Metadata tooling combines hierarchical schemas with asynchronous CSV import and
+export jobs.
+
+== Metadata schemas
+
+`MetadataSchema` supports three levels: root, type, and subtype. The resolver
+chooses the most specific schema based on MIME type, while tabs/fields inherit
+from parents.
+
+== Export flow
+
+`MetadataExportManager.jsx` lets admins choose a folder scope, include
+subfolders, schedule execution, and export either all properties or a selected
+subset discovered from `/api/v1/metadata_exports/properties`.
+
+== Import flow
+
+`MetadataImportManager.jsx` uploads a CSV, parses the header client-side,
+configures delimiters/batch size, optionally launches workflows, and polls until
+`MetadataImportWorker` finishes.
+
+== Endpoints
+
+[cols="1,2,3", options="header"]
+|===
+| Method | Path | Description
+| `GET/POST` | `/api/v1/metadata_schemas` | List/create schemas.
+| `GET/PATCH/DELETE` | `/api/v1/metadata_schemas/:id` | Maintain schemas.
+| `POST` | `/api/v1/metadata_schemas/:id/assign` | Apply schema to folder tree.
+| `GET/POST` | `/api/v1/metadata_exports` | List/create export jobs.
+| `GET` | `/api/v1/metadata_exports/properties` | Discover metadata keys.
+| `GET/POST` | `/api/v1/metadata_imports` | List/create import jobs.
+|===

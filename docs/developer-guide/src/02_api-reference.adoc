@@ -1,0 +1,162 @@
+[[section-api-reference]]
+= REST API Reference
+
+Capri DAM exposes conventional CRUD endpoints plus operational APIs for admin,
+AI, ingestion, workflow, and governance modules. The canonical routes live under
+`app/controllers/api/v1/` and `app/controllers/admin/`.
+
+== Authentication summary
+
+[cols="1,3", options="header"]
+|===
+| Mechanism | Notes
+| Session cookie | Used by the Rails/React shell for browser traffic.
+| OAuth2 bearer token | Backed by Doorkeeper.
+| Personal access token | Hashed token stored in `PersonalAccessToken`.
+| Gateway shared secret | Machine-to-machine callbacks such as agent execution,
+AI batch progress, and health callbacks.
+|===
+
+== Admin endpoints (`app/controllers/admin/*`)
+
+[cols="1,2,1,3", options="header"]
+|===
+| Method | Path | Auth | Description
+
+| `GET` | `/admin/users` | admin | HTML shell for user administration.
+| `GET/PATCH/DELETE` | `/admin/users/:id` | admin | JSON user detail, update, and soft-delete style admin actions.
+| `GET` | `/admin/user_groups` | admin | Group hierarchy management shell.
+| `GET/PATCH/DELETE` | `/admin/user_groups/:id` | admin | Group editing, hierarchy maintenance, and membership changes.
+| `GET` | `/admin/folder_policies` | admin | ACL matrix screen for folder/group permissions.
+| `GET` | `/admin/storage_backends` | admin | Storage backend administration shell.
+| `GET` | `/admin/system_configurations` | admin | Runtime system configuration screen.
+| `GET` | `/admin/system_status` | admin | Operational status shell for app, DB, Redis/Sidekiq, SMTP, and AI gateway.
+| `POST` | `/admin/system_status/test_smtp` | admin | Sends a test email using the configured SMTP settings.
+| `PATCH` | `/admin/system_status/update_smtp` | admin | Persists SMTP-related settings.
+| `POST` | `/admin/system_status/restart` | admin | Triggers a restart/maintenance action.
+| `GET` | `/admin/email_templates` | admin | Email template manager shell.
+| `GET` | `/admin/email_deliveries` | admin | Email outbox / delivery audit shell.
+| `GET` | `/admin/reports` | admin | Analytics and report-definition shell.
+| `GET` | `/admin/report_snapshots` | admin | Report snapshot history shell.
+| `GET` | `/admin/migrations` | admin | Migration, connector, and data-health shell.
+| `GET` | `/admin/intelligence` | admin | AI operations shell: models, style hub, batch jobs, provenance, copilots.
+| `GET` | `/admin/system_accounts` | admin | Admin-only service-account management surface.
+|===
+
+== Collections, bin, duplicates, and delivery
+
+[cols="1,2,1,3", options="header"]
+|===
+| Method | Path | Auth | Description
+
+| `GET` | `/api/v1/collections` | user | List active collections with optional smart/manual filtering.
+| `POST` | `/api/v1/collections` | user | Create a collection.
+| `GET` | `/api/v1/collections/:slug` | user | Collection detail, optionally time-travelled with `as_of`.
+| `PATCH` | `/api/v1/collections/:slug` | user | Update collection metadata.
+| `DELETE` | `/api/v1/collections/:slug` | user | Archive/soft-delete a collection.
+| `POST` | `/api/v1/collections/:slug/configure_rule` | user | Upsert the semantic `CollectionRule`.
+| `POST` | `/api/v1/collections/:slug/simulate_rule` | user | Dry-run semantic routing.
+| `GET` | `/api/v1/collections/:slug/cluster_map` | user | 2D semantic cluster-map nodes.
+| `POST` | `/api/v1/collections/:slug/assets` | user | Add asset to manual collection.
+| `DELETE` | `/api/v1/collections/:slug/assets/:asset_id` | user | Remove membership.
+| `POST` | `/api/v1/collections/:slug/assets/:asset_id/toggle_pin` | user | Toggle pinned state on `CollectionAsset`.
+| `PATCH/DELETE` | `/api/v1/collections/bulk_update`, `/api/v1/collections/bulk_delete` | user | Bulk workspace operations.
+| `GET/PATCH` | `/api/v1/collection_settings` | user | Collection module defaults.
+| `GET` | `/api/v1/bin` | user | Paginated recycle-bin contents.
+| `GET` | `/api/v1/bin/stats` | user | Aggregate trash metrics.
+| `POST` | `/api/v1/bin/bulk_restore` | user | Restore mixed asset/folder selections.
+| `DELETE` | `/api/v1/bin/bulk_destroy` | user | Permanently purge selected trashed items.
+| `DELETE` | `/api/v1/bin/empty` | user | Empty the entire recycle bin.
+| `GET/PATCH` | `/api/v1/bin/retention_policy` | admin | Read/update purge retention settings.
+| `POST` | `/api/v1/bin/trigger_purge` | admin | Enqueue a purge cycle.
+| `GET` | `/api/v1/bin/purge_status` | admin | Read current purge-job lock/status markers.
+| `GET` | `/api/v1/duplicate_groups` | user | List duplicate groups by status.
+| `GET` | `/api/v1/duplicate_groups/stats` | user | Duplicate counts by lifecycle state.
+| `GET` | `/api/v1/duplicate_groups/:id` | user | Group detail with member assets.
+| `PATCH` | `/api/v1/duplicate_groups/:id/resolve` | user | Resolve by keeping all or deleting duplicates.
+| `PATCH` | `/api/v1/duplicate_groups/:id/dismiss` | user | Mark false positive / defer action.
+| `PATCH` | `/api/v1/duplicate_groups/bulk_resolve` | user | Bulk duplicate resolution.
+| `GET/PATCH` | `/api/v1/cdn_configurations` | admin | Read/update CDN provider settings.
+| `POST` | `/api/v1/edge_operations/purge` | admin | Purge CDN cache or surrogate keys.
+| `POST` | `/api/v1/edge_operations/sign_url` | admin | Return a signed delivery URL.
+| `POST` | `/api/v1/edge_operations/sync_metadata` | admin | Push edge metadata refresh.
+|===
+
+== Intelligence and provenance APIs
+
+[cols="1,2,1,3", options="header"]
+|===
+| Method | Path | Auth | Description
+
+| `GET/PATCH` | `/api/v1/ai_configurations` | admin | Read/update active AI provider and gateway settings.
+| `GET/POST` | `/api/v1/ai_model_configs` | admin | List/create registered model configs.
+| `PATCH/DELETE` | `/api/v1/ai_model_configs/:id` | admin | Update/delete a model config.
+| `GET` | `/api/v1/ai_model_configs/capabilities` | admin | Capability catalogue for the Style Model Hub.
+| `POST` | `/api/v1/ai_model_configs/:id/health_check` | admin | Trigger model ping.
+| `POST` | `/api/v1/ai_model_configs/:id/set_default` | admin | Set capability default.
+| `POST` | `/api/v1/ai_model_configs/:id/health_callback` | gateway | Write health-check results.
+| `GET/POST` | `/api/v1/ai_batch_jobs` | admin | List and create batch jobs.
+| `GET` | `/api/v1/ai_batch_jobs/task_types` | admin | `Ai::BatchTaskRegistry` metadata.
+| `POST` | `/api/v1/ai_batch_jobs/:id/cancel` | admin | Cancel a queued/running job.
+| `POST` | `/api/v1/ai_batch_jobs/:id/progress` | gateway | Write batch progress callback data.
+| `GET` | `/api/v1/asset_embeddings` | admin | Inspect stored embeddings / coverage.
+| `GET` | `/api/v1/asset_provenance_records` | admin | List provenance records with filtering.
+| `POST` | `/api/v1/asset_provenance_records/bulk_upsert` | gateway | Upsert verification results.
+| `GET/PATCH` | `/api/v1/c2pa_configuration` | admin | Read/update provenance policy.
+| `GET/POST/PATCH/DELETE` | `/api/v1/agent_workflows...` | mixed | CRUD, toggle, trigger, and execution history for gateway-driven automations.
+| `GET` | `/api/v1/copilots` | admin | Copilot shell/config metadata.
+| `POST` | `/api/v1/copilot/search` | user | Semantic search used by `SemanticCopilot.jsx`.
+| `GET` | `/api/v1/ai/lab/models` | admin | Playground model list.
+| `POST` | `/api/v1/ai/lab/chat` | admin | Prompt-playground proxy to AI gateway.
+|===
+
+== Ingestion, metadata, and operational health
+
+[cols="1,2,1,3", options="header"]
+|===
+| Method | Path | Auth | Description
+
+| `GET/POST` | `/api/v1/system_connectors` | admin | List/create source connectors.
+| `PUT/DELETE` | `/api/v1/system_connectors/:id` | admin | Update/remove connector.
+| `POST` | `/api/v1/system_connectors/test_connection` | admin | Validate credentials/endpoint.
+| `POST` | `/api/v1/system_connectors/:id/start_migration` | admin | Launch an `IngestionBatch` from a connector.
+| `GET/POST` | `/api/v1/ingestion_batches` | admin | List/create migration batches.
+| `GET` | `/api/v1/ingestion_batches/stats` | admin | Dashboard counters.
+| `GET/PATCH/DELETE` | `/api/v1/ingestion_batches/:id` | admin | Inspect, update review state, or delete batch.
+| `POST` | `/api/v1/ingestion_batches/:id/abort` | admin | Abort an in-flight batch.
+| `GET` | `/api/v1/ingestion_items` | admin | Item-level ingestion inspection.
+| `PATCH` | `/api/v1/ingestion_items/:id` | admin | Accept/reject/fix review payloads.
+| `GET/POST` | `/api/v1/metadata_schemas` | admin | List/create schemas.
+| `GET/PATCH/DELETE` | `/api/v1/metadata_schemas/:id` | admin | Maintain schema definitions.
+| `GET` | `/api/v1/metadata_schemas/:id/folders` | admin | Folder assignments.
+| `POST` | `/api/v1/metadata_schemas/:id/assign` | admin | Apply schema to folder tree.
+| `GET/POST/DELETE` | `/api/v1/metadata_exports...` | admin | Create, list, and delete export jobs.
+| `GET` | `/api/v1/metadata_exports/properties` | admin | Discover candidate metadata keys.
+| `GET/POST/DELETE` | `/api/v1/metadata_imports...` | admin | Create, list, and delete import jobs.
+| `GET` | `/api/v1/data_health` | admin | Data-health metrics dashboard payload.
+| `POST` | `/api/v1/data_health/scan` | admin | Trigger pre-flight/data-health analysis.
+| `POST` | `/api/v1/data_health/remediate` | admin | Enqueue remediation worker.
+| `GET/PATCH` | `/api/v1/upload_restrictions` | admin | Upload-policy controls.
+| `POST` | `/api/v1/webhooks/connectors/:id/receive` | connector | Connector ingress/callback endpoint.
+|===
+
+== User, profile, workflow, and profile assets
+
+[cols="1,2,1,3", options="header"]
+|===
+| Method | Path | Auth | Description
+
+| `GET` | `/api/v1/user_groups` | user | User-visible group data for selectors/ACL screens.
+| `GET/POST/PATCH/DELETE` | `/api/v1/image_profiles...` | admin | Image-profile CRUD.
+| `GET/POST/PATCH/DELETE` | `/api/v1/video_profiles...` | admin | Video-profile CRUD.
+| `GET/POST/PATCH/DELETE` | `/api/v1/style_presets...` | admin | Style-preset CRUD and gateway sync.
+| `POST` | `/api/v1/style_presets/:id/sync` | admin | Broadcast style preset to gateway.
+| `GET` | `/api/v1/workflow_instances` | user | Runtime workflow instances.
+| `GET/PATCH` | `/api/v1/workflow_tasks/:id` | user | Worklist detail and approval decision.
+| `GET` | `/api/v1/workflow_tasks` | user | Pending task queue.
+| `GET/PATCH` | `/api/v1/notifications`, `/api/v1/notifications/:id/mark_read` | user | In-app notifications.
+| `PATCH` | `/api/v1/notifications/mark_all_read` | user | Clear all unread notifications.
+|===
+
+NOTE: Admin controllers mainly render HTML shells; the React screens then call
+JSON endpoints in `/api/v1/` or nested `/admin/...` JSON actions.

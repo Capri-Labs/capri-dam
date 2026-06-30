@@ -1,0 +1,43 @@
+[[section-notifications-email]]
+= Notifications and Email
+
+Notification delivery is split between lightweight in-app rows and queued SMTP
+messages.
+
+== In-app notifications
+
+`Notification` belongs to a `User` and is surfaced by `NotificationBell.jsx`,
+which polls `/api/v1/notifications`, marks individual rows read, and supports
+bulk clear.
+
+== Email system
+
+`EmailTemplate` stores Liquid templates, while `EmailDelivery` stores the outbox
+row, payload, retry count, and final status.
+
+[source]
+----
+EmailOrchestrator.deliver(...)
+  -> create EmailDelivery
+  -> EmailDispatcherWorker.perform_async(delivery.id)
+  -> render Liquid subject/html/text
+  -> DynamicMailer.dispatch_email(...)
+----
+
+== Workflow task notifications
+
+`TaskNotificationWorker` is the bridge between workflow tasks and user-facing
+notifications. It creates a `Notification` row and then calls
+`WorkflowMailer.task_assigned(...).deliver_later`.
+
+== Endpoints and UI
+
+[cols="1,2,3", options="header"]
+|===
+| Method | Path | Description
+| `GET` | `/api/v1/notifications` | Unread/current notifications for the user.
+| `PATCH` | `/api/v1/notifications/:id/mark_read` | Mark one notification read.
+| `PATCH` | `/api/v1/notifications/mark_all_read` | Clear unread set.
+| `GET` | `/admin/email_templates` | Email template admin shell.
+| `GET` | `/admin/email_deliveries` | Delivery/outbox admin shell.
+|===

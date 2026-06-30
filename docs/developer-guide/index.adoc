@@ -3,7 +3,7 @@ Ashok Pelluru <apelluru@apache.org>
 v2.0.0, 2026-06-26
 :doctype: book
 :toc: left
-:toclevels: 3
+:toclevels: 4
 :sectnums:
 :sectanchors:
 :sectlinks:
@@ -16,10 +16,15 @@ v2.0.0, 2026-06-26
 :lang: en
 :description: Complete developer reference for the Capri DAM — models, APIs, components, auth, storage, workers, workflows, search, and testing.
 :keywords: DAM, developer guide, Ruby on Rails, React, REST, GraphQL, RBAC, Sidekiq
-:stylesdir: ../theme
-:stylesheet: capri.css
-:docinfodir: ..
-:docinfo: shared-head
+// ── Theme ─────────────────────────────────────────────────────────────────────
+:stylesdir: theme
+:stylesheet: arc42.css
+:docinfodir: .
+:docinfo: shared
+// ── PDF theme ────────────────────────────────────────────────────────────────
+:pdf-themesdir: theme
+:pdf-theme: arc42
+// ─────────────────────────────────────────────────────────────────────────────
 
 This guide is the authoritative reference for contributors and integrators working on
 **Capri DAM**.  It covers every layer of the stack — data models, REST and GraphQL APIs,
@@ -28,30 +33,74 @@ the workflow engine, semantic search, and the test suite.
 
 ifdef::backend-html5[]
 [.text-right]
-link:../[← Documentation Hub] · link:../architecture/[Architecture Docs]
+link:headless-dam-developer-guide.pdf[⬇ Download as PDF] · link:../[← Documentation Hub] · link:../architecture/[Architecture Docs]
 endif::backend-html5[]
 
-// ── Sections ──────────────────────────────────────────────────────────────────
+// 1. Domain Models
+include::src/01_models.adoc[]
 
-include::models.adoc[leveloffset=+1]
+// 2. REST API Reference
+include::src/02_api-reference.adoc[]
 
-include::api-reference.adoc[leveloffset=+1]
+// 3. GraphQL API
+include::src/03_graphql.adoc[]
 
-include::graphql.adoc[leveloffset=+1]
+// 4. UI Components
+include::src/04_ui-components.adoc[]
 
-include::ui-components.adoc[leveloffset=+1]
+// 5. Authentication, Authorisation & RBAC
+include::src/05_authentication.adoc[]
 
-include::authentication.adoc[leveloffset=+1]
+// 6. Storage Backends & CDN
+include::src/06_storage.adoc[]
 
-include::storage.adoc[leveloffset=+1]
+// 7. Background Workers & Jobs
+include::src/07_workers-and-jobs.adoc[]
 
-include::workers-and-jobs.adoc[leveloffset=+1]
+// 8. Workflow Engine
+include::src/08_workflows.adoc[]
 
-include::workflows.adoc[leveloffset=+1]
+// 9. Search & AI Embeddings
+include::src/09_search.adoc[]
 
-include::search.adoc[leveloffset=+1]
+// 10. Testing Guide
+include::src/10_testing.adoc[]
 
-include::testing.adoc[leveloffset=+1]
+// 11. Admin Module
+include::src/11_admin-module.adoc[]
+
+// 12. Collections
+include::src/12_collections.adoc[]
+
+// 13. Bin
+include::src/13_bin.adoc[]
+
+// 14. Duplicate Detection
+include::src/14_duplicate-detection.adoc[]
+
+// 15. Reports & Analytics
+include::src/15_reports-analytics.adoc[]
+
+// 16. Intelligence
+include::src/16_intelligence.adoc[]
+
+// 17. Ingestion & Migration
+include::src/17_ingestion-migration.adoc[]
+
+// 18. Metadata Tools
+include::src/18_metadata-tools.adoc[]
+
+// 19. CDN & Edge
+include::src/19_cdn-edge.adoc[]
+
+// 20. Image Editor
+include::src/20_image-editor.adoc[]
+
+// 21. Notifications & Email
+include::src/21_notifications-email.adoc[]
+
+// 22. Data Health
+include::src/22_data-health.adoc[]
 
 ifdef::backend-html5[]
 // Back-to-top button
@@ -59,7 +108,9 @@ ifdef::backend-html5[]
 <button id="back-to-top" title="Back to top">&#8679;</button>
 <script>
   const btn = document.getElementById('back-to-top');
-  window.addEventListener('scroll', () => { btn.classList.toggle('visible', window.scrollY > 400); });
+  window.addEventListener('scroll', () => {
+    btn.classList.toggle('visible', window.scrollY > 400);
+  });
   btn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
 </script>
 ++++

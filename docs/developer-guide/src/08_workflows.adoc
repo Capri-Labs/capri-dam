@@ -1,0 +1,75 @@
+[[section-workflows]]
+= Workflow Engine
+
+The workflow subsystem combines persisted templates, a React Flow designer, and
+Sidekiq-driven runtime execution. Human approvals and automated steps share the
+same DAG, but `WorkflowAdvancerService` and `WorkflowActionExecutor` decide which
+branches pause and which continue immediately.
+
+== Runtime records
+
+[cols="1,3", options="header"]
+|===
+| Model | Purpose
+| `WorkflowStep` | Template node definition.
+| `WorkflowInstance` | Live run for an asset or collection.
+| `WorkflowTask` | Human approval/review item created from approval nodes.
+|===
+
+== Supported node types
+
+[cols="1,3", options="header"]
+|===
+| Node type | Behaviour
+| `start`, `end` | Entry/terminal nodes.
+| `approval` | Creates a `WorkflowTask` and pauses until decision.
+| `condition` | Routes to `true_branch` or `false_branch`.
+| `delay` | Defers continuation through `WorkflowDelayWorker`.
+| `email`, `in_app_notify`, `slack`, `teams`, `sms` | Notification nodes.
+| `webhook`, `secure_webhook`, `api_call` | Outbound integration nodes.
+| `set_status`, `metadata_update` | Metadata/status mutation.
+| `add_tags`, `remove_tags` | Asset classification updates.
+| `move_asset`, `copy_asset`, `archive`, `publish` | Asset movement/publishing actions.
+| `ai_metadata`, `generate_thumbnail`, `cdn_sync` | Automated AI/delivery helpers.
+|===
+
+== Execution flow
+
+[source]
+----
+trigger matched
+  -> WorkflowInitiatorWorker
+  -> WorkflowInstance(status: running)
+  -> WorkflowEngineWorker
+       -> approval? create WorkflowTask and wait
+       -> automated? WorkflowActionExecutor executes and advances
+       -> delay? WorkflowDelayWorker.perform_in(...)
+       -> end? mark instance completed
+----
+
+== Workflow APIs
+
+[cols="1,2,1,3", options="header"]
+|===
+| Method | Path | Auth | Description
+| `GET` | `/api/v1/workflow_instances` | user | Runtime instances.
+| `GET` | `/api/v1/workflow_tasks` | user | Pending tasks/worklist.
+| `PATCH` | `/api/v1/workflow_tasks/:id` | user | Approve/reject/comment on a task.
+| `GET/POST/PATCH/DELETE` | `/api/v1/workflows...` | admin | Designer persistence for templates.
+|===
+
+== Designer UI
+
+`WorkflowDesigner.jsx` composes the editing shell, while `WorkflowCanvas.jsx`
+maps UI node types to backend payloads through `NODE_TYPE_MAP`. The palette is
+split into approval, communication, integration, asset-operation, and AI helper
+categories.
+
+Related supporting screens:
+
+* `ApprovalActions.jsx` — inline task approval/rejection UX.
+* `BottleneckReport.jsx` — SLA and queue hotspot reporting.
+* `BulkReassignModal.jsx` — mass reassignment of stuck tasks.
+
+NOTE: Step escalation is configured per approval node; legacy workflow-level
+fallback fields remain only for backward compatibility.

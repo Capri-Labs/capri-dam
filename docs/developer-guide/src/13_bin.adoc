@@ -1,0 +1,61 @@
+[[section-bin-module]]
+= Recycle Bin
+
+The recycle bin is built on the `SoftDeletable` concern and provides a delayed,
+recoverable delete workflow for both assets and folders.
+
+== Soft delete model
+
+`app/models/concerns/soft_deletable.rb` adds the common lifecycle:
+
+[source,ruby]
+----
+record.soft_delete
+record.restore
+record.trashed?
+Model.active
+Model.trashed
+----
+
+== Purge lifecycle
+
+`BinPurgeService` performs the irreversible phase. It checks for workflow
+protection, cleans collection/duplicate references, and records reclaimed
+storage metrics before the hard delete is finalized.
+
+[cols="1,3", options="header"]
+|===
+| Worker/service | Role
+| `BinPurgeWorker` | Runs retention-based purge batches.
+| `TrashCleanupWorker` | Cleans remaining stale trash artifacts.
+| `BinPurgeService` | Domain rules and safety checks for permanent delete.
+|===
+
+== REST endpoints
+
+[cols="1,2,3", options="header"]
+|===
+| Method | Path | Description
+| `GET` | `/api/v1/bin` | List trashed assets/folders with filters.
+| `GET` | `/api/v1/bin/stats` | Totals, storage used, retention days.
+| `POST` | `/api/v1/bin/bulk_restore` | Restore mixed selections.
+| `DELETE` | `/api/v1/bin/bulk_destroy` | Permanently delete selected rows.
+| `DELETE` | `/api/v1/bin/empty` | Empty the entire bin.
+| `GET/PATCH` | `/api/v1/bin/retention_policy` | Read/update purge policy.
+| `POST` | `/api/v1/bin/trigger_purge` | Start a purge run.
+| `GET` | `/api/v1/bin/purge_status` | Job lock/status payload.
+|===
+
+== Bin UI
+
+`BinManager.jsx` is a full-screen manager with:
+
+* stats bar and retention summary
+* list/grid toggle
+* mixed asset/folder selection
+* bulk restore and bulk permanent delete
+* active purge banner while a job is running
+
+WARNING: Permanent delete is intentionally separated from the initial trash
+operation; workflow-protected assets may remain unpurgeable until instances are
+completed or cancelled.

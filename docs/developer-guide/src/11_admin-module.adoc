@@ -1,0 +1,77 @@
+[[section-admin-module]]
+= Admin Module
+
+The Admin module is a set of Rails-rendered shells backed by React islands under
+`app/javascript/components/Admin/`. It centralises identity, access control,
+infrastructure, messaging, migration operations, and system observability.
+
+== User and group administration
+
+`UsersManager.jsx`, `UserDrawer.jsx`, and `UserGroupsManager.jsx` are the main
+screens for account lifecycle work.
+
+[cols="1,3", options="header"]
+|===
+| Capability | Implementation notes
+| User management | Create, edit, disable, and inspect users; assign roles and group memberships.
+| Group hierarchy | Nested `UserGroup` trees support inherited membership and permission roll-up.
+| Drawer detail | `UserDrawer.jsx` surfaces per-user metadata, memberships, and admin actions without leaving the list.
+|===
+
+== ACL matrix and folder policy administration
+
+`AclMatrix.jsx` edits the current folder-policy columns directly.
+
+[cols="1,1,3", options="header"]
+|===
+| Field | Type | Description
+| `read_access` | boolean | Browse folder and asset content.
+| `modify_access` | boolean | Edit metadata/content.
+| `create_access` | boolean | Upload or create children.
+| `delete_access` | boolean | Trash items.
+| `replicate_access` | boolean | Copy/share/export operations.
+| `manage_access` | boolean | Folder administration.
+| `explicit_deny` | boolean | Hard deny that overrides permissive inheritance.
+|===
+
+== Operational configuration
+
+`SystemConfigurationsController` and the System Status UI provide runtime
+controls instead of compile-time environment switching.
+
+[cols="1,3", options="header"]
+|===
+| Area | Notes
+| System configuration | Log level, TTL-style retention knobs, and feature toggles.
+| Storage backend admin | Manage `StorageBackend` definitions and active targets.
+| Email engine | `EmailEngineManager.jsx` manages templates, deliveries, and SMTP-related workflows.
+| Report snapshots | Historical `ReportSnapshot` files are available from the reports area.
+|===
+
+== System status
+
+`Admin/SystemStatus/index.jsx` exposes operational tabs for:
+
+* AI gateway connectivity and feature availability
+* SMTP configuration and test-send
+* observability/runtime diagnostics
+* Redis/Sidekiq and background queue health
+* storage operations and service checks
+* operational logging / status summaries
+
+== Key admin endpoints
+
+[cols="1,2,3", options="header"]
+|===
+| Method | Path | Purpose
+| `GET /admin/system_status` | shell | Render operations dashboard.
+| `POST /admin/system_status/test_smtp` | action | Validate SMTP settings.
+| `PATCH /admin/system_status/update_smtp` | action | Persist SMTP config.
+| `GET /admin/reports` | shell | Analytics and export dashboard.
+| `GET /admin/report_snapshots` | shell | Snapshot history.
+| `GET /admin/intelligence` | shell | AI operations console.
+| `GET /admin/migrations` | shell | Connectors, ingestion, and data-health console.
+|===
+
+NOTE: Most admin routes render HTML shells; the heavy-lifting JSON traffic goes
+through `/api/v1/...` controllers documented in <<section-api-reference>>.

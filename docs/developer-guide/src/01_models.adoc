@@ -1,0 +1,264 @@
+[[section-models]]
+= Domain Models
+
+Capri DAM uses conventional Rails models under `app/models/`, but several
+subsystems add domain-specific state machines, JSONB-backed configuration, and
+join models that are important for extension work.
+
+== Core asset and library models
+
+=== Asset-adjacent records
+
+[cols="1,1,3", options="header"]
+|===
+| Model | Key fields | Notes
+
+| `AssetVersion`
+| `version_number`, `file_size`, `properties`
+| Immutable snapshot of a binary revision. The active asset keeps the current
+master; historical revisions remain addressable for restore, checksum analysis,
+and duplicate detection.
+
+| `Rendition`
+| `kind`, `file`, `metadata`
+| Cached derivative output such as thumbnails or transformed delivery assets.
+The platform still prefers dynamic CDN/image-IO delivery where possible.
+
+| `AssetEmbedding`
+| `embedding`, `model_name`, `status`
+| Stores the pgvector payload used by semantic search, smart collections,
+cluster-map visualisation, and Copilot-style discovery.
+
+| `AssetProvenanceRecord`
+| `manifest_status`, `is_ai_generated`, `is_ai_modified`, `verification_details`
+| Normalised C2PA/provenance result for an asset. Populated from gateway
+callbacks and queried by provenance dashboards.
+
+| `AssetWorkflowTrigger`
+| runtime-only association via `workflow_instances`
+| Assets do not store workflow logic directly; matching is delegated to
+`AssetWorkflowTriggerWorker` and persisted as `WorkflowInstance` rows.
+|===
+
+=== Access, identity, and auditing
+
+[cols="1,1,3", options="header"]
+|===
+| Model | Key fields | Notes
+
+| `AuditLog`
+| `auditable_type`, `auditable_id`, `action`, `changeset`, `actor_id`
+| Append-oriented change ledger used for operational traceability, admin
+history, and compliance review.
+
+| `Notification`
+| `title`, `message`, `read_at`, `action_url`
+| Lightweight in-app notification shown by `NotificationBell.jsx`. Created by
+workflow/task flows and cleared through `/api/v1/notifications`.
+
+| `PersonalAccessToken`
+| `name`, `token_digest`, `last_used_at`, `expires_at`, `revoked_at`
+| Token-based auth for automation. Tokens are created once, stored hashed, and
+can be revoked without touching the owning `User`.
+
+| `Setting`
+| `key`, `value`
+| Global key/value store used for operational toggles such as duplicate scan
+status, bin retention, and health-check markers.
+
+| `SystemConfiguration`
+| `logging_level`, `retention_days`, feature flags in JSONB
+| Runtime operational configuration edited in the admin module.
+
+| `SystemConnector`
+| `provider_type`, `endpoint`, `status`, `tdm_sanitation`, `analysis_report`
+| Source-system connection used by migrations and ingestion. Tracks health,
+asset counts, and webhook/migration metadata.
+|===
+
+== Collections, duplicates, and governance
+
+=== Collections
+
+`Collection` is richer than a simple tag set. The model combines curated and
+rule-driven groupings, temporal visibility, and attribute-based access controls.
+
+[cols="1,1,3", options="header"]
+|===
+| Model | Key fields | Notes
+
+| `Collection`
+| `collection_type`, `slug`, `expires_at`, `properties`
+| Supports manual and smart workspaces. `properties` stores governance fields
+such as `allowed_groups`, `denied_groups`, and other presentation settings.
+Expired rows are filtered from the `active` scope.
+
+| `CollectionRule`
+| `semantic_prompt`, `similarity_threshold`, `rule_type`
+| Smart-collection routing rule. The current implementation is semantic and
+prompt-driven rather than classic `field/op/value` filtering.
+
+| `CollectionAsset`
+| `collection_id`, `asset_id`, `position`, `pinned`
+| Join row for manual membership plus pinning/order information used by the UI.
+
+| `DuplicateGroup`
+| `checksum`, `status`, `resolution_metadata`
+| SHA-256 based duplicate bucket. Lifecycle is `pending`, `resolved`, or
+`dismissed`; resolution metadata records which asset remained canonical.
+|===
+
+=== Governance and delivery configuration
+
+[cols="1,1,3", options="header"]
+|===
+| Model | Key fields | Notes
+
+| `C2paConfiguration`
+| `gateway_c2pa_enabled`, `auto_verify_on_ingest`, `verification_strictness`
+| Organisation-wide provenance policy consumed by `AssetProvenanceWorker` and
+admin provenance tooling.
+
+| `CdnConfiguration`
+| provider credentials, signing settings, purge defaults
+| Canonical CDN/edge configuration backing `CdnManager` and the edge-operation
+API.
+
+| `StorageBackend`
+| `service_name`, `provider`, `bucket`, `active`
+| Admin-managed storage target. Used when switching local/S3/GCS/Azure-style
+backends without changing code.
+
+| `QuarantinedAsset`
+| review metadata, source asset linkage
+| Records binaries isolated from normal delivery because of validation,
+security, or ingestion-policy issues.
+
+| `FolderPolicy`
+| `read_access`, `modify_access`, `create_access`, `delete_access`, `replicate_access`, `manage_access`, `explicit_deny`
+| The current ACL matrix used by admin and folder APIs. This is broader than the
+older `can_*` naming still visible in stale docs.
+|===
+
+== AI, reporting, and automation
+
+=== AI and automation models
+
+[cols="1,1,3", options="header"]
+|===
+| Model | Key fields | Notes
+
+| `AiConfiguration`
+| provider selection, gateway URL/model fields
+| Singleton-style configuration for the active AI provider and default runtime
+models.
+
+| `AiModelConfig`
+| `name`, `provider`, `model_id`, `capability`, `health_status`, `is_default`
+| Registered model catalogue for the Style Model Hub and health checks.
+
+| `AiBatchJob`
+| `task_type`, `target_scope`, `status`, counters, `error_message`
+| Tracks gateway-dispatched bulk AI runs. States include `queued`, `running`,
+`paused`, `completed`, `failed`, and `cancelled`.
+
+| `AgentWorkflow`
+| `trigger_event`, `agent_model`, `tools_enabled`, `active`
+| Event-driven AI automation recipe broadcast to the gateway when changed.
+
+| `AgentExecution`
+| `trigger_type`, `status`, `duration_ms`, `output`
+| Execution log row written back by the gateway for an `AgentWorkflow`.
+|===
+
+=== Workflow runtime
+
+[cols="1,1,3", options="header"]
+|===
+| Model | Key fields | Notes
+
+| `WorkflowInstance`
+| `status`, `current_step_id`, `context_data`
+| Live execution bound to an asset or collection. Advanced by
+`WorkflowEngineWorker`.
+
+| `WorkflowTask`
+| `status`, `decision`, `assigned_to`, `due_at`
+| Human approval/review item created for approval nodes. Drives notifications,
+SLA tracking, and bottleneck reporting.
+|===
+
+=== Reporting, messaging, and analytics
+
+[cols="1,1,3", options="header"]
+|===
+| Model | Key fields | Notes
+
+| `ReportDefinition`
+| `slug`, `report_type`, `schedule`, `filters`
+| Saved report recipe for analytics/export generation.
+
+| `ReportSnapshot`
+| `status`, `format`, attached output files
+| Concrete generated report artifact, typically produced by
+`Reports::GenerationJob` through `Reports::Orchestrator`.
+
+| `DailyMetric`
+| date bucket + counters/aggregates
+| Pre-aggregated analytics feeding the admin dashboard.
+
+| `EmailTemplate`
+| `event_key`, `subject`, `html_body`, `text_body`, `active`
+| Liquid-based outbound template registry.
+
+| `EmailDelivery`
+| `recipient_email`, `status`, `payload`, `retry_count`, `error_log`
+| Outbox/audit row for SMTP delivery attempts.
+|===
+
+== Ingestion and metadata operations
+
+=== Ingestion pipeline records
+
+[cols="1,1,3", options="header"]
+|===
+| Model | Key fields | Notes
+
+| `IngestionBatch`
+| `source_type`, `status`, `processed_count`, `duplicate_count`, `error_count`
+| Migration/import batch state machine. Observed states are `initializing`,
+`extracting`, `transforming`, `review_needed`, `committed`, and `failed`.
+
+| `IngestionItem`
+| source identifiers, `status`, `transformed_payload`, review flags
+| Per-record ingest item. Statuses include `pending`, `ai_processing`,
+`flagged_duplicate`, `flagged_error`, `ready_for_import`, `committed`, and
+`rejected`.
+|===
+
+=== Metadata operations
+
+[cols="1,1,3", options="header"]
+|===
+| Model | Key fields | Notes
+
+| `MetadataSchema`
+| `level`, `mime_segment`, `tabs`, `is_builtin`
+| Hierarchical schema tree with root/type/subtype matching and inherited tab
+resolution.
+
+| `MetadataExport`
+| `name`, `status`, `scheduled_at`, output files
+| Async CSV export request managed by `MetadataExportWorker`.
+
+| `MetadataImport`
+| `name`, `status`, `batch_size`, delimiters, source file
+| Async CSV import request managed by `MetadataImportWorker`.
+
+| `StylePreset`
+| `slug`, `style_params`, `active`, `is_default`, `synced_at`
+| Reusable AI style payload synchronized to the gateway.
+|===
+
+IMPORTANT: `user_preferences.timezone` remains server-managed and must not be
+reintroduced into public APIs, serializers, or GraphQL types.

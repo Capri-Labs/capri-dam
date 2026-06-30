@@ -1,0 +1,58 @@
+[[section-ingestion-migration]]
+= Ingestion and Migration Pipeline
+
+The ingestion stack normalises external DAM sources into staged
+`IngestionBatch`/`IngestionItem` records before commit into canonical assets.
+
+== Supported connector families
+
+`IngestionAdapters::Factory` currently maps adapters for AEM, Aprimo,
+Brandfolder, Bynder, Canto, Cloudinary, Extensis, FTP, MediaValet, Nuxeo,
+SharePoint, Widen, and a legacy S3-style source.
+
+== Batch lifecycle
+
+[cols="1,3", options="header"]
+|===
+| Status | Meaning
+| `initializing` | Batch record created and queued.
+| `extracting` | Source records/files being enumerated.
+| `transforming` | AI/normalisation stage.
+| `review_needed` | Manual review required before commit.
+| `committed` | Accepted items written into DAM models.
+| `failed` | Terminal error.
+|===
+
+== Pipeline workers
+
+[cols="1,3", options="header"]
+|===
+| Worker | Responsibility
+| `PreFlightAnalysisWorker` | Source inspection, sizing, metadata-gap, and readiness analysis.
+| `IngestionWorker` | Extraction from the connector adapter.
+| `MigrationTransformWorker` | Per-item transformation/AI cleanup.
+| `MigrationCommitWorker` | Final commit into library records.
+| `MigrationReportWorker` | Summary/report generation.
+|===
+
+== UI
+
+[cols="1,3", options="header"]
+|===
+| Component | Notes
+| `IngestionDashboard.jsx` | KPI cards, active-batch tracking, timeline view, search/filter, and audit handoff.
+| `SystemConnectors.jsx` | Connector CRUD, test connection, pause/resume, and start migration.
+|===
+
+== APIs
+
+[cols="1,2,3", options="header"]
+|===
+| Method | Path | Description
+| `GET/POST` | `/api/v1/system_connectors` | Manage connectors.
+| `POST` | `/api/v1/system_connectors/test_connection` | Validate connectivity.
+| `POST` | `/api/v1/system_connectors/:id/start_migration` | Create a new `IngestionBatch`.
+| `GET/POST` | `/api/v1/ingestion_batches` | List/create batches.
+| `GET` | `/api/v1/ingestion_batches/stats` | Dashboard aggregates.
+| `POST` | `/api/v1/ingestion_batches/:id/abort` | Abort a running batch.
+|===

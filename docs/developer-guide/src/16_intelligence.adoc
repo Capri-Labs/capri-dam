@@ -1,0 +1,56 @@
+[[section-intelligence-module]]
+= Intelligence Module
+
+The Intelligence module covers provider configuration, model registry, AI batch
+processing, semantic search helpers, provenance policy, and gateway-facing
+agent workflows.
+
+== AI configuration and model registry
+
+`AiConfiguration` stores the active provider/runtime defaults, while
+`AiModelConfig` stores provider/model/capability tuples for concrete tasks.
+
+[cols="1,3", options="header"]
+|===
+| Capability | Notes
+| Model health | `AiModelHealthCheckWorker` publishes pings and records callback latency/status.
+| Capability defaults | The admin UI can mark a single default model per capability.
+| Style hub | `StyleModelHub.jsx` manages provider, capability, health, and default selection.
+|===
+
+== Batch jobs and task registry
+
+`Ai::BatchTaskRegistry` defines the supported `task_type` and `target_scope`
+catalogues surfaced by `/api/v1/ai_batch_jobs/task_types`. `AiBatchJobWorker`
+resolves targets, marks the job running, and publishes a single gateway event.
+
+== Provenance and C2PA
+
+`ProvenanceC2PA.jsx` manages:
+
+* gateway enablement
+* auto-verify and auto-sign on ingest
+* import requirements
+* AI disclosure policy
+* signing issuer / organisation and strictness
+
+Single-asset verification is dispatched by `AssetProvenanceWorker`; bulk
+verification uses AI batch jobs.
+
+== Copilot and prompt tools
+
+[cols="1,3", options="header"]
+|===
+| Component | Notes
+| `SemanticCopilot.jsx` | Chat-style semantic search client using `/api/v1/copilot/search`.
+| `PromptPlayground.jsx` | Admin-only prompt lab backed by `/api/v1/ai/lab/models` and `/api/v1/ai/lab/chat`.
+| `BatchProcessing.jsx` | Batch AI run launcher with progress polling and cancellation.
+| `AgentWorkflows.jsx` | CRUD for gateway-driven event automations.
+|===
+
+== Agent workflows
+
+`AgentWorkflowsController` exposes read access to authenticated users and write
+access to admins. Toggle/create/update actions rebroadcast workflow definitions
+to the AI gateway, and the gateway writes back `AgentExecution` rows using the
+shared secret callback.

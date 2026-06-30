@@ -1,0 +1,47 @@
+[[section-duplicate-detection]]
+= Duplicate Detection
+
+Duplicate detection groups assets by SHA-256 checksum taken from
+`AssetVersion.properties["checksum_sha256"]` and exposes review workflows for
+resolving redundant binaries.
+
+== Detection flow
+
+[cols="1,3", options="header"]
+|===
+| Stage | Notes
+| Repository scan | `DuplicateRepositoryScanWorker` walks the library and tracks progress in `Setting`.
+| Grouping | `DuplicateDetectionService` groups matching checksums into `DuplicateGroup` rows.
+| Resolution | Users keep all members, delete duplicates, or dismiss a false positive.
+|===
+
+== Group lifecycle
+
+[cols="1,3", options="header"]
+|===
+| Status | Meaning
+| `pending` | Needs review.
+| `resolved` | Canonical result recorded.
+| `dismissed` | False positive or intentionally ignored.
+|===
+
+== APIs
+
+[cols="1,2,3", options="header"]
+|===
+| Method | Path | Description
+| `GET` | `/api/v1/duplicate_groups` | List groups by status.
+| `GET` | `/api/v1/duplicate_groups/stats` | Count summary.
+| `GET` | `/api/v1/duplicate_groups/:id` | Group detail with member assets.
+| `PATCH` | `/api/v1/duplicate_groups/:id/resolve` | Resolve a group.
+| `PATCH` | `/api/v1/duplicate_groups/:id/dismiss` | Dismiss a group.
+|===
+
+GraphQL also exposes `duplicateGroups`, `duplicateManagerStats`,
+`duplicateManagerScanStatus`, `resolveDuplicateGroup`, and
+`triggerDuplicateScan`.
+
+== UI
+
+`DuplicateManager.jsx` provides filter chips, stats cards, detail fetching, and
+launches `DuplicateResolutionModal` for destructive review decisions.

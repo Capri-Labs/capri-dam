@@ -1,0 +1,56 @@
+[[section-reports-analytics]]
+= Reports and Analytics
+
+Reporting is split between saved definitions, generated snapshots, and live
+analytics aggregation.
+
+== Core pipeline
+
+[source]
+----
+Reports::GenerationJob
+  -> Reports::Orchestrator.execute!(snapshot_id)
+     -> Reports::AnalyticsService / generator selection
+     -> CSV / XLSX / PDF output
+     -> attach files to ReportSnapshot
+----
+
+== Domain records
+
+[cols="1,3", options="header"]
+|===
+| Model | Purpose
+| `ReportDefinition` | Saved report recipe and schedule metadata.
+| `ReportSnapshot` | Concrete generated artifact and status.
+| `DailyMetric` | Pre-aggregated counters used by dashboards.
+|===
+
+== Export formats
+
+[cols="1,3", options="header"]
+|===
+| Generator | Notes
+| `Reports::Generators::Csv` | Row-oriented export for external analysis.
+| `Reports::Generators::Xlsx` | Spreadsheet-oriented export when richer tabular output is needed.
+| `Reports::Generators::Pdf` | Presentation/summary-friendly artifact.
+|===
+
+== Analytics dashboard
+
+`AnalyticsDashboard.jsx` renders:
+
+* date-range switching, including custom ranges
+* KPI cards for assets, workflows, storage, AI coverage, and duplicates
+* charts for trends, content types, workflow funnel, top folders, and top uploaders
+* heuristic “AI insights” generated from threshold logic in
+  `Reports::AnalyticsService`
+
+== Endpoints
+
+[cols="1,2,3", options="header"]
+|===
+| Method | Path | Description
+| `GET` | `/admin/reports/analytics` | JSON payload for dashboard charts and KPI cards.
+| `GET` | `/admin/reports` | Reports shell.
+| `GET` | `/admin/report_snapshots` | Snapshot history shell.
+|===

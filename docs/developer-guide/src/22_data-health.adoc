@@ -1,0 +1,28 @@
+[[section-data-health]]
+= Data Health Module
+
+The Data Health module is the operational quality gate for migrations and large
+library hygiene tasks.
+
+== Responsibilities
+
+* run pre-flight scans before migration commit
+* score source-system health and metadata completeness
+* surface remediation candidates
+* enqueue automated fixes through `DataHealthRemediationWorker`
+
+== API surface
+
+[cols="1,2,3", options="header"]
+|===
+| Method | Path | Description
+| `GET` | `/api/v1/data_health` | Dashboard payload with scores and issue breakdowns.
+| `POST` | `/api/v1/data_health/scan` | Trigger fresh scan/pre-flight analysis.
+| `POST` | `/api/v1/data_health/remediate` | Launch remediation worker.
+|===
+
+== UI
+
+`DataHealthDashboard.jsx` shares the migration-admin visual language and focuses
+on connector-level health scores, storage composition, impact indicators, and
+scan/remediation launch points.

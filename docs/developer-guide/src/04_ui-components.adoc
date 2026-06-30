@@ -1,0 +1,66 @@
+[[section-ui-components]]
+= UI Components
+
+The React frontend is organized into domain folders under
+`app/javascript/components/`. Complex modules are mounted as islands inside the
+Rails shell and typically fetch JSON from `/api/v1/...`.
+
+== Core library screens
+
+[cols="1,3", options="header"]
+|===
+| Component area | Notes
+| `Folders/*` | Asset explorer, folder tree, upload flows, and the image editor dialog.
+| `Search/*` | Full-text and semantic search experiences layered on asset APIs.
+| `Dashboard/*` | Top-level KPI and activity screens.
+| `Bin/*` | Dedicated recycle-bin manager with stats, filtering, and mixed item restore/delete.
+| `Collections/*` | Workspace board, detail view, rule simulation, and semantic cluster map.
+| `Duplicates/*` | Duplicate-review dashboard with modal resolution workflow.
+| `NotificationBell.jsx` | Global unread bell polling `/api/v1/notifications`.
+|===
+
+== Admin surfaces
+
+[cols="1,3", options="header"]
+|===
+| Component | Responsibility
+| `Admin/UsersManager.jsx`, `UserDrawer.jsx` | User CRUD, role changes, membership, and account detail.
+| `Admin/UserGroupsManager.jsx` | Hierarchy management for nested groups.
+| `Admin/AclMatrix.jsx` | Folder-policy matrix editing against the current `read_access`/`modify_access` style columns.
+| `Admin/EmailEngineManager.jsx` | Template editing, event mapping, and outbox monitoring.
+| `Admin/SystemStatus/index.jsx` | Operational status tabs for AI gateway, SMTP, observability, feature flags, and storage operations.
+| `Admin/Reports/AnalyticsDashboard.jsx` | Analytics charts and export launch point.
+| `Admin/Migrations/*` | Connectors, ingestion dashboard, data-health review, and pre-flight tooling.
+| `Admin/Intelligence/*` | Model hub, provenance policy, batch AI jobs, prompt playground, semantic copilot, and agent workflows.
+|===
+
+== Tools and settings screens
+
+[cols="1,3", options="header"]
+|===
+| Area | Notes
+| `Tools/MetadataSchemas/*` | Hierarchical schema tree, folder assignment, and tab/field editing.
+| `Tools/MetadataExport/*` | Export creation, property discovery, scheduling, and download UI.
+| `Tools/MetadataImport/*` | CSV import upload, column mapping, delimiter controls, and polling.
+| `Tools/AssetConfigurations/*` | Houses duplicate-manager settings and related operational asset policies.
+| `Profile/*` and `Settings/*` | User preferences and personal account flows.
+|===
+
+== Workflow and creative tooling
+
+[cols="1,3", options="header"]
+|===
+| Component | Notes
+| `Workflows/WorkflowDesigner.jsx` | Top-level designer shell and persistence orchestration.
+| `Workflows/WorkflowCanvas.jsx` | React Flow canvas with node-to-backend type mapping.
+| `Workflows/NodePalette.jsx` | User-facing catalogue of workflow node types.
+| `Workflows/ApprovalActions.jsx` | Runtime decision controls for assigned tasks.
+| `Workflows/BottleneckReport.jsx` | SLA and queue analytics.
+| `Workflows/BulkReassignModal.jsx` | Mass assignment/rebalancing tool.
+| `Folders/ImageEditorDialog.jsx` | Multi-tab image editor: Suggestions, Adjust, AI Studio, LUT filters, geometry, and custom CLI.
+|===
+
+NOTE: New module-specific details are documented in <<section-admin-module>>,
+<<section-collections-module>>, <<section-bin-module>>, <<section-duplicate-detection>>,
+<<section-intelligence-module>>, <<section-ingestion-migration>>, and
+<<section-image-editor>>.

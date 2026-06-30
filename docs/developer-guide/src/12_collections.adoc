@@ -1,0 +1,67 @@
+[[section-collections-module]]
+= Collections Module
+
+Collections are workspace-style containers for curated or AI-routed assets.
+They combine manual membership, semantic routing rules, access controls, and
+visualisation tooling.
+
+== Manual vs smart collections
+
+[cols="1,3", options="header"]
+|===
+| Type | Behaviour
+| `manual` | Membership is managed explicitly through `CollectionAsset` join rows.
+| `smart` | Membership is derived from `CollectionRule` semantic prompts and similarity thresholds.
+|===
+
+`Collection.active` excludes soft-deleted and expired rows; `expires_at` is used
+for TTL-style visibility.
+
+== Access model
+
+ABAC-style access data is stored in `Collection#properties`.
+
+[cols="1,3", options="header"]
+|===
+| Property key | Meaning
+| `allowed_groups` | Only these groups are allowed when populated.
+| `denied_groups` | Explicit blocklist for workspace access.
+|===
+
+== Smart routing
+
+`SmartCollectionRouterWorker` reevaluates semantic prompts against stored
+embeddings. The REST controller also supports simulation before a rule is saved.
+
+[source,ruby]
+----
+{
+  semantic_prompt: "winter lifestyle campaign",
+  similarity_threshold: 0.82
+}
+----
+
+== REST and GraphQL surface
+
+[cols="1,2,3", options="header"]
+|===
+| Interface | Operation | Notes
+| REST | `GET /api/v1/collections/:slug/cluster_map` | Returns semantic node positions for `SemanticClusterMap.jsx`.
+| REST | `POST /api/v1/collections/:slug/configure_rule` | Upserts smart-routing rule.
+| REST | `POST /api/v1/collections/:slug/simulate_rule` | Dry-run semantic membership.
+| GraphQL | `createCollection` | Create collection record.
+| GraphQL | `addAssetToCollection`, `removeAssetFromCollection` | Manual membership changes.
+|===
+
+== UI components
+
+[cols="1,3", options="header"]
+|===
+| Component | Notes
+| `CollectionsBoard.jsx` | Board/list of workspaces with bulk actions, link copying, and property editing.
+| `CollectionDetail.jsx` | Detail screen for rule tuning, asset pinning, governance warnings, and AI analysis hooks.
+| `SemanticClusterMap.jsx` | 2D semantic scatterplot of embedding-derived clusters.
+|===
+
+TIP: Use the `as_of` query parameter on the detail endpoint to inspect a
+collection at a historical point in time.

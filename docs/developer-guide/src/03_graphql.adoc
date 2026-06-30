@@ -1,0 +1,155 @@
+[[section-graphql]]
+= GraphQL API
+
+GraphQL is implemented under `app/graphql/` with a single `QueryType` and
+`MutationType`. It complements REST rather than replacing it: read-heavy
+exploration flows use GraphQL; operational jobs and side effects usually stay in
+REST.
+
+== Schema entry points
+
+[cols="1,3", options="header"]
+|===
+| Root type | Responsibility
+| `Types::QueryType` | Read models, search results, analytics-style status payloads, and admin catalogues.
+| `Types::MutationType` | State changes such as collection edits, duplicate resolution, PAT creation, and bin operations.
+|===
+
+== Major queries
+
+[cols="1,3", options="header"]
+|===
+| Query | Description
+
+| `assetDetail(uuid:)`
+| Returns one active asset by public UUID.
+
+| `searchAssets(query:, mode:, metadataFilters:, sortBy:, sortDirection:)`
+| Connection-based asset search with title matching, JSONB property filters, and
+sorting by name/date/size/type.
+
+| `collections`, `collection(slug:)`
+| Active collection catalogue and single-workspace lookup.
+
+| `imageProfiles`, `imageProfile(id:)`, `videoProfiles`, `videoProfile(id:)`
+| Delivery-profile catalogues.
+
+| `agentWorkflows`, `agentWorkflow(id:)`
+| AI automation definitions.
+
+| `aiBatchJobs`, `aiBatchJob(id:)`
+| Admin-only AI batch run history.
+
+| `c2paConfiguration`, `assetProvenanceRecords`, `assetProvenanceRecord(id:)`
+| Provenance/C2PA policy and verification records.
+
+| `aiModelConfigs`, `aiModelConfig(id:)`, `stylePresets`, `stylePreset(id:)`
+| Admin-only model registry and style-hub data.
+
+| `users`, `user(id:)`, `userGroups`, `userGroup(id:)`
+| Admin-only identity catalogues.
+
+| `duplicateGroups`, `duplicateGroup(id:)`, `duplicateManagerStats`, `duplicateManagerScanStatus`
+| Duplicate-management queries.
+
+| `binStats`, `binRetentionPolicy`, `binPurgeStatus`, `binAiSuggestions(limit:)`
+| Recycle-bin observability and heuristics.
+|===
+
+== Major mutations
+
+[cols="1,3", options="header"]
+|===
+| Mutation | Description
+
+| `updateAssetMetadata`
+| Patch title/description/custom metadata without dropping into REST.
+
+| `createCollection`, `addAssetToCollection`, `removeAssetFromCollection`
+| Collection authoring flows.
+
+| `createImageProfile`, `updateImageProfile`, `createVideoProfile`, `updateVideoProfile`
+| Delivery-profile maintenance.
+
+| `createUser`, `updateUser`, `createUserGroup`, `updateUserGroup`, `deleteUserGroup`
+| Admin identity management.
+
+| `startImpersonation`, `stopImpersonation`
+| Administrative troubleshooting workflow.
+
+| `createPersonalAccessToken`, `revokePersonalAccessToken`
+| API-token lifecycle.
+
+| `resolveDuplicateGroup`, `triggerDuplicateScan`
+| Duplicate-management actions.
+
+| `bulkRestoreFromBin`, `emptyBin`, `updateBinRetentionPolicy`, `triggerBinPurge`
+| Recycle-bin operations.
+
+| `createAiModelConfig`, `updateAiModelConfig`, `createStylePreset`, `updateStylePreset`
+| AI model and style-hub administration.
+|===
+
+== Important types
+
+[cols="1,3", options="header"]
+|===
+| Type | Notes
+| `AssetType` | Exposes asset identity, metadata, folder, versions, and related delivery state.
+| `CollectionType` | Includes smart/manual metadata plus joined assets.
+| `AgentWorkflowType` | AI automation definition with computed reliability and average duration.
+| `AiBatchJobType` | Bulk AI execution status and counters.
+| `AssetProvenanceRecordType` | Manifest status plus AI-origin metadata.
+| `AiModelConfigType` | Provider/model/capability registry row.
+| `DuplicateGroupType` | Duplicate bucket and member-asset projection.
+| `BinStatsType`, `BinRetentionPolicyType`, `BinPurgeStatusType` | Operational bin structures returned from computed queries.
+|===
+
+== Example queries
+
+[source,graphql]
+----
+query SearchAssets {
+  searchAssets(query: "campaign", mode: "images", sortBy: "updated_at", sortDirection: "desc", first: 20) {
+    nodes {
+      id
+      uuid
+      title
+      properties
+    }
+  }
+}
+----
+
+[source,graphql]
+----
+query DuplicateSummary {
+  duplicateManagerStats
+  duplicateManagerScanStatus
+  duplicateGroups(status: "pending", first: 10) {
+    nodes {
+      id
+      checksum
+      status
+    }
+  }
+}
+----
+
+[source,graphql]
+----
+mutation CreatePat {
+  createPersonalAccessToken(input: { name: "CI agent", expiresAt: "2026-12-31T00:00:00Z" }) {
+    personalAccessToken {
+      id
+      name
+      expiresAt
+    }
+    token
+  }
+}
+----
+
+IMPORTANT: Admin-oriented GraphQL fields enforce `context[:current_user]&.admin?`
+checks in resolvers; non-admin callers receive `[]`, `nil`, or an execution
+error depending on the field.

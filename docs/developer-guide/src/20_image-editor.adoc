@@ -1,0 +1,57 @@
+[[section-image-editor]]
+= Image Editor
+
+The image editor combines a React dialog, a Rails endpoint, and an
+`ImageProcessingService` that translates user intent into transformation
+operations.
+
+== Processing architecture
+
+`AssetsController#process_image` accepts `POST /api/v1/assets/:id/process_image`
+and delegates to `ImageProcessingService`. The service supports many numeric
+adjustments, LUT filters, geometry/crop operations, and a custom CLI-style
+advanced path.
+
+== Save modes
+
+[cols="1,3", options="header"]
+|===
+| Mode | Description
+| `new` | Create a copied asset.
+| `overwrite` | Replace the current binary in place.
+| `version` | Create a new `AssetVersion` while keeping the asset identity.
+|===
+
+== UI tabs
+
+`ImageEditorDialog.jsx` exposes:
+
+* Suggestions
+* Adjust
+* AI Studio
+* LUT Filters
+* Geometry
+* Custom CLI / advanced operations
+
+== Payload shape
+
+[source,json]
+----
+{
+  "save_mode": "version",
+  "adjustments": {
+    "brightness": 5,
+    "contrast": 12,
+    "saturation": -8,
+    "lut_filter": "Vivid"
+  },
+  "geometry": {
+    "rotate": 90,
+    "flip_horizontal": true
+  }
+}
+----
+
+NOTE: The implementation includes several named LUT presets and many fine-grain
+adjustment parameters; keep documentation and frontend controls aligned with
+`ImageProcessingService` when adding new transforms.
