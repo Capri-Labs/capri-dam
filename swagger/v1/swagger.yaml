@@ -5201,7 +5201,8 @@ paths:
                       type: object
                       properties:
                         id:
-                          type: integer
+                          type: string
+                          format: uuid
                         uuid:
                           type: string
                           format: uuid
@@ -9431,6 +9432,7 @@ components:
           type: string
         slug:
           type: string
+          nullable: true
         description:
           type: string
           nullable: true
@@ -9469,6 +9471,7 @@ components:
                 type: string
               slug:
                 type: string
+                nullable: true
               description:
                 type: string
                 nullable: true

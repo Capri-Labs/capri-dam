@@ -745,7 +745,7 @@ RSpec.describe 'Image Processing Tests', type: :request do
   end
 
   before do
-    login_as(user)
+    sign_in user
   end
 
   # ===========================================================================

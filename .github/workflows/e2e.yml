@@ -101,7 +101,10 @@ jobs:
       - name: Prepare E2E database & seed
         env:
           RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY }}
-          SECRET_KEY_BASE: ${{ secrets.RAILS_MASTER_KEY || 'ci_e2e_placeholder_secret_key_base_32chars_min' }}
+          SECRET_KEY_BASE: ${{ secrets.RAILS_MASTER_KEY || 'ci_e2e_placeholder_secret_key_base_that_is_at_least_64_chars_long_required' }}
+          ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY: test-ar-enc-primary-key-32bytes!
+          ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY: test-ar-enc-det-key-32bytes!!!!!
+          ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT: test-ar-enc-derivation-salt32b!!
         run: |
           bundle exec rails db:create
           bundle exec rails db:migrate
@@ -110,7 +113,10 @@ jobs:
       - name: Start Rails server in background
         env:
           RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY }}
-          SECRET_KEY_BASE: ${{ secrets.RAILS_MASTER_KEY || 'ci_e2e_placeholder_secret_key_base_32chars_min' }}
+          SECRET_KEY_BASE: ${{ secrets.RAILS_MASTER_KEY || 'ci_e2e_placeholder_secret_key_base_that_is_at_least_64_chars_long_required' }}
+          ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY: test-ar-enc-primary-key-32bytes!
+          ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY: test-ar-enc-det-key-32bytes!!!!!
+          ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT: test-ar-enc-derivation-salt32b!!
         run: |
           # Bind to 0.0.0.0 so the health-check curl can reach it
           bundle exec rails server -b 0.0.0.0 -p 3000 -e test > /tmp/rails-server.log 2>&1 &
@@ -143,7 +149,7 @@ jobs:
           E2E_EMAIL: ${{ secrets.E2E_EMAIL || 'admin@admin.com' }}
           E2E_PASSWORD: ${{ secrets.E2E_PASSWORD || 'AdminUser' }}
           RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY }}
-          SECRET_KEY_BASE: ${{ secrets.RAILS_MASTER_KEY || 'ci_e2e_placeholder_secret_key_base_32chars_min' }}
+          SECRET_KEY_BASE: ${{ secrets.RAILS_MASTER_KEY || 'ci_e2e_placeholder_secret_key_base_that_is_at_least_64_chars_long_required' }}
         run: yarn playwright test --reporter=html
 
       - name: Upload Playwright HTML report

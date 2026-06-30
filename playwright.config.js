@@ -20,6 +20,7 @@ module.exports = defineConfig({
   timeout: 30_000,
   fullyParallel: false,
   retries: 0,
+  globalTeardown: './spec/e2e/global-teardown.js',
   reporter: [['list'], ['html', { outputFolder: 'coverage-frontend/playwright-report', open: 'never' }]],
   use: {
     baseURL: BASE_URL,
