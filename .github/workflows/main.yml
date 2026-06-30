@@ -45,7 +45,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
@@ -97,17 +97,38 @@ jobs:
       RAILS_ENV:              test
       DATABASE_URL:           postgres://capri:capri@localhost:5432/headless_dam_test
       REDIS_URL:              redis://localhost:6379/1
-      SECRET_KEY_BASE:        ${{ secrets.SECRET_KEY_BASE || 'ci_placeholder_not_used_in_test' }}
+      SECRET_KEY_BASE:        ${{ secrets.SECRET_KEY_BASE || 'ci_placeholder_secret_key_base_that_is_at_least_64_chars_long_required' }}
       ACTIVE_STORAGE_SERVICE: local
+      ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY: "test-ar-enc-primary-key-32bytes!"
+      ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY: "test-ar-enc-det-key-32bytes!!!!!"
+      ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT: "test-ar-enc-derivation-salt32b!!"
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Install system packages
+        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y libpq-dev libvips node-gyp exiv2 imagemagick
+
+      - uses: actions/checkout@v7
 
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: '4.0.3'
           bundler-cache: true
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: yarn
+
+      - name: Install JS dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Build JS assets (esbuild → app/assets/builds/)
+        run: yarn build
+
+      - name: Precompile assets for Propshaft (test env)
+        run: bundle exec rails assets:precompile
 
       - name: Prepare test database
         run: bundle exec rails db:test:prepare
@@ -135,7 +156,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -187,14 +208,19 @@ jobs:
       RAILS_ENV:              test
       DATABASE_URL:           postgres://capri:capri@localhost:5432/headless_dam_test
       REDIS_URL:              redis://localhost:6379/1
-      SECRET_KEY_BASE:        ${{ secrets.SECRET_KEY_BASE || 'ci_e2e_placeholder_not_for_prod' }}
+      SECRET_KEY_BASE:        ${{ secrets.SECRET_KEY_BASE || 'ci_e2e_placeholder_secret_key_base_that_is_at_least_64_chars_long' }}
       ACTIVE_STORAGE_SERVICE: local
+      ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY: "test-ar-enc-primary-key-32bytes!"
+      ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY: "test-ar-enc-det-key-32bytes!!!!!"
+      ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT: "test-ar-enc-derivation-salt32b!!"
       RAILS_SERVE_STATIC_FILES: true
-      # Tell the Playwright base URL where the server lives
       E2E_BASE_URL: http://localhost:3000
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Install system packages
+        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y libpq-dev libvips node-gyp exiv2 imagemagick
+
+      - uses: actions/checkout@v7
 
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
@@ -221,6 +247,9 @@ jobs:
 
       - name: Build JS assets
         run: yarn build
+
+      - name: Precompile assets for Propshaft (test env)
+        run: bundle exec rails assets:precompile
 
       - name: Start Rails server (background)
         run: |
@@ -274,7 +303,7 @@ jobs:
       github.event_name == 'workflow_dispatch'
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # ── System dependencies ───────────────────────────────────────────────
       - name: Install system dependencies
