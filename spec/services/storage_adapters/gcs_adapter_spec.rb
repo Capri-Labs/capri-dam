@@ -121,10 +121,10 @@ RSpec.describe StorageAdapters::GcsAdapter, type: :service do
   describe '#list' do
     it 'lists bucket files' do
       allow(bucket).to receive(:files).with(prefix: 'folder/', max: 100).and_return([
-        instance_double('Google::Cloud::Storage::File', name: 'folder/file.txt', size: 9, updated_at: Time.current, etag: 'etag')
+        instance_double('Google::Cloud::Storage::File', name: 'folder/file.txt', size: 9, updated_at: Time.current, etag: 'etag'),
       ])
 
-      expect(adapter.list(prefix: 'folder/')).to eq([{ key: 'folder/file.txt', size: 9, last_modified: bucket.files(prefix: 'folder/', max: 100).first.updated_at, etag: 'etag' }])
+      expect(adapter.list(prefix: 'folder/')).to eq([ { key: 'folder/file.txt', size: 9, last_modified: bucket.files(prefix: 'folder/', max: 100).first.updated_at, etag: 'etag' } ])
     end
 
     it 'logs and returns an empty array when listing fails' do

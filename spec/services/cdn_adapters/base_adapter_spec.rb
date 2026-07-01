@@ -8,7 +8,7 @@ RSpec.describe CdnAdapters::BaseAdapter, type: :service do
   end
 
   it 'raises for purge_batch' do
-    expect { adapter.purge_batch(['tag']) }.to raise_error(NotImplementedError)
+    expect { adapter.purge_batch([ 'tag' ]) }.to raise_error(NotImplementedError)
   end
 
   it 'raises for sync_metadata' do

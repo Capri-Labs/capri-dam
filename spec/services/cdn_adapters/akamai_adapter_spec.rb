@@ -54,14 +54,14 @@ RSpec.describe CdnAdapters::AkamaiAdapter, type: :service do
     it 'returns false when the EdgeGrid request times out' do
       allow(http_client).to receive(:request).and_raise(Net::OpenTimeout)
 
-      expect(adapter.purge_batch(['asset-1'])).to be(false)
+      expect(adapter.purge_batch([ 'asset-1' ])).to be(false)
     end
   end
 
   describe '#purge_tag' do
     it 'delegates to #purge_batch' do
       expect(adapter).to receive(:purge_batch) do |tags, options|
-        expect(tags).to eq(['asset-1'])
+        expect(tags).to eq([ 'asset-1' ])
         expect(options).to eq(network: 'staging')
         true
       end

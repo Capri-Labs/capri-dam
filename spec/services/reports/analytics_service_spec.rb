@@ -36,7 +36,7 @@ RSpec.describe Reports::AnalyticsService, type: :service do
         'active_assets' => '8',
         'pending_assets' => '1',
         'new_in_range' => '2',
-        'in_trash' => '1'
+        'in_trash' => '1',
       })
       workflow_counts = instance_double('WorkflowCounts', attributes: {
         'id' => 1,
@@ -44,27 +44,27 @@ RSpec.describe Reports::AnalyticsService, type: :service do
         'pending_approvals' => '2',
         'approved_in_range' => '4',
         'rejected_in_range' => '1',
-        'avg_approval_hours' => '5.5'
+        'avg_approval_hours' => '5.5',
       })
       embedding_counts = instance_double('EmbeddingCounts', attributes: { 'with_embedding' => '6' })
 
       asset_unscoped = instance_double('AssetUnscoped')
       asset_selected = instance_double('AssetSelected')
-      asset_limited = instance_double('AssetLimited', to_a: [asset_counts])
+      asset_limited = instance_double('AssetLimited', to_a: [ asset_counts ])
       allow(Asset).to receive(:unscoped).and_return(asset_unscoped)
       allow(asset_unscoped).to receive(:select).and_return(asset_selected)
       allow(asset_selected).to receive(:where).with('1=1').and_return(asset_selected)
       allow(asset_selected).to receive(:limit).with(1).and_return(asset_limited)
 
       workflow_selected = instance_double('WorkflowSelected')
-      workflow_limited = instance_double('WorkflowLimited', to_a: [workflow_counts])
+      workflow_limited = instance_double('WorkflowLimited', to_a: [ workflow_counts ])
       allow(WorkflowInstance).to receive(:select).and_return(workflow_selected)
       allow(workflow_selected).to receive(:where).with('1=1').and_return(workflow_selected)
       allow(workflow_selected).to receive(:limit).with(1).and_return(workflow_limited)
 
       embedding_relation = instance_double('EmbeddingRelation')
       allow(AssetEmbedding).to receive(:select).and_return(embedding_relation)
-      allow(embedding_relation).to receive(:limit).with(1).and_return(instance_double('EmbeddingLimit', to_a: [embedding_counts]))
+      allow(embedding_relation).to receive(:limit).with(1).and_return(instance_double('EmbeddingLimit', to_a: [ embedding_counts ]))
       allow(IngestionBatch).to receive(:sum).with(:duplicate_count).and_return(7)
       allow(ActiveRecord::Base.connection).to receive(:select_value).and_return(1.25)
 
@@ -92,14 +92,14 @@ RSpec.describe Reports::AnalyticsService, type: :service do
   describe '#time_series' do
     it 'returns raw and merged daily series' do
       allow(ActiveRecord::Base.connection).to receive(:select_all).and_return(
-        [{ 'date' => '2026-06-01', 'count' => '2' }],
-        [{ 'date' => '2026-06-01', 'count' => '1' }]
+        [ { 'date' => '2026-06-01', 'count' => '2' } ],
+        [ { 'date' => '2026-06-01', 'count' => '1' } ]
       )
 
       result = service.send(:time_series)
 
-      expect(result[:assets]).to eq([{ date: '2026-06-01', count: 2 }])
-      expect(result[:workflows]).to eq([{ date: '2026-06-01', count: 1 }])
+      expect(result[:assets]).to eq([ { date: '2026-06-01', count: 2 } ])
+      expect(result[:workflows]).to eq([ { date: '2026-06-01', count: 1 } ])
       expect(result[:combined].first).to include(date: '2026-06-01', assets: 2, workflows: 1)
     end
 
@@ -113,11 +113,11 @@ RSpec.describe Reports::AnalyticsService, type: :service do
   describe '#breakdowns' do
     it 'returns the configured breakdown sections' do
       allow(ActiveRecord::Base.connection).to receive(:select_all).and_return(
-        [{ 'type' => 'image/jpeg', 'count' => '2' }],
-        [{ 'email' => 'jane@example.com', 'count' => '3' }]
+        [ { 'type' => 'image/jpeg', 'count' => '2' } ],
+        [ { 'email' => 'jane@example.com', 'count' => '3' } ]
       )
       allow(Asset).to receive_message_chain(:unscoped, :where, :group, :count).and_return({ 'ready' => 2 })
-      allow(Folder).to receive_message_chain(:active, :left_joins, :where, :group, :order, :limit, :pluck).and_return([['Marketing', 4]])
+      allow(Folder).to receive_message_chain(:active, :left_joins, :where, :group, :order, :limit, :pluck).and_return([ [ 'Marketing', 4 ] ])
       allow(WorkflowInstance).to receive(:count).and_return(8)
       allow(WorkflowInstance).to receive(:where).with(status: %w[pending in_progress]).and_return(instance_double(ActiveRecord::Relation, count: 5))
       allow(WorkflowInstance).to receive(:where).with(status: 'approved').and_return(instance_double(ActiveRecord::Relation, count: 2))
@@ -126,12 +126,12 @@ RSpec.describe Reports::AnalyticsService, type: :service do
       result = service.send(:breakdowns)
 
       expect(result).to include(
-        by_content_type: [{ type: 'Image (JPEG)', count: 2 }],
-        by_status: [{ status: 'Ready', count: 2 }],
-        top_folders: [{ name: 'Marketing', count: 4 }]
+        by_content_type: [ { type: 'Image (JPEG)', count: 2 } ],
+        by_status: [ { status: 'Ready', count: 2 } ],
+        top_folders: [ { name: 'Marketing', count: 4 } ]
       )
       expect(result[:workflow_funnel]).to include(stage: 'Triggered', count: 8)
-      expect(result[:by_user]).to eq([{ user: 'jane', count: 3 }])
+      expect(result[:by_user]).to eq([ { user: 'jane', count: 3 } ])
     end
 
     it 'returns an empty hash when breakdown generation fails' do
@@ -151,7 +151,7 @@ RSpec.describe Reports::AnalyticsService, type: :service do
           { 'date' => '2026-06-04', 'cnt' => '10' },
           { 'date' => '2026-06-05', 'cnt' => '10' },
           { 'date' => '2026-06-06', 'cnt' => '10' },
-          { 'date' => '2026-06-07', 'cnt' => '40' }
+          { 'date' => '2026-06-07', 'cnt' => '40' },
         ]
       )
 
@@ -196,11 +196,11 @@ RSpec.describe Reports::AnalyticsService, type: :service do
     end
 
     it 'merges sparse time series over the provided date range' do
-      result = service.send(:merge_time_series, { assets: [{ date: '2026-06-01', count: 2 }], workflows: [] }, Date.new(2026, 6, 1), Date.new(2026, 6, 2))
+      result = service.send(:merge_time_series, { assets: [ { date: '2026-06-01', count: 2 } ], workflows: [] }, Date.new(2026, 6, 1), Date.new(2026, 6, 2))
 
       expect(result).to eq([
         { date: '2026-06-01', assets: 2, workflows: 0 },
-        { date: '2026-06-02', assets: 0, workflows: 0 }
+        { date: '2026-06-02', assets: 0, workflows: 0 },
       ])
     end
   end

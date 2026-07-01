@@ -124,7 +124,7 @@ RSpec.describe StorageAdapters::AzureAdapter, type: :service do
   describe '#metadata' do
     it 'returns normalized blob metadata' do
       blob = instance_double('Blob', properties: { content_length: 12, content_type: 'text/plain', etag: '"etag"', last_modified: Time.current }, metadata: { 'foo' => 'bar' })
-      allow(blob_client).to receive(:get_blob_properties).and_return([nil, blob])
+      allow(blob_client).to receive(:get_blob_properties).and_return([ nil, blob ])
 
       expect(adapter.metadata('folder/file.txt')).to include(size: 12, content_type: 'text/plain', etag: 'etag', metadata: { 'foo' => 'bar' })
     end
@@ -139,9 +139,9 @@ RSpec.describe StorageAdapters::AzureAdapter, type: :service do
   describe '#list' do
     it 'lists blobs under the given prefix' do
       blob = instance_double('Blob', name: 'folder/file.txt', properties: { content_length: 1, last_modified: Time.current, etag: '"etag"' })
-      allow(blob_client).to receive(:list_blobs).and_return([blob])
+      allow(blob_client).to receive(:list_blobs).and_return([ blob ])
 
-      expect(adapter.list(prefix: 'folder/')).to eq([{ key: 'folder/file.txt', size: 1, last_modified: blob.properties[:last_modified], etag: 'etag' }])
+      expect(adapter.list(prefix: 'folder/')).to eq([ { key: 'folder/file.txt', size: 1, last_modified: blob.properties[:last_modified], etag: 'etag' } ])
     end
 
     it 'logs and returns an empty array when listing fails' do

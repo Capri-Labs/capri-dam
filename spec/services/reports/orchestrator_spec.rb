@@ -8,12 +8,12 @@ RSpec.describe Reports::Orchestrator, type: :service do
     stub_const('Reports::DataFetcher', Class.new do
       def self.fetch(_snapshot); end
     end)
-    allow(Reports::DataFetcher).to receive(:fetch).with(instance_of(ReportSnapshot)).and_return([{ name: 'Asset 1' }])
+    allow(Reports::DataFetcher).to receive(:fetch).with(instance_of(ReportSnapshot)).and_return([ { name: 'Asset 1' } ])
     allow(Reports::Generators::Csv).to receive(:new).and_return(generator)
   end
 
   it 'fetches data, generates the report, attaches it, and marks the snapshot completed' do
-    allow(generator).to receive(:generate).and_return([StringIO.new('name\nAsset 1\n'), 'usage.csv', 'text/csv'])
+    allow(generator).to receive(:generate).and_return([ StringIO.new('name\nAsset 1\n'), 'usage.csv', 'text/csv' ])
 
     described_class.execute!(snapshot.id)
 

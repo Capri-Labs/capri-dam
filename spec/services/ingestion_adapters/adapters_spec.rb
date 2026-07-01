@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe 'IngestionAdapters subclasses', type: :service do
-  shared_examples 'an HTTP ingestion adapter' do |adapter_class:, credentials:, fetch_response:, expected_identifier:, expected_name:, expected_next_cursor:, expected_has_more:, expected_metadata:, download_id:, expected_download_url:, expected_connection_path:, stream_extension: '.bin', download_response: nil, download_error: nil, fetch_args: [nil, 100]|
+  shared_examples 'an HTTP ingestion adapter' do |adapter_class:, credentials:, fetch_response:, expected_identifier:, expected_name:, expected_next_cursor:, expected_has_more:, expected_metadata:, download_id:, expected_download_url:, expected_connection_path:, stream_extension: '.bin', download_response: nil, download_error: nil, fetch_args: [ nil, 100 ]|
     subject(:adapter) { adapter_class.new(nil, credentials) }
 
     describe '#fetch_next_chunk' do
@@ -55,20 +55,20 @@ RSpec.describe 'IngestionAdapters subclasses', type: :service do
                   adapter_class: IngestionAdapters::AemAdapter,
                   credentials: { endpoint: 'https://aem.example.com', auth_token: 'token' },
                   fetch_response: {
-                    'entities' => [{
+                    'entities' => [ {
                       'id' => 'asset-1',
                       'name' => 'hero.jpg',
-                      'links' => [{ 'rel' => 'self', 'href' => '/content/dam/hero.jpg' }],
+                      'links' => [ { 'rel' => 'self', 'href' => '/content/dam/hero.jpg' } ],
                       'properties' => {
                         'dam:size' => 123,
                         'dc:title' => 'Hero',
                         'dc:description' => 'Homepage asset',
-                        'cq:tags' => ['marketing'],
+                        'cq:tags' => [ 'marketing' ],
                         'dc:creator' => 'Jane',
                         'jcr:created' => '2026-01-01',
-                        'dam:mimeType' => 'image/jpeg'
-                      }
-                    }]
+                        'dam:mimeType' => 'image/jpeg',
+                      },
+                    } ],
                   },
                   expected_identifier: '/content/dam/hero.jpg',
                   expected_name: 'hero.jpg',
@@ -84,12 +84,12 @@ RSpec.describe 'IngestionAdapters subclasses', type: :service do
                   adapter_class: IngestionAdapters::AprimoAdapter,
                   credentials: { endpoint: 'https://aprimo.example.com', auth_token: 'token' },
                   fetch_response: {
-                    'items' => [{
+                    'items' => [ {
                       'id' => 'aprimo-1', 'fileSize' => 321, 'fileName' => 'brochure.pdf',
                       'title' => 'Brochure', 'description' => 'Q3 brochure',
-                      'tags' => [{ 'name' => 'print' }], 'mimeType' => 'application/pdf',
+                      'tags' => [ { 'name' => 'print' } ], 'mimeType' => 'application/pdf',
                       'createdOn' => '2026-01-01', 'modifiedOn' => '2026-01-02', 'recordId' => 'record-1'
-                    }]
+                    } ],
                   },
                   expected_identifier: 'aprimo-1',
                   expected_name: 'brochure.pdf',
@@ -105,12 +105,12 @@ RSpec.describe 'IngestionAdapters subclasses', type: :service do
                   adapter_class: IngestionAdapters::BrandfolderAdapter,
                   credentials: { endpoint: 'https://brandfolder.example.com', auth_token: 'token', brandfolder_key: 'bf-key' },
                   fetch_response: {
-                    'data' => [{
+                    'data' => [ {
                       'id' => 'bf-1',
-                      'attributes' => { 'file_size' => 456, 'name' => 'logo.svg', 'description' => 'Primary logo', 'tags' => ['brand'], 'created_at' => '2026-01-01', 'updated_at' => '2026-01-02' },
-                      'relationships' => { 'attachments' => { 'data' => [{ 'id' => 'attachment-1' }] } }
-                    }],
-                    'meta' => { 'total_pages' => 1 }
+                      'attributes' => { 'file_size' => 456, 'name' => 'logo.svg', 'description' => 'Primary logo', 'tags' => [ 'brand' ], 'created_at' => '2026-01-01', 'updated_at' => '2026-01-02' },
+                      'relationships' => { 'attachments' => { 'data' => [ { 'id' => 'attachment-1' } ] } },
+                    } ],
+                    'meta' => { 'total_pages' => 1 },
                   },
                   expected_identifier: 'bf-1',
                   expected_name: 'logo.svg',
@@ -118,18 +118,18 @@ RSpec.describe 'IngestionAdapters subclasses', type: :service do
                   expected_has_more: false,
                   expected_metadata: { 'title' => 'logo.svg', 'description' => 'Primary logo' },
                   download_id: 'bf-1',
-                  download_response: { 'data' => [{ 'attributes' => { 'url' => 'https://downloads.example.com/logo.svg' } }] },
+                  download_response: { 'data' => [ { 'attributes' => { 'url' => 'https://downloads.example.com/logo.svg' } } ] },
                   expected_download_url: 'https://downloads.example.com/logo.svg',
                   expected_connection_path: 'https://brandfolder.example.com/api/v4/brandfolders/bf-key?fields=name'
 
   it_behaves_like 'an HTTP ingestion adapter',
                   adapter_class: IngestionAdapters::BynderAdapter,
                   credentials: { endpoint: 'https://company.bynder.com', auth_token: 'token' },
-                  fetch_response: [{
+                  fetch_response: [ {
                     'id' => 'bynder-1', 'fileSize' => 789, 'name' => 'launch.mp4', 'description' => 'Launch video',
-                    'tags' => ['video'], 'dateCreated' => '2026-01-01', 'dateModified' => '2026-01-02',
-                    'extensions' => ['mp4'], 'copyright' => 'ACME', 'campaigns' => ['Spring']
-                  }],
+                    'tags' => [ 'video' ], 'dateCreated' => '2026-01-01', 'dateModified' => '2026-01-02',
+                    'extensions' => [ 'mp4' ], 'copyright' => 'ACME', 'campaigns' => [ 'Spring' ]
+                  } ],
                   expected_identifier: 'bynder-1',
                   expected_name: 'launch.mp4',
                   expected_next_cursor: '2',
@@ -144,12 +144,12 @@ RSpec.describe 'IngestionAdapters subclasses', type: :service do
                   adapter_class: IngestionAdapters::CantoAdapter,
                   credentials: { endpoint: 'https://canto.example.com', auth_token: 'token' },
                   fetch_response: {
-                    'results' => [{
+                    'results' => [ {
                       'id' => 'canto-1', 'size' => 654, 'name' => 'poster.psd', 'description' => 'Poster',
-                      'tag' => ['design'], 'contentType' => 'image/vnd.adobe.photoshop',
+                      'tag' => [ 'design' ], 'contentType' => 'image/vnd.adobe.photoshop',
                       'created' => '2026-01-01', 'lastModified' => '2026-01-02', 'scheme' => 'Default', 'owner' => 'owner'
-                    }],
-                    'found' => 1
+                    } ],
+                    'found' => 1,
                   },
                   expected_identifier: 'canto-1',
                   expected_name: 'poster.psd',
@@ -165,11 +165,11 @@ RSpec.describe 'IngestionAdapters subclasses', type: :service do
                   adapter_class: IngestionAdapters::CloudinaryAdapter,
                   credentials: { cloud_name: 'demo', access_key: 'key', secret_key: 'secret' },
                   fetch_response: {
-                    'resources' => [{
+                    'resources' => [ {
                       'public_id' => 'folder/photo', 'bytes' => 222, 'format' => 'jpg',
-                      'width' => 100, 'height' => 50, 'created_at' => '2026-01-01', 'folder' => 'folder', 'tags' => ['featured']
-                    }],
-                    'next_cursor' => 'cursor-2'
+                      'width' => 100, 'height' => 50, 'created_at' => '2026-01-01', 'folder' => 'folder', 'tags' => [ 'featured' ]
+                    } ],
+                    'next_cursor' => 'cursor-2',
                   },
                   expected_identifier: 'folder/photo',
                   expected_name: 'folder/photo.jpg',
@@ -185,12 +185,12 @@ RSpec.describe 'IngestionAdapters subclasses', type: :service do
                   adapter_class: IngestionAdapters::ExtensisAdapter,
                   credentials: { endpoint: 'https://portfolio.example.com', auth_token: 'token' },
                   fetch_response: {
-                    'assets' => [{
+                    'assets' => [ {
                       'id' => 'ext-1', 'file_size' => 2048, 'filename' => 'catalog.png', 'title' => 'Catalog',
-                      'description' => 'Catalog cover', 'keywords' => ['catalog'], 'mime_type' => 'image/png',
+                      'description' => 'Catalog cover', 'keywords' => [ 'catalog' ], 'mime_type' => 'image/png',
                       'created_at' => '2026-01-01', 'updated_at' => '2026-01-02', 'catalog_name' => 'Main'
-                    }],
-                    'total_count' => 1
+                    } ],
+                    'total_count' => 1,
                   },
                   expected_identifier: 'ext-1',
                   expected_name: 'catalog.png',
@@ -206,16 +206,16 @@ RSpec.describe 'IngestionAdapters subclasses', type: :service do
                   credentials: { endpoint: 'https://api.mediavalet.com', auth_token: 'token' },
                   fetch_response: {
                     'payload' => {
-                      'assets' => [{
+                      'assets' => [ {
                         'id' => 'mv-1',
                         'attributes' => {
                           'fileSize' => 333, 'filename' => 'clip.mov', 'title' => 'Clip', 'description' => 'Media clip',
-                          'keywords' => ['media'], 'mediaType' => 'video/quicktime', 'createdAt' => '2026-01-01',
+                          'keywords' => [ 'media' ], 'mediaType' => 'video/quicktime', 'createdAt' => '2026-01-01',
                           'modifiedAt' => '2026-01-02', 'categoryName' => 'Campaign'
-                        }
-                      }],
-                      'total' => 1
-                    }
+                        },
+                      } ],
+                      'total' => 1,
+                    },
                   },
                   expected_identifier: 'mv-1',
                   expected_name: 'clip.mov',
@@ -231,15 +231,15 @@ RSpec.describe 'IngestionAdapters subclasses', type: :service do
                   adapter_class: IngestionAdapters::NuxeoAdapter,
                   credentials: { endpoint: 'https://nuxeo.example.com/nuxeo', auth_token: 'token' },
                   fetch_response: {
-                    'entries' => [{
+                    'entries' => [ {
                       'uid' => 'nx-1', 'title' => 'Asset',
                       'properties' => {
                         'file:content' => { 'length' => 1024, 'name' => 'asset.jpg', 'mime-type' => 'image/jpeg' },
-                        'dc:title' => 'Asset', 'dc:description' => 'Desc', 'dc:subjects' => ['news'],
+                        'dc:title' => 'Asset', 'dc:description' => 'Desc', 'dc:subjects' => [ 'news' ],
                         'dc:creator' => 'Jane', 'dc:created' => '2026-01-01', 'dc:modified' => '2026-01-02'
                       }
-                    }],
-                    'isLastPageAvailable' => true
+                    } ],
+                    'isLastPageAvailable' => true,
                   },
                   expected_identifier: 'nx-1',
                   expected_name: 'asset.jpg',
@@ -254,13 +254,13 @@ RSpec.describe 'IngestionAdapters subclasses', type: :service do
                   adapter_class: IngestionAdapters::SharepointAdapter,
                   credentials: { endpoint: 'https://graph.microsoft.com/v1.0/drives/drive-1', auth_token: 'token', folder_path: 'root' },
                   fetch_response: {
-                    'value' => [{
+                    'value' => [ {
                       'id' => 'sp-1', 'name' => 'proposal.docx', 'size' => 128,
                       'file' => { 'mimeType' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' },
                       'createdDateTime' => '2026-01-01', 'lastModifiedDateTime' => '2026-01-02',
                       'parentReference' => { 'path' => '/drives/drive-1/root:' }
-                    }],
-                    '@odata.nextLink' => 'https://graph.microsoft.com/v1.0/next-page'
+                    } ],
+                    '@odata.nextLink' => 'https://graph.microsoft.com/v1.0/next-page',
                   },
                   expected_identifier: 'sp-1',
                   expected_name: 'proposal.docx',
@@ -275,11 +275,11 @@ RSpec.describe 'IngestionAdapters subclasses', type: :service do
                   adapter_class: IngestionAdapters::WidenAdapter,
                   credentials: { endpoint: 'https://api.widencollective.com', auth_token: 'token' },
                   fetch_response: {
-                    'items' => [{
+                    'items' => [ {
                       'id' => 'widen-1', 'filename' => 'grid.png', 'description' => 'Grid',
                       'file_properties' => { 'file_size' => 512, 'format' => 'png', 'image_width' => 400, 'image_height' => 300 },
-                      'metadata' => { 'keywords' => ['layout'] }, 'created_date' => '2026-01-01', 'last_update_date' => '2026-01-02'
-                    }]
+                      'metadata' => { 'keywords' => [ 'layout' ] }, 'created_date' => '2026-01-01', 'last_update_date' => '2026-01-02'
+                    } ],
                   },
                   expected_identifier: 'widen-1',
                   expected_name: 'grid.png',
@@ -287,7 +287,7 @@ RSpec.describe 'IngestionAdapters subclasses', type: :service do
                   expected_has_more: false,
                   expected_metadata: { 'title' => 'grid.png', 'width' => 400 },
                   download_id: 'widen-1',
-                  download_response: { 'embeds' => [{ 'url' => 'https://downloads.example.com/widen-1' }] },
+                  download_response: { 'embeds' => [ { 'url' => 'https://downloads.example.com/widen-1' } ] },
                   expected_download_url: 'https://downloads.example.com/widen-1',
                   expected_connection_path: 'https://api.widencollective.com/v2/assets/search?query=*&pageSize=1'
 
@@ -315,14 +315,14 @@ RSpec.describe 'IngestionAdapters subclasses', type: :service do
     end
 
     it 'lists and normalizes object metadata' do
-      contents = [instance_double(Aws::S3::Types::Object, key: 'folder/file.jpg', size: 99)]
+      contents = [ instance_double(Aws::S3::Types::Object, key: 'folder/file.jpg', size: 99) ]
       response = instance_double(Aws::S3::Types::ListObjectsV2Output, contents: contents, next_continuation_token: 'next-token', is_truncated: true)
       allow(client).to receive(:list_objects_v2).and_return(response)
 
       result = adapter.fetch_next_chunk('cursor', 10)
 
       expect(result).to eq(
-        files: [{ identifier: 'folder/file.jpg', size: 99, original_name: 'file.jpg' }],
+        files: [ { identifier: 'folder/file.jpg', size: 99, original_name: 'file.jpg' } ],
         next_cursor: 'next-token',
         has_more: true
       )
@@ -361,7 +361,7 @@ RSpec.describe 'IngestionAdapters subclasses', type: :service do
       allow(ftp).to receive(:chdir).with('/exports')
       allow(ftp).to receive(:list).with('*').and_return([
         '-rw-r--r-- 1 user grp 512 Jun 01 12:00 image.jpg',
-        'drwxr-xr-x 1 user grp 0 Jun 01 12:00 nested'
+        'drwxr-xr-x 1 user grp 0 Jun 01 12:00 nested',
       ])
 
       result = adapter.fetch_next_chunk(nil, 10)
@@ -370,7 +370,7 @@ RSpec.describe 'IngestionAdapters subclasses', type: :service do
         identifier: '/exports/image.jpg',
         size: 512,
         original_name: 'image.jpg',
-        metadata: { 'modified' => 'Jun 01 12:00', 'source' => 'ftp' }
+        metadata: { 'modified' => 'Jun 01 12:00', 'source' => 'ftp' },
       ])
       expect(result[:has_more]).to be(false)
     end
@@ -385,7 +385,7 @@ RSpec.describe 'IngestionAdapters subclasses', type: :service do
       path = adapter.download_and_stream('/exports/image.jpg') { |chunk| seen << chunk }
 
       expect(path).to eq('spec/fixtures/files/ftp.bin')
-      expect(seen).to eq(['chunk-1', 'chunk-2'])
+      expect(seen).to eq([ 'chunk-1', 'chunk-2' ])
     end
 
     it 'tests the connection by listing the remote path' do

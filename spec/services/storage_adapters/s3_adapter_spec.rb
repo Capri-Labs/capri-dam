@@ -156,11 +156,11 @@ RSpec.describe StorageAdapters::S3Adapter, type: :service do
 
   describe '#list' do
     it 'lists object metadata' do
-      contents = [instance_double(Aws::S3::Types::Object, key: 'folder/file.txt', size: 5, last_modified: Time.current, etag: '"etag"')]
+      contents = [ instance_double(Aws::S3::Types::Object, key: 'folder/file.txt', size: 5, last_modified: Time.current, etag: '"etag"') ]
       response = instance_double(Aws::S3::Types::ListObjectsV2Output, contents: contents)
       allow(client).to receive(:list_objects_v2).and_return(response)
 
-      expect(adapter.list(prefix: 'folder/')).to eq([{ key: 'folder/file.txt', size: 5, last_modified: contents.first.last_modified, etag: 'etag' }])
+      expect(adapter.list(prefix: 'folder/')).to eq([ { key: 'folder/file.txt', size: 5, last_modified: contents.first.last_modified, etag: 'etag' } ])
     end
 
     it 'logs and returns an empty array on provider failures' do

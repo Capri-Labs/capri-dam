@@ -28,7 +28,7 @@ RSpec.describe CdnAdapters::CloudflareAdapter, type: :service do
   describe '#purge_tag' do
     it 'delegates to #purge_batch' do
       expect(adapter).to receive(:purge_batch) do |tags, options|
-        expect(tags).to eq(['asset-1'])
+        expect(tags).to eq([ 'asset-1' ])
         expect(options).to eq(soft: true)
         true
       end
@@ -53,9 +53,9 @@ RSpec.describe CdnAdapters::CloudflareAdapter, type: :service do
 
     it 'returns false when Cloudflare reports a logical error' do
       stub_request(:post, 'https://api.cloudflare.com/client/v4/zones/zone-1/purge_cache')
-        .to_return(status: 200, body: { success: false, errors: ['bad tag'] }.to_json)
+        .to_return(status: 200, body: { success: false, errors: [ 'bad tag' ] }.to_json)
 
-      expect(adapter.purge_batch(['asset-1'])).to be(false)
+      expect(adapter.purge_batch([ 'asset-1' ])).to be(false)
     end
   end
 end
