@@ -4392,6 +4392,60 @@ paths:
                   example: image
                   description: 'Optional MIME-type prefix filter: image | video |
                     document | audio'
+  "/api/v1/dashboard/overview":
+    get:
+      summary: Get dashboard overview statistics
+      tags:
+      - Dashboard
+      security:
+      - Bearer: []
+      responses:
+        '200':
+          description: dashboard statistics
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - kpis
+                - asset_growth
+                - assets_by_type
+                - storage
+                - recent_assets
+                - workflow_summary
+                - ai_insights
+                properties:
+                  kpis:
+                    type: object
+                  asset_growth:
+                    type: array
+                    items:
+                      type: object
+                  assets_by_type:
+                    type: array
+                    items:
+                      type: object
+                  storage:
+                    type: object
+                  recent_assets:
+                    type: array
+                    items:
+                      type: object
+                  workflow_summary:
+                    type: object
+                  ai_insights:
+                    type: array
+                    items:
+                      type: object
+        '401':
+          description: unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
   "/api/v1/data_health/overview":
     get:
       summary: Aggregate TDM & Storage Health overview metrics

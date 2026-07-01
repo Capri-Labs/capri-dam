@@ -80,3 +80,9 @@ end
 puts "✅ Storage Backend: #{backend.name}"
 
 puts "---  Seed Complete! ---"
+
+
+# ---------------------------------------------------------------------------
+# Report Definitions (built-in types)
+# ---------------------------------------------------------------------------
+require_relative 'seeds/report_definitions'

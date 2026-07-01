@@ -480,3 +480,52 @@ describe('i18n — search filter collapse/expand keys (regression guard)', () =>
     });
   });
 });
+
+
+describe('i18n — dashboard keys (regression guard)', () => {
+  beforeEach(() => i18n.changeLanguage('en'));
+  afterAll(() => i18n.changeLanguage('en'));
+
+  it('dashboard.title', () => expect(i18n.t('dashboard.title')).toBe('Command Center'));
+  it('dashboard.refresh', () => expect(i18n.t('dashboard.refresh')).toBe('Refresh'));
+
+  const LOCALES = ['en', 'de', 'es', 'fr', 'ja', 'ko', 'nl', 'pt', 'zh'];
+  LOCALES.forEach(locale => {
+    it(`${locale} has dashboard.title`, () => {
+      i18n.changeLanguage(locale);
+      const val = i18n.t('dashboard.title');
+      expect(val).not.toBe('dashboard.title');
+      expect(val.length).toBeGreaterThan(0);
+    });
+  });
+});
+
+describe('Reports i18n', () => {
+  beforeEach(() => i18n.changeLanguage('en'));
+
+  it('reports.title resolves', () => expect(i18n.t('reports.title')).toBe('Reports & Analytics'));
+  it('reports.create_export resolves', () => expect(i18n.t('reports.create_export')).toBe('Create Export'));
+  it('reports.tabs.analytics resolves', () => expect(i18n.t('reports.tabs.analytics')).toBe('Analytics Dashboard'));
+  it('reports.tabs.downloads resolves', () => expect(i18n.t('reports.tabs.downloads')).toBe('Download Center'));
+  it('reports.tabs.types resolves', () => expect(i18n.t('reports.tabs.types')).toBe('Report Types'));
+  it('reports.builder.generate resolves', () => expect(i18n.t('reports.builder.generate')).toBe('Generate Report'));
+  it('reports.types.new_type resolves', () => expect(i18n.t('reports.types.new_type')).toBe('New Report Type'));
+  it('reports.types.form.save resolves', () => expect(i18n.t('reports.types.form.save')).toBe('Save'));
+  it('reports.type_descriptions.asset_library resolves', () => expect(i18n.t('reports.type_descriptions.asset_library')).not.toBe('reports.type_descriptions.asset_library'));
+
+  const LOCALES = ['en', 'de', 'es', 'fr', 'ja', 'ko', 'nl', 'pt', 'zh'];
+  LOCALES.forEach(locale => {
+    it(`${locale} has reports.title`, () => {
+      i18n.changeLanguage(locale);
+      const val = i18n.t('reports.title');
+      expect(val).not.toBe('reports.title');
+      expect(val.length).toBeGreaterThan(0);
+    });
+    it(`${locale} has reports.types.new_type`, () => {
+      i18n.changeLanguage(locale);
+      const val = i18n.t('reports.types.new_type');
+      expect(val).not.toBe('reports.types.new_type');
+      expect(val.length).toBeGreaterThan(0);
+    });
+  });
+});

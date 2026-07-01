@@ -146,6 +146,7 @@ Rails.application.routes.draw do
 
   namespace :api do
     namespace :v1 do
+      get "dashboard/overview", to: "dashboard#overview"
       # Global Search & AI
       get "search", to: "search#index"
       post "copilot/search", to: "copilots#search"
@@ -485,9 +486,10 @@ Rails.application.routes.draw do
     end
 
     # Reporting
-    resources :reports, only: [ :index, :show ] do
+    resources :reports, only: [ :index, :show, :create, :update, :destroy ] do
       collection do
-        get :analytics   # GET /admin/reports/analytics?range=last_30_days
+        get :analytics            # GET /admin/reports/analytics?range=last_30_days
+        get :asset_property_hints # GET /admin/reports/asset_property_hints.json
       end
       member do
         post :generate
