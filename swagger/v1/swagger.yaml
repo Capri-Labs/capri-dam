@@ -3580,11 +3580,20 @@ paths:
         Returns all active (non-archived) collections ordered by `created_at DESC`.
         Supports **temporal time-travel** via `as_of`: pass an ISO-8601 timestamp
         to see what collections existed at that point in time.
+        Pass `asset_id` to receive `pinned_for_asset: true/false` for each collection,
+        indicating whether the asset is currently pinned to that collection.
       parameters:
       - name: as_of
         in: query
         required: false
         description: ISO-8601 datetime for temporal filtering (e.g. `2025-01-15T00:00:00Z`)
+        schema:
+          type: string
+      - name: asset_id
+        in: query
+        required: false
+        description: 'UUID of an asset — when provided, each collection includes `pinned_for_asset:
+          true/false`'
         schema:
           type: string
       responses:
@@ -3615,6 +3624,10 @@ paths:
                     assets_count:
                       type: integer
                       example: 24
+                    pinned_for_asset:
+                      type: boolean
+                      nullable: true
+                      description: Included only when asset_id is provided
                     expires_at:
                       type: string
                       format: date-time

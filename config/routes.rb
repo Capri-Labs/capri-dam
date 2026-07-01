@@ -234,6 +234,8 @@ Rails.application.routes.draw do
           post :check_hashes # Now correctly responds to POST /api/v1/assets/check_hashes
         end
         member do
+          get :duplicates
+          post :ai_analysis
           post :restore
           post :process_image
           delete :permanent, to: "assets#permanent_delete"

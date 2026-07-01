@@ -736,6 +736,94 @@ module Api
         render json: { duplicates: duplicates }, status: :ok
       end
 
+      # Lists duplicate candidates for an asset using exact checksum matches and
+      # original filename matches.
+      #
+      # @return [void] renders +200 OK+ with duplicate asset summaries
+      # @return [void] renders +404+ when the asset is not found
+      def duplicates
+        asset = find_asset_record(Asset.active.includes(:active_version, :folder))
+        check_asset_read!(asset)
+        return if performed?
+
+        properties = merged_asset_properties(asset)
+        checksum = properties["checksum_sha256"].presence
+        original_filename = properties["original_filename"].presence
+
+        exact_matches =
+          if checksum
+            Asset.active
+                 .includes(:active_version, :folder)
+                 .left_outer_joins(:active_version)
+                 .where.not(id: asset.id)
+                 .where(
+                   "assets.properties ->> 'checksum_sha256' = :checksum OR asset_versions.properties ->> 'checksum_sha256' = :checksum",
+                   checksum: checksum
+                 )
+          else
+            Asset.none
+          end
+
+        name_matches =
+          if original_filename
+            Asset.active
+                 .includes(:active_version, :folder)
+                 .left_outer_joins(:active_version)
+                 .where.not(id: asset.id)
+                 .where(
+                   "assets.properties ->> 'original_filename' = :filename OR asset_versions.properties ->> 'original_filename' = :filename",
+                   filename: original_filename
+                 )
+          else
+            Asset.none
+          end
+
+        duplicates_by_id = {}
+
+        exact_matches.each do |match|
+          duplicates_by_id[match.id] = serialize_duplicate_asset(match, "exact")
+        end
+
+        name_matches.each do |match|
+          duplicates_by_id[match.id] ||= serialize_duplicate_asset(match, "name_match")
+        end
+
+        render json: { duplicates: duplicates_by_id.values }, status: :ok
+      rescue ActiveRecord::RecordNotFound
+        render json: { error: "Asset not found" }, status: :not_found
+      end
+
+      # Starts or returns AI analysis for an asset.
+      #
+      # @return [void] renders +200 OK+ with analysis data when available
+      # @return [void] renders +202 Accepted+ when analysis has been queued
+      # @return [void] renders +404+ when the asset is not found
+      def ai_analysis
+        asset = find_asset_record(Asset.active.includes(:active_version, :folder))
+        check_asset_read!(asset)
+        return if performed?
+
+        properties = merged_asset_properties(asset)
+        stored_analysis = properties["ai_analysis"]
+        analysis_status = properties["image_analysis_status"].presence
+
+        if stored_analysis.present? || analysis_status == "completed"
+          payload = stored_analysis.presence || Assets::AiAnalysisJob.analysis_payload_for(asset)
+          return render json: { status: "completed" }.merge(payload.deep_stringify_keys), status: :ok
+        end
+
+        if %w[queued processing].include?(analysis_status)
+          return render json: { status: analysis_status }, status: :accepted
+        end
+
+        asset.update!(properties: asset.properties.merge("image_analysis_status" => "queued"))
+        Assets::AiAnalysisJob.perform_later(asset.id)
+
+        render json: { status: "queued" }, status: :accepted
+      rescue ActiveRecord::RecordNotFound
+        render json: { error: "Asset not found" }, status: :not_found
+      end
+
       # Streams a watermarked version of an image asset.
       #
       # Applies a 45° diagonal +CONFIDENTIAL+ annotation via MiniMagick and
@@ -1014,6 +1102,32 @@ module Api
 
       def find_asset_record(scope = Asset)
         scope.find_by(id: params[:id]) || scope.find_by!(uuid: params[:id])
+      end
+
+      def merged_asset_properties(asset)
+        asset.properties.merge(asset.active_version&.properties || {})
+      end
+
+      def serialize_duplicate_asset(asset, similarity_type)
+        metadata = merged_asset_properties(asset)
+
+        {
+          id: asset.id,
+          uuid: asset.uuid,
+          title: asset.title,
+          url: asset_url_for(asset),
+          size: metadata["size"] || metadata["file_size"],
+          content_type: metadata["content_type"],
+          folder_name: folder_path_for(asset.folder),
+          similarity_type: similarity_type,
+          similarity_score: similarity_type == "exact" ? 100 : 84,
+        }
+      end
+
+      def folder_path_for(folder)
+        return "/Root" unless folder
+
+        "/" + folder.path_hierarchy.map { |node| node[:name] }.join("/")
       end
 
       def normalised_asset_status(asset)

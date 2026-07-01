@@ -1640,5 +1640,66 @@
       "audit_trail": "Full immutable log of all system actions.",
       "migration": "Migration batch results and cost savings per source system."
     }
+  },
+  "folders": {
+    "filter": {
+      "search_placeholder": "Search assets and folders...",
+      "all": "All",
+      "assets": "Assets",
+      "folders": "Folders",
+      "images": "Images",
+      "videos": "Videos",
+      "documents": "Documents",
+      "audio": "Audio",
+      "status_all": "Any Status",
+      "draft": "Draft",
+      "published": "Published",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "sort": "Sort",
+      "results": "Results",
+      "name_az": "Name (A–Z)",
+      "name_za": "Name (Z–A)",
+      "created_newest": "Created (Newest first)",
+      "created_oldest": "Created (Oldest first)",
+      "size_largest": "Size (Largest first)",
+      "size_smallest": "Size (Smallest first)",
+      "type_sort": "Type",
+      "type_label": "Type",
+      "status_label": "Status",
+      "clear": "Clear",
+      "per_page": "page",
+      "share_link": "Copy shareable link"
+    },
+    "duplicates": {
+      "title": "Find Duplicate Assets",
+      "loading": "Searching for duplicates...",
+      "none_found": "No duplicate assets found.",
+      "exact_match": "Exact Duplicate",
+      "name_match": "Same Filename",
+      "similarity": "Similarity",
+      "ignore": "Ignore",
+      "deactivate": "Deactivate",
+      "delete": "Delete",
+      "ignore_all": "Ignore All",
+      "delete_all": "Delete All Duplicates",
+      "folder": "Folder"
+    },
+    "ai": {
+      "title": "AI Analysis",
+      "analyzing": "Analyzing asset...",
+      "labels": "Detected Labels",
+      "colors": "Color Analysis",
+      "quality": "Image Quality",
+      "suggested_tags": "Suggested Tags",
+      "description": "AI Description",
+      "similar": "Similar Assets",
+      "apply_tags": "Apply Suggested Tags",
+      "save_properties": "Save to Properties",
+      "queued": "Analysis queued. Check back soon.",
+      "error": "Analysis failed. Please try again."
+    },
+    "subfolder_count_tip": "{{count}} sub-folders",
+    "asset_count_tip": "{{count}} assets"
   }
 }

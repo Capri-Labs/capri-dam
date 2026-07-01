@@ -1640,5 +1640,66 @@
       "audit_trail": "所有系统操作的完整不可变日志。",
       "migration": "每个源系统的迁移批次结果和成本节省。"
     }
+  },
+  "folders": {
+    "filter": {
+      "search_placeholder": "搜索资产和文件夹...",
+      "all": "全部",
+      "assets": "资产",
+      "folders": "文件夹",
+      "images": "图片",
+      "videos": "视频",
+      "documents": "文档",
+      "audio": "音频",
+      "status_all": "任意状态",
+      "draft": "草稿",
+      "published": "已发布",
+      "approved": "已批准",
+      "rejected": "已拒绝",
+      "sort": "排序",
+      "results": "结果",
+      "name_az": "名称 (A–Z)",
+      "name_za": "名称 (Z–A)",
+      "created_newest": "创建时间（最新）",
+      "created_oldest": "创建时间（最旧）",
+      "size_largest": "大小（最大）",
+      "size_smallest": "大小（最小）",
+      "type_sort": "类型",
+      "type_label": "类型",
+      "status_label": "状态",
+      "clear": "清除",
+      "per_page": "页",
+      "share_link": "复制可分享链接"
+    },
+    "duplicates": {
+      "title": "查找重复资产",
+      "loading": "正在搜索重复项...",
+      "none_found": "未找到重复资产。",
+      "exact_match": "完全重复",
+      "name_match": "相同文件名",
+      "similarity": "相似度",
+      "ignore": "忽略",
+      "deactivate": "停用",
+      "delete": "删除",
+      "ignore_all": "全部忽略",
+      "delete_all": "删除所有重复项",
+      "folder": "文件夹"
+    },
+    "ai": {
+      "title": "AI 分析",
+      "analyzing": "正在分析资产...",
+      "labels": "检测到的标签",
+      "colors": "颜色分析",
+      "quality": "图像质量",
+      "suggested_tags": "建议标签",
+      "description": "AI 描述",
+      "similar": "相似资产",
+      "apply_tags": "应用建议标签",
+      "save_properties": "保存到属性",
+      "queued": "分析已加入队列。请稍后再查看。",
+      "error": "分析失败。请重试。"
+    },
+    "subfolder_count_tip": "{{count}} 个子文件夹",
+    "asset_count_tip": "{{count}} 个资产"
   }
 }

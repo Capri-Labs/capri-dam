@@ -1640,5 +1640,66 @@
       "audit_trail": "Log imutável completo de todas as ações do sistema.",
       "migration": "Resultados de lotes de migração e economias de custo por sistema de origem."
     }
+  },
+  "folders": {
+    "filter": {
+      "search_placeholder": "Pesquisar assets e pastas...",
+      "all": "Todos",
+      "assets": "Assets",
+      "folders": "Pastas",
+      "images": "Imagens",
+      "videos": "Vídeos",
+      "documents": "Documentos",
+      "audio": "Áudio",
+      "status_all": "Qualquer status",
+      "draft": "Rascunho",
+      "published": "Publicado",
+      "approved": "Aprovado",
+      "rejected": "Rejeitado",
+      "sort": "Ordenar",
+      "results": "Resultados",
+      "name_az": "Nome (A–Z)",
+      "name_za": "Nome (Z–A)",
+      "created_newest": "Criado (mais recente)",
+      "created_oldest": "Criado (mais antigo)",
+      "size_largest": "Tamanho (maior primeiro)",
+      "size_smallest": "Tamanho (menor primeiro)",
+      "type_sort": "Tipo",
+      "type_label": "Tipo",
+      "status_label": "Status",
+      "clear": "Limpar",
+      "per_page": "página",
+      "share_link": "Copiar link compartilhável"
+    },
+    "duplicates": {
+      "title": "Encontrar assets duplicados",
+      "loading": "Procurando duplicados...",
+      "none_found": "Nenhum asset duplicado encontrado.",
+      "exact_match": "Duplicado exato",
+      "name_match": "Mesmo nome de arquivo",
+      "similarity": "Similaridade",
+      "ignore": "Ignorar",
+      "deactivate": "Desativar",
+      "delete": "Excluir",
+      "ignore_all": "Ignorar todos",
+      "delete_all": "Excluir todos os duplicados",
+      "folder": "Pasta"
+    },
+    "ai": {
+      "title": "Análise por IA",
+      "analyzing": "Analisando asset...",
+      "labels": "Rótulos detectados",
+      "colors": "Análise de cores",
+      "quality": "Qualidade da imagem",
+      "suggested_tags": "Tags sugeridas",
+      "description": "Descrição da IA",
+      "similar": "Assets semelhantes",
+      "apply_tags": "Aplicar tags sugeridas",
+      "save_properties": "Salvar nas propriedades",
+      "queued": "Análise enfileirada. Verifique novamente em breve.",
+      "error": "A análise falhou. Tente novamente."
+    },
+    "subfolder_count_tip": "{{count}} subpastas",
+    "asset_count_tip": "{{count}} ativos"
   }
 }

@@ -139,4 +139,34 @@ RSpec.describe 'Folders API (functional)', type: :request do
       expect(vp['preset_count']).to eq(3)
     end
   end
+
+  # ── asset_count in folder payload ──────────────────────────────────────────
+  describe 'GET /api/v1/folders/:id includes asset_count' do
+    let!(:admin_user) { create(:user, :admin) }
+    let!(:folder) { create(:folder, user: admin_user, name: 'Parent Folder') }
+    let!(:child)  { create(:folder, user: admin_user, parent: folder, name: 'Child Folder') }
+
+    before { sign_in admin_user }
+
+    it 'includes asset_count in each subfolder payload' do
+      create(:asset, user: admin_user, folder: child, title: 'Asset 1')
+      create(:asset, user: admin_user, folder: child, title: 'Asset 2')
+
+      get "/api/v1/folders/#{folder.id}", as: :json
+      expect(response).to have_http_status(:ok)
+      folders = JSON.parse(response.body)['folders']
+      child_payload = folders.find { |f| f['id'].to_s == child.id.to_s }
+      expect(child_payload).not_to be_nil
+      expect(child_payload['asset_count']).to eq(2)
+    end
+
+    it 'returns asset_count 0 when subfolder has no assets' do
+      get "/api/v1/folders/#{folder.id}", as: :json
+      expect(response).to have_http_status(:ok)
+      folders = JSON.parse(response.body)['folders']
+      child_payload = folders.find { |f| f['id'].to_s == child.id.to_s }
+      expect(child_payload).not_to be_nil
+      expect(child_payload['asset_count']).to eq(0)
+    end
+  end
 end

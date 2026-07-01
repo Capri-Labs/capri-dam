@@ -1640,5 +1640,66 @@
       "audit_trail": "Vollständiges unveränderliches Protokoll aller Systemaktionen.",
       "migration": "Migrationsbatch-Ergebnisse und Kosteneinsparungen."
     }
+  },
+  "folders": {
+    "filter": {
+      "search_placeholder": "Assets und Ordner durchsuchen...",
+      "all": "Alle",
+      "assets": "Assets",
+      "folders": "Ordner",
+      "images": "Bilder",
+      "videos": "Videos",
+      "documents": "Dokumente",
+      "audio": "Audio",
+      "status_all": "Jeder Status",
+      "draft": "Entwurf",
+      "published": "Veröffentlicht",
+      "approved": "Freigegeben",
+      "rejected": "Abgelehnt",
+      "sort": "Sortieren",
+      "results": "Ergebnisse",
+      "name_az": "Name (A–Z)",
+      "name_za": "Name (Z–A)",
+      "created_newest": "Erstellt (Neueste zuerst)",
+      "created_oldest": "Erstellt (Älteste zuerst)",
+      "size_largest": "Größe (Größte zuerst)",
+      "size_smallest": "Größe (Kleinste zuerst)",
+      "type_sort": "Typ",
+      "type_label": "Typ",
+      "status_label": "Status",
+      "clear": "Zurücksetzen",
+      "per_page": "Seite",
+      "share_link": "Teilbaren Link kopieren"
+    },
+    "duplicates": {
+      "title": "Doppelte Assets finden",
+      "loading": "Suche nach Duplikaten...",
+      "none_found": "Keine doppelten Assets gefunden.",
+      "exact_match": "Exaktes Duplikat",
+      "name_match": "Gleicher Dateiname",
+      "similarity": "Ähnlichkeit",
+      "ignore": "Ignorieren",
+      "deactivate": "Deaktivieren",
+      "delete": "Löschen",
+      "ignore_all": "Alle ignorieren",
+      "delete_all": "Alle Duplikate löschen",
+      "folder": "Ordner"
+    },
+    "ai": {
+      "title": "KI-Analyse",
+      "analyzing": "Asset wird analysiert...",
+      "labels": "Erkannte Labels",
+      "colors": "Farbanalyse",
+      "quality": "Bildqualität",
+      "suggested_tags": "Vorgeschlagene Tags",
+      "description": "KI-Beschreibung",
+      "similar": "Ähnliche Assets",
+      "apply_tags": "Vorgeschlagene Tags anwenden",
+      "save_properties": "In Eigenschaften speichern",
+      "queued": "Analyse wurde eingereiht. Bitte später erneut prüfen.",
+      "error": "Analyse fehlgeschlagen. Bitte erneut versuchen."
+    },
+    "subfolder_count_tip": "{{count}} Unterordner",
+    "asset_count_tip": "{{count}} Assets"
   }
 }

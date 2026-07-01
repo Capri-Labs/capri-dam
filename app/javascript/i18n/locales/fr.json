@@ -1640,5 +1640,66 @@
       "audit_trail": "Journal immuable complet de toutes les actions système.",
       "migration": "Résultats des lots de migration et économies de coûts."
     }
+  },
+  "folders": {
+    "filter": {
+      "search_placeholder": "Rechercher des assets et des dossiers...",
+      "all": "Tous",
+      "assets": "Assets",
+      "folders": "Dossiers",
+      "images": "Images",
+      "videos": "Vidéos",
+      "documents": "Documents",
+      "audio": "Audio",
+      "status_all": "Tous les statuts",
+      "draft": "Brouillon",
+      "published": "Publié",
+      "approved": "Approuvé",
+      "rejected": "Rejeté",
+      "sort": "Trier",
+      "results": "Résultats",
+      "name_az": "Nom (A–Z)",
+      "name_za": "Nom (Z–A)",
+      "created_newest": "Créé (plus récent)",
+      "created_oldest": "Créé (plus ancien)",
+      "size_largest": "Taille (plus grande)",
+      "size_smallest": "Taille (plus petite)",
+      "type_sort": "Type",
+      "type_label": "Type",
+      "status_label": "Statut",
+      "clear": "Effacer",
+      "per_page": "page",
+      "share_link": "Copier le lien partageable"
+    },
+    "duplicates": {
+      "title": "Trouver les assets en double",
+      "loading": "Recherche des doublons...",
+      "none_found": "Aucun asset en double trouvé.",
+      "exact_match": "Doublon exact",
+      "name_match": "Même nom de fichier",
+      "similarity": "Similarité",
+      "ignore": "Ignorer",
+      "deactivate": "Désactiver",
+      "delete": "Supprimer",
+      "ignore_all": "Tout ignorer",
+      "delete_all": "Supprimer tous les doublons",
+      "folder": "Dossier"
+    },
+    "ai": {
+      "title": "Analyse IA",
+      "analyzing": "Analyse de l’asset...",
+      "labels": "Libellés détectés",
+      "colors": "Analyse des couleurs",
+      "quality": "Qualité de l’image",
+      "suggested_tags": "Tags suggérés",
+      "description": "Description IA",
+      "similar": "Assets similaires",
+      "apply_tags": "Appliquer les tags suggérés",
+      "save_properties": "Enregistrer dans les propriétés",
+      "queued": "Analyse mise en file d’attente. Revenez bientôt.",
+      "error": "Échec de l’analyse. Veuillez réessayer."
+    },
+    "subfolder_count_tip": "{{count}} sous-dossiers",
+    "asset_count_tip": "{{count}} éléments"
   }
 }

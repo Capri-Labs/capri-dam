@@ -28,9 +28,16 @@ class Api::V1::CollectionsController < ApplicationController
 
     @collections = @collections.order(created_at: :desc)
 
-    render json: @collections.as_json(
-      methods: [ :assets_count ]
-    ), status: :ok
+    if params[:asset_id].present?
+      pinned_ids = CollectionAsset.where(asset_id: params[:asset_id]).pluck(:collection_id).to_set
+      render json: @collections.as_json(methods: [ :assets_count ]).map { |c|
+        c.merge("pinned_for_asset" => pinned_ids.include?(c["id"]))
+      }, status: :ok
+    else
+      render json: @collections.as_json(
+        methods: [ :assets_count ]
+      ), status: :ok
+    end
   end
 
   # PATCH/PUT /api/v1/collections/:slug

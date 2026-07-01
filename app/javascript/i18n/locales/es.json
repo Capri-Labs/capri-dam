@@ -1640,5 +1640,66 @@
       "audit_trail": "Registro inmutable completo de todas las acciones del sistema.",
       "migration": "Resultados de lotes de migración y ahorros de costos."
     }
+  },
+  "folders": {
+    "filter": {
+      "search_placeholder": "Buscar assets y carpetas...",
+      "all": "Todo",
+      "assets": "Assets",
+      "folders": "Carpetas",
+      "images": "Imágenes",
+      "videos": "Vídeos",
+      "documents": "Documentos",
+      "audio": "Audio",
+      "status_all": "Cualquier estado",
+      "draft": "Borrador",
+      "published": "Publicado",
+      "approved": "Aprobado",
+      "rejected": "Rechazado",
+      "sort": "Ordenar",
+      "results": "Resultados",
+      "name_az": "Nombre (A–Z)",
+      "name_za": "Nombre (Z–A)",
+      "created_newest": "Creado (más reciente)",
+      "created_oldest": "Creado (más antiguo)",
+      "size_largest": "Tamaño (más grande)",
+      "size_smallest": "Tamaño (más pequeño)",
+      "type_sort": "Tipo",
+      "type_label": "Tipo",
+      "status_label": "Estado",
+      "clear": "Borrar",
+      "per_page": "página",
+      "share_link": "Copiar enlace compartible"
+    },
+    "duplicates": {
+      "title": "Buscar assets duplicados",
+      "loading": "Buscando duplicados...",
+      "none_found": "No se encontraron assets duplicados.",
+      "exact_match": "Duplicado exacto",
+      "name_match": "Mismo nombre de archivo",
+      "similarity": "Similitud",
+      "ignore": "Ignorar",
+      "deactivate": "Desactivar",
+      "delete": "Eliminar",
+      "ignore_all": "Ignorar todos",
+      "delete_all": "Eliminar todos los duplicados",
+      "folder": "Carpeta"
+    },
+    "ai": {
+      "title": "Análisis de IA",
+      "analyzing": "Analizando asset...",
+      "labels": "Etiquetas detectadas",
+      "colors": "Análisis de color",
+      "quality": "Calidad de imagen",
+      "suggested_tags": "Etiquetas sugeridas",
+      "description": "Descripción de IA",
+      "similar": "Assets similares",
+      "apply_tags": "Aplicar etiquetas sugeridas",
+      "save_properties": "Guardar en propiedades",
+      "queued": "Análisis en cola. Vuelve pronto.",
+      "error": "El análisis falló. Inténtalo de nuevo."
+    },
+    "subfolder_count_tip": "{{count}} subcarpetas",
+    "asset_count_tip": "{{count}} activos"
   }
 }

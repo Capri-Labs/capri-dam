@@ -42,7 +42,7 @@ module Api
       def show
         if params[:id] == "root"
           # Strictly fetch only ACTIVE top-level items
-          @folders = Folder.active.where(parent_id: nil)
+          @folders = Folder.active.where(parent_id: nil).includes(:children)
 
           #  FIX 1: Eager load the active_version to prevent database N+1 performance issues
           @assets = Asset.active.where(folder_id: nil).includes(:active_version)
@@ -57,7 +57,7 @@ module Api
           return if performed?
 
           # Filter subfolders and assets by active scope
-          @folders = Folder.active.where(parent_id: current_folder.id)
+          @folders = Folder.active.where(parent_id: current_folder.id).includes(:children)
 
           #  FIX 1: Eager load the active_version
           @assets = Asset.active.where(folder_id: current_folder.id).includes(:active_version)
@@ -65,8 +65,13 @@ module Api
           breadcrumbs = build_breadcrumbs(current_folder)
         end
 
+        # Batch-count assets per subfolder in one query to avoid N+1
+        folder_ids = @folders.map(&:id)
+        asset_counts_by_folder = folder_ids.any? ?
+          Asset.active.where(folder_id: folder_ids).group(:folder_id).count : {}
+
         # Apply optional sorting (sort + direction query params)
-        folders_payload = sort_folders(@folders.map { |f| format_folder_payload(f) })
+        folders_payload = sort_folders(@folders.map { |f| format_folder_payload(f, asset_counts_by_folder[f.id] || 0) })
         assets_payload  = sort_assets(@assets.map { |asset| format_asset_payload(asset) })
 
         render json: {
@@ -348,14 +353,16 @@ module Api
       end
 
       # Standardised folder payload (also exposes sortable timestamps).
-      def format_folder_payload(folder)
+      def format_folder_payload(folder, asset_count = 0)
         {
-          id:          folder.id,
-          name:        folder.name,
-          slug:        folder.slug,
-          description: folder.description,
-          created_at:  folder.created_at,
-          updated_at:  folder.updated_at,
+          id:              folder.id,
+          name:            folder.name,
+          slug:            folder.slug,
+          description:     folder.description,
+          subfolder_count: folder.children.count { |element| !element.trashed? },
+          asset_count:     asset_count,
+          created_at:      folder.created_at,
+          updated_at:      folder.updated_at,
         }
       end
 

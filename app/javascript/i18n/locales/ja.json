@@ -1640,5 +1640,66 @@
       "audit_trail": "すべてのシステムアクションの完全な不変ログ。",
       "migration": "移行バッチ結果とソースシステムごとのコスト削減。"
     }
+  },
+  "folders": {
+    "filter": {
+      "search_placeholder": "アセットとフォルダーを検索...",
+      "all": "すべて",
+      "assets": "アセット",
+      "folders": "フォルダー",
+      "images": "画像",
+      "videos": "動画",
+      "documents": "ドキュメント",
+      "audio": "音声",
+      "status_all": "すべてのステータス",
+      "draft": "下書き",
+      "published": "公開済み",
+      "approved": "承認済み",
+      "rejected": "却下",
+      "sort": "並び替え",
+      "results": "結果",
+      "name_az": "名前 (A–Z)",
+      "name_za": "名前 (Z–A)",
+      "created_newest": "作成日 (新しい順)",
+      "created_oldest": "作成日 (古い順)",
+      "size_largest": "サイズ (大きい順)",
+      "size_smallest": "サイズ (小さい順)",
+      "type_sort": "種類",
+      "type_label": "タイプ",
+      "status_label": "ステータス",
+      "clear": "クリア",
+      "per_page": "ページ",
+      "share_link": "共有リンクをコピー"
+    },
+    "duplicates": {
+      "title": "重複アセットを検索",
+      "loading": "重複を検索しています...",
+      "none_found": "重複アセットは見つかりませんでした。",
+      "exact_match": "完全一致の重複",
+      "name_match": "同じファイル名",
+      "similarity": "類似度",
+      "ignore": "無視",
+      "deactivate": "無効化",
+      "delete": "削除",
+      "ignore_all": "すべて無視",
+      "delete_all": "重複をすべて削除",
+      "folder": "フォルダー"
+    },
+    "ai": {
+      "title": "AI分析",
+      "analyzing": "アセットを分析しています...",
+      "labels": "検出ラベル",
+      "colors": "カラー分析",
+      "quality": "画質",
+      "suggested_tags": "提案タグ",
+      "description": "AI説明",
+      "similar": "類似アセット",
+      "apply_tags": "提案タグを適用",
+      "save_properties": "プロパティに保存",
+      "queued": "分析をキューに追加しました。後でもう一度確認してください。",
+      "error": "分析に失敗しました。もう一度お試しください。"
+    },
+    "subfolder_count_tip": "{{count}} サブフォルダー",
+    "asset_count_tip": "{{count}} アセット"
   }
 }

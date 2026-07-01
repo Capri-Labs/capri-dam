@@ -15,25 +15,31 @@ RSpec.describe 'Api::V1::Collections', type: :request do
         Returns all active (non-archived) collections ordered by `created_at DESC`.
         Supports **temporal time-travel** via `as_of`: pass an ISO-8601 timestamp
         to see what collections existed at that point in time.
+        Pass `asset_id` to receive `pinned_for_asset: true/false` for each collection,
+        indicating whether the asset is currently pinned to that collection.
       DESC
 
       parameter name: :as_of, in: :query, type: :string, required: false,
                 description: 'ISO-8601 datetime for temporal filtering (e.g. `2025-01-15T00:00:00Z`)'
+      parameter name: :asset_id, in: :query, type: :string, required: false,
+                description: 'UUID of an asset — when provided, each collection includes `pinned_for_asset: true/false`'
 
       response '200', 'Collections returned' do
         schema type: :array,
                items: {
                  type: :object,
                  properties: {
-                   id:              { type: :integer },
-                   name:            { type: :string, example: 'Q3 Brand Campaign' },
-                   slug:            { type: :string, example: 'q3-brand-campaign' },
-                   description:     { type: :string, nullable: true },
-                   collection_type: { type: :string, example: 'smart',
-                                      description: 'manual | smart' },
-                   assets_count:    { type: :integer, example: 24 },
-                   expires_at:      { type: :string, format: 'date-time', nullable: true },
-                   created_at:      { type: :string, format: 'date-time' },
+                   id:                { type: :integer },
+                   name:              { type: :string, example: 'Q3 Brand Campaign' },
+                   slug:              { type: :string, example: 'q3-brand-campaign' },
+                   description:       { type: :string, nullable: true },
+                   collection_type:   { type: :string, example: 'smart',
+                                        description: 'manual | smart' },
+                   assets_count:      { type: :integer, example: 24 },
+                   pinned_for_asset:  { type: :boolean, nullable: true,
+                                        description: 'Included only when asset_id is provided' },
+                   expires_at:        { type: :string, format: 'date-time', nullable: true },
+                   created_at:        { type: :string, format: 'date-time' },
                  },
                }
         run_test!

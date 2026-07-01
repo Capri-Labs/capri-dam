@@ -1640,5 +1640,66 @@
       "audit_trail": "모든 시스템 작업의 완전한 불변 로그.",
       "migration": "마이그레이션 배치 결과 및 소스 시스템별 비용 절감."
     }
+  },
+  "folders": {
+    "filter": {
+      "search_placeholder": "에셋과 폴더 검색...",
+      "all": "전체",
+      "assets": "에셋",
+      "folders": "폴더",
+      "images": "이미지",
+      "videos": "동영상",
+      "documents": "문서",
+      "audio": "오디오",
+      "status_all": "모든 상태",
+      "draft": "초안",
+      "published": "게시됨",
+      "approved": "승인됨",
+      "rejected": "거부됨",
+      "sort": "정렬",
+      "results": "결과",
+      "name_az": "이름 (A–Z)",
+      "name_za": "이름 (Z–A)",
+      "created_newest": "생성일 (최신순)",
+      "created_oldest": "생성일 (오래된순)",
+      "size_largest": "크기 (큰순)",
+      "size_smallest": "크기 (작은순)",
+      "type_sort": "유형",
+      "type_label": "유형",
+      "status_label": "상태",
+      "clear": "초기화",
+      "per_page": "페이지",
+      "share_link": "공유 가능한 링크 복사"
+    },
+    "duplicates": {
+      "title": "중복 에셋 찾기",
+      "loading": "중복 항목을 찾는 중...",
+      "none_found": "중복 에셋이 없습니다.",
+      "exact_match": "정확히 일치하는 중복",
+      "name_match": "같은 파일 이름",
+      "similarity": "유사도",
+      "ignore": "무시",
+      "deactivate": "비활성화",
+      "delete": "삭제",
+      "ignore_all": "모두 무시",
+      "delete_all": "모든 중복 삭제",
+      "folder": "폴더"
+    },
+    "ai": {
+      "title": "AI 분석",
+      "analyzing": "에셋을 분석하는 중...",
+      "labels": "감지된 라벨",
+      "colors": "색상 분석",
+      "quality": "이미지 품질",
+      "suggested_tags": "추천 태그",
+      "description": "AI 설명",
+      "similar": "유사한 에셋",
+      "apply_tags": "추천 태그 적용",
+      "save_properties": "속성에 저장",
+      "queued": "분석이 대기열에 추가되었습니다. 잠시 후 다시 확인하세요.",
+      "error": "분석에 실패했습니다. 다시 시도해 주세요."
+    },
+    "subfolder_count_tip": "{{count}}개의 하위 폴더",
+    "asset_count_tip": "{{count}}개의 에셋"
   }
 }

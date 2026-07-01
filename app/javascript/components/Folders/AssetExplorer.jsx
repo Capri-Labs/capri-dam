@@ -1,305 +1,516 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Box, Divider, Typography, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button } from '@mui/material';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { Box, Divider, Typography, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Pagination } from '@mui/material';
 import { useNotify } from '../../context/NotificationContext';
 import AssetViewer from './AssetViewer';
-import AssetFilterBar from './AssetFilterBar';
-
-// Import our new chunked components
+import AssetFilterBar, { PER_PAGE_OPTIONS } from './AssetFilterBar';
 import ExplorerTopBar from './ExplorerTopBar';
 import FolderGrid from './FolderGrid';
 import AssetGrid from './AssetGrid';
 import AssetList from './AssetList';
 import PinToCollectionDialog from './PinToCollectionDialog';
 import FolderInfoPanel from './FolderInfoPanel';
+import DuplicateFinderDialog from './DuplicateResolverDialog';
+import AiAnalysisDialog from './AiAnalysisDialog';
+
+const matchesQuery = (value, query) => value.toLowerCase().includes(query.toLowerCase());
+const isDocumentType = (contentType) => contentType.startsWith('application/') || contentType.startsWith('text/');
+
+// ── URL param helpers ──────────────────────────────────────────────────────────
+function readUrlFilters() {
+  const p = new URLSearchParams(window.location.search);
+  return {
+    folderId:      p.get('folder') || 'root',
+    query:         p.get('q') || '',
+    typeFilters:   p.get('types') ? p.get('types').split(',') : [],
+    statusFilters: p.get('statuses') ? p.get('statuses').split(',') : [],
+    sort: {
+      field:     p.get('sort_field') || 'name',
+      direction: p.get('sort_dir') || 'asc',
+    },
+    perPage: Number(p.get('per_page')) || PER_PAGE_OPTIONS[0],
+    page:    Number(p.get('page')) || 1,
+  };
+}
+
+function buildFilterUrl(folderId, { query, typeFilters, statusFilters, sort, perPage, page }) {
+  const p = new URLSearchParams();
+  if (folderId && folderId !== 'root') p.set('folder', folderId);
+  if (query) p.set('q', query);
+  if (typeFilters.length > 0) p.set('types', typeFilters.join(','));
+  if (statusFilters.length > 0) p.set('statuses', statusFilters.join(','));
+  if (sort.field !== 'name') p.set('sort_field', sort.field);
+  if (sort.direction !== 'asc') p.set('sort_dir', sort.direction);
+  if (perPage !== PER_PAGE_OPTIONS[0]) p.set('per_page', perPage);
+  if (page > 1) p.set('page', page);
+  const qs = p.toString();
+  return `${window.location.pathname}${qs ? `?${qs}` : ''}`;
+}
 
 export default function AssetExplorer({ initialTargetAssetId }) {
-    const notify = useNotify();
-    const [viewData, setViewData] = useState({ folders: [], assets: [], breadcrumbs: [] });
-    const [viewLayout, setViewLayout] = useState('grid');
-    const [viewMode, setViewMode] = useState('active');
+  const notify = useNotify();
+  const [viewData, setViewData] = useState({ folders: [], assets: [], breadcrumbs: [] });
+  const [viewLayout, setViewLayout] = useState('grid');
+  const [viewMode, setViewMode] = useState('active');
 
-    const [currentId, setCurrentId] = useState(() => {
-        const params = new URLSearchParams(window.location.search);
-        return params.get('folder') || 'root';
-    });
+  // Initialise all filter state from URL on mount
+  const initFilters = useMemo(() => readUrlFilters(), []); // eslint-disable-line react-hooks/exhaustive-deps
+  const [gridSize, setGridSize] = useState('medium');
+  const [query, setQuery] = useState(initFilters.query);
+  const [typeFilters, setTypeFilters] = useState(initFilters.typeFilters);
+  const [statusFilters, setStatusFilters] = useState(initFilters.statusFilters);
+  const [perPage, setPerPage] = useState(initFilters.perPage);
+  const [page, setPage] = useState(initFilters.page);
+  const [sort, setSort] = useState(initFilters.sort);
 
-    const [selectedAsset, setSelectedAsset] = useState(null);
-    const [openFolderDialog, setOpenFolderDialog] = useState(false);
-    const [newFolderName, setNewFolderName] = useState('');
-    const [selectedItems, setSelectedItems] = useState({ folders: [], assets: [] });
-    const [pinDialogOpen, setPinDialogOpen] = useState(false);
-    const [assetToPin, setAssetToPin] = useState(null);
+  const [currentId, setCurrentId] = useState(initFilters.folderId);
 
-    // Sorting (field + direction) — sent to the folder API as query params
-    const [sort, setSort] = useState({ field: 'name', direction: 'asc' });
+  const [selectedAsset, setSelectedAsset] = useState(null);
+  const [openFolderDialog, setOpenFolderDialog] = useState(false);
+  const [newFolderName, setNewFolderName] = useState('');
+  const [selectedItems, setSelectedItems] = useState({ folders: [], assets: [] });
+  const [pinDialogOpen, setPinDialogOpen] = useState(false);
+  const [assetToPin, setAssetToPin] = useState(null);
+  const [duplicateFinderOpen, setDuplicateFinderOpen] = useState(false);
+  const [duplicateFinderAsset, setDuplicateFinderAsset] = useState(null);
+  const [aiAnalysisOpen, setAiAnalysisOpen] = useState(false);
+  const [aiAnalysisAsset, setAiAnalysisAsset] = useState(null);
+  const [infoFolder, setInfoFolder] = useState(null);
+  const [infoPanelOpen, setInfoPanelOpen] = useState(false);
 
-    // Folder info panel
-    const [infoFolder,    setInfoFolder]    = useState(null);
-    const [infoPanelOpen, setInfoPanelOpen] = useState(false);
+  const deepLinkProcessed = useRef(false);
 
-    // Track whether we have already auto-opened the deep-linked asset so
-    // folder navigation does not re-trigger the AssetViewer on every load.
-    const deepLinkProcessed = useRef(false);
+  const handleFolderInfo = (folder) => {
+    setInfoFolder(folder);
+    setInfoPanelOpen(true);
+  };
 
-    const handleFolderInfo = (folder) => {
-        setInfoFolder(folder);
-        setInfoPanelOpen(true);
+  const handlePinClick = (asset, event) => {
+    if (event) event.stopPropagation();
+    setAssetToPin(asset);
+    setPinDialogOpen(true);
+  };
+
+  const handleOpenDuplicateFinder = (asset) => {
+    setDuplicateFinderAsset(asset);
+    setDuplicateFinderOpen(true);
+  };
+
+  const handleOpenAiAnalysis = (asset) => {
+    setAiAnalysisAsset(asset);
+    setAiAnalysisOpen(true);
+  };
+
+  const handleNavigate = (folderId) => {
+    setCurrentId(folderId);
+    // Reset filters when navigating into a different folder
+    setPage(1);
+    const url = buildFilterUrl(folderId, { query, typeFilters, statusFilters, sort, perPage, page: 1 });
+    window.history.pushState({ folderId }, '', url);
+  };
+
+  // Keep URL in sync when filters change (replace, not push, to avoid polluting history)
+  useEffect(() => {
+    if (viewMode !== 'active') return;
+    const url = buildFilterUrl(currentId, { query, typeFilters, statusFilters, sort, perPage, page });
+    window.history.replaceState({ folderId: currentId }, '', url);
+  }, [currentId, query, typeFilters, statusFilters, sort, perPage, page, viewMode]);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      const f = readUrlFilters();
+      setCurrentId(f.folderId);
+      setQuery(f.query);
+      setTypeFilters(f.typeFilters);
+      setStatusFilters(f.statusFilters);
+      setSort(f.sort);
+      setPerPage(f.perPage);
+      setPage(f.page);
     };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
-    const handlePinClick = (asset, event) => {
-        if (event) event.stopPropagation();
-        setAssetToPin(asset);
-        setPinDialogOpen(true);
-    };
+  const loadContent = useCallback(() => {
+    const sortQuery = `sort=${sort.field}&direction=${sort.direction}`;
+    const endpoint = viewMode === 'bin'
+      ? '/api/v1/bin'
+      : `/api/v1/folders/${currentId}?${sortQuery}`;
 
-    // --- BROWSER HISTORY & ROUTING LOGIC ---
-    const handleNavigate = (folderId) => {
-        setCurrentId(folderId);
-        const newUrl = folderId === 'root' ? window.location.pathname : `${window.location.pathname}?folder=${folderId}`;
-        window.history.pushState({ folderId }, '', newUrl);
-    };
+    fetch(endpoint)
+      .then((response) => response.json())
+      .then((data) => {
+        setViewData(data);
+        setSelectedItems({ folders: [], assets: [] });
+      });
+  }, [currentId, viewMode, sort]);
 
-    useEffect(() => {
-        const handlePopState = () => setCurrentId(new URLSearchParams(window.location.search).get('folder') || 'root');
-        window.addEventListener('popstate', handlePopState);
-        return () => window.removeEventListener('popstate', handlePopState);
-    }, []);
+  useEffect(() => { loadContent(); }, [loadContent]);
 
-    // --- DATA LOADING ---
-    const loadContent = useCallback(() => {
-        const sortQuery = `sort=${sort.field}&direction=${sort.direction}`;
-        const endpoint = viewMode === 'bin'
-            ? '/api/v1/bin'
-            : `/api/v1/folders/${currentId}?${sortQuery}`;
-        fetch(endpoint).then(res => res.json()).then(data => {
-            setViewData(data);
-            setSelectedItems({ folders: [], assets: [] });
-        });
-    }, [currentId, viewMode, sort]);
+  useEffect(() => {
+    if (!initialTargetAssetId || deepLinkProcessed.current) return;
 
-    useEffect(() => { loadContent(); }, [loadContent]);
-
-    // --- DEEP-LINK: open a specific asset by ID ---
-    // Only fires once per mount (deepLinkProcessed guards against re-triggers
-    // when viewData changes due to folder navigation).
-    useEffect(() => {
-        if (!initialTargetAssetId || deepLinkProcessed.current) return;
-
-        // Try to find it in the already-loaded folder first (cache-friendly)
-        const inView = viewData.assets?.find(
-            a => a.id === initialTargetAssetId || a.uuid === initialTargetAssetId
-        );
-        if (inView) {
-            setSelectedAsset(inView);
-            deepLinkProcessed.current = true;
-            return;
-        }
-
-        // Otherwise fetch the asset directly and open the viewer
-        fetch(`/api/v1/assets/${initialTargetAssetId}`)
-            .then(res => {
-                if (!res.ok) throw new Error(`Asset not found (${res.status})`);
-                return res.json();
-            })
-            .then(data => {
-                setSelectedAsset(data);
-                deepLinkProcessed.current = true;
-            })
-            .catch(err => {
-                notify(`Could not open asset: ${err.message}`, 'error');
-                deepLinkProcessed.current = true; // prevent infinite retry
-            });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [initialTargetAssetId, viewData.assets]);
-
-    // --- ACTIONS ---
-    const handleCopyPath = () => {
-        navigator.clipboard.writeText(window.location.href)
-            .then(() => notify("Folder location copied to clipboard!", "success"))
-            .catch(() => notify("Failed to copy link.", "error"));
-    };
-
-    const handleRestoreSelected = async () => {
-        const csrfToken = document.querySelector('[name="csrf-token"]').content;
-        const headers = { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken };
-        const assetPromises = selectedItems.assets.map(id => fetch(`/api/v1/assets/${id}/restore`, { method: 'POST', headers }));
-        const folderPromises = selectedItems.folders.map(id => fetch(`/api/v1/folders/${id}/restore`, { method: 'POST', headers }));
-        await Promise.all([...assetPromises, ...folderPromises]);
-        loadContent();
-    };
-
-    const handlePermanentDelete = async () => {
-        if (!window.confirm("WARNING: This will permanently delete these files from the server. This cannot be undone!")) return;
-        const csrfToken = document.querySelector('[name="csrf-token"]').content;
-        const headers = { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken };
-        const assetPromises = selectedItems.assets.map(id => fetch(`/api/v1/assets/${id}/permanent`, { method: 'DELETE', headers }));
-        const folderPromises = selectedItems.folders.map(id => fetch(`/api/v1/folders/${id}/permanent`, { method: 'DELETE', headers }));
-        await Promise.all([...assetPromises, ...folderPromises]);
-        loadContent();
-    };
-
-    const handleDeleteSelected = async () => {
-        const totalCount = selectedItems.folders.length + selectedItems.assets.length;
-        if (!window.confirm(`Are you sure you want to delete ${totalCount} selected item(s)? This cannot be undone.`)) return;
-
-        try {
-            const csrfToken = document.querySelector('[name="csrf-token"]').content;
-            const headers = { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken };
-            const assetPromises = selectedItems.assets.map(id => fetch(`/api/v1/assets/${id}`, { method: 'DELETE', headers }));
-            const folderPromises = selectedItems.folders.map(id => fetch(`/api/v1/folders/${id}`, { method: 'DELETE', headers }));
-            await Promise.all([...assetPromises, ...folderPromises]);
-            loadContent();
-        } catch (error) {
-            console.error("Bulk delete failed:", error);
-            notify("An error occurred during deletion.", "error");
-        }
-    };
-
-    const handleSelectAll = (event) => {
-        if (event.target.checked) {
-            setSelectedItems({
-                folders: viewData.folders.map(f => f.id),
-                assets: viewData.assets.map(a => a.id)
-            });
-        } else {
-            setSelectedItems({ folders: [], assets: [] });
-        }
-    };
-
-    const toggleSelection = (type, id, event) => {
-        event.stopPropagation();
-        setSelectedItems(prev => {
-            const list = prev[type];
-            return list.includes(id)
-                ? { ...prev, [type]: list.filter(itemId => itemId !== id) }
-                : { ...prev, [type]: [...list, id] };
-        });
-    };
-
-    const handleCreateFolder = async () => {
-        const response = await fetch('/api/v1/folders', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content },
-            body: JSON.stringify({ folder: { name: newFolderName, parent_id: currentId === 'root' ? null : currentId } })
-        });
-        if (response.ok) {
-            setOpenFolderDialog(false);
-            setNewFolderName('');
-            loadContent();
-        }
-    };
-
-    const handleFileUpload = async (event) => {
-        const file = event.target.files[0];
-        if (!file) return;
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('title', file.name);
-        formData.append('folder_id', currentId === 'root' ? '' : currentId);
-
-        try {
-            const csrfMetaTag = document.querySelector('[name="csrf-token"]');
-            const response = await fetch('/api/v1/assets', {
-                method: 'POST',
-                headers: { 'Accept': 'application/json', 'X-CSRF-Token': csrfMetaTag.content },
-                body: formData
-            });
-            if (response.ok) loadContent();
-        } catch (error) {
-            console.error("Upload error:", error);
-        } finally {
-            event.target.value = null;
-        }
-    };
-
-    const isAllSelected = (viewData.folders?.length > 0 || viewData.assets?.length > 0) &&
-        selectedItems.folders.length === (viewData.folders?.length || 0) &&
-        selectedItems.assets.length === (viewData.assets?.length || 0);
-    const hasSelection = selectedItems.folders.length > 0 || selectedItems.assets.length > 0;
-
-    return (
-        <Box sx={{ width: '100%', p: 4, bgcolor: '#f8fafc', minHeight: '100vh' }}>
-
-            <ExplorerTopBar
-                currentId={currentId} viewData={viewData} viewMode={viewMode} setViewMode={setViewMode}
-                handleNavigate={handleNavigate} handleCopyPath={handleCopyPath} isAllSelected={isAllSelected}
-                handleSelectAll={handleSelectAll} hasSelection={hasSelection} handleDeleteSelected={handleDeleteSelected}
-                handleRestoreSelected={handleRestoreSelected} handlePermanentDelete={handlePermanentDelete}
-                setOpenFolderDialog={setOpenFolderDialog} handleFileUpload={handleFileUpload}
-                selectedItems={selectedItems}
-                onSchemaApplied={() => loadContent()}
-                onUploadSuccess={() => loadContent()}
-            />
-
-            {viewMode === 'active' && (
-                <AssetFilterBar
-                    resultCount={(viewData.folders?.length || 0) + (viewData.assets?.length || 0)}
-                    viewLayout={viewLayout} setViewLayout={setViewLayout}
-                    sort={sort} onSortChange={setSort}
-                />
-            )}
-
-            <FolderGrid
-                folders={viewData.folders} viewMode={viewMode}
-                selectedItems={selectedItems} toggleSelection={toggleSelection}
-                handleNavigate={handleNavigate}
-                onFolderInfo={handleFolderInfo}
-            />
-
-            {viewData.folders?.length > 0 && viewData.assets?.length > 0 && <Divider sx={{ my: 4, borderColor: '#e2e8f0' }} />}
-
-            {viewData.assets && viewData.assets.length > 0 && (
-                <Box>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', mb: 2 }}>Media & Files</Typography>
-
-                    {/* THE GRID/LIST CONDITIONAL RENDER */}
-                    {viewLayout === 'grid' ? (
-                        <AssetGrid
-                            assets={viewData.assets} viewMode={viewMode}
-                            selectedItems={selectedItems} toggleSelection={toggleSelection} setSelectedAsset={setSelectedAsset}
-                            onPinClick={handlePinClick}
-                        />
-                    ) : (
-                        <AssetList
-                            assets={viewData.assets} viewMode={viewMode}
-                            selectedItems={selectedItems} toggleSelection={toggleSelection} setSelectedAsset={setSelectedAsset}
-                            onPinClick={handlePinClick}
-                        />
-                    )}
-                </Box>
-            )}
-
-            <Dialog open={openFolderDialog} onClose={() => setOpenFolderDialog(false)}>
-                <DialogTitle>Create New Folder</DialogTitle>
-                <DialogContent>
-                    <TextField autoFocus margin="dense" label="Folder Name" fullWidth variant="standard" value={newFolderName} onChange={(e) => setNewFolderName(e.target.value)} />
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setOpenFolderDialog(false)}>Cancel</Button>
-                    <Button onClick={handleCreateFolder} variant="contained" disabled={!newFolderName.trim()}>Create</Button>
-                </DialogActions>
-            </Dialog>
-
-            <AssetViewer asset={selectedAsset} open={Boolean(selectedAsset)} onClose={() => setSelectedAsset(null)} onAssetUpdated={(updatedAsset) => { setSelectedAsset(updatedAsset); loadContent(); }} />
-
-            <PinToCollectionDialog
-                open={pinDialogOpen}
-                onClose={() => setPinDialogOpen(false)}
-                asset={assetToPin}
-            />
-
-            {/* Folder info drawer */}
-            <FolderInfoPanel
-                folder={infoFolder}
-                open={infoPanelOpen}
-                onClose={() => setInfoPanelOpen(false)}
-                onFolderUpdated={(updated) => {
-                    // Refresh folder list so the renamed folder appears immediately
-                    loadContent();
-                    // Keep the panel open with updated data
-                    setInfoFolder(prev => prev ? { ...prev, ...updated } : prev);
-                }}
-            />
-        </Box>
+    const inView = viewData.assets?.find(
+      (asset) => asset.id === initialTargetAssetId || asset.uuid === initialTargetAssetId
     );
+    if (inView) {
+      setSelectedAsset(inView);
+      deepLinkProcessed.current = true;
+      return;
+    }
+
+    fetch(`/api/v1/assets/${initialTargetAssetId}`)
+      .then((response) => {
+        if (!response.ok) throw new Error(`Asset not found (${response.status})`);
+        return response.json();
+      })
+      .then((data) => {
+        setSelectedAsset(data);
+        deepLinkProcessed.current = true;
+      })
+      .catch((error) => {
+        notify(`Could not open asset: ${error.message}`, 'error');
+        deepLinkProcessed.current = true;
+      });
+  }, [initialTargetAssetId, notify, viewData.assets]);
+
+  const handleCopyPath = () => {
+    navigator.clipboard.writeText(window.location.href)
+      .then(() => notify('Folder location copied to clipboard!', 'success'))
+      .catch(() => notify('Failed to copy link.', 'error'));
+  };
+
+  const handleShareLink = () => {
+    navigator.clipboard.writeText(window.location.href)
+      .then(() => notify('Shareable link copied to clipboard!', 'success'))
+      .catch(() => notify('Failed to copy link.', 'error'));
+  };
+
+  const handleRestoreSelected = async () => {
+    const headers = requestHeaders();
+    const assetPromises = selectedItems.assets.map((id) => fetch(`/api/v1/assets/${id}/restore`, { method: 'POST', headers }));
+    const folderPromises = selectedItems.folders.map((id) => fetch(`/api/v1/folders/${id}/restore`, { method: 'POST', headers }));
+    await Promise.all([...assetPromises, ...folderPromises]);
+    loadContent();
+  };
+
+  const handlePermanentDelete = async () => {
+    if (!window.confirm('WARNING: This will permanently delete these files from the server. This cannot be undone!')) return;
+    const headers = requestHeaders();
+    const assetPromises = selectedItems.assets.map((id) => fetch(`/api/v1/assets/${id}/permanent`, { method: 'DELETE', headers }));
+    const folderPromises = selectedItems.folders.map((id) => fetch(`/api/v1/folders/${id}/permanent`, { method: 'DELETE', headers }));
+    await Promise.all([...assetPromises, ...folderPromises]);
+    loadContent();
+  };
+
+  const handleDeleteSelected = async () => {
+    const totalCount = selectedItems.folders.length + selectedItems.assets.length;
+    if (!window.confirm(`Are you sure you want to delete ${totalCount} selected item(s)? This cannot be undone.`)) return;
+
+    try {
+      const headers = requestHeaders();
+      const assetPromises = selectedItems.assets.map((id) => fetch(`/api/v1/assets/${id}`, { method: 'DELETE', headers }));
+      const folderPromises = selectedItems.folders.map((id) => fetch(`/api/v1/folders/${id}`, { method: 'DELETE', headers }));
+      await Promise.all([...assetPromises, ...folderPromises]);
+      loadContent();
+    } catch {
+      notify('An error occurred during deletion.', 'error');
+    }
+  };
+
+  const toggleSelection = (type, id, event) => {
+    event.stopPropagation();
+    setSelectedItems((previous) => {
+      const list = previous[type];
+      return list.includes(id)
+        ? { ...previous, [type]: list.filter((itemId) => itemId !== id) }
+        : { ...previous, [type]: [...list, id] };
+    });
+  };
+
+  const handleCreateFolder = async () => {
+    const response = await fetch('/api/v1/folders', {
+      method: 'POST',
+      headers: requestHeaders(),
+      body: JSON.stringify({ folder: { name: newFolderName, parent_id: currentId === 'root' ? null : currentId } })
+    });
+    if (response.ok) {
+      setOpenFolderDialog(false);
+      setNewFolderName('');
+      loadContent();
+    }
+  };
+
+  const handleFileUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('title', file.name);
+    formData.append('folder_id', currentId === 'root' ? '' : currentId);
+
+    try {
+      const response = await fetch('/api/v1/assets', {
+        method: 'POST',
+        headers: { Accept: 'application/json', 'X-CSRF-Token': document.querySelector('[name="csrf-token"]')?.content || '' },
+        body: formData
+      });
+      if (response.ok) loadContent();
+    } catch {
+      notify('Upload failed.', 'error');
+    } finally {
+      event.target.value = null;
+    }
+  };
+
+  const filteredFolders = useMemo(() => {
+    const folders = viewData.folders || [];
+    if (viewMode !== 'active') return folders;
+
+    // If type filters are set and 'folders' is not among them, hide all folders
+    if (typeFilters.length > 0 && !typeFilters.includes('folders')) return [];
+
+    return folders.filter((folder) => !query || matchesQuery(folder.name || '', query));
+  }, [query, typeFilters, viewData.folders, viewMode]);
+
+  const filteredAssets = useMemo(() => {
+    const assets = viewData.assets || [];
+    if (viewMode !== 'active') return assets;
+
+    return assets.filter((asset) => {
+      const contentType = asset.content_type || asset.properties?.content_type || '';
+      const title = asset.name || asset.title || '';
+      const normalizedStatus = asset.status === 'ready' ? 'published' : asset.status;
+
+      // Type filter:
+      // - No type filters active → show all assets
+      // - Only 'folders' selected → hide all assets (user wants folders only)
+      // - Asset type keys selected → show matching assets
+      const assetTypeFilters = typeFilters.filter((k) => k !== 'folders');
+      let matchesType;
+      if (typeFilters.length === 0) {
+        matchesType = true; // no filter
+      } else if (assetTypeFilters.length === 0) {
+        matchesType = false; // only 'folders' selected → hide assets
+      } else {
+        matchesType = assetTypeFilters.some((key) => {
+          switch (key) {
+            case 'images':    return contentType.startsWith('image/');
+            case 'videos':    return contentType.startsWith('video/');
+            case 'documents': return isDocumentType(contentType);
+            case 'audio':     return contentType.startsWith('audio/');
+            default:          return true;
+          }
+        });
+      }
+
+      const matchesStatus = statusFilters.length === 0 || statusFilters.includes(normalizedStatus);
+      const matchesSearch = !query || matchesQuery(title, query);
+
+      return matchesType && matchesStatus && matchesSearch;
+    });
+  }, [query, statusFilters, typeFilters, viewData.assets, viewMode]);
+
+  // Reset to page 1 whenever filters change
+  const resetPage = () => setPage(1);
+
+  const handleTypeFiltersChange = (val) => { setTypeFilters(val); resetPage(); };
+  const handleStatusFiltersChange = (val) => { setStatusFilters(val); resetPage(); };
+  const handleQueryChange = (val) => { setQuery(val); resetPage(); };
+  const handlePerPageChange = (val) => { setPerPage(val); resetPage(); };
+
+  // Pagination — combine folders + assets into a single virtual list, page them together
+  const allItems = useMemo(() => [
+    ...filteredFolders.map((f) => ({ kind: 'folder', data: f })),
+    ...filteredAssets.map((a) => ({ kind: 'asset', data: a })),
+  ], [filteredFolders, filteredAssets]);
+
+  const totalPages = Math.max(1, Math.ceil(allItems.length / perPage));
+  const safePage = Math.min(page, totalPages);
+  const pagedItems = allItems.slice((safePage - 1) * perPage, safePage * perPage);
+
+  const visibleFolders = pagedItems.filter((i) => i.kind === 'folder').map((i) => i.data);
+  const visibleAssets  = pagedItems.filter((i) => i.kind === 'asset').map((i) => i.data);
+
+  const handleSelectAll = () => {
+    setSelectedItems({
+      folders: visibleFolders.map((folder) => folder.id),
+      assets: visibleAssets.map((asset) => asset.id),
+    });
+  };
+
+  const handleDeselectAll = () => {
+    setSelectedItems({ folders: [], assets: [] });
+  };
+
+  const isAllSelected = (visibleFolders.length > 0 || visibleAssets.length > 0)
+    && visibleFolders.every((folder) => selectedItems.folders.includes(folder.id))
+    && visibleAssets.every((asset) => selectedItems.assets.includes(asset.id));
+  const hasSelection = selectedItems.folders.length > 0 || selectedItems.assets.length > 0;
+
+  return (
+    <Box sx={{ width: '100%', p: 4, bgcolor: '#f8fafc', minHeight: '100vh' }}>
+      <ExplorerTopBar
+        currentId={currentId}
+        viewData={viewData}
+        viewMode={viewMode}
+        setViewMode={setViewMode}
+        handleNavigate={handleNavigate}
+        handleCopyPath={handleCopyPath}
+        isAllSelected={isAllSelected}
+        handleSelectAll={handleSelectAll}
+        hasSelection={hasSelection}
+        handleDeleteSelected={handleDeleteSelected}
+        handleRestoreSelected={handleRestoreSelected}
+        handlePermanentDelete={handlePermanentDelete}
+        setOpenFolderDialog={setOpenFolderDialog}
+        handleFileUpload={handleFileUpload}
+        selectedItems={selectedItems}
+        onSchemaApplied={() => loadContent()}
+        onUploadSuccess={() => loadContent()}
+      />
+
+      {viewMode === 'active' && (
+        <AssetFilterBar
+          query={query}
+          onQueryChange={handleQueryChange}
+          typeFilters={typeFilters}
+          onTypeFiltersChange={handleTypeFiltersChange}
+          statusFilters={statusFilters}
+          onStatusFiltersChange={handleStatusFiltersChange}
+          sort={sort}
+          onSortChange={setSort}
+          viewLayout={viewLayout}
+          onViewLayoutChange={setViewLayout}
+          gridSize={gridSize}
+          onGridSizeChange={setGridSize}
+          resultCount={allItems.length}
+          perPage={perPage}
+          onPerPageChange={handlePerPageChange}
+          onShareLink={handleShareLink}
+        />
+      )}
+
+      <FolderGrid
+        folders={visibleFolders}
+        viewMode={viewMode}
+        selectedItems={selectedItems}
+        toggleSelection={toggleSelection}
+        handleNavigate={handleNavigate}
+        onFolderInfo={handleFolderInfo}
+        gridSize={gridSize}
+      />
+
+      {visibleFolders.length > 0 && visibleAssets.length > 0 && <Divider sx={{ my: 4, borderColor: '#e2e8f0' }} />}
+
+      {visibleAssets.length > 0 && (
+        <Box>
+          <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', mb: 2 }}>
+            Media & Files
+          </Typography>
+
+          {viewLayout === 'grid' ? (
+            <AssetGrid
+              assets={visibleAssets}
+              viewMode={viewMode}
+              selectedItems={selectedItems}
+              toggleSelection={toggleSelection}
+              setSelectedAsset={setSelectedAsset}
+              onPinClick={handlePinClick}
+              onFindDuplicates={handleOpenDuplicateFinder}
+              onAiAnalysis={handleOpenAiAnalysis}
+              gridSize={gridSize}
+            />
+          ) : (
+            <AssetList
+              assets={visibleAssets}
+              viewMode={viewMode}
+              selectedItems={selectedItems}
+              toggleSelection={toggleSelection}
+              setSelectedAsset={setSelectedAsset}
+              onPinClick={handlePinClick}
+            />
+          )}
+        </Box>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4, mb: 2 }}>
+          <Pagination
+            count={totalPages}
+            page={safePage}
+            onChange={(_, newPage) => setPage(newPage)}
+            color="primary"
+            shape="rounded"
+            showFirstButton
+            showLastButton
+          />
+        </Box>
+      )}
+
+      <Dialog open={openFolderDialog} onClose={() => setOpenFolderDialog(false)}>
+        <DialogTitle>Create New Folder</DialogTitle>
+        <DialogContent>
+          <TextField autoFocus margin="dense" label="Folder Name" fullWidth variant="standard" value={newFolderName} onChange={(event) => setNewFolderName(event.target.value)} />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenFolderDialog(false)}>Cancel</Button>
+          <Button onClick={handleCreateFolder} variant="contained" disabled={!newFolderName.trim()}>Create</Button>
+        </DialogActions>
+      </Dialog>
+
+      <AssetViewer
+        asset={selectedAsset}
+        open={Boolean(selectedAsset)}
+        onClose={() => setSelectedAsset(null)}
+        onAssetUpdated={(updatedAsset) => {
+          setSelectedAsset(updatedAsset);
+          loadContent();
+        }}
+      />
+
+      <PinToCollectionDialog
+        open={pinDialogOpen}
+        onClose={() => setPinDialogOpen(false)}
+        asset={assetToPin}
+      />
+
+      <DuplicateFinderDialog
+        open={duplicateFinderOpen}
+        onClose={() => {
+          setDuplicateFinderOpen(false);
+          setDuplicateFinderAsset(null);
+          loadContent();
+        }}
+        asset={duplicateFinderAsset}
+      />
+
+      <AiAnalysisDialog
+        open={aiAnalysisOpen}
+        onClose={() => {
+          setAiAnalysisOpen(false);
+          setAiAnalysisAsset(null);
+          loadContent();
+        }}
+        asset={aiAnalysisAsset}
+      />
+
+      <FolderInfoPanel
+        folder={infoFolder}
+        open={infoPanelOpen}
+        onClose={() => setInfoPanelOpen(false)}
+        onFolderUpdated={(updated) => {
+          loadContent();
+          setInfoFolder((previous) => (previous ? { ...previous, ...updated } : previous));
+        }}
+      />
+    </Box>
+  );
+}
+
+function requestHeaders() {
+  return {
+    'Content-Type': 'application/json',
+    'X-CSRF-Token': document.querySelector('[name="csrf-token"]')?.content || ''
+  };
 }

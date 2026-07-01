@@ -1640,5 +1640,66 @@
       "audit_trail": "Volledig onveranderlijk logboek van alle systeemacties.",
       "migration": "Migratieresultaten per batch en kostenbesparing per bronsysteem."
     }
+  },
+  "folders": {
+    "filter": {
+      "search_placeholder": "Assets en mappen zoeken...",
+      "all": "Alles",
+      "assets": "Assets",
+      "folders": "Mappen",
+      "images": "Afbeeldingen",
+      "videos": "Video’s",
+      "documents": "Documenten",
+      "audio": "Audio",
+      "status_all": "Elke status",
+      "draft": "Concept",
+      "published": "Gepubliceerd",
+      "approved": "Goedgekeurd",
+      "rejected": "Afgewezen",
+      "sort": "Sorteren",
+      "results": "Resultaten",
+      "name_az": "Naam (A–Z)",
+      "name_za": "Naam (Z–A)",
+      "created_newest": "Aangemaakt (nieuwste eerst)",
+      "created_oldest": "Aangemaakt (oudste eerst)",
+      "size_largest": "Grootte (grootste eerst)",
+      "size_smallest": "Grootte (kleinste eerst)",
+      "type_sort": "Type",
+      "type_label": "Type",
+      "status_label": "Status",
+      "clear": "Wissen",
+      "per_page": "pagina",
+      "share_link": "Deelbare link kopiëren"
+    },
+    "duplicates": {
+      "title": "Dubbele assets zoeken",
+      "loading": "Duplicaten zoeken...",
+      "none_found": "Geen dubbele assets gevonden.",
+      "exact_match": "Exact duplicaat",
+      "name_match": "Zelfde bestandsnaam",
+      "similarity": "Overeenkomst",
+      "ignore": "Negeren",
+      "deactivate": "Deactiveren",
+      "delete": "Verwijderen",
+      "ignore_all": "Alles negeren",
+      "delete_all": "Alle duplicaten verwijderen",
+      "folder": "Map"
+    },
+    "ai": {
+      "title": "AI-analyse",
+      "analyzing": "Asset wordt geanalyseerd...",
+      "labels": "Gedetecteerde labels",
+      "colors": "Kleuranalyse",
+      "quality": "Beeldkwaliteit",
+      "suggested_tags": "Voorgestelde tags",
+      "description": "AI-beschrijving",
+      "similar": "Vergelijkbare assets",
+      "apply_tags": "Voorgestelde tags toepassen",
+      "save_properties": "Opslaan in eigenschappen",
+      "queued": "Analyse in wachtrij geplaatst. Controleer later opnieuw.",
+      "error": "Analyse mislukt. Probeer het opnieuw."
+    },
+    "subfolder_count_tip": "{{count}} submappen",
+    "asset_count_tip": "{{count}} assets"
   }
 }
