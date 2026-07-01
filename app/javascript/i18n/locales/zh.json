@@ -1412,7 +1412,10 @@
       "audioBitrate": "比特率",
       "min": "最小",
       "max": "最大",
-      "fileLabel": "文件"
+      "fileLabel": "文件",
+      "collapse": "收起筛选器",
+      "expand": "展开筛选器",
+      "metadata": "元数据"
     },
     "noResults": {
       "title": "未找到结果",

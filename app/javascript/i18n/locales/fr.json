@@ -1412,7 +1412,10 @@
       "audioBitrate": "Débit binaire",
       "min": "Min",
       "max": "Max",
-      "fileLabel": "FICHIER"
+      "fileLabel": "FICHIER",
+      "collapse": "Réduire les filtres",
+      "expand": "Développer les filtres",
+      "metadata": "Métadonnées"
     },
     "noResults": {
       "title": "Aucun résultat trouvé",

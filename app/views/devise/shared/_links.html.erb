@@ -1,0 +1,30 @@
+<%#
+  Capri DAM — Devise shared links partial.
+
+  Self-registration is permanently disabled: user accounts are created by
+  administrators or provisioned automatically via SSO (Keycloak).
+
+  This local override removes the "Sign up" link from every Devise view so
+  that `new_user_registration_path` (which no longer exists) is never called.
+%>
+<%- if controller_name != 'sessions' %>
+  <p><%= link_to t("devise.shared.links.sign_in"), new_session_path(resource_name) %></p>
+<% end %>
+
+<%- if devise_mapping.recoverable? && controller_name != 'passwords' && controller_name != 'registrations' %>
+  <p><%= link_to t("devise.shared.links.forgot_your_password"), new_password_path(resource_name) %></p>
+<% end %>
+
+<%- if devise_mapping.confirmable? && controller_name != 'confirmations' %>
+  <p><%= link_to t("devise.shared.links.didn_t_receive_confirmation_instructions"), new_confirmation_path(resource_name) %></p>
+<% end %>
+
+<%- if devise_mapping.lockable? && resource_class.unlock_strategy_enabled?(:email) && controller_name != 'unlocks' %>
+  <p><%= link_to t("devise.shared.links.didn_t_receive_unlock_instructions"), new_unlock_path(resource_name) %></p>
+<% end %>
+
+<%- if devise_mapping.omniauthable? %>
+  <%- resource_class.omniauth_providers.each do |provider| %>
+    <p><%= button_to t("devise.shared.links.sign_in_with_provider", provider: OmniAuth::Utils.camelize(provider)), omniauth_authorize_path(resource_name, provider), data: { turbo: false } %></p>
+  <% end %>
+<% end %>

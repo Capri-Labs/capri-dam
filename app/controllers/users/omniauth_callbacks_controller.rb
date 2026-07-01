@@ -19,7 +19,7 @@ class Users::OmniauthCallbacksController < Devise::OmniauthCallbacksController
     if @user.persisted?
       unless @user.active_for_authentication?
         flash[:alert] = t("devise.failure.account_deactivated")
-        redirect_to new_user_session_path and return
+        redirect_to "/" and return
       end
 
       sign_in_and_redirect @user, event: :authentication
@@ -29,12 +29,12 @@ class Users::OmniauthCallbacksController < Devise::OmniauthCallbacksController
       session["devise.keycloak_data"] = request.env["omniauth.auth"]
                                                  .except("extra")
                                                  .to_h
-      redirect_to new_user_session_path,
+      redirect_to "/",
                   alert: @user.errors.full_messages.join("\n")
     end
   rescue StandardError => e
     Rails.logger.error("[OmniauthCallbacks] Unexpected error: #{e.class}: #{e.message}")
-    redirect_to new_user_session_path,
+    redirect_to "/",
                 alert: t("devise.omniauth_callbacks.failure",
                          kind: "Keycloak", reason: "an unexpected error occurred")
   end
@@ -45,7 +45,7 @@ class Users::OmniauthCallbacksController < Devise::OmniauthCallbacksController
   # consent, Keycloak is unavailable, state mismatch).
   def failure
     Rails.logger.warn("[OmniauthCallbacks] SSO failure: #{failure_message}")
-    redirect_to new_user_session_path,
+    redirect_to "/",
                 alert: t("devise.omniauth_callbacks.failure",
                          kind: "Keycloak",
                          reason: failure_message.humanize)

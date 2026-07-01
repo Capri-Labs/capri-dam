@@ -27,27 +27,34 @@ const QUICK_SEARCHES = [
   { key: 'approved', icon: <AutoAwesome fontSize="small" /> },
 ];
 
+// Static (known) filter keys — written and read explicitly so ordering is consistent
+const STATIC_FILTER_KEYS = new Set([
+  'mime_group', 'modified_within', 'file_size_group',
+  'publish_status', 'approved_status', 'orientation', 'style',
+  'video_format', 'video_codec',
+  'video_height_min', 'video_height_max',
+  'video_width_min', 'video_width_max',
+  'video_bitrate_min', 'video_bitrate_max',
+  'audio_codec', 'audio_bitrate_min', 'audio_bitrate_max',
+]);
+
+// URL params that are NOT filter keys (reserved for pagination / sorting / search)
+const RESERVED_URL_PARAMS = new Set(['q', 'page', 'per_page', 'sort_by', 'sort_dir']);
+
 function buildQueryString(query, filters, page, perPage, sortBy, sortDir) {
   const params = new URLSearchParams();
   if (query) params.set('q', query);
-  if (filters.mime_group) params.set('mime_group', filters.mime_group);
-  if (filters.modified_within) params.set('modified_within', filters.modified_within);
-  if (filters.file_size_group) params.set('file_size_group', filters.file_size_group);
-  if (filters.publish_status) params.set('publish_status', filters.publish_status);
-  if (filters.approved_status) params.set('approved_status', filters.approved_status);
-  if (filters.orientation) params.set('orientation', filters.orientation);
-  if (filters.style) params.set('style', filters.style);
-  if (filters.video_format) params.set('video_format', filters.video_format);
-  if (filters.video_codec) params.set('video_codec', filters.video_codec);
-  if (filters.video_height_min) params.set('video_height_min', filters.video_height_min);
-  if (filters.video_height_max) params.set('video_height_max', filters.video_height_max);
-  if (filters.video_width_min) params.set('video_width_min', filters.video_width_min);
-  if (filters.video_width_max) params.set('video_width_max', filters.video_width_max);
-  if (filters.video_bitrate_min) params.set('video_bitrate_min', filters.video_bitrate_min);
-  if (filters.video_bitrate_max) params.set('video_bitrate_max', filters.video_bitrate_max);
-  if (filters.audio_codec) params.set('audio_codec', filters.audio_codec);
-  if (filters.audio_bitrate_min) params.set('audio_bitrate_min', filters.audio_bitrate_min);
-  if (filters.audio_bitrate_max) params.set('audio_bitrate_max', filters.audio_bitrate_max);
+
+  // 1. Write known static filters
+  STATIC_FILTER_KEYS.forEach((key) => {
+    if (filters[key]) params.set(key, filters[key]);
+  });
+
+  // 2. Write dynamic metadata filters (anything not in the static set)
+  Object.entries(filters).forEach(([key, value]) => {
+    if (!STATIC_FILTER_KEYS.has(key) && value) params.set(key, value);
+  });
+
   params.set('page', page);
   params.set('per_page', perPage);
   if (sortBy !== 'relevance') params.set('sort_by', sortBy);
@@ -56,26 +63,20 @@ function buildQueryString(query, filters, page, perPage, sortBy, sortDir) {
 }
 
 function parseFiltersFromURL(params) {
-  return {
-    mime_group: params.get('mime_group') || '',
-    modified_within: params.get('modified_within') || '',
-    file_size_group: params.get('file_size_group') || '',
-    publish_status: params.get('publish_status') || '',
-    approved_status: params.get('approved_status') || '',
-    orientation: params.get('orientation') || '',
-    style: params.get('style') || '',
-    video_format: params.get('video_format') || '',
-    video_codec: params.get('video_codec') || '',
-    video_height_min: params.get('video_height_min') || '',
-    video_height_max: params.get('video_height_max') || '',
-    video_width_min: params.get('video_width_min') || '',
-    video_width_max: params.get('video_width_max') || '',
-    video_bitrate_min: params.get('video_bitrate_min') || '',
-    video_bitrate_max: params.get('video_bitrate_max') || '',
-    audio_codec: params.get('audio_codec') || '',
-    audio_bitrate_min: params.get('audio_bitrate_min') || '',
-    audio_bitrate_max: params.get('audio_bitrate_max') || '',
-  };
+  // 1. Read static filters explicitly
+  const filters = {};
+  STATIC_FILTER_KEYS.forEach((key) => {
+    filters[key] = params.get(key) || '';
+  });
+
+  // 2. Collect any extra params as dynamic metadata filters (e.g. editor_state.filter)
+  params.forEach((value, key) => {
+    if (!STATIC_FILTER_KEYS.has(key) && !RESERVED_URL_PARAMS.has(key)) {
+      filters[key] = value;
+    }
+  });
+
+  return filters;
 }
 
 function countActiveFilters(filters) {
@@ -230,6 +231,7 @@ export default function SearchScreen() {
         activeFilterCount={activeFilterCount}
         onFilterChange={handleFilterChange}
         onReset={handleResetFilters}
+        metadataFacets={meta.facets?.metadata_fields || {}}
       />
 
       <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>

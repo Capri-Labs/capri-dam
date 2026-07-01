@@ -1412,7 +1412,10 @@
       "audioBitrate": "Taxa de bits",
       "min": "Mín",
       "max": "Máx",
-      "fileLabel": "FICHEIRO"
+      "fileLabel": "FICHEIRO",
+      "collapse": "Recolher filtros",
+      "expand": "Expandir filtros",
+      "metadata": "Metadados"
     },
     "noResults": {
       "title": "Nenhum resultado encontrado",

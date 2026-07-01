@@ -144,15 +144,15 @@ RSpec.describe "Users::OmniauthCallbacks", type: :request do
 
       before { mock_keycloak_auth }
 
-      it "redirects to the sign-in page with an error" do
+      it "redirects to the root (sign-in is handled by the React SPA at /)" do
         get "/users/auth/keycloak_openid/callback"
-        expect(response).to redirect_to(new_user_session_path)
+        expect(response).to redirect_to("/")
       end
 
       it "does not sign the user in" do
         get "/users/auth/keycloak_openid/callback"
         follow_redirect!
-        expect(response.body).to include("deactivated")
+        expect(controller.current_user).to be_nil
       end
     end
   end
@@ -166,9 +166,9 @@ RSpec.describe "Users::OmniauthCallbacks", type: :request do
         OmniAuth.config.mock_auth[:keycloak_openid]
     end
 
-    it "redirects to the sign-in page" do
+    it "redirects to root with an alert" do
       get "/users/auth/failure"
-      expect(response).to redirect_to(new_user_session_path)
+      expect(response).to redirect_to("/")
     end
   end
 end

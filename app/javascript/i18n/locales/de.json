@@ -1412,7 +1412,10 @@
       "audioBitrate": "Bitrate",
       "min": "Min",
       "max": "Max",
-      "fileLabel": "DATEI"
+      "fileLabel": "DATEI",
+      "collapse": "Filter einklappen",
+      "expand": "Filter ausklappen",
+      "metadata": "Metadaten"
     },
     "noResults": {
       "title": "Keine Ergebnisse gefunden",

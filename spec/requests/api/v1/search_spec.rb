@@ -149,6 +149,54 @@ RSpec.describe 'Api::V1::Search', type: :request do
         )
         expect(json['results'].length).to eq(10)
       end
+
+      it 'returns facets including metadata_fields key' do
+        get '/api/v1/search', as: :json
+
+        expect(response).to have_http_status(:ok)
+        expect(json['meta']['facets']).to have_key('metadata_fields')
+        expect(json['meta']['facets']['metadata_fields']).to be_a(Hash)
+      end
+
+      it 'filters by dynamic metadata property key' do
+        isolated_user = create(:user)
+        asset_with_brand = create(:asset, user: isolated_user,
+          properties: { 'content_type' => 'image/png', 'dam:brand' => 'Acme' })
+        asset_other_brand = create(:asset, user: isolated_user,
+          properties: { 'content_type' => 'image/png', 'dam:brand' => 'Other' })
+
+        # Use explicit query string (not `as: :json`) so request.query_parameters sees the key
+        get '/api/v1/search?dam%3Abrand=Acme',
+          headers: { 'Accept' => 'application/json', 'Content-Type' => 'application/json' }
+
+        expect(response).to have_http_status(:ok)
+        uuids = json['results'].map { |r| r['uuid'] }
+        expect(uuids).to include(asset_with_brand.uuid)
+        expect(uuids).not_to include(asset_other_brand.uuid)
+      end
+
+      it 'ignores dynamic filter params with unsafe key characters' do
+        get '/api/v1/search', params: { 'bad; DROP TABLE assets;--' => 'x' }, as: :json
+
+        expect(response).to have_http_status(:ok)
+      end
+
+      it 'filters by nested JSONB path using dot notation' do
+        asset_vivid = create(:asset, user: user,
+          properties: { 'content_type' => 'image/png',
+                        'editor_state' => { 'filter' => 'Vivid', 'crop_aspect' => 'free' } })
+        asset_none  = create(:asset, user: user,
+          properties: { 'content_type' => 'image/png',
+                        'editor_state' => { 'filter' => 'None', 'crop_aspect' => 'free' } })
+
+        get '/api/v1/search?editor_state.filter=Vivid',
+          headers: { 'Accept' => 'application/json' }
+
+        expect(response).to have_http_status(:ok)
+        uuids = json['results'].map { |r| r['uuid'] }
+        expect(uuids).to include(asset_vivid.uuid)
+        expect(uuids).not_to include(asset_none.uuid)
+      end
     end
 
     it 'returns 401 without authentication' do

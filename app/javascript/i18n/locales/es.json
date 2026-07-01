@@ -1412,7 +1412,10 @@
       "audioBitrate": "Tasa de bits",
       "min": "Mín",
       "max": "Máx",
-      "fileLabel": "ARCHIVO"
+      "fileLabel": "ARCHIVO",
+      "collapse": "Colapsar filtros",
+      "expand": "Expandir filtros",
+      "metadata": "Metadatos"
     },
     "noResults": {
       "title": "No se encontraron resultados",

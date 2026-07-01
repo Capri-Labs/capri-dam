@@ -462,3 +462,21 @@ describe('i18n — search sort direction keys (regression guard)', () => {
     });
   });
 });
+
+describe('i18n — search filter collapse/expand keys (regression guard)', () => {
+  beforeEach(() => i18n.changeLanguage('en'));
+  afterAll(() => i18n.changeLanguage('en'));
+
+  it('search.filters.collapse', () => expect(i18n.t('search.filters.collapse')).toBe('Collapse filters'));
+  it('search.filters.expand',   () => expect(i18n.t('search.filters.expand')).toBe('Expand filters'));
+
+  const LOCALES = ['en', 'de', 'es', 'fr', 'ja', 'ko', 'nl', 'pt', 'zh'];
+  LOCALES.forEach(locale => {
+    it(`${locale} has search.filters.collapse`, () => {
+      i18n.changeLanguage(locale);
+      const val = i18n.t('search.filters.collapse');
+      expect(val).not.toBe('search.filters.collapse');
+      expect(val.length).toBeGreaterThan(0);
+    });
+  });
+});

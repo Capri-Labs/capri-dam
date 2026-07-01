@@ -1412,7 +1412,10 @@
       "audioBitrate": "비트레이트",
       "min": "최소",
       "max": "최대",
-      "fileLabel": "파일"
+      "fileLabel": "파일",
+      "collapse": "필터 접기",
+      "expand": "필터 펼치기",
+      "metadata": "메타데이터"
     },
     "noResults": {
       "title": "결과를 찾을 수 없음",

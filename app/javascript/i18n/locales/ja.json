@@ -1412,7 +1412,10 @@
       "audioBitrate": "ビットレート",
       "min": "最小",
       "max": "最大",
-      "fileLabel": "ファイル"
+      "fileLabel": "ファイル",
+      "collapse": "フィルターを折りたたむ",
+      "expand": "フィルターを展開する",
+      "metadata": "メタデータ"
     },
     "noResults": {
       "title": "結果が見つかりません",

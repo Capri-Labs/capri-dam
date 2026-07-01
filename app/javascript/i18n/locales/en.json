@@ -1412,7 +1412,10 @@
       "audioBitrate": "Bitrate",
       "min": "Min",
       "max": "Max",
-      "fileLabel": "FILE"
+      "fileLabel": "FILE",
+      "collapse": "Collapse filters",
+      "expand": "Expand filters",
+      "metadata": "Metadata"
     },
     "noResults": {
       "title": "No results found",

@@ -13,6 +13,25 @@ module Api
                            audio_codec audio_bitrate_min audio_bitrate_max
                            page per_page sort_by sort_dir controller action format].freeze
 
+      # Field types whose values are suitable for chip/filter UI (bounded option sets)
+      FILTERABLE_FIELD_TYPES = %w[select radio tag checkbox].freeze
+
+      # Any schema field type that cannot meaningfully be shown as filter chips
+      NON_FILTERABLE_FIELD_TYPES = %w[textarea date datetime boolean number].freeze
+
+      # System/internal property keys excluded from auto-discovery
+      SYSTEM_PROPERTY_KEYS = %w[
+        size file_size processed_at storage_path checksum_sha256
+        original_filename size_human width height depth
+        video_height video_width video_bitrate audio_bitrate
+        applied_schema_id applied_schema_slug
+        content_type color_mode alt_text usage_terms description
+        tags image_data thumbnail_data
+      ].freeze
+
+      MAX_METADATA_FACET_VALUES  = 20
+      MAX_METADATA_CARDINALITY   = 30
+
       MIME_GROUPS = {
         "images" => [ "image/%" ],
         "documents" => [ "application/pdf", "application/msword",
@@ -244,11 +263,24 @@ module Api
         scope
       end
 
+      # Applies any extra query params as JSONB property filters.
+      # Supports one-level nested paths via dot notation: editor_state.filter
+      # Uses ? placeholders to prevent SQL injection.
       def apply_dynamic_filters(scope)
         filter_params = request.query_parameters.except(*RESERVED_PARAMS)
         filter_params.each do |key, value|
-          values_array = value.split(",")
-          scope = scope.where("properties->>:key IN (:values)", key: key, values: values_array)
+          next unless key.match?(/\A[\w:\-\.]+\z/)
+          values_array = value.split(",").map(&:strip).reject(&:blank?)
+          next if values_array.empty?
+
+          if key.include?(".") && !key.start_with?(".")
+            # Nested: editor_state.filter → properties->'editor_state'->>'filter'
+            parent, child = key.split(".", 2)
+            next unless parent.match?(/\A[\w:\-]+\z/) && child.match?(/\A[\w:\-]+\z/)
+            scope = scope.where("properties->?->>? IN (?)", parent, child, values_array)
+          else
+            scope = scope.where("properties->>? IN (?)", key, values_array)
+          end
         end
         scope
       end
@@ -277,6 +309,7 @@ module Api
           applied_schema: facet_scope.pluck(Arel.sql("properties->>'applied_schema_name'")).compact.uniq.sort,
           mime_group: count_mime_groups(facet_scope),
           status: count_statuses(facet_scope),
+          metadata_fields: build_metadata_facets(facet_scope),
         }
       end
 
@@ -295,6 +328,136 @@ module Api
           key = normalize_status(status)
           result[key] = result.fetch(key, 0) + count
         end
+      end
+
+      # Two-phase metadata facet discovery:
+      #   Phase 1 — schema-driven: walks active MetadataSchema definitions;
+      #             includes any filterable field type with low cardinality.
+      #   Phase 2 — property discovery: scans actual property keys from assets
+      #             in the result set (catches system fields like applied_schema_name
+      #             even when formal metadata has never been entered).
+      # Schema-defined entries take precedence so proper labels are shown.
+      def build_metadata_facets(scope)
+        schema_facets    = build_schema_driven_facets(scope)
+        discovered       = build_discovered_facets(scope, skip_keys: schema_facets.keys)
+        discovered.merge(schema_facets)
+      end
+
+      def build_schema_driven_facets(scope)
+        field_defs = {}
+
+        MetadataSchema.active.each do |schema|
+          schema.resolved_tabs.each do |tab|
+            (tab["fields"] || []).each do |field|
+              next if NON_FILTERABLE_FIELD_TYPES.include?(field["field_type"])
+              prop_key = field["map_to_property"].presence
+              next unless prop_key&.match?(/\A[\w:\-\.]+\z/)
+
+              field_defs[prop_key] ||= field["label"].presence || prop_key
+            end
+          end
+        end
+
+        field_defs.each_with_object({}) do |(prop_key, label), result|
+          tally = query_property_tally(scope, prop_key)
+          next if tally.empty? || tally.size > MAX_METADATA_CARDINALITY
+
+          result[prop_key] = { label: label, values: format_facet_values(tally) }
+        end
+      end
+
+      def build_discovered_facets(scope, skip_keys: [])
+        # Collect property keys that actually appear in the result set
+        asset_ids = scope.limit(500).pluck(:id)
+        return {} if asset_ids.empty?
+
+        top_keys = Asset
+          .where(id: asset_ids)
+          .where.not(properties: {})
+          .pluck(Arel.sql("DISTINCT jsonb_object_keys(properties)"))
+          .reject { |k| SYSTEM_PROPERTY_KEYS.include?(k) }
+          .reject { |k| skip_keys.include?(k) }
+          .select { |k| k.match?(/\A[\w:\-\.]+\z/) }
+
+        result = {}
+
+        top_keys.each do |key|
+          quoted = ActiveRecord::Base.connection.quote(key)
+
+          # Detect whether this property holds a JSON object or a scalar
+          value_type = Asset.where(id: asset_ids)
+            .where("jsonb_typeof(properties->#{quoted}) IS NOT NULL")
+            .limit(1)
+            .pluck(Arel.sql("jsonb_typeof(properties->#{quoted})"))
+            .first
+
+          if value_type == "object"
+            # Drill one level into the nested object — extract filterable leaf fields
+            sub_keys = Asset.where(id: asset_ids)
+              .where("jsonb_typeof(properties->#{quoted}) = 'object'")
+              .pluck(Arel.sql("DISTINCT jsonb_object_keys(properties->#{quoted})"))
+              .select { |k| k.match?(/\A[\w\-]+\z/) }
+
+            sub_keys.each do |sub_key|
+              # Only explore scalar-valued sub-keys (skip nested objects like geometry)
+              sub_quoted = ActiveRecord::Base.connection.quote(sub_key)
+              leaf_type = Asset.where(id: asset_ids)
+                .where("jsonb_typeof(properties->#{quoted}->#{sub_quoted}) IS NOT NULL")
+                .limit(1)
+                .pluck(Arel.sql("jsonb_typeof(properties->#{quoted}->#{sub_quoted})"))
+                .first
+
+              next unless %w[string number].include?(leaf_type)
+
+              tally = scope
+                .pluck(Arel.sql("properties->#{quoted}->>#{sub_quoted}"))
+                .compact.flat_map { |v| v.include?(",") ? v.split(",").map(&:strip) : [ v ] }
+                .reject(&:blank?).tally
+
+              # Require at least 1 value (even single-value is useful for nested fields)
+              next if tally.empty? || tally.size > MAX_METADATA_CARDINALITY
+
+              composite_key = "#{key}.#{sub_key}"
+              label = humanize_property_key("#{key}_#{sub_key}")
+              result[composite_key] = { label: label, values: format_facet_values(tally) }
+            end
+          else
+            # Scalar top-level property
+            tally = query_property_tally(scope, key)
+            next if tally.empty? || tally.size > MAX_METADATA_CARDINALITY || tally.size < 2
+
+            result[key] = { label: humanize_property_key(key), values: format_facet_values(tally) }
+          end
+        end
+
+        result
+      end
+
+      # Returns a tally hash { value => count } for a given property key.
+      def query_property_tally(scope, prop_key)
+        quoted = ActiveRecord::Base.connection.quote(prop_key)
+        scope
+          .pluck(Arel.sql("properties->>#{quoted}"))
+          .compact
+          .flat_map { |v| v.include?(",") ? v.split(",").map(&:strip) : [ v ] }
+          .reject(&:blank?)
+          .tally
+      end
+
+      def format_facet_values(tally)
+        tally
+          .sort_by { |_, count| -count }
+          .first(MAX_METADATA_FACET_VALUES)
+          .map { |val, count| { value: val, count: count } }
+      end
+
+      # "applied_schema_name"  → "Applied Schema Name"
+      # "dc:creator"           → "Creator"
+      # "Iptc4xmpCore:City"    → "City"
+      # "editor_state_filter"  → "Editor State Filter"
+      def humanize_property_key(key)
+        field = key.include?(":") ? key.split(":", 2).last : key
+        field.gsub(/([A-Z])/, ' \1').strip.split(/[_\s]+/).map(&:capitalize).join(" ")
       end
 
       def format_asset(asset)

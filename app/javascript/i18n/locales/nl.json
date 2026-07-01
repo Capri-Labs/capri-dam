@@ -1412,7 +1412,10 @@
       "audioBitrate": "Bitsnelheid",
       "min": "Min",
       "max": "Max",
-      "fileLabel": "BESTAND"
+      "fileLabel": "BESTAND",
+      "collapse": "Filters inklappen",
+      "expand": "Filters uitklappen",
+      "metadata": "Metadata"
     },
     "noResults": {
       "title": "Geen resultaten gevonden",
