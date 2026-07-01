@@ -19,10 +19,14 @@ const ADMIN_PASS  = process.env.ADMIN_PASS  || 'Password123!';
 
 async function login(page) {
   await page.goto(`${BASE_URL}/users/sign_in`);
-  await page.fill('input[name="user[email]"]',    ADMIN_EMAIL);
-  await page.fill('input[name="user[password]"]', ADMIN_PASS);
+  await page.waitForSelector('input[autocomplete="email"]', { timeout: 15_000 });
+  await page.fill('input[autocomplete="email"]',    ADMIN_EMAIL);
+  await page.fill('input[autocomplete="current-password"]', ADMIN_PASS);
   await page.click('button[type="submit"]');
-  await page.waitForFunction(() => !window.location.href.includes('/users/sign_in'), { timeout: 15_000 });
+  await page.waitForFunction(
+    () => !document.querySelector('input[autocomplete="email"]'),
+    { timeout: 15_000 },
+  );
   await page.waitForLoadState('networkidle');
 }
 

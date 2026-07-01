@@ -27,10 +27,14 @@ const TARGET_EMAIL = process.env.TARGET_EMAIL || 'user@example.com';
 
 async function login(page, email, password) {
   await page.goto(`${BASE_URL}/users/sign_in`);
-  await page.fill('input[name="user[email]"]',    email);
-  await page.fill('input[name="user[password]"]', password);
+  await page.waitForSelector('input[autocomplete="email"]', { timeout: 15_000 });
+  await page.fill('input[autocomplete="email"]',    email);
+  await page.fill('input[autocomplete="current-password"]', password);
   await page.click('button[type="submit"]');
-  await page.waitForFunction(() => !window.location.href.includes('/users/sign_in'), { timeout: 15_000 });
+  await page.waitForFunction(
+    () => !document.querySelector('input[autocomplete="email"]'),
+    { timeout: 15_000 },
+  );
   await page.waitForLoadState('networkidle');
 }
 
@@ -96,7 +100,10 @@ test.describe('Impersonation Engine', () => {
     await impersonateBtn.click();
 
     // Wait for redirect to dashboard
-  await page.waitForFunction(() => !window.location.href.includes('/users/sign_in'), { timeout: 15_000 });
+  await page.waitForFunction(
+    () => !document.querySelector('input[autocomplete="email"]'),
+    { timeout: 15_000 },
+  );
   await page.waitForLoadState('networkidle');
 
     // The red impersonation banner should be visible
@@ -113,7 +120,10 @@ test.describe('Impersonation Engine', () => {
 
     const impersonateBtn = page.locator('button').filter({ hasText: /Impersonate/ }).last();
     await impersonateBtn.click();
-    await page.waitForFunction(() => !window.location.href.includes('/users/sign_in'), { timeout: 15_000 });
+    await page.waitForFunction(
+    () => !document.querySelector('input[autocomplete="email"]'),
+    { timeout: 15_000 },
+  );
   await page.waitForLoadState('networkidle');
 
     // Navigate to folders — banner must still be visible
@@ -131,7 +141,10 @@ test.describe('Impersonation Engine', () => {
 
     const impersonateBtn = page.locator('button').filter({ hasText: /Impersonate/ }).last();
     await impersonateBtn.click();
-    await page.waitForFunction(() => !window.location.href.includes('/users/sign_in'), { timeout: 15_000 });
+    await page.waitForFunction(
+    () => !document.querySelector('input[autocomplete="email"]'),
+    { timeout: 15_000 },
+  );
   await page.waitForLoadState('networkidle');
 
     // Click End Impersonation

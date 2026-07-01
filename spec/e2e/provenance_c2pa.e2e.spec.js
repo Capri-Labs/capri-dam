@@ -10,8 +10,9 @@ const PASSWORD = process.env.E2E_PASSWORD || 'password123';
 
 async function login(page) {
   await page.goto('/users/sign_in');
-  await page.fill('input[name="user[email]"]', EMAIL);
-  await page.fill('input[name="user[password]"]', PASSWORD);
+  await page.waitForSelector('input[autocomplete="email"]', { timeout: 15_000 });
+  await page.fill('input[autocomplete="email"]', EMAIL);
+  await page.fill('input[autocomplete="current-password"]', PASSWORD);
   await page.click('button[type="submit"], input[type="submit"]');
   await page.waitForLoadState('networkidle');
 }
@@ -64,8 +65,9 @@ test.describe('Provenance & C2PA screen', () => {
     const regularEmail    = process.env.E2E_USER_EMAIL    || 'user@example.com';
     const regularPassword = process.env.E2E_USER_PASSWORD || 'password123';
     await page.goto('/users/sign_in');
-    await page.fill('input[name="user[email]"]', regularEmail);
-    await page.fill('input[name="user[password]"]', regularPassword);
+    await page.waitForSelector('input[autocomplete="email"]', { timeout: 15_000 });
+    await page.fill('input[autocomplete="email"]', regularEmail);
+    await page.fill('input[autocomplete="current-password"]', regularPassword);
     await page.click('button[type="submit"], input[type="submit"]');
     await page.waitForLoadState('networkidle');
 

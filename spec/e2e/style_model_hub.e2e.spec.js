@@ -8,10 +8,14 @@ test.describe('Style & Model Hub — /ai/models/hub', () => {
   test.beforeEach(async ({ page }) => {
     // Log in as admin before each test
     await page.goto('/users/sign_in');
-    await page.fill('[name="user[email]"]', process.env.ADMIN_EMAIL || 'admin@example.com');
-    await page.fill('[name="user[password]"]', process.env.ADMIN_PASSWORD || 'password');
+    await page.waitForSelector('input[autocomplete="email"]', { timeout: 15_000 });
+    await page.fill('input[autocomplete="email"]', process.env.ADMIN_EMAIL || 'admin@example.com');
+    await page.fill('input[autocomplete="current-password"]', process.env.ADMIN_PASSWORD || 'password');
     await page.click('[type="submit"]');
-    await page.waitForFunction(() => !window.location.href.includes('/users/sign_in'), { timeout: 15_000 });
+    await page.waitForFunction(
+    () => !document.querySelector('input[autocomplete="email"]'),
+    { timeout: 15_000 },
+  );
     await page.waitForLoadState('networkidle');
   });
 
@@ -55,8 +59,9 @@ test.describe('Style & Model Hub — /ai/models/hub', () => {
     // Clear admin session and sign in as regular user
     await context.clearCookies();
     await page.goto('/users/sign_in');
-    await page.fill('[name="user[email]"]', process.env.MEMBER_EMAIL || 'member@example.com');
-    await page.fill('[name="user[password]"]', process.env.MEMBER_PASSWORD || 'password');
+    await page.waitForSelector('input[autocomplete="email"]', { timeout: 15_000 });
+    await page.fill('input[autocomplete="email"]', process.env.MEMBER_EMAIL || 'member@example.com');
+    await page.fill('input[autocomplete="current-password"]', process.env.MEMBER_PASSWORD || 'password');
     await page.click('[type="submit"]');
     await page.goto(STYLE_HUB_URL);
     // Expect redirect away from admin screen (dashboard or root)

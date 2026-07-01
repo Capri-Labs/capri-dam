@@ -14,12 +14,17 @@ const BASE = process.env.APP_URL || 'http://localhost:3000';
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
 async function loginAsAdmin(page) {
-  await page.goto(`${BASE}/admin/login`);
+  await page.goto(`${BASE}/users/sign_in`);
   // The test suite uses the seeded admin credentials.
-  await page.fill('[name="user[email]"]', process.env.ADMIN_EMAIL || 'admin@example.com');
-  await page.fill('[name="user[password]"]', process.env.ADMIN_PASSWORD || 'password');
-  await page.click('[type="submit"]');
-  await page.waitForFunction(() => !window.location.href.includes('/users/sign_in'), { timeout: 15_000 });
+  // Login is handled by the React SPA — use autocomplete selectors.
+  await page.waitForSelector('input[autocomplete="email"]', { timeout: 15_000 });
+  await page.fill('input[autocomplete="email"]', process.env.ADMIN_EMAIL || 'admin@example.com');
+  await page.fill('input[autocomplete="current-password"]', process.env.ADMIN_PASSWORD || 'password');
+  await page.click('button[type="submit"]');
+  await page.waitForFunction(
+    () => !document.querySelector('input[autocomplete="email"]'),
+    { timeout: 15_000 },
+  );
   await page.waitForLoadState('networkidle');
 }
 

@@ -8,8 +8,9 @@ const PASSWORD = process.env.E2E_PASSWORD || 'password123';
 
 async function login(page) {
     await page.goto('/users/sign_in');
-    await page.fill('input[name="user[email]"]', EMAIL);
-    await page.fill('input[name="user[password]"]', PASSWORD);
+    await page.waitForSelector('input[autocomplete="email"]', { timeout: 15_000 });
+    await page.fill('input[autocomplete="email"]', EMAIL);
+    await page.fill('input[autocomplete="current-password"]', PASSWORD);
     await page.click('button[type="submit"], input[type="submit"]');
     await page.waitForLoadState('networkidle');
 }

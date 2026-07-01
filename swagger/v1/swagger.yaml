@@ -2293,8 +2293,8 @@ paths:
                       type: object
                       properties:
                         id:
-                          type: integer
-                          example: 1
+                          type: string
+                          format: uuid
                         uuid:
                           type: string
                           format: uuid
@@ -5132,7 +5132,8 @@ paths:
                       type: object
                       properties:
                         id:
-                          type: integer
+                          type: string
+                          format: uuid
                         uuid:
                           type: string
                           format: uuid

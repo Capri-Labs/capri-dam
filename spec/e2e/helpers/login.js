@@ -1,16 +1,31 @@
 'use strict';
 
 // Shared login helper for all E2E tests.
-// Handles both the old /dashboard redirect and current / redirect.
-const EMAIL = process.env.E2E_EMAIL || 'admin@example.com';
+//
+// The app uses a React SPA login form (not a Devise HTML form).
+// The Rails Sessions#new action redirects to "/" which renders the
+// React Login component when the user is unauthenticated.
+//
+// Correct selectors:
+//   email    → input[autocomplete="email"]
+//   password → input[autocomplete="current-password"]
+//   submit   → button[type="submit"]
+const EMAIL    = process.env.E2E_EMAIL    || 'admin@example.com';
 const PASSWORD = process.env.E2E_PASSWORD || 'password123';
 
 async function login(page, email = EMAIL, password = PASSWORD) {
+  // Navigate to root — redirects to the React Login SPA when unauthenticated.
   await page.goto('/users/sign_in');
-  await page.fill('input[name="user[email]"]', email);
-  await page.fill('input[name="user[password]"]', password);
+  // Wait for the React login form to mount.
+  await page.waitForSelector('input[autocomplete="email"]', { timeout: 15_000 });
+  await page.fill('input[autocomplete="email"]', email);
+  await page.fill('input[autocomplete="current-password"]', password);
   await page.click('button[type="submit"]');
-  await page.waitForFunction(() => !window.location.href.includes('/users/sign_in'), { timeout: 15_000 });
+  // After login React does window.location.href = '/' → authenticated root renders dashboard.
+  await page.waitForFunction(
+    () => !document.querySelector('input[autocomplete="email"]'),
+    { timeout: 15_000 },
+  );
   await page.waitForLoadState('networkidle');
 }
 

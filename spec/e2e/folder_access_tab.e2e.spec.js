@@ -18,10 +18,14 @@ const BASE = process.env.BASE_URL || 'http://localhost:3000';
 // Shared helper: sign in as admin and navigate to the Assets view.
 async function signInAsAdmin(page) {
   await page.goto(`${BASE}/users/sign_in`);
-  await page.getByLabel('Email').fill(process.env.ADMIN_EMAIL ?? 'admin@example.com');
-  await page.getByLabel('Password').fill(process.env.ADMIN_PASSWORD ?? 'password');
+  await page.waitForSelector('input[autocomplete="email"]', { timeout: 15_000 });
+  await page.fill('input[autocomplete="email"]', process.env.ADMIN_EMAIL ?? 'admin@example.com');
+  await page.fill('input[autocomplete="current-password"]', process.env.ADMIN_PASSWORD ?? 'password');
   await page.getByRole('button', { name: /sign in/i }).click();
-  await page.waitForFunction(() => !window.location.href.includes('/users/sign_in'), { timeout: 15_000 });
+  await page.waitForFunction(
+    () => !document.querySelector('input[autocomplete="email"]'),
+    { timeout: 15_000 },
+  );
   await page.waitForLoadState('networkidle');
 }
 

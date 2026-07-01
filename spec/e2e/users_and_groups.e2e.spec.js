@@ -17,8 +17,9 @@ const ADMIN_PASSWORD = process.env.E2E_PASSWORD || 'AdminUser';
 
 async function login(page) {
   await page.goto('/users/sign_in');
-  await page.fill('input[name="user[email]"]', ADMIN_EMAIL);
-  await page.fill('input[name="user[password]"]', ADMIN_PASSWORD);
+  await page.waitForSelector('input[autocomplete="email"]', { timeout: 15_000 });
+  await page.fill('input[autocomplete="email"]', ADMIN_EMAIL);
+  await page.fill('input[autocomplete="current-password"]', ADMIN_PASSWORD);
   await page.click('button[type="submit"], input[type="submit"]');
   await page.waitForLoadState('networkidle');
 }

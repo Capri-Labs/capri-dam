@@ -20,19 +20,25 @@ async function signOut(page) {
 }
 
 test.describe('Authentication flows', () => {
-  test('redirects unauthenticated users from /dashboard to /users/sign_in', async ({ page }) => {
+  // Sessions#new redirects /users/sign_in → / so the final URL is root (/)
+  // which renders the React Login SPA when unauthenticated.
+  test('redirects unauthenticated users from /dashboard to the login page', async ({ page }) => {
     await page.goto('/dashboard');
-    await expect(page).toHaveURL(/\/users\/sign_in/);
+    // After the redirect chain /dashboard → /users/sign_in → /, the React Login form is shown.
+    await expect(page).toHaveURL(/\/$/);
+    await expect(page.locator('#root')).toHaveAttribute('data-view', 'login');
   });
 
   test('shows an error on invalid credentials', async ({ page }) => {
     await page.goto('/users/sign_in');
-    await page.fill('input[name="user[email]"]', EMAIL);
-    await page.fill('input[name="user[password]"]', INVALID_PASSWORD);
+    await page.waitForSelector('input[autocomplete="email"]', { timeout: 15_000 });
+    await page.fill('input[autocomplete="email"]', EMAIL);
+    await page.fill('input[autocomplete="current-password"]', INVALID_PASSWORD);
     await page.click('button[type="submit"]');
 
     await expect(page.getByText(/Invalid email or password/i)).toBeVisible();
-    await expect(page).toHaveURL(/\/users\/sign_in/);
+    // Error is shown on the same login page (/)
+    await expect(page.locator('#root')).toHaveAttribute('data-view', 'login');
   });
 
   test('redirects GET /users/sign_up to root when registration is disabled', async ({ page }) => {
@@ -59,16 +65,19 @@ test.describe('Authentication flows', () => {
     await expect(page.locator('#root')).toHaveAttribute('data-view', 'dashboard');
   });
 
-  test('sign out returns the browser to /users/sign_in for protected pages', async ({ page }) => {
+  test('sign out returns the browser to the login page for protected routes', async ({ page }) => {
     await login(page);
     await signOut(page);
     await page.goto('/dashboard');
 
-    await expect(page).toHaveURL(/\/users\/sign_in/);
+    // After sign-out the redirect chain ends at / (login page)
+    await expect(page).toHaveURL(/\/$/);
+    await expect(page.locator('#root')).toHaveAttribute('data-view', 'login');
   });
 
   test('SSO button posts to the configured Keycloak path', async ({ page }) => {
     await page.goto('/users/sign_in');
+    await page.waitForSelector('input[autocomplete="email"]', { timeout: 15_000 });
 
     const [request] = await Promise.all([
       page.waitForRequest((candidate) => (
