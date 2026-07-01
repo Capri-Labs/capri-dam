@@ -1,7 +1,6 @@
 class Admin::SystemConfigurationsController < ApplicationController
-  # Assuming you have admin authentication in place via an inherited controller
-  # like Admin::BaseController, or a before_action here:
-  # before_action :authenticate_admin!
+  before_action :authenticate_user!
+  before_action :ensure_admin!
 
   def logging_status
     # Fetch the global log level, or initialize a default representation if it doesn't exist yet
@@ -66,6 +65,12 @@ class Admin::SystemConfigurationsController < ApplicationController
   end
 
   private
+
+  def ensure_admin!
+    return if current_user_admin?
+
+    render json: { error: "Unauthorized" }, status: :forbidden
+  end
 
   def calculate_remaining_minutes(expires_at)
     return 0 unless expires_at && expires_at > Time.current

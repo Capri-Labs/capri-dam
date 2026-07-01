@@ -1,95 +1,73 @@
-# frozen_string_literal: true
+require "rails_helper"
 
-require 'swagger_helper'
+RSpec.describe "Api::V1::CdnConfigurations", type: :request do
+  let(:admin) { create(:user, :admin) }
+  let(:user) { create(:user) }
 
-RSpec.describe 'Api::V1::CdnConfigurations', type: :request do
-  # ===========================================================================
-  # INDEX — GET /api/v1/cdn_configurations
-  # ===========================================================================
-  path '/api/v1/cdn_configurations' do
-    get 'Retrieve CDN configuration for all supported providers' do
-      tags 'CDN & Settings'
-      produces 'application/json'
-      security [ Bearer: [] ]
-      description <<~DESC
-        Returns the active CDN configuration for Fastly, Cloudflare, and Akamai.
-        **Secrets are masked** in the response — only the last 4 characters of
-        each secret value are visible (e.g. `••••••••k9Xz`). To update a
-        provider, use `PUT /api/v1/cdn_configurations`.
-      DESC
+  describe "GET /api/v1/cdn_configurations" do
+    it "requires authentication" do
+      get api_v1_cdn_configurations_path, as: :json
 
-      response '200', 'CDN configurations returned (secrets masked)' do
-        schema type: :object,
-               properties: {
-                 fastly: {
-                   type: :object,
-                   properties: {
-                     is_active: { type: :boolean },
-                     settings:  { type: :object,
-                                   description: 'Provider-specific settings with secrets masked' },
-                   },
-                 },
-                 cloudflare: {
-                   type: :object,
-                   properties: {
-                     is_active: { type: :boolean },
-                     settings:  { type: :object },
-                   },
-                 },
-                 akamai: {
-                   type: :object,
-                   properties: {
-                     is_active: { type: :boolean },
-                     settings:  { type: :object },
-                   },
-                 },
-               }
-        run_test!
-      end
+      expect(response.status).to be_in([ 401, 302 ])
     end
 
-    # --------------------------------------------------------------------------
-    put 'Update CDN configuration for a provider' do
-      tags 'CDN & Settings'
-      consumes 'application/json'
-      produces 'application/json'
-      security [ Bearer: [] ]
-      description <<~DESC
-        Creates or updates the `CdnConfiguration` for the specified `provider`.
-        Values containing `••••` (the masking sentinel) are automatically
-        excluded from the update to prevent overwriting stored secrets with
-        masked placeholder values returned by the GET endpoint.
-      DESC
+    it "returns masked configurations for authenticated users" do
+      sign_in user
+      fastly = instance_double(CdnConfiguration, provider: "fastly", is_active: true, settings: { "api_key" => "abcdef1234" })
+      allow(CdnConfiguration).to receive(:all).and_return([ fastly ])
 
-      parameter name: :payload, in: :body, schema: {
-        type: :object,
-        required: [ 'provider' ],
-        properties: {
-          provider:  { type: :string, example: 'fastly',
-                       description: 'fastly | cloudflare | akamai' },
-          is_active: { type: :boolean, example: true },
-          settings: {
-            type: :object,
-            description: 'Provider-specific key-value settings (e.g. service_id, api_key)',
-            example: { service_id: 'svc_abc123', api_key: 'sk_live_xyz' },
-          },
-        },
-      }
+      get api_v1_cdn_configurations_path, as: :json
 
-      response '200', 'CDN configuration updated' do
-        schema type: :object,
-               properties: {
-                 success: { type: :boolean },
-                 message: { type: :string, example: 'Fastly configuration updated.' },
-               }
-        run_test!
-      end
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body.dig("fastly", "settings", "api_key")).to eq("••••••••1234")
+      expect(response.parsed_body["cloudflare"]).to eq("is_active" => false, "settings" => {})
+    end
+  end
 
-      response '422', 'Validation failed' do
-        schema type: :object,
-               properties: { errors: { type: :array, items: { type: :string } } }
-        run_test!
-      end
+  describe "PUT /api/v1/cdn_configurations" do
+    it "rejects non-admin updates" do
+      sign_in user
+
+      put api_v1_cdn_configurations_path,
+          params: { provider: "fastly", is_active: true, settings: { api_key: "new-key" } },
+          as: :json
+
+      expect(response).to have_http_status(:forbidden)
+    end
+
+    it "updates a provider configuration for admins" do
+      sign_in admin
+      config = instance_double(CdnConfiguration, settings: { "api_key" => "old-key" }, errors: instance_double(ActiveModel::Errors, full_messages: []))
+      allow(config).to receive(:is_active=)
+      allow(config).to receive(:settings=)
+      allow(config).to receive(:save).and_return(true)
+      allow(CdnConfiguration).to receive(:find_or_initialize_by).with(provider: "fastly").and_return(config)
+
+      put api_v1_cdn_configurations_path,
+          params: { provider: "fastly", is_active: true, settings: { api_key: "••••masked", service_id: "svc_1" } },
+          as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body["success"]).to be(true)
+      expect(config).to have_received(:is_active=).with(true)
+      expect(config).to have_received(:settings=).with("api_key" => "old-key", "service_id" => "svc_1")
+    end
+
+    it "returns validation errors" do
+      sign_in admin
+      errors = instance_double(ActiveModel::Errors, full_messages: [ "Provider can't be blank" ])
+      config = instance_double(CdnConfiguration, settings: {}, errors: errors)
+      allow(config).to receive(:is_active=)
+      allow(config).to receive(:settings=)
+      allow(config).to receive(:save).and_return(false)
+      allow(CdnConfiguration).to receive(:find_or_initialize_by).with(provider: "").and_return(config)
+
+      put api_v1_cdn_configurations_path,
+          params: { provider: "", is_active: true, settings: {} },
+          as: :json
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.parsed_body["errors"]).to eq([ "Provider can't be blank" ])
     end
   end
 end

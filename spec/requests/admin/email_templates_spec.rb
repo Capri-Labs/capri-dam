@@ -1,155 +1,120 @@
-require 'swagger_helper'
+require "rails_helper"
 
-RSpec.describe 'Admin::EmailTemplates', type: :request do
-  path '/admin/email_templates' do
-    # 1. GET /admin/email_templates
-    get 'Retrieves a list of all email templates' do
-      tags 'Admin - Email Templates'
-      produces 'application/json'
-      security [ Bearer: [] ]
+RSpec.describe "Admin::EmailTemplates", type: :request do
+  let(:admin) { create(:user, :admin) }
+  let(:user) { create(:user) }
+  let!(:template) { create(:email_template, name: "Welcome", event_trigger: "user_created") }
 
-      response '200', 'email templates retrieved successfully' do
-        schema type: :object,
-               properties: {
-                 email_templates: {
-                   type: :array,
-                   items: {
-                     type: :object,
-                     properties: {
-                       id: { type: :integer },
-                       name: { type: :string },
-                       event_trigger: { type: :string },
-                       subject: { type: :string },
-                       active: { type: :boolean },
-                       updated_at: { type: :string },
-                     },
-                   },
-                 },
-               }
-        run_test!
-      end
+  describe "GET /admin/email_templates" do
+    it "redirects unauthenticated users to sign in" do
+      get admin_email_templates_path, as: :json
+
+      expect(response).to redirect_to(new_user_session_path(format: :json))
     end
 
-    # 2. POST /admin/email_templates
-    post 'Creates a new email template' do
-      tags 'Admin - Email Templates'
-      consumes 'application/json'
-      produces 'application/json'
-      security [ Bearer: [] ]
+    it "returns forbidden for non-admin users" do
+      sign_in user
 
-      parameter name: :payload, in: :body, schema: {
-        type: :object,
-        properties: {
-          email_template: {
-            type: :object,
-            properties: {
-              name: { type: :string, example: 'Welcome Email' },
-              event_trigger: { type: :string, example: 'user_created' },
-              subject: { type: :string, example: 'Welcome to Capri DAM' },
-              html_body: { type: :string, example: '<h1>Welcome {{first_name}}</h1>' },
-              text_body: { type: :string, example: 'Welcome {{first_name}}' },
-              active: { type: :boolean, example: true },
-            },
-            required: [ 'name', 'event_trigger', 'subject' ],
-          },
-        },
-        required: [ 'email_template' ],
-      }
+      get admin_email_templates_path, as: :json
 
-      response '200', 'template created successfully' do
-        schema type: :object, properties: { success: { type: :boolean }, message: { type: :string } }
-        run_test!
-      end
+      expect(response).to have_http_status(:forbidden)
+    end
 
-      response '200', 'validation failed' do
-        # Note: Controller renders 200 OK with success: false on validation failure
-        schema type: :object, properties: { success: { type: :boolean }, errors: { type: :array, items: { type: :string } } }
-        run_test!
-      end
+    it "returns the templates for admins" do
+      sign_in admin
+
+      get admin_email_templates_path, as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body.dig("email_templates", 0, "name")).to eq("Welcome")
     end
   end
 
-  path '/admin/email_templates/{id}' do
-    parameter name: :id, in: :path, type: :string, description: 'Email Template ID'
+  describe "GET /admin/email_templates/:id" do
+    it "returns the requested template for admins" do
+      sign_in admin
 
-    # 3. GET /admin/email_templates/:id
-    get 'Retrieves details of a specific email template' do
-      tags 'Admin - Email Templates'
-      produces 'application/json'
-      security [ Bearer: [] ]
+      get admin_email_template_path(template), as: :json
 
-      response '200', 'template details retrieved' do
-        schema type: :object,
-               properties: {
-                 email_template: {
-                   type: :object,
-                   properties: {
-                     id: { type: :integer },
-                     name: { type: :string },
-                     event_trigger: { type: :string },
-                     subject: { type: :string },
-                     html_body: { type: :string },
-                     text_body: { type: :string },
-                     active: { type: :boolean },
-                     created_at: { type: :string, format: 'date-time' },
-                     updated_at: { type: :string, format: 'date-time' },
-                   },
-                 },
-               }
-        run_test!
-      end
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body.dig("email_template", "event_trigger")).to eq("user_created")
     end
+  end
 
-    # 4. PATCH /admin/email_templates/:id
-    patch 'Updates an existing email template' do
-      tags 'Admin - Email Templates'
-      consumes 'application/json'
-      produces 'application/json'
-      security [ Bearer: [] ]
-
-      parameter name: :payload, in: :body, schema: {
-        type: :object,
-        properties: {
-          email_template: {
-            type: :object,
-            properties: {
-              name: { type: :string },
-              event_trigger: { type: :string },
-              subject: { type: :string },
-              html_body: { type: :string },
-              text_body: { type: :string },
-              active: { type: :boolean },
-            },
-          },
+  describe "POST /admin/email_templates" do
+    let(:valid_params) do
+      {
+        email_template: {
+          name: "Digest",
+          event_trigger: "daily_digest",
+          subject: "Digest for {{ user.first_name }}",
+          html_body: "<p>Hi</p>",
+          text_body: "Hi",
+          active: true,
         },
       }
-
-      response '200', 'template updated successfully' do
-        schema type: :object, properties: { success: { type: :boolean }, message: { type: :string } }
-        run_test!
-      end
-
-      response '200', 'update failed' do
-        schema type: :object, properties: { success: { type: :boolean }, errors: { type: :array, items: { type: :string } } }
-        run_test!
-      end
     end
 
-    # 5. DELETE /admin/email_templates/:id
-    delete 'Deletes an email template' do
-      tags 'Admin - Email Templates'
-      produces 'application/json'
-      security [ Bearer: [] ]
+    it "creates a template for admins" do
+      sign_in admin
 
-      response '200', 'template deleted successfully' do
-        schema type: :object, properties: { success: { type: :boolean }, message: { type: :string } }
-        run_test!
-      end
+      expect do
+        post admin_email_templates_path, params: valid_params, as: :json
+      end.to change(EmailTemplate, :count).by(1)
 
-      response '200', 'deletion failed' do
-        schema type: :object, properties: { success: { type: :boolean }, errors: { type: :array, items: { type: :string } } }
-        run_test!
-      end
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body["success"]).to be(true)
+    end
+
+    it "returns validation errors" do
+      sign_in admin
+
+      post admin_email_templates_path,
+           params: { email_template: valid_params[:email_template].merge(name: "", event_trigger: "") },
+           as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body["success"]).to be(false)
+      expect(response.parsed_body["errors"]).to include(a_string_matching(/Name can't be blank/))
+    end
+  end
+
+  describe "PATCH /admin/email_templates/:id" do
+    it "updates the template for admins" do
+      sign_in admin
+
+      patch admin_email_template_path(template),
+            params: { email_template: { subject: "Updated subject" } },
+            as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body["success"]).to be(true)
+      expect(template.reload.subject).to eq("Updated subject")
+    end
+
+    it "returns validation errors when update fails" do
+      sign_in admin
+
+      patch admin_email_template_path(template),
+            params: { email_template: { name: "" } },
+            as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body["success"]).to be(false)
+      expect(response.parsed_body["errors"]).to include(a_string_matching(/Name can't be blank/))
+    end
+  end
+
+  describe "DELETE /admin/email_templates/:id" do
+    it "destroys the template for admins" do
+      sign_in admin
+
+      expect do
+        delete admin_email_template_path(template), as: :json
+      end.to change(EmailTemplate, :count).by(-1)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body["success"]).to be(true)
     end
   end
 end

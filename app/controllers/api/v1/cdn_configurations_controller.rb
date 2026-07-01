@@ -21,7 +21,8 @@ module Api
         config = CdnConfiguration.find_or_initialize_by(provider: provider)
 
         config.is_active = params[:is_active]
-        clean_settings = params[:settings].reject do |key, value|
+        raw_settings = params[:settings].respond_to?(:to_unsafe_h) ? params[:settings].to_unsafe_h : params.fetch(:settings, {})
+        clean_settings = raw_settings.reject do |key, value|
           value.to_s.include?("••••") # Drop masked secrets so they aren't overwritten
         end
         config.settings = (config.settings || {}).merge(clean_settings)

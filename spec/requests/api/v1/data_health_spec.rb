@@ -1,156 +1,105 @@
-# frozen_string_literal: true
+require "rails_helper"
 
-require 'swagger_helper'
+RSpec.describe "Api::V1::DataHealth", type: :request do
+  let(:admin) { create(:user, :admin) }
+  let(:user) { create(:user) }
 
-RSpec.describe 'Api::V1::DataHealth', type: :request do
-  # ===========================================================================
-  # OVERVIEW — GET /api/v1/data_health/overview
-  # ===========================================================================
-  path '/api/v1/data_health/overview' do
-    get 'Aggregate TDM & Storage Health overview metrics' do
-      tags 'Data Health'
-      produces 'application/json'
-      security [ Bearer: [] ]
-      description <<~DESC
-        Returns a single JSON payload: storage composition (active, orphaned,
-        dedup-prevented), duplicate group counts, connector summary, migration
-        batch pipeline summary, duplicate-scan status, and a live debt-flag list.
-      DESC
+  describe "GET /api/v1/data_health/overview" do
+    before do
+      create(:system_connector, status: "active")
+      create(:system_connector, status: "idle")
+      create(:system_connector, status: "disabled")
+      allow(IngestionBatch).to receive(:aggregate_stats).and_return(
+        total_batches: 3,
+        active_batches: 1,
+        completed_batches: 1,
+        failed_batches: 1,
+        total_duplicates_blocked: 2,
+        total_assets_committed: 10,
+        total_assets_staged: 12,
+        estimated_storage_saved_gb: 1.5,
+        estimated_cost_savings_usd: 0.25,
+      )
+      allow_any_instance_of(Api::V1::DataHealthController).to receive(:duplicate_group_stats).and_return(
+        pending: 1, resolved: 2, dismissed: 3, total: 6
+      )
+      allow_any_instance_of(Api::V1::DataHealthController).to receive(:current_scan_status).and_return(
+        status: "idle", progress: {}, last_scan_at: nil
+      )
+      allow_any_instance_of(Api::V1::DataHealthController).to receive(:build_storage_metrics).and_return("active_used_tb" => 1.2)
+      allow_any_instance_of(Api::V1::DataHealthController).to receive(:build_batch_overview).and_return(
+        total: 3, active: 1, completed: 1, failed: 1
+      )
+      allow_any_instance_of(Api::V1::DataHealthController).to receive(:build_debt_flags).and_return([ { type: "duplicates" } ])
+    end
 
-      response '200', 'Health overview returned' do
-        schema type: :object,
-               properties: {
-                 storage:    { type: :object },
-                 duplicates: { type: :object,
-                               properties: {
-                                 pending:   { type: :integer },
-                                 resolved:  { type: :integer },
-                                 dismissed: { type: :integer },
-                                 total:     { type: :integer },
-                               } },
-                 connectors: { type: :object,
-                               properties: {
-                                 total: { type: :integer }, active: { type: :integer },
-                                 idle:  { type: :integer }, disabled: { type: :integer }
-                               } },
-                 batches:    { type: :object,
-                               properties: {
-                                 total: { type: :integer }, active: { type: :integer },
-                                 completed: { type: :integer }, failed: { type: :integer }
-                               } },
-                 scan:       { type: :object,
-                               properties: {
-                                 status:      { type: :string },
-                                 last_scan_at: { type: :string, nullable: true },
-                               } },
-                 debt_flags:   { type: :array, items: { type: :object } },
-                 generated_at: { type: :string, format: 'date-time' },
-               }
-        run_test!
-      end
+    it "requires authentication" do
+      get overview_api_v1_data_health_index_path, as: :json
 
-      response '403', 'Admin privileges required' do
-        schema type: :object, properties: { error: { type: :string } }
-        run_test!
-      end
+      expect(response.status).to be_in([ 401, 302 ])
+    end
+
+    it "rejects non-admin users" do
+      sign_in user
+
+      get overview_api_v1_data_health_index_path, as: :json
+
+      expect(response).to have_http_status(:forbidden)
+    end
+
+    it "returns the overview payload for admins" do
+      sign_in admin
+
+      get overview_api_v1_data_health_index_path, as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body["connectors"]).to include("total" => 3, "active" => 1, "idle" => 1, "disabled" => 1)
+      expect(response.parsed_body["generated_at"]).to be_present
     end
   end
 
-  # ===========================================================================
-  # CONNECTORS — GET /api/v1/data_health/connectors
-  # ===========================================================================
-  path '/api/v1/data_health/connectors' do
-    get 'Per-connector health details including pre-flight analysis reports' do
-      tags 'Data Health'
-      produces 'application/json'
-      security [ Bearer: [] ]
-      description <<~DESC
-        Returns every SystemConnector with its computed health_score (0–100),
-        last_sync timestamp, assets_imported, batch count, and any available
-        analysis_report from a previous pre-flight scan.
-      DESC
+  describe "GET /api/v1/data_health/connectors" do
+    it "returns connector health details" do
+      sign_in admin
+      connector = create(:system_connector, name: "AEM", status: "active", analysis_report: { "total_found" => 10, "missing_tags" => 1 })
+      create(:ingestion_batch, connector: connector)
 
-      response '200', 'Connector health list returned' do
-        schema type: :array,
-               items: {
-                 type: :object,
-                 properties: {
-                   id:              { type: :integer },
-                   name:            { type: :string },
-                   provider_type:   { type: :string },
-                   provider_label:  { type: :string },
-                   status:          { type: :string },
-                   assets_imported: { type: :integer },
-                   last_sync:       { type: :string, format: 'date-time', nullable: true },
-                   tdm_sanitation:  { type: :boolean },
-                   batches_count:   { type: :integer },
-                   health_score:    { type: :integer, nullable: true },
-                   analysis_report: { type: :object, nullable: true },
-                 },
-               }
-        run_test!
-      end
+      get connectors_api_v1_data_health_index_path, as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body.first).to include(
+        "name" => "AEM",
+        "provider_type" => connector.provider_type,
+        "batches_count" => 1,
+      )
     end
   end
 
-  # ===========================================================================
-  # REMEDIATE — POST /api/v1/data_health/remediate
-  # ===========================================================================
-  path '/api/v1/data_health/remediate' do
-    post 'Queue a background remediation job for a specific debt type' do
-      tags 'Data Health'
-      consumes 'application/json'
-      produces 'application/json'
-      security [ Bearer: [] ]
-      description <<~DESC
-        Enqueues a `DataHealthRemediationWorker` Sidekiq job.
-        Valid types: `duplicates` | `missing_metadata` | `copyright` | `stale`.
-      DESC
+  describe "POST /api/v1/data_health/remediate" do
+    it "queues remediation jobs for admins" do
+      sign_in admin
+      allow(DataHealthRemediationWorker).to receive(:perform_async)
 
-      parameter name: :payload, in: :body, schema: {
-        type: :object,
-        required: [ 'debt_type' ],
-        properties: {
-          debt_type: {
-            type: :string,
-            enum: %w[duplicates missing_metadata copyright stale],
-            example: 'duplicates',
-          },
-        },
-      }
+      post remediate_api_v1_data_health_index_path, params: { debt_type: "duplicates" }, as: :json
 
-      response '202', 'Remediation job accepted' do
-        schema type: :object, properties: { message: { type: :string } }
-        run_test!
-      end
-
-      response '422', 'Unknown debt type' do
-        schema type: :object, properties: { error: { type: :string } }
-        run_test!
-      end
-
-      response '403', 'Admin privileges required' do
-        schema type: :object, properties: { error: { type: :string } }
-        run_test!
-      end
+      expect(response).to have_http_status(:accepted)
+      expect(DataHealthRemediationWorker).to have_received(:perform_async).with("duplicates", admin.id)
     end
-  end
 
-  # ===========================================================================
-  # Legacy: keep old /metrics path doc for backward-compat reference only
-  # ===========================================================================
-  path '/api/v1/data_health/metrics' do
-    get '[Deprecated] Old TDM metrics endpoint — use /overview instead' do
-      tags 'Data Health'
-      produces 'application/json'
-      security [ Bearer: [] ]
-      deprecated true
-      description 'Superseded by GET /api/v1/data_health/overview.'
+    it "rejects unknown debt types" do
+      sign_in admin
 
-      response '404', 'Endpoint removed' do
-        schema type: :object, properties: { error: { type: :string } }
-        run_test!
-      end
+      post remediate_api_v1_data_health_index_path, params: { debt_type: "unknown" }, as: :json
+
+      expect(response).to have_http_status(:unprocessable_entity)
+    end
+
+    it "rejects non-admin users" do
+      sign_in user
+
+      post remediate_api_v1_data_health_index_path, params: { debt_type: "duplicates" }, as: :json
+
+      expect(response).to have_http_status(:forbidden)
     end
   end
 end

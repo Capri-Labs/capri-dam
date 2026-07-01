@@ -2,9 +2,10 @@ module Reports
   class Orchestrator
     def self.execute!(snapshot_id)
       snapshot = ReportSnapshot.find(snapshot_id)
-      snapshot.processing!
 
       begin
+        snapshot.processing!
+
         # 1. Data Fetching Phase
         raw_data = Reports::DataFetcher.fetch(snapshot)
 
@@ -30,7 +31,11 @@ module Reports
         snapshot.completed!
       rescue => e
         # Catch any errors (memory limits, bad queries) and log them to the snapshot
-        snapshot.update!(status: :failed, error_message: e.message)
+        snapshot.update_columns(
+          status: ReportSnapshot.statuses[:failed],
+          error_message: e.message,
+          updated_at: Time.current
+        )
         # Re-raise if you want your error monitoring (e.g., Sentry) to catch it
         raise e
       end

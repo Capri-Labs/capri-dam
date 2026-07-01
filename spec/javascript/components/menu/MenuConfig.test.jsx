@@ -198,5 +198,49 @@ describe('Sidebar — graceful degradation (missing key)', () => {
   });
 });
 
+describe('MENU_GROUPS derived helpers', () => {
+  const getMenuItems = (groups) =>
+    groups.flatMap((group) =>
+      group.items.flatMap((item) => [item, ...(item.children || [])])
+    );
+
+  it('returns top-level and nested items from the navigation tree', () => {
+    const items = getMenuItems(MENU_GROUPS);
+    const ids = items.map((item) => item.id);
+
+    expect(ids).toContain('Overview');
+    expect(ids).toContain('Collections');
+    expect(ids).toContain('Users');
+    expect(ids).toContain('Queues');
+  });
+
+  it('keeps admin routes inside the administration group', () => {
+    const administration = MENU_GROUPS.find((group) => group.id === 'administration');
+    const core = MENU_GROUPS.find((group) => group.id === 'core');
+    const adminItems = getMenuItems([administration]);
+    const coreItems = getMenuItems([core]);
+
+    expect(adminItems.some((item) => item.url === '/admin/users')).toBe(true);
+    expect(adminItems.some((item) => item.url === '/admin/queues')).toBe(true);
+    expect(coreItems.some((item) => String(item.url).startsWith('/admin/'))).toBe(false);
+  });
+});
+
+describe('Sidebar — dynamic nested rendering', () => {
+  afterEach(async () => { await act(async () => { await i18n.changeLanguage('en'); }); });
+
+  it('expands the active admin branch and renders nested items', async () => {
+    await act(async () => { await i18n.changeLanguage('en'); });
+    render(
+      <I18nextProvider i18n={i18n}>
+        <Sidebar activeView="Users" onNavigate={() => {}} />
+      </I18nextProvider>
+    );
+
+    expect(screen.getByText('Access & Identity')).toBeInTheDocument();
+    expect(screen.getByText('Users')).toBeInTheDocument();
+    expect(screen.getByText('User Groups')).toBeInTheDocument();
+  });
+});
 
 

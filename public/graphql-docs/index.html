@@ -53,6 +53,7 @@
                   <li><a href="#query-duplicateGroups">duplicateGroups</a></li>
                   <li><a href="#query-imageProfile">imageProfile</a></li>
                   <li><a href="#query-imageProfiles">imageProfiles</a></li>
+                  <li><a href="#query-inbox">inbox</a></li>
                   <li><a href="#query-stylePreset">stylePreset</a></li>
                   <li><a href="#query-stylePresets">stylePresets</a></li>
                   <li><a href="#query-user">user</a></li>
@@ -70,6 +71,7 @@
                   <a href="#group-Operations-Mutations">Mutations</a>
                 </h5>
                 <ul class="nav-group-section-items">
+                  <li><a href="#mutation-archiveInboxMessage">archiveInboxMessage</a></li>
                   <li><a href="#mutation-bulkRestoreFromBin">bulkRestoreFromBin</a></li>
                   <li><a href="#mutation-createAiModelConfig">createAiModelConfig</a></li>
                   <li><a href="#mutation-createPersonalAccessToken">createPersonalAccessToken</a></li>
@@ -79,6 +81,7 @@
                   <li><a href="#mutation-createVideoProfile">createVideoProfile</a></li>
                   <li><a href="#mutation-deleteUserGroup">deleteUserGroup</a></li>
                   <li><a href="#mutation-emptyBin">emptyBin</a></li>
+                  <li><a href="#mutation-markInboxMessageRead">markInboxMessageRead</a></li>
                   <li><a href="#mutation-resolveDuplicateGroup">resolveDuplicateGroup</a></li>
                   <li><a href="#mutation-revokePersonalAccessToken">revokePersonalAccessToken</a></li>
                   <li><a href="#mutation-startImpersonation">startImpersonation</a></li>
@@ -103,6 +106,8 @@
               <li><a href="#definition-AgentWorkflow">AgentWorkflow</a></li>
               <li><a href="#definition-AiBatchJob">AiBatchJob</a></li>
               <li><a href="#definition-AiModelConfig">AiModelConfig</a></li>
+              <li><a href="#definition-ArchiveInboxMessageInput">ArchiveInboxMessageInput</a></li>
+              <li><a href="#definition-ArchiveInboxMessagePayload">ArchiveInboxMessagePayload</a></li>
               <li><a href="#definition-Asset">Asset</a></li>
               <li><a href="#definition-AssetProvenanceRecord">AssetProvenanceRecord</a></li>
               <li><a href="#definition-BigInt">BigInt</a></li>
@@ -137,7 +142,10 @@
               <li><a href="#definition-EmptyBinPayload">EmptyBinPayload</a></li>
               <li><a href="#definition-FolderPolicy">FolderPolicy</a></li>
               <li><a href="#definition-ImageProfile">ImageProfile</a></li>
+              <li><a href="#definition-InboxMessage">InboxMessage</a></li>
               <li><a href="#definition-JSON">JSON</a></li>
+              <li><a href="#definition-MarkInboxMessageReadInput">MarkInboxMessageReadInput</a></li>
+              <li><a href="#definition-MarkInboxMessageReadPayload">MarkInboxMessageReadPayload</a></li>
               <li><a href="#definition-PersonalAccessToken">PersonalAccessToken</a></li>
               <li><a href="#definition-ResolveDuplicateGroupInput">ResolveDuplicateGroupInput</a></li>
               <li><a href="#definition-ResolveDuplicateGroupPayload">ResolveDuplicateGroupPayload</a></li>
@@ -1064,6 +1072,50 @@
               </div>
             </div>
           </section>
+          <section id="query-inbox" class="operation operation-query" data-traverse-target="query-inbox">
+            <div class="operation-group-name">
+              <a href="#group-Operations-Queries">Queries</a>
+            </div>
+            <h2 class="operation-heading ">
+              <code>inbox</code>
+            </h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Recent inbox messages for the current user</p>
+                </div>
+              </div>
+            </div>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-response doc-copy-section">
+                  <h5>Response</h5>
+                  <p> Returns <a href="#definition-InboxMessage"><code>[InboxMessage!]!</code></a>
+                  </p>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <h4 class="example-heading">Example</h4>
+                <div class="example-section example-section-is-code operation-query-example">
+                  <h5>Query</h5>
+                  <pre><code class="hljs language-gql"><span class="hljs-symbol"><span class="hljs-keyword">query</span> inbox <span class="hljs-tag">{
+  <span class="hljs-symbol">inbox <span class="hljs-tag">{
+    <span class="hljs-symbol">sender <span class="hljs-tag">{
+      <span class="hljs-type">...UserFragment</span>
+    }</span></span>
+  }</span></span>
+}</span></span>
+</code></pre>
+                </div>
+                <div class="example-section example-section-is-code operation-response-example">
+                  <h5>Response</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"data"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-attr">"inbox"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-punctuation">{</span><span class="hljs-attr">"sender"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">User</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
           <section id="query-stylePreset" class="operation operation-query" data-traverse-target="query-stylePreset">
             <div class="operation-group-name">
               <a href="#group-Operations-Queries">Queries</a>
@@ -1559,7 +1611,63 @@
             </div>
           </section>
           <h1 id="group-Operations-Mutations" class="group-heading" data-traverse-target="group-Operations-Mutations">Mutations</h1>
+          <section id="mutation-archiveInboxMessage" class="operation operation-mutation" data-traverse-target="mutation-archiveInboxMessage">
+            <h2 class="operation-heading ">
+              <code>archiveInboxMessage</code>
+            </h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-response doc-copy-section">
+                  <h5>Response</h5>
+                  <p> Returns an <a href="#definition-ArchiveInboxMessagePayload"><code>ArchiveInboxMessagePayload</code></a>
+                  </p>
+                </div>
+                <div class="operation-arguments doc-copy-section">
+                  <h5>Arguments</h5>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>
+                          <span class="property-name"><code>input</code></span> - <span class="property-type"><a href="#definition-ArchiveInboxMessageInput"><code>ArchiveInboxMessageInput!</code></a></span>
+                        </td>
+                        <td> Parameters for ArchiveInboxMessage </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <h4 class="example-heading">Example</h4>
+                <div class="example-section example-section-is-code operation-query-example">
+                  <h5>Query</h5>
+                  <pre><code class="hljs language-gql"><span class="hljs-symbol"><span class="hljs-keyword">mutation</span> archiveInboxMessage<span class="hljs-tag">(<span class="hljs-code">$input</span>:<span class="hljs-type"> ArchiveInboxMessageInput!</span>)</span> <span class="hljs-tag">{
+  <span class="hljs-symbol">archiveInboxMessage<span class="hljs-tag">(input: <span class="hljs-code">$input</span>)</span></span>
+}</span></span>
+</code></pre>
+                </div>
+                <div class="example-section example-section-is-code operation-variables-example">
+                  <h5>Variables</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"input"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">ArchiveInboxMessageInput</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+                <div class="example-section example-section-is-code operation-response-example">
+                  <h5>Response</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"data"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-attr">"archiveInboxMessage"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
           <section id="mutation-bulkRestoreFromBin" class="operation operation-mutation" data-traverse-target="mutation-bulkRestoreFromBin">
+            <div class="operation-group-name">
+              <a href="#group-Operations-Mutations">Mutations</a>
+            </div>
             <h2 class="operation-heading ">
               <code>bulkRestoreFromBin</code>
             </h2>
@@ -2165,6 +2273,62 @@
                 <div class="example-section example-section-is-code operation-response-example">
                   <h5>Response</h5>
                   <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"data"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-attr">"emptyBin"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="mutation-markInboxMessageRead" class="operation operation-mutation" data-traverse-target="mutation-markInboxMessageRead">
+            <div class="operation-group-name">
+              <a href="#group-Operations-Mutations">Mutations</a>
+            </div>
+            <h2 class="operation-heading ">
+              <code>markInboxMessageRead</code>
+            </h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-response doc-copy-section">
+                  <h5>Response</h5>
+                  <p> Returns a <a href="#definition-MarkInboxMessageReadPayload"><code>MarkInboxMessageReadPayload</code></a>
+                  </p>
+                </div>
+                <div class="operation-arguments doc-copy-section">
+                  <h5>Arguments</h5>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>
+                          <span class="property-name"><code>input</code></span> - <span class="property-type"><a href="#definition-MarkInboxMessageReadInput"><code>MarkInboxMessageReadInput!</code></a></span>
+                        </td>
+                        <td> Parameters for MarkInboxMessageRead </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <h4 class="example-heading">Example</h4>
+                <div class="example-section example-section-is-code operation-query-example">
+                  <h5>Query</h5>
+                  <pre><code class="hljs language-gql"><span class="hljs-symbol"><span class="hljs-keyword">mutation</span> markInboxMessageRead<span class="hljs-tag">(<span class="hljs-code">$input</span>:<span class="hljs-type"> MarkInboxMessageReadInput!</span>)</span> <span class="hljs-tag">{
+  <span class="hljs-symbol">markInboxMessageRead<span class="hljs-tag">(input: <span class="hljs-code">$input</span>)</span></span>
+}</span></span>
+</code></pre>
+                </div>
+                <div class="example-section example-section-is-code operation-variables-example">
+                  <h5>Variables</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"input"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">MarkInboxMessageReadInput</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+                <div class="example-section example-section-is-code operation-response-example">
+                  <h5>Response</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"data"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-attr">"markInboxMessageRead"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span>
 </code></pre>
                 </div>
               </div>
@@ -3081,6 +3245,48 @@
                 <div class="definition-description doc-copy-section">
                   <h5>Description</h5>
                   <p>A registered AI model endpoint used by the Capri DAM gateway.</p>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <div class="example-section example-section-is-code">
+                  <h5>Example</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="definition-ArchiveInboxMessageInput" class="definition definition-input-object" data-traverse-target="definition-ArchiveInboxMessageInput">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">ArchiveInboxMessageInput</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Autogenerated input type of ArchiveInboxMessage</p>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <div class="example-section example-section-is-code">
+                  <h5>Example</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="definition-ArchiveInboxMessagePayload" class="definition definition-object" data-traverse-target="definition-ArchiveInboxMessagePayload">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">ArchiveInboxMessagePayload</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Autogenerated return type of ArchiveInboxMessage.</p>
                 </div>
               </div>
               <div class="doc-examples">
@@ -4109,6 +4315,42 @@
               </div>
             </div>
           </section>
+          <section id="definition-InboxMessage" class="definition definition-object" data-traverse-target="definition-InboxMessage">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">InboxMessage</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-properties doc-copy-section">
+                  <h5>Fields</h5>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Field Name</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td data-property-name=""><span class="property-name"><code>sender</code></span> - <span class="property-type"><a href="#definition-User"><code>User</code></a></span>
+                        </td>
+                        <td>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <div class="example-section example-section-is-code">
+                  <h5>Example</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"sender"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">User</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
           <section id="definition-JSON" class="definition definition-scalar" data-traverse-target="definition-JSON">
             <div class="definition-group-name">
               <a href="#group-Types">Types</a>
@@ -4119,6 +4361,48 @@
                 <div class="definition-description doc-copy-section">
                   <h5>Description</h5>
                   <p>Represents untyped JSON</p>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <div class="example-section example-section-is-code">
+                  <h5>Example</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="definition-MarkInboxMessageReadInput" class="definition definition-input-object" data-traverse-target="definition-MarkInboxMessageReadInput">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">MarkInboxMessageReadInput</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Autogenerated input type of MarkInboxMessageRead</p>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <div class="example-section example-section-is-code">
+                  <h5>Example</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="definition-MarkInboxMessageReadPayload" class="definition definition-object" data-traverse-target="definition-MarkInboxMessageReadPayload">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">MarkInboxMessageReadPayload</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Autogenerated return type of MarkInboxMessageRead.</p>
                 </div>
               </div>
               <div class="doc-examples">

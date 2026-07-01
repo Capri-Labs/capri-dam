@@ -57,4 +57,8 @@ class DashboardController < ApplicationController
     @active_view = "Search"
     # This just tells Rails to render app/views/dashboard/search.html.erb
   end
+
+  def inbox
+    @active_view = "Inbox"
+  end
 end

@@ -1,8 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { cloneElement, useEffect, useState } from 'react';
 import {
-    Box, Drawer, List, Typography, ListItem,
-    ListItemButton, ListItemIcon, ListItemText, Divider,
-    IconButton, Tooltip, Collapse
+    Badge,
+    Box,
+    Collapse,
+    Divider,
+    IconButton,
+    List,
+    ListItem,
+    ListItemButton,
+    ListItemIcon,
+    ListItemText,
+    Tooltip,
+    Typography,
 } from '@mui/material';
 import { MenuOpen, Menu, ExpandLess, ExpandMore } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
@@ -17,8 +26,8 @@ export default function Sidebar({ activeView, onNavigate }) {
         const savedState = localStorage.getItem('dam_sidebar_open');
         return savedState !== null ? JSON.parse(savedState) : true;
     });
-
     const [expandedMenus, setExpandedMenus] = useState({});
+    const [inboxUnread, setInboxUnread] = useState(0);
 
     useEffect(() => {
         const initialExpanded = {};
@@ -26,17 +35,40 @@ export default function Sidebar({ activeView, onNavigate }) {
             group.items.forEach(item => {
                 if (item.children) {
                     const hasActiveChild = item.children.some(child => child.id === activeView);
-                    if (hasActiveChild) {
-                        initialExpanded[item.id] = true;
-                    }
+                    if (hasActiveChild) initialExpanded[item.id] = true;
                 }
             });
         });
         setExpandedMenus(prev => ({ ...prev, ...initialExpanded }));
     }, [activeView]);
 
+    useEffect(() => {
+        let ignore = false;
+
+        const loadUnread = () => {
+            fetch('/api/v1/inbox/unread_count')
+                .then(async response => {
+                    if (!response.ok) throw new Error('inbox_count_failed');
+                    return response.json();
+                })
+                .then(data => {
+                    if (!ignore) setInboxUnread(data.unread_count || 0);
+                })
+                .catch(() => {
+                    if (!ignore) setInboxUnread(0);
+                });
+        };
+
+        loadUnread();
+        const interval = window.setInterval(loadUnread, 30000);
+        return () => {
+            ignore = true;
+            window.clearInterval(interval);
+        };
+    }, []);
+
     const toggleSidebar = () => {
-        setOpen((prev) => {
+        setOpen(prev => {
             const newState = !prev;
             localStorage.setItem('dam_sidebar_open', JSON.stringify(newState));
             return newState;
@@ -45,18 +77,27 @@ export default function Sidebar({ activeView, onNavigate }) {
 
     const handleMenuClick = (item) => {
         if (item.children) {
-            if (!open) setOpen(true); // Force open if collapsed
-            setExpandedMenus(prev => ({
-                ...prev,
-                [item.id]: !prev[item.id]
-            }));
-        } else {
-            if (item.url) {
-                window.location.href = item.url;
-            } else if (onNavigate) {
-                onNavigate(item.id);
-            }
+            if (!open) setOpen(true);
+            setExpandedMenus(prev => ({ ...prev, [item.id]: !prev[item.id] }));
+            return;
         }
+
+        if (item.url) {
+            window.location.href = item.url;
+        } else if (onNavigate) {
+            onNavigate(item.id);
+        }
+    };
+
+    const renderIcon = (item, isActive) => {
+        const icon = item.icon || null;
+        if (item.id !== 'Inbox' || inboxUnread <= 0 || !icon) return icon;
+
+        return (
+            <Badge badgeContent={inboxUnread} color="error">
+                {cloneElement(icon, { color: isActive ? 'primary' : icon.props.color })}
+            </Badge>
+        );
     };
 
     const renderMenuItem = (item, isChild = false) => {
@@ -69,32 +110,33 @@ export default function Sidebar({ activeView, onNavigate }) {
         return (
             <ListItemButton
                 onClick={() => handleMenuClick(item)}
+                data-testid={item.id === 'Inbox' ? 'inbox-nav' : undefined}
                 sx={{
                     borderRadius: '8px',
                     py: 1.25,
-                    px: 2.5, // Consistent padding, flexbox handles the rest
+                    px: 2.5,
                     justifyContent: open ? 'initial' : 'center',
                     bgcolor: isActive ? '#ede7f6' : 'transparent',
                     color: isActive ? '#5e35b1' : '#4b5563',
                     mb: 0.5,
                     mx: open ? 1 : 0,
-                    transition: 'all 0.3s ease', // Smooth padding/margin transitions
+                    transition: 'all 0.3s ease',
                     '&:hover': {
                         bgcolor: isActive ? '#ede7f6' : '#f8fafc',
                         color: '#5e35b1',
-                        '& .MuiListItemIcon-root': { color: '#5e35b1' }
-                    }
+                        '& .MuiListItemIcon-root': { color: '#5e35b1' },
+                    },
                 }}
             >
                 <ListItemIcon sx={{
                     minWidth: 0,
-                    mr: open ? 2 : 'auto', // Push text away when open, center when closed
-                    ml: open && isChild ? 2 : 0, // Indent child icons when open
+                    mr: open ? 2 : 'auto',
+                    ml: open && isChild ? 2 : 0,
                     justifyContent: 'center',
                     color: isActive ? '#5e35b1' : '#4b5563',
-                    transition: 'all 0.3s ease'
+                    transition: 'all 0.3s ease',
                 }}>
-                    {item.icon}
+                    {renderIcon(item, isActive)}
                 </ListItemIcon>
 
                 <ListItemText
@@ -103,14 +145,14 @@ export default function Sidebar({ activeView, onNavigate }) {
                         opacity: open ? 1 : 0,
                         transition: 'opacity 0.3s ease',
                         m: 0,
-                        whiteSpace: 'nowrap'
+                        whiteSpace: 'nowrap',
                     }}
                     slotProps={{
                         primary: {
                             variant: 'body2',
                             fontWeight: isActive ? 600 : 500,
-                            fontSize: isChild ? '0.85rem' : '0.875rem'
-                        }
+                            fontSize: isChild ? '0.85rem' : '0.875rem',
+                        },
                     }}
                 />
 
@@ -143,50 +185,49 @@ export default function Sidebar({ activeView, onNavigate }) {
             </Box>
 
             <Box sx={{ overflowY: 'auto', overflowX: 'hidden', pb: 4 }}>
-                {MENU_GROUPS.map((group) => (
+                {MENU_GROUPS.map(group => (
                     <Box key={group.id} sx={{ mb: 2 }}>
-
                         <Typography
                             variant="subtitle2"
                             sx={{
-                                px: 3, mb: 1, mt: 1, fontWeight: 700, color: '#94a3b8',
-                                fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px',
-                                opacity: open ? 1 : 0, // Fade out group titles
+                                px: 3,
+                                mb: 1,
+                                mt: 1,
+                                fontWeight: 700,
+                                color: '#94a3b8',
+                                fontSize: '0.75rem',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.5px',
+                                opacity: open ? 1 : 0,
                                 transition: 'opacity 0.3s ease',
                                 whiteSpace: 'nowrap',
-                                overflow: 'hidden'
+                                overflow: 'hidden',
                             }}
                         >
-                        {group.titleKey ? t(group.titleKey, { defaultValue: group.title }) : group.title}
+                            {group.titleKey ? t(group.titleKey, { defaultValue: group.title }) : group.title}
                         </Typography>
 
                         <List sx={{ p: 0 }}>
-                            {group.items.map((item) => (
+                            {group.items.map(item => (
                                 <React.Fragment key={item.id}>
                                     <ListItem disablePadding sx={{ display: 'block' }}>
                                         {!open && !item.children ? (
                                             <Tooltip title={item.label} placement="right" arrow>
                                                 <Box sx={{ width: '100%' }}>{renderMenuItem(item)}</Box>
                                             </Tooltip>
-                                        ) : (
-                                            renderMenuItem(item)
-                                        )}
+                                        ) : renderMenuItem(item)}
                                     </ListItem>
 
-                                    {/* Only render children if they exist. Force collapse if sidebar is minimized */}
                                     {item.children && (
                                         <Collapse in={expandedMenus[item.id] && open} timeout="auto" unmountOnExit>
                                             <List component="div" disablePadding>
-                                                {item.children.map((child) => (
+                                                {item.children.map(child => (
                                                     <ListItem key={child.id} disablePadding sx={{ display: 'block' }}>
-                                                        {/* Adding tooltips to children when sidebar is closed prevents UX dead-ends */}
                                                         {!open ? (
                                                             <Tooltip title={child.label} placement="right" arrow>
                                                                 <Box sx={{ width: '100%' }}>{renderMenuItem(child, true)}</Box>
                                                             </Tooltip>
-                                                        ) : (
-                                                            renderMenuItem(child, true)
-                                                        )}
+                                                        ) : renderMenuItem(child, true)}
                                                     </ListItem>
                                                 ))}
                                             </List>

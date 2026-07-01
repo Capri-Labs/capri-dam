@@ -39,9 +39,10 @@ import nl from './locales/nl.json';
 import ja from './locales/ja.json';
 import zh from './locales/zh.json';
 import ko from './locales/ko.json';
+import ar from './locales/ar.json';
 
 /** All supported language codes — must match UserPreference::SUPPORTED_LANGUAGES */
-export const SUPPORTED_LANGUAGES = ['en', 'de', 'fr', 'es', 'pt', 'nl', 'ja', 'zh', 'ko'];
+export const SUPPORTED_LANGUAGES = ['en', 'de', 'fr', 'es', 'pt', 'nl', 'ja', 'zh', 'ko', 'ar'];
 
 const resources = {
   en: { translation: en },
@@ -53,6 +54,7 @@ const resources = {
   ja: { translation: ja },
   zh: { translation: zh },
   ko: { translation: ko },
+  ar: { translation: ar },
 };
 
 /**

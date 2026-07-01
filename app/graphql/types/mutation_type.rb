@@ -29,6 +29,9 @@ module Types
     field :start_impersonation, mutation: Mutations::StartImpersonation
     field :stop_impersonation,  mutation: Mutations::StopImpersonation
 
+    field :mark_inbox_message_read, mutation: Mutations::MarkInboxMessageRead
+    field :archive_inbox_message, mutation: Mutations::ArchiveInboxMessage
+
     # Personal Access Tokens
     field :create_personal_access_token, mutation: Mutations::CreatePersonalAccessToken
     field :revoke_personal_access_token, mutation: Mutations::RevokePersonalAccessToken

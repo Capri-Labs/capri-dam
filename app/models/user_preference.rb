@@ -11,7 +11,7 @@
 class UserPreference < ApplicationRecord
   belongs_to :user
 
-  SUPPORTED_LANGUAGES = %w[en de fr es pt nl ja zh ko].freeze
+  SUPPORTED_LANGUAGES = %w[en de fr es pt nl ja zh ko ar].freeze
   SUPPORTED_THEMES    = %w[light dark system].freeze
 
   validates :language, inclusion: { in: SUPPORTED_LANGUAGES,

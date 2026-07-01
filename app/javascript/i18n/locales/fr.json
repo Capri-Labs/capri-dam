@@ -43,7 +43,8 @@
       "General": "Paramètres généraux",
       "Email Engine": "Moteur d'e-mail",
       "System Ops": "Opérations système",
-      "Queues": "Files Sidekiq"
+      "Queues": "Files Sidekiq",
+      "Inbox": "Boîte de réception"
     }
   },
   "common": {
@@ -1701,5 +1702,68 @@
     },
     "subfolder_count_tip": "{{count}} sous-dossiers",
     "asset_count_tip": "{{count}} éléments"
+  },
+  "inbox": {
+    "title": "Boîte de réception",
+    "compose": "Composer",
+    "refresh": "Actualiser",
+    "markAllRead": "Tout marquer comme lu",
+    "unread": "Non lus",
+    "starred": "Favoris",
+    "archived": "Archivés",
+    "all": "Tous les messages",
+    "mentions": "Mentions",
+    "workflow": "Workflow",
+    "system": "Système",
+    "empty": "Votre boîte de réception est vide",
+    "emptySubtitle": "Les messages et mentions apparaîtront ici",
+    "noUnread": "Aucun message non lu",
+    "markRead": "Marquer comme lu",
+    "markUnread": "Marquer comme non lu",
+    "archive": "Archiver",
+    "star": "Ajouter une étoile",
+    "unstar": "Retirer l’étoile",
+    "delete": "Supprimer",
+    "reply": "Répondre",
+    "forward": "Transférer",
+    "types": {
+      "mention": "Mention",
+      "notification": "Notification",
+      "workflow": "Workflow",
+      "system": "Système",
+      "announcement": "Annonce"
+    }
+  },
+  "emailEngine": {
+    "title": "Moteur de communication",
+    "templates": "Modèles",
+    "eventMapping": "Mappage des événements",
+    "outbox": "Boîte d’envoi",
+    "auditLog": "Journal d’audit",
+    "aiSuggestions": "Suggestions IA",
+    "newTemplate": "Nouveau modèle",
+    "templateName": "Nom du modèle",
+    "eventTrigger": "Déclencheur",
+    "subject": "Objet",
+    "htmlBody": "Corps HTML",
+    "textBody": "Texte brut",
+    "variables": "Variables du modèle",
+    "preview": "Aperçu",
+    "sendTest": "Envoyer un test",
+    "active": "Actif",
+    "inactive": "Inactif",
+    "category": {
+      "transactional": "Transactionnel",
+      "notification": "Notification",
+      "mention": "Mention",
+      "announcement": "Annonce",
+      "system": "Système"
+    },
+    "stats": {
+      "sentToday": "Envoyés aujourd’hui",
+      "sentThisWeek": "Envoyés cette semaine",
+      "failureRate": "Taux d’échec",
+      "pending": "En attente"
+    }
   }
 }

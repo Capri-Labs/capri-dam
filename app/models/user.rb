@@ -64,6 +64,8 @@ class User < ApplicationRecord
   has_many :user_group_memberships, dependent: :destroy
   has_many :user_groups,            through: :user_group_memberships
   has_many :notifications,          dependent: :destroy
+  has_many :inbox_messages,         foreign_key: :recipient_id, dependent: :destroy
+  has_many :sent_messages,          class_name: "InboxMessage", foreign_key: :sender_id, dependent: :nullify
   has_many :metadata_exports,       dependent: :destroy
   has_many :metadata_imports,       dependent: :destroy
   has_one  :preference, class_name: "UserPreference", dependent: :destroy

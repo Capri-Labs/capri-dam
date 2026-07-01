@@ -43,7 +43,8 @@
       "General": "General Settings",
       "Email Engine": "Email Engine",
       "System Ops": "System Operations",
-      "Queues": "Sidekiq Queues"
+      "Queues": "Sidekiq Queues",
+      "Inbox": "Inbox"
     }
   },
   "common": {
@@ -1701,5 +1702,68 @@
     },
     "subfolder_count_tip": "{{count}} sub-folders",
     "asset_count_tip": "{{count}} assets"
+  },
+  "inbox": {
+    "title": "Inbox",
+    "compose": "Compose",
+    "refresh": "Refresh",
+    "markAllRead": "Mark all read",
+    "unread": "Unread",
+    "starred": "Starred",
+    "archived": "Archived",
+    "all": "All Messages",
+    "mentions": "Mentions",
+    "workflow": "Workflow",
+    "system": "System",
+    "empty": "Your inbox is empty",
+    "emptySubtitle": "Messages and mentions will appear here",
+    "noUnread": "No unread messages",
+    "markRead": "Mark as read",
+    "markUnread": "Mark as unread",
+    "archive": "Archive",
+    "star": "Star",
+    "unstar": "Unstar",
+    "delete": "Delete",
+    "reply": "Reply",
+    "forward": "Forward",
+    "types": {
+      "mention": "Mention",
+      "notification": "Notification",
+      "workflow": "Workflow",
+      "system": "System",
+      "announcement": "Announcement"
+    }
+  },
+  "emailEngine": {
+    "title": "Communication Engine",
+    "templates": "Templates",
+    "eventMapping": "Event Mapping",
+    "outbox": "Outbox",
+    "auditLog": "Audit Log",
+    "aiSuggestions": "AI Suggestions",
+    "newTemplate": "New Template",
+    "templateName": "Template Name",
+    "eventTrigger": "Event Trigger",
+    "subject": "Subject",
+    "htmlBody": "HTML Body",
+    "textBody": "Plain Text",
+    "variables": "Template Variables",
+    "preview": "Preview",
+    "sendTest": "Send Test",
+    "active": "Active",
+    "inactive": "Inactive",
+    "category": {
+      "transactional": "Transactional",
+      "notification": "Notification",
+      "mention": "Mention",
+      "announcement": "Announcement",
+      "system": "System"
+    },
+    "stats": {
+      "sentToday": "Sent Today",
+      "sentThisWeek": "Sent This Week",
+      "failureRate": "Failure Rate",
+      "pending": "Pending"
+    }
   }
 }

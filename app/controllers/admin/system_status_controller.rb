@@ -19,7 +19,7 @@ class Admin::SystemStatusController < ApplicationController
   # POST /admin/system_status/update_smtp
   def update_smtp
     # Convert parameters to hash cleanly
-    Setting.set!("smtp_settings", smtp_params.to_h)
+    Setting.set("smtp_settings", smtp_params.to_h)
     # Re-apply config changes to the current environment context
     Setting.apply_smtp_settings!
     render json: { success: true, message: "SMTP configuration updated successfully." }

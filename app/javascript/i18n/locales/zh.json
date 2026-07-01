@@ -43,7 +43,8 @@
       "General": "常规设置",
       "Email Engine": "邮件引擎",
       "System Ops": "系统运维",
-      "Queues": "Sidekiq队列"
+      "Queues": "Sidekiq队列",
+      "Inbox": "收件箱"
     }
   },
   "common": {
@@ -1701,5 +1702,68 @@
     },
     "subfolder_count_tip": "{{count}} 个子文件夹",
     "asset_count_tip": "{{count}} 个资产"
+  },
+  "inbox": {
+    "title": "收件箱",
+    "compose": "撰写",
+    "refresh": "刷新",
+    "markAllRead": "全部标记为已读",
+    "unread": "未读",
+    "starred": "已加星标",
+    "archived": "已归档",
+    "all": "全部消息",
+    "mentions": "提及",
+    "workflow": "工作流",
+    "system": "系统",
+    "empty": "您的收件箱为空",
+    "emptySubtitle": "消息和提及将显示在这里",
+    "noUnread": "没有未读消息",
+    "markRead": "标记为已读",
+    "markUnread": "标记为未读",
+    "archive": "归档",
+    "star": "加星标",
+    "unstar": "取消星标",
+    "delete": "删除",
+    "reply": "回复",
+    "forward": "转发",
+    "types": {
+      "mention": "提及",
+      "notification": "通知",
+      "workflow": "工作流",
+      "system": "系统",
+      "announcement": "公告"
+    }
+  },
+  "emailEngine": {
+    "title": "通信引擎",
+    "templates": "模板",
+    "eventMapping": "事件映射",
+    "outbox": "发件箱",
+    "auditLog": "审计日志",
+    "aiSuggestions": "AI 建议",
+    "newTemplate": "新建模板",
+    "templateName": "模板名称",
+    "eventTrigger": "事件触发器",
+    "subject": "主题",
+    "htmlBody": "HTML 正文",
+    "textBody": "纯文本",
+    "variables": "模板变量",
+    "preview": "预览",
+    "sendTest": "发送测试",
+    "active": "启用",
+    "inactive": "停用",
+    "category": {
+      "transactional": "事务型",
+      "notification": "通知",
+      "mention": "提及",
+      "announcement": "公告",
+      "system": "系统"
+    },
+    "stats": {
+      "sentToday": "今日已发送",
+      "sentThisWeek": "本周已发送",
+      "failureRate": "失败率",
+      "pending": "待处理"
+    }
   }
 }

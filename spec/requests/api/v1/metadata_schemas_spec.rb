@@ -1,272 +1,157 @@
-# frozen_string_literal: true
+require "rails_helper"
 
-require 'swagger_helper'
+RSpec.describe "Api::V1::MetadataSchemas", type: :request do
+  let(:admin) { create(:user, :admin) }
+  let(:schema) { create(:metadata_schema, :root, :with_basic_tab, name: "Default") }
 
-RSpec.describe 'Api::V1::MetadataSchemas', type: :request do
-  # ===========================================================================
-  # INDEX — GET /api/v1/metadata_schemas
-  # ===========================================================================
-  path '/api/v1/metadata_schemas' do
-    get 'List all root metadata schemas (with children)' do
-      tags        'Metadata Schemas'
-      produces    'application/json'
-      security    [ Bearer: [] ]
-      description <<~DESC
-        Returns all active root-level metadata schemas, each fully populated with
-        their type and subtype children. Schemas are ordered: built-in first, then
-        alphabetically by name.
-      DESC
+  describe "GET /api/v1/metadata_schemas" do
+    it "requires authentication" do
+      get api_v1_metadata_schemas_path, as: :json
 
-      response '200', 'Schemas returned' do
-        schema type: :array,
-               items: {
-                 '$ref' => '#/components/schemas/MetadataSchema',
-               }
-
-        let(:Authorization) { 'Bearer test-token' }
-
-        before do
-          create(:metadata_schema, :root, :with_basic_tab, name: 'Default', is_builtin: true)
-          create(:metadata_schema, :root, name: 'Product Images')
-        end
-
-        run_test!
-      end
-
-      response '401', 'Unauthorized' do
-        let(:Authorization) { nil }
-        run_test!
-      end
+      expect(response.status).to be_in([ 401, 302 ])
     end
 
-    # ─── CREATE ───────────────────────────────────────────────────────────────
-    post 'Create a new metadata schema' do
-      tags        'Metadata Schemas'
-      consumes    'application/json'
-      produces    'application/json'
-      security    [ Bearer: [] ]
+    it "returns root schemas with children" do
+      sign_in admin
+      child = create(:metadata_schema, :type_level, parent: schema, name: "Image", mime_segment: "image")
 
-      parameter name: :body, in: :body, schema: {
-        type: :object,
-        properties: {
-          metadata_schema: {
-            type: :object,
-            required: %w[name level],
-            properties: {
-              name:         { type: :string,  example: 'Magazine Assets' },
-              description:  { type: :string,  example: 'Schema for magazine photography' },
-              level:        { type: :string,  example: 'root', enum: %w[root type subtype] },
-              parent_id:    { type: :integer, nullable: true },
-              mime_segment: { type: :string,  nullable: true, example: 'image' },
-              tabs:         { type: :array,   items: { type: :object } },
-            },
-          },
-        },
-      }
+      get api_v1_metadata_schemas_path, as: :json
 
-      response '201', 'Schema created' do
-        schema '$ref' => '#/components/schemas/MetadataSchema'
-
-        let(:Authorization) { 'Bearer test-token' }
-        let(:body) { { metadata_schema: { name: 'Magazine Assets', level: 'root', tabs: [] } } }
-
-        run_test!
-      end
-
-      response '422', 'Validation error' do
-        schema '$ref' => '#/components/schemas/ErrorResponse'
-
-        let(:Authorization) { 'Bearer test-token' }
-        let(:body) { { metadata_schema: { name: '', level: 'root' } } }
-
-        run_test!
-      end
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body.first["id"]).to eq(schema.id)
+      expect(response.parsed_body.first["children"].first["id"]).to eq(child.id)
     end
   end
 
-  # ===========================================================================
-  # SHOW — GET /api/v1/metadata_schemas/:id
-  # ===========================================================================
-  path '/api/v1/metadata_schemas/{id}' do
-    parameter name: :id, in: :path, type: :integer, required: true,
-              description: 'Metadata schema ID'
+  describe "GET /api/v1/metadata_schemas/:id" do
+    it "returns a schema with resolved tabs" do
+      sign_in admin
+      child = create(:metadata_schema, :type_level, parent: schema, name: "Image", mime_segment: "image")
 
-    get 'Retrieve a single metadata schema' do
-      tags     'Metadata Schemas'
-      produces 'application/json'
-      security [ Bearer: [] ]
-      description 'Returns the schema including `resolved_tabs` which merges inherited tabs from the parent chain.'
+      get api_v1_metadata_schema_path(child), as: :json
 
-      response '200', 'Schema returned' do
-        schema '$ref' => '#/components/schemas/MetadataSchema'
-
-        let(:Authorization) { 'Bearer test-token' }
-        let(:id) { create(:metadata_schema, :root).id }
-
-        run_test!
-      end
-
-      response '404', 'Not found' do
-        let(:Authorization) { 'Bearer test-token' }
-        let(:id) { 0 }
-
-        run_test!
-      end
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body["resolved_tabs"]).not_to be_empty
     end
 
-    # ─── UPDATE ───────────────────────────────────────────────────────────────
-    patch 'Update a metadata schema' do
-      tags     'Metadata Schemas'
-      consumes 'application/json'
-      produces 'application/json'
-      security [ Bearer: [] ]
+    it "returns not found for unknown ids" do
+      sign_in admin
 
-      parameter name: :body, in: :body, schema: {
-        type: :object,
-        properties: {
-          metadata_schema: {
-            type: :object,
-            properties: {
-              name:        { type: :string },
-              description: { type: :string },
-              tabs:        { type: :array, items: { type: :object } },
-            },
-          },
-        },
-      }
+      get api_v1_metadata_schema_path("missing"), as: :json
 
-      response '200', 'Schema updated' do
-        schema '$ref' => '#/components/schemas/MetadataSchema'
-
-        let(:Authorization) { 'Bearer test-token' }
-        let(:id)   { create(:metadata_schema, :root).id }
-        let(:body) { { metadata_schema: { name: 'Updated Name' } } }
-
-        run_test!
-      end
-
-      response '422', 'Validation error' do
-        schema '$ref' => '#/components/schemas/ErrorResponse'
-
-        let(:Authorization) { 'Bearer test-token' }
-        let(:id)   { create(:metadata_schema, :root).id }
-        let(:body) { { metadata_schema: { name: '' } } }
-
-        run_test!
-      end
-    end
-
-    # ─── DESTROY ──────────────────────────────────────────────────────────────
-    delete 'Soft-delete a metadata schema' do
-      tags     'Metadata Schemas'
-      produces 'application/json'
-      security [ Bearer: [] ]
-      description 'Soft-deletes the schema and all its child schemas. Built-in schemas cannot be deleted.'
-
-      response '204', 'Deleted' do
-        let(:Authorization) { 'Bearer test-token' }
-        let(:id) { create(:metadata_schema, :root, is_builtin: false).id }
-
-        run_test!
-      end
-
-      response '403', 'Forbidden — built-in schema' do
-        let(:Authorization) { 'Bearer test-token' }
-        let(:id) { create(:metadata_schema, :root, is_builtin: true).id }
-
-        run_test!
-      end
+      expect(response).to have_http_status(:not_found)
     end
   end
 
-  # ===========================================================================
-  # DUPLICATE — POST /api/v1/metadata_schemas/:id/duplicate
-  # ===========================================================================
-  path '/api/v1/metadata_schemas/{id}/duplicate' do
-    parameter name: :id, in: :path, type: :integer, required: true
+  describe "POST /api/v1/metadata_schemas" do
+    it "creates a schema" do
+      sign_in admin
 
-    post 'Deep-duplicate a schema tree' do
-      tags     'Metadata Schemas'
-      produces 'application/json'
-      security [ Bearer: [] ]
-      description <<~DESC
-        Creates a deep copy of the schema and all its children. The copy is
-        non-builtin and named "Copy of \<original name\>". This is the recommended
-        way to start a new custom schema based on an existing one.
-      DESC
+      expect do
+        post api_v1_metadata_schemas_path,
+             params: { metadata_schema: { name: "Products", level: "root", tabs: [] } },
+             as: :json
+      end.to change(MetadataSchema, :count).by(1)
 
-      response '201', 'Duplicate created' do
-        schema '$ref' => '#/components/schemas/MetadataSchema'
+      expect(response).to have_http_status(:created)
+      expect(response.parsed_body["name"]).to eq("Products")
+    end
 
-        let(:Authorization) { 'Bearer test-token' }
-        let(:id) { create(:metadata_schema, :root, :builtin, :with_basic_tab).id }
+    it "returns validation errors" do
+      sign_in admin
 
-        run_test!
-      end
+      post api_v1_metadata_schemas_path,
+           params: { metadata_schema: { name: "", level: "type", tabs: [] } },
+           as: :json
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.parsed_body["errors"]).not_to be_empty
     end
   end
 
-  # ===========================================================================
-  # APPLY TO FOLDER — POST /api/v1/metadata_schemas/:id/apply_to_folder
-  # ===========================================================================
-  path '/api/v1/metadata_schemas/{id}/apply_to_folder' do
-    parameter name: :id, in: :path, type: :integer, required: true
+  describe "PATCH /api/v1/metadata_schemas/:id" do
+    it "updates a schema" do
+      sign_in admin
 
-    post 'Apply a root schema to a folder' do
-      tags     'Metadata Schemas'
-      consumes 'application/json'
-      produces 'application/json'
-      security [ Bearer: [] ]
+      patch api_v1_metadata_schema_path(schema),
+            params: { metadata_schema: { description: "Updated" } },
+            as: :json
 
-      parameter name: :body, in: :body, schema: {
-        type: :object,
-        required: %w[folder_id],
-        properties: { folder_id: { type: :string, format: :uuid } },
-      }
-
-      response '201', 'Assignment created' do
-        let(:Authorization) { 'Bearer test-token' }
-        let(:id)   { create(:metadata_schema, :root).id }
-        let(:body) { { folder_id: SecureRandom.uuid } }
-
-        run_test!
-      end
-
-      response '400', 'folder_id missing' do
-        let(:Authorization) { 'Bearer test-token' }
-        let(:id)   { create(:metadata_schema, :root).id }
-        let(:body) { {} }
-
-        run_test!
-      end
+      expect(response).to have_http_status(:ok)
+      expect(schema.reload.description).to eq("Updated")
     end
   end
 
-  # ===========================================================================
-  # REMOVE FROM FOLDER — DELETE /api/v1/metadata_schemas/:id/remove_from_folder
-  # ===========================================================================
-  path '/api/v1/metadata_schemas/{id}/remove_from_folder' do
-    parameter name: :id, in: :path, type: :integer, required: true
+  describe "DELETE /api/v1/metadata_schemas/:id" do
+    it "soft deletes non-built-in schemas" do
+      sign_in admin
 
-    delete 'Remove a schema from a folder' do
-      tags     'Metadata Schemas'
-      consumes 'application/json'
-      produces 'application/json'
-      security [ Bearer: [] ]
+      delete api_v1_metadata_schema_path(schema), as: :json
 
-      parameter name: :body, in: :body, schema: {
-        type: :object,
-        required: %w[folder_id],
-        properties: { folder_id: { type: :string, format: :uuid } },
-      }
+      expect(response).to have_http_status(:no_content)
+      expect(schema.reload.deleted_at).to be_present
+    end
 
-      response '204', 'Removed' do
-        let(:Authorization) { 'Bearer test-token' }
-        let(:id)   { create(:metadata_schema, :root).id }
-        let(:body) { { folder_id: SecureRandom.uuid } }
+    it "rejects deletion of built-in schemas" do
+      sign_in admin
+      builtin = create(:metadata_schema, :root, :builtin)
 
-        run_test!
-      end
+      delete api_v1_metadata_schema_path(builtin), as: :json
+
+      expect(response).to have_http_status(:forbidden)
+    end
+  end
+
+  describe "POST /api/v1/metadata_schemas/:id/duplicate" do
+    it "duplicates the schema tree" do
+      sign_in admin
+      create(:metadata_schema, :type_level, parent: schema, name: "Image", mime_segment: "image")
+
+      expect do
+        post duplicate_api_v1_metadata_schema_path(schema), as: :json
+      end.to change(MetadataSchema, :count).by(2)
+
+      expect(response).to have_http_status(:created)
+      expect(response.parsed_body["name"]).to start_with("Copy of ")
+    end
+  end
+
+  describe "POST /api/v1/metadata_schemas/:id/apply_to_folder" do
+    it "creates a folder assignment" do
+      sign_in admin
+      folder = create(:folder, user: admin)
+
+      expect do
+        post apply_to_folder_api_v1_metadata_schema_path(schema),
+             params: { folder_id: folder.id },
+             as: :json
+      end.to change(MetadataSchemaFolderAssignment, :count).by(1)
+
+      expect(response).to have_http_status(:created)
+    end
+
+    it "rejects blank folder ids" do
+      sign_in admin
+
+      post apply_to_folder_api_v1_metadata_schema_path(schema), params: {}, as: :json
+
+      expect(response).to have_http_status(:bad_request)
+    end
+  end
+
+  describe "DELETE /api/v1/metadata_schemas/:id/remove_from_folder" do
+    it "removes an existing folder assignment" do
+      sign_in admin
+      folder = create(:folder, user: admin)
+      create(:metadata_schema_folder_assignment, metadata_schema: schema, folder_id: folder.id)
+
+      expect do
+        delete remove_from_folder_api_v1_metadata_schema_path(schema),
+               params: { folder_id: folder.id },
+               as: :json
+      end.to change(MetadataSchemaFolderAssignment, :count).by(-1)
+
+      expect(response).to have_http_status(:no_content)
     end
   end
 end

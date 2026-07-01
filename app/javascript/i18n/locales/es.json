@@ -43,7 +43,8 @@
       "General": "Configuración general",
       "Email Engine": "Motor de correo",
       "System Ops": "Operaciones del sistema",
-      "Queues": "Colas Sidekiq"
+      "Queues": "Colas Sidekiq",
+      "Inbox": "Bandeja de entrada"
     }
   },
   "common": {
@@ -1701,5 +1702,68 @@
     },
     "subfolder_count_tip": "{{count}} subcarpetas",
     "asset_count_tip": "{{count}} activos"
+  },
+  "inbox": {
+    "title": "Bandeja de entrada",
+    "compose": "Redactar",
+    "refresh": "Actualizar",
+    "markAllRead": "Marcar todo como leído",
+    "unread": "No leídos",
+    "starred": "Destacados",
+    "archived": "Archivados",
+    "all": "Todos los mensajes",
+    "mentions": "Menciones",
+    "workflow": "Flujo de trabajo",
+    "system": "Sistema",
+    "empty": "Tu bandeja de entrada está vacía",
+    "emptySubtitle": "Los mensajes y menciones aparecerán aquí",
+    "noUnread": "No hay mensajes sin leer",
+    "markRead": "Marcar como leído",
+    "markUnread": "Marcar como no leído",
+    "archive": "Archivar",
+    "star": "Destacar",
+    "unstar": "Quitar destacado",
+    "delete": "Eliminar",
+    "reply": "Responder",
+    "forward": "Reenviar",
+    "types": {
+      "mention": "Mención",
+      "notification": "Notificación",
+      "workflow": "Flujo de trabajo",
+      "system": "Sistema",
+      "announcement": "Anuncio"
+    }
+  },
+  "emailEngine": {
+    "title": "Motor de comunicación",
+    "templates": "Plantillas",
+    "eventMapping": "Asignación de eventos",
+    "outbox": "Bandeja de salida",
+    "auditLog": "Registro de auditoría",
+    "aiSuggestions": "Sugerencias de IA",
+    "newTemplate": "Nueva plantilla",
+    "templateName": "Nombre de la plantilla",
+    "eventTrigger": "Evento disparador",
+    "subject": "Asunto",
+    "htmlBody": "Cuerpo HTML",
+    "textBody": "Texto plano",
+    "variables": "Variables de plantilla",
+    "preview": "Vista previa",
+    "sendTest": "Enviar prueba",
+    "active": "Activo",
+    "inactive": "Inactivo",
+    "category": {
+      "transactional": "Transaccional",
+      "notification": "Notificación",
+      "mention": "Mención",
+      "announcement": "Anuncio",
+      "system": "Sistema"
+    },
+    "stats": {
+      "sentToday": "Enviados hoy",
+      "sentThisWeek": "Enviados esta semana",
+      "failureRate": "Tasa de fallos",
+      "pending": "Pendiente"
+    }
   }
 }

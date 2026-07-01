@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_29_120000) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_01_120001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -332,13 +332,20 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_29_120000) do
 
   create_table "email_templates", force: :cascade do |t|
     t.boolean "active", default: true, null: false
+    t.string "category", default: "transactional", null: false
     t.datetime "created_at", null: false
+    t.bigint "created_by_id"
+    t.text "description"
     t.string "event_trigger", null: false
     t.text "html_body"
     t.string "name", null: false
+    t.jsonb "preview_data", default: {}, null: false
     t.string "subject", null: false
     t.text "text_body"
     t.datetime "updated_at", null: false
+    t.jsonb "variables", default: {}, null: false
+    t.index ["category"], name: "index_email_templates_on_category"
+    t.index ["created_by_id"], name: "index_email_templates_on_created_by_id"
     t.index ["event_trigger"], name: "index_email_templates_on_event_trigger", unique: true
   end
 
@@ -419,6 +426,30 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_29_120000) do
     t.index ["notifiable_type", "notifiable_id"], name: "index_in_app_notifications_on_notifiable"
     t.index ["user_id", "read_at"], name: "index_in_app_notifications_on_user_id_and_read_at"
     t.index ["user_id"], name: "index_in_app_notifications_on_user_id"
+  end
+
+  create_table "inbox_messages", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.datetime "archived_at"
+    t.text "body_html"
+    t.text "body_text"
+    t.datetime "created_at", null: false
+    t.bigint "email_template_id"
+    t.string "message_type", default: "notification", null: false
+    t.jsonb "metadata", default: {}, null: false
+    t.datetime "read_at"
+    t.bigint "recipient_id", null: false
+    t.uuid "reference_id"
+    t.string "reference_type"
+    t.bigint "sender_id"
+    t.datetime "starred_at"
+    t.string "subject"
+    t.datetime "updated_at", null: false
+    t.index ["email_template_id"], name: "index_inbox_messages_on_email_template_id"
+    t.index ["message_type"], name: "index_inbox_messages_on_message_type"
+    t.index ["recipient_id", "archived_at"], name: "index_inbox_messages_on_recipient_id_and_archived_at"
+    t.index ["recipient_id", "read_at"], name: "index_inbox_messages_on_recipient_id_and_read_at"
+    t.index ["recipient_id"], name: "index_inbox_messages_on_recipient_id"
+    t.index ["sender_id"], name: "index_inbox_messages_on_sender_id"
   end
 
   create_table "ingestion_batches", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -953,6 +984,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_29_120000) do
   add_foreign_key "duplicate_group_assets", "duplicate_groups"
   add_foreign_key "duplicate_groups", "users", column: "resolved_by_id"
   add_foreign_key "email_deliveries", "email_templates"
+  add_foreign_key "email_templates", "users", column: "created_by_id"
   add_foreign_key "folder_policies", "folders"
   add_foreign_key "folder_policies", "user_groups"
   add_foreign_key "folders", "folders", column: "parent_id"
@@ -960,6 +992,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_29_120000) do
   add_foreign_key "image_profile_folder_assignments", "image_profiles"
   add_foreign_key "in_app_notifications", "users"
   add_foreign_key "in_app_notifications", "users", column: "actor_id"
+  add_foreign_key "inbox_messages", "email_templates"
+  add_foreign_key "inbox_messages", "users", column: "recipient_id"
+  add_foreign_key "inbox_messages", "users", column: "sender_id"
   add_foreign_key "ingestion_batches", "system_connectors", column: "connector_id", on_delete: :nullify
   add_foreign_key "ingestion_items", "ingestion_batches"
   add_foreign_key "metadata_exports", "users"

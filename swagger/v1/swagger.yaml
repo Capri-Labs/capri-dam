@@ -6853,6 +6853,155 @@ paths:
                 properties:
                   error:
                     type: string
+  "/api/v1/inbox":
+    get:
+      summary: List inbox messages
+      tags:
+      - Inbox
+      security:
+      - Bearer: []
+      parameters:
+      - name: type
+        in: query
+        schema:
+          type: string
+          enum:
+          - mention
+          - notification
+          - workflow
+          - system
+          - announcement
+      - name: unread_only
+        in: query
+        schema:
+          type: boolean
+      - name: page
+        in: query
+        schema:
+          type: integer
+      - name: per_page
+        in: query
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: inbox messages returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  messages:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/InboxMessage'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+                  unread_count:
+                    type: integer
+    patch:
+      summary: Mark all inbox messages as read
+      tags:
+      - Inbox
+      security:
+      - Bearer: []
+      responses:
+        '200':
+          description: inbox messages marked read
+  "/api/v1/inbox/unread_count":
+    get:
+      summary: Return unread inbox count
+      tags:
+      - Inbox
+      security:
+      - Bearer: []
+      responses:
+        '200':
+          description: unread count returned
+  "/api/v1/inbox/{id}":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    get:
+      summary: Show inbox message
+      tags:
+      - Inbox
+      security:
+      - Bearer: []
+      responses:
+        '200':
+          description: inbox message returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    $ref: '#/components/schemas/InboxMessage'
+    delete:
+      summary: Delete inbox message
+      tags:
+      - Inbox
+      security:
+      - Bearer: []
+      responses:
+        '200':
+          description: inbox message deleted
+  "/api/v1/inbox/{id}/mark_read":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    patch:
+      summary: Mark inbox message as read
+      tags:
+      - Inbox
+      security:
+      - Bearer: []
+      responses:
+        '200':
+          description: inbox message marked read
+  "/api/v1/inbox/{id}/archive":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    patch:
+      summary: Archive inbox message
+      tags:
+      - Inbox
+      security:
+      - Bearer: []
+      responses:
+        '200':
+          description: inbox message archived
+  "/api/v1/inbox/{id}/star":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    patch:
+      summary: Star or unstar inbox message
+      tags:
+      - Inbox
+      security:
+      - Bearer: []
+      responses:
+        '200':
+          description: inbox message updated
   "/api/v1/c2pa_configuration":
     get:
       summary: Show C2PA policy configuration (admin only)
@@ -9354,6 +9503,40 @@ components:
       scheme: bearer
       description: Enter your OAuth 2.0 Bearer token to authenticate requests.
   schemas:
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+        per_page:
+          type: integer
+        total:
+          type: integer
+        total_pages:
+          type: integer
+    InboxMessage:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        subject:
+          type: string
+        message_type:
+          type: string
+        read:
+          type: boolean
+        starred:
+          type: boolean
+        snippet:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        sender:
+          nullable: true
+          type: object
     FolderPolicy:
       type: object
       properties:

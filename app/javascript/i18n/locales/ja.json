@@ -43,7 +43,8 @@
       "General": "一般設定",
       "Email Engine": "メールエンジン",
       "System Ops": "システム運用",
-      "Queues": "Sidekiqキュー"
+      "Queues": "Sidekiqキュー",
+      "Inbox": "受信トレイ"
     }
   },
   "common": {
@@ -1701,5 +1702,68 @@
     },
     "subfolder_count_tip": "{{count}} サブフォルダー",
     "asset_count_tip": "{{count}} アセット"
+  },
+  "inbox": {
+    "title": "受信トレイ",
+    "compose": "作成",
+    "refresh": "更新",
+    "markAllRead": "すべて既読にする",
+    "unread": "未読",
+    "starred": "スター付き",
+    "archived": "アーカイブ",
+    "all": "すべてのメッセージ",
+    "mentions": "メンション",
+    "workflow": "ワークフロー",
+    "system": "システム",
+    "empty": "受信トレイは空です",
+    "emptySubtitle": "メッセージとメンションがここに表示されます",
+    "noUnread": "未読メッセージはありません",
+    "markRead": "既読にする",
+    "markUnread": "未読に戻す",
+    "archive": "アーカイブ",
+    "star": "スター",
+    "unstar": "スターを外す",
+    "delete": "削除",
+    "reply": "返信",
+    "forward": "転送",
+    "types": {
+      "mention": "メンション",
+      "notification": "通知",
+      "workflow": "ワークフロー",
+      "system": "システム",
+      "announcement": "お知らせ"
+    }
+  },
+  "emailEngine": {
+    "title": "コミュニケーションエンジン",
+    "templates": "テンプレート",
+    "eventMapping": "イベントマッピング",
+    "outbox": "送信トレイ",
+    "auditLog": "監査ログ",
+    "aiSuggestions": "AI 提案",
+    "newTemplate": "新しいテンプレート",
+    "templateName": "テンプレート名",
+    "eventTrigger": "イベントトリガー",
+    "subject": "件名",
+    "htmlBody": "HTML 本文",
+    "textBody": "プレーンテキスト",
+    "variables": "テンプレート変数",
+    "preview": "プレビュー",
+    "sendTest": "テスト送信",
+    "active": "有効",
+    "inactive": "無効",
+    "category": {
+      "transactional": "トランザクション",
+      "notification": "通知",
+      "mention": "メンション",
+      "announcement": "お知らせ",
+      "system": "システム"
+    },
+    "stats": {
+      "sentToday": "本日送信",
+      "sentThisWeek": "今週送信",
+      "failureRate": "失敗率",
+      "pending": "保留中"
+    }
   }
 }

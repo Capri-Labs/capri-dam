@@ -161,6 +161,28 @@ module Types
       VideoProfile.active.find_by(id: id)
     end
 
+    field :inbox, [ Types::InboxMessageType ], null: false do
+      description "Recent inbox messages for the current user"
+      argument :type, String, required: false
+      argument :unread_only, Boolean, required: false
+    end
+
+    def inbox(type: nil, unread_only: false)
+      user = context[:current_user]
+      return [] unless user
+
+      scope = user.inbox_messages.active.recent
+      scope = scope.by_type(type) if type.present?
+      scope = scope.unread if unread_only
+      scope.limit(50)
+    end
+
+    field :inbox_unread_count, Integer, null: false, description: "Unread inbox count for the current user"
+
+    def inbox_unread_count
+      context[:current_user]&.inbox_messages&.active&.unread&.count || 0
+    end
+
     # -------------------------------------------------------------------------
     # Agent Workflows (AI Automations)
     # -------------------------------------------------------------------------

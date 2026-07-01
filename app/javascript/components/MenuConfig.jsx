@@ -15,7 +15,7 @@ import {
     PersonOutlined,
     SecurityOutlined, ContentCopy,
     ManageSearchOutlined, CollectionsBookmark, AutoAwesome, Route, QueryStats, CloudSync, BackupTable, HealthAndSafety,
-    BuildOutlined, SchemaOutlined, FileDownloadOutlined, FileUploadOutlined, BlockOutlined, TuneOutlined
+    BuildOutlined, SchemaOutlined, FileDownloadOutlined, FileUploadOutlined, BlockOutlined, TuneOutlined, Inbox as InboxIcon
 } from '@mui/icons-material';
 
 /**
@@ -44,6 +44,12 @@ export const MENU_GROUPS = [
                 labelKey: 'menu.item.Overview',
                 icon: <DashboardOutlined fontSize="small" />,
                 url: '/dashboard' },
+            {
+                id: 'Inbox',
+                label: 'Inbox',
+                labelKey: 'menu.item.Inbox',
+                icon: <InboxIcon fontSize="small" />,
+                url: '/inbox' },
             {
                 id: 'Search',
                 label: 'Advanced Search',

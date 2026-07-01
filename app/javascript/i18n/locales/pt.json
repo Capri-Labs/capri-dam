@@ -43,7 +43,8 @@
       "General": "Configurações gerais",
       "Email Engine": "Motor de e-mail",
       "System Ops": "Operações do sistema",
-      "Queues": "Filas Sidekiq"
+      "Queues": "Filas Sidekiq",
+      "Inbox": "Caixa de entrada"
     }
   },
   "common": {
@@ -1701,5 +1702,68 @@
     },
     "subfolder_count_tip": "{{count}} subpastas",
     "asset_count_tip": "{{count}} ativos"
+  },
+  "inbox": {
+    "title": "Caixa de entrada",
+    "compose": "Escrever",
+    "refresh": "Atualizar",
+    "markAllRead": "Marcar tudo como lido",
+    "unread": "Não lidas",
+    "starred": "Favoritas",
+    "archived": "Arquivadas",
+    "all": "Todas as mensagens",
+    "mentions": "Menções",
+    "workflow": "Fluxo de trabalho",
+    "system": "Sistema",
+    "empty": "Sua caixa de entrada está vazia",
+    "emptySubtitle": "Mensagens e menções aparecerão aqui",
+    "noUnread": "Nenhuma mensagem não lida",
+    "markRead": "Marcar como lida",
+    "markUnread": "Marcar como não lida",
+    "archive": "Arquivar",
+    "star": "Favoritar",
+    "unstar": "Remover estrela",
+    "delete": "Excluir",
+    "reply": "Responder",
+    "forward": "Encaminhar",
+    "types": {
+      "mention": "Menção",
+      "notification": "Notificação",
+      "workflow": "Fluxo de trabalho",
+      "system": "Sistema",
+      "announcement": "Comunicado"
+    }
+  },
+  "emailEngine": {
+    "title": "Motor de comunicação",
+    "templates": "Modelos",
+    "eventMapping": "Mapeamento de eventos",
+    "outbox": "Saída",
+    "auditLog": "Log de auditoria",
+    "aiSuggestions": "Sugestões de IA",
+    "newTemplate": "Novo modelo",
+    "templateName": "Nome do modelo",
+    "eventTrigger": "Evento",
+    "subject": "Assunto",
+    "htmlBody": "Corpo HTML",
+    "textBody": "Texto simples",
+    "variables": "Variáveis do modelo",
+    "preview": "Pré-visualização",
+    "sendTest": "Enviar teste",
+    "active": "Ativo",
+    "inactive": "Inativo",
+    "category": {
+      "transactional": "Transacional",
+      "notification": "Notificação",
+      "mention": "Menção",
+      "announcement": "Comunicado",
+      "system": "Sistema"
+    },
+    "stats": {
+      "sentToday": "Enviados hoje",
+      "sentThisWeek": "Enviados esta semana",
+      "failureRate": "Taxa de falha",
+      "pending": "Pendente"
+    }
   }
 }

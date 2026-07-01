@@ -71,6 +71,7 @@ Rails.application.routes.draw do
   get "/assets", to: "dashboard#assets"     # /assets?id=UUID deep-link
   get "/duplicates", to: "dashboard#duplicates"
   get "/search", to: "dashboard#search"
+  get "/inbox", to: "dashboard#inbox"
   get "up" => "rails/health#show", as: :rails_health_check
 
   # ── User self-service profile ──────────────────────────────────────────────
@@ -229,6 +230,22 @@ Rails.application.routes.draw do
       post "edge_operations/purge", to: "edge_operations#purge"
 
       #  THE FIXED ASSETS BLOCK
+      resources :inbox, only: %i[index show destroy] do
+        collection do
+          patch :mark_all_read
+          get :unread_count
+        end
+        member do
+          patch :mark_read
+          patch :mark_unread
+          patch :archive
+          patch :star
+        end
+      end
+
+      resources :users, only: :index
+      get "ai/template_suggestions", to: "ai/template_suggestions#index"
+
       resources :assets do
         collection do
           post :check_hashes # Now correctly responds to POST /api/v1/assets/check_hashes
@@ -480,8 +497,20 @@ Rails.application.routes.draw do
     end
 
     # Communications
-    resources :email_templates, except: [ :new, :edit ]
+    resources :storage_backends, only: [ :index, :edit, :update ]
+    resources :email_templates, except: [ :new, :edit ] do
+      collection do
+        get :event_triggers
+      end
+      member do
+        post :send_test
+      end
+    end
     resources :email_deliveries, only: [ :index ] do
+      collection do
+        get :stats
+        post :bulk_retry_failed
+      end
       member do
         post :retry
       end
