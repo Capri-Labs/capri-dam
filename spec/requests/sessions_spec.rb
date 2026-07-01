@@ -66,6 +66,14 @@ RSpec.describe "Users::Sessions", type: :request do
     end
   end
 
+  describe "GET /users/sign_up" do
+    it "redirects to root (registration is disabled)" do
+      get "/users/sign_up"
+
+      expect(response).to redirect_to("/")
+    end
+  end
+
   # ── Force password update ─────────────────────────────────────────────────
 
   describe "POST /users/force_password_update" do

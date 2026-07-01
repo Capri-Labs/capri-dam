@@ -41,10 +41,11 @@ Rails.application.routes.draw do
   # 2. AUTHENTICATION & ROOT LOGIC
   # ==========================================
   use_doorkeeper
-  devise_for :users, controllers: {
+  devise_for :users, skip: [ :registrations ], controllers: {
     sessions:            "users/sessions",
     omniauth_callbacks:  "users/omniauth_callbacks",
   }
+  get "users/sign_up", to: redirect("/")
 
   devise_scope :user do
     post "users/force_password_update", to: "users/sessions#force_password_update"

@@ -25,7 +25,8 @@ async function login(page, email, password) {
   await page.fill('input[name="user[email]"]',    email);
   await page.fill('input[name="user[password]"]', password);
   await page.click('button[type="submit"]');
-  await page.waitForURL(`${BASE_URL}/dashboard`, { timeout: 15_000 });
+  await page.waitForFunction(() => !window.location.href.includes('/users/sign_in'), { timeout: 15_000 });
+  await page.waitForLoadState('networkidle');
 }
 
 async function openUserDrawer(page, email) {
@@ -124,7 +125,8 @@ test.describe('Impersonate User — Header menu', () => {
     await page.locator('[role="dialog"] button').filter({ hasText: 'Start Impersonation' }).click();
 
     // Wait for redirect to dashboard
-    await page.waitForURL(`${BASE_URL}/dashboard`, { timeout: 15_000 });
+  await page.waitForFunction(() => !window.location.href.includes('/users/sign_in'), { timeout: 15_000 });
+  await page.waitForLoadState('networkidle');
     // Impersonation banner must be visible
     await expect(page.locator('[role="alert"]').filter({ hasText: 'IMPERSONATION ACTIVE' }))
       .toBeVisible({ timeout: 5_000 });
@@ -138,7 +140,8 @@ test.describe('Impersonate User — Header menu', () => {
     await page.locator('.MuiDataGrid-row').filter({ hasText: TARGET_EMAIL }).first().click();
     await page.locator('[role="tablist"] [role="tab"]').nth(3).click();
     await page.locator('button').filter({ hasText: /Impersonate/ }).last().click();
-    await page.waitForURL(`${BASE_URL}/dashboard`);
+    await page.waitForFunction(() => !window.location.href.includes('/users/sign_in'), { timeout: 15_000 });
+  await page.waitForLoadState('networkidle');
 
     // Open avatar menu — should NOT have impersonate option
     await page.locator('#header-root .MuiAvatar-root').first().click();

@@ -24,7 +24,99 @@ info:
   license:
     name: MIT License
     url: https://opensource.org/licenses/MIT
+tags:
+  - name: Session Auth
+    description: Browser session authentication endpoints for login and mandatory password rotation.
 paths:
+  "/users/sign_in.json":
+    post:
+      summary: Sign in with email and password
+      tags:
+      - Session Auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [user]
+              properties:
+                user:
+                  type: object
+                  required: [email, password]
+                  properties:
+                    email:
+                      type: string
+                      format: email
+                    password:
+                      type: string
+                      format: password
+      responses:
+        '200':
+          description: Signed in (or force_password_change required)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  force_password_change:
+                    type: boolean
+                  user:
+                    type: object
+                    properties:
+                      email:
+                        type: string
+                      username:
+                        type: string
+        '401':
+          description: Invalid credentials or deactivated account
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  error:
+                    type: string
+  "/users/force_password_update":
+    post:
+      summary: Complete mandatory first-login password change
+      tags:
+      - Session Auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, current_password, new_password, new_password_confirmation]
+              properties:
+                email:
+                  type: string
+                current_password:
+                  type: string
+                new_password:
+                  type: string
+                new_password_confirmation:
+                  type: string
+      responses:
+        '200':
+          description: Password changed and user signed in
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  user:
+                    type: object
+        '401':
+          description: Invalid temporary password
+        '422':
+          description: Validation failed
   "/admin/email_templates":
     get:
       summary: Retrieves a list of all email templates

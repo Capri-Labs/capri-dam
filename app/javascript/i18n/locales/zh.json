@@ -1288,5 +1288,37 @@
       "overwritten": "当前版本被强制覆盖。",
       "versionSavedAndMoved": "新版本已保存并移动到{{folder}}。"
     }
+  },
+  "login": {
+    "title": "Capri DAM",
+    "subtitle": "欢迎回来。请输入您的登录信息。",
+    "brandingHeadline": "集中管理您的数字生态系统。",
+    "brandingSubtitle": "在单一可信来源中安全地管理元数据、自动化审批工作流并治理企业资产。",
+    "emailLabel": "电子邮箱地址",
+    "passwordLabel": "密码",
+    "signIn": "登录",
+    "signingIn": "正在登录...",
+    "ssoButton": "使用企业 SSO 登录",
+    "forgotPassword": "忘记密码？",
+    "forgotTitle": "重置密码",
+    "forgotDescription": "请输入与您的账户关联的电子邮箱，我们会向您发送重置密码的链接。",
+    "forgotSuccess": "如果您的电子邮箱存在于系统中，您很快就会收到密码恢复链接。",
+    "forgotFailed": "请求重置密码失败。请重试。",
+    "forgotNetworkError": "发生网络错误。",
+    "sendResetLink": "发送重置链接",
+    "close": "关闭",
+    "forceTitle": "需要操作",
+    "forceSubtitle": "这是您第一次登录。出于安全原因，您必须更改临时密码。",
+    "tempPassword": "临时密码",
+    "newPassword": "新密码",
+    "confirmPassword": "确认新密码",
+    "updatePassword": "更新密码并登录",
+    "updating": "正在更新...",
+    "passwordMismatch": "新密码不匹配。",
+    "passwordTooWeak": "密码必须至少包含 8 个字符，并且包含 1 个大写字母和 1 个数字。",
+    "loginFailed": "登录失败。请检查您的凭据。",
+    "invalidCredentials": "电子邮箱或密码无效",
+    "accountDeactivated": "账户已被停用。",
+    "networkError": "发生网络错误。"
   }
 }

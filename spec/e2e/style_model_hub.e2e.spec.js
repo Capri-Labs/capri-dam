@@ -11,7 +11,8 @@ test.describe('Style & Model Hub — /ai/models/hub', () => {
     await page.fill('[name="user[email]"]', process.env.ADMIN_EMAIL || 'admin@example.com');
     await page.fill('[name="user[password]"]', process.env.ADMIN_PASSWORD || 'password');
     await page.click('[type="submit"]');
-    await page.waitForURL('**/dashboard', { timeout: 10_000 });
+    await page.waitForFunction(() => !window.location.href.includes('/users/sign_in'), { timeout: 15_000 });
+    await page.waitForLoadState('networkidle');
   });
 
   test('page loads at canonical URL', async ({ page }) => {

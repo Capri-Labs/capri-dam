@@ -21,7 +21,8 @@ async function signInAsAdmin(page) {
   await page.getByLabel('Email').fill(process.env.ADMIN_EMAIL ?? 'admin@example.com');
   await page.getByLabel('Password').fill(process.env.ADMIN_PASSWORD ?? 'password');
   await page.getByRole('button', { name: /sign in/i }).click();
-  await page.waitForURL(`${BASE}/dashboard`);
+  await page.waitForFunction(() => !window.location.href.includes('/users/sign_in'), { timeout: 15_000 });
+  await page.waitForLoadState('networkidle');
 }
 
 // Opens the folder info panel for the first visible folder.

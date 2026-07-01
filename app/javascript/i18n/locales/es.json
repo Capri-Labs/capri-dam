@@ -1288,5 +1288,37 @@
       "overwritten": "Versión actual sobrescrita de manera forzada.",
       "versionSavedAndMoved": "Nueva versión guardada y movida a {{folder}}."
     }
+  },
+  "login": {
+    "title": "Capri DAM",
+    "subtitle": "Bienvenido de nuevo. Introduce tus datos.",
+    "brandingHeadline": "Centraliza tu ecosistema digital.",
+    "brandingSubtitle": "Gestiona metadatos, automatiza flujos de aprobación y gobierna tus activos empresariales de forma segura desde una única fuente de verdad.",
+    "emailLabel": "Correo electrónico",
+    "passwordLabel": "Contraseña",
+    "signIn": "Iniciar sesión",
+    "signingIn": "Iniciando sesión...",
+    "ssoButton": "Iniciar sesión con SSO empresarial",
+    "forgotPassword": "¿Olvidaste tu contraseña?",
+    "forgotTitle": "Restablecer contraseña",
+    "forgotDescription": "Introduce el correo electrónico asociado a tu cuenta y te enviaremos un enlace para restablecer tu contraseña.",
+    "forgotSuccess": "Si tu correo electrónico existe en nuestro sistema, recibirás en breve un enlace de recuperación.",
+    "forgotFailed": "No se pudo solicitar el restablecimiento de la contraseña. Inténtalo de nuevo.",
+    "forgotNetworkError": "Se produjo un error de red.",
+    "sendResetLink": "Enviar enlace de restablecimiento",
+    "close": "Cerrar",
+    "forceTitle": "Acción requerida",
+    "forceSubtitle": "Es tu primer inicio de sesión. Por seguridad, debes cambiar tu contraseña temporal.",
+    "tempPassword": "Contraseña temporal",
+    "newPassword": "Nueva contraseña",
+    "confirmPassword": "Confirmar nueva contraseña",
+    "updatePassword": "Actualizar contraseña e iniciar sesión",
+    "updating": "Actualizando...",
+    "passwordMismatch": "Las nuevas contraseñas no coinciden.",
+    "passwordTooWeak": "La contraseña debe tener al menos 8 caracteres, 1 letra mayúscula y 1 número.",
+    "loginFailed": "Error al iniciar sesión. Comprueba tus credenciales.",
+    "invalidCredentials": "Correo electrónico o contraseña no válidos",
+    "accountDeactivated": "La cuenta está desactivada.",
+    "networkError": "Se produjo un error de red."
   }
 }

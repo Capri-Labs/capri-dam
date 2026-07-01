@@ -1288,5 +1288,37 @@
       "overwritten": "Version actuelle écrasée de force.",
       "versionSavedAndMoved": "Nouvelle version enregistrée et déplacée vers {{folder}}."
     }
+  },
+  "login": {
+    "title": "Capri DAM",
+    "subtitle": "Bon retour. Veuillez saisir vos informations.",
+    "brandingHeadline": "Centralisez votre écosystème numérique.",
+    "brandingSubtitle": "Gérez les métadonnées, automatisez les workflows d’approbation et gouvernez vos ressources d’entreprise en toute sécurité depuis une source unique.",
+    "emailLabel": "Adresse e-mail",
+    "passwordLabel": "Mot de passe",
+    "signIn": "Se connecter",
+    "signingIn": "Connexion en cours...",
+    "ssoButton": "Se connecter avec le SSO d’entreprise",
+    "forgotPassword": "Mot de passe oublié ?",
+    "forgotTitle": "Réinitialiser le mot de passe",
+    "forgotDescription": "Saisissez l’e-mail associé à votre compte et nous vous enverrons un lien pour réinitialiser votre mot de passe.",
+    "forgotSuccess": "Si votre adresse e-mail existe dans notre système, vous recevrez bientôt un lien de récupération.",
+    "forgotFailed": "La demande de réinitialisation du mot de passe a échoué. Veuillez réessayer.",
+    "forgotNetworkError": "Une erreur réseau est survenue.",
+    "sendResetLink": "Envoyer le lien de réinitialisation",
+    "close": "Fermer",
+    "forceTitle": "Action requise",
+    "forceSubtitle": "Il s’agit de votre première connexion. Pour des raisons de sécurité, vous devez modifier votre mot de passe temporaire.",
+    "tempPassword": "Mot de passe temporaire",
+    "newPassword": "Nouveau mot de passe",
+    "confirmPassword": "Confirmer le nouveau mot de passe",
+    "updatePassword": "Mettre à jour le mot de passe et se connecter",
+    "updating": "Mise à jour...",
+    "passwordMismatch": "Les nouveaux mots de passe ne correspondent pas.",
+    "passwordTooWeak": "Le mot de passe doit comporter au moins 8 caractères, 1 lettre majuscule et 1 chiffre.",
+    "loginFailed": "Échec de la connexion. Veuillez vérifier vos identifiants.",
+    "invalidCredentials": "Adresse e-mail ou mot de passe invalide",
+    "accountDeactivated": "Le compte est désactivé.",
+    "networkError": "Une erreur réseau est survenue."
   }
 }

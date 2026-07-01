@@ -1288,5 +1288,37 @@
       "overwritten": "Versão atual foi sobrescrita à força.",
       "versionSavedAndMoved": "Nova versão salva e movida para {{folder}}."
     }
+  },
+  "login": {
+    "title": "Capri DAM",
+    "subtitle": "Bem-vindo de volta. Insira os seus dados.",
+    "brandingHeadline": "Centralize o seu ecossistema digital.",
+    "brandingSubtitle": "Gerencie metadados, automatize fluxos de aprovação e governe os seus ativos empresariais com segurança a partir de uma única fonte de verdade.",
+    "emailLabel": "Endereço de e-mail",
+    "passwordLabel": "Senha",
+    "signIn": "Entrar",
+    "signingIn": "Entrando...",
+    "ssoButton": "Entrar com SSO corporativo",
+    "forgotPassword": "Esqueceu a senha?",
+    "forgotTitle": "Redefinir senha",
+    "forgotDescription": "Informe o e-mail associado à sua conta e enviaremos um link para redefinir a sua senha.",
+    "forgotSuccess": "Se o seu e-mail existir em nosso sistema, você receberá em breve um link de recuperação de senha.",
+    "forgotFailed": "Falha ao solicitar a redefinição de senha. Tente novamente.",
+    "forgotNetworkError": "Ocorreu um erro de rede.",
+    "sendResetLink": "Enviar link de redefinição",
+    "close": "Fechar",
+    "forceTitle": "Ação necessária",
+    "forceSubtitle": "Este é o seu primeiro acesso. Por motivos de segurança, você deve alterar a sua senha temporária.",
+    "tempPassword": "Senha temporária",
+    "newPassword": "Nova senha",
+    "confirmPassword": "Confirmar nova senha",
+    "updatePassword": "Atualizar senha e entrar",
+    "updating": "Atualizando...",
+    "passwordMismatch": "As novas senhas não coincidem.",
+    "passwordTooWeak": "A senha deve ter pelo menos 8 caracteres, com 1 letra maiúscula e 1 número.",
+    "loginFailed": "Falha no login. Verifique as suas credenciais.",
+    "invalidCredentials": "E-mail ou senha inválidos",
+    "accountDeactivated": "A conta está desativada.",
+    "networkError": "Ocorreu um erro de rede."
   }
 }

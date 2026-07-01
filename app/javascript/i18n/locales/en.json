@@ -1288,5 +1288,37 @@
       "overwritten": "Current version forcefully overwritten.",
       "versionSavedAndMoved": "New version saved and moved to {{folder}}."
     }
+  },
+  "login": {
+    "title": "Capri DAM",
+    "subtitle": "Welcome back. Please enter your details.",
+    "brandingHeadline": "Centralize your digital ecosystem.",
+    "brandingSubtitle": "Manage metadata, automate approval workflows, and govern your enterprise assets securely from a single source of truth.",
+    "emailLabel": "Email Address",
+    "passwordLabel": "Password",
+    "signIn": "Sign In",
+    "signingIn": "Signing in...",
+    "ssoButton": "Sign in with Enterprise SSO",
+    "forgotPassword": "Forgot password?",
+    "forgotTitle": "Reset Password",
+    "forgotDescription": "Enter the email associated with your account and we will send you a link to reset your password.",
+    "forgotSuccess": "If your email exists in our system, you will receive a password recovery link shortly.",
+    "forgotFailed": "Failed to request password reset. Please try again.",
+    "forgotNetworkError": "A network error occurred.",
+    "sendResetLink": "Send Reset Link",
+    "close": "Close",
+    "forceTitle": "Action Required",
+    "forceSubtitle": "This is your first time logging in. For security reasons, you must change your temporary password.",
+    "tempPassword": "Temporary Password",
+    "newPassword": "New Password",
+    "confirmPassword": "Confirm New Password",
+    "updatePassword": "Update Password & Sign In",
+    "updating": "Updating...",
+    "passwordMismatch": "New passwords do not match.",
+    "passwordTooWeak": "Password must be at least 8 characters with 1 uppercase letter and 1 number.",
+    "loginFailed": "Login failed. Please check your credentials.",
+    "invalidCredentials": "Invalid email or password",
+    "accountDeactivated": "Account is deactivated.",
+    "networkError": "A network error occurred."
   }
 }

@@ -1288,5 +1288,37 @@
       "overwritten": "現在のバージョンは強制的に上書きされました。",
       "versionSavedAndMoved": "新しいバージョンが保存され、{{folder}}に移動されました。"
     }
+  },
+  "login": {
+    "title": "Capri DAM",
+    "subtitle": "お帰りなさい。ログイン情報を入力してください。",
+    "brandingHeadline": "デジタルエコシステムを一元化。",
+    "brandingSubtitle": "メタデータ管理、承認ワークフローの自動化、企業アセットの安全な統制を、単一の信頼できる基盤から実現します。",
+    "emailLabel": "メールアドレス",
+    "passwordLabel": "パスワード",
+    "signIn": "サインイン",
+    "signingIn": "サインイン中...",
+    "ssoButton": "エンタープライズSSOでサインイン",
+    "forgotPassword": "パスワードをお忘れですか？",
+    "forgotTitle": "パスワードをリセット",
+    "forgotDescription": "アカウントに関連付けられているメールアドレスを入力してください。パスワード再設定用のリンクをお送りします。",
+    "forgotSuccess": "入力されたメールアドレスがシステムに存在する場合、まもなくパスワード再設定リンクが送信されます。",
+    "forgotFailed": "パスワードリセットのリクエストに失敗しました。もう一度お試しください。",
+    "forgotNetworkError": "ネットワークエラーが発生しました。",
+    "sendResetLink": "リセットリンクを送信",
+    "close": "閉じる",
+    "forceTitle": "対応が必要です",
+    "forceSubtitle": "初回ログインのため、セキュリティ上の理由から一時パスワードを変更する必要があります。",
+    "tempPassword": "一時パスワード",
+    "newPassword": "新しいパスワード",
+    "confirmPassword": "新しいパスワードを確認",
+    "updatePassword": "パスワードを更新してサインイン",
+    "updating": "更新中...",
+    "passwordMismatch": "新しいパスワードが一致しません。",
+    "passwordTooWeak": "パスワードは8文字以上で、英大文字1文字と数字1文字を含める必要があります。",
+    "loginFailed": "ログインに失敗しました。認証情報を確認してください。",
+    "invalidCredentials": "メールアドレスまたはパスワードが正しくありません",
+    "accountDeactivated": "アカウントは無効化されています。",
+    "networkError": "ネットワークエラーが発生しました。"
   }
 }

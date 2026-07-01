@@ -333,3 +333,13 @@ describe('i18n — all 9 locales load without errors', () => {
   afterAll(() => i18n.changeLanguage('en'));
 });
 
+
+describe('i18n — login strings (regression guard)', () => {
+  beforeEach(() => i18n.changeLanguage('en'));
+
+  it('login.title', () => expect(i18n.t('login.title')).toBe('Capri DAM'));
+  it('login.signIn', () => expect(i18n.t('login.signIn')).toBe('Sign In'));
+  it('login.forgotPassword', () => expect(i18n.t('login.forgotPassword')).toBe('Forgot password?'));
+  it('login.forceTitle', () => expect(i18n.t('login.forceTitle')).toBe('Action Required'));
+});
+

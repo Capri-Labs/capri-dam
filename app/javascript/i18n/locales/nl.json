@@ -1288,5 +1288,37 @@
       "overwritten": "Huidigeversie geforceerd overschreven.",
       "versionSavedAndMoved": "Nieuwe versie opgeslagen en verplaatst naar {{folder}}."
     }
+  },
+  "login": {
+    "title": "Capri DAM",
+    "subtitle": "Welkom terug. Voer uw gegevens in.",
+    "brandingHeadline": "Centraliseer uw digitale ecosysteem.",
+    "brandingSubtitle": "Beheer metadata, automatiseer goedkeuringsworkflows en bestuur uw bedrijfsmiddelen veilig vanuit één centrale bron van waarheid.",
+    "emailLabel": "E-mailadres",
+    "passwordLabel": "Wachtwoord",
+    "signIn": "Inloggen",
+    "signingIn": "Bezig met inloggen...",
+    "ssoButton": "Inloggen met Enterprise-SSO",
+    "forgotPassword": "Wachtwoord vergeten?",
+    "forgotTitle": "Wachtwoord opnieuw instellen",
+    "forgotDescription": "Voer het e-mailadres in dat aan uw account is gekoppeld en wij sturen u een link om uw wachtwoord opnieuw in te stellen.",
+    "forgotSuccess": "Als uw e-mailadres in ons systeem bestaat, ontvangt u binnenkort een link om uw wachtwoord te herstellen.",
+    "forgotFailed": "Het aanvragen van een wachtwoordreset is mislukt. Probeer het opnieuw.",
+    "forgotNetworkError": "Er is een netwerkfout opgetreden.",
+    "sendResetLink": "Resetlink verzenden",
+    "close": "Sluiten",
+    "forceTitle": "Actie vereist",
+    "forceSubtitle": "Dit is uw eerste keer inloggen. Om veiligheidsredenen moet u uw tijdelijke wachtwoord wijzigen.",
+    "tempPassword": "Tijdelijk wachtwoord",
+    "newPassword": "Nieuw wachtwoord",
+    "confirmPassword": "Nieuw wachtwoord bevestigen",
+    "updatePassword": "Wachtwoord bijwerken en inloggen",
+    "updating": "Bezig met bijwerken...",
+    "passwordMismatch": "De nieuwe wachtwoorden komen niet overeen.",
+    "passwordTooWeak": "Het wachtwoord moet minimaal 8 tekens bevatten, met 1 hoofdletter en 1 cijfer.",
+    "loginFailed": "Inloggen mislukt. Controleer uw gegevens.",
+    "invalidCredentials": "Ongeldig e-mailadres of wachtwoord",
+    "accountDeactivated": "Het account is gedeactiveerd.",
+    "networkError": "Er is een netwerkfout opgetreden."
   }
 }
