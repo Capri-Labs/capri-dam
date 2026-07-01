@@ -74,6 +74,14 @@ RSpec.describe "Users::Sessions", type: :request do
     end
   end
 
+  describe "GET /users/sign_in" do
+    it "redirects to root (sign-in is handled by the React SPA at /)" do
+      get "/users/sign_in"
+
+      expect(response).to redirect_to("/")
+    end
+  end
+
   # ── Force password update ─────────────────────────────────────────────────
 
   describe "POST /users/force_password_update" do

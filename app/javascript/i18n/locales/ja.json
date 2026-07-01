@@ -1320,5 +1320,108 @@
     "invalidCredentials": "メールアドレスまたはパスワードが正しくありません",
     "accountDeactivated": "アカウントは無効化されています。",
     "networkError": "ネットワークエラーが発生しました。"
+  },
+  "search": {
+    "title": "高度な検索",
+    "placeholder": "アセット、フォルダ、タグ、メタデータを検索…",
+    "quickSearch": "クイック検索",
+    "quickSearches": {
+      "recent_images": "最近の画像",
+      "recent_videos": "最近の動画",
+      "documents": "ドキュメント",
+      "approved": "承認済み"
+    },
+    "resultsFound": "件の結果",
+    "shared": "検索URLをクリップボードにコピーしました！",
+    "activeFilters": "{{count}}件のフィルター適用中",
+    "activeFilters_plural": "{{count}}件のフィルター適用中",
+    "share": "結果を共有",
+    "fileLabel": "ファイル",
+    "sort": {
+      "relevance": "関連性",
+      "name": "名前",
+      "modified": "最終更新日",
+      "size": "ファイルサイズ",
+      "label": "並び替え",
+      "direction": {
+        "asc": "昇順",
+        "desc": "降順"
+      }
+    },
+    "status": {
+      "published": "公開済み",
+      "approved": "承認済み",
+      "rejected": "却下",
+      "inReview": "レビュー中"
+    },
+    "filters": {
+      "title": "フィルター",
+      "reset": "全フィルターをリセット",
+      "mimeType": "ファイルタイプ",
+      "mime": {
+        "images": "画像",
+        "documents": "ドキュメント",
+        "multimedia": "マルチメディア",
+        "archives": "アーカイブ",
+        "other": "その他"
+      },
+      "lastModified": "最終更新日",
+      "modified": {
+        "hour": "1時間以内",
+        "day": "24時間以内",
+        "week": "1週間以内",
+        "month": "1ヶ月以内",
+        "year": "1年以内"
+      },
+      "fileSize": "ファイルサイズ",
+      "size": {
+        "small": "小（<1 MB）",
+        "medium": "中（1〜10 MB）",
+        "large": "大（>10 MB）"
+      },
+      "status": "ステータス",
+      "publishStatus": "公開ステータス",
+      "approvedStatus": "承認ステータス",
+      "publish": {
+        "published": "公開済み",
+        "unpublished": "未公開"
+      },
+      "approval": {
+        "approved": "承認済み",
+        "rejected": "却下"
+      },
+      "orientation": "向き",
+      "orientations": {
+        "horizontal": "横向き",
+        "vertical": "縦向き",
+        "square": "正方形"
+      },
+      "style": "スタイル",
+      "styles": {
+        "color": "カラー",
+        "black_white": "白黒"
+      },
+      "video": "動画",
+      "videoFormat": "フォーマット",
+      "videoCodec": "コーデック",
+      "videoHeight": "高さ",
+      "videoWidth": "幅",
+      "videoBitrate": "ビットレート",
+      "audio": "音声",
+      "audioCodec": "コーデック",
+      "audioBitrate": "ビットレート",
+      "min": "最小",
+      "max": "最大",
+      "fileLabel": "ファイル"
+    },
+    "noResults": {
+      "title": "結果が見つかりません",
+      "withQuery": "「{{query}}」に一致するアセットはありません",
+      "withFilters": "適用されたフィルターに一致するアセットはありません",
+      "clearFilters": "フィルターをクリア"
+    },
+    "error": {
+      "fetchFailed": "検索に失敗しました。もう一度お試しください。"
+    }
   }
 }

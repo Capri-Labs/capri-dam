@@ -41,7 +41,7 @@ Rails.application.routes.draw do
   # 2. AUTHENTICATION & ROOT LOGIC
   # ==========================================
   use_doorkeeper
-  devise_for :users, skip: [ :registrations ], controllers: {
+  devise_for :users, controllers: {
     sessions:            "users/sessions",
     omniauth_callbacks:  "users/omniauth_callbacks",
   }

@@ -1320,5 +1320,108 @@
     "invalidCredentials": "이메일 또는 비밀번호가 올바르지 않습니다",
     "accountDeactivated": "계정이 비활성화되었습니다.",
     "networkError": "네트워크 오류가 발생했습니다."
+  },
+  "search": {
+    "title": "고급 검색",
+    "placeholder": "에셋, 폴더, 태그, 메타데이터 검색…",
+    "quickSearch": "빠른 검색",
+    "quickSearches": {
+      "recent_images": "최근 이미지",
+      "recent_videos": "최근 동영상",
+      "documents": "문서",
+      "approved": "승인됨"
+    },
+    "resultsFound": "개 결과 발견",
+    "shared": "검색 URL이 클립보드에 복사되었습니다!",
+    "activeFilters": "{{count}}개 필터 활성",
+    "activeFilters_plural": "{{count}}개 필터 활성",
+    "share": "결과 공유",
+    "fileLabel": "파일",
+    "sort": {
+      "relevance": "관련성",
+      "name": "이름",
+      "modified": "마지막 수정",
+      "size": "파일 크기",
+      "label": "정렬 기준",
+      "direction": {
+        "asc": "오름차순",
+        "desc": "내림차순"
+      }
+    },
+    "status": {
+      "published": "게시됨",
+      "approved": "승인됨",
+      "rejected": "거부됨",
+      "inReview": "검토 중"
+    },
+    "filters": {
+      "title": "필터",
+      "reset": "모든 필터 초기화",
+      "mimeType": "파일 유형",
+      "mime": {
+        "images": "이미지",
+        "documents": "문서",
+        "multimedia": "멀티미디어",
+        "archives": "아카이브",
+        "other": "기타"
+      },
+      "lastModified": "마지막 수정",
+      "modified": {
+        "hour": "1시간 이내",
+        "day": "24시간 이내",
+        "week": "1주일 이내",
+        "month": "1개월 이내",
+        "year": "1년 이내"
+      },
+      "fileSize": "파일 크기",
+      "size": {
+        "small": "소형 (<1 MB)",
+        "medium": "중형 (1–10 MB)",
+        "large": "대형 (>10 MB)"
+      },
+      "status": "상태",
+      "publishStatus": "게시 상태",
+      "approvedStatus": "승인 상태",
+      "publish": {
+        "published": "게시됨",
+        "unpublished": "미게시"
+      },
+      "approval": {
+        "approved": "승인됨",
+        "rejected": "거부됨"
+      },
+      "orientation": "방향",
+      "orientations": {
+        "horizontal": "가로",
+        "vertical": "세로",
+        "square": "정사각형"
+      },
+      "style": "스타일",
+      "styles": {
+        "color": "컬러",
+        "black_white": "흑백"
+      },
+      "video": "동영상",
+      "videoFormat": "형식",
+      "videoCodec": "코덱",
+      "videoHeight": "높이",
+      "videoWidth": "너비",
+      "videoBitrate": "비트레이트",
+      "audio": "오디오",
+      "audioCodec": "코덱",
+      "audioBitrate": "비트레이트",
+      "min": "최소",
+      "max": "최대",
+      "fileLabel": "파일"
+    },
+    "noResults": {
+      "title": "결과를 찾을 수 없음",
+      "withQuery": "\"{{query}}\"와 일치하는 에셋이 없습니다",
+      "withFilters": "적용된 필터와 일치하는 에셋이 없습니다",
+      "clearFilters": "필터 지우기"
+    },
+    "error": {
+      "fetchFailed": "검색에 실패했습니다. 다시 시도해 주세요."
+    }
   }
 }

@@ -1320,5 +1320,108 @@
     "invalidCredentials": "Ongeldig e-mailadres of wachtwoord",
     "accountDeactivated": "Het account is gedeactiveerd.",
     "networkError": "Er is een netwerkfout opgetreden."
+  },
+  "search": {
+    "title": "Geavanceerd zoeken",
+    "placeholder": "Zoek assets, mappen, tags, metadata…",
+    "quickSearch": "Snel zoeken",
+    "quickSearches": {
+      "recent_images": "Recente afbeeldingen",
+      "recent_videos": "Recente video's",
+      "documents": "Documenten",
+      "approved": "Goedgekeurd"
+    },
+    "resultsFound": "resultaten gevonden",
+    "shared": "Zoek-URL gekopieerd naar klembord!",
+    "activeFilters": "{{count}} filter actief",
+    "activeFilters_plural": "{{count}} filters actief",
+    "share": "Resultaten delen",
+    "fileLabel": "BESTAND",
+    "sort": {
+      "relevance": "Relevantie",
+      "name": "Naam",
+      "modified": "Laatst gewijzigd",
+      "size": "Bestandsgrootte",
+      "label": "Sorteren op",
+      "direction": {
+        "asc": "Oplopend",
+        "desc": "Aflopend"
+      }
+    },
+    "status": {
+      "published": "Gepubliceerd",
+      "approved": "Goedgekeurd",
+      "rejected": "Afgewezen",
+      "inReview": "In beoordeling"
+    },
+    "filters": {
+      "title": "Filters",
+      "reset": "Alle filters resetten",
+      "mimeType": "Bestandstype",
+      "mime": {
+        "images": "Afbeeldingen",
+        "documents": "Documenten",
+        "multimedia": "Multimedia",
+        "archives": "Archieven",
+        "other": "Overig"
+      },
+      "lastModified": "Laatst gewijzigd",
+      "modified": {
+        "hour": "Afgelopen uur",
+        "day": "Afgelopen 24u",
+        "week": "Afgelopen week",
+        "month": "Afgelopen maand",
+        "year": "Afgelopen jaar"
+      },
+      "fileSize": "Bestandsgrootte",
+      "size": {
+        "small": "Klein (<1 MB)",
+        "medium": "Gemiddeld (1–10 MB)",
+        "large": "Groot (>10 MB)"
+      },
+      "status": "Status",
+      "publishStatus": "Publicatiestatus",
+      "approvedStatus": "Goedkeuringsstatus",
+      "publish": {
+        "published": "Gepubliceerd",
+        "unpublished": "Niet gepubliceerd"
+      },
+      "approval": {
+        "approved": "Goedgekeurd",
+        "rejected": "Afgewezen"
+      },
+      "orientation": "Oriëntatie",
+      "orientations": {
+        "horizontal": "Horizontaal",
+        "vertical": "Verticaal",
+        "square": "Vierkant"
+      },
+      "style": "Stijl",
+      "styles": {
+        "color": "Kleur",
+        "black_white": "Zwart-wit"
+      },
+      "video": "Video",
+      "videoFormat": "Formaat",
+      "videoCodec": "Codec",
+      "videoHeight": "Hoogte",
+      "videoWidth": "Breedte",
+      "videoBitrate": "Bitsnelheid",
+      "audio": "Audio",
+      "audioCodec": "Codec",
+      "audioBitrate": "Bitsnelheid",
+      "min": "Min",
+      "max": "Max",
+      "fileLabel": "BESTAND"
+    },
+    "noResults": {
+      "title": "Geen resultaten gevonden",
+      "withQuery": "Geen assets gevonden voor \"{{query}}\"",
+      "withFilters": "Geen assets komen overeen met de toegepaste filters",
+      "clearFilters": "Filters wissen"
+    },
+    "error": {
+      "fetchFailed": "Zoeken mislukt. Probeer het opnieuw."
+    }
   }
 }

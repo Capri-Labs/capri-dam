@@ -2,11 +2,7 @@ class Users::SessionsController < Devise::SessionsController
   respond_to :json
 
   def new
-    if user_signed_in?
-      redirect_to root_path, alert: "You are already signed in."
-    else
-      super
-    end
+    redirect_to "/"
   end
 
   def create

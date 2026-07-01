@@ -24,99 +24,7 @@ info:
   license:
     name: MIT License
     url: https://opensource.org/licenses/MIT
-tags:
-  - name: Session Auth
-    description: Browser session authentication endpoints for login and mandatory password rotation.
 paths:
-  "/users/sign_in.json":
-    post:
-      summary: Sign in with email and password
-      tags:
-      - Session Auth
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [user]
-              properties:
-                user:
-                  type: object
-                  required: [email, password]
-                  properties:
-                    email:
-                      type: string
-                      format: email
-                    password:
-                      type: string
-                      format: password
-      responses:
-        '200':
-          description: Signed in (or force_password_change required)
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                  force_password_change:
-                    type: boolean
-                  user:
-                    type: object
-                    properties:
-                      email:
-                        type: string
-                      username:
-                        type: string
-        '401':
-          description: Invalid credentials or deactivated account
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: false
-                  error:
-                    type: string
-  "/users/force_password_update":
-    post:
-      summary: Complete mandatory first-login password change
-      tags:
-      - Session Auth
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [email, current_password, new_password, new_password_confirmation]
-              properties:
-                email:
-                  type: string
-                current_password:
-                  type: string
-                new_password:
-                  type: string
-                new_password_confirmation:
-                  type: string
-      responses:
-        '200':
-          description: Password changed and user signed in
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                  user:
-                    type: object
-        '401':
-          description: Invalid temporary password
-        '422':
-          description: Validation failed
   "/admin/email_templates":
     get:
       summary: Retrieves a list of all email templates
@@ -1509,30 +1417,8 @@ paths:
       responses:
         '201':
           description: Execution logged
-          content:
-            application/json:
-              schema:
-                type: object
         '401':
           description: Missing/invalid gateway secret
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-        '422':
-          description: Validation failed
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  errors:
-                    type: array
-                    items:
-                      type: string
       requestBody:
         content:
           application/json:
@@ -1717,24 +1603,6 @@ paths:
                     type: array
                     items:
                       "$ref": "#/components/schemas/AiBatchJob"
-        '401':
-          description: Unauthenticated
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-        '403':
-          description: Forbidden (admin only)
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
     post:
       summary: Launch an AI batch job (admin only)
       tags:
@@ -1751,33 +1619,8 @@ paths:
                 "$ref": "#/components/schemas/AiBatchJob"
         '422':
           description: Validation failed
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  errors:
-                    type: array
-                    items:
-                      type: string
         '403':
           description: Non-admin forbidden
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-        '401':
-          description: Unauthenticated
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
       requestBody:
         content:
           application/json:
@@ -2391,52 +2234,31 @@ paths:
         type: string
   "/api/v1/search":
     get:
-      summary: Full-text and faceted asset search
+      summary: Search assets (lexical + dynamic metadata facets)
       tags:
-      - Search
+      - Assets
       security:
       - Bearer: []
       description: |
-        Performs lexical full-text search across asset `title`, `original_filename`,
-        and **all JSONB metadata properties**. Supports mode filtering, schema filtering,
-        and arbitrary dynamic metadata filters via query params.
-
-        Returns facets alongside results so UIs can render live filter panels with
-        a single request.
-
-        ### Dynamic metadata filtering
-        Any query param not in the reserved list (`q`, `mode`, `schema_id`) is
-        treated as a JSONB property filter:
-        ```
-        GET /api/v1/search?brand=Nike&campaign=Summer2026
-        ```
+        Performs full-text lexical search against asset titles and original filenames.
+        Supports dynamic metadata filtering via arbitrary query params (e.g. `?region=EMEA`).
+        Returns facet data alongside results so UIs can build filter panels without extra calls.
       parameters:
       - name: q
         in: query
         required: false
-        description: Full-text search term matched against title, filename, and all
-          metadata values
+        description: Full-text term matched against title and original_filename
         schema:
           type: string
       - name: mode
         in: query
-        type: string
         required: false
+        description: 'Filter by type: `images` (default), `files`, or omit for all'
         schema:
-          enum:
-          - images
-          - files
-        description: "`images` — image/* types only (default). `files` — non-image
-          types only. Omit for all."
-      - name: schema_id
-        in: query
-        required: false
-        description: Filter to assets that have this metadata schema applied
-        schema:
-          type: integer
+          type: string
       responses:
         '200':
-          description: search results with facets
+          description: Search results with facets returned
           content:
             application/json:
               schema:
@@ -2465,21 +2287,20 @@ paths:
                             example:
                             - image/jpeg
                             - image/png
-                          applied_schema:
-                            type: array
-                            items:
-                              type: string
-                            example:
-                            - Product Images
-                            - Marketing Assets
                   results:
                     type: array
                     items:
                       type: object
                       properties:
                         id:
+                          type: integer
+                          example: 1
+                        uuid:
                           type: string
                           format: uuid
+                        title:
+                          type: string
+                          example: Brand Logo Final
                         type:
                           type: string
                           example: image/png
@@ -2489,49 +2310,6 @@ paths:
                         thumb_url:
                           type: string
                           nullable: true
-                        folder_id:
-                          type: string
-                          nullable: true
-                        schema_name:
-                          type: string
-                          nullable: true
-                        schema_id:
-                          type: integer
-                          nullable: true
-                        metadata:
-                          type: object
-                          description: Schema-driven metadata fields surfaced in search
-                            results
-                          properties:
-                            creator:
-                              type: string
-                              nullable: true
-                            title_meta:
-                              type: string
-                              nullable: true
-                            description:
-                              type: string
-                              nullable: true
-                            sku:
-                              type: string
-                              nullable: true
-                            brand:
-                              type: string
-                              nullable: true
-                            asset_type:
-                              type: string
-                              nullable: true
-                            product_id:
-                              type: string
-                              nullable: true
-                            language:
-                              type: string
-                              nullable: true
-                            tags:
-                              type: array
-                              items:
-                                type: string
-                              nullable: true
   "/api/v1/assets":
     post:
       summary: Upload a new asset (multipart)
@@ -5159,9 +4937,8 @@ paths:
                       - name
                       properties:
                         id:
-                          type: string
-                          format: uuid
-                          example: "351be284-bc76-4529-a9cf-1683dd4be450"
+                          type: integer
+                          example: 42
                         name:
                           type: string
                           example: "/Marketing/2026"
@@ -5288,8 +5065,7 @@ paths:
                       type: object
                       properties:
                         id:
-                          type: string
-                          format: uuid
+                          type: integer
                         uuid:
                           type: string
                           format: uuid
@@ -9510,60 +9286,6 @@ components:
       scheme: bearer
       description: Enter your OAuth 2.0 Bearer token to authenticate requests.
   schemas:
-    UserGroup:
-      type: object
-      properties:
-        id:
-          type: integer
-        name:
-          type: string
-        slug:
-          type: string
-          nullable: true
-        description:
-          type: string
-          nullable: true
-        is_system:
-          type: boolean
-        parent_id:
-          type: integer
-          nullable: true
-        member_count:
-          type: integer
-        created_at:
-          type: string
-          format: date-time
-        members:
-          type: array
-          items:
-            type: object
-            properties:
-              id:
-                type: integer
-              display_name:
-                type: string
-              email:
-                type: string
-              avatar_url:
-                type: string
-                nullable: true
-        child_groups:
-          type: array
-          items:
-            type: object
-            properties:
-              id:
-                type: integer
-              name:
-                type: string
-              slug:
-                type: string
-                nullable: true
-              description:
-                type: string
-                nullable: true
-              is_system:
-                type: boolean
     FolderPolicy:
       type: object
       properties:

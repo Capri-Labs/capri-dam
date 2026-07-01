@@ -51,7 +51,7 @@ class User < ApplicationRecord
   # Devise modules
   # ---------------------------------------------------------------------------
 
-  devise :database_authenticatable, :registerable,
+  devise :database_authenticatable,
          :recoverable, :rememberable, :validatable,
          :omniauthable, omniauth_providers: %i[keycloak_openid]
 

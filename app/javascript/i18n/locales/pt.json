@@ -1320,5 +1320,108 @@
     "invalidCredentials": "E-mail ou senha inválidos",
     "accountDeactivated": "A conta está desativada.",
     "networkError": "Ocorreu um erro de rede."
+  },
+  "search": {
+    "title": "Pesquisa Avançada",
+    "placeholder": "Pesquisar assets, pastas, tags, metadados…",
+    "quickSearch": "Pesquisa rápida",
+    "quickSearches": {
+      "recent_images": "Imagens recentes",
+      "recent_videos": "Vídeos recentes",
+      "documents": "Documentos",
+      "approved": "Aprovados"
+    },
+    "resultsFound": "resultados encontrados",
+    "shared": "URL de pesquisa copiado para a área de transferência!",
+    "activeFilters": "{{count}} filtro ativo",
+    "activeFilters_plural": "{{count}} filtros ativos",
+    "share": "Partilhar resultados",
+    "fileLabel": "FICHEIRO",
+    "sort": {
+      "relevance": "Relevância",
+      "name": "Nome",
+      "modified": "Última modificação",
+      "size": "Tamanho do ficheiro",
+      "label": "Ordenar por",
+      "direction": {
+        "asc": "Ascendente",
+        "desc": "Descendente"
+      }
+    },
+    "status": {
+      "published": "Publicado",
+      "approved": "Aprovado",
+      "rejected": "Rejeitado",
+      "inReview": "Em revisão"
+    },
+    "filters": {
+      "title": "Filtros",
+      "reset": "Redefinir todos os filtros",
+      "mimeType": "Tipo de ficheiro",
+      "mime": {
+        "images": "Imagens",
+        "documents": "Documentos",
+        "multimedia": "Multimédia",
+        "archives": "Arquivos",
+        "other": "Outro"
+      },
+      "lastModified": "Última modificação",
+      "modified": {
+        "hour": "Última hora",
+        "day": "Últimas 24h",
+        "week": "Última semana",
+        "month": "Último mês",
+        "year": "Último ano"
+      },
+      "fileSize": "Tamanho do ficheiro",
+      "size": {
+        "small": "Pequeno (<1 MB)",
+        "medium": "Médio (1–10 MB)",
+        "large": "Grande (>10 MB)"
+      },
+      "status": "Estado",
+      "publishStatus": "Estado de publicação",
+      "approvedStatus": "Estado de aprovação",
+      "publish": {
+        "published": "Publicado",
+        "unpublished": "Não publicado"
+      },
+      "approval": {
+        "approved": "Aprovado",
+        "rejected": "Rejeitado"
+      },
+      "orientation": "Orientação",
+      "orientations": {
+        "horizontal": "Horizontal",
+        "vertical": "Vertical",
+        "square": "Quadrado"
+      },
+      "style": "Estilo",
+      "styles": {
+        "color": "Cor",
+        "black_white": "Preto e Branco"
+      },
+      "video": "Vídeo",
+      "videoFormat": "Formato",
+      "videoCodec": "Codec",
+      "videoHeight": "Altura",
+      "videoWidth": "Largura",
+      "videoBitrate": "Taxa de bits",
+      "audio": "Áudio",
+      "audioCodec": "Codec",
+      "audioBitrate": "Taxa de bits",
+      "min": "Mín",
+      "max": "Máx",
+      "fileLabel": "FICHEIRO"
+    },
+    "noResults": {
+      "title": "Nenhum resultado encontrado",
+      "withQuery": "Nenhum asset corresponde a \"{{query}}\"",
+      "withFilters": "Nenhum asset corresponde aos filtros aplicados",
+      "clearFilters": "Limpar filtros"
+    },
+    "error": {
+      "fetchFailed": "A pesquisa falhou. Por favor, tente novamente."
+    }
   }
 }

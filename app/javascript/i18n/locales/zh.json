@@ -1320,5 +1320,108 @@
     "invalidCredentials": "电子邮箱或密码无效",
     "accountDeactivated": "账户已被停用。",
     "networkError": "发生网络错误。"
+  },
+  "search": {
+    "title": "高级搜索",
+    "placeholder": "搜索资产、文件夹、标签、元数据…",
+    "quickSearch": "快速搜索",
+    "quickSearches": {
+      "recent_images": "最近图片",
+      "recent_videos": "最近视频",
+      "documents": "文档",
+      "approved": "已审批"
+    },
+    "resultsFound": "条结果",
+    "shared": "搜索URL已复制到剪贴板！",
+    "activeFilters": "已启用{{count}}个筛选器",
+    "activeFilters_plural": "已启用{{count}}个筛选器",
+    "share": "分享结果",
+    "fileLabel": "文件",
+    "sort": {
+      "relevance": "相关性",
+      "name": "名称",
+      "modified": "最后修改",
+      "size": "文件大小",
+      "label": "排序方式",
+      "direction": {
+        "asc": "升序",
+        "desc": "降序"
+      }
+    },
+    "status": {
+      "published": "已发布",
+      "approved": "已审批",
+      "rejected": "已拒绝",
+      "inReview": "审核中"
+    },
+    "filters": {
+      "title": "筛选器",
+      "reset": "重置所有筛选器",
+      "mimeType": "文件类型",
+      "mime": {
+        "images": "图片",
+        "documents": "文档",
+        "multimedia": "多媒体",
+        "archives": "压缩包",
+        "other": "其他"
+      },
+      "lastModified": "最后修改",
+      "modified": {
+        "hour": "最近1小时",
+        "day": "最近24小时",
+        "week": "最近1周",
+        "month": "最近1个月",
+        "year": "最近1年"
+      },
+      "fileSize": "文件大小",
+      "size": {
+        "small": "小型（<1 MB）",
+        "medium": "中型（1–10 MB）",
+        "large": "大型（>10 MB）"
+      },
+      "status": "状态",
+      "publishStatus": "发布状态",
+      "approvedStatus": "审批状态",
+      "publish": {
+        "published": "已发布",
+        "unpublished": "未发布"
+      },
+      "approval": {
+        "approved": "已审批",
+        "rejected": "已拒绝"
+      },
+      "orientation": "方向",
+      "orientations": {
+        "horizontal": "横向",
+        "vertical": "纵向",
+        "square": "正方形"
+      },
+      "style": "风格",
+      "styles": {
+        "color": "彩色",
+        "black_white": "黑白"
+      },
+      "video": "视频",
+      "videoFormat": "格式",
+      "videoCodec": "编解码器",
+      "videoHeight": "高度",
+      "videoWidth": "宽度",
+      "videoBitrate": "比特率",
+      "audio": "音频",
+      "audioCodec": "编解码器",
+      "audioBitrate": "比特率",
+      "min": "最小",
+      "max": "最大",
+      "fileLabel": "文件"
+    },
+    "noResults": {
+      "title": "未找到结果",
+      "withQuery": "没有与\"{{query}}\"匹配的资产",
+      "withFilters": "没有与所应用筛选器匹配的资产",
+      "clearFilters": "清除筛选器"
+    },
+    "error": {
+      "fetchFailed": "搜索失败，请重试。"
+    }
   }
 }
