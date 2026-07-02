@@ -373,6 +373,14 @@ describe('Folders components', () => {
         tags: ['hero'],
         ai_tags: { faces: ['person'], text: ['SALE'], general: [] },
         color_palette: ['#123456'],
+        creator: ['Andy Thoma'],
+        copyright: 'ALDI US',
+        camera_make: 'NIKON CORPORATION',
+        camera_model: 'NIKON D850',
+        lens: 'Nikon AF-S NIKKOR 24-70mm f/2.8E ED VR',
+        color_mode: 'CMYK',
+        metadata_field_count: 89,
+        embedded_metadata: { XMP: { Creator: ['Andy Thoma'] }, EXIF: { Make: 'NIKON CORPORATION' } },
       },
     };
 
@@ -380,6 +388,12 @@ describe('Folders components', () => {
 
     expect(screen.getByText('General Metadata')).toBeInTheDocument();
     expect(screen.getByText('3 tags')).toBeInTheDocument();
+    expect(screen.getByText('Creator')).toBeInTheDocument();
+    expect(screen.getByText('Andy Thoma')).toBeInTheDocument();
+    expect(screen.getByText('NIKON CORPORATION NIKON D850')).toBeInTheDocument();
+    expect(screen.getByText('Nikon AF-S NIKKOR 24-70mm f/2.8E ED VR')).toBeInTheDocument();
+    expect(screen.getByText('CMYK')).toBeInTheDocument();
+    expect(screen.getByText('89')).toBeInTheDocument();
     fireEvent.click(iconButton('ContentCopyIcon'));
 
     await waitFor(() => expect(navigator.clipboard.writeText).toHaveBeenCalledWith('/viewer.jpg'));
@@ -585,6 +599,39 @@ describe('Folders components', () => {
     expect(handleSingleFileAi).toHaveBeenCalledWith('f1');
   });
 
+  it('renders a placeholder for non-web-renderable files without a preview', () => {
+    render(
+      <UploadGrid
+        filesData={[{
+          id: 'psd1',
+          selected: true,
+          isDuplicate: false,
+          preview: null,
+          file: { name: 'artwork.psd', type: 'image/vnd.adobe.photoshop' },
+          status: 'ready',
+          meta: { title: 'artwork.psd', size: '5.00 MB', dimensions: 'N/A', type: '', schemaId: 7, aiTags: [] },
+        }]}
+        setFilesData={jest.fn()}
+        getRootProps={() => ({})}
+        getInputProps={() => ({})}
+        isDragActive={false}
+        handleToggleSelectAll={jest.fn()}
+        handleToggleSelectFile={jest.fn()}
+        handleRemoveFile={jest.fn()}
+        allSelected
+        selectedCount={1}
+        onClose={jest.fn()}
+        globalMeta={{ imageType: '', schemaId: 7 }}
+        schemaOptions={[{ id: 7, name: 'Product Images', slug: 'product-images' }]}
+        handleSingleFileAi={jest.fn()}
+        onOpenDuplicate={jest.fn()}
+      />,
+    );
+
+    expect(screen.getByText('psd')).toBeInTheDocument();
+    expect(screen.getByText('Preview generated after upload')).toBeInTheDocument();
+  });
+
   it('renders UploadSidebar and triggers AI and upload actions', async () => {
     const handleAiGlobalAction = jest.fn();
     const handleUploadAll = jest.fn();
@@ -611,6 +658,31 @@ describe('Folders components', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Upload (1)' }));
     expect(handleUploadAll).toHaveBeenCalled();
+  });
+
+  it('shows a batch upload progress bar while uploading', () => {
+    render(
+      <UploadSidebar
+        globalMeta={{ collection: null, imageType: '', manualTags: [], aiTagsEnabled: true, schemaId: null }}
+        setGlobalMeta={jest.fn()}
+        handleGlobalSchemaChange={jest.fn()}
+        schemaOptions={[]}
+        collectionOptions={[]}
+        handleAiGlobalAction={jest.fn()}
+        isAiProcessing={false}
+        filesData={[{ id: 'f1' }]}
+        handleUploadAll={jest.fn()}
+        isUploading
+        uploadProgress={{ done: 2, total: 5 }}
+        selectedCount={5}
+        onClose={jest.fn()}
+      />,
+    );
+
+    expect(screen.getByTestId('upload-progress')).toBeInTheDocument();
+    expect(screen.getByText('2 of 5')).toBeInTheDocument();
+    const bar = within(screen.getByTestId('upload-progress')).getByRole('progressbar');
+    expect(bar).toHaveAttribute('aria-valuenow', '40');
   });
 
   it('loads UploadWorkspace dependencies, stages a dropped file, and uploads it', async () => {

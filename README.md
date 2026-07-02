@@ -65,6 +65,7 @@ powered by **PostgreSQL + pgvector**.
 | PostgreSQL | 14 + **pgvector** | `make bootstrap` installs `postgresql@14` |
 | Redis | 6+ | required for Sidekiq & Action Cable |
 | ImageMagick / exiv2 | latest | image variants & metadata extraction |
+| ExifTool | 12+ | full EXIF/IPTC/XMP/Photoshop metadata extraction |
 
 On macOS with Homebrew, `make bootstrap` installs these for you.
 

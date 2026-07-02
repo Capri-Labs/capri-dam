@@ -2111,6 +2111,11 @@ paths:
                         thumb_url:
                           type: string
                           nullable: true
+                        preview_url:
+                          type: string
+                          nullable: true
+                          description: Web-renderable preview URL (falls back to the
+                            asset URL)
   "/api/v1/assets":
     post:
       summary: Upload a new asset (multipart)
@@ -2908,6 +2913,15 @@ paths:
       format: uuid
       required: true
       description: Asset UUID (public identifier — **not** the integer PK)
+      schema:
+        type: string
+    - name: variant
+      in: query
+      required: false
+      enum:
+      - preview
+      description: When set to `preview`, streams the generated web-renderable preview
+        (e.g. a flattened PNG for a PSD/TIFF) instead of the original binary.
       schema:
         type: string
     get:

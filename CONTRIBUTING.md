@@ -53,6 +53,7 @@ By participating you agree to abide by its terms.
 | PostgreSQL | 14 + **pgvector** extension | `pgvector/pgvector:pg14` image works |
 | Redis | 6+ | Required for Sidekiq and Action Cable |
 | ImageMagick | 7+ | Required for image variant processing |
+| ExifTool | 12+ | Required for full EXIF/IPTC/XMP metadata extraction |
 | Java (JRE) | 11+ | Required for PlantUML in doc generation |
 
 ### Local development setup

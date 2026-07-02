@@ -28,6 +28,19 @@ function isMimeAllowed(mimeType, allowedMimes) {
     });
 }
 
+// MIME types a browser can render directly in an <img> tag. Formats outside
+// this list (e.g. Photoshop PSD, TIFF, HEIC) get a placeholder in the staging
+// grid instead of a broken image; the server generates a real preview later.
+const WEB_RENDERABLE_MIME_TYPES = [
+    'image/jpeg', 'image/jpg', 'image/pjpeg', 'image/png',
+    'image/gif', 'image/webp', 'image/svg+xml', 'image/avif'
+];
+
+function isWebRenderableImage(mimeType) {
+    const mime = (mimeType || '').toLowerCase();
+    return WEB_RENDERABLE_MIME_TYPES.includes(mime);
+}
+
 export default function UploadWorkspace({ folderId, onClose, onUploadComplete }) {
     const notify = useNotify();
     const [filesData, setFilesData] = useState([]);
@@ -52,6 +65,9 @@ export default function UploadWorkspace({ folderId, onClose, onUploadComplete })
     });
     const [isUploading, setIsUploading] = useState(false);
     const [isAiProcessing, setIsAiProcessing] = useState(false);
+
+    // Batch upload progress ({ done, total }) surfaced as a progress bar.
+    const [uploadProgress, setUploadProgress] = useState({ done: 0, total: 0 });
 
     // Duplicate Resolver State
     const [activeDuplicateFile, setActiveDuplicateFile] = useState(null);
@@ -141,9 +157,10 @@ export default function UploadWorkspace({ folderId, onClose, onUploadComplete })
         // ───────────────────────────────────────────────────────────────────────
 
         const newFilesPromises = permitted.map(async (file) => {
-            const previewUrl = URL.createObjectURL(file);
+            const renderable = isWebRenderableImage(file.type);
+            const previewUrl = renderable ? URL.createObjectURL(file) : null;
             const dimensions = await new Promise((resolve) => {
-                if (file.type.startsWith('image/')) {
+                if (renderable && previewUrl) {
                     const img = new Image();
                     img.onload = () => resolve(`${img.width} x ${img.height}`);
                     img.onerror = () => resolve('Unknown');
@@ -278,7 +295,9 @@ export default function UploadWorkspace({ folderId, onClose, onUploadComplete })
         setIsUploading(true);
         const csrfToken = document.querySelector('[name="csrf-token"]')?.content;
         const filesToProcess = filesData.filter(f => f.selected && f.status !== 'done');
+        setUploadProgress({ done: 0, total: filesToProcess.length });
 
+        let completed = 0;
         for (const fData of filesToProcess) {
             setFilesData(prev => prev.map(f => f.id === fData.id ? { ...f, status: 'uploading' } : f));
             const formData = new FormData();
@@ -314,6 +333,8 @@ export default function UploadWorkspace({ folderId, onClose, onUploadComplete })
             } catch (error) {
                 setFilesData(prev => prev.map(f => f.id === fData.id ? { ...f, status: 'error' } : f));
             }
+            completed += 1;
+            setUploadProgress({ done: completed, total: filesToProcess.length });
         }
 
         setIsUploading(false);
@@ -324,7 +345,7 @@ export default function UploadWorkspace({ folderId, onClose, onUploadComplete })
     const selectedCount = filesData.filter(f => f.selected).length;
 
     return (
-        <Box sx={{ display: 'flex', height: '100vh', bgcolor: '#f8fafc', color: '#1e293b' }}>
+        <Box sx={{ display: 'flex', height: '100vh', overflow: 'hidden', bgcolor: '#f8fafc', color: '#1e293b' }}>
             <UploadSidebar
                 globalMeta={globalMeta}
                 setGlobalMeta={setGlobalMeta}
@@ -336,6 +357,7 @@ export default function UploadWorkspace({ folderId, onClose, onUploadComplete })
                 filesData={filesData}
                 handleUploadAll={handleUploadAll}
                 isUploading={isUploading}
+                uploadProgress={uploadProgress}
                 selectedCount={selectedCount}
                 onClose={onClose}
             />

@@ -100,6 +100,7 @@ RSpec.describe "GraphQL endpoint", type: :request do
         query FetchAsset($uuid: String!) {
           assetDetail(uuid: $uuid) {
             id uuid title createdAt
+            url previewUrl
             properties
           }
         }
@@ -117,6 +118,20 @@ RSpec.describe "GraphQL endpoint", type: :request do
         data = json.dig("data", "assetDetail")
         expect(data).not_to be_nil
         expect(data["uuid"]).to eq(asset.uuid)
+        expect(data).to have_key("previewUrl")
+      end
+
+      it "returns the preview variant URL when the asset has a generated preview" do
+        asset.update!(properties: asset.properties.merge(
+          "preview_storage_path" => "#{asset.uuid}/v1_preview_abcd.png",
+          "preview_content_type" => "image/png"
+        ))
+        gql_post(query: query,
+                 variables: { uuid: asset.uuid },
+                 user: viewer_user)
+        expect(response).to have_http_status(:ok)
+        data = json.dig("data", "assetDetail")
+        expect(data["previewUrl"]).to include("variant=preview")
       end
 
       it "returns null when the asset UUID does not exist" do

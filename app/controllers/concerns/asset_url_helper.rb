@@ -83,6 +83,28 @@ module AssetUrlHelper
     end
   end
 
+  # Returns a URL that resolves to a web-renderable *preview* of the asset.
+  #
+  # When the asset has a generated preview (e.g. a flattened PNG for a PSD),
+  # this points at the +?variant=preview+ endpoint.  Otherwise it falls back to
+  # the regular asset URL so callers can use it unconditionally for display.
+  #
+  # @param asset [Asset]
+  # @return [String, nil]
+  def asset_preview_url_for(asset)
+    active_v     = asset.active_version
+    preview_path = active_v&.properties&.fetch("preview_storage_path", nil) ||
+                   asset.properties&.fetch("preview_storage_path", nil)
+
+    return asset_url_for(asset) if preview_path.blank?
+
+    if Rails.env.production? || Rails.env.staging?
+      "#{CDN_BASE_URL.call}/assets/#{asset.uuid}?variant=preview"
+    else
+      "/api/v1/assets/local/#{asset.uuid}?variant=preview"
+    end
+  end
+
   # Convenience wrapper that returns a download-disposition URL.
   #
   # @param asset [Asset]

@@ -1,7 +1,8 @@
 import React from 'react';
 import {
     Box, Typography, Button, TextField, Checkbox, FormControlLabel,
-    Select, MenuItem, Chip, Stack, CircularProgress, Divider, Autocomplete, IconButton
+    Select, MenuItem, Chip, Stack, CircularProgress, Divider, Autocomplete, IconButton,
+    LinearProgress
 } from '@mui/material';
 import { Close, AutoAwesome, CollectionsBookmark, CategoryOutlined, AutoFixHigh, ContentCut, CloudUpload, SchemaOutlined } from '@mui/icons-material';
 
@@ -18,6 +19,7 @@ export default function UploadSidebar({
     filesData,
     handleUploadAll,
     isUploading,
+    uploadProgress = { done: 0, total: 0 },
     selectedCount,
     onClose
 }) {
@@ -114,6 +116,21 @@ export default function UploadSidebar({
             </Box>
 
             <Box sx={{ p: 3, borderTop: '1px solid #e2e8f0', bgcolor: '#f8fafc' }}>
+                {isUploading && uploadProgress.total > 0 && (
+                    <Box sx={{ mb: 2 }} data-testid="upload-progress">
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                            <Typography variant="caption" fontWeight="600" color="#475569">Uploading…</Typography>
+                            <Typography variant="caption" fontWeight="700" color="#4f46e5">
+                                {uploadProgress.done} of {uploadProgress.total}
+                            </Typography>
+                        </Box>
+                        <LinearProgress
+                            variant="determinate"
+                            value={uploadProgress.total ? Math.round((uploadProgress.done / uploadProgress.total) * 100) : 0}
+                            sx={{ height: 8, borderRadius: 4 }}
+                        />
+                    </Box>
+                )}
                 <Button variant="outlined" startIcon={<CloudUpload />} fullWidth onClick={handleUploadAll} disabled={isUploading || selectedCount === 0} sx={{ py: 1.5, '&:hover': { bgcolor: '#4338ca' }, textTransform: 'none', fontWeight: 700 }}>
                     {isUploading ? <CircularProgress size={24} color="inherit" /> : `Upload (${selectedCount})`}
                 </Button>

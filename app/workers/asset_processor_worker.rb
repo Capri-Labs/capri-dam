@@ -14,6 +14,9 @@
 #
 # 3. **Image-specific enrichment** (when +content_type+ starts with +image/+):
 #    - Dimensions, aspect ratio, colour space, and EXIF data via MiniMagick.
+#    - Full embedded metadata (EXIF, IPTC, XMP, Photoshop, ICC) via ExifTool
+#      when the binary is available, promoting descriptive fields such as
+#      author, copyright, keywords, and lens to top-level keys.
 #    - Top-5 dominant colour palette via ImageMagick histogram output.
 #    - Visible text via Tesseract OCR (+rtesseract+ gem).
 #
@@ -38,10 +41,54 @@
 # @see StorageManager
 # @see Api::V1::AssetsController#dispatch_asset_workers
 require "digest"
+require "open3"
 
 class AssetProcessorWorker
   include Sidekiq::Worker
   sidekiq_options queue: "ingest", retry: 3
+
+  # MIME types that browsers can render natively in an +<img>+ tag.  Any image
+  # asset whose MIME type is NOT in this list (e.g. Photoshop PSD, TIFF, HEIC)
+  # gets a flattened PNG preview generated so the UI can still display it.
+  WEB_RENDERABLE_MIME_TYPES = %w[
+    image/jpeg
+    image/jpg
+    image/pjpeg
+    image/png
+    image/gif
+    image/webp
+    image/svg+xml
+    image/avif
+  ].freeze
+
+  # ExifTool metadata groups that are noise for a DAM (the tool itself, the
+  # source path, and duplicated File-system attributes we already capture) and
+  # are therefore dropped from the stored +embedded_metadata+ hash.
+  EXIFTOOL_SKIP_GROUPS = %w[SourceFile ExifTool File Composite APP14].freeze
+
+  # High-value descriptive fields promoted to top-level metadata keys so the
+  # asset viewer and search can use them directly.  Each entry lists the
+  # ExifTool +Group:Tag+ candidates in priority order; the first non-blank match
+  # wins.  This captures the IPTC / XMP / Photoshop descriptive metadata (author,
+  # copyright, lens, colour mode, document IDs, …) that MiniMagick's EXIF-only
+  # reader silently drops.
+  EXIFTOOL_DESCRIPTIVE_MAP = {
+    creator: %w[XMP:Creator IPTC:By-line EXIF:Artist],
+    copyright: %w[XMP:Rights IPTC:CopyrightNotice EXIF:Copyright],
+    description: %w[XMP:Description IPTC:Caption-Abstract EXIF:ImageDescription],
+    headline: %w[XMP:Headline IPTC:Headline],
+    title: %w[XMP:Title IPTC:ObjectName],
+    keywords: %w[XMP:Subject IPTC:Keywords],
+    lens: %w[XMP:Lens EXIF:LensModel Composite:LensID],
+    camera_make: %w[EXIF:Make],
+    camera_model: %w[EXIF:Model],
+    date_taken: %w[EXIF:DateTimeOriginal XMP:CreateDate EXIF:CreateDate],
+    color_mode: %w[XMP:ColorMode],
+    icc_profile: %w[ICC_Profile:ProfileDescription XMP:ICCProfileName],
+    document_id: %w[XMP:DocumentID],
+    instance_id: %w[XMP:InstanceID],
+    software: %w[EXIF:Software XMP:CreatorTool],
+  }.freeze
 
   # Called when all retry attempts have been exhausted.
   # Marks the parent asset as +failed+ and cleans up the staging file.
@@ -92,6 +139,12 @@ class AssetProcessorWorker
         if mime_type.start_with?("image/")
           extract_image_metadata(staging_path, extracted_meta)
           extract_text_from_image(staging_path, extracted_meta)
+
+          # Photoshop / TIFF / HEIC and other non-web formats cannot be shown in
+          # a browser <img> tag, so render a flattened PNG preview and stage it.
+          unless WEB_RENDERABLE_MIME_TYPES.include?(mime_type)
+            generate_web_preview(staging_path, asset, version, storage, extracted_meta)
+          end
         elsif mime_type == "application/pdf"
           extract_pdf_metadata(staging_path, extracted_meta)
         elsif mime_type.start_with?("video/")
@@ -170,6 +223,12 @@ class AssetProcessorWorker
   # Extracts image dimensions, aspect ratio, colour space, EXIF data, and
   # dominant colour palette using MiniMagick.
   #
+  # In addition to the basic dimensions this captures the *full* EXIF hash under
+  # +:exif_data+ (surfaced by the asset viewer) and a set of extended technical
+  # properties (DPI, bit depth, channels, compression, ICC profile, layer count,
+  # orientation) so formats rich in metadata such as PSD and TIFF are not
+  # reduced to just a handful of fields.
+  #
   # @param path [String] absolute path to the image file
   # @param meta [Hash]   mutable metadata hash to populate
   # @return [void]
@@ -186,14 +245,200 @@ class AssetProcessorWorker
     extract_color_palette(path, meta)
 
     exif = image.exif
-    if exif.any?
+    if exif.respond_to?(:any?) && exif.any?
+      cleaned = clean_exif(exif)
+      meta[:exif_data]    = cleaned if cleaned.any?
       meta[:camera_make]  = exif["Make"]&.strip
       meta[:camera_model] = exif["Model"]&.strip
       meta[:software]     = exif["Software"]&.strip
     end
+
+    extract_extended_image_properties(image, meta)
+    extract_embedded_metadata(path, meta)
   rescue StandardError => e
     Rails.logger.error "Minor error: Image metadata extraction failed: #{e.message}"
     meta[:image_analysis_status] = "failed"
+  end
+
+  # Strips whitespace from EXIF values and drops blank entries so the stored
+  # +exif_data+ hash is clean for display.
+  #
+  # @param exif [Hash]
+  # @return [Hash]
+  def clean_exif(exif)
+    exif.each_with_object({}) do |(key, value), acc|
+      next if key.blank?
+
+      cleaned = value.is_a?(String) ? value.strip : value
+      acc[key.to_s] = cleaned unless cleaned.nil? || cleaned == ""
+    end
+  end
+
+  # Pulls extended technical properties from an image using ImageMagick's
+  # +identify+ output.  Every lookup is defensive: a format that does not expose
+  # a given property simply omits that key rather than aborting extraction.
+  #
+  # @param image [MiniMagick::Image]
+  # @param meta [Hash] mutable metadata hash to populate
+  # @return [void]
+  def extract_extended_image_properties(image, meta)
+    meta[:format]      = safe_image_attr { image.type }
+    meta[:bit_depth]   = safe_image_attr { image["%[bit-depth]"].presence || image["%z"].presence }
+    meta[:channels]    = safe_image_attr { image["%[channels]"].presence }
+    meta[:compression] = safe_image_attr { image["%C"].presence }
+    meta[:orientation] = safe_image_attr { image["%[orientation]"].presence }
+
+    density = safe_image_attr { image["%x x %y"].presence }
+    meta[:dpi] = density if density.present? && density != "0 x 0"
+
+    icc = safe_image_attr { image["%[profile:icc]"].presence || image["%[profiles]"].presence }
+    meta[:color_profile] = icc if icc.present?
+
+    layers = safe_image_attr { image.layers&.size }
+    meta[:layer_count] = layers if layers.to_i > 1
+
+    # Drop any properties that resolved to nil so the stored hash stays tidy.
+    meta.reject! { |_k, v| v.nil? }
+  end
+
+  # Runs the given block, returning +nil+ (or the supplied default) when the
+  # underlying ImageMagick lookup is unavailable or raises.
+  #
+  # @return [Object, nil]
+  def safe_image_attr(default = nil)
+    yield
+  rescue StandardError
+    default
+  end
+
+  # Extracts the *full* set of embedded metadata (EXIF, IPTC, XMP, Photoshop and
+  # ICC profile fields) using ExifTool and merges it into +meta+.
+  #
+  # MiniMagick's +Image#exif+ only surfaces the ~20 tags of the EXIF group,
+  # silently dropping the IPTC / XMP / Photoshop namespaces that hold the most
+  # useful descriptive metadata for a DAM — author, copyright, keywords, lens,
+  # colour mode, document IDs and so on.  ExifTool reads all of them, so a file
+  # that previously yielded ~20 fields now yields well over a hundred.
+  #
+  # The complete, group-namespaced payload is stored under
+  # +:embedded_metadata+, the flat EXIF group is folded into +:exif_data+ (so
+  # the existing viewer panel keeps working), and a curated set of descriptive
+  # fields (see {EXIFTOOL_DESCRIPTIVE_MAP}) is promoted to top-level keys.
+  #
+  # Non-fatal and gracefully degrading: when the +exiftool+ binary is not
+  # installed (or errors) the method simply returns and the asset keeps the
+  # MiniMagick-derived EXIF data.
+  #
+  # @param path [String] absolute path to the image file
+  # @param meta [Hash]   mutable metadata hash to populate
+  # @return [void]
+  def extract_embedded_metadata(path, meta)
+    return unless exiftool_available?
+
+    out, _err, status = Open3.capture3(
+      "exiftool", "-json", "-G0", "-struct", "-api", "largefilesupport=1", path
+    )
+    return unless status.success?
+
+    raw = JSON.parse(out).first
+    return unless raw.is_a?(Hash)
+
+    grouped = Hash.new { |hash, key| hash[key] = {} }
+    raw.each do |key, value|
+      group, tag = key.split(":", 2)
+      next if tag.nil? || EXIFTOOL_SKIP_GROUPS.include?(group)
+      next if binary_placeholder?(value)
+
+      grouped[group][tag] = value
+    end
+    return if grouped.empty?
+
+    meta[:embedded_metadata] = grouped
+    meta[:metadata_field_count] = grouped.values.sum(&:size)
+
+    exif_group = grouped["EXIF"]
+    if exif_group.present?
+      existing = meta[:exif_data].is_a?(Hash) ? meta[:exif_data] : {}
+      meta[:exif_data] = existing.merge(exif_group)
+    end
+
+    apply_descriptive_metadata(raw, meta)
+  rescue StandardError => e
+    Rails.logger.error "Minor error: ExifTool metadata extraction failed: #{e.message}"
+  end
+
+  # Promotes the first non-blank descriptive candidate for each mapped field
+  # (creator, copyright, lens, …) onto +meta+.
+  #
+  # @param raw  [Hash] ExifTool's flat +Group:Tag => value+ output
+  # @param meta [Hash] mutable metadata hash to populate
+  # @return [void]
+  def apply_descriptive_metadata(raw, meta)
+    EXIFTOOL_DESCRIPTIVE_MAP.each do |field, candidates|
+      candidates.each do |candidate|
+        value = raw[candidate]
+        next if value.nil? || binary_placeholder?(value)
+        next if value.is_a?(String) && value.strip.empty?
+        next if value.is_a?(Array) && value.empty?
+
+        meta[field] = value.is_a?(String) ? value.strip : value
+        break
+      end
+    end
+  end
+
+  # @return [Boolean] true when the value is an ExifTool binary-data placeholder
+  #   string (e.g. embedded thumbnails) that should not be stored.
+  def binary_placeholder?(value)
+    value.is_a?(String) && value.start_with?("(Binary data")
+  end
+
+  # @return [Boolean] whether the +exiftool+ binary is on +PATH+.  Memoised so
+  #   the availability probe runs at most once per worker instance.
+  def exiftool_available?
+    return @exiftool_available unless @exiftool_available.nil?
+
+    @exiftool_available = system("which", "exiftool", out: File::NULL, err: File::NULL) || false
+  end
+
+  # Generates a flattened, web-renderable PNG preview for image formats that
+  # browsers cannot display natively (PSD, TIFF, HEIC, …) and stores it via the
+  # active storage backend.  Populates +:preview_storage_path+ and
+  # +:preview_content_type+ so the API can serve the preview separately from the
+  # original binary.
+  #
+  # Non-fatal: any failure is logged and the asset still processes without a
+  # preview.
+  #
+  # @param source_path [String]
+  # @param asset [Asset]
+  # @param version [AssetVersion]
+  # @param storage [Object] storage adapter responding to +store+
+  # @param meta [Hash] mutable metadata hash to populate
+  # @return [void]
+  def generate_web_preview(source_path, asset, version, storage, meta)
+    require "mini_magick"
+    preview_tmp = Rails.root.join("tmp", "preview_#{SecureRandom.hex(8)}.png").to_s
+
+    MiniMagick::Tool::Convert.new(false) do |convert|
+      convert.background "white"
+      convert << "#{source_path}[0]"
+      convert.flatten
+      convert << preview_tmp
+    end
+
+    return unless File.exist?(preview_tmp)
+
+    preview_path = "#{asset.uuid}/v#{version.version_number}_preview_#{SecureRandom.hex(4)}.png"
+    File.open(preview_tmp, "rb") { |file| storage.store(file, preview_path) }
+
+    meta[:preview_storage_path] = preview_path
+    meta[:preview_content_type] = "image/png"
+    Rails.logger.info "🖼️ Generated web preview for AssetVersion #{version.id} at #{preview_path}"
+  rescue StandardError => e
+    Rails.logger.error "Web preview generation failed: #{e.message}"
+  ensure
+    File.delete(preview_tmp) if preview_tmp && File.exist?(preview_tmp)
   end
 
   # Extracts the top 5 dominant hex colour codes from an image using an

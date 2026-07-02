@@ -54,6 +54,7 @@ RSpec.describe 'Api::V1::Assets', type: :request do
                        type:      { type: :string, example: 'image/png' },
                        size:      { type: :string, example: '2.4 MB' },
                        thumb_url: { type: :string, nullable: true },
+                       preview_url: { type: :string, nullable: true, description: 'Web-renderable preview URL (falls back to the asset URL)' },
                      },
                    },
                  },
@@ -608,6 +609,11 @@ RSpec.describe 'Api::V1::Assets', type: :request do
   path '/api/v1/assets/local/{uuid}' do
     parameter name: :uuid, in: :path, type: :string, format: :uuid, required: true,
               description: 'Asset UUID (public identifier — **not** the integer PK)'
+    parameter name: :variant, in: :query, type: :string, required: false,
+              enum: %w[preview],
+              description: 'When set to `preview`, streams the generated web-renderable ' \
+                           'preview (e.g. a flattened PNG for a PSD/TIFF) instead of the ' \
+                           'original binary.'
 
     get 'Stream the active-version file from local/staging storage' do
       tags 'Assets'

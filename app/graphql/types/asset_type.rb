@@ -13,6 +13,10 @@ module Types
           description: "Public URL to the active version of the asset. " \
                        "Returns the CDN URL in production or the authenticated " \
                        "local-serve endpoint (/api/v1/assets/local/:uuid) in development."
+    field :preview_url,    String,                           null: true,
+          description: "URL to a web-renderable preview of the asset. For formats " \
+                       "browsers cannot display natively (PSD, TIFF, HEIC) this points " \
+                       "at a generated PNG preview; otherwise it falls back to the asset URL."
     field :version_number, Integer,                          null: true,
           description: "Active version number (1-based)."
     field :properties,     Types::JsonType,                  null: true,
@@ -26,6 +30,13 @@ module Types
     def url
       helper = Object.new.extend(AssetUrlHelper)
       helper.asset_url_for(object)
+    rescue StandardError
+      nil
+    end
+
+    def preview_url
+      helper = Object.new.extend(AssetUrlHelper)
+      helper.asset_preview_url_for(object)
     rescue StandardError
       nil
     end

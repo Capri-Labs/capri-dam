@@ -14,7 +14,7 @@ help: ## Show this help message
 bootstrap: ## Force install system dependencies (macOS/Homebrew only)
 	@echo "--- 1. Bootstrapping System Packages ---"
 	@command -v brew >/dev/null 2>&1 || { echo "Homebrew not found. Install it first."; exit 1; }
-	brew install redis rbenv ruby-build node yarn exiv2 pkg-config postgresql@14 imagemagick
+	brew install redis rbenv ruby-build node yarn exiv2 pkg-config postgresql@14 imagemagick exiftool
 	@echo "--- 2. Ensuring Ruby $(RUBY_VERSION) is installed ---"
 	rbenv install -s $(RUBY_VERSION)
 	rbenv global $(RUBY_VERSION)
@@ -36,6 +36,7 @@ check-system: ## Verify if we are on the right Ruby and have Yarn
 		echo "\033[31mImageMagick not found (required by MiniMagick). Run: make bootstrap\033[0m"; \
 		exit 1; \
 	fi
+	@command -v exiftool >/dev/null 2>&1 || echo "\033[33mExifTool not found — full EXIF/IPTC/XMP metadata extraction will be skipped. Run: make bootstrap\033[0m"
 	@echo "\033[32mEnvironment OK.\033[0m"
 
 repair-lockfile: ## Force update the lockfile for modern Ruby

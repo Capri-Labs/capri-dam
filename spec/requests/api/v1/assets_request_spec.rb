@@ -404,6 +404,48 @@ RSpec.describe "Api::V1::Assets coverage", type: :request do
       FileUtils.rm_rf(dam_path.dirname) if defined?(dam_path) && dam_path.dirname.to_s.end_with?("assets_controller_coverage")
     end
 
+    it "serves the generated web preview when variant=preview is requested" do
+      preview_path = Rails.root.join("storage/dam/assets_controller_coverage/preview.png")
+      original_path = Rails.root.join("storage/dam/assets_controller_coverage/original.psd")
+      FileUtils.mkdir_p(preview_path.dirname)
+      File.binwrite(preview_path, "PNGPREVIEW")
+      File.binwrite(original_path, "8BPS-original")
+      asset = asset_with_version(title: "Psd", properties: {
+        "storage_path"         => "assets_controller_coverage/original.psd",
+        "content_type"         => "image/vnd.adobe.photoshop",
+        "preview_storage_path" => "assets_controller_coverage/preview.png",
+        "preview_content_type" => "image/png",
+      })
+
+      get "/api/v1/assets/local/#{asset.uuid}", params: { variant: "preview" }
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to eq("PNGPREVIEW")
+      expect(response.headers["Content-Type"]).to include("image/png")
+
+      # Without the variant the original binary is served.
+      get "/api/v1/assets/local/#{asset.uuid}"
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to eq("8BPS-original")
+    ensure
+      FileUtils.rm_f(preview_path)
+      FileUtils.rm_f(original_path)
+      FileUtils.rm_rf(preview_path.dirname) if defined?(preview_path) && preview_path.dirname.to_s.end_with?("assets_controller_coverage")
+    end
+
+    it "exposes a preview_url that points at the preview variant" do
+      asset = asset_with_version(title: "PsdMeta", properties: {
+        "storage_path"         => "assets_controller_coverage/original.psd",
+        "content_type"         => "image/vnd.adobe.photoshop",
+        "preview_storage_path" => "assets_controller_coverage/preview.png",
+        "preview_content_type" => "image/png",
+      })
+
+      get "/api/v1/assets/#{asset.uuid}", as: :json
+      expect(response).to have_http_status(:ok)
+      expect(json["preview_url"]).to include("variant=preview")
+      expect(json["url"]).not_to include("variant=preview")
+    end
+
     it "generates and reports failures for watermarked images" do
       require "mini_magick"
 

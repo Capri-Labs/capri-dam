@@ -165,6 +165,13 @@ type Asset {
   id: ID!
 
   """
+  URL to a web-renderable preview of the asset. For formats browsers cannot
+  display natively (PSD, TIFF, HEIC) this points at a generated PNG preview;
+  otherwise it falls back to the asset URL.
+  """
+  previewUrl: String
+
+  """
   Raw JSONB custom attributes (Campaign, Region, etc).
   """
   properties: Json

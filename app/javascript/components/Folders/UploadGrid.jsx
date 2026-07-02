@@ -3,7 +3,7 @@ import {
     Box, Grid, Typography, Button, TextField, Checkbox, FormControlLabel,
     Select, MenuItem, Paper, IconButton, Chip, Tooltip, Divider
 } from '@mui/material';
-import { Close, Sync, WarningAmber, AddPhotoAlternate, AutoAwesome, Cancel } from '@mui/icons-material';
+import { Close, Sync, WarningAmber, AddPhotoAlternate, AutoAwesome, Cancel, InsertDriveFile } from '@mui/icons-material';
 
 const IMAGE_TYPES = ['Product Image', 'Lifestyle', 'Banner / Hero', 'Headshot', 'Document'];
 const ASSET_TYPE_CODES = ['FR01', 'FR02', 'FR03', 'BK01', 'BK02', 'SD01', 'SD02', 'TQ01', 'TQ02', 'TP01', 'TP02', 'DT01', 'DT02', 'DT03'];
@@ -30,7 +30,7 @@ export default function UploadGrid({
     };
 
     return (
-        <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+        <Box sx={{ flexGrow: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
             <Box sx={{ p: 2, px: 4, borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', bgcolor: '#ffffff' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
                     <Typography variant="h6" fontWeight="700" sx={{ mr: 3 }}>Staging Area</Typography>
@@ -67,7 +67,19 @@ export default function UploadGrid({
                                     </Box>
 
                                     <Box sx={{ height: 180, position: 'relative', bgcolor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                        {fData.preview ? <img src={fData.preview} alt="preview" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} /> : <Typography variant="caption" color="textSecondary">No preview</Typography>}
+                                        {fData.preview ? (
+                                            <img src={fData.preview} alt="preview" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                                        ) : (
+                                            <Box sx={{ textAlign: 'center', px: 1 }}>
+                                                <InsertDriveFile sx={{ fontSize: 40, color: '#94a3b8' }} />
+                                                <Typography variant="caption" sx={{ display: 'block', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>
+                                                    {(fData.file?.name?.split('.').pop() || 'file')}
+                                                </Typography>
+                                                <Typography variant="caption" sx={{ display: 'block', color: '#94a3b8' }}>
+                                                    Preview generated after upload
+                                                </Typography>
+                                            </Box>
+                                        )}
                                         {['hashing', 'checking', 'uploading'].includes(fData.status) && (
                                             <Box sx={{ position: 'absolute', inset: 0, bgcolor: 'rgba(255,255,255,0.85)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                                                 <Sync sx={{ animation: 'spin 2s linear infinite', color: '#4f46e5', mb: 1 }} />

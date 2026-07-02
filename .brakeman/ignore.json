@@ -5,12 +5,12 @@
       "note": "FileAccess Weak — app/controllers/api/v1/assets_controller.rb:185. The original_filename is sanitised with File.basename + gsub(/[^\\w.\\-]/, '_') and the path is scoped under tmp/uploads/<uuid>_v1_<safe_name>. Accepted risk."
     },
     {
-      "fingerprint": "1f327e72a42226b6489d5be4c112cc86c4cefd2c71d54ae99fe00cbd5dbd2082",
-      "note": "FileAccess Weak — app/controllers/api/v1/assets_controller.rb:745. storage_path is a DB-stored value but is resolved through File.expand_path and validated against the tmp/ root before use. Path traversal is not possible. Accepted risk."
+      "fingerprint": "346bde8af3546eddd17af8988e0b8b4446fb9261d3ba0059be2362d4a216625e",
+      "note": "FileAccess Weak — app/controllers/api/v1/assets_controller.rb serve_local. storage_path / preview_storage_path are DB-stored values but are resolved through File.expand_path and validated against the storage/dam and tmp/ roots before use. Path traversal is not possible. Accepted risk."
     },
     {
-      "fingerprint": "e673619790c07adce5ae43b3b9b31f710e3ff8ca606b9bf98e81d7d70f35ae0f",
-      "note": "SendFile Weak — app/controllers/api/v1/assets_controller.rb:783. Both dam_candidate and tmp_candidate are validated via File.expand_path against storage_root/tmp_root before reaching send_file. Content-Type is from DB, not user input. Accepted risk."
+      "fingerprint": "f63ea31930c5e1c4647eed66a1ad51809310bb05632ab3bfb11be40ebead137c",
+      "note": "SendFile Weak — app/controllers/api/v1/assets_controller.rb serve_local. Both dam_candidate and tmp_candidate (original or preview variant) are validated via File.expand_path against storage_root/tmp_root before reaching send_file. Content-Type is from DB, not user input. Accepted risk."
     },
     {
       "fingerprint": "ad4bb17c7565f6c92859cf20bdf59196a5841d07efad6d3c63bf8ad31931b73a",

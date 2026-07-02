@@ -94,6 +94,13 @@ export default function AssetViewer({ asset: initialAsset, open, onClose, onAsse
     const displayName = asset.title || asset.name || "Unknown File";
     const fileSize = asset.properties?.file_size || "Unknown Size";
 
+    // Prefer a generated web preview (e.g. flattened PNG for PSD/TIFF) for
+    // display; the original URL is still used for downloads.
+    const displayImageUrl = asset.preview_url || asset.url;
+    const previewSrc = displayImageUrl
+        ? `${displayImageUrl}${displayImageUrl.includes('?') ? '&' : '?'}v=${asset.version || Date.now()}`
+        : null;
+
     const editorState = asset.properties?.editor_state || {};
     const adjustments = editorState.adjustments || {};
     const geometry = editorState.geometry || {};
@@ -174,9 +181,9 @@ export default function AssetViewer({ asset: initialAsset, open, onClose, onAsse
             <Grid container sx={{ height: 'calc(100vh - 64px)' }}>
                 {/* LEFT PANE: 60% Image Preview */}
                 <Grid  sx={{ width: '65%', bgcolor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', p: 4, borderRight: '1px solid #cbd5e1' }}>
-                    {isImage && asset.url ? (
+                    {isImage && previewSrc ? (
                         <Box component="img"
-                             src={`${asset.url}?v=${asset.version || Date.now()}`}
+                             src={previewSrc}
                              alt={displayName}
                              sx={{
                                  maxWidth: '100%',
@@ -237,6 +244,24 @@ export default function AssetViewer({ asset: initialAsset, open, onClose, onAsse
                                 <ListItem disableGutters><ListItemText primary="Date Added" secondary={new Date(asset.created_at).toLocaleString()} /></ListItem>
                                 <ListItem disableGutters><ListItemText primary="Resolution" secondary={asset.properties?.resolution || "Unknown"} /></ListItem>
                                 <ListItem disableGutters><ListItemText primary="File Size" secondary={fileSize} /></ListItem>
+                                {asset.properties?.creator && (
+                                    <ListItem disableGutters><ListItemText primary="Creator" secondary={[].concat(asset.properties.creator).join(', ')} /></ListItem>
+                                )}
+                                {asset.properties?.copyright && (
+                                    <ListItem disableGutters><ListItemText primary="Copyright" secondary={asset.properties.copyright} /></ListItem>
+                                )}
+                                {(asset.properties?.camera_make || asset.properties?.camera_model) && (
+                                    <ListItem disableGutters><ListItemText primary="Camera" secondary={[asset.properties.camera_make, asset.properties.camera_model].filter(Boolean).join(' ')} /></ListItem>
+                                )}
+                                {asset.properties?.lens && (
+                                    <ListItem disableGutters><ListItemText primary="Lens" secondary={asset.properties.lens} /></ListItem>
+                                )}
+                                {asset.properties?.color_mode && (
+                                    <ListItem disableGutters><ListItemText primary="Color Mode" secondary={asset.properties.color_mode} /></ListItem>
+                                )}
+                                {asset.properties?.metadata_field_count > 0 && (
+                                    <ListItem disableGutters><ListItemText primary="Embedded Metadata Fields" secondary={asset.properties.metadata_field_count} /></ListItem>
+                                )}
                             </List>
 
                             {/* Extract the palette from properties, defaulting to empty array */}
@@ -264,10 +289,14 @@ export default function AssetViewer({ asset: initialAsset, open, onClose, onAsse
 
                             <Divider sx={{ mb: 3 }} />
 
-                            <Typography variant="subtitle2" fontWeight="700" sx={{ mb: 2 }}>EXIF / IPTC Data</Typography>
-                            <Paper elevation={0} sx={{ p: 2, bgcolor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 2 }}>
-                                <Typography variant="caption" color="textSecondary" sx={{ fontFamily: 'monospace' }}>
-                                    {asset.properties?.exif_data ? JSON.stringify(asset.properties.exif_data, null, 2) : "No EXIF data extracted yet."}
+                            <Typography variant="subtitle2" fontWeight="700" sx={{ mb: 2 }}>EXIF / IPTC / XMP Data</Typography>
+                            <Paper elevation={0} sx={{ p: 2, bgcolor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 2, maxHeight: 360, overflowY: 'auto' }}>
+                                <Typography component="pre" variant="caption" color="textSecondary" sx={{ fontFamily: 'monospace', whiteSpace: 'pre-wrap', m: 0 }}>
+                                    {asset.properties?.embedded_metadata
+                                        ? JSON.stringify(asset.properties.embedded_metadata, null, 2)
+                                        : asset.properties?.exif_data
+                                            ? JSON.stringify(asset.properties.exif_data, null, 2)
+                                            : "No EXIF data extracted yet."}
                                 </Typography>
                             </Paper>
                         </TabPanel>

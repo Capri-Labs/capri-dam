@@ -169,7 +169,7 @@ Presets define codec, bitrate, and resolution:
 . Client calls `GET /rails/active_storage/direct_uploads` to obtain a presigned URL.
 . Client PUTs the file binary directly to the storage backend.
 . Client POSTs the signed blob ID to `POST /api/v1/assets`.
-. `AssetProcessorWorker` runs EXIF extraction, generates thumbnail rendition, and queues embedding.
+. `AssetProcessorWorker` runs full embedded-metadata extraction (EXIF/IPTC/XMP/Photoshop/ICC via ExifTool), generates thumbnail/web-preview renditions, and queues embedding.
 
 == Local development storage
 

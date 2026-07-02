@@ -900,13 +900,31 @@ module Api
         asset    = Asset.includes(:active_version).find_by!(uuid: params[:uuid])
         active_v = asset.active_version
 
-        storage_path = active_v&.properties&.fetch("storage_path", nil) ||
-                       asset.properties["storage_path"]
-        content_type = (active_v&.properties&.fetch("content_type", nil) ||
-                        asset.properties["content_type"]).presence || "application/octet-stream"
+        want_preview = params[:variant].to_s == "preview"
+
+        preview_path = active_v&.properties&.fetch("preview_storage_path", nil) ||
+                       asset.properties["preview_storage_path"]
+
+        storage_path =
+          if want_preview && preview_path.present?
+            preview_path
+          else
+            active_v&.properties&.fetch("storage_path", nil) ||
+              asset.properties["storage_path"]
+          end
+
+        content_type =
+          if want_preview && preview_path.present?
+            (active_v&.properties&.fetch("preview_content_type", nil) ||
+             asset.properties["preview_content_type"]).presence || "image/png"
+          else
+            (active_v&.properties&.fetch("content_type", nil) ||
+             asset.properties["content_type"]).presence || "application/octet-stream"
+          end
 
         # 1. ActiveStorage attachment: redirect to signed blob URL.
-        if active_v.respond_to?(:file) && active_v.file.attached?
+        #    (Only for the original binary — previews are stored on disk.)
+        if !want_preview && active_v.respond_to?(:file) && active_v.file.attached?
           return redirect_to url_for(active_v.file), allow_other_host: false
         end
 
@@ -1094,10 +1112,11 @@ module Api
           # Merge parent properties with active version properties so React sees everything
           metadata: metadata,
           content_type: metadata["content_type"],
-          thumb_url: asset_url_for(asset),
+          thumb_url: asset_preview_url_for(asset),
           folder_id: asset.folder_id,
           trashed: asset.trashed?,
           url: asset_url_for(asset),
+          preview_url: asset_preview_url_for(asset),
         }
       end
 

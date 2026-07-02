@@ -45,10 +45,10 @@ export default function AssetCard({ asset, onPin, onViewMore }) {
         >
             {/* Image / Thumbnail Area */}
             <Box sx={{ position: 'relative', height: 160, bgcolor: '#f1f5f9', borderBottom: '1px solid #e2e8f0' }}>
-                {asset.url ? (
+                {asset.preview_url || asset.url ? (
                     <CardMedia
                         component="img"
-                        image={asset.url}
+                        image={asset.preview_url || asset.url}
                         alt={filename}
                         sx={{ height: '100%', objectFit: 'cover' }}
                     />

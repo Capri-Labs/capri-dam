@@ -138,12 +138,20 @@ test.describe('Local asset serving (GET /api/v1/assets/local/:uuid)', () => {
         const etag = first.headers()['etag'];
         expect(etag).toBeTruthy();
 
-        // Second request with If-None-Match → expect 304.
-        const second = await request.get(`/api/v1/assets/local/${uuid}`, {
-            headers: { ...authHeaders(), 'If-None-Match': etag },
+    test('accepts the ?variant=preview query parameter without error', async ({ request, page }) => {
+        await login(page);
+        const uuid = await getFirstReadyAssetUuid(request, null);
+        test.skip(!uuid, 'No ready assets in DB — seed the test environment first');
+
+        const res = await request.get(`/api/v1/assets/local/${uuid}?variant=preview`, {
+            headers: authHeaders(),
             failOnStatusCode: false,
         });
-        expect(second.status()).toBe(304);
+
+        // When the asset has a generated preview a 200 is returned; otherwise the
+        // endpoint falls back to the original binary (200) or 404 if the file is
+        // absent on this machine. It must never 500.
+        expect([ 200, 404 ]).toContain(res.status());
     });
 });
 

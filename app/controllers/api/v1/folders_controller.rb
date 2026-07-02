@@ -349,6 +349,7 @@ module Api
           updated_at:   asset.updated_at,
 
           url: asset_url_for(asset),
+          preview_url: asset_preview_url_for(asset),
         }
       end
 

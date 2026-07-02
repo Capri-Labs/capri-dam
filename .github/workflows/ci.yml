@@ -154,7 +154,7 @@ jobs:
 
     steps:
       - name: Install system packages
-        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y libpq-dev libvips node-gyp exiv2 imagemagick
+        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y libpq-dev libvips node-gyp exiv2 imagemagick libimage-exiftool-perl
 
       - name: Checkout
         uses: actions/checkout@v7
@@ -273,7 +273,7 @@ jobs:
 
     steps:
       - name: Install system packages
-        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y libpq-dev libvips node-gyp exiv2 imagemagick
+        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y libpq-dev libvips node-gyp exiv2 imagemagick libimage-exiftool-perl
 
       - name: Checkout
         uses: actions/checkout@v7
