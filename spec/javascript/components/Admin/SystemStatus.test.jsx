@@ -24,7 +24,7 @@ import SystemStatus from '../../../../app/javascript/components/Admin/SystemStat
 describe('SystemStatus tabs', () => {
   beforeEach(() => {
     jest.useFakeTimers();
-    document.head.innerHTML = '<meta name="csrf-token" content="token" />';
+    const _csrfMeta = document.head.querySelector('meta[name="csrf-token"]') || (() => { const m = document.createElement('meta'); m.name = 'csrf-token'; document.head.appendChild(m); return m; })(); _csrfMeta.content = 'token';
     window.confirm = jest.fn(() => true);
     global.fetch = jest.fn((url, options = {}) => {
       if (url === '/admin/system_status.json') {
@@ -54,8 +54,8 @@ describe('SystemStatus tabs', () => {
     });
   });
 
-  afterEach(() => {
-    jest.runOnlyPendingTimers();
+  afterEach(async () => {
+    await act(async () => { jest.runOnlyPendingTimers(); });
     jest.useRealTimers();
   });
 
@@ -75,7 +75,7 @@ describe('SystemStatus tabs', () => {
   });
 
   it('renders OperationalLoggingTab and applies config', async () => {
-    render(<OperationalLoggingTab />);
+    await act(async () => { render(<OperationalLoggingTab />); });
     expect(await screen.findByText('Adjust Log Verbosity')).toBeInTheDocument();
     fireEvent.click(screen.getByText('Apply Configuration'));
     await waitFor(() => expect(global.fetch).toHaveBeenCalledWith(
@@ -84,22 +84,22 @@ describe('SystemStatus tabs', () => {
     ));
   });
 
-  it('renders SmtpSettingsTab with fields', () => {
-    render(<SmtpSettingsTab incomingConfigs={{ address: 'smtp.example.com', sender_address: 'noreply@example.com' }} />);
+  it('renders SmtpSettingsTab with fields', async () => {
+    await act(async () => { render(<SmtpSettingsTab incomingConfigs={{ address: 'smtp.example.com', sender_address: 'noreply@example.com' }} />); });
     expect(screen.getByText('SMTP Infrastructure Setup')).toBeInTheDocument();
     expect(screen.getByDisplayValue('smtp.example.com')).toBeInTheDocument();
     expect(screen.getByDisplayValue('noreply@example.com')).toBeInTheDocument();
   });
 
   it('renders StorageOperationsTab', async () => {
-    render(<StorageOperationsTab />);
-    act(() => jest.advanceTimersByTime(600));
+    await act(async () => { render(<StorageOperationsTab />); });
+    await act(async () => { jest.advanceTimersByTime(600); });
     expect(await screen.findByText('Infrastructure Routing')).toBeInTheDocument();
     expect(screen.getByText('Save CDN Settings')).toBeInTheDocument();
   });
 
   it('renders SystemStatus main and switches tabs', async () => {
-    render(<SystemStatus incomingConfigs={{ address: 'smtp.example.com' }} />);
+    await act(async () => { render(<SystemStatus incomingConfigs={{ address: 'smtp.example.com' }} />); });
     expect(screen.getByText('System Operations')).toBeInTheDocument();
     expect(await screen.findByText('Puma Rack')).toBeInTheDocument();
     fireEvent.click(screen.getByText('SMTP & Email Settings'));

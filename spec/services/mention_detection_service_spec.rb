@@ -32,3 +32,42 @@ RSpec.describe MentionDetectionService do
     end
   end
 end
+
+# ---- merged from mention_detection_service_coverage_spec.rb ----
+RSpec.describe MentionDetectionService do
+  describe '.extract_mentions' do
+    it 'returns an empty list for blank, missing, or unknown mentions' do
+      expect(described_class.extract_mentions(nil)).to eq([])
+      expect(described_class.extract_mentions('hello world')).to eq([])
+      expect(described_class.extract_mentions('hello @nobody')).to eq([])
+    end
+
+    it 'matches by email handle and preserves canonical username fallback' do
+      user = create(:user, username: '', email: 'person@example.com')
+
+      mention = described_class.extract_mentions('Please ask @person').first
+
+      expect(mention[:user]).to eq(user)
+      expect(mention[:username]).to eq('person')
+      expect(mention[:start]).to eq(11)
+      expect(mention[:end]).to eq(18)
+    end
+  end
+
+  describe '.replace_mentions' do
+    it 'replaces known handles with escaped mention spans and leaves unknown handles unchanged' do
+      user = create(:user)
+
+      html = described_class.replace_mentions('Hi @Alice and @nobody', 'alice' => user)
+
+      expect(html).to include(%(class="mention" data-user-id="#{user.id}"))
+      expect(html).to include('@Alice')
+      expect(html).to include('@nobody')
+    end
+
+    it 'returns blank text unchanged' do
+      expect(described_class.replace_mentions(nil)).to be_nil
+      expect(described_class.replace_mentions('')).to eq('')
+    end
+  end
+end

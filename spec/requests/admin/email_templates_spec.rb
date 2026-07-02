@@ -118,3 +118,110 @@ RSpec.describe "Admin::EmailTemplates", type: :request do
     end
   end
 end
+
+# ---- merged from email_templates_coverage_spec.rb ----
+RSpec.describe "Admin::EmailTemplates coverage additions", type: :request do
+  let(:admin) { create(:user, :admin) }
+
+  before do
+    sign_in admin
+    allow(EmailDispatcherWorker).to receive(:perform_async)
+  end
+
+  describe "GET /admin/email_templates" do
+    it "renders the HTML shell" do
+      get "/admin/email_templates"
+      expect(response).to have_http_status(:ok)
+    end
+
+    it "returns an empty JSON list" do
+      get "/admin/email_templates", as: :json
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body["email_templates"]).to eq([])
+    end
+  end
+
+  describe "event triggers" do
+    it "returns all supported system events" do
+      get "/admin/email_templates/event_triggers", as: :json
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body["events"].map { |event| event["id"] }).to include("user_created", "report_ready")
+    end
+  end
+
+  describe "create/update details" do
+    it "creates templates with variables, preview data, category, and creator" do
+      post "/admin/email_templates", params: {
+        email_template: {
+          name: "Report Ready",
+          event_trigger: "report_ready_custom",
+          subject: "Report {{report.name}}",
+          html_body: "<p>Ready</p>",
+          text_body: "Ready",
+          active: false,
+          description: "Report notification",
+          category: "system",
+          variables: { report: [ "name" ] },
+          preview_data: { report: { name: "Weekly" } },
+        },
+      }, as: :json
+
+      expect(response).to have_http_status(:ok)
+      body = response.parsed_body["email_template"]
+      expect(body).to include("active" => false, "category" => "system", "created_by_id" => admin.id)
+      expect(body["preview_data"]).to include("report")
+    end
+
+    it "returns validation errors for invalid category" do
+      post "/admin/email_templates", params: {
+        email_template: { name: "Bad", event_trigger: "bad_event", subject: "Bad", category: "invalid" },
+      }, as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body["success"]).to be(false)
+      expect(response.parsed_body["errors"]).to include(a_string_matching(/Category/))
+    end
+  end
+
+  describe "send_test" do
+    it "queues a test delivery with explicit recipient and payload" do
+      template = create(:email_template, event_trigger: "test_payload")
+
+      expect do
+        post "/admin/email_templates/#{template.id}/send_test", params: {
+          recipient_email: "qa@example.com", payload: { user: { first_name: "QA" } }
+        }, as: :json
+      end.to change(EmailDelivery, :count).by(1)
+
+      delivery = EmailDelivery.last
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body["delivery_id"]).to eq(delivery.id)
+      expect(delivery).to have_attributes(recipient_email: "qa@example.com", status: "pending")
+      expect(delivery.payload).to include("user" => { "first_name" => "QA" })
+      expect(EmailDispatcherWorker).to have_received(:perform_async).with(delivery.id)
+    end
+
+    it "falls back to preview data and current user email" do
+      template = create(:email_template, event_trigger: "preview_payload", preview_data: { "asset" => { "name" => "Hero" } })
+
+      post "/admin/email_templates/#{template.id}/send_test", as: :json
+
+      expect(response).to have_http_status(:ok)
+      delivery = EmailDelivery.last
+      expect(delivery.recipient_email).to eq(admin.email)
+      expect(delivery.payload).to include("asset" => { "name" => "Hero" })
+    end
+  end
+
+  describe "destroy failure" do
+    it "returns an error when destroy fails" do
+      template = create(:email_template, event_trigger: "destroy_failure")
+      allow_any_instance_of(EmailTemplate).to receive(:destroy).and_return(false)
+
+      delete "/admin/email_templates/#{template.id}", as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body).to include("success" => false)
+    end
+  end
+end

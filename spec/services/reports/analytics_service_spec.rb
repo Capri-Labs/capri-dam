@@ -91,16 +91,18 @@ RSpec.describe Reports::AnalyticsService, type: :service do
 
   describe '#time_series' do
     it 'returns raw and merged daily series' do
+      sample_date = 10.days.ago.to_date.to_s
       allow(ActiveRecord::Base.connection).to receive(:select_all).and_return(
-        [ { 'date' => '2026-06-01', 'count' => '2' } ],
-        [ { 'date' => '2026-06-01', 'count' => '1' } ]
+        [ { 'date' => sample_date, 'count' => '2' } ],
+        [ { 'date' => sample_date, 'count' => '1' } ]
       )
 
       result = service.send(:time_series)
 
-      expect(result[:assets]).to eq([ { date: '2026-06-01', count: 2 } ])
-      expect(result[:workflows]).to eq([ { date: '2026-06-01', count: 1 } ])
-      expect(result[:combined].first).to include(date: '2026-06-01', assets: 2, workflows: 1)
+      expect(result[:assets]).to eq([ { date: sample_date, count: 2 } ])
+      expect(result[:workflows]).to eq([ { date: sample_date, count: 1 } ])
+      combined_entry = result[:combined].find { |r| r[:date] == sample_date }
+      expect(combined_entry).to include(date: sample_date, assets: 2, workflows: 1)
     end
 
     it 'returns empty series on failure' do

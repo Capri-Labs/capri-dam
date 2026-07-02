@@ -4,7 +4,7 @@ BUNDLE = bundle
 YARN = yarn
 RUBY_VERSION = 4.0.3
 
-.PHONY: help bootstrap check-system install db-setup setup dev \
+.PHONY: help bootstrap check-system install db-setup setup dev stop \
         swagger-docs graphql-schema graphql-docs api-docs \
         install-hooks check-api-specs check-graphql-docs
 
@@ -188,6 +188,16 @@ dev: ## Start the full engine (Server + Ingest Workers)
 	@echo "--- Switching to development environment ---"
 	@echo "--- Launching Capri DAM Ecosystem ---"
 	RAILS_ENV=development ./bin/dev
+
+stop: ## Stop the running dev server (Rails web + Sidekiq worker started by 'make dev')
+	@echo "--- Stopping Capri DAM Ecosystem ---"
+	@echo "Stopping foreman launcher (bin/dev)..."
+	@pkill -f "bin/dev" 2>/dev/null || echo "  No bin/dev launcher running"
+	@echo "Stopping Rails server on port 3000..."
+	@lsof -ti tcp:3000 | xargs kill 2>/dev/null || echo "  No process on port 3000"
+	@echo "Stopping Sidekiq worker..."
+	@pkill -f "sidekiq -C config/sidekiq.yml" 2>/dev/null || echo "  No Sidekiq worker running"
+	@echo "--- Stopped (Redis left running; stop it with: redis-cli shutdown) ---"
 
 all-tests: ## Run all RSpec tests
 	@echo "--- Running Tests ---"

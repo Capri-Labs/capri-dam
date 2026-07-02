@@ -1,10 +1,10 @@
 import React from 'react';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
 
 const mockNotify = jest.fn();
 
 jest.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (key) => key }),
+  useTranslation: () => ({ t: (key, opts) => opts?.defaultValue || key }),
   Trans: ({ i18nKey }) => i18nKey,
 }));
 
@@ -20,12 +20,12 @@ import EmailEngineManager from '../../../../app/javascript/components/Admin/Emai
 
 describe('EmailEngineManager', () => {
   beforeEach(() => {
-    document.head.innerHTML = '<meta name="csrf-token" content="token" />';
+    const _csrfMeta = document.head.querySelector('meta[name="csrf-token"]') || (() => { const m = document.createElement('meta'); m.name = 'csrf-token'; document.head.appendChild(m); return m; })(); _csrfMeta.content = 'token';
     global.fetch = jest.fn((url) => {
       if (url === '/admin/email_templates.json') {
         return Promise.resolve({ json: () => Promise.resolve({ email_templates: [{ id: 1, name: 'Welcome', subject: 'Hello', event_trigger: 'user_created', active: true }] }) });
       }
-      if (url === '/admin/email_deliveries.json') {
+      if (url.startsWith('/admin/email_deliveries.json')) {
         return Promise.resolve({ json: () => Promise.resolve({ email_deliveries: [{ id: 2, recipient: 'alice@example.com', template_name: 'Welcome', status: 'sent', sent_at: 'Today' }] }) });
       }
       return Promise.resolve({ json: () => Promise.resolve({ success: true, message: 'ok' }) });
@@ -33,17 +33,17 @@ describe('EmailEngineManager', () => {
   });
 
   it('renders without crashing', async () => {
-    render(<EmailEngineManager />);
-    expect(screen.getByText('Communication Engine')).toBeInTheDocument();
+    await act(async () => { render(<EmailEngineManager />); });
+    expect(await screen.findByText('Communication Engine')).toBeInTheDocument();
     expect(await screen.findByText('Welcome')).toBeInTheDocument();
   });
 
   it('shows email configuration sections', async () => {
-    render(<EmailEngineManager />);
+    await act(async () => { render(<EmailEngineManager />); });
     await screen.findByText('Welcome');
-    fireEvent.click(screen.getByText('Event Mapping (Settings)'));
+    fireEvent.click(screen.getByText('Event Mapping'));
     expect(screen.getByText('User Provisioned (Welcome)')).toBeInTheDocument();
-    fireEvent.click(screen.getByText('Outbox & Audit Log'));
+    await act(async () => { fireEvent.click(screen.getByText('Outbox')); });
     await waitFor(() => expect(screen.getByText('alice@example.com')).toBeInTheDocument());
   });
 });

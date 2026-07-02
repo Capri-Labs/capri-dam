@@ -1,4 +1,6 @@
 module StorageAdapters
+  StorageError = Class.new(StandardError) unless const_defined?(:StorageError)
+
   class BaseAdapter
     attr_reader :config
 

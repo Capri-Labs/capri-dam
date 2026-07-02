@@ -243,7 +243,7 @@ export default function SchemaEditorDialog({ schema, onClose, onSave }) {
 
     return (
         <Dialog open fullWidth maxWidth="xl" onClose={onClose}
-                PaperProps={{ sx: { height: '90vh', borderRadius: 3 } }}>
+                slotProps={{ paper: { sx: { height: '90vh', borderRadius: 3 } } }}>
             {/* Title bar */}
             <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1.5, pb: 1,
                                borderBottom: '1px solid #f1f5f9', bgcolor: '#faf5ff' }}>

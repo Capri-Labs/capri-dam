@@ -29,7 +29,7 @@ describe('SearchScreen behavior', () => {
     global.fetch = jest.fn((url) => String(url).includes('/api/v1/search') ? jsonResponse(searchResponse) : jsonResponse({}));
     navigator.clipboard.writeText = mockClipboardWriteText;
     window.scrollTo = jest.fn();
-    document.head.innerHTML = '<meta name="csrf-token" content="token-123" />';
+    const _csrfMeta = document.head.querySelector('meta[name="csrf-token"]') || (() => { const m = document.createElement('meta'); m.name = 'csrf-token'; document.head.appendChild(m); return m; })(); _csrfMeta.content = 'token';
     setUrl('/search?q=logo&page=1');
   });
 

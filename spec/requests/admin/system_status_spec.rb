@@ -117,3 +117,54 @@ RSpec.describe "Admin::SystemStatus", type: :request do
     end
   end
 end
+
+# ---- merged from system_status_coverage_spec.rb ----
+RSpec.describe "Admin::SystemStatus coverage additions", type: :request do
+  let(:admin) { create(:user, :admin) }
+
+  before { sign_in admin }
+
+  it "builds a full diagnostic report with healthy redis and storage" do
+    allow(Setting).to receive(:get).with("smtp_settings").and_return({})
+    allow(Setting).to receive(:get).with("notification_rules").and_return({})
+    redis = instance_double("Redis", info: { "redis_version" => "7.2" })
+    allow(Sidekiq).to receive(:redis).and_yield(redis)
+    stats = instance_double(Sidekiq::Stats, enqueued: 1, processed: 2, failed: 3)
+    allow(Sidekiq::Stats).to receive(:new).and_return(stats)
+    allow(Sidekiq::Workers).to receive(:new).and_return(double(size: 4))
+    allow(Sidekiq::ProcessSet).to receive(:new).and_return(double(size: 5))
+    service = double("storage", upload: true, download: "1", delete: true)
+    allow(ActiveStorage::Blob).to receive(:service).and_return(service)
+
+    get "/admin/system_status.json", as: :json
+
+    expect(response).to have_http_status(:ok)
+    expect(response.parsed_body.dig("app_server", "status")).to eq("healthy")
+    expect(response.parsed_body.dig("cache_queue", "redis_version")).to eq("7.2")
+    expect(response.parsed_body.dig("storage_backend", "status")).to eq("healthy")
+  end
+
+  it "reports degraded redis and unreachable storage when diagnostics fail" do
+    allow(Setting).to receive(:get).and_return({})
+    allow(Sidekiq).to receive(:redis).and_raise(StandardError, "redis down")
+    service = double("storage")
+    allow(service).to receive(:upload).and_raise(StandardError, "disk down")
+    allow(ActiveStorage::Blob).to receive(:service).and_return(service)
+
+    get "/admin/system_status.json", as: :json
+
+    expect(response).to have_http_status(:ok)
+    expect(response.parsed_body.dig("cache_queue", "status")).to eq("degraded")
+    expect(response.parsed_body.dig("storage_backend", "status")).to eq("unreachable")
+  end
+
+  it "returns restart errors when the trigger file cannot be touched" do
+    allow(FileUtils).to receive(:mkdir_p)
+    allow(FileUtils).to receive(:touch).and_raise(StandardError, "readonly")
+
+    post "/admin/system_status/restart_server", as: :json
+
+    expect(response).to have_http_status(:internal_server_error)
+    expect(response.parsed_body["error"]).to include("readonly")
+  end
+end

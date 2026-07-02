@@ -43,7 +43,8 @@
       "General": "일반 설정",
       "Email Engine": "이메일 엔진",
       "System Ops": "시스템 운영",
-      "Queues": "Sidekiq 대기열"
+      "Queues": "Sidekiq 대기열",
+      "Inbox": "받은 편지함"
     }
   },
   "common": {
@@ -1701,5 +1702,68 @@
     },
     "subfolder_count_tip": "{{count}}개의 하위 폴더",
     "asset_count_tip": "{{count}}개의 에셋"
+  },
+  "inbox": {
+    "title": "받은 편지함",
+    "compose": "작성",
+    "refresh": "새로 고침",
+    "markAllRead": "모두 읽음으로 표시",
+    "unread": "읽지 않음",
+    "starred": "중요 표시",
+    "archived": "보관됨",
+    "all": "모든 메시지",
+    "mentions": "멘션",
+    "workflow": "워크플로",
+    "system": "시스템",
+    "empty": "받은 편지함이 비어 있습니다",
+    "emptySubtitle": "메시지와 멘션이 여기에 표시됩니다",
+    "noUnread": "읽지 않은 메시지 없음",
+    "markRead": "읽음으로 표시",
+    "markUnread": "읽지 않음으로 표시",
+    "archive": "보관",
+    "star": "중요 표시",
+    "unstar": "중요 표시 해제",
+    "delete": "삭제",
+    "reply": "답장",
+    "forward": "전달",
+    "types": {
+      "mention": "멘션",
+      "notification": "알림",
+      "workflow": "워크플로",
+      "system": "시스템",
+      "announcement": "공지"
+    }
+  },
+  "emailEngine": {
+    "title": "커뮤니케이션 엔진",
+    "templates": "템플릿",
+    "eventMapping": "이벤트 매핑",
+    "outbox": "보낸 편지함",
+    "auditLog": "감사 로그",
+    "aiSuggestions": "AI 제안",
+    "newTemplate": "새 템플릿",
+    "templateName": "템플릿 이름",
+    "eventTrigger": "이벤트 트리거",
+    "subject": "제목",
+    "htmlBody": "HTML 본문",
+    "textBody": "일반 텍스트",
+    "variables": "템플릿 변수",
+    "preview": "미리보기",
+    "sendTest": "테스트 전송",
+    "active": "활성",
+    "inactive": "비활성",
+    "category": {
+      "transactional": "트랜잭션",
+      "notification": "알림",
+      "mention": "멘션",
+      "announcement": "공지",
+      "system": "시스템"
+    },
+    "stats": {
+      "sentToday": "오늘 전송",
+      "sentThisWeek": "이번 주 전송",
+      "failureRate": "실패율",
+      "pending": "대기 중"
+    }
   }
 }

@@ -168,14 +168,16 @@ export default function StorageOperationsTab() {
                                             fullWidth size="small" variant="filled"
                                             value={configs.storage.aws_s3.secret_key}
                                             onChange={(e) => handleConfigChange('storage', 'aws_s3', 'secret_key', e.target.value)}
-                                            InputProps={{
-                                                endAdornment: (
-                                                    <InputAdornment position="end">
-                                                        <IconButton onClick={() => setShowSecret(!showSecret)} edge="end" size="small">
-                                                            {showSecret ? <VisibilityOff /> : <Visibility />}
-                                                        </IconButton>
-                                                    </InputAdornment>
-                                                )
+                                            slotProps={{
+                                                input: {
+                                                    endAdornment: (
+                                                        <InputAdornment position="end">
+                                                            <IconButton onClick={() => setShowSecret(!showSecret)} edge="end" size="small">
+                                                                {showSecret ? <VisibilityOff /> : <Visibility />}
+                                                            </IconButton>
+                                                        </InputAdornment>
+                                                    )
+                                                }
                                             }}
                                         />
                                     </>

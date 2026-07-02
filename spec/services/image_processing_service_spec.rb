@@ -349,3 +349,113 @@ RSpec.describe ImageProcessingService, type: :service do
     end
   end
 end
+
+# ---- merged from image_processing_service_coverage_spec.rb ----
+RSpec.describe ImageProcessingService, type: :service do
+  let(:source_path) { Rails.root.join('spec/fixtures/images/test-image.jpg').to_s }
+  let(:logger) { instance_double(Logger, info: true, error: true) }
+  let(:service) { described_class.new(source_path, logger: logger) }
+
+  before do
+    fixtures_dir = Rails.root.join('spec/fixtures/images')
+    FileUtils.mkdir_p(fixtures_dir)
+    unless File.exist?(source_path)
+      require 'mini_magick'
+      image = MiniMagick::Image.create do |convert|
+        convert.size '20x20'
+        convert << 'xc:red'
+      end
+      image.format('jpg')
+      image.write(source_path)
+    end
+  end
+
+  class CommandRecorder
+    attr_reader :calls, :tokens
+
+    def initialize
+      @calls = []
+      @tokens = []
+    end
+
+    def method_missing(name, *args)
+      @calls << [ name, args ]
+    end
+
+    def respond_to_missing?(_name, _include_private = false)
+      true
+    end
+
+    def <<(token)
+      @tokens << token
+    end
+  end
+
+  describe 'validation branches' do
+    it 'rejects missing focal point coordinates and out of range y values' do
+      expect { service.process({ focal_point: { x: 10 } }) }.to raise_error(described_class::ValidationError, /x and y/)
+      expect { service.process({ focal_point: { x: 10, y: 120 } }) }.to raise_error(described_class::ValidationError, /focal_point y/)
+    end
+
+    it 'rejects files larger than the configured maximum' do
+      allow(File).to receive(:exist?).with('huge.jpg').and_return(true)
+      allow(File).to receive(:readable?).with('huge.jpg').and_return(true)
+      allow(File).to receive(:size).with('huge.jpg').and_return(described_class::MAX_FILE_SIZE + 1)
+
+      expect { described_class.new('huge.jpg') }.to raise_error(described_class::ValidationError, /exceeds maximum size/)
+    end
+
+    it 'wraps unexpected processing errors' do
+      allow(service).to receive(:load_image).and_raise(StandardError, 'boom')
+
+      expect { service.process({}) }.to raise_error(described_class::ProcessingError, /Unexpected error: boom/)
+      expect(logger).to have_received(:error).with(/Unexpected error during image processing: boom/)
+    end
+  end
+
+  describe 'private operation branches' do
+    it 'records lighting, color, effect, filter, and custom CLI commands' do
+      cmd = CommandRecorder.new
+      adjustments = {
+        flip_horizontal: true,
+        flip_vertical: true,
+        rotation: 180,
+        brightness: 10,
+        contrast: -5,
+        white_point: 5,
+        black_point: -10,
+        highlights: 15,
+        shadows: -20,
+        hdr: 50,
+        saturation: -25,
+        warmth: -40,
+        tint: 20,
+        skin_tone: 30,
+        blue_tone: 60,
+        vignette: 75,
+        filter: 'Palma',
+        custom_cli: '-strip -modulate 120,100,100 ignored',
+      }
+
+      service.send(:apply_geometry, cmd, adjustments)
+      service.send(:apply_lighting, cmd, adjustments)
+      service.send(:apply_color, cmd, adjustments)
+      service.send(:apply_effects, cmd, adjustments)
+      service.send(:apply_filter, cmd, adjustments)
+      service.send(:apply_custom_cli, cmd, adjustments)
+
+      names = cmd.calls.map(&:first)
+      expect(names).to include(:flop, :flip, :rotate, :brightness_contrast, :level, :sigmoidal_contrast, :modulate, :vignette, :"-colorspace")
+      expect(cmd.tokens).to include('-strip', '-modulate', '120,100,100 ignored')
+    end
+
+    it 'skips unsupported or empty filter operations' do
+      cmd = CommandRecorder.new
+
+      service.send(:apply_filter, cmd, { filter: nil })
+      service.send(:apply_filter, cmd, { filter: 'None' })
+
+      expect(cmd.calls).to be_empty
+    end
+  end
+end

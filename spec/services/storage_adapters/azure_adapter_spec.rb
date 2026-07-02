@@ -60,6 +60,12 @@ RSpec.describe StorageAdapters::AzureAdapter, type: :service do
 
       expect(adapter.delete('missing.txt')).to be_nil
     end
+
+    it 'wraps non-404 provider failures' do
+      allow(blob_client).to receive(:delete_blob).and_raise(azure_error(500, 'down'))
+
+      expect { adapter.delete('folder/file.txt') }.to raise_error(StorageAdapters::StorageError, /Azure delete failed/)
+    end
   end
 
   describe '#url' do
@@ -92,6 +98,12 @@ RSpec.describe StorageAdapters::AzureAdapter, type: :service do
       expect(url).to include('sp=cw')
       expect(url).to include('rscd=attachment%3B+filename%3D%22download.txt%22')
     end
+
+    it 'wraps SAS generation failures' do
+      allow(Base64).to receive(:decode64).and_raise(ArgumentError, 'bad key')
+
+      expect { adapter.presign_url('folder/file.txt') }.to raise_error(StorageAdapters::StorageError, /Azure SAS generation failed/)
+    end
   end
 
   describe '#supports_presigned_urls?' do
@@ -112,12 +124,25 @@ RSpec.describe StorageAdapters::AzureAdapter, type: :service do
 
       expect(adapter.exists?('missing.txt')).to be(false)
     end
+
+    it 'reraises non-404 lookup failures' do
+      error = azure_error(500)
+      allow(blob_client).to receive(:get_blob_properties).and_raise(error)
+
+      expect { adapter.exists?('folder/file.txt') }.to raise_error(error)
+    end
   end
 
   describe '#copy' do
     it 'copies the blob server-side' do
       expect(adapter.copy('from.txt', 'to.txt')).to eq('to.txt')
       expect(blob_client).to have_received(:copy_blob_from_uri).with('assets', 'to.txt', 'https://storageacct.blob.core.windows.net/assets/from.txt')
+    end
+
+    it 'wraps provider copy failures' do
+      allow(blob_client).to receive(:copy_blob_from_uri).and_raise(azure_error(500, 'copy failed'))
+
+      expect { adapter.copy('from.txt', 'to.txt') }.to raise_error(StorageAdapters::StorageError, /Azure copy failed/)
     end
   end
 
@@ -133,6 +158,13 @@ RSpec.describe StorageAdapters::AzureAdapter, type: :service do
       allow(blob_client).to receive(:get_blob_properties).and_raise(azure_error(404))
 
       expect(adapter.metadata('missing.txt')).to be_nil
+    end
+
+    it 'reraises non-404 metadata failures' do
+      error = azure_error(500)
+      allow(blob_client).to receive(:get_blob_properties).and_raise(error)
+
+      expect { adapter.metadata('folder/file.txt') }.to raise_error(error)
     end
   end
 
@@ -169,6 +201,18 @@ RSpec.describe StorageAdapters::AzureAdapter, type: :service do
       allow(blob_client).to receive(:list_blobs).and_raise(azure_error(403))
 
       expect(adapter.test_connection).to eq(success: false, error: 'Access denied. Check your account key.')
+    end
+
+    it 'reports other Azure HTTP errors' do
+      allow(blob_client).to receive(:list_blobs).and_raise(azure_error(500, 'server down'))
+
+      expect(adapter.test_connection).to eq(success: false, error: 'Azure error 500: server down')
+    end
+
+    it 'reports generic connection errors' do
+      allow(blob_client).to receive(:list_blobs).and_raise(StandardError, 'offline')
+
+      expect(adapter.test_connection).to eq(success: false, error: 'offline')
     end
   end
 end

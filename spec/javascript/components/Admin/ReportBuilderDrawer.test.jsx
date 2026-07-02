@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, act } from '@testing-library/react';
 
 const mockNotify = jest.fn();
 
@@ -16,7 +16,7 @@ import ReportBuilderDrawer from '../../../../app/javascript/components/Admin/Rep
 
 describe('Admin ReportBuilderDrawer', () => {
   beforeEach(() => {
-    document.head.innerHTML = '<meta name="csrf-token" content="token" />';
+    const _csrfMeta = document.head.querySelector('meta[name="csrf-token"]') || (() => { const m = document.createElement('meta'); m.name = 'csrf-token'; document.head.appendChild(m); return m; })(); _csrfMeta.content = 'token';
     global.fetch = jest.fn((url) => {
       if (url === '/admin/reports.json') {
         return Promise.resolve({ json: () => Promise.resolve({ reports: [{ id: 1, name: 'Storage Report' }] }) });
@@ -32,7 +32,7 @@ describe('Admin ReportBuilderDrawer', () => {
   });
 
   it('shows form fields', async () => {
-    render(<ReportBuilderDrawer open onClose={jest.fn()} onExportStarted={jest.fn()} />);
+    await act(async () => { render(<ReportBuilderDrawer open onClose={jest.fn()} onExportStarted={jest.fn()} />); });
     expect(screen.getByText('1. Select Report Type')).toBeInTheDocument();
     expect(screen.getByText('2. Time Range')).toBeInTheDocument();
     expect(screen.getByText('3. Output Format')).toBeInTheDocument();

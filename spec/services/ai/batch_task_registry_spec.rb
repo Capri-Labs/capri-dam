@@ -3,58 +3,106 @@
 require "rails_helper"
 
 RSpec.describe Ai::BatchTaskRegistry do
-  describe ".tasks" do
-    it "returns frozen task descriptors with required attributes" do
-      expect(described_class.tasks).to all(respond_to(:key, :label, :gateway_capability))
-      expect(described_class.task_keys).to include("metadata_extraction", "embedding_backfill")
-    end
+  before do
+    allow(Redis).to receive(:new).and_return(instance_double(Redis, publish: true))
+  end
 
-    it "uses only known cost tiers" do
-      described_class.tasks.each do |task|
-        expect(described_class::COST_TIERS).to include(task.cost_tier)
-      end
+  describe ".tasks and .scopes" do
+    it "exposes immutable task and scope descriptors" do
+      expect(described_class.tasks.map(&:key)).to include("metadata_extraction", "embedding_backfill", "style_audit")
+      expect(described_class.scopes.map(&:key)).to include("all_assets", "missing_embeddings", "style_untagged")
+      expect(described_class::COST_TIERS).to contain_exactly("low", "medium", "high")
     end
   end
 
-  describe ".task" do
-    it "finds a task by key" do
-      expect(described_class.task("seo_enrichment").label).to eq("SEO Enrichment")
-    end
-
-    it "returns nil for an unknown key" do
-      expect(described_class.task("nope")).to be_nil
+  describe ".task_keys and .scope_keys" do
+    it "returns serializable keys" do
+      expect(described_class.task_keys).to all(be_a(String))
+      expect(described_class.scope_keys).to all(be_a(String))
+      expect(described_class.task_keys).to include("c2pa_verify")
+      expect(described_class.scope_keys).to include("unsigned_assets")
     end
   end
 
-  describe ".scope / .scopes" do
-    it "exposes the registered dataset keys" do
-      expect(described_class.scope_keys).to include("all_assets", "missing_embeddings")
+  describe ".task and .scope" do
+    it "finds descriptors by string-like key" do
+      task = described_class.task(:visual_context)
+      scope = described_class.scope(:all_images)
+
+      expect(task.label).to eq("Deep Visual Context")
+      expect(task.gateway_capability).to eq("vision.describe")
+      expect(scope.label).to eq("All Images")
     end
 
-    it "finds a scope by key" do
-      expect(described_class.scope("all_assets").label).to eq("All Assets")
+    it "returns nil for unknown descriptors" do
+      expect(described_class.task("missing")).to be_nil
+      expect(described_class.scope("missing")).to be_nil
     end
   end
 
   describe ".resolve_targets" do
-    it "returns the assets relation for a valid scope" do
-      a = create(:asset)
-      create(:asset, :trashed)
-      expect(described_class.resolve_targets("all_assets")).to include(a)
-      expect(described_class.resolve_targets("all_assets").count).to eq(1)
+    let!(:image_with_embedding) do
+      asset = create(:asset, status: :ready, properties: { "content_type" => "image/png", "tags" => [] })
+      asset.create_asset_embedding!(embedding: Array.new(1536, 0.001), model_name: "text-embedding-3-small")
+      asset
+    end
+    let!(:image_without_embedding) { create(:asset, status: :ready, properties: { "content_type" => "image/jpeg", "tags" => [] }) }
+    let!(:described_asset) { create(:asset, status: :ready, properties: { "description" => "Done", "tags" => [ { "type" => "style_preset" } ] }) }
+
+    before do
+      allow(SmartCollectionRouterWorker).to receive(:perform_async)
     end
 
-    it "returns an empty relation for an unknown scope" do
-      create(:asset)
-      expect(described_class.resolve_targets("nowhere")).to be_empty
+    it "resolves known scopes with their database filters" do
+      expect(described_class.resolve_targets("all_images")).to include(image_with_embedding, image_without_embedding)
+      expect(described_class.resolve_targets("missing_embeddings")).to include(image_without_embedding)
+      expect(described_class.resolve_targets("missing_embeddings")).not_to include(image_with_embedding)
+      expect(described_class.resolve_targets("missing_metadata")).to include(image_without_embedding)
+      expect(described_class.resolve_targets("missing_metadata")).not_to include(described_asset)
+    end
+
+    it "returns an empty relation for unknown scopes" do
+      expect(described_class.resolve_targets("unknown")).to be_empty
+    end
+
+    it "resolves tag, provenance, signing, and style-specific scopes" do
+      untagged = create(:asset, status: :ready, properties: { "content_type" => "application/pdf", "tags" => [] })
+      tagged = create(:asset, status: :ready, properties: { "content_type" => "image/png", "tags" => [ { "type" => "style_preset" } ] })
+      invalid = create(:asset, status: :ready)
+      ai_modified = create(:asset, status: :ready)
+      signed = create(:asset, status: :ready)
+      unchecked = create(:asset, status: :ready)
+      create(:asset_provenance_record, :invalid, asset: invalid)
+      create(:asset_provenance_record, :ai_modified, asset: ai_modified)
+      create(:asset_provenance_record, :signed, asset: signed)
+      create(:asset_provenance_record, asset: unchecked)
+
+      expect(described_class.resolve_targets(:missing_tags)).to include(untagged)
+      expect(described_class.resolve_targets(:style_untagged)).to include(untagged)
+      expect(described_class.resolve_targets(:style_untagged)).not_to include(tagged)
+      expect(described_class.resolve_targets(:invalid_manifests)).to contain_exactly(invalid)
+      expect(described_class.resolve_targets(:ai_modified_assets)).to contain_exactly(ai_modified)
+      expect(described_class.resolve_targets(:unsigned_assets)).to include(untagged, invalid, ai_modified, unchecked)
+      expect(described_class.resolve_targets(:unsigned_assets)).not_to include(signed)
+      expect(described_class.resolve_targets(:unverified_assets)).to include(untagged, unchecked)
+      expect(described_class.resolve_targets(:unverified_assets)).not_to include(invalid, ai_modified, signed)
     end
   end
 
   describe ".as_json_meta" do
-    it "serialises tasks and scopes for the UI" do
+    it "returns frontend metadata without resolver lambdas" do
       meta = described_class.as_json_meta
-      expect(meta[:tasks].first.keys).to include(:key, :label, :cost_tier, :gateway_capability)
-      expect(meta[:scopes].first.keys).to include(:key, :label, :description)
+
+      expect(meta[:tasks].first).to include(:key, :label, :description, :cost_tier, :default_tools, :gateway_capability)
+      expect(meta[:scopes].first).to include(:key, :label, :description)
+      expect(meta[:scopes].first).not_to have_key(:resolver)
+    end
+
+    it "serializes every registered task and scope" do
+      meta = described_class.as_json_meta
+
+      expect(meta[:tasks].map { |task| task[:key] }).to eq(described_class.task_keys)
+      expect(meta[:scopes].map { |scope| scope[:key] }).to eq(described_class.scope_keys)
     end
   end
 end

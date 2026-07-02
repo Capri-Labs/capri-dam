@@ -53,7 +53,7 @@ export default function NewSchemaDialog({ open, onClose, onCreate, parentSchemas
 
     return (
         <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth
-                PaperProps={{ sx: { borderRadius: 3 } }}>
+            slotProps={{ paper: { sx: { borderRadius: 3 } } }}>
             <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1,
                                borderBottom: '1px solid #f1f5f9', pb: 1.5 }}>
                 <AddOutlined sx={{ color: '#5e35b1' }} />
@@ -75,8 +75,8 @@ export default function NewSchemaDialog({ open, onClose, onCreate, parentSchemas
                                value={description} onChange={e => setDescription(e.target.value)} />
 
                     <FormControl fullWidth size="small">
-                        <InputLabel>Schema Level</InputLabel>
-                        <Select value={level} label="Schema Level"
+                        <InputLabel id="schema-level-label">Schema Level</InputLabel>
+                        <Select labelId="schema-level-label" value={level} label="Schema Level"
                                 onChange={e => { setLevel(e.target.value); setParentId(''); setMimeSegment(''); }}>
                             <MenuItem value="root">Root — top-level, applied to folders</MenuItem>
                             <MenuItem value="type">Type — matches a MIME type (e.g. image/*)</MenuItem>
@@ -87,8 +87,8 @@ export default function NewSchemaDialog({ open, onClose, onCreate, parentSchemas
                     {level !== 'root' && (
                         <>
                             <FormControl fullWidth size="small" required>
-                                <InputLabel>Parent Schema</InputLabel>
-                                <Select value={parentId} label="Parent Schema"
+                                <InputLabel id="parent-schema-label">Parent Schema</InputLabel>
+                                <Select labelId="parent-schema-label" value={parentId} label="Parent Schema"
                                         onChange={e => setParentId(e.target.value)}>
                                     {parentOptions.map(s => (
                                         <MenuItem key={s.id} value={s.id}>

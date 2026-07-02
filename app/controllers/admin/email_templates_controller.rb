@@ -125,7 +125,7 @@ class Admin::EmailTemplatesController < ApplicationController
   end
 
   def send_test
-    payload = params[:payload].presence || @template.preview_data.presence || {}
+    payload = (params[:payload].presence || @template.preview_data.presence || {}).then { |value| value.respond_to?(:to_unsafe_h) ? value.to_unsafe_h : value }
     recipient_email = params[:recipient_email].presence || current_user.email
     delivery = EmailDelivery.create!(
       email_template: @template,

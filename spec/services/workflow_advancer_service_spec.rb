@@ -139,3 +139,72 @@ RSpec.describe WorkflowAdvancerService do
     end
   end
 end
+
+RSpec.describe WorkflowAdvancerService, 'additional branch coverage' do
+  let(:approver) { create(:user) }
+  let(:asset) { create(:asset, status: 'in_review') }
+  let(:workflow) { create(:workflow) }
+  let(:instance) { create(:workflow_instance, asset: asset, workflow: workflow, status: 'in_progress') }
+
+  def approval_step(position, overrides = {})
+    create(:workflow_step, workflow: workflow, position: position, step_type: 'approval',
+                           node_type: 'approval', assignee_type: 'user', assignee_id: approver.id,
+                           logic: 'any', **overrides)
+  end
+
+  def automated_step(position, node_type, config = {}, overrides = {})
+    create(:workflow_step, workflow: workflow, position: position, step_type: 'automated_action',
+                           node_type: node_type, assignee_type: 'system', assignee_id: 0,
+                           logic: 'all', step_config: config, **overrides)
+  end
+
+  it 'follows a matching graph edge and falls back to position when node ids are unavailable' do
+    condition = automated_step(1, 'condition', { 'field' => 'status', 'operator' => 'equals', 'value' => 'in_review' })
+    false_step = approval_step(2, title: 'False Path')
+    approval_step(3, title: 'True Path')
+    workflow.update!(graph_data: {
+      'edges' => [ { 'source' => condition.id.to_s, 'sourceHandle' => 'true', 'target' => 'true-node' } ],
+    })
+
+    described_class.new(instance).process_step(condition)
+
+    expect(instance.reload.current_step).to eq(false_step)
+    expect(instance.workflow_tasks.pluck(:workflow_step_id)).to eq([ false_step.id ])
+  end
+
+  it 'falls back to the next position when a branch edge target has no matching node' do
+    condition = automated_step(1, 'condition', { 'field' => 'status', 'operator' => 'equals', 'value' => 'missing' })
+    fallback_step = approval_step(2, title: 'Linear Fallback')
+    workflow.update!(graph_data: {
+      'edges' => [ { 'source' => condition.id.to_s, 'sourceHandle' => 'false', 'target' => 'missing-node' } ],
+    })
+
+    described_class.new(instance).process_step(condition)
+
+    expect(instance.reload.current_step).to eq(fallback_step)
+  end
+
+  it 'resolves primary group assignees to one task per member' do
+    member_a = create(:user)
+    member_b = create(:user)
+    group = create(:user_group)
+    group.users << [ member_a, member_b ]
+    step = approval_step(1, assignee_type: 'group', assignee_id: group.id)
+
+    described_class.new(instance).process_step(step)
+
+    expect(instance.workflow_tasks.map(&:user)).to contain_exactly(member_a, member_b)
+  end
+
+  it 'uses a workflow-level group fallback when primary and step fallback are absent' do
+    fallback_member = create(:user)
+    group = create(:user_group)
+    group.users << fallback_member
+    workflow.update!(fallback_assignee_type: 'group', fallback_assignee_id: group.id)
+    step = approval_step(1, assignee_id: 0, fallback_assignee_type: 'team', fallback_assignee_id: group.id.to_s)
+
+    described_class.new(instance).process_step(step)
+
+    expect(instance.workflow_tasks.last.user).to eq(fallback_member)
+  end
+end

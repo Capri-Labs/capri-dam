@@ -12,6 +12,7 @@ class Api::V1::CollectionsController < ApplicationController
     :remove_asset,
     :toggle_pin,
     :configure_rule,
+    :cluster_map,
     :purge_cdn,
   ]
 
@@ -111,7 +112,7 @@ class Api::V1::CollectionsController < ApplicationController
         # Mocking the 2D projection distribution (0 to 100 scale)
         x: rand(10.0..90.0).round(2),
         y: rand(10.0..90.0).round(2),
-        url: asset.url,
+        url: asset.respond_to?(:url) ? asset.url : nil,
       }
     end
 

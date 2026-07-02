@@ -182,5 +182,5 @@ module StorageAdapters
   end
 
   # Convenience error class for all adapter failures
-  StorageError = Class.new(StandardError)
+  StorageError = Class.new(StandardError) unless const_defined?(:StorageError)
 end

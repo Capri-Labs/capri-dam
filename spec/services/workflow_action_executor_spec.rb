@@ -231,3 +231,238 @@ RSpec.describe WorkflowActionExecutor do
     end
   end
 end
+
+# ---- merged from workflow_action_executor_coverage_spec.rb ----
+RSpec.describe WorkflowActionExecutor do
+  let(:user) { create(:user) }
+  let(:admin) { create(:user, :admin) }
+  let(:asset) { create(:asset, user: user, status: 'in_review', properties: { 'tags' => [ 'keep' ], 'rating' => '4.5', 'name' => 'hero-final.jpg' }) }
+  let(:workflow) { create(:workflow, name: 'Review Flow') }
+  let(:instance) { create(:workflow_instance, asset: asset, workflow: workflow, status: 'in_progress') }
+
+  def build_step(node_type, config = {})
+    create(:workflow_step,
+           workflow: workflow,
+           step_type: 'automated_action',
+           node_type: node_type,
+           assignee_type: 'system',
+           assignee_id: 0,
+           step_config: config)
+  end
+
+  describe 'notification branches' do
+    it 'sends email notifications to every admin with rendered body and priority defaults' do
+      admin
+      delivery = instance_double(ActionMailer::MessageDelivery, deliver_later: true)
+
+      without_partial_double_verification do
+        allow(WorkflowMailer).to receive(:workflow_email).and_return(delivery)
+
+        step = build(:workflow_step, workflow: workflow, node_type: 'email_notification', step_config: {
+          'recipient' => 'admins',
+          'subject' => '',
+          'body' => 'Asset {{asset.title}} in {{workflow.name}}',
+        })
+
+        expect { described_class.new(instance, step).call }.to change(Notification, :count).by(1)
+        expect(WorkflowMailer).to have_received(:workflow_email).with(hash_including(
+          to: admin.email,
+          subject: "Workflow update: #{asset.title}",
+          body: "Asset #{asset.title} in Review Flow",
+          priority: 'normal'
+        ))
+        expect(delivery).to have_received(:deliver_later)
+      end
+    end
+
+    it 'returns nil for blank slack and teams channels without making HTTP calls' do
+      allow(Faraday).to receive(:new)
+
+      expect(described_class.new(instance, build_step('slack', { 'channel' => '' })).call).to be_nil
+      expect(described_class.new(instance, build_step('teams', { 'channel' => nil })).call).to be_nil
+      expect(Faraday).not_to have_received(:new)
+    end
+
+    it 'posts Teams cards with attention colors' do
+      captured_body = nil
+      conn = instance_double(Faraday::Connection)
+      allow(Faraday).to receive(:new).and_return(conn)
+      allow(conn).to receive(:run_request) do |_method, _url, body, _headers|
+        captured_body = body
+      end
+
+      described_class.new(instance, build_step('teams', {
+        'channel' => 'https://teams.example.com/hook',
+        'message' => 'Look at {{asset.url}}',
+        'color' => 'attention',
+      })).call
+
+      body = JSON.parse(captured_body)
+      expect(body).to include('@type' => 'MessageCard', 'themeColor' => 'FF0000')
+      expect(body['text']).to include(asset.id)
+    end
+  end
+
+  describe 'integration branches' do
+    let(:conn) { instance_double(Faraday::Connection, run_request: true) }
+
+    before { allow(Faraday).to receive(:new).and_return(conn) }
+
+    it 'merges JSON headers and basic auth for secure webhooks' do
+      described_class.new(instance, build_step('secure_webhook', {
+        'url' => 'https://hooks.example.com/basic',
+        'headers' => '{"X-Trace":"abc"}',
+        'authType' => 'basic',
+        'secret' => 'encoded-creds',
+      })).call
+
+      expect(conn).to have_received(:run_request).with(
+        :post,
+        'https://hooks.example.com/basic',
+        anything,
+        hash_including('X-Trace' => 'abc', 'Authorization' => 'Basic encoded-creds', 'Content-Type' => 'application/json')
+      )
+    end
+
+    it 'ignores malformed custom header JSON and skips blank webhook URLs' do
+      blank_step = build(:workflow_step, workflow: workflow, node_type: 'webhook', step_config: { 'url' => '' })
+      described_class.new(instance, blank_step).call
+      expect(conn).not_to have_received(:run_request)
+
+      described_class.new(instance, build_step('webhook', {
+        'url' => 'https://hooks.example.com/malformed',
+        'headers' => '{not json',
+      })).call
+      expect(conn).to have_received(:run_request).with(:post, 'https://hooks.example.com/malformed', anything, hash_including('Content-Type' => 'application/json'))
+    end
+
+    it 'logs and re-raises Faraday failures' do
+      allow(Rails.logger).to receive(:warn)
+      allow(Rails.logger).to receive(:error)
+      allow(conn).to receive(:run_request).and_raise(Faraday::TimeoutError, 'slow')
+
+      expect do
+        described_class.new(instance, build_step('api_call', { 'url' => 'https://api.example.com', 'method' => 'PATCH' })).call
+      end.to raise_error(Faraday::TimeoutError)
+      expect(Rails.logger).to have_received(:warn).with(/HTTP PATCH https:\/\/api.example.com failed: slow/)
+      expect(Rails.logger).to have_received(:error).with(/Step #.*api_call.*slow/)
+    end
+  end
+
+  describe 'asset operation and flow branches' do
+    it 'skips metadata updates when the legacy key is blank' do
+      expect do
+        described_class.new(instance, build_step('update_metadata', { 'metadataKey' => '', 'metadataValue' => 'ignored' })).call
+      end.not_to change { asset.reload.properties }
+    end
+
+    it 'does not delete the original asset when resolving deletion targets' do
+      stub_const('AssetCopyWorker', Class.new do
+        def self.perform_async(*); end
+      end)
+      expect(AssetCopyWorker).to receive(:perform_async).with(asset.id, nil)
+      described_class.new(instance, build_step('copy_asset', { 'folder' => '' })).call
+    end
+
+    it 'publishes and triggers CDN sync unless disabled' do
+      allow(EdgeMetadataSyncWorker).to receive(:perform_async)
+
+      described_class.new(instance, build_step('publish')).call
+
+      expect(asset.reload.read_attribute_before_type_cast('status')).to eq(Asset.statuses['approved'].to_s)
+      expect(EdgeMetadataSyncWorker).to have_received(:perform_async).with(asset.id)
+    end
+
+    it 'schedules delays in minutes and falls back to hours for unknown units' do
+      allow(WorkflowDelayWorker).to receive(:perform_in)
+
+      minute_step = build_step('delay', { 'delayValue' => 3, 'delayUnit' => 'minutes' })
+      unknown_step = build_step('delay', { 'delayValue' => 2, 'delayUnit' => 'fortnights' })
+
+      expect(described_class.new(instance, minute_step).call).to eq(:delay_scheduled)
+      expect(described_class.new(instance, unknown_step).call).to eq(:delay_scheduled)
+      expect(WorkflowDelayWorker).to have_received(:perform_in).with(180, instance.id, minute_step.id)
+      expect(WorkflowDelayWorker).to have_received(:perform_in).with(7200, instance.id, unknown_step.id)
+    end
+
+    it 'evaluates all remaining condition operators and unknown fields' do
+      expect(described_class.new(instance, build_step('condition', { 'field' => 'properties.name', 'operator' => 'contains', 'value' => 'final' })).call).to eq(:true_branch)
+      expect(described_class.new(instance, build_step('condition', { 'field' => 'properties.name', 'operator' => 'ends_with', 'value' => '.jpg' })).call).to eq(:true_branch)
+      expect(described_class.new(instance, build_step('condition', { 'field' => 'properties.rating', 'operator' => 'greater_than', 'value' => '4' })).call).to eq(:true_branch)
+      expect(described_class.new(instance, build_step('condition', { 'field' => 'status', 'operator' => 'not_equals', 'value' => 'approved' })).call).to eq(:true_branch)
+      expect(described_class.new(instance, build_step('condition', { 'field' => 'missing', 'operator' => 'bogus', 'value' => 'x' })).call).to eq(:false_branch)
+      expect(described_class.new(instance, build_step('condition', { 'field' => '', 'operator' => 'equals', 'value' => '' })).call).to eq(:true_branch)
+    end
+
+    it 'logs and skips unknown node types' do
+      allow(Rails.logger).to receive(:warn)
+
+      unknown_step = build(:workflow_step, workflow: workflow, node_type: 'future_node')
+      expect(described_class.new(instance, unknown_step).call).to be_nil
+      expect(Rails.logger).to have_received(:warn).with(/Unknown node_type 'future_node'/)
+    end
+  end
+end
+
+RSpec.describe WorkflowActionExecutor, 'additional branch coverage' do
+  let(:user) { create(:user) }
+  let(:asset) { create(:asset, user: user, status: 'in_review', properties: { 'tags' => [] }) }
+  let(:workflow) { create(:workflow, name: 'Extra Flow') }
+  let(:instance) { create(:workflow_instance, asset: asset, workflow: workflow, status: 'in_progress') }
+
+  def build_step(node_type, config = {})
+    create(:workflow_step,
+           workflow: workflow,
+           step_type: 'automated_action',
+           node_type: node_type,
+           assignee_type: 'system',
+           assignee_id: 0,
+           logic: 'all',
+           step_config: config)
+  end
+
+  it 'does not enqueue SMS when no SMS worker is defined' do
+    hide_const('WorkflowSmsWorker')
+    allow(Rails.logger).to receive(:info)
+
+    described_class.new(instance, build_step('sms', { 'phone' => '+1', 'message' => 'Hello' })).call
+
+    expect(Rails.logger).to have_received(:info).with(/SMS to \+1/)
+  end
+
+  it 'regenerates thumbnails through ImageProcessingWorker when available' do
+    stub_const('ImageProcessingWorker', Class.new do
+      def self.perform_async(*); end
+    end)
+    allow(ImageProcessingWorker).to receive(:perform_async)
+
+    described_class.new(instance, build_step('generate_thumbnail')).call
+
+    expect(ImageProcessingWorker).to have_received(:perform_async).with(asset.id)
+  end
+
+  it 'logs thumbnail regeneration when only the ingestion worker is available' do
+    hide_const('ImageProcessingWorker')
+    allow(Rails.logger).to receive(:info)
+
+    described_class.new(instance, build_step('generate_thumbnail')).call
+
+    expect(Rails.logger).to have_received(:info).with(/Thumbnail regen requested for Asset #{asset.id}/)
+  end
+
+  it 'skips AI metadata dispatch failures without re-raising' do
+    allow(AiBatchJob).to receive(:create!).and_raise(ActiveRecord::ActiveRecordError, 'offline')
+    allow(Rails.logger).to receive(:warn)
+
+    expect(described_class.new(instance, build_step('ai_metadata')).call).to be_nil
+    expect(Rails.logger).to have_received(:warn).with(/AI metadata dispatch skipped: offline/)
+  end
+
+  it 'renders blank notification messages as empty strings' do
+    expect do
+      described_class.new(instance, build_step('in_app_notification', { 'recipient' => 'uploader', 'message' => nil })).call
+    end.to change(Notification, :count).by(1)
+
+    expect(Notification.last.message).to eq('')
+  end
+end

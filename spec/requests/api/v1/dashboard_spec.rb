@@ -60,3 +60,23 @@ RSpec.describe "Api::V1::Dashboard", type: :request do
     end
   end
 end
+
+# ---- merged from dashboard_coverage_spec.rb ----
+RSpec.describe "Api::V1::Dashboard coverage", type: :request do
+  let(:user) { create(:user) }
+  before { sign_in user }
+
+  it "categorizes mime types, storage, workflows and AI insights" do
+    create(:asset, user: user, title: "Video", status: :draft, properties: { "content_type" => "video/mp4", "file_size" => "1048576" })
+    create(:asset, user: user, status: :ready, properties: { "content_type" => "audio/mpeg", "file_size" => "0", "image_analysis_status" => "failed" })
+    create(:asset, user: user, status: :ready, properties: { "content_type" => "application/pdf", "file_size" => "2048", "applied_schema_name" => "Core" })
+    create(:asset, user: user, status: :ready, properties: { "content_type" => "application/vnd.openxmlformats-officedocument.wordprocessingml.document" })
+
+    get "/api/v1/dashboard/overview", as: :json
+    expect(response).to have_http_status(:ok)
+    body = response.parsed_body
+    expect(body["assets_by_type"].map { |row| row["type"] }).to include("Videos", "Audio", "PDF", "Documents")
+    expect(body["storage"]["total_human"]).not_to eq("0 B")
+    expect(body["ai_insights"].map { |i| i["key"] }).to include("failed_analysis", "no_schema", "recent_24h")
+  end
+end

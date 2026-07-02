@@ -87,7 +87,7 @@ class MigrationCommitWorker
       batch.increment!(:committed_count)
 
       # Trigger AI embedding after commit
-      asset.broadcast_for_embedding if asset.respond_to?(:broadcast_for_embedding, true)
+      asset.send(:broadcast_for_embedding) if asset.respond_to?(:broadcast_for_embedding, true)
 
       Rails.logger.info("[MigrationCommit] Asset #{asset.uuid} committed from item #{item.id}")
     end

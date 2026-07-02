@@ -75,14 +75,15 @@ module Api
       end
 
       def import_params
+        raw_ignored_columns = params.dig(:metadata_import, :ignored_columns)
         permitted = params.require(:metadata_import).permit(
           :name, :source_file, :batch_size, :field_separator, :multi_value_delimiter,
           :launch_workflows, :asset_path_column, :scheduled_at, ignored_columns: []
         )
 
         # FormData sends ignored_columns as a comma-joined string when not an array.
-        if permitted[:ignored_columns].is_a?(String)
-          permitted[:ignored_columns] = permitted[:ignored_columns].split(",").map(&:strip).reject(&:blank?)
+        if raw_ignored_columns.is_a?(String)
+          permitted[:ignored_columns] = raw_ignored_columns.split(",").map(&:strip).reject(&:blank?)
         end
         permitted
       end

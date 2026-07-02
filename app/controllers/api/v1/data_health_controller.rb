@@ -91,10 +91,10 @@ class Api::V1::DataHealthController < ApplicationController
     prevented_bytes = IngestionItem
       .where(status: IngestionItem.statuses[:flagged_duplicate])
       .sum(:file_size)
-    active_bytes    = Asset.sum(:file_size)
+    active_bytes    = asset_file_size_sum(Asset.all)
     orphaned_bytes  = Asset.left_outer_joins(:collection_assets)
                            .where(collection_assets: { id: nil })
-                           .sum(:file_size)
+    orphaned_bytes  = asset_file_size_sum(orphaned_bytes)
 
     {
       duplicates_prevented_tb:  bytes_to_tb(prevented_bytes),
@@ -240,6 +240,10 @@ class Api::V1::DataHealthController < ApplicationController
 
   def bytes_to_tb(bytes)
     (bytes.to_f / (1024**4)).round(4)
+  end
+
+  def asset_file_size_sum(scope)
+    scope.pick(Arel.sql("COALESCE(SUM(COALESCE(NULLIF(properties->>'file_size', '')::bigint, 0)), 0)")).to_i
   end
 
   # @param count   [Integer]

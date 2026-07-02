@@ -374,12 +374,12 @@ describe('Tools components', () => {
     fireEvent.click(screen.getByRole('button', { name: /create schema/i }));
     expect(await screen.findByText('Name is required.')).toBeInTheDocument();
 
-    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Image Assets' } });
+    fireEvent.change(screen.getByLabelText(/^Name/), { target: { value: 'Image Assets' } });
     fireEvent.mouseDown(screen.getByRole('combobox', { name: 'Schema Level' }));
     fireEvent.click(screen.getByRole('option', { name: /type — matches a mime type/i }));
     fireEvent.mouseDown(screen.getByRole('combobox', { name: 'Parent Schema' }));
     fireEvent.click(screen.getByRole('option', { name: 'Root Schema' }));
-    fireEvent.change(screen.getByLabelText('MIME Segment'), { target: { value: 'IMAGE' } });
+    fireEvent.change(await screen.findByLabelText(/^MIME Segment/), { target: { value: 'IMAGE' } });
     fireEvent.click(screen.getByRole('button', { name: /create schema/i }));
 
     await waitFor(() => {
@@ -412,7 +412,7 @@ describe('Tools components', () => {
 
     fireEvent.change(screen.getByLabelText('Field Label'), { target: { value: 'Title' } });
     fireEvent.change(screen.getByLabelText('Map to Property'), { target: { value: 'dc:title' } });
-    fireEvent.click(screen.getByRole('checkbox', { name: 'Required' }));
+    fireEvent.click(screen.getByRole('switch', { name: /Required/ }));
     fireEvent.click(screen.getByRole('button', { name: /save schema/i }));
 
     await waitFor(() => {

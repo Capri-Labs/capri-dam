@@ -203,7 +203,7 @@ class BinPurgeService
 
       # Cancel all pending tasks so assignees are not left with dangling tasks
       wi.workflow_tasks.where(status: "pending").update_all(  # rubocop:disable Rails/SkipsModelValidations
-        status: "cancelled",
+        status: "canceled",
         comment: "Automatically cancelled — asset deleted from Recycle Bin"
       )
     end

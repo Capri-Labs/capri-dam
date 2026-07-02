@@ -619,6 +619,7 @@ module Api
         end
 
         # 2. Destroy database record (cascades to versions)
+        @asset.update_column(:active_version_id, nil) if @asset.active_version_id # rubocop:disable Rails/SkipsModelValidations
         @asset.destroy
         render json: { success: true, message: "Permanently deleted all versions" }
       end

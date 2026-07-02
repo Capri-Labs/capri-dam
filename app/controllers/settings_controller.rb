@@ -68,7 +68,7 @@ class SettingsController < ApplicationController
 
   def update_storage
     provider = params[:storage_config][:provider]
-    new_data  = params[:storage_config].except(:provider).to_h
+    new_data  = params[:storage_config].permit!.except(:provider).to_h
 
     # 1. Load existing config from DB
     existing_raw = Setting.get("storage_config_#{provider}")
@@ -101,7 +101,7 @@ class SettingsController < ApplicationController
   end
 
   def test_connection
-    config   = params[:storage_config].to_h.transform_keys(&:to_s)
+    config   = params[:storage_config].permit!.to_h.transform_keys(&:to_s)
     provider = config["provider"].to_s
 
     # Unmask secrets: if user sent '********', pull the real value from DB

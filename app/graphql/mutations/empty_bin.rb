@@ -33,6 +33,7 @@ module Mutations
           storage&.delete(storage_path) if storage_path
           version.file.purge if version.respond_to?(:file) && version.file.attached?
         end
+        asset.update_column(:active_version_id, nil) if asset.active_version_id # rubocop:disable Rails/SkipsModelValidations
         asset.destroy
         deleted += 1
       end

@@ -156,16 +156,19 @@ class IngestionWorker
     vector_array    = fetch_vector_embedding(semantic_string)
 
     ActiveRecord::Base.transaction do
+      owner = User.find_by(id: full_payload.dig("asset", "user_id") || full_payload["user_id"]) || User.first
+      raise ActiveRecord::RecordNotFound, "No user available for ingested asset" unless owner
+
       asset = Asset.create!(
-        original_filename: filename,
-        properties:        metadata,
-        vector_embedding:  vector_array
+        user:       owner,
+        title:      filename,
+        uuid:       SecureRandom.uuid,
+        properties: metadata
       )
+      AssetEmbedding.create!(asset: asset, embedding: vector_array, model_name: "ingestion-worker") if vector_array.present?
 
       connector.increment!(:assets_imported)
       connector.update!(last_sync: Time.current)
-
-      SmartCollectionRouterWorker.perform_async(asset.id) if asset.vector_embedding.present?
     end
   end
 

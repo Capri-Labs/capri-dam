@@ -1,4 +1,6 @@
 class AssetEmbedding < ApplicationRecord
+  def self.instance_method_already_implemented?(method_name) = method_name.to_s == "model_name" ? false : super
+
   belongs_to :asset
 
   # Instructs the neighbor gem to treat this column as a high-dimensional vector

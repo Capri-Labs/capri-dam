@@ -89,7 +89,7 @@ export default function DownloadCenter({ refreshTrigger }) {
                     <TextField size="small" placeholder="Search reports…" value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         sx={{ width: 180, bgcolor: 'white' }}
-                        InputProps={{ startAdornment: <FilterList sx={{ mr: 0.5, color: '#94a3b8', fontSize: 18 }} /> }} />
+                        slotProps={{ input: { startAdornment: <FilterList sx={{ mr: 0.5, color: '#94a3b8', fontSize: 18 }} /> } }} />
 
                     <FormControl size="small" sx={{ minWidth: 110, bgcolor: 'white' }}>
                         <Select value={statusFilter} displayEmpty

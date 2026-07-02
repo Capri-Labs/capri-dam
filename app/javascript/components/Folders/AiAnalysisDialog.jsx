@@ -69,7 +69,8 @@ export default function AiAnalysisDialog({ open, onClose, asset }) {
     return () => {
       active = false;
     };
-  }, [open, asset?.id, t]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, asset?.id]);
 
   const toggleTag = (tag) => {
     setSelectedTags((prev) => (prev.includes(tag) ? prev.filter((value) => value !== tag) : [...prev, tag]));

@@ -4,7 +4,7 @@ module Tools
 
     def index
       unless current_user.admin?
-        redirect_to root_path, alert: "Access denied: Administrator privileges required to manage asset configurations."
+        redirect_to authenticated_root_path, alert: "Access denied: Administrator privileges required to manage asset configurations."
       end
     end
   end

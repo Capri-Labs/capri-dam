@@ -23,6 +23,14 @@ RSpec.describe CdnAdapters::CloudflareAdapter, type: :service do
 
       expect(adapter.sync_metadata('asset-1', '{"status":"ready"}')).to be(true)
     end
+
+    it 'returns false when KV sync receives a non-success response' do
+      stub_request(:put, 'https://api.cloudflare.com/client/v4/accounts/acct-1/storage/kv/namespaces/ns-1/values/asset-asset-1')
+        .to_return(status: 503, body: 'maintenance')
+
+      expect(adapter.sync_metadata('asset-1', '{"status":"ready"}')).to be(false)
+      expect(Rails.logger).to have_received(:error).with(/HTTP failed: 503/)
+    end
   end
 
   describe '#purge_tag' do
@@ -56,6 +64,21 @@ RSpec.describe CdnAdapters::CloudflareAdapter, type: :service do
         .to_return(status: 200, body: { success: false, errors: [ 'bad tag' ] }.to_json)
 
       expect(adapter.purge_batch([ 'asset-1' ])).to be(false)
+    end
+
+    it 'returns false when a chunk times out' do
+      stub_request(:post, 'https://api.cloudflare.com/client/v4/zones/zone-1/purge_cache').to_timeout
+
+      expect(adapter.purge_batch([ 'asset-1' ])).to be(false)
+      expect(Rails.logger).to have_received(:error).with(/timed out|network error/)
+    end
+
+    it 'returns false when Cloudflare returns invalid JSON' do
+      stub_request(:post, 'https://api.cloudflare.com/client/v4/zones/zone-1/purge_cache')
+        .to_return(status: 200, body: 'not json')
+
+      expect(adapter.purge_batch([ 'asset-1' ])).to be(false)
+      expect(Rails.logger).to have_received(:error).with(/network error/)
     end
   end
 end

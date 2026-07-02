@@ -206,3 +206,164 @@ RSpec.describe 'Api::V1::Search', type: :request do
     end
   end
 end
+
+# ---- merged from search_coverage_spec.rb ----
+RSpec.describe "Api::V1::Search coverage", type: :request do
+  let(:user) { create(:user) }
+  before { sign_in user }
+
+  def json = response.parsed_body
+
+  def search_asset(title, props = {}, status: :ready, updated_at: Time.current)
+    asset = create(:asset, user: user, title: title, status: status, properties: {
+      "content_type" => "image/png", "file_size" => "1024", "size_human" => "1 KB"
+    }.merge(props))
+    asset.update_column(:updated_at, updated_at)
+    asset
+  end
+
+  it "filters by mode variants, schema and other mime group" do
+    image = search_asset("Image", { "content_type" => "image/png", "applied_schema_id" => "10" })
+    file = search_asset("Binary", { "content_type" => "application/octet-stream" })
+    search_asset("Video", { "content_type" => "video/mp4" })
+    search_asset("Doc", { "content_type" => "application/pdf" })
+
+    get "/api/v1/search", params: { mode: "images", schema_id: 10 }, as: :json
+    expect(json["results"].map { |r| r["uuid"] }).to contain_exactly(image.uuid)
+
+    get "/api/v1/search", params: { mode: "files" }, as: :json
+    expect(json["results"].map { |r| r["uuid"] }).to include(file.uuid)
+
+    get "/api/v1/search", params: { mime_group: "other" }, as: :json
+    expect(json["results"].map { |r| r["uuid"] }).to include(file.uuid)
+  end
+
+  it "filters file sizes, publication states, orientations, style, video and audio metadata" do
+    match = search_asset("Match", {
+      "content_type" => "video/mpeg4", "file_size" => 12.megabytes.to_s,
+      "width" => "100", "height" => "100", "color_mode" => "grayscale",
+      "video_height" => "1080", "video_width" => "1920", "video_format" => "mpeg4",
+      "video_codec" => "h264", "video_bitrate" => "6000", "audio_codec" => "aac", "audio_bitrate" => "320"
+    }, status: :rejected)
+    search_asset("Nope", { "content_type" => "image/png", "file_size" => 2.megabytes.to_s }, status: :ready)
+
+    get "/api/v1/search", params: {
+      file_size_group: "large", approved_status: "rejected", orientation: "square", style: "black_white",
+      video_height_min: 720, video_height_max: 1200, video_width_min: 1000, video_width_max: 2000,
+      video_format: "mpeg4", video_codec: "h264", video_bitrate_min: 1000, video_bitrate_max: 8000,
+      audio_codec: "aac", audio_bitrate_min: 128, audio_bitrate_max: 512, sort_by: "size", sort_dir: "asc"
+    }, as: :json
+
+    expect(response).to have_http_status(:ok)
+    expect(json["results"].map { |r| r["uuid"] }).to contain_exactly(match.uuid)
+  end
+
+  it "clamps pagination and sorts by name/modified/created" do
+    search_asset("B", updated_at: 2.days.ago)
+    search_asset("A", updated_at: 1.day.ago)
+
+    get "/api/v1/search", params: { page: -2, per_page: 500, sort_by: "name", sort_dir: "asc" }, as: :json
+    expect(json["meta"]).to include("page" => 1, "per_page" => 100)
+    expect(json["results"].map { |r| r["title"] }.first(2)).to eq(%w[A B])
+
+    get "/api/v1/search", params: { sort_by: "modified" }, as: :json
+    expect(response).to have_http_status(:ok)
+
+    get "/api/v1/search", params: { sort_by: "created", sort_dir: "asc" }, as: :json
+    expect(response).to have_http_status(:ok)
+  end
+
+  it "builds schema-driven and discovered metadata facets" do
+    create(:metadata_schema, tabs: [ { "fields" => [
+      { "field_type" => "select", "map_to_property" => "dam:brand", "label" => "Brand" },
+      { "field_type" => "textarea", "map_to_property" => "hidden", "label" => "Hidden" },
+    ] } ])
+    search_asset("One", { "dam:brand" => "Capri", "market" => "EU", "editor_state" => { "filter" => "Vivid" } })
+    search_asset("Two", { "dam:brand" => "Acme", "market" => "US", "editor_state" => { "filter" => "None" } })
+
+    get "/api/v1/search", as: :json
+    facets = json["meta"]["facets"]["metadata_fields"]
+    expect(facets["dam:brand"]["label"]).to eq("Brand")
+    expect(facets).to have_key("market")
+    expect(facets).to have_key("editor_state.filter")
+  end
+
+  it "requires authentication" do
+    sign_out user
+
+    get "/api/v1/search", as: :json
+
+    expect(response).to have_http_status(:unauthorized)
+  end
+
+  it "filters by text, recency, mime groups, publish status, orientation, style, and dynamic metadata" do
+    match = search_asset("Needle", {
+      "original_filename" => "campaign.pdf",
+      "content_type" => "application/pdf",
+      "file_size" => 5.megabytes.to_s,
+      "width" => "1600",
+      "height" => "900",
+      "color_mode" => "rgb",
+      "dc:creator" => "Maya",
+      "editor_state" => { "filter" => "Reviewed" },
+    }, status: :approved, updated_at: 30.minutes.ago)
+    search_asset("Old", {
+      "original_filename" => "campaign.pdf",
+      "content_type" => "application/zip",
+      "file_size" => 512.kilobytes.to_s,
+      "width" => "900",
+      "height" => "1600",
+      "color_mode" => "grayscale",
+      "dc:creator" => "Maya",
+      "editor_state" => { "filter" => "Draft" },
+    }, status: :draft, updated_at: 2.days.ago)
+
+    get "/api/v1/search", params: {
+      q: "campaign",
+      mode: "documents",
+      mime_group: "documents",
+      modified_within: "hour",
+      file_size_group: "medium",
+      publish_status: "published",
+      approved_status: "approved",
+      orientation: "horizontal",
+      style: "color",
+      "dc:creator" => "Maya",
+      "editor_state.filter" => "Reviewed",
+      ".ignored" => "Reviewed",
+      "bad key!" => "Maya",
+    }, as: :json
+
+    expect(response).to have_http_status(:ok)
+    expect(json["results"].map { |result| result["uuid"] }).to contain_exactly(match.uuid)
+    expect(json["meta"]["facets"]["mime_group"]).to include("documents" => 1)
+  end
+
+  it "handles archives, multimedia, small files, unpublished status, vertical orientation, and empty facets" do
+    archive = search_asset("Archive", {
+      "content_type" => "application/zip",
+      "file_size" => 100.kilobytes.to_s,
+      "width" => "600",
+      "height" => "900",
+    }, status: :draft)
+    search_asset("Audio", { "content_type" => "audio/aac", "file_size" => 20.megabytes.to_s }, status: :ready)
+
+    get "/api/v1/search", params: {
+      mime_group: "archives",
+      file_size_group: "small",
+      publish_status: "unpublished",
+      orientation: "vertical",
+    }, as: :json
+
+    expect(response).to have_http_status(:ok)
+    expect(json["results"].map { |result| result["uuid"] }).to contain_exactly(archive.uuid)
+
+    get "/api/v1/search", params: { mime_group: "multimedia" }, as: :json
+    expect(json["meta"]["facets"]["mime_group"]).to include("multimedia" => 1)
+
+    Asset.delete_all
+    get "/api/v1/search", as: :json
+    expect(json["results"]).to be_empty
+    expect(json["meta"]["facets"]["metadata_fields"]).to eq({})
+  end
+end

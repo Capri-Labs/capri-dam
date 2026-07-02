@@ -127,6 +127,78 @@ RSpec.describe BinPurgeService do
       expect { asset.reload }.to raise_error(ActiveRecord::RecordNotFound)
       expect { wf.reload }.to raise_error(ActiveRecord::RecordNotFound) # cascaded
     end
+
+    it "records termination audit entries and cancels pending tasks" do
+      asset = expired_asset_with_versions
+      wf = create(:workflow_instance, asset: asset, status: "in_review")
+      task = create(:workflow_task, workflow_instance: wf, status: "pending")
+
+      described_class.new.send(:force_terminate_workflows!, [ wf ], asset)
+
+      expect(wf.reload.status).to eq("terminated")
+      expect(wf.audit_log.last).to include("action" => "terminated", "reason" => "asset_purged_from_bin", "asset_id" => asset.id)
+      expect(task.reload.status).to eq("canceled")
+    end
+  end
+
+  describe "duplicate-group cleanup" do
+    it "resolves duplicate groups that have too few remaining members" do
+      asset = expired_asset_with_versions
+      group = create(:duplicate_group, status: "pending")
+      create(:duplicate_group_asset, duplicate_group: group, asset: asset)
+
+      result = described_class.new(retention_days: 30).call
+
+      expect(result.deleted).to eq(1)
+      expect(group.reload.status).to eq("resolved")
+    end
+  end
+
+  describe "folder purge" do
+    it "deletes expired trashed folders with no active children" do
+      folder = create(:folder, :trashed, deleted_at: 40.days.ago)
+
+      result = described_class.new(retention_days: 30).call
+
+      expect(result.deleted).to eq(1)
+      expect { folder.reload }.to raise_error(ActiveRecord::RecordNotFound)
+    end
+
+    it "skips expired folders that still contain active children" do
+      folder = create(:folder, :trashed, deleted_at: 40.days.ago)
+      create(:asset, folder: folder, status: :ready)
+      create(:folder, parent: folder)
+
+      result = described_class.new(retention_days: 30).call
+
+      expect(result.skipped).to eq(1)
+      expect(result.skipped_items.first).to include(type: "folder", reason: "has_active_children")
+      expect { folder.reload }.not_to raise_error
+    end
+
+    it "records folder purge failures and continues" do
+      folder = create(:folder, :trashed, deleted_at: 40.days.ago)
+      allow(folder).to receive(:destroy!).and_raise(StandardError, "locked")
+      allow(Folder).to receive_message_chain(:trashed, :where, :order, :find_each).and_yield(folder)
+
+      result = described_class.new(retention_days: 30).call
+
+      expect(result.failed).to eq(1)
+      expect(result.errors).to contain_exactly(hash_including(id: folder.id, type: "folder", title: folder.name, message: "locked"))
+    end
+  end
+
+  describe "storage adapter loading" do
+    it "returns nil without looking up an adapter when no backend is active" do
+      allow(StorageBackend).to receive(:find_by).with(active: true).and_return(nil)
+
+      service = described_class.new
+
+      expect(service.send(:storage_adapter)).to be_nil
+      expect(service.send(:storage_adapter)).to be_nil
+      expect(StorageManager).not_to have_received(:adapter_for)
+      expect(StorageBackend).to have_received(:find_by).once
+    end
   end
 
   # ── Result shape ─────────────────────────────────────────────────────────────

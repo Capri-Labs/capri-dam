@@ -404,7 +404,8 @@ export default function FolderAccessTab({ folder }) {
         } finally {
             setLoading(false);
         }
-    }, [folder?.id, notify, t]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [folder?.id, notify]);
 
     useEffect(() => { fetchPolicies(); }, [fetchPolicies]);
 

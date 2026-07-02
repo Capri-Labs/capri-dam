@@ -43,7 +43,8 @@
       "General": "Algemene instellingen",
       "Email Engine": "E-mailengine",
       "System Ops": "Systeembeheer",
-      "Queues": "Sidekiq-wachtrijen"
+      "Queues": "Sidekiq-wachtrijen",
+      "Inbox": "Inbox"
     }
   },
   "common": {
@@ -1701,5 +1702,68 @@
     },
     "subfolder_count_tip": "{{count}} submappen",
     "asset_count_tip": "{{count}} assets"
+  },
+  "inbox": {
+    "title": "Inbox",
+    "compose": "Opstellen",
+    "refresh": "Vernieuwen",
+    "markAllRead": "Alles als gelezen markeren",
+    "unread": "Ongelezen",
+    "starred": "Gemarkeerd",
+    "archived": "Gearchiveerd",
+    "all": "Alle berichten",
+    "mentions": "Vermeldingen",
+    "workflow": "Workflow",
+    "system": "Systeem",
+    "empty": "Uw inbox is leeg",
+    "emptySubtitle": "Berichten en vermeldingen verschijnen hier",
+    "noUnread": "Geen ongelezen berichten",
+    "markRead": "Als gelezen markeren",
+    "markUnread": "Als ongelezen markeren",
+    "archive": "Archiveren",
+    "star": "Markeren",
+    "unstar": "Markering verwijderen",
+    "delete": "Verwijderen",
+    "reply": "Beantwoorden",
+    "forward": "Doorsturen",
+    "types": {
+      "mention": "Vermelding",
+      "notification": "Melding",
+      "workflow": "Workflow",
+      "system": "Systeem",
+      "announcement": "Aankondiging"
+    }
+  },
+  "emailEngine": {
+    "title": "Communicatie-engine",
+    "templates": "Sjablonen",
+    "eventMapping": "Gebeurtenistoewijzing",
+    "outbox": "Outbox",
+    "auditLog": "Auditlogboek",
+    "aiSuggestions": "AI-suggesties",
+    "newTemplate": "Nieuw sjabloon",
+    "templateName": "Sjabloonnaam",
+    "eventTrigger": "Gebeurtenistrigger",
+    "subject": "Onderwerp",
+    "htmlBody": "HTML-inhoud",
+    "textBody": "Platte tekst",
+    "variables": "Sjabloonvariabelen",
+    "preview": "Voorbeeld",
+    "sendTest": "Test verzenden",
+    "active": "Actief",
+    "inactive": "Inactief",
+    "category": {
+      "transactional": "Transactioneel",
+      "notification": "Melding",
+      "mention": "Vermelding",
+      "announcement": "Aankondiging",
+      "system": "Systeem"
+    },
+    "stats": {
+      "sentToday": "Vandaag verzonden",
+      "sentThisWeek": "Deze week verzonden",
+      "failureRate": "Foutenpercentage",
+      "pending": "In behandeling"
+    }
   }
 }

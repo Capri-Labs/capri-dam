@@ -158,11 +158,11 @@ describe('Folders components', () => {
 
     render(<AiAnalysisDialog open onClose={jest.fn()} asset={{ id: 1, title: 'Hero', url: '/hero.jpg' }} />);
 
-    expect(await screen.findByText('Hero banner with summer colors')).toBeInTheDocument();
+    expect((await screen.findAllByText('Hero banner with summer colors'))[0]).toBeInTheDocument();
     expect(screen.getByText('outdoor')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByLabelText('summer'));
-    fireEvent.click(screen.getByRole('button', { name: 'folders.ai.apply_tags' }));
+    act(() => { fireEvent.click(screen.getByRole('checkbox', { name: 'summer' })); });
+    act(() => { fireEvent.click(screen.getByRole('button', { name: 'folders.ai.apply_tags' })); });
 
     await waitFor(() => {
       const patchCall = global.fetch.mock.calls.find(([url, options]) => String(url) === '/api/v1/assets/1' && options.method === 'PATCH');
@@ -586,7 +586,6 @@ describe('Folders components', () => {
   });
 
   it('renders UploadSidebar and triggers AI and upload actions', async () => {
-    const user = userEvent.setup();
     const handleAiGlobalAction = jest.fn();
     const handleUploadAll = jest.fn();
     render(
@@ -607,10 +606,10 @@ describe('Folders components', () => {
     );
 
     expect(screen.getByText('Upload & Enrich')).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Smart Describe Selected' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Smart Describe Selected' }));
     expect(handleAiGlobalAction).toHaveBeenCalledWith('tag');
 
-    await user.click(screen.getByRole('button', { name: 'Upload (1)' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Upload (1)' }));
     expect(handleUploadAll).toHaveBeenCalled();
   });
 

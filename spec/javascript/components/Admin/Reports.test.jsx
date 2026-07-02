@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { BarChart as BarChartIcon } from '@mui/icons-material';
 
 const mockNotify = jest.fn();
@@ -49,7 +49,7 @@ import WorkflowFunnelChart from '../../../../app/javascript/components/Admin/Rep
 
 describe('Admin Reports components', () => {
   beforeEach(() => {
-    document.head.innerHTML = '<meta name="csrf-token" content="token" />';
+    const _csrfMeta = document.head.querySelector('meta[name="csrf-token"]') || (() => { const m = document.createElement('meta'); m.name = 'csrf-token'; document.head.appendChild(m); return m; })(); _csrfMeta.content = 'token';
     global.fetch = jest.fn((url) => {
       if (url.startsWith('/admin/reports/analytics')) {
         return Promise.resolve({ ok: true, json: () => Promise.resolve({
@@ -101,33 +101,33 @@ describe('Admin Reports components', () => {
 
   it('AnalyticsDashboard renders without crashing', async () => {
     const onCreateExport = jest.fn();
-    render(<AnalyticsDashboard onCreateExport={onCreateExport} />);
+    await act(async () => { render(<AnalyticsDashboard onCreateExport={onCreateExport} />); });
     expect(await screen.findByText('System Analytics')).toBeInTheDocument();
-    expect(screen.getByText('Spike detected')).toBeInTheDocument();
+    expect(await screen.findByText('Spike detected')).toBeInTheDocument();
     fireEvent.click(screen.getByText('+ Create Export'));
     expect(onCreateExport).toHaveBeenCalled();
   });
 
   it('DownloadCenter renders a file list', async () => {
-    render(<DownloadCenter refreshTrigger={0} />);
+    await act(async () => { render(<DownloadCenter refreshTrigger={0} />); });
     expect(await screen.findByText('Asset Audit')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Download' })).toHaveAttribute('href', '/downloads/audit.pdf');
   });
 
   it('ReportBuilderDrawer renders its form', async () => {
-    render(<ReportBuilderDrawer open onClose={jest.fn()} onExportStarted={jest.fn()} preselectedReportId={1} />);
+    await act(async () => { render(<ReportBuilderDrawer open onClose={jest.fn()} onExportStarted={jest.fn()} preselectedReportId={1} />); });
     expect(screen.getByText('reports.builder.title')).toBeInTheDocument();
-    expect(await screen.findByText('reports.builder.step_format')).toBeInTheDocument();
+    expect(await screen.findByText(/reports\.builder\.step_format/)).toBeInTheDocument();
   });
 
   it('ReportTypesManager renders the type list', async () => {
-    render(<ReportTypesManager onOpenBuilder={jest.fn()} />);
+    await act(async () => { render(<ReportTypesManager onOpenBuilder={jest.fn()} />); });
     expect(await screen.findByText('Asset Audit')).toBeInTheDocument();
     expect(screen.getByText('asset_audit')).toBeInTheDocument();
   });
 
   it('Reports hub renders tabs', async () => {
-    render(<ReportsHub />);
+    await act(async () => { render(<ReportsHub />); });
     expect(screen.getByText('reports.title')).toBeInTheDocument();
     expect(await screen.findByText('System Analytics')).toBeInTheDocument();
     fireEvent.click(screen.getByText('reports.tabs.downloads'));

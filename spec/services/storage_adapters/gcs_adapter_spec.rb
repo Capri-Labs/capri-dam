@@ -19,6 +19,25 @@ RSpec.describe StorageAdapters::GcsAdapter, type: :service do
       expect(adapter.store(StringIO.new('hello'), 'folder/file.txt')).to eq('folder/file.txt')
     end
 
+    it 'passes provider-specific upload options' do
+      allow(bucket).to receive(:create_file).and_return(instance_double('Google::Cloud::Storage::File', name: 'folder/file.txt'))
+
+      adapter.store(StringIO.new('hello'), 'folder/file.txt',
+                    content_type: 'text/plain',
+                    cache_control: 'private, max-age=60',
+                    acl: 'public',
+                    metadata: { 'checksum' => 'abc' })
+
+      expect(bucket).to have_received(:create_file).with(
+        anything,
+        'folder/file.txt',
+        content_type: 'text/plain',
+        cache_control: 'private, max-age=60',
+        acl: 'publicRead',
+        metadata: { 'checksum' => 'abc' }
+      )
+    end
+
     it 'wraps provider failures in a storage error' do
       allow(bucket).to receive(:create_file).and_raise(Google::Cloud::Error.new('boom'))
 
@@ -40,6 +59,12 @@ RSpec.describe StorageAdapters::GcsAdapter, type: :service do
 
       expect(adapter.delete('missing.txt')).to be_nil
     end
+
+    it 'wraps non-not-found provider failures' do
+      allow(bucket).to receive(:file).and_raise(Google::Cloud::Error.new('boom'))
+
+      expect { adapter.delete('folder/file.txt') }.to raise_error(StorageAdapters::StorageError, /GCS delete failed/)
+    end
   end
 
   describe '#url' do
@@ -58,6 +83,14 @@ RSpec.describe StorageAdapters::GcsAdapter, type: :service do
   end
 
   describe '#presign_url' do
+    it 'passes method and content type to the signer' do
+      allow(bucket).to receive(:file).and_return(gcs_file)
+      allow(gcs_file).to receive(:signed_url).and_return('https://example.com/file')
+
+      expect(adapter.presign_url('folder/file.txt', method: :put, content_type: 'image/png')).to eq('https://example.com/file')
+      expect(gcs_file).to have_received(:signed_url).with(method: 'PUT', expires: 3600, version: :v4, content_type: 'image/png')
+    end
+
     it 'signs the URL and appends a download filename when requested' do
       allow(bucket).to receive(:file).and_return(gcs_file)
       allow(gcs_file).to receive(:signed_url).and_return('https://example.com/file?foo=bar')
@@ -101,6 +134,19 @@ RSpec.describe StorageAdapters::GcsAdapter, type: :service do
 
       expect(adapter.copy('from.txt', 'to.txt')).to eq('to.txt')
     end
+
+    it 'raises when the source file is missing' do
+      allow(bucket).to receive(:file).with('from.txt').and_return(nil)
+
+      expect { adapter.copy('from.txt', 'to.txt') }.to raise_error(StorageAdapters::StorageError, /source file/)
+    end
+
+    it 'wraps provider copy failures' do
+      allow(bucket).to receive(:file).with('from.txt').and_return(gcs_file)
+      allow(gcs_file).to receive(:copy).and_raise(Google::Cloud::Error.new('boom'))
+
+      expect { adapter.copy('from.txt', 'to.txt') }.to raise_error(StorageAdapters::StorageError, /GCS copy failed/)
+    end
   end
 
   describe '#metadata' do
@@ -115,6 +161,12 @@ RSpec.describe StorageAdapters::GcsAdapter, type: :service do
       allow(bucket).to receive(:file).and_return(nil)
 
       expect(adapter.metadata('missing.txt')).to be_nil
+    end
+
+    it 'returns nil when metadata lookup fails' do
+      allow(bucket).to receive(:file).and_raise(Google::Cloud::Error.new('boom'))
+
+      expect(adapter.metadata('folder/file.txt')).to be_nil
     end
   end
 
@@ -151,6 +203,12 @@ RSpec.describe StorageAdapters::GcsAdapter, type: :service do
 
       expect(adapter.test_connection).to eq(success: false, error: 'Permission denied. Ensure the service account has Storage Object Admin role.')
     end
+
+    it 'returns generic connection errors' do
+      allow(adapter).to receive(:gcs_bucket).and_raise(StandardError, 'offline')
+
+      expect(adapter.test_connection).to eq(success: false, error: 'offline')
+    end
   end
 
   describe 'private helpers' do
@@ -158,6 +216,30 @@ RSpec.describe StorageAdapters::GcsAdapter, type: :service do
       expect(adapter.send(:gcs_acl, 'public')).to eq('publicRead')
       expect(adapter.send(:gcs_acl, 'private')).to be_nil
       expect(adapter.send(:gcs_acl, 'custom')).to eq('custom')
+    end
+
+    it 'builds a storage client from a credentials file path' do
+      file_adapter = described_class.new(project_id: 'project-1', bucket: 'assets', credentials_json: 'Gemfile')
+      storage = instance_double('Google::Cloud::Storage::Project')
+      allow(Google::Cloud::Storage).to receive(:new).and_return(storage)
+
+      expect(file_adapter.send(:storage_client)).to eq(storage)
+      expect(Google::Cloud::Storage).to have_received(:new).with(project_id: 'project-1', credentials: 'Gemfile')
+    end
+
+    it 'builds a storage client from inline JSON credentials' do
+      creds = instance_double('Google::Auth::ServiceAccountCredentials')
+      storage = instance_double('Google::Cloud::Storage::Project')
+      inline_json = '{"client_email":"svc@example.com"}'
+      allow(Google::Auth::ServiceAccountCredentials).to receive(:make_creds).and_return(creds)
+      allow(Google::Cloud::Storage).to receive(:new).and_return(storage)
+
+      expect(described_class.new(project_id: 'project-1', bucket: 'assets', credentials_json: inline_json).send(:storage_client)).to eq(storage)
+      expect(Google::Auth::ServiceAccountCredentials).to have_received(:make_creds).with(
+        json_key_io: an_instance_of(StringIO),
+        scope: 'https://www.googleapis.com/auth/devstorage.full_control'
+      )
+      expect(Google::Cloud::Storage).to have_received(:new).with(project_id: 'project-1', credentials: creds)
     end
   end
 end

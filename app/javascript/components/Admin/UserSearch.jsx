@@ -75,18 +75,21 @@ export default function UserSearch({ onSelect, placeholder = 'Search by name or 
           </Box>
         </Box>
       )}
-      renderInput={params => (
+      renderInput={(params) => (
         <TextField
           {...params}
           placeholder={placeholder}
-          InputProps={{
-            ...params.InputProps,
-            endAdornment: (
-              <>
-                {loading && <CircularProgress size={14} sx={{ mr: 1 }} />}
-                {params.InputProps?.endAdornment}
-              </>
-            )
+          slotProps={{
+            ...params.slotProps,
+            input: {
+              ...params.slotProps?.input,
+              endAdornment: (
+                <>
+                  {loading && <CircularProgress size={14} sx={{ mr: 1 }} />}
+                  {params.slotProps?.input?.endAdornment}
+                </>
+              )
+            }
           }}
         />
       )}

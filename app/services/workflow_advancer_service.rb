@@ -82,8 +82,8 @@ class WorkflowAdvancerService
         # Find the workflow_step whose canvas node id matches.  The canvas node
         # id is stored in step.node_id (populated by the designer on save) or
         # we fall back to position-based lookup.
-        next_s = @workflow.workflow_steps.find_by(node_id: target_id) ||
-                 @workflow.workflow_steps.find_by(position: step.position + 1)
+        next_s = @workflow.workflow_steps.find_by(node_id: target_id) if WorkflowStep.column_names.include?("node_id")
+        next_s ||= @workflow.workflow_steps.find_by(position: step.position + 1)
         return next_s
       end
     end

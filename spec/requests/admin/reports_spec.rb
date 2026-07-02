@@ -207,3 +207,101 @@ RSpec.describe 'Admin::Reports', type: :request do
     end
   end
 end
+
+# ---- merged from reports_coverage_spec.rb ----
+RSpec.describe "Admin::Reports coverage additions", type: :request do
+  let(:admin) { create(:user, :admin) }
+  let(:user) { create(:user) }
+  let!(:active_report) { create(:report_definition, name: "Active Storage", report_type: "storage_usage", active: true, query_config: { "description" => "Storage" }) }
+  let!(:inactive_report) { create(:report_definition, name: "Inactive Audit", report_type: "audit_trail", active: false) }
+  let!(:custom_report) { create(:report_definition, name: "Brand Report", report_type: "brand_custom", active: true) }
+
+  describe "GET /admin/reports.json" do
+    before { sign_in admin }
+
+    it "filters inactive, exact category, and caps pagination" do
+      get "/admin/reports.json", params: { active: "false", category: "audit_trail", per_page: 500, page: -3 }, as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body["reports"].map { |row| row["id"] }).to eq([ inactive_report.id ])
+      expect(response.parsed_body["meta"]).to include("page" => 1, "per_page" => 100)
+    end
+
+    it "renders the HTML shell for admins and redirects non-admins" do
+      get "/admin/reports"
+      expect(response).to have_http_status(:ok)
+
+      sign_out admin
+      sign_in user
+      get "/admin/reports"
+      expect(response).to redirect_to(authenticated_root_path)
+    end
+  end
+
+  describe "show" do
+    before { sign_in admin }
+
+    it "returns report details with formatted recent snapshots" do
+      completed = create(:report_snapshot, report_definition: active_report, status: :completed, format: "csv")
+      completed.generated_file.attach(io: StringIO.new("csv"), filename: "report.csv", content_type: "text/csv")
+      failed = create(:report_snapshot, report_definition: active_report, status: :failed, format: "pdf", error_message: "failed")
+
+      get "/admin/reports/#{active_report.id}.json", as: :json
+
+      expect(response).to have_http_status(:ok)
+      snapshots = response.parsed_body["recent_snapshots"].index_by { |row| row["id"] }
+      expect(snapshots[completed.id]["download_url"]).to include("/download")
+      expect(snapshots[failed.id]["error_message"]).to eq("failed")
+    end
+  end
+
+  describe "mutations" do
+    before { sign_in admin }
+
+    it "returns validation errors on update" do
+      patch "/admin/reports/#{custom_report.id}.json", params: { report_definition: { name: "" } }, as: :json
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.parsed_body["errors"]).to be_present
+    end
+
+    it "queues xlsx generation and persists permitted parameters" do
+      allow(Reports::GenerationJob).to receive(:perform_later)
+
+      post "/admin/reports/#{active_report.id}/generate.json", params: {
+        format: "xlsx",
+        parameters: { date_range: "custom", from: "2026-01-01", to: "2026-01-31", folder_ids: %w[1 2], ignored: "no" },
+      }, as: :json
+
+      expect(response).to have_http_status(:accepted)
+      snapshot = ReportSnapshot.last
+      expect(snapshot.format).to eq("xlsx")
+      expect(snapshot.parameters).to include("date_range" => "custom", "folder_ids" => %w[1 2])
+      expect(snapshot.parameters).not_to have_key("ignored")
+      expect(Reports::GenerationJob).to have_received(:perform_later).with(snapshot.id)
+    end
+  end
+
+  describe "GET /admin/reports/analytics" do
+    before { sign_in admin }
+
+    it "returns analytics service data with parsed dates" do
+      service = instance_double(Reports::AnalyticsService, call: { "totals" => { "reports" => 3 } })
+      expect(Reports::AnalyticsService).to receive(:new).with("custom", custom_from: be_present, custom_to: be_nil).and_return(service)
+
+      get "/admin/reports/analytics.json", params: { range: "custom", from: "2026-01-01", to: "not-a-date" }, as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body).to eq("totals" => { "reports" => 3 })
+    end
+
+    it "returns service unavailable when analytics raises" do
+      allow(Reports::AnalyticsService).to receive(:new).and_raise(StandardError, "down")
+      allow(Rails.logger).to receive(:error)
+
+      get "/admin/reports/analytics.json", as: :json
+
+      expect(response).to have_http_status(:service_unavailable)
+      expect(response.parsed_body["error"]).to include("temporarily unavailable")
+    end
+  end
+end

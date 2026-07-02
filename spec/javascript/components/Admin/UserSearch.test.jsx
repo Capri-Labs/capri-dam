@@ -57,13 +57,16 @@ describe('UserSearch', () => {
     render(<UserSearch onSelect={jest.fn()} />);
 
     const input = screen.getByPlaceholderText('Search by name or email…');
-    fireEvent.mouseDown(input);
+    fireEvent.focus(input);
     fireEvent.change(input, { target: { value: 'zz' } });
 
-    act(() => {
+    await act(async () => {
       jest.advanceTimersByTime(300);
+      await Promise.resolve();
     });
 
-    expect(await screen.findByText('No users found')).toBeInTheDocument();
+    await waitFor(() => expect(mockApiFetch).toHaveBeenCalledWith('/admin/users.json?search=zz'));
+    // noOptionsText renders once dropdown opens with empty results
+    expect(screen.getByText('No users found')).toBeInTheDocument();
   });
 });

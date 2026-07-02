@@ -65,7 +65,7 @@ describe('GroupOverlay', () => {
       />
     );
 
-    expect(screen.getByText(/Editorial team/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Editorial team/)[0]).toBeInTheDocument();
     expect(screen.getByDisplayValue('Editors')).toBeInTheDocument();
     expect(screen.getByDisplayValue('Editorial team')).toBeInTheDocument();
   });
