@@ -121,6 +121,49 @@ test.describe('Ingestion Pipeline Dashboard E2E', () => {
         await expect(page.getByRole('dialog')).not.toBeVisible();
     });
 
+    // ── Wizard destination step ───────────────────────────────────────────────
+    test('wizard advances to the Select Destination step with a folder search box', async ({ page }) => {
+        // Provide one active connector and a couple of folders so the wizard can advance.
+        await page.route('/api/v1/system_connectors', route => {
+            route.fulfill({
+                status:      200,
+                contentType: 'application/json',
+                body:        JSON.stringify([
+                    { id: 1, name: 'AEM Source', provider_type: 'aem', status: 'active', tdm_sanitation: true, assets_imported: 0 },
+                ]),
+            });
+        });
+        await page.route('/api/v1/folders', route => {
+            route.fulfill({
+                status:      200,
+                contentType: 'application/json',
+                body:        JSON.stringify({ folders: [
+                    { id: 'f1', name: 'Marketing', path: '/Marketing', slug: 'marketing' },
+                    { id: 'f2', name: 'Campaigns', path: '/Marketing/Campaigns', slug: 'campaigns' },
+                ] }),
+            });
+        });
+
+        await page.goto('/admin/migrations/ingestion');
+        await page.waitForLoadState('networkidle');
+
+        await page.getByRole('button', { name: /start migration/i }).first().click();
+        await expect(page.getByRole('dialog')).toBeVisible();
+
+        // Step 1 — select the source connector, then advance.
+        await page.getByText('AEM Source').click();
+        await page.getByRole('button', { name: /^next$/i }).click();
+
+        // Step 2 — destination folder picker with a search box.
+        await expect(page.getByText(/choose the folder where migrated assets/i)).toBeVisible();
+        const search = page.getByPlaceholder(/search folders/i);
+        await expect(search).toBeVisible();
+
+        await search.fill('campaigns');
+        await page.getByText('/Marketing/Campaigns').click();
+        await expect(page.getByText(/assets will be migrated into/i)).toBeVisible();
+    });
+
     // ── Batch table with data (mocked) ───────────────────────────────────────
     test('renders batch rows with status chips and actions', async ({ page }) => {
         const fakeBatches = [

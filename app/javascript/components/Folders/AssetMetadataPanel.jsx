@@ -51,8 +51,7 @@ function MetadataField({ field, value, onChange, readOnly }) {
         case 'date':
             return (
                 <TextField {...commonProps} type="date" label={label}
-                           value={value ?? ''} onChange={e => onChange(e.target.value)}
-                           InputLabelProps={{ shrink: true }}
+                           value={value ?? ''} onChange={e => onChange(e.target.value)} slotProps={{inputLabel: { shrink: true } }}
                            helperText={field.map_to_property} />
             );
 
@@ -92,9 +91,10 @@ function MetadataField({ field, value, onChange, readOnly }) {
 
         case 'tags':
             return (
-                <Autocomplete multiple freeSolo size="small" disabled={isLocked} value={Array.isArray(value) ? value : value ? [value] : []} onChange={(_, newVal) => onChange(newVal)} options={[]} renderValue={(val, getTagProps) => val.map((opt, i) => <Chip label={opt} size="small" {...getTagProps({
-  index: i
-})} key={i} />)} renderInput={params => <TextField {...params} label={label} helperText={`${field.map_to_property} — press Enter to add`} sx={{
+                <Autocomplete multiple freeSolo size="small" disabled={isLocked} value={Array.isArray(value) ? value : value ? [value] : []} onChange={(_, newVal) => onChange(newVal)} options={[]} renderValue={(val, getTagProps) => val.map((opt, i) => {
+  const { key, ...tagProps } = getTagProps({ index: i });
+  return <Chip key={key ?? i} label={opt} size="small" {...tagProps} />;
+})} renderInput={params => <TextField {...params} label={label} helperText={`${field.map_to_property} — press Enter to add`} sx={{
   mb: 2
 }} />} />
             );
@@ -312,4 +312,3 @@ export default function AssetMetadataPanel({ asset, onAssetUpdated }) {
         </Box>
     );
 }
-

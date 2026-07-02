@@ -56,7 +56,7 @@ export default function ImpersonationBanner({ impersonatedUser, trueUserName }) 
         🚨 IMPERSONATION ACTIVE
       </Typography>
 
-      <Typography variant="body2" sx={{ opacity: 0.9 }}>
+      <Typography variant="body2" component="span" sx={{ opacity: 0.9 }}>
         You are acting as&nbsp;
         <strong>{impersonatedUser.display_name}</strong>
         {impersonatedUser.email && (
@@ -99,4 +99,3 @@ export default function ImpersonationBanner({ impersonatedUser, trueUserName }) 
     </Box>
   );
 }
-

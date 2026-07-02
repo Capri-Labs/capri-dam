@@ -97,7 +97,7 @@ export default function PinToCollectionDialog({ open, onClose, asset }) {
 
           {/* Currently pinned summary */}
           {pinnedCollections.length > 0 && (
-            <Stack direction="row" spacing={0.75} flexWrap="wrap" sx={{ mb: 1.5, gap: 0.75 }}>
+            <Stack direction="row" spacing={0.75} sx={{mb: 1.5, gap: 0.75, flexWrap: 'wrap'}}>
               {pinnedCollections.map((c) => (
                 <Chip
                   key={c.slug}
@@ -157,14 +157,14 @@ export default function PinToCollectionDialog({ open, onClose, asset }) {
                     <ListItemText
                       primary={collection.name}
                       secondary={
-                        <Stack direction="row" spacing={1} alignItems="center">
+                        <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
                           <span>{collection.collection_type === 'smart' ? 'AI Smart Routing' : 'Manual Curation'}</span>
                           {typeof collection.assets_count === 'number' && (
                             <Chip label={`${collection.assets_count} assets`} size="small" sx={{ height: 16, fontSize: '0.65rem' }} />
                           )}
                         </Stack>
                       }
-                      slotProps={{ primary: { variant: 'subtitle2', fontWeight: 600 } }}
+                      slotProps={{ primary: { variant: 'subtitle2', fontWeight: 600 }, secondary: { component: 'div' } }}
                     />
                     <Tooltip title={isPinned ? 'Remove from this collection' : 'Add to this collection'}>
                       {isLoading ? (

@@ -123,7 +123,7 @@ export default function AssetList({ assets, viewMode, selectedItems, toggleSelec
                 </TableCell>
 
                 <TableCell align="right">
-                  <Stack direction="row" spacing={0.5} justifyContent="flex-end">
+                  <Stack direction="row" spacing={0.5} sx={{justifyContent: 'flex-end'}}>
                     <Tooltip title="Pin to Collection">
                       <IconButton size="small" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onPinClick(asset, e); }}>
                         <PushPinOutlined fontSize="small" sx={{ color: '#475569' }} />

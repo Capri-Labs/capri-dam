@@ -40,6 +40,11 @@ const systemConnector = {
   analysis_report: { total_found: 300, missing_tags: 8, estimated_size_gb: 4.2 },
 };
 
+const folderList = [
+  { id: 'f1', name: 'Marketing', path: '/Marketing', slug: 'marketing' },
+  { id: 'f2', name: 'Campaigns', path: '/Marketing/Campaigns', slug: 'campaigns' },
+];
+
 const batchList = [
   {
     id: 42,
@@ -312,22 +317,34 @@ describe('Admin Migrations components', () => {
 
   it('runs NewMigrationDialog wizard and launches a migration', async () => {
     const onSuccess = jest.fn();
+    let postedBody = null;
 
     installFetchMock((url, options) => {
       if (url === '/api/v1/system_connectors') return jsonResponse([systemConnector, { ...systemConnector, id: 2, status: 'disabled', name: 'Disabled' }]);
+      if (url === '/api/v1/folders') return jsonResponse({ folders: folderList });
       if (url === '/api/v1/ingestion_batches' && options.method === 'POST') {
+        postedBody = JSON.parse(options.body);
         return jsonResponse({ batch: { id: 77, name: 'July Launch' } });
       }
     });
 
     render(<NewMigrationDialog open onClose={jest.fn()} onSuccess={onSuccess} />);
 
+    // Step 1 — Select Source
     expect(await screen.findByText('AEM Source')).toBeInTheDocument();
     expect(screen.queryByText('Disabled')).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByText('AEM Source'));
     fireEvent.click(screen.getByRole('button', { name: /^next$/i }));
 
+    // Step 2 — Select Destination (searchable folder picker)
+    expect(await screen.findByText('/Marketing/Campaigns')).toBeInTheDocument();
+    fireEvent.change(screen.getByPlaceholderText('ingestion.wizard.destinationSearchPlaceholder'), { target: { value: 'campaigns' } });
+    await waitFor(() => expect(screen.queryByText('/Marketing')).not.toBeInTheDocument());
+    fireEvent.click(screen.getByText('/Marketing/Campaigns'));
+    fireEvent.click(screen.getByRole('button', { name: /^next$/i }));
+
+    // Step 3 — Configure Batch
     expect(screen.getByDisplayValue(/migration/i)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: /^next$/i }));
@@ -337,6 +354,7 @@ describe('Admin Migrations components', () => {
 
     await waitFor(() => expect(onSuccess).toHaveBeenCalledWith({ id: 77, name: 'July Launch' }));
     expect(mockNotify).toHaveBeenCalledWith('ingestion.wizard.launchSuccess:July Launch', 'success');
+    expect(postedBody.ingestion_batch.destination_folder_id).toBe('f2');
   });
 
   it('renders BatchReviewWorkspace and commits a review batch', async () => {
@@ -418,6 +436,7 @@ describe('Admin Migrations components', () => {
       if (url === '/api/v1/ingestion_batches/stats') return jsonResponse(ingestionStats);
       if (url.startsWith('/api/v1/ingestion_batches?')) return jsonResponse({ batches: batchList, meta: { total: 2, per_page: 50 } });
       if (url === '/api/v1/system_connectors') return jsonResponse([systemConnector]);
+      if (url === '/api/v1/folders') return jsonResponse({ folders: folderList });
       if (url === '/api/v1/ingestion_batches/42?page=1') return jsonResponse(reviewBatchPayload);
       if (url === '/api/v1/ingestion_batches/42/commit' && options.method === 'POST') return jsonResponse({ success: true });
     });

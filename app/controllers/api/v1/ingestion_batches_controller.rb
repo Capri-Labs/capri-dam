@@ -132,7 +132,7 @@ class Api::V1::IngestionBatchesController < ApplicationController
 
   def batch_params
     params.require(:ingestion_batch).permit(
-      :name, :source_type, :connector_id, :notes,
+      :name, :source_type, :connector_id, :notes, :destination_folder_id,
       source_credentials: {}
     )
   end

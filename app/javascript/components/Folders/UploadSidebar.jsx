@@ -89,9 +89,10 @@ export default function UploadSidebar({
                 <Autocomplete multiple freeSolo size="small" options={[]} value={globalMeta.manualTags} onChange={(e, val) => setGlobalMeta({
   ...globalMeta,
   manualTags: val
-})} renderValue={(value, getTagProps) => value.map((option, index) => <Chip variant="outlined" label={option} {...getTagProps({
-  index
-})} size="small" />)} renderInput={params => <TextField {...params} placeholder="Type and press enter" sx={{
+})} renderValue={(value, getTagProps) => value.map((option, index) => {
+  const { key, ...tagProps } = getTagProps({ index });
+  return <Chip key={key} variant="outlined" label={option} {...tagProps} size="small" />;
+})} renderInput={params => <TextField {...params} placeholder="Type and press enter" sx={{
   mb: 2,
   bgcolor: '#f8fafc'
 }} />} />

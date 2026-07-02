@@ -106,7 +106,7 @@ export default function AssetCard({ asset, onPin, onViewMore }) {
             </CardContent>
 
             {/* Standard Asset Context Menu */}
-            <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose} elevation={2} PaperProps={{ sx: { borderRadius: 2, minWidth: 160 } }}>
+            <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose} elevation={2} slotProps={{paper: { sx: { borderRadius: 2, minWidth: 160 } } }}>
                 <MenuItem onClick={(e) => { handleMenuClose(e); onViewMore(asset); }}>
                     <InfoOutlined fontSize="small" sx={{ mr: 1.5, color: '#475569' }} /> View Details
                 </MenuItem>

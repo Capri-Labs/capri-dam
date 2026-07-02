@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_01_120001) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_02_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -457,6 +457,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_01_120001) do
     t.datetime "completed_at"
     t.bigint "connector_id"
     t.datetime "created_at", null: false
+    t.uuid "destination_folder_id"
     t.integer "duplicate_count", default: 0
     t.integer "error_count", default: 0
     t.bigint "initiated_by_id"
@@ -472,6 +473,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_01_120001) do
     t.datetime "updated_at", null: false
     t.integer "user_id"
     t.index ["connector_id"], name: "index_ingestion_batches_on_connector_id"
+    t.index ["destination_folder_id"], name: "index_ingestion_batches_on_destination_folder_id"
   end
 
   create_table "ingestion_items", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|

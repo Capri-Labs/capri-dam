@@ -94,11 +94,12 @@ export default function AssetTagsEditor({ asset, open, onClose, onSave }) {
                         <Typography variant="subtitle1" fontWeight="700" sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                             <LabelOutlined sx={{ mr: 1, color: '#475569' }} /> Manual Tags
                         </Typography>
-                        <Autocomplete multiple freeSolo options={EXISTING_DATABASE_TAGS} value={manualTags} onChange={(event, newValue) => setManualTags(newValue)} renderValue={(value, getTagProps) => value.map((option, index) => <Chip variant="outlined" label={option} {...getTagProps({
-  index
-})} sx={{
+                        <Autocomplete multiple freeSolo options={EXISTING_DATABASE_TAGS} value={manualTags} onChange={(event, newValue) => setManualTags(newValue)} renderValue={(value, getTagProps) => value.map((option, index) => {
+  const { key, ...tagProps } = getTagProps({ index });
+  return <Chip key={key} variant="outlined" label={option} {...tagProps} sx={{
   borderRadius: 1
-}} />)} renderInput={params => <TextField {...params} variant="outlined" placeholder="Search or type new tag..." helperText="Press enter to add custom tags not in the database." />} />
+}} />;
+})} renderInput={params => <TextField {...params} variant="outlined" placeholder="Search or type new tag..." helperText="Press enter to add custom tags not in the database." />} />
                     </Box>
 
                     <Divider sx={{ mb: 4 }} />

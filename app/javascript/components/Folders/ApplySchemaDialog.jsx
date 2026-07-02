@@ -146,8 +146,7 @@ export default function ApplySchemaDialog({
     const isFolderTarget = targetType === 'folder';
 
     return (
-        <Dialog open={open} onClose={() => onClose(false)} maxWidth="sm" fullWidth
-                PaperProps={{ sx: { borderRadius: 3 } }}>
+        <Dialog open={open} onClose={() => onClose(false)} maxWidth="sm" fullWidth slotProps={{paper: { sx: { borderRadius: 3 } } }}>
             <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1.5,
                                borderBottom: '1px solid #f1f5f9', pb: 1.5, bgcolor: '#faf5ff' }}>
                 <SchemaOutlined sx={{ color: '#5e35b1' }} />

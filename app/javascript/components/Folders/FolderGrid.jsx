@@ -66,7 +66,7 @@ export default function FolderGrid({ folders, viewMode, selectedItems, toggleSel
                   sx={{ position: 'absolute', top: 6, right: 6, p: 0.5 }}
                 />
 
-                <Stack direction="row" spacing={1.5} alignItems="center" sx={{ minWidth: 0 }}>
+                <Stack direction="row" spacing={1.5} sx={{minWidth: 0, alignItems: 'center'}}>
                   <FolderIcon sx={{ fontSize: card.iconSize, color: '#3b82f6', flexShrink: 0 }} />
                   <Box sx={{ minWidth: 0, flexGrow: 1 }}>
                     <Tooltip title={folder.name} placement="top-start">
@@ -74,7 +74,7 @@ export default function FolderGrid({ folders, viewMode, selectedItems, toggleSel
                         {folder.name}
                       </Typography>
                     </Tooltip>
-                    <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mt: 0.75, flexWrap: 'wrap', gap: 0.5 }}>
+                    <Stack direction="row" spacing={0.75} sx={{mt: 0.75, flexWrap: 'wrap', gap: 0.5, alignItems: 'center'}}>
                       {typeof folder.subfolder_count === 'number' && (
                         <Tooltip title={t('folders.subfolder_count_tip', '{{count}} sub-folders', { count: folder.subfolder_count })}>
                           <Chip

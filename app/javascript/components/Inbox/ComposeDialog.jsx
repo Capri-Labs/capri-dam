@@ -102,7 +102,7 @@ export default function ComposeDialog({ open, onClose }) {
               <Typography variant="caption" color="text.secondary">
                 Mention suggestions
               </Typography>
-              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ mt: 1 }}>
+              <Stack direction="row" spacing={1} useFlexGap sx={{mt: 1, flexWrap: 'wrap'}}>
                 {users.map(user => (
                   <Chip
                     key={user.id}

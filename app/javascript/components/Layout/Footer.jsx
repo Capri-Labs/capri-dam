@@ -17,7 +17,7 @@ export default function Footer() {
         >
             <Container maxWidth="xl">
                 {/* MUI v9 Grid2: no `item` prop; use `size` for responsive columns */}
-                <Grid container spacing={4} justifyContent="space-between">
+                <Grid container spacing={4} sx={{ justifyContent: 'space-between' }}>
 
                     {/* Branding & Mission */}
                     <Grid size={{ xs: 12, md: 5 }}>

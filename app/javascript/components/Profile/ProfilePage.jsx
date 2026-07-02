@@ -378,14 +378,13 @@ export default function ProfilePage(props) {
                       label="Current Password" type={showPwd ? 'text' : 'password'}
                       size="small" fullWidth
                       value={pwdForm.current_password}
-                      onChange={e => setPwdForm({ ...pwdForm, current_password: e.target.value })}
-                      InputProps={{
+                      onChange={e => setPwdForm({ ...pwdForm, current_password: e.target.value })} slotProps={{input: {
                         endAdornment: (
                           <IconButton size="small" onClick={() => setShowPwd(!showPwd)}>
                             {showPwd ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
                           </IconButton>
                         ),
-                      }}
+                      } }}
                     />
                     <TextField
                       label="New Password" type="password" size="small" fullWidth
@@ -600,8 +599,7 @@ export default function ProfilePage(props) {
             <TextField
               label="Expiry Date (optional)" type="date" size="small" fullWidth
               value={newTokenForm.expires_at}
-              onChange={e => setNewTokenForm({ ...newTokenForm, expires_at: e.target.value })}
-              InputLabelProps={{ shrink: true }}
+              onChange={e => setNewTokenForm({ ...newTokenForm, expires_at: e.target.value })} slotProps={{inputLabel: { shrink: true } }}
               helperText="Leave blank for a token that never expires."
             />
           </Stack>

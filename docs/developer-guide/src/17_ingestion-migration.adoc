@@ -41,8 +41,24 @@ SharePoint, Widen, and a legacy S3-style source.
 |===
 | Component | Notes
 | `IngestionDashboard.jsx` | KPI cards, active-batch tracking, timeline view, search/filter, and audit handoff.
+| `NewMigrationDialog.jsx` | 4-step wizard: *Select Source* → *Select Destination* → *Configure Batch* → *Confirm & Launch*.
 | `SystemConnectors.jsx` | Connector CRUD, test connection, pause/resume, and start migration.
 |===
+
+=== Destination folder selection
+
+The *Select Destination* wizard step lets the operator choose the DAM folder
+that migrated assets are stored in. It loads the folder tree from
+`GET /api/v1/folders` and provides a search box to filter by folder path. The
+chosen folder id is submitted as `ingestion_batch[destination_folder_id]` and
+persisted on the `IngestionBatch` (`destination_folder_id`, an optional
+`belongs_to :destination_folder` pointing at `Folder`).
+
+At commit time `MigrationCommitWorker#resolve_target_folder` places every asset
+into `batch.destination_folder` when present. When the field is omitted (legacy
+batches or API callers that skip it) the worker falls back to its previous
+behaviour: mapping the item's `campaign` to an existing folder or creating an
+auto-generated `Migration — <SOURCE> — <DATE>` staging folder.
 
 == APIs
 

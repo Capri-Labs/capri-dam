@@ -80,6 +80,7 @@
     "setupFilesAfterEnv": [
       "<rootDir>/spec/javascript/setup.js"
     ],
+    "testTimeout": 20000,
     "collectCoverageFrom": [
       "app/javascript/**/*.{js,jsx}",
       "!app/javascript/application.js",

@@ -145,12 +145,13 @@ export default function CollectionPropertiesDialog({ open, onClose, selectedColl
                         <Autocomplete multiple disabled={isBulk && !modifyFlags.tags} options={SUGGESTED_TAGS} freeSolo value={formData.tags || []} onChange={(e, newValue) => setFormData({
   ...formData,
   tags: newValue || []
-})} renderValue={(value, getTagProps) => value.map((option, index) => <Chip variant="outlined" label={option} {...getTagProps({
-  index
-})} size="small" sx={{
+})} renderValue={(value, getTagProps) => value.map((option, index) => {
+  const { key, ...tagProps } = getTagProps({ index });
+  return <Chip key={key} variant="outlined" label={option} {...tagProps} size="small" sx={{
   borderColor: '#5e35b1',
   color: '#5e35b1'
-}} />)} renderInput={params => <TextField {...params} placeholder="Add tags..." />} />
+}} />;
+})} renderInput={params => <TextField {...params} placeholder="Add tags..." />} />
                     </Box>
                 </Box>
 

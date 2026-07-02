@@ -257,7 +257,7 @@ export default function EmailEngineManager() {
 
     if (loading) {
         return (
-            <Stack alignItems="center" justifyContent="center" sx={{ minHeight: '60vh' }}>
+            <Stack sx={{ minHeight: '60vh', alignItems: 'center', justifyContent: 'center' }}>
                 <CircularProgress />
             </Stack>
         );
@@ -266,7 +266,7 @@ export default function EmailEngineManager() {
     return (
         <Box sx={{ display: 'flex', bgcolor: '#f4f7fb', minHeight: '100vh' }}>
             <Box component="main" sx={{ width: '100%', p: 2 }}>
-                <Stack direction="row" justifyContent="space-between" alignItems="center">
+                <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
                     <Box>
                         <Typography variant="h4" sx={{ fontWeight: 700, color: '#121926' }}>
                             {t('emailEngine.title', { defaultValue: 'Communication Engine' })}
@@ -309,7 +309,7 @@ export default function EmailEngineManager() {
                                                 <Typography variant="caption" color="text.secondary">{template.description || template.subject}</Typography>
                                             </TableCell>
                                             <TableCell>
-                                                <Stack direction="row" spacing={1} alignItems="center">
+                                                <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
                                                     <Chip size="small" label={template.event_trigger} variant="outlined" />
                                                     <Chip size="small" label={t(`emailEngine.category.${template.category}`, { defaultValue: template.category })} />
                                                 </Stack>
@@ -334,7 +334,7 @@ export default function EmailEngineManager() {
                                     {eventMappings.map(event => {
                                         const mappedTemplate = templates.find(template => template.event_trigger === event.id);
                                         return (
-                                            <Grid item xs={12} md={6} key={event.id}>
+                                            <Grid xs={12} md={6} key={event.id}>
                                                 <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, height: '100%' }}>
                                                     <Stack spacing={1}>
                                                         <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>{event.label}</Typography>
@@ -347,7 +347,7 @@ export default function EmailEngineManager() {
                                                         </Typography>
                                                         <Divider />
                                                         {mappedTemplate ? (
-                                                            <Stack direction="row" justifyContent="space-between" alignItems="center">
+                                                            <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
                                                                 <Chip size="small" color={mappedTemplate.active ? 'success' : 'default'} label={mappedTemplate.active ? t('emailEngine.active', { defaultValue: 'Active' }) : t('emailEngine.inactive', { defaultValue: 'Inactive' })} />
                                                                 <Button size="small" onClick={() => openEditor(mappedTemplate)}>Edit</Button>
                                                             </Stack>
@@ -372,7 +372,7 @@ export default function EmailEngineManager() {
                                         { label: t('emailEngine.stats.failureRate', { defaultValue: 'Failure Rate' }), value: failureRate },
                                         { label: t('emailEngine.stats.pending', { defaultValue: 'Pending' }), value: stats.pending },
                                     ].map(card => (
-                                        <Grid item xs={12} md={3} key={card.label}>
+                                        <Grid xs={12} md={3} key={card.label}>
                                             <Card variant="outlined">
                                                 <CardContent>
                                                     <Typography variant="body2" color="text.secondary">{card.label}</Typography>
@@ -425,7 +425,7 @@ export default function EmailEngineManager() {
                                     </TableBody>
                                 </Table>
 
-                                <Stack direction="row" justifyContent="space-between" alignItems="center">
+                                <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
                                     <Typography variant="body2" color="text.secondary">{deliveryPagination.total} deliveries</Typography>
                                     <Stack direction="row" spacing={1}>
                                         <Button disabled={filters.page <= 1} onClick={() => setFilters(prev => ({ ...prev, page: prev.page - 1 }))}>Previous</Button>
@@ -439,7 +439,7 @@ export default function EmailEngineManager() {
                             <Stack spacing={2}>
                                 {suggestions.map(suggestion => (
                                     <Paper variant="outlined" key={suggestion.id} sx={{ p: 2 }}>
-                                        <Stack direction="row" justifyContent="space-between" spacing={2}>
+                                        <Stack direction="row" spacing={2} sx={{ justifyContent: 'space-between' }}>
                                             <Box>
                                                 <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>{suggestion.title}</Typography>
                                                 <Typography variant="body2" color="text.secondary">{suggestion.summary}</Typography>
@@ -456,7 +456,7 @@ export default function EmailEngineManager() {
 
                 <Drawer anchor="right" open={drawerOpen} onClose={() => setDrawerOpen(false)}>
                     <Box sx={{ mt: 6, width: '60vw', minWidth: 640, p: 4, height: '100%', overflowY: 'auto' }}>
-                        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
+                        <Stack direction="row" sx={{ mb: 3, justifyContent: 'space-between', alignItems: 'center' }}>
                             <Typography variant="h5" sx={{ fontWeight: 700 }}>{editForm.id ? 'Edit Template' : 'New Template'}</Typography>
                             <Stack direction="row" spacing={1}>
                                 <Button variant="outlined" startIcon={<Send />} onClick={sendTestEmail}>Send Test</Button>
@@ -482,7 +482,7 @@ export default function EmailEngineManager() {
                             <Paper variant="outlined" sx={{ p: 2 }}>
                                 <Stack spacing={1}>
                                     <Typography variant="subtitle2">{t('emailEngine.variables', { defaultValue: 'Template Variables' })}</Typography>
-                                    <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                                    <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap' }}>
                                         {availableVariables.map(variable => (
                                             <Chip
                                                 key={variable}

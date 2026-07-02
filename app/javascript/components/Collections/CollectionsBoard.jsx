@@ -149,7 +149,7 @@ export default function CollectionsBoard({ onSelectCollection, selectedIds, setS
             )}
 
             {/* Individual Card Context Menu */}
-            <Menu anchorEl={cardMenuAnchor} open={Boolean(cardMenuAnchor)} onClose={closeCardMenu} PaperProps={{ sx: { mt: 1, minWidth: 220, borderRadius: 2, border: '1px solid #e3e8ef' } }}>
+            <Menu anchorEl={cardMenuAnchor} open={Boolean(cardMenuAnchor)} onClose={closeCardMenu} slotProps={{paper: { sx: { mt: 1, minWidth: 220, borderRadius: 2, border: '1px solid #e3e8ef' } } }}>
                 <MenuItem onClick={handleSingleCopyLink}>
                     <ListItemIcon><ContentCopy fontSize="small" sx={{ color: '#475569' }}/></ListItemIcon>
                     <ListItemText>Copy Workspace Link</ListItemText>
@@ -190,7 +190,7 @@ export default function CollectionsBoard({ onSelectCollection, selectedIds, setS
             </Menu>
 
             {/* Advanced Bulk Menu */}
-            <Menu anchorEl={bulkMenuAnchor} open={Boolean(bulkMenuAnchor)} onClose={() => setBulkMenuAnchor(null)} PaperProps={{ sx: { mt: 1, minWidth: 260, borderRadius: 2 } }}>
+            <Menu anchorEl={bulkMenuAnchor} open={Boolean(bulkMenuAnchor)} onClose={() => setBulkMenuAnchor(null)} slotProps={{paper: { sx: { mt: 1, minWidth: 260, borderRadius: 2 } } }}>
                 <MenuItem onClick={() => setBulkMenuAnchor(null)}>
                     <MergeType fontSize="small" sx={{ mr: 1.5, color: '#0ea5e9' }} />
                     Merge to New AI Workspace

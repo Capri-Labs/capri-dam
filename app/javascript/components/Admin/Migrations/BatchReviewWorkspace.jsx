@@ -205,7 +205,7 @@ export default function BatchReviewWorkspace({ batchId, onBack }) {
                         <Box sx={{ p: 1.5, borderBottom: '1px solid #f1f5f9' }}>
                             <TextField select size="small" fullWidth value={statusFilter}
                                 onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
-                                label="Filter by status" InputProps={{ startAdornment: <FilterList fontSize="small" sx={{ mr: 0.5, color: '#94a3b8' }} /> }}>
+                                label="Filter by status" slotProps={{ input: { startAdornment: <FilterList fontSize="small" sx={{ mr: 0.5, color: '#94a3b8' }} /> } }}>
                                 <MenuItem value="">All Items ({meta.total || 0})</MenuItem>
                                 {Object.entries(ITEM_STATUS_CONFIG).map(([k, v]) => (
                                     <MenuItem key={k} value={k}>{v.label}</MenuItem>

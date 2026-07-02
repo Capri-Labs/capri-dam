@@ -164,8 +164,7 @@ export default function ExplorerTopBar({
                         <Menu
                             anchorEl={toolsMenuAnchor}
                             open={Boolean(toolsMenuAnchor)}
-                            onClose={() => setToolsMenuAnchor(null)}
-                            PaperProps={{ elevation: 3, sx: { mt: 1, minWidth: 260, borderRadius: 2 } }}
+                            onClose={() => setToolsMenuAnchor(null)} slotProps={{paper: { elevation: 3, sx: { mt: 1, minWidth: 260, borderRadius: 2 } } }}
                         >
                             <MenuItem disabled sx={{ opacity: 1 }}>
                                 <Typography variant="caption" fontWeight={700} sx={{ color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.5 }}>
@@ -233,8 +232,7 @@ export default function ExplorerTopBar({
                         <Menu
                             anchorEl={edgeMenuAnchor}
                             open={Boolean(edgeMenuAnchor)}
-                            onClose={handleEdgeMenuClose}
-                            PaperProps={{ elevation: 3, sx: { mt: 1, minWidth: 260, borderRadius: 2 } }}
+                            onClose={handleEdgeMenuClose} slotProps={{paper: { elevation: 3, sx: { mt: 1, minWidth: 260, borderRadius: 2 } } }}
                         >
                             <MenuItem onClick={handleForceSync}>
                                 <ListItemIcon><Publish fontSize="small" sx={{ color: '#059669' }} /></ListItemIcon>
@@ -259,8 +257,7 @@ export default function ExplorerTopBar({
                         <Menu
                             anchorEl={workflowMenuAnchor}
                             open={Boolean(workflowMenuAnchor)}
-                            onClose={() => setWorkflowMenuAnchor(null)}
-                            PaperProps={{ elevation: 3, sx: { mt: 1, minWidth: 260, borderRadius: 2 } }}
+                            onClose={() => setWorkflowMenuAnchor(null)} slotProps={{paper: { elevation: 3, sx: { mt: 1, minWidth: 260, borderRadius: 2 } } }}
                         >
                             <MenuItem onClick={() => { setWorkflowMenuAnchor(null); notify("Localization agent triggered.", "info"); }}>
                                 <ListItemIcon><Translate fontSize="small" color="primary" /></ListItemIcon>
@@ -284,8 +281,7 @@ export default function ExplorerTopBar({
                         <Menu
                             anchorEl={smartMenuAnchor}
                             open={Boolean(smartMenuAnchor)}
-                            onClose={handleAiMenuClose}
-                            PaperProps={{ elevation: 3, sx: { mt: 1, minWidth: 220, borderRadius: 2 } }}
+                            onClose={handleAiMenuClose} slotProps={{paper: { elevation: 3, sx: { mt: 1, minWidth: 220, borderRadius: 2 } } }}
                         >
                             <MenuItem onClick={handleAutoEnrich}>
                                 <ListItemIcon><Style fontSize="small" sx={{ color: '#8b5cf6' }} /></ListItemIcon>
@@ -333,8 +329,7 @@ export default function ExplorerTopBar({
                                 <Menu
                                     anchorEl={toolsMenuAnchor}
                                     open={Boolean(toolsMenuAnchor)}
-                                    onClose={() => setToolsMenuAnchor(null)}
-                                    PaperProps={{ elevation: 3, sx: { mt: 1, minWidth: 260, borderRadius: 2 } }}
+                                    onClose={() => setToolsMenuAnchor(null)} slotProps={{paper: { elevation: 3, sx: { mt: 1, minWidth: 260, borderRadius: 2 } } }}
                                 >
                                     <MenuItem onClick={openSchemaForFolders}>
                                         <ListItemIcon><SchemaOutlined fontSize="small" sx={{ color: '#7c3aed' }} /></ListItemIcon>

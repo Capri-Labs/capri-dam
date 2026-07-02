@@ -91,8 +91,7 @@ export default function CollectionCreateDialog({ open, onClose, onSuccess }) {
                         {/* 3. Render the DatePicker conditionally */}
                         {formData.ttl_days === 'custom' && (
                             <TextField
-                                type="date"
-                                InputLabelProps={{ shrink: true }}
+                                type="date" slotProps={{inputLabel: { shrink: true } }}
                                 value={formData.custom_date}
                                 onChange={(e) => setFormData({ ...formData, custom_date: e.target.value })}
                                 sx={{ width: 180 }}

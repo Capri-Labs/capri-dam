@@ -221,10 +221,9 @@ export default function UserGroupsManager({
               {/* Search */}
               <Box sx={{ p: 1.5, borderBottom: '1px solid', borderColor: 'divider', bgcolor: '#fafafa' }}>
                 <TextField size="small" fullWidth placeholder="Search groups…"
-                  value={search} onChange={e => setSearch(e.target.value)}
-                  InputProps={{
+                  value={search} onChange={e => setSearch(e.target.value)} slotProps={{input: {
                     startAdornment: <SearchOutlined sx={{ mr: 1, fontSize: 18, color: 'text.secondary' }} />
-                  }}
+                  } }}
                 />
               </Box>
 

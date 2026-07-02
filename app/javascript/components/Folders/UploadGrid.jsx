@@ -93,8 +93,7 @@ export default function UploadGrid({
                                             size="small"
                                             variant="standard"
                                             value={fData.meta.title}
-                                            onChange={(e) => updateFileMeta(fData.id, { title: e.target.value })}
-                                            InputProps={{ disableUnderline: true, sx: { fontSize: '0.875rem', fontWeight: 700, color: '#1e293b' } }}
+                                            onChange={(e) => updateFileMeta(fData.id, { title: e.target.value })} slotProps={{input: { disableUnderline: true, sx: { fontSize: '0.875rem', fontWeight: 700, color: '#1e293b' } } }}
                                         />
                                         <Typography variant="caption" sx={{ display: 'block', color: '#64748b', mb: 1.5, mt: 0.5 }}>{fData.meta.size} • {fData.meta.dimensions}</Typography>
                                         <Divider sx={{ my: 1.5 }} />

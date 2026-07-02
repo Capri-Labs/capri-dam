@@ -232,7 +232,7 @@ export default function AssetGrid({
               <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#0f172a' }} noWrap>
                 {displayName}
               </Typography>
-              <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mt: 0.75 }}>
+              <Stack direction="row" sx={{ mt: 0.75, justifyContent: 'space-between', alignItems: 'center' }}>
                 <Typography variant="caption" sx={{ color: '#64748b' }} noWrap>
                   {contentType.split('/')[1] || contentType || '—'}
                 </Typography>

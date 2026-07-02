@@ -53,12 +53,11 @@ function NumInput({ label, value, onChange, min = 0, step = 1, suffix, nullable 
                     if (nullable && v === '') { onChange(null); return; }
                     const n = Number(v);
                     if (!isNaN(n)) onChange(n);
-                }}
-                InputProps={{
+                }} slotProps={{input: {
                     endAdornment: suffix
                         ? <InputAdornment position="end"><Typography variant="caption" sx={{ color: '#94a3b8' }}>{suffix}</Typography></InputAdornment>
                         : undefined
-                }}
+                } }}
                 sx={{ width: '100%', '& .MuiInputBase-input': { fontSize: '0.82rem' } }}
             />
             {helperText && (
@@ -364,8 +363,7 @@ function VideoProfileEditDialog({ open, profile, onClose, onSaved }) {
     })() : [];
 
     return (
-        <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth
-                PaperProps={{ sx: { borderRadius: 3, height: '92vh' } }}>
+        <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth slotProps={{paper: { sx: { borderRadius: 3, height: '92vh' } } }}>
             <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                                bgcolor: '#f8fafc', borderBottom: '1px solid #e2e8f0', py: 1.5 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -590,8 +588,7 @@ export function ApplyVideoProfileDialog({ open, onClose, folderId, folderName })
     };
 
     return (
-        <Dialog open={open} onClose={() => onClose(false)} maxWidth="sm" fullWidth
-                PaperProps={{ sx: { borderRadius: 3 } }}>
+        <Dialog open={open} onClose={() => onClose(false)} maxWidth="sm" fullWidth slotProps={{paper: { sx: { borderRadius: 3 } } }}>
             <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1.5,
                                borderBottom: '1px solid #f1f5f9', py: 1.5, bgcolor: '#faf5ff' }}>
                 <VideoFileOutlined sx={{ color: '#7c3aed' }} />
@@ -868,7 +865,7 @@ function CopyProfileDialog({ open, profile, onClose, onCopied }) {
     };
 
     return (
-        <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+        <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth slotProps={{paper: { sx: { borderRadius: 3 } } }}>
             <DialogTitle sx={{ py: 1.5, display: 'flex', alignItems: 'center', gap: 1, bgcolor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
                 <ContentCopyOutlined sx={{ color: '#7c3aed', fontSize: 20 }} />
                 <Typography fontWeight={700}>Copy Profile</Typography>

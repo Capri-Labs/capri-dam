@@ -113,8 +113,11 @@ class MigrationCommitWorker
   end
 
   def resolve_target_folder(batch, props)
-    # Try to map the asset's source campaign/folder to an existing DAM folder.
-    # Creates a migration staging folder if no match found.
+    # An explicit destination folder chosen in the migration wizard always wins.
+    return batch.destination_folder if batch.destination_folder.present?
+
+    # Otherwise try to map the asset's source campaign/folder to an existing DAM
+    # folder, creating a migration staging folder if no match is found.
     folder_name = props["campaign"].presence || "Migration — #{batch.source_type.upcase} — #{batch.created_at.strftime("%Y-%m-%d")}"
 
     Folder.find_or_create_by!(

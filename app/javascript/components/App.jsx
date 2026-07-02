@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-    Box, Drawer, List, ListItem, ListItemIcon, ListItemText,
+    Box, Drawer, List, ListItemButton, ListItemIcon, ListItemText,
     Typography, AppBar, Toolbar, CssBaseline, Divider, Avatar
 } from '@mui/material';
 import { FolderCopy, Assignment, Settings, Notifications } from '@mui/icons-material';
@@ -62,8 +62,7 @@ export default function App() {
                 <Divider sx={{ borderColor: 'rgba(255,255,255,0.1)' }} />
 
                 <List sx={{ px: 2, pt: 2 }}>
-                    <ListItem
-                        button
+                    <ListItemButton
                         onClick={() => { setCurrentView('explorer'); setTargetAssetId(null); }}
                         sx={{
                             borderRadius: '8px', mb: 1,
@@ -75,10 +74,9 @@ export default function App() {
                             <FolderCopy />
                         </ListItemIcon>
                         <ListItemText primary="Asset Explorer" slotProps={{ primary: { fontWeight: currentView === 'explorer' ? 600 : 400 } }} />
-                    </ListItem>
+                    </ListItemButton>
 
-                    <ListItem
-                        button
+                    <ListItemButton
                         onClick={() => setCurrentView('workflows')}
                         sx={{
                             borderRadius: '8px', mb: 1,
@@ -90,16 +88,16 @@ export default function App() {
                             <Assignment />
                         </ListItemIcon>
                         <ListItemText primary="Workflows" slotProps={{ primary: { fontWeight: currentView === 'workflows' ? 600 : 400 } }} />
-                    </ListItem>
+                    </ListItemButton>
                 </List>
 
                 <Box sx={{ flexGrow: 1 }} />
 
                 <List sx={{ px: 2, pb: 2 }}>
-                    <ListItem button sx={{ borderRadius: '8px', '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' } }}>
+                    <ListItemButton sx={{ borderRadius: '8px', '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' } }}>
                         <ListItemIcon sx={{ color: '#94a3b8', minWidth: '40px' }}><Settings /></ListItemIcon>
                         <ListItemText primary="Settings" />
-                    </ListItem>
+                    </ListItemButton>
                 </List>
             </Drawer>
 

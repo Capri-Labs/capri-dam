@@ -75,11 +75,10 @@ export default function NotificationBell() {
             <Menu
                 anchorEl={anchorEl}
                 open={open}
-                onClose={handleClose}
-                PaperProps={{
+                onClose={handleClose} slotProps={{paper: {
                     elevation: 3,
                     sx: { width: 350, maxHeight: 500, mt: 1.5, borderRadius: 2 }
-                }}
+                } }}
                 transformOrigin={{ horizontal: 'right', vertical: 'top' }}
                 anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
             >

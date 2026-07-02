@@ -186,8 +186,7 @@ export default function AclMatrix({ groupId, folderId, readOnly = false, isAdmin
         </Typography>
         <TextField
           size="small" placeholder="Filter folders…"
-          value={search} onChange={e => setSearch(e.target.value)}
-          InputProps={{ startAdornment: <InputAdornment position="start"><SearchOutlined fontSize="small" /></InputAdornment> }}
+          value={search} onChange={e => setSearch(e.target.value)} slotProps={{input: { startAdornment: <InputAdornment position="start"><SearchOutlined fontSize="small" /></InputAdornment> } }}
           sx={{ width: 220 }}
         />
       </Stack>

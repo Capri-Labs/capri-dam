@@ -105,7 +105,7 @@ export default function AiAnalysisDialog({ open, onClose, asset }) {
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <DialogTitle component="div" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Box>
           <Typography variant="h6" fontWeight={700}>{t('folders.ai.title')}</Typography>
           {asset?.title && <Typography variant="body2" color="text.secondary">{asset.title}</Typography>}
@@ -145,16 +145,16 @@ export default function AiAnalysisDialog({ open, onClose, asset }) {
 
               <Box>
                 <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1 }}>{t('folders.ai.labels')}</Typography>
-                <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+                <Stack direction="row" spacing={1} useFlexGap sx={{flexWrap: 'wrap'}}>
                   {(analysis.labels || []).map((label) => <Chip key={label} label={label} size="small" />)}
                 </Stack>
               </Box>
 
               <Box>
                 <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1 }}>{t('folders.ai.colors')}</Typography>
-                <Stack direction="row" spacing={1.5} useFlexGap flexWrap="wrap">
+                <Stack direction="row" spacing={1.5} useFlexGap sx={{flexWrap: 'wrap'}}>
                   {(analysis.colors || []).map((color) => (
-                    <Stack key={color.hex || color.name} direction="row" spacing={1} alignItems="center">
+                    <Stack key={color.hex || color.name} direction="row" spacing={1} sx={{alignItems: 'center'}}>
                       <Box sx={{ width: 22, height: 22, borderRadius: '50%', bgcolor: color.hex, border: '1px solid #cbd5e1' }} />
                       <Typography variant="body2">{color.name}</Typography>
                     </Stack>
@@ -164,7 +164,7 @@ export default function AiAnalysisDialog({ open, onClose, asset }) {
 
               <Box>
                 <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1 }}>{t('folders.ai.quality')}</Typography>
-                <Stack direction="row" spacing={2} alignItems="center">
+                <Stack direction="row" spacing={2} sx={{alignItems: 'center'}}>
                   <Box sx={{ flexGrow: 1 }}>
                     <LinearProgress variant="determinate" value={qualityScore} sx={{ height: 10, borderRadius: 999 }} />
                   </Box>
@@ -192,7 +192,7 @@ export default function AiAnalysisDialog({ open, onClose, asset }) {
 
               <Box>
                 <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1 }}>{t('folders.ai.similar')}</Typography>
-                <Stack direction="row" spacing={1.5} useFlexGap flexWrap="wrap">
+                <Stack direction="row" spacing={1.5} useFlexGap sx={{flexWrap: 'wrap'}}>
                   {(analysis.similar_assets || []).map((similarAsset) => (
                     <Box key={similarAsset.id} sx={{ width: 96 }}>
                       <Box sx={{ width: 96, height: 72, borderRadius: 2, overflow: 'hidden', bgcolor: '#e2e8f0' }}>

@@ -31,7 +31,7 @@ export default function SemanticClusterMap({ open, onClose, slug }) {
     if (!open) return null;
 
     return (
-        <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+        <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth slotProps={{paper: { sx: { borderRadius: 3 } } }}>
             <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pb: 1 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
                     <AutoFixHigh sx={{ color: '#0ea5e9', mr: 1.5 }} />

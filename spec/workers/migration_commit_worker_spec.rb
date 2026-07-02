@@ -28,6 +28,20 @@ RSpec.describe MigrationCommitWorker, type: :worker do
     expect(described_class).to have_received(:perform_async).with(batch.id, described_class::COMMIT_CHUNK)
   end
 
+  it "commits ready items into the chosen destination folder when set" do
+    folder = create(:folder, name: "Chosen", user: user)
+    batch.update!(destination_folder: folder)
+    create(:ingestion_item, ingestion_batch: batch, status: :ready_for_import, clean_properties: {
+      "title" => "Hero", "campaign" => "Summer"
+    })
+    allow(described_class).to receive(:perform_async)
+    allow_any_instance_of(Asset).to receive(:broadcast_for_embedding)
+
+    described_class.new.perform(batch.id)
+
+    expect(Asset.order(:created_at).last.folder).to eq(folder)
+  end
+
   it "finalizes empty batches and queues the report worker" do
     batch.update!(status: :committed)
     allow(MigrationReportWorker).to receive(:perform_async)

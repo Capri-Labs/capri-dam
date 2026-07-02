@@ -78,8 +78,7 @@ export default function SystemAccountShow(props) {
                                     label="Client ID (UID)"
                                     value={app.uid || ''}
                                     fullWidth
-                                    variant="filled"
-                                    InputProps={{
+                                    variant="filled" slotProps={{input: {
                                         readOnly: true,
                                         endAdornment: (
                                             <InputAdornment position="end">
@@ -90,7 +89,7 @@ export default function SystemAccountShow(props) {
                                                 </Tooltip>
                                             </InputAdornment>
                                         ),
-                                    }}
+                                    } }}
                                 />
 
                                 {/* CLIENT SECRET FIELD */}
@@ -100,8 +99,7 @@ export default function SystemAccountShow(props) {
                                     fullWidth
                                     variant="outlined"
                                     color="warning"
-                                    focused
-                                    InputProps={{
+                                    focused slotProps={{input: {
                                         readOnly: true,
                                         sx: { fontFamily: 'monospace', bgcolor: '#fffde7' },
                                         endAdornment: (
@@ -113,7 +111,7 @@ export default function SystemAccountShow(props) {
                                                 </Tooltip>
                                             </InputAdornment>
                                         ),
-                                    }}
+                                    } }}
                                 />
                             </Stack>
                         </Stack>

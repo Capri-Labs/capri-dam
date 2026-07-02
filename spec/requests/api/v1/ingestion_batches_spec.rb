@@ -76,6 +76,8 @@ RSpec.describe 'Api::V1::IngestionBatches', type: :request do
                               description: 'cloudinary | brandfolder | bynder | ftp | http_api' },
               connector_id: { type: :integer, nullable: true,
                               description: 'ID of the SystemConnector to use for credentials' },
+              destination_folder_id: { type: :integer, nullable: true,
+                              description: 'ID of the DAM Folder where migrated assets will be stored. When omitted, assets land in an auto-generated migration staging folder.' },
               notes:        { type: :string,  nullable: true },
               source_credentials: {
                 type: :object,

@@ -44,9 +44,11 @@ export default function BinList({ items, isSelected, onToggleSelect, onRestore, 
         return (
             <TableContainer component={Paper} elevation={0} sx={{ border: '1px solid #e2e8f0', borderRadius: 2 }}>
                 <Table size="small">
-                    {[...Array(8)].map((_, i) => (
-                        <TableRow key={i}><TableCell colSpan={6}><Skeleton height={40} /></TableCell></TableRow>
-                    ))}
+                    <TableBody>
+                        {[...Array(8)].map((_, i) => (
+                            <TableRow key={i}><TableCell colSpan={6}><Skeleton height={40} /></TableCell></TableRow>
+                        ))}
+                    </TableBody>
                 </Table>
             </TableContainer>
         );
@@ -144,4 +146,3 @@ export default function BinList({ items, isSelected, onToggleSelect, onRestore, 
         </TableContainer>
     );
 }
-

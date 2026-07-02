@@ -105,7 +105,7 @@ export default function GlobalSearchBar() {
                 value={searchMode}
                 onChange={(e) => setSearchMode(e.target.value)}
                 disableUnderline
-                MenuProps={{ PaperProps: { elevation: 4, sx: { mt: 1, borderRadius: 2 } } }}
+                MenuProps={{ slotProps: { paper: { elevation: 4, sx: { mt: 1, borderRadius: 2 } } } }}
             >
                 <MenuItem value="images">
                     <ImageIcon fontSize="small" sx={{ color: '#64748b', mr: 1 }} /> Images

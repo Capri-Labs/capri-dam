@@ -330,7 +330,7 @@ export default function CollectionDetail({ slug, onBack }) {
             )}
 
             {/* Asset Actions Menu */}
-            <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose} elevation={2} PaperProps={{ sx: { borderRadius: 2, minWidth: 180 } }}>
+            <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose} elevation={2} slotProps={{paper: { sx: { borderRadius: 2, minWidth: 180 } } }}>
                 <MenuItem onClick={handleNavigateToAsset}>
                     <LaunchOutlined fontSize="small" sx={{ mr: 1.5, color: '#3b82f6' }} /> View Asset
                 </MenuItem>

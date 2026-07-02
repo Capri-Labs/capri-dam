@@ -130,7 +130,24 @@ RSpec.describe IngestionBatch, type: :model do
       keys  = batch.summary.keys
       expect(keys).to include(:id, :name, :source_type, :status, :progress_pct,
                                :total_count, :processed_count, :committed_count,
-                               :duplicate_count, :error_count, :source_label)
+                               :duplicate_count, :error_count, :source_label,
+                               :destination_folder_id, :destination_folder_name)
+    end
+
+    it 'surfaces the destination folder when set' do
+      folder = create(:folder, name: 'Campaign Assets')
+      batch  = create(:ingestion_batch, destination_folder: folder)
+
+      expect(batch.summary[:destination_folder_id]).to eq(folder.id)
+      expect(batch.summary[:destination_folder_name]).to eq('Campaign Assets')
+    end
+  end
+
+  describe 'associations' do
+    it 'optionally belongs to a destination folder' do
+      expect(build(:ingestion_batch, destination_folder: nil)).to be_valid
+      folder = create(:folder)
+      expect(create(:ingestion_batch, destination_folder: folder).destination_folder).to eq(folder)
     end
   end
 end

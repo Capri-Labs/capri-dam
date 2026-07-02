@@ -109,8 +109,7 @@ function ExportDialog({ open, onClose, onCreate, folders }) {
                     </FormControl>
                     {schedule === 'later' && (
                         <TextField
-                            type="datetime-local" label="Scheduled date & time" size="small"
-                            InputLabelProps={{ shrink: true }} value={scheduledAt}
+                            type="datetime-local" label="Scheduled date & time" size="small" slotProps={{inputLabel: { shrink: true } }} value={scheduledAt}
                             onChange={e => setScheduledAt(e.target.value)}
                         />
                     )}

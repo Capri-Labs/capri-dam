@@ -98,10 +98,10 @@ export default function AnalyticsDashboard({ onCreateExport }) {
                         <>
                             <TextField size="small" type="date" label="From" value={customFrom}
                                 onChange={(e) => setCustomFrom(e.target.value)}
-                                sx={{ bgcolor: 'white', width: 150 }} InputLabelProps={{ shrink: true }} />
+                                sx={{ bgcolor: 'white', width: 150 }} slotProps={{inputLabel: { shrink: true } }} />
                             <TextField size="small" type="date" label="To" value={customTo}
                                 onChange={(e) => setCustomTo(e.target.value)}
-                                sx={{ bgcolor: 'white', width: 150 }} InputLabelProps={{ shrink: true }} />
+                                sx={{ bgcolor: 'white', width: 150 }} slotProps={{inputLabel: { shrink: true } }} />
                             <Button variant="contained" size="small" onClick={handleCustomApply}
                                 sx={{ bgcolor: '#5e35b1', textTransform: 'none' }}>Apply</Button>
                         </>

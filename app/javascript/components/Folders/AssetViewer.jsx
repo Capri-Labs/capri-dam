@@ -154,8 +154,7 @@ export default function AssetViewer({ asset: initialAsset, open, onClose, onAsse
                     <Menu
                         anchorEl={downloadMenuAnchor}
                         open={Boolean(downloadMenuAnchor)}
-                        onClose={() => setDownloadMenuAnchor(null)}
-                        PaperProps={{ elevation: 3, sx: { mt: 1, minWidth: 200, borderRadius: 2 } }}
+                        onClose={() => setDownloadMenuAnchor(null)} slotProps={{paper: { elevation: 3, sx: { mt: 1, minWidth: 200, borderRadius: 2 } } }}
                     >
                         <MenuItem onClick={() => { setDownloadMenuAnchor(null); handleDownload(); }}>
                             <ListItemText primary="Download Original" secondary="High-resolution source file" />

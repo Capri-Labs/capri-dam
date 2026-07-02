@@ -243,11 +243,14 @@ function QueryBuilder({ config, onChange, folders, propertyHints }) {
             value={config.ai_tags || []}
             onChange={(_, val) => set('ai_tags', val)}
             renderTags={(value, getTagProps) =>
-              value.map((option, index) => (
-                <Chip key={option} label={option} size="small"
-                  sx={{ bgcolor: '#f3e8ff', color: '#6b21a8', fontSize: 11 }}
-                  {...getTagProps({ index })} />
-              ))
+              value.map((option, index) => {
+                const { key, ...tagProps } = getTagProps({ index });
+                return (
+                  <Chip key={key ?? option} label={option} size="small"
+                    sx={{ bgcolor: '#f3e8ff', color: '#6b21a8', fontSize: 11 }}
+                    {...tagProps} />
+                );
+              })
             }
             renderInput={(params) => (
               <TextField {...params} label={t('reports.types.form.ai_tags', 'AI Tags / Labels')}
@@ -262,11 +265,14 @@ function QueryBuilder({ config, onChange, folders, propertyHints }) {
             value={config.tags || []}
             onChange={(_, val) => set('tags', val)}
             renderTags={(value, getTagProps) =>
-              value.map((option, index) => (
-                <Chip key={option} label={option} size="small"
-                  sx={{ bgcolor: '#e0f2fe', color: '#0369a1', fontSize: 11 }}
-                  {...getTagProps({ index })} />
-              ))
+              value.map((option, index) => {
+                const { key, ...tagProps } = getTagProps({ index });
+                return (
+                  <Chip key={key ?? option} label={option} size="small"
+                    sx={{ bgcolor: '#e0f2fe', color: '#0369a1', fontSize: 11 }}
+                    {...tagProps} />
+                );
+              })
             }
             renderInput={(params) => (
               <TextField {...params} label={t('reports.types.form.asset_tags', 'Asset Tags')}
@@ -295,11 +301,14 @@ function QueryBuilder({ config, onChange, folders, propertyHints }) {
               <TextField {...params} placeholder={t('reports.types.form.folder_placeholder', 'Select folders...')} size="small" />
             )}
             renderTags={(value, getTagProps) =>
-              value.map((option, index) => (
-                <Chip key={option.id} label={option.name} size="small"
-                  icon={<FolderOutlined sx={{ fontSize: 14 }} />}
-                  {...getTagProps({ index })} />
-              ))
+              value.map((option, index) => {
+                const { key, ...tagProps } = getTagProps({ index });
+                return (
+                  <Chip key={key ?? option.id} label={option.name} size="small"
+                    icon={<FolderOutlined sx={{ fontSize: 14 }} />}
+                    {...tagProps} />
+                );
+              })
             }
           />
         </Grid>
@@ -470,7 +479,7 @@ function ReportTypeFormDialog({ open, editing, onClose, onSaved, folders, proper
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth
       slotProps={{ paper: { sx: { borderRadius: 3 } } }}>
       <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>
-        <Stack direction="row" alignItems="center" spacing={1.5}>
+        <Stack direction="row" spacing={1.5} sx={{alignItems: 'center'}}>
           <Box sx={{ width: 36, height: 36, borderRadius: 2, bgcolor: '#ede7f6',
             display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <BarChartOutlined sx={{ fontSize: 20, color: '#5e35b1' }} />
@@ -770,7 +779,7 @@ export default function ReportTypesManager({ onOpenBuilder }) {
   return (
     <Box>
       {/* Toolbar */}
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ mb: 3 }} alignItems="center">
+      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{mb: 3, alignItems: 'center'}}>
         <TextField
           size="small"
           placeholder={t('reports.types.search_placeholder')}

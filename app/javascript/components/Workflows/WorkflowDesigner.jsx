@@ -474,17 +474,19 @@ export default function WorkflowDesigner({ initialData, onSave, onCancel }) {
                                 {meta.folder_scope === 'all' && (
                                     <Autocomplete multiple size="small" sx={{
   mt: 1
-}} options={folders} getOptionLabel={opt => opt.name || 'Unknown'} value={meta.exclude_folders} onChange={(_, val) => setField('exclude_folders', val)} isOptionEqualToValue={(o, v) => String(o.id) === String(v.id)} renderValue={(value, getTagProps) => value.map((opt, i) => <Chip key={opt.id} variant="outlined" color="error" label={opt.name} size="small" {...getTagProps({
-  index: i
-})} />)} renderInput={params => <TextField {...params} label={t('workflowDesigner.excludeFolders')} placeholder={t('workflowDesigner.excludeFoldersPlaceholder')} />} />
+}} options={folders} getOptionLabel={opt => opt.name || 'Unknown'} value={meta.exclude_folders} onChange={(_, val) => setField('exclude_folders', val)} isOptionEqualToValue={(o, v) => String(o.id) === String(v.id)} renderValue={(value, getTagProps) => value.map((opt, i) => {
+  const { key, ...tagProps } = getTagProps({ index: i });
+  return <Chip key={key ?? opt.id} variant="outlined" color="error" label={opt.name} size="small" {...tagProps} />;
+})} renderInput={params => <TextField {...params} label={t('workflowDesigner.excludeFolders')} placeholder={t('workflowDesigner.excludeFoldersPlaceholder')} />} />
                                 )}
 
                                 {meta.folder_scope === 'specific' && (
                                     <Autocomplete multiple size="small" sx={{
   mt: 1
-}} options={folders} getOptionLabel={opt => opt.name || 'Unknown'} value={meta.target_folders} onChange={(_, val) => setField('target_folders', val)} isOptionEqualToValue={(o, v) => String(o.id) === String(v.id)} renderValue={(value, getTagProps) => value.map((opt, i) => <Chip key={opt.id} variant="filled" color="primary" label={opt.name} size="small" {...getTagProps({
-  index: i
-})} />)} renderInput={params => <TextField {...params} label={t('workflowDesigner.targetFolders')} placeholder={t('workflowDesigner.targetFoldersPlaceholder')} />} />
+}} options={folders} getOptionLabel={opt => opt.name || 'Unknown'} value={meta.target_folders} onChange={(_, val) => setField('target_folders', val)} isOptionEqualToValue={(o, v) => String(o.id) === String(v.id)} renderValue={(value, getTagProps) => value.map((opt, i) => {
+  const { key, ...tagProps } = getTagProps({ index: i });
+  return <Chip key={key ?? opt.id} variant="filled" color="primary" label={opt.name} size="small" {...tagProps} />;
+})} renderInput={params => <TextField {...params} label={t('workflowDesigner.targetFolders')} placeholder={t('workflowDesigner.targetFoldersPlaceholder')} />} />
                                 )}
                             </Box>
                         </Stack>

@@ -131,14 +131,16 @@ export default function BatchPipelineTimeline({ status }) {
                         <Step key={step.status} completed={stepStatus === 'completed'}>
                             <StepLabel
                                 error={isFailed && i === currentIdx}
-                                StepIconComponent={() => (
-                                    <PipelineStepIcon
-                                        status={status}
-                                        stepStatus={stepStatus}
-                                        stepIndex={i}
-                                        isFailed={isFailed}
-                                    />
-                                )}
+                                slots={{
+                                    stepIcon: () => (
+                                        <PipelineStepIcon
+                                            status={status}
+                                            stepStatus={stepStatus}
+                                            stepIndex={i}
+                                            isFailed={isFailed}
+                                        />
+                                    ),
+                                }}
                                 sx={{
                                     '& .MuiStepLabel-label': {
                                         fontSize: '0.72rem',

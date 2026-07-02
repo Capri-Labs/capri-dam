@@ -111,7 +111,7 @@ export default function StorageOperationsTab() {
                         </Box>
 
                         <Box sx={{ p: 3, bgcolor: '#f1f5f9', borderRadius: 2, border: '1px dashed #cbd5e1' }}>
-                            <Typography variant="subtitle2" color="textSecondary" textTransform="uppercase" fontWeight="700" sx={{ mb: 2 }}>{selectedCdn} Credentials</Typography>
+                            <Typography variant="subtitle2" color="textSecondary" fontWeight="700" sx={{ mb: 2, textTransform: 'uppercase' }}>{selectedCdn} Credentials</Typography>
                             <Stack spacing={2.5}>
                                 {selectedCdn === 'fastly' && (
                                     <>
@@ -155,7 +155,7 @@ export default function StorageOperationsTab() {
                         </Box>
 
                         <Box sx={{ p: 3, bgcolor: '#f1f5f9', borderRadius: 2, border: '1px dashed #cbd5e1' }}>
-                            <Typography variant="subtitle2" color="textSecondary" textTransform="uppercase" fontWeight="700" sx={{ mb: 2 }}>{selectedStorage.replace('_', ' ')} Settings</Typography>
+                            <Typography variant="subtitle2" color="textSecondary" fontWeight="700" sx={{ mb: 2, textTransform: 'uppercase' }}>{selectedStorage.replace('_', ' ')} Settings</Typography>
                             <Stack spacing={2.5}>
                                 {selectedStorage === 'aws_s3' && (
                                     <>

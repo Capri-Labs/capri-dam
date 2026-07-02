@@ -1,5 +1,6 @@
 class IngestionBatch < ApplicationRecord
   belongs_to :connector, class_name: "SystemConnector", optional: true
+  belongs_to :destination_folder, class_name: "Folder", optional: true
   has_many   :ingestion_items, dependent: :destroy
 
   validates :name, :source_type, presence: true
@@ -80,6 +81,8 @@ class IngestionBatch < ApplicationRecord
       completed_at:       completed_at,
       created_at:         created_at,
       connector_name:     connector&.name,
+      destination_folder_id:   destination_folder_id,
+      destination_folder_name: destination_folder&.name,
       report_snapshot_id: report_snapshot_id,
     }
   end

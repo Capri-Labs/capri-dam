@@ -15,6 +15,10 @@
     {
       "fingerprint": "ad4bb17c7565f6c92859cf20bdf59196a5841d07efad6d3c63bf8ad31931b73a",
       "note": "PermitAttributes Medium — admin/users_controller.rb:368. user_group_ids is an intentional many-to-many assignment for group membership management in the admin panel. The :admin key is handled explicitly outside user_params with role/ownership guards."
+    },
+    {
+      "fingerprint": "96a3991d4f7f8462ca028e0cff388e696762883c26436fde63171ddd0f872b63",
+      "note": "PermitAttributes High — settings_controller.rb:151. The `_id`-suffixed keys (account_id for Cloudflare R2, project_id for GCS) are storage-provider configuration strings, not ActiveRecord foreign keys. They are persisted into a Setting JSON blob (storage_config_<provider>), never mass-assigned to a model, so no privilege escalation is possible. All permitted keys mirror the storage settings form and adapter config. Accepted risk."
     }
   ]
 }

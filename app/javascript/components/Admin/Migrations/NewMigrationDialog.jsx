@@ -4,11 +4,12 @@ import {
     Button, CircularProgress, Alert, Box, Typography, Stack,
     TextField, Stepper, Step, StepLabel, Divider,
     FormControlLabel, Chip, Card, CardContent,
-    Switch, Grid
+    Switch, Grid, List, ListItemButton, ListItemIcon, ListItemText,
+    InputAdornment
 } from '@mui/material';
 import {
     Close, CloudSync, RocketLaunch, ArrowBack, ArrowForward,
-    CheckCircle, AccountTree, Storage, AutoFixHigh
+    CheckCircle, AccountTree, Storage, AutoFixHigh, FolderOpen, Search
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useNotify } from '../../../context/NotificationContext';
@@ -26,7 +27,7 @@ const getConnectorIcon = (type) => {
     return <CloudSync sx={{ color: '#0ea5e9', fontSize: 22 }} />;
 };
 
-const WIZARD_STEPS = ['Select Source', 'Configure Batch', 'Confirm & Launch'];
+const WIZARD_STEPS = ['Select Source', 'Select Destination', 'Configure Batch', 'Confirm & Launch'];
 
 /**
  * NewMigrationDialog — 3-step wizard to start a migration from a connector.
@@ -45,6 +46,10 @@ export default function NewMigrationDialog({ open, onClose, onSuccess }) {
     const [loadingConns, setLoadingConns]     = useState(true);
     const [selectedConn, setSelectedConn]     = useState(null);
     const [launching, setLaunching]           = useState(false);
+    const [folders, setFolders]               = useState([]);
+    const [loadingFolders, setLoadingFolders] = useState(true);
+    const [folderSearch, setFolderSearch]     = useState('');
+    const [selectedFolder, setSelectedFolder] = useState(null);
     const [formData, setFormData]             = useState({
         name:            '',
         notes:           '',
@@ -57,12 +62,21 @@ export default function NewMigrationDialog({ open, onClose, onSuccess }) {
         if (!open) return;
         setActiveStep(0);
         setSelectedConn(null);
+        setSelectedFolder(null);
+        setFolderSearch('');
         setLoadingConns(true);
         fetch('/api/v1/system_connectors')
             .then(r => r.json())
             .then(data => setConnectors(Array.isArray(data) ? data.filter(c => c.status === 'active') : []))
             .catch(() => notify(t('ingestion.wizard.connectorFetchError'), 'error'))
             .finally(() => setLoadingConns(false));
+
+        setLoadingFolders(true);
+        fetch('/api/v1/folders')
+            .then(r => r.json())
+            .then(data => setFolders(Array.isArray(data?.folders) ? data.folders : []))
+            .catch(() => notify(t('ingestion.wizard.folderFetchError'), 'error'))
+            .finally(() => setLoadingFolders(false));
     }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Auto-suggest batch name when connector is selected
@@ -88,6 +102,7 @@ export default function NewMigrationDialog({ open, onClose, onSuccess }) {
                     notes:        formData.notes,
                     source_type:  selectedConn.provider_type,
                     connector_id: selectedConn.id,
+                    destination_folder_id: selectedFolder?.id ?? null,
                 },
             };
             const res  = await fetch('/api/v1/ingestion_batches', {
@@ -188,6 +203,84 @@ export default function NewMigrationDialog({ open, onClose, onSuccess }) {
         </Box>
     );
 
+    const renderStepDestination = () => {
+        const q = folderSearch.trim().toLowerCase();
+        const filtered = q
+            ? folders.filter(f => (f.path || f.name || '').toLowerCase().includes(q))
+            : folders;
+
+        return (
+            <Box>
+                <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
+                    {t('ingestion.wizard.destinationDesc')}
+                </Typography>
+
+                <TextField
+                    fullWidth
+                    size="small"
+                    placeholder={t('ingestion.wizard.destinationSearchPlaceholder')}
+                    value={folderSearch}
+                    onChange={e => setFolderSearch(e.target.value)}
+                    sx={{ mb: 2 }}
+                    slotProps={{
+                        input: {
+                            startAdornment: (
+                                <InputAdornment position="start">
+                                    <Search sx={{ color: '#94a3b8', fontSize: 20 }} />
+                                </InputAdornment>
+                            ),
+                        },
+                    }}
+                />
+
+                {loadingFolders ? (
+                    <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                        <CircularProgress />
+                    </Box>
+                ) : filtered.length === 0 ? (
+                    <Alert severity="info" sx={{ borderRadius: 2 }}>
+                        {t('ingestion.wizard.noFoldersMatch')}
+                    </Alert>
+                ) : (
+                    <List
+                        dense
+                        sx={{
+                            maxHeight: 280, overflowY: 'auto',
+                            border: '1px solid #e2e8f0', borderRadius: 2, p: 0,
+                        }}
+                    >
+                        {filtered.map(folder => {
+                            const isSelected = selectedFolder?.id === folder.id;
+                            return (
+                                <ListItemButton
+                                    key={folder.id}
+                                    selected={isSelected}
+                                    onClick={() => setSelectedFolder(folder)}
+                                    sx={{ '&.Mui-selected': { bgcolor: '#faf5ff' } }}
+                                >
+                                    <ListItemIcon sx={{ minWidth: 36 }}>
+                                        <FolderOpen sx={{ color: isSelected ? '#5e35b1' : '#94a3b8', fontSize: 20 }} />
+                                    </ListItemIcon>
+                                    <ListItemText
+                                        primary={folder.path || folder.name}
+                                        slotProps={{ primary: { sx: { fontWeight: isSelected ? 700 : 500, fontSize: '0.85rem' } } }}
+                                    />
+                                    {isSelected && <CheckCircle sx={{ color: '#5e35b1', fontSize: 18 }} />}
+                                </ListItemButton>
+                            );
+                        })}
+                    </List>
+                )}
+
+                {selectedFolder && (
+                    <Alert severity="success" icon={<FolderOpen fontSize="inherit" />} sx={{ mt: 2, borderRadius: 2 }}>
+                        {t('ingestion.wizard.destinationSelected', { folder: selectedFolder.path || selectedFolder.name })}
+                    </Alert>
+                )}
+            </Box>
+        );
+    };
+
     const renderStep2 = () => (
         <Stack spacing={2.5}>
             <TextField
@@ -261,6 +354,7 @@ export default function NewMigrationDialog({ open, onClose, onSuccess }) {
                     { label: 'Batch Name',    value: formData.name },
                     { label: 'Source System', value: `${getProviderLabel(selectedConn?.provider_type)} (${selectedConn?.name})` },
                     { label: 'Source Type',   value: selectedConn?.provider_type },
+                    { label: 'Destination',   value: selectedFolder ? (selectedFolder.path || selectedFolder.name) : 'Auto — migration staging folder' },
                     { label: 'AI/TDM',        value: formData.tdm_sanitation ? 'Enabled — full metadata normalization' : 'Bypassed' },
                     { label: 'Concurrency',   value: `${formData.concurrency} parallel threads` },
                     ...(formData.notes ? [{ label: 'Notes', value: formData.notes }] : []),
@@ -278,13 +372,15 @@ export default function NewMigrationDialog({ open, onClose, onSuccess }) {
         </Stack>
     );
 
-    const stepContent = [renderStep1, renderStep2, renderStep3];
+    const stepContent = [renderStep1, renderStepDestination, renderStep2, renderStep3];
 
     const canProceedStep1 = !!selectedConn;
+    const canProceedDestination = !!selectedFolder;
     const canProceedStep2 = formData.name.trim().length >= 3;
 
     const canProceed = activeStep === 0 ? canProceedStep1
-        : activeStep === 1 ? canProceedStep2
+        : activeStep === 1 ? canProceedDestination
+        : activeStep === 2 ? canProceedStep2
         : true;
 
     return (

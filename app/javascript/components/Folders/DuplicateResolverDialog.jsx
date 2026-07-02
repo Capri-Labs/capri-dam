@@ -58,7 +58,7 @@ function LegacyDuplicateResolverDialog({ open, onClose, fileData, onResolve }) {
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', bgcolor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+      <DialogTitle component="div" sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', bgcolor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
         <Typography variant="h6" fontWeight="700">Resolve Duplicate: {fileData.meta.title}</Typography>
         <IconButton onClick={onClose} size="small"><Close /></IconButton>
       </DialogTitle>
@@ -257,7 +257,7 @@ function AssetDuplicateFinderDialog({ open, onClose, asset }) {
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <DialogTitle component="div" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Box>
           <Typography variant="h6" fontWeight={700}>{t('folders.duplicates.title')}</Typography>
           {asset?.title && <Typography variant="body2" color="text.secondary">{asset.title}</Typography>}
@@ -266,7 +266,7 @@ function AssetDuplicateFinderDialog({ open, onClose, asset }) {
       </DialogTitle>
       <DialogContent dividers>
         {loading && (
-          <Stack spacing={2} alignItems="center" sx={{ py: 6 }}>
+          <Stack spacing={2} sx={{py: 6, alignItems: 'center'}}>
             <CircularProgress />
             <Typography color="text.secondary">{t('folders.duplicates.loading')}</Typography>
           </Stack>
@@ -293,12 +293,11 @@ function AssetDuplicateFinderDialog({ open, onClose, asset }) {
                     <ListItemAvatar>
                       <Avatar src={duplicate.url} variant="rounded" sx={{ width: 72, height: 72, bgcolor: '#e2e8f0' }} />
                     </ListItemAvatar>
-                    <ListItemText
-                      secondaryTypographyProps={{ component: 'div' }}
+                    <ListItemText slotProps={{secondary: { component: 'div' } }}
                       primary={<Typography fontWeight={700}>{duplicate.title}</Typography>}
                       secondary={(
                         <Stack spacing={1} sx={{ mt: 0.5 }}>
-                          <Stack direction="row" spacing={1} flexWrap="wrap">
+                          <Stack direction="row" spacing={1} sx={{flexWrap: 'wrap'}}>
                             <Chip label={similarityLabel} size="small" color={duplicate.similarity_type === 'exact' ? 'success' : 'default'} />
                             <Chip label={`${t('folders.duplicates.similarity')}: ${duplicate.similarity_score}%`} size="small" />
                             <Chip label={formatBytes(duplicate.size)} size="small" />

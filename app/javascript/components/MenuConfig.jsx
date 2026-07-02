@@ -45,12 +45,6 @@ export const MENU_GROUPS = [
                 icon: <DashboardOutlined fontSize="small" />,
                 url: '/dashboard' },
             {
-                id: 'Inbox',
-                label: 'Inbox',
-                labelKey: 'menu.item.Inbox',
-                icon: <InboxIcon fontSize="small" />,
-                url: '/inbox' },
-            {
                 id: 'Search',
                 label: 'Advanced Search',
                 labelKey: 'menu.item.Search',
@@ -88,6 +82,12 @@ export const MENU_GROUPS = [
                         url: '/bin' }
                 ]
             },
+            {
+              id: 'Inbox',
+              label: 'Inbox',
+              labelKey: 'menu.item.Inbox',
+              icon: <InboxIcon fontSize="small" />,
+              url: '/inbox' },
         ]
     },
     {

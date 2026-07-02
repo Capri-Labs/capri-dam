@@ -246,7 +246,7 @@ export default function InboxPage() {
 
   return (
     <Box sx={{ p: 3, height: '100%', minHeight: 'calc(100vh - 120px)' }}>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
+      <Stack direction="row" sx={{ mb: 3, justifyContent: 'space-between', alignItems: 'center' }}>
         <Box>
           <Typography variant="h4" sx={{ fontWeight: 700 }}>
             {t('inbox.title', { defaultValue: 'Inbox' })}
@@ -307,11 +307,11 @@ export default function InboxPage() {
           </Box>
           <Divider />
           {loading ? (
-            <Stack alignItems="center" justifyContent="center" sx={{ flexGrow: 1 }}>
+            <Stack sx={{ flexGrow: 1, alignItems: 'center', justifyContent: 'center' }}>
               <CircularProgress />
             </Stack>
           ) : filteredMessages.length === 0 ? (
-            <Stack alignItems="center" justifyContent="center" spacing={1} sx={{ flexGrow: 1, p: 4 }}>
+            <Stack spacing={1} sx={{ flexGrow: 1, p: 4, alignItems: 'center', justifyContent: 'center' }}>
               <InboxIcon sx={{ fontSize: 48, color: 'text.disabled' }} />
               <Typography variant="h6">{t('inbox.empty', { defaultValue: 'Your inbox is empty' })}</Typography>
               <Typography variant="body2" color="text.secondary">{t('inbox.emptySubtitle')}</Typography>
@@ -329,7 +329,7 @@ export default function InboxPage() {
                     <Stack direction="row" spacing={1.5} sx={{ width: '100%' }}>
                       <Avatar>{(message.sender?.name || 'S').charAt(0).toUpperCase()}</Avatar>
                       <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-                        <Stack direction="row" justifyContent="space-between" spacing={1}>
+                        <Stack direction="row" spacing={1} sx={{ justifyContent: 'space-between' }}>
                           <Typography variant="subtitle2" sx={{ fontWeight: message.read ? 500 : 700 }} noWrap>
                             {message.subject}
                           </Typography>
@@ -343,7 +343,7 @@ export default function InboxPage() {
                         <Typography variant="body2" color="text.secondary" noWrap>
                           {message.snippet}
                         </Typography>
-                        <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 1 }}>
+                        <Stack direction="row" spacing={1} sx={{ mt: 1, alignItems: 'center' }}>
                           {!message.read && <Circle sx={{ fontSize: 10, color: 'primary.main' }} />}
                           <Chip size="small" label={t(`inbox.types.${message.message_type}`, { defaultValue: message.message_type })} />
                           <IconButton size="small" onClick={event => { event.stopPropagation(); toggleStar(message); }}>
@@ -369,7 +369,7 @@ export default function InboxPage() {
         <Box sx={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
           {selectedMessage ? (
             <>
-              <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ px: 3, py: 2 }}>
+              <Stack direction="row" sx={{ px: 3, py: 2, justifyContent: 'space-between', alignItems: 'center' }}>
                 <Box>
                   <Typography variant="h5" sx={{ fontWeight: 700 }}>{selectedMessage.subject}</Typography>
                   <Typography variant="body2" color="text.secondary">
@@ -405,7 +405,7 @@ export default function InboxPage() {
               </Box>
             </>
           ) : (
-            <Stack alignItems="center" justifyContent="center" spacing={2} sx={{ flexGrow: 1 }}>
+            <Stack spacing={2} sx={{ flexGrow: 1, alignItems: 'center', justifyContent: 'center' }}>
               <InboxIcon sx={{ fontSize: 48, color: 'text.disabled' }} />
               <Typography variant="h6">{t('inbox.noUnread', { defaultValue: 'No unread messages' })}</Typography>
             </Stack>

@@ -34,6 +34,23 @@ RSpec.describe 'Api::V1::IngestionBatches coverage', type: :request do
       expect(ExtractionWorker).to have_received(:perform_async).with(batch.id)
     end
 
+    it 'persists the chosen destination folder' do
+      allow(ExtractionWorker).to receive(:perform_async)
+      folder = create(:folder, name: 'Target')
+
+      post '/api/v1/ingestion_batches',
+           params: { ingestion_batch: { name: 'Import', source_type: 'aem', destination_folder_id: folder.id } },
+           as: :json
+
+      batch = IngestionBatch.last
+      expect(response).to have_http_status(:created)
+      expect(batch.destination_folder_id).to eq(folder.id)
+      expect(JSON.parse(response.body)['batch']).to include(
+        'destination_folder_id'   => folder.id,
+        'destination_folder_name' => 'Target'
+      )
+    end
+
     it 'returns validation errors for invalid payloads' do
       post '/api/v1/ingestion_batches', params: { ingestion_batch: { name: '', source_type: '' } }, as: :json
 

@@ -130,15 +130,17 @@ function WorkspaceApp() {
                                 size="small"
                                 value={temporalDate}
                                 onChange={(e) => setTemporalDate(e.target.value)}
-                                InputLabelProps={{ shrink: true }}
+                                slotProps={{
+                                    inputLabel: { shrink: true },
+                                    input: {
+                                        startAdornment: <HistoryToggleOff sx={{ color: temporalDate ? '#ef4444' : '#94a3b8', mr: 1, fontSize: 20 }} />
+                                    }
+                                }}
                                 sx={{
                                     width: 170, // Force a width so it doesn't disappear
                                     bgcolor: temporalDate ? '#fff1f2' : '#fff',
                                     borderRadius: 1,
                                     '& .MuiOutlinedInput-root': { height: 40 }
-                                }}
-                                InputProps={{
-                                    startAdornment: <HistoryToggleOff sx={{ color: temporalDate ? '#ef4444' : '#94a3b8', mr: 1, fontSize: 20 }} />
                                 }}
                             />
                         </Tooltip>
@@ -154,7 +156,7 @@ function WorkspaceApp() {
             </Box>
 
             {/* AI Menu */}
-            <Menu anchorEl={aiMenuAnchor} open={Boolean(aiMenuAnchor)} onClose={() => setAiMenuAnchor(null)} elevation={3} PaperProps={{ sx: { mt: 1, minWidth: 220, borderRadius: 2, border: '1px solid #e3e8ef' } }}>
+            <Menu anchorEl={aiMenuAnchor} open={Boolean(aiMenuAnchor)} onClose={() => setAiMenuAnchor(null)} elevation={3} slotProps={{paper: { sx: { mt: 1, minWidth: 220, borderRadius: 2, border: '1px solid #e3e8ef' } } }}>
                 <MenuItem onClick={() => setAiMenuAnchor(null)}>
                     <RuleFolder fontSize="small" sx={{ mr: 1.5, color: '#475569' }} /> Re-evaluate Smart Rules
                 </MenuItem>
