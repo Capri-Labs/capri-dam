@@ -31,7 +31,9 @@ RSpec.describe AssetProcessorWorker, type: :worker do
     staging_path = Rails.root.join("storage", "asset_processor_worker_#{SecureRandom.hex}.pdf")
     File.binwrite(staging_path, "%PDF-1.4\n1 0 obj\n<<>>\nendobj\n%%EOF\n")
 
-    described_class.new.perform(version.id, staging_path.to_s)
+    worker = described_class.new
+    allow(worker).to receive(:generate_web_preview)
+    worker.perform(version.id, staging_path.to_s)
 
     props = version.reload.properties
     expect(props).to include(
@@ -126,12 +128,9 @@ RSpec.describe AssetProcessorWorker, type: :worker do
     )
     allow(image).to receive(:[]).and_return(nil)
     image_class = class_double("MiniMagick::Image", open: image)
-    convert_class = class_double(
-      "MiniMagick::Tool::Convert",
-      new: "  4: (170,187,204) #AABBCC srgb(170,187,204)\n"
-    )
     stub_const("MiniMagick::Image", image_class)
-    stub_const("MiniMagick::Tool::Convert", convert_class)
+    allow(MiniMagick).to receive(:convert)
+      .and_return("  4: (170,187,204) #AABBCC srgb(170,187,204)\n")
 
     worker.send(:extract_image_metadata, "image.jpg", meta)
 
@@ -200,6 +199,33 @@ RSpec.describe AssetProcessorWorker, type: :worker do
       expect(meta[:exif_data]).to include("Make" => "NIKON CORPORATION", "Model" => "NIKON D850")
     end
 
+    it "maps embedded metadata onto schema map_to_property keys" do
+      worker = described_class.new
+      allow(worker).to receive(:exiftool_available?).and_return(true)
+      allow(Open3).to receive(:capture3).and_return([ exiftool_json, "", instance_double(Process::Status, success?: true) ])
+
+      meta = {}
+      worker.send(:extract_embedded_metadata, "image.jpg", meta)
+
+      expect(meta[:"dc:creator"]).to eq([ "Andy Thoma" ])
+      expect(meta[:"dc:rights"]).to eq("ALDI US")
+      expect(meta[:"dc:date"]).to eq("2026-02-09")
+      expect(meta[:"exif:Make"]).to eq("NIKON CORPORATION")
+      expect(meta[:"exif:Model"]).to eq("NIKON D850")
+    end
+
+    it "does not overwrite existing schema-mapped values" do
+      worker = described_class.new
+      allow(worker).to receive(:exiftool_available?).and_return(true)
+      allow(Open3).to receive(:capture3).and_return([ exiftool_json, "", instance_double(Process::Status, success?: true) ])
+
+      meta = { "dc:rights" => "Manual override" }
+      worker.send(:extract_embedded_metadata, "image.jpg", meta)
+
+      expect(meta["dc:rights"]).to eq("Manual override")
+      expect(meta[:"dc:rights"]).to be_nil
+    end
+
     it "no-ops gracefully when exiftool is unavailable" do
       worker = described_class.new
       allow(worker).to receive(:exiftool_available?).and_return(false)
@@ -247,6 +273,62 @@ RSpec.describe AssetProcessorWorker, type: :worker do
     File.delete(staging_path) if staging_path && File.exist?(staging_path)
   end
 
+  it "generates a web preview for document formats (PDF)" do
+    staging_path = Rails.root.join("storage", "asset_processor_worker_#{SecureRandom.hex}.pdf")
+    File.binwrite(staging_path, "%PDF-1.4".b)
+    allow(Marcel::MimeType).to receive(:for).and_return("application/pdf")
+
+    worker = described_class.new
+    allow(worker).to receive(:extract_pdf_metadata)
+    allow(worker).to receive(:generate_web_preview) do |_src, _asset, _version, meta_storage, meta|
+      meta[:preview_storage_path] = "uuid/v1_preview_pdf.png"
+      meta[:preview_content_type] = "image/png"
+    end
+
+    worker.perform(version.id, staging_path.to_s)
+
+    expect(worker).to have_received(:generate_web_preview)
+    expect(version.reload.properties).to include(
+      "preview_storage_path" => "uuid/v1_preview_pdf.png",
+      "preview_content_type" => "image/png"
+    )
+  ensure
+    File.delete(staging_path) if staging_path && File.exist?(staging_path)
+  end
+
+  it "generates a web preview for vector / document formats (EPS, AI, INDD)" do
+    AssetProcessorWorker::PREVIEWABLE_DOCUMENT_MIME_TYPES
+      .reject { |m| m == "application/pdf" }
+      .each do |mime|
+      staging_path = Rails.root.join("storage", "asset_processor_worker_#{SecureRandom.hex}.bin")
+      File.binwrite(staging_path, "data".b)
+      allow(Marcel::MimeType).to receive(:for).and_return(mime)
+
+      doc_version = create(
+        :asset_version,
+        asset: create(:asset, status: :pending),
+        version_number: 1,
+        properties: nil
+      )
+
+      worker = described_class.new
+      allow(worker).to receive(:generate_web_preview) do |_src, _asset, _v, _storage, meta|
+        meta[:preview_storage_path] = "uuid/v1_preview_doc.png"
+        meta[:preview_content_type] = "image/png"
+      end
+
+      worker.perform(doc_version.id, staging_path.to_s)
+
+      expect(worker).to have_received(:generate_web_preview), "expected preview for #{mime}"
+      expect(doc_version.reload.properties).to include(
+        "preview_storage_path" => "uuid/v1_preview_doc.png",
+        "format" => "Vector / Document Media"
+      )
+    ensure
+      File.delete(staging_path) if staging_path && File.exist?(staging_path)
+    end
+  end
+
   it "does not generate a web preview for browser-renderable images (PNG)" do
     staging_path = Rails.root.join("storage", "asset_processor_worker_#{SecureRandom.hex}.png")
     File.binwrite(staging_path, "\x89PNG\r\n\x1A\n".b)
@@ -266,13 +348,13 @@ RSpec.describe AssetProcessorWorker, type: :worker do
   it "stores a preview path and content type via generate_web_preview" do
     worker = described_class.new
     preview_bytes = "PNGDATA"
-    convert = double("MiniMagick::Tool::Convert")
+    convert = double("MiniMagick convert")
     allow(convert).to receive(:background)
     allow(convert).to receive(:flatten)
     allow(convert).to receive(:<<) do |arg|
       File.binwrite(arg, preview_bytes) if arg.to_s.end_with?(".png")
     end
-    allow(MiniMagick::Tool::Convert).to receive(:new).and_yield(convert)
+    allow(MiniMagick).to receive(:convert).and_yield(convert)
 
     meta = {}
     worker.send(:generate_web_preview, "/tmp/source.psd", asset, version, storage, meta)
@@ -282,12 +364,184 @@ RSpec.describe AssetProcessorWorker, type: :worker do
     expect(storage).to have_received(:store)
   end
 
+  describe "#backfill_preview" do
+    let(:psd_asset) do
+      create(
+        :asset,
+        status: :ready,
+        properties: {
+          "original_filename" => "design.psd",
+          "content_type" => "image/vnd.adobe.photoshop",
+          "storage_path" => "uuid/v1_abc.psd",
+        }
+      )
+    end
+    let!(:psd_version) do
+      create(:asset_version, asset: psd_asset, version_number: 1,
+                             properties: { "storage_path" => "uuid/v1_abc.psd" })
+    end
+
+    it "generates and stamps a preview for a non-web image missing one" do
+      worker = described_class.new
+      allow(worker).to receive(:fetch_original).and_return(true)
+      allow(worker).to receive(:generate_web_preview) do |_src, _asset, _version, _storage, meta|
+        meta[:preview_storage_path] = "uuid/v1_preview_dead.png"
+        meta[:preview_content_type] = "image/png"
+      end
+
+      result = worker.backfill_preview(psd_asset)
+
+      expect(result).to eq("uuid/v1_preview_dead.png")
+      expect(psd_asset.reload.properties).to include(
+        "preview_storage_path" => "uuid/v1_preview_dead.png",
+        "preview_content_type" => "image/png"
+      )
+      expect(psd_version.reload.properties["preview_storage_path"]).to eq("uuid/v1_preview_dead.png")
+    end
+
+    it "skips web-renderable images" do
+      png = create(:asset, status: :ready,
+                           properties: { "content_type" => "image/png", "storage_path" => "uuid/v1.png" })
+      create(:asset_version, asset: png, version_number: 1, properties: { "storage_path" => "uuid/v1.png" })
+
+      expect(described_class.new.backfill_preview(png)).to be_nil
+    end
+
+    it "skips assets that already have a preview" do
+      psd_version.update!(properties: psd_version.properties.merge("preview_storage_path" => "uuid/existing.png"))
+
+      expect(described_class.new.backfill_preview(psd_asset)).to be_nil
+    end
+
+    it "skips when the original cannot be fetched" do
+      worker = described_class.new
+      allow(worker).to receive(:fetch_original).and_return(false)
+      expect(worker).not_to receive(:generate_web_preview)
+
+      expect(worker.backfill_preview(psd_asset)).to be_nil
+    end
+  end
+
+  describe ".backfill_preview" do
+    it "delegates to an instance worker" do
+      worker = instance_double(described_class, backfill_preview: "uuid/preview.png")
+      allow(described_class).to receive(:new).and_return(worker)
+
+      expect(described_class.backfill_preview(asset)).to eq("uuid/preview.png")
+      expect(worker).to have_received(:backfill_preview).with(asset)
+    end
+  end
+
+  describe "#fetch_original" do
+    let(:worker) { described_class.new }
+    let(:dest_path) { Rails.root.join("storage", "fetch_original_dest_#{SecureRandom.hex}.bin").to_s }
+
+    after do
+      File.delete(dest_path) if File.exist?(dest_path)
+    end
+
+    it "copies files from the local storage adapter" do
+      storage = StorageAdapters::LocalStorageAdapter.new
+      storage_path = "spec-fetch/source-#{SecureRandom.hex}.bin"
+      source = StorageAdapters::LocalStorageAdapter::ROOT.call.join(storage_path)
+      FileUtils.mkdir_p(source.dirname)
+      File.binwrite(source, "source-bytes")
+
+      expect(worker.send(:fetch_original, storage, storage_path, dest_path)).to be(true)
+      expect(File.binread(dest_path)).to eq("source-bytes")
+    ensure
+      File.delete(source) if source && File.exist?(source)
+    end
+
+    it "returns false when a local storage source file is missing" do
+      storage = StorageAdapters::LocalStorageAdapter.new
+
+      expect(worker.send(:fetch_original, storage, "missing/source.bin", dest_path)).to be(false)
+      expect(File.size?(dest_path)).to be_nil
+    end
+
+    it "downloads files from adapters exposing download" do
+      remote_storage = double("RemoteStorage")
+      allow(remote_storage).to receive(:download).with("remote/path.bin").and_return("remote-bytes")
+
+      expect(worker.send(:fetch_original, remote_storage, "remote/path.bin", dest_path)).to be(true)
+      expect(File.binread(dest_path)).to eq("remote-bytes")
+    end
+
+    it "returns false for unsupported adapters" do
+      expect(worker.send(:fetch_original, Object.new, "remote/path.bin", dest_path)).to be(false)
+    end
+
+    it "logs and returns false when fetching raises an error" do
+      remote_storage = double("RemoteStorage")
+      allow(remote_storage).to receive(:download).and_raise(StandardError, "network down")
+
+      expect(worker.send(:fetch_original, remote_storage, "remote/path.bin", dest_path)).to be(false)
+      expect(File.size?(dest_path)).to be_nil
+    end
+  end
+
+  describe "private error handling helpers" do
+    let(:worker) { described_class.new }
+
+    it "returns the provided default when safe_image_attr raises" do
+      expect(worker.send(:safe_image_attr, "fallback") { raise StandardError, "boom" }).to eq("fallback")
+    end
+
+    it "swallows ExifTool extraction errors" do
+      allow(worker).to receive(:exiftool_available?).and_return(true)
+      allow(Open3).to receive(:capture3).and_raise(StandardError, "exiftool missing")
+
+      meta = { exif_data: { "Make" => "Canon" } }
+      expect { worker.send(:extract_embedded_metadata, "image.jpg", meta) }.not_to raise_error
+      expect(meta).to eq(exif_data: { "Make" => "Canon" })
+    end
+
+    it "swallows preview generation failures" do
+      allow(MiniMagick).to receive(:convert).and_raise(StandardError, "convert broke")
+
+      meta = {}
+      expect { worker.send(:generate_web_preview, "source.psd", asset, version, storage, meta) }.not_to raise_error
+      expect(meta).to be_empty
+    end
+
+    it "passes histogram arguments to ImageMagick when extracting a color palette" do
+      convert = double("MiniMagick convert")
+      allow(convert).to receive(:<<).and_return(convert)
+      allow(MiniMagick).to receive(:convert).and_yield(convert).and_return(
+        "  4: (170,187,204) #AABBCC srgb(170,187,204)
+  1: (17,34,51) #112233 srgb(17,34,51)"
+      )
+
+      meta = {}
+      worker.send(:extract_color_palette, "image.jpg", meta)
+
+      expect(convert).to have_received(:<<).with("image.jpg")
+      expect(convert).to have_received(:<<).with("-format")
+      expect(convert).to have_received(:<<).with("%c")
+      expect(convert).to have_received(:<<).with("-colors")
+      expect(convert).to have_received(:<<).with("5")
+      expect(convert).to have_received(:<<).with("-depth")
+      expect(convert).to have_received(:<<).with("8")
+      expect(convert).to have_received(:<<).with("histogram:info:-")
+      expect(meta[:color_palette]).to eq([ "#AABBCC", "#112233" ])
+    end
+
+    it "logs OCR errors without populating extracted text" do
+      tesseract_class = class_double("RTesseract", new: nil)
+      stub_const("RTesseract", tesseract_class)
+      allow(tesseract_class).to receive(:new).and_raise(StandardError, "ocr failed")
+
+      meta = {}
+      expect { worker.send(:extract_text_from_image, "image.jpg", meta) }.not_to raise_error
+      expect(meta).to eq({})
+    end
+  end
+
   it "falls back to an empty color palette when ImageMagick fails" do
     meta = {}
     worker = described_class.new
-    convert_class = class_double("MiniMagick::Tool::Convert")
-    allow(convert_class).to receive(:new).and_raise(StandardError, "convert failed")
-    stub_const("MiniMagick::Tool::Convert", convert_class)
+    allow(MiniMagick).to receive(:convert).and_raise(StandardError, "convert failed")
 
     worker.send(:extract_color_palette, "missing.jpg", meta)
 

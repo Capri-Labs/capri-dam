@@ -54,6 +54,24 @@ RSpec.describe "Api::V1::AiModelConfigs", type: :request do
     end
   end
 
+  describe "GET /api/v1/ai_model_configs/:id" do
+    let!(:config) { create(:ai_model_config, :healthy) }
+
+    it "returns the requested config" do
+      get "/api/v1/ai_model_configs/#{config.id}", headers: auth_headers(admin)
+
+      expect(response).to have_http_status(:ok)
+      expect(json).to include("id" => config.id, "health_status" => "healthy")
+    end
+
+    it "returns 404 for unknown configs" do
+      get "/api/v1/ai_model_configs/999999", headers: auth_headers(admin)
+
+      expect(response).to have_http_status(:not_found)
+      expect(json).to eq("error" => "AI model config not found.")
+    end
+  end
+
   describe "POST /api/v1/ai_model_configs" do
     let(:valid_params) do
       { ai_model_config: { name: "Claude 3 Opus", provider: "anthropic", model_id: "claude-3-opus-20240229", capability: "generation" } }
@@ -82,6 +100,15 @@ RSpec.describe "Api::V1::AiModelConfigs", type: :request do
             headers: auth_headers(admin)
       expect(response).to have_http_status(:ok)
       expect(json["name"]).to eq("Updated Name")
+    end
+
+    it "returns validation errors for invalid updates" do
+      patch "/api/v1/ai_model_configs/#{config.id}",
+            params: { ai_model_config: { name: "" } }.to_json,
+            headers: auth_headers(admin)
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(json["errors"]).to include("Name can't be blank")
     end
   end
 
@@ -116,6 +143,18 @@ RSpec.describe "Api::V1::AiModelConfigs", type: :request do
       expect(json["is_default"]).to be true
       expect(existing_default.reload.is_default).to be false
     end
+
+    it "returns validation errors when promotion fails" do
+      config.errors.add(:base, "cannot promote")
+      allow_any_instance_of(AiModelConfig)
+        .to receive(:promote_to_default!)
+        .and_raise(ActiveRecord::RecordInvalid.new(config))
+
+      post "/api/v1/ai_model_configs/#{config.id}/set_default", headers: auth_headers(admin)
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(json["errors"]).to include("cannot promote")
+    end
   end
 
   describe "POST /api/v1/ai_model_configs/:id/health_callback" do
@@ -140,6 +179,15 @@ RSpec.describe "Api::V1::AiModelConfigs", type: :request do
            params: { health: { health_status: "healthy" } }.to_json,
            headers: headers.merge("X-Gateway-Secret" => "wrong-secret")
       expect(response).to have_http_status(:unauthorized)
+    end
+
+    it "returns validation errors for invalid health updates" do
+      post "/api/v1/ai_model_configs/#{config.id}/health_callback",
+           params: { health: { health_status: "broken" } }.to_json,
+           headers: headers.merge("X-Gateway-Secret" => gateway_secret)
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(json["errors"]).to include("Health status is not included in the list")
     end
   end
 

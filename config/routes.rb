@@ -266,6 +266,8 @@ Rails.application.routes.draw do
 
           # Schema-driven metadata update
           patch :metadata, to: "assets#update_metadata"
+          # Metadata schema resolved + pre-filled for this specific asset
+          get :metadata_schema, to: "assets#metadata_schema"
         end
         # AI Embedding specific to this asset
         resource :embedding, only: [ :update ], controller: "asset_embeddings"

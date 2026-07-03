@@ -61,6 +61,21 @@ class AssetProcessorWorker
     image/avif
   ].freeze
 
+  # Non-image document / vector MIME types that a browser cannot render inline
+  # but which ImageMagick (backed by Ghostscript) can flatten into a first-page
+  # PNG preview — e.g. PDF, EPS, Adobe Illustrator, InDesign.  These follow the
+  # same preview pipeline as non-web-native images (PSD, TIFF, HEIC).
+  PREVIEWABLE_DOCUMENT_MIME_TYPES = %w[
+    application/pdf
+    application/postscript
+    application/eps
+    application/x-eps
+    application/illustrator
+    application/vnd.adobe.illustrator
+    application/x-indesign
+    application/vnd.adobe.indesign-idml-package
+  ].freeze
+
   # ExifTool metadata groups that are noise for a DAM (the tool itself, the
   # source path, and duplicated File-system attributes we already capture) and
   # are therefore dropped from the stored +embedded_metadata+ hash.
@@ -147,6 +162,10 @@ class AssetProcessorWorker
           end
         elsif mime_type == "application/pdf"
           extract_pdf_metadata(staging_path, extracted_meta)
+          generate_web_preview(staging_path, asset, version, storage, extracted_meta)
+        elsif PREVIEWABLE_DOCUMENT_MIME_TYPES.include?(mime_type)
+          extracted_meta[:format] = "Vector / Document Media"
+          generate_web_preview(staging_path, asset, version, storage, extracted_meta)
         elsif mime_type.start_with?("video/")
           extracted_meta[:format] = "Video Media"
         end
@@ -193,7 +212,87 @@ class AssetProcessorWorker
     end
   end
 
+  # Regenerates a flattened PNG web preview for an *already-processed* asset whose
+  # original binary is stored but whose preview is missing — e.g. non-web-native
+  # images (PSD, TIFF, HEIC) ingested before preview generation existed.
+  #
+  # The original is fetched from the active storage backend into a temp file, a
+  # flattened PNG is produced, stored, and +preview_storage_path+ /
+  # +preview_content_type+ are stamped onto both the {AssetVersion} and {Asset}
+  # properties.  No-op (returns +nil+) when the asset is web-renderable, already
+  # has a preview, or its original cannot be located.
+  #
+  # @param asset [Asset]
+  # @return [String, nil] the new preview storage path, or +nil+ when skipped
+  def self.backfill_preview(asset)
+    new.backfill_preview(asset)
+  end
+
+  # (instance form — see {.backfill_preview})
+  # @param asset [Asset]
+  # @return [String, nil]
+  def backfill_preview(asset)
+    version = asset.active_version
+    return nil unless version
+
+    props        = asset.properties || {}
+    content_type = props["content_type"].to_s
+    return nil if content_type.blank? || WEB_RENDERABLE_MIME_TYPES.include?(content_type)
+
+    existing = version.properties&.dig("preview_storage_path") || props["preview_storage_path"]
+    return nil if existing.present?
+
+    storage_path = version.properties&.dig("storage_path") || props["storage_path"]
+    return nil if storage_path.blank?
+
+    backend = ::StorageBackend.find_by(active: true)
+    storage = ::StorageManager.adapter_for(backend)
+
+    tmp = Rails.root.join("tmp", "backfill_#{SecureRandom.hex(8)}#{File.extname(storage_path)}").to_s
+    return nil unless fetch_original(storage, storage_path, tmp)
+
+    meta = {}
+    generate_web_preview(tmp, asset, version, storage, meta)
+    return nil if meta[:preview_storage_path].blank?
+
+    preview_meta = {
+      "preview_storage_path" => meta[:preview_storage_path],
+      "preview_content_type" => meta[:preview_content_type],
+    }
+    version.update!(properties: (version.properties || {}).merge(preview_meta))
+    asset.update!(properties: props.merge(preview_meta))
+    meta[:preview_storage_path]
+  ensure
+    File.delete(tmp) if tmp && File.exist?(tmp)
+  end
+
   private
+
+  # Copies a stored original into +dest_path+ so it can be re-read by ImageMagick.
+  # Supports the local adapter (direct filesystem read) and any adapter exposing a
+  # readable +presign_url+/+download+; returns +true+ on success.
+  #
+  # @param storage [Object] active storage adapter
+  # @param storage_path [String] relative stored path
+  # @param dest_path [String] absolute temp destination
+  # @return [Boolean]
+  def fetch_original(storage, storage_path, dest_path)
+    if storage.is_a?(StorageAdapters::LocalStorageAdapter)
+      source = StorageAdapters::LocalStorageAdapter::ROOT.call.join(storage_path)
+      return false unless File.exist?(source)
+
+      FileUtils.cp(source, dest_path)
+      true
+    elsif storage.respond_to?(:download)
+      File.open(dest_path, "wb") { |f| f.write(storage.download(storage_path)) }
+      File.exist?(dest_path) && File.size(dest_path).positive?
+    else
+      false
+    end
+  rescue StandardError => e
+    Rails.logger.error "Preview backfill: could not fetch original #{storage_path}: #{e.message}"
+    false
+  end
 
   # Extracts DAM naming-convention fields from a filename.
   #
@@ -363,8 +462,24 @@ class AssetProcessorWorker
     end
 
     apply_descriptive_metadata(raw, meta)
+    apply_schema_mapped_metadata(meta)
   rescue StandardError => e
     Rails.logger.error "Minor error: ExifTool metadata extraction failed: #{e.message}"
+  end
+
+  # Maps the grouped embedded metadata onto the +map_to_property+ keys used by
+  # the built-in metadata schemas (+dc:*+, +exif:*+, +Iptc4xmpCore:*+) so the
+  # asset's schema editor pre-fills those fields with the values embedded in the
+  # file.  Existing keys are never overwritten, keeping any prior user edits.
+  #
+  # @param meta [Hash] mutable metadata hash (must contain +:embedded_metadata+)
+  # @return [void]
+  def apply_schema_mapped_metadata(meta)
+    mapped = EmbeddedMetadataMapper.call({ "embedded_metadata" => meta[:embedded_metadata] })
+    mapped.each do |property, value|
+      key = property.to_sym
+      meta[key] = value unless meta.key?(key) || meta.key?(property)
+    end
   end
 
   # Promotes the first non-blank descriptive candidate for each mapped field
@@ -420,7 +535,7 @@ class AssetProcessorWorker
     require "mini_magick"
     preview_tmp = Rails.root.join("tmp", "preview_#{SecureRandom.hex(8)}.png").to_s
 
-    MiniMagick::Tool::Convert.new(false) do |convert|
+    MiniMagick.convert do |convert|
       convert.background "white"
       convert << "#{source_path}[0]"
       convert.flatten
@@ -448,7 +563,7 @@ class AssetProcessorWorker
   # @param meta [Hash]   mutable metadata hash; populates +:color_palette+
   # @return [void]
   def extract_color_palette(path, meta)
-    output = MiniMagick::Tool::Convert.new(false) do |convert|
+    output = MiniMagick.convert do |convert|
       convert << path
       convert << "-format" << "%c"
       convert << "-colors" << "5"

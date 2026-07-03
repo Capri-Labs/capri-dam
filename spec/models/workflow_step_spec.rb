@@ -63,6 +63,26 @@ RSpec.describe WorkflowStep, type: :model do
       step = create(:workflow_step)
       expect(step.workflow).to be_present
     end
+
+    it 'destroys dependent workflow_tasks when the step is destroyed' do
+      step = create(:workflow_step)
+      instance = create(:workflow_instance, workflow: step.workflow)
+      task = create(:workflow_task, workflow_step: step, workflow_instance: instance)
+
+      expect { step.destroy }.to change { WorkflowTask.where(id: task.id).count }.from(1).to(0)
+    end
+
+    it 'removes a step referenced by tasks without a foreign key violation' do
+      workflow = create(:workflow)
+      step = create(:workflow_step, workflow: workflow)
+      instance = create(:workflow_instance, workflow: workflow)
+      create(:workflow_task, workflow_step: step, workflow_instance: instance)
+
+      expect {
+        workflow.update!(workflow_steps_attributes: [ { id: step.id, _destroy: true } ])
+      }.not_to raise_error
+      expect(WorkflowStep.where(id: step.id)).to be_empty
+    end
   end
 
   describe '#resolve_assignee' do

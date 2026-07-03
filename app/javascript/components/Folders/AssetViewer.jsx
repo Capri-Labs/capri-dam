@@ -91,6 +91,10 @@ export default function AssetViewer({ asset: initialAsset, open, onClose, onAsse
     };
 
     const isImage = asset.properties?.content_type?.startsWith('image/');
+    const hasGeneratedPreview = Boolean(
+        asset.properties?.preview_storage_path || asset.properties?.preview_content_type
+    );
+    const canPreview = isImage || hasGeneratedPreview;
     const displayName = asset.title || asset.name || "Unknown File";
     const fileSize = asset.properties?.file_size || "Unknown Size";
 
@@ -181,7 +185,7 @@ export default function AssetViewer({ asset: initialAsset, open, onClose, onAsse
             <Grid container sx={{ height: 'calc(100vh - 64px)' }}>
                 {/* LEFT PANE: 60% Image Preview */}
                 <Grid  sx={{ width: '65%', bgcolor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', p: 4, borderRight: '1px solid #cbd5e1' }}>
-                    {isImage && previewSrc ? (
+                    {canPreview && previewSrc ? (
                         <Box component="img"
                              src={previewSrc}
                              alt={displayName}

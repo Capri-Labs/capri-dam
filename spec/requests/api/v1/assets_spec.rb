@@ -239,6 +239,66 @@ RSpec.describe 'Api::V1::Assets', type: :request do
   end
 
   # ===========================================================================
+  # METADATA SCHEMA — GET /api/v1/assets/{id}/metadata_schema
+  # ===========================================================================
+  path '/api/v1/assets/{id}/metadata_schema' do
+    parameter name: :id, in: :path, type: :string, required: true,
+              description: 'Asset database ID or UUID'
+
+    get 'Resolve the metadata schema for a single asset, pre-filled with its values' do
+      tags 'Assets'
+      produces 'application/json'
+      security [ Bearer: [] ]
+      description <<~DESC
+        Resolves the metadata schema that applies to the asset (its applied schema,
+        else its folder's schema, else the MIME-derived default) and returns it with
+        every field's `value` pre-filled from the asset's own metadata. Saved edits
+        win over values mapped from the file's embedded EXIF/IPTC/XMP metadata. This
+        removes the need for the client to know the schema id or map metadata itself.
+      DESC
+
+      response '200', 'Resolved schema with pre-filled field values returned' do
+        schema type: :object,
+               properties: {
+                 id:                { type: :integer, example: 2 },
+                 name:              { type: :string, example: 'Image' },
+                 slug:              { type: :string, example: 'default--image' },
+                 applied_schema_id: { type: :integer, example: 2 },
+                 asset_id:          { type: :string, example: 'f249c338-2153-45df-aeba-56bd4cad3c3b' },
+                 asset_uuid:        { type: :string, example: 'f249c338-2153-45df-aeba-56bd4cad3c3b' },
+                 resolved_tabs: {
+                   type: :array,
+                   items: {
+                     type: :object,
+                     properties: {
+                       name: { type: :string, example: 'Basic' },
+                       fields: {
+                         type: :array,
+                         items: {
+                           type: :object,
+                           properties: {
+                             label:           { type: :string, example: 'Title' },
+                             field_type:      { type: :string, example: 'text' },
+                             map_to_property: { type: :string, example: 'dc:title' },
+                             value:           { type: :string, example: 'Sunset over the bay', nullable: true },
+                           },
+                         },
+                       },
+                     },
+                   },
+                 },
+               }
+        run_test!
+      end
+
+      response '404', 'Asset not found or no schema could be resolved' do
+        schema type: :object, properties: { error: { type: :string } }
+        run_test!
+      end
+    end
+  end
+
+  # ===========================================================================
   # AUDIT TRAIL — GET /api/v1/assets/{id}/audit_trail
   # ===========================================================================
   path '/api/v1/assets/{id}/audit_trail' do

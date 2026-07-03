@@ -43,7 +43,7 @@ RSpec.describe "Api::V1::Dashboard", type: :request do
         get "/api/v1/dashboard/overview", as: :json
         recent = JSON.parse(response.body)["recent_assets"]
         expect(recent).to be_an(Array)
-        expect(recent.length).to be <= 10
+        expect(recent.length).to be <= 20
       end
 
       it "returns ai_insights as array" do

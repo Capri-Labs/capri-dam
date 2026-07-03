@@ -86,12 +86,21 @@ export default function AssetGrid({
         const displayName = asset.name || asset.title || 'Unknown File';
         const contentType = asset.content_type || metadata.content_type || '';
         const isImage = contentType.startsWith('image/');
+        const hasGeneratedPreview = Boolean(
+          metadata.preview_storage_path || metadata.preview_content_type
+        );
         const isPdf = contentType === 'application/pdf';
         const isVideo = contentType.startsWith('video/');
         const isAudio = contentType.startsWith('audio/');
         const isSelected = selectedItems.assets.includes(asset.id);
         const statusConfig = getStatusConfig(asset.status, t);
         const sizeLabel = formatBytes(asset.size || metadata.size || metadata.file_size);
+        // Prefer the web-renderable preview (e.g. a flattened PNG generated for
+        // PSD/TIFF/HEIC) so non-browser-native formats still show a thumbnail.
+        const displaySrc = asset.preview_url || asset.url;
+        const imageSrc = displaySrc
+          ? `${displaySrc}${displaySrc.includes('?') ? '&' : '?'}w=640&fit=crop&auto=format`
+          : null;
 
         return (
           <ImageListItem
@@ -151,9 +160,9 @@ export default function AssetGrid({
               }}
               sx={{ position: 'relative', width: '100%', height: cardConfig.height, cursor: 'pointer' }}
             >
-              {isImage && asset.url ? (
+              {(isImage || hasGeneratedPreview) && imageSrc ? (
                 <img
-                  src={`${asset.url}?w=640&fit=crop&auto=format`}
+                  src={imageSrc}
                   alt={displayName}
                   loading="lazy"
                   style={{ height: '100%', width: '100%', objectFit: 'cover' }}

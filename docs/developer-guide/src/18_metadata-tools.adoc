@@ -30,7 +30,25 @@ configures delimiters/batch size, optionally launches workflows, and polls until
 | `GET/POST` | `/api/v1/metadata_schemas` | List/create schemas.
 | `GET/PATCH/DELETE` | `/api/v1/metadata_schemas/:id` | Maintain schemas.
 | `POST` | `/api/v1/metadata_schemas/:id/assign` | Apply schema to folder tree.
+| `GET` | `/api/v1/assets/:id/metadata_schema` | Resolve the schema for one asset (by id or UUID), pre-filled with the asset's own values.
 | `GET/POST` | `/api/v1/metadata_exports` | List/create export jobs.
 | `GET` | `/api/v1/metadata_exports/properties` | Discover metadata keys.
 | `GET/POST` | `/api/v1/metadata_imports` | List/create import jobs.
 |===
+
+== Per-asset schema pre-fill
+
+`GET /api/v1/assets/:id/metadata_schema` resolves the metadata schema that
+applies to a single asset — its applied schema, else its folder's schema, else
+the built-in default derived from the asset's MIME type — and returns it with
+each field's `value` already populated. Values are resolved server-side by
+`EmbeddedMetadataMapper`, which maps the file's embedded EXIF/IPTC/XMP metadata
+onto the schema's `map_to_property` keys (for example `exif:Make`, `dc:title`,
+`Iptc4xmpCore:Byline`). A value the user has already saved on the asset wins over
+the mapped default.
+
+The `AssetMetadataPanel` calls this endpoint first, so the schema editor shows
+extracted metadata pre-filled without the client needing to know the schema id
+or map metadata itself. The `:id` segment accepts either the numeric asset id or
+its UUID. The endpoint responds `404` when the asset is unknown or no schema can
+be resolved.

@@ -136,6 +136,60 @@ message to the AI gateway.
 | Executes remediation plans from the Data Health dashboard.
 |===
 
+== Embedded metadata extraction & schema mapping
+
+`AssetProcessorWorker` extracts the full set of embedded image metadata
+(EXIF, IPTC, XMP, Photoshop and ICC profile) using ExifTool
+(`libimage-exiftool-perl`). The complete, group-namespaced payload is stored
+under `properties.embedded_metadata`, the flat EXIF group is folded into
+`properties.exif_data`, and a curated set of descriptive fields (creator,
+copyright, lens, colour mode, document IDs, …) is promoted to top-level keys.
+Extraction is fully dynamic — every ExifTool tag is retained except a small set
+of noise groups and binary placeholders — so richer files automatically yield
+more fields. When the `exiftool` binary is unavailable the step degrades
+gracefully and the asset keeps its MiniMagick-derived EXIF data.
+
+The grouped embedded metadata is then mapped onto the `map_to_property` keys used
+by the built-in metadata schemas via `EmbeddedMetadataMapper`
+(`app/services/embedded_metadata_mapper.rb`). This single source of truth
+translates ExifTool `Group:Tag` values (e.g. `XMP:Creator`, `EXIF:Make`,
+`IPTC:Headline`) into schema keys such as `dc:creator`, `exif:Make` and
+`Iptc4xmpCore:Headline`, and the resolved values are persisted into
+`asset.properties`. As a result the asset's *Metadata Schema* tab pre-fills its
+fields with the values embedded in the file. Existing user-edited values are
+never overwritten. Values destined for schema `date` fields (e.g. `dc:date`) are
+normalised from ExifTool's `YYYY:MM:DD HH:MM:SS` form to ISO `YYYY-MM-DD` so an
+HTML date input renders them. As a fallback, a bare candidate key (no `Group:`
+prefix — e.g. `camera_make`, `camera_model`, `date_taken`) resolves against the
+flat top-level `properties`, so assets that only carry the MiniMagick-derived
+fields (no grouped ExifTool payload) still pre-fill `exif:Make`, `exif:Model` and
+`dc:date`. Grouped ExifTool values always take precedence over these flat
+fallbacks. The frontend mirrors this mapping in
+`app/javascript/utils/embeddedMetadataMapper.js` so assets processed before the
+mapping was introduced still pre-fill from their stored `embedded_metadata`.
+
+== Web-renderable previews
+
+Image formats that browsers cannot display natively in an `<img>` tag (Photoshop
+PSD, TIFF, HEIC, BMP, RAW, …) are flattened to a PNG preview by
+`AssetProcessorWorker#generate_web_preview` using MiniMagick 5's
+`MiniMagick.convert` block API. The same first-page-PNG pipeline is also applied
+to non-image document / vector formats listed in
+`AssetProcessorWorker::PREVIEWABLE_DOCUMENT_MIME_TYPES` — PDF, PostScript/EPS,
+Adobe Illustrator and InDesign — via ImageMagick's Ghostscript delegate, so those
+assets get a browser-renderable thumbnail too. The preview is stored via the
+active storage backend and its path recorded under
+`properties.preview_storage_path`; the API exposes it through
+`asset_preview_url_for` (`/api/v1/assets/local/:uuid?variant=preview`) so the
+folder grid and asset viewer render the flattened image while the original binary
+stays available for download. The folder grid (`AssetGrid`) and detail viewer
+(`AssetViewer`) prefer `asset.preview_url` over the raw `asset.url` when building
+their thumbnail `src`, appending display query parameters with `&` when the
+preview URL already carries a query string, and show the generated preview for
+any asset whose `properties.preview_storage_path` is present (not only native
+images). Assets ingested before preview generation existed can be backfilled
+with `AssetProcessorWorker.backfill_preview(asset)`.
+
 == Active Jobs
 
 [cols="1,3", options="header"]

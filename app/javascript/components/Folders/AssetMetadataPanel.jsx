@@ -10,6 +10,7 @@ import {
     CheckCircleOutlined, WarningAmberOutlined, RefreshOutlined
 } from '@mui/icons-material';
 import { useNotify } from '../../context/NotificationContext';
+import { mapEmbeddedMetadata } from '../../utils/embeddedMetadataMapper';
 
 // ── Field Renderer ─────────────────────────────────────────────────────────────
 function MetadataField({ field, value, onChange, readOnly }) {
@@ -109,6 +110,26 @@ function MetadataField({ field, value, onChange, readOnly }) {
 }
 
 // ── AssetMetadataPanel ─────────────────────────────────────────────────────────
+
+// Builds the editable `{ map_to_property: value }` map for a schema. When the
+// schema was resolved by the asset-scoped API each field already carries an
+// authoritative `value` (saved edits merged over embedded-metadata defaults);
+// those win. For schemas fetched via the generic endpoints (no per-field value)
+// we fall back to mapping the asset's own embedded metadata on the client.
+function extractSchemaValues(schema, asset) {
+    const props = asset?.properties ?? {};
+    const base  = { ...mapEmbeddedMetadata(props), ...props };
+    const tabs  = schema?.resolved_tabs ?? schema?.tabs ?? [];
+    for (const tab of tabs) {
+        for (const field of (tab.fields ?? [])) {
+            if (field?.map_to_property && field.value !== undefined && field.value !== null) {
+                base[field.map_to_property] = field.value;
+            }
+        }
+    }
+    return base;
+}
+
 export default function AssetMetadataPanel({ asset, onAssetUpdated }) {
     const notify = useNotify();
     const [schema,    setSchema]    = useState(null);
@@ -119,33 +140,51 @@ export default function AssetMetadataPanel({ asset, onAssetUpdated }) {
     // Local copy of metadata values being edited
     const [values,    setValues]    = useState({});
 
-    // Fetch the resolved schema for this asset
+    // Fetch the resolved schema for this asset, pre-filled server-side with the
+    // values mapped from the asset's own embedded metadata (EXIF/IPTC/XMP). Each
+    // field carries a `value`; saved edits take precedence over mapped defaults.
     const fetchSchema = useCallback(async () => {
         if (!asset) return;
         setLoading(true);
         try {
-            // 1. Try schema stored on the asset itself
+            // 1. Preferred: asset-scoped schema resolved + pre-filled by the API.
+            const assetKey = asset.uuid || asset.id;
+            if (assetKey) {
+                const res  = await fetch(`/api/v1/assets/${assetKey}/metadata_schema`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setSchema(data);
+                    setValues(extractSchemaValues(data, asset));
+                    setDirty(false);
+                    setActiveTab(0);
+                    setLoading(false);
+                    return;
+                }
+            }
+            // 2. Fall back to the schema stored on the asset itself.
             const schemaId = asset.properties?.applied_schema_id;
             if (schemaId) {
                 const res  = await fetch(`/api/v1/metadata_schemas/${schemaId}`);
                 const data = await res.json();
                 if (res.ok) {
                     setSchema(data);
+                    setValues(extractSchemaValues(data, asset));
                     setLoading(false);
                     return;
                 }
             }
-            // 2. Fall back to folder schema
+            // 3. Fall back to folder schema.
             if (asset.folder_id) {
                 const res  = await fetch(`/api/v1/folders/${asset.folder_id}/schema`);
                 const data = await res.json();
                 if (res.ok && data.schema) {
                     setSchema(data.schema);
+                    setValues(extractSchemaValues(data.schema, asset));
                     setLoading(false);
                     return;
                 }
             }
-            // 3. Fall back to Default builtin schema
+            // 4. Fall back to Default builtin schema.
             const res  = await fetch('/api/v1/metadata_schemas?slug=default');
             const data = await res.json();
             if (res.ok && Array.isArray(data) && data.length > 0) {
@@ -153,18 +192,17 @@ export default function AssetMetadataPanel({ asset, onAssetUpdated }) {
                 const detail = await fetch(`/api/v1/metadata_schemas/${data[0].id}`);
                 const schemaData = await detail.json();
                 setSchema(schemaData);
+                setValues(extractSchemaValues(schemaData, asset));
             }
         } catch {
             // silent — schema section just won't render
         } finally {
             setLoading(false);
         }
-    }, [asset?.id, asset?.properties?.applied_schema_id, asset?.folder_id]);
+    }, [asset?.id, asset?.uuid, asset?.properties?.applied_schema_id, asset?.folder_id]);
 
     useEffect(() => {
         fetchSchema();
-        // Initialise values from asset properties
-        setValues(asset?.properties ?? {});
         setDirty(false);
         setActiveTab(0);
     }, [asset?.id]);

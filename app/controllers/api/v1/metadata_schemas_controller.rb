@@ -1,7 +1,7 @@
 class Api::V1::MetadataSchemasController < ApplicationController
   skip_before_action :verify_authenticity_token, if: -> { request.format.json? }
   before_action :authenticate_hybrid!
-  before_action :set_schema, only: %i[show update destroy duplicate apply_to_folder remove_from_folder]
+  before_action :set_schema, only: %i[show update destroy duplicate apply_to_folder remove_from_folder folders]
 
   # GET /api/v1/metadata_schemas
   # Returns all root schemas with their full child tree and folder counts.

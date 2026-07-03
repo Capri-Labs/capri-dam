@@ -13,6 +13,7 @@
 # | POST   | /api/v1/assets/:id/purge_cdn | {#purge_cdn} | Invalidate CDN edge cache |
 # | DELETE | /api/v1/assets/:id | {#destroy} | Soft-delete an asset |
 # | PATCH  | /api/v1/assets/:id/metadata | {#update_metadata} | Schema-driven metadata update |
+# | GET    | /api/v1/assets/:id/metadata_schema | {#metadata_schema} | Resolved schema pre-filled for this asset |
 # | POST   | /api/v1/assets/:id/restore | {#restore} | Recover a soft-deleted asset |
 # | DELETE | /api/v1/assets/:id/permanent | {#permanent_delete} | Permanently destroy asset + files |
 # | GET    | /api/v1/bin | {#bin} | Trashed assets & folders |
@@ -586,6 +587,32 @@ module Api
         render json: { error: e.message }, status: :unprocessable_entity
       end
 
+      # GET /api/v1/assets/:id/metadata_schema
+      #
+      # Resolves the metadata schema applicable to a single asset (looked up by
+      # numeric id *or* UUID) and returns it with every field pre-filled with the
+      # value drawn from the asset's own metadata. This lets the client fetch a
+      # ready-to-edit schema for a specific asset without knowing the schema id or
+      # doing any client-side mapping.
+      #
+      # Value precedence for each field: a value the user has already saved on the
+      # asset (a top-level property matching +map_to_property+) wins; otherwise the
+      # value mapped from the file's embedded metadata (EXIF/IPTC/XMP) is used.
+      #
+      # @return [void] renders +200 OK+ with the resolved, pre-filled schema, or
+      #   +404 Not Found+ when the asset or a schema cannot be resolved.
+      def metadata_schema
+        @asset = find_asset_record(Asset.active)
+        schema = resolve_asset_schema(@asset)
+        unless schema
+          return render json: { error: "No metadata schema applied to this asset" }, status: :not_found
+        end
+
+        render json: serialize_asset_schema(schema, @asset), status: :ok
+      rescue ActiveRecord::RecordNotFound
+        render json: { error: "Asset not found" }, status: :not_found
+      end
+
       # Recovers a soft-deleted asset from the Trash Bin.
       #
       # @return [void] renders +200 OK+ with +{ success, message }+
@@ -1122,6 +1149,79 @@ module Api
 
       def find_asset_record(scope = Asset)
         scope.find_by(id: params[:id]) || scope.find_by!(uuid: params[:id])
+      end
+
+      # Resolves the metadata schema that applies to +asset+, in priority order:
+      #   1. the schema explicitly applied to the asset (+applied_schema_id+)
+      #   2. the schema assigned to the asset's folder
+      #   3. the built-in default schema resolved from the asset's MIME type
+      #
+      # @param asset [Asset]
+      # @return [MetadataSchema, nil]
+      def resolve_asset_schema(asset)
+        props = merged_asset_properties(asset)
+
+        applied_id = props["applied_schema_id"]
+        if applied_id.present?
+          schema = MetadataSchema.active.find_by(id: applied_id)
+          return schema if schema
+        end
+
+        if asset.folder_id.present?
+          assignment = MetadataSchemaFolderAssignment.find_by(folder_id: asset.folder_id.to_s)
+          if assignment
+            schema = MetadataSchema.active.find_by(id: assignment.metadata_schema_id)
+            return schema if schema
+          end
+        end
+
+        MetadataSchema.resolve_for_mime(props["content_type"])
+      end
+
+      # Serialises +schema+ with each field pre-filled from +asset+'s metadata.
+      #
+      # @param schema [MetadataSchema]
+      # @param asset [Asset]
+      # @return [Hash]
+      def serialize_asset_schema(schema, asset)
+        props  = merged_asset_properties(asset)
+        mapped = EmbeddedMetadataMapper.call(props)
+
+        resolved_tabs = schema.resolved_tabs.map do |tab|
+          fields = (tab["fields"] || []).map do |field|
+            key   = field["map_to_property"]
+            saved = key.present? ? props[key] : nil
+            value = asset_metadata_blank?(saved) ? mapped[key] : saved
+            field.merge("value" => value)
+          end
+          tab.merge("fields" => fields)
+        end
+
+        {
+          id:                schema.id,
+          uuid:              schema.uuid,
+          name:              schema.name,
+          slug:              schema.slug,
+          description:       schema.description,
+          level:             schema.level,
+          mime_segment:      schema.mime_segment,
+          is_builtin:        schema.is_builtin,
+          tabs:              schema.tabs || [],
+          resolved_tabs:     resolved_tabs,
+          applied_schema_id: schema.id,
+          asset_id:          asset.uuid || asset.id,
+          asset_uuid:        asset.uuid,
+        }
+      end
+
+      # @param value [Object]
+      # @return [Boolean] true for nil / empty string / empty collection
+      def asset_metadata_blank?(value)
+        return true if value.nil?
+        return value.strip.empty? if value.is_a?(String)
+        return value.empty? if value.respond_to?(:empty?)
+
+        false
       end
 
       def merged_asset_properties(asset)

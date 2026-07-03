@@ -67,5 +67,33 @@ RSpec.describe 'Api::V1::Notifications', type: :request do
         run_test!
       end
     end
+
+    describe 'request coverage', :without_rswag do
+      let(:user) { create(:user) }
+
+      before { sign_in user }
+
+      it 'marks a single notification as read' do
+        notification = create(:notification, user: user, read_at: nil)
+
+        patch "/api/v1/notifications/#{notification.id}/mark_read", as: :json
+
+        expect(response).to have_http_status(:ok)
+        expect(response.parsed_body).to eq('success' => true)
+        expect(notification.reload.read_at).to be_present
+      end
+
+      it 'marks all unread notifications as read without changing already-read ones' do
+        unread = create_list(:notification, 2, user: user, read_at: nil)
+        already_read = create(:notification, :read, user: user)
+
+        patch '/api/v1/notifications/mark_all_read', as: :json
+
+        expect(response).to have_http_status(:ok)
+        expect(response.parsed_body).to eq('success' => true)
+        expect(unread).to all(satisfy { |notification| notification.reload.read_at.present? })
+        expect(already_read.reload.read_at).to be_present
+      end
+    end
   end
 end

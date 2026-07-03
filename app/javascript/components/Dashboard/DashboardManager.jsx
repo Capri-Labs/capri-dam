@@ -445,7 +445,16 @@ export default function DashboardManager() {
           ) : recentAssets.length === 0 ? (
             <Typography color="text.secondary">{t('dashboard.recent_assets.empty')}</Typography>
           ) : (
-            recentAssets.map((asset) => {
+            <Box
+              sx={{
+                maxHeight: 520,
+                overflowY: 'auto',
+                pr: 0.5,
+                '&::-webkit-scrollbar': { width: 8 },
+                '&::-webkit-scrollbar-thumb': { bgcolor: 'divider', borderRadius: 4 },
+              }}
+            >
+            {recentAssets.map((asset) => {
               const typeKey = (asset.content_type || '').split('/')[0];
               const typeIcon = CONTENT_TYPE_ICONS[typeKey] || <ImageOutlined sx={{ fontSize: 16 }} />;
               const statusColors = { published: 'success', draft: 'default', approved: 'primary' };
@@ -487,7 +496,8 @@ export default function DashboardManager() {
                   </Button>
                 </Box>
               );
-            })
+            })}
+            </Box>
           )}
         </Paper>
       </Box>

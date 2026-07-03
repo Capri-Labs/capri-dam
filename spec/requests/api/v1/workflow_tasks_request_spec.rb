@@ -90,4 +90,40 @@ RSpec.describe 'API workflow task coverage', type: :request do
       ))
     end
   end
+
+  describe 'POST /api/v1/workflows/bulk_stop' do
+    it 'cancels instances, only cancels pending tasks, and soft-deletes the asset' do
+      task
+      completed_task = create(
+        :workflow_task,
+        workflow_instance: instance,
+        workflow_step: step,
+        user: user,
+        status: 'approved',
+        comment: 'Already done',
+        completed_at: 2.minutes.ago
+      )
+
+      with_routing do |set|
+        set.draw do
+          post '/spec/workflow_tasks/bulk_stop', to: 'api/v1/workflow_tasks#bulk_stop'
+        end
+
+        post '/spec/workflow_tasks/bulk_stop', params: { ids: [ instance.id ] }, as: :json
+
+        expect(response).to have_http_status(:ok)
+        expect(response.parsed_body).to eq('success' => true)
+      end
+
+      expect(instance.reload).to have_attributes(status: 'canceled')
+      expect(instance.completed_at).to be_present
+      expect(task.reload).to have_attributes(
+        status: 'canceled',
+        comment: "Admin Action: Workflow manually stopped by #{user.email}"
+      )
+      expect(task.completed_at).to be_present
+      expect(completed_task.reload).to have_attributes(status: 'approved', comment: 'Already done')
+      expect(asset.reload.deleted_at).to be_present
+    end
+  end
 end

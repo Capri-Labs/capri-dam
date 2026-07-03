@@ -34,5 +34,28 @@ test.describe('Metadata Tools E2E', () => {
     await expect(page.getByRole('link', { name: /download template/i })).toBeVisible();
     await expect(page.getByRole('button', { name: /new import/i })).toBeVisible();
   });
+
+  test('per-asset metadata_schema endpoint resolves a pre-filled schema', async ({ page }) => {
+    // Discover a real asset, then hit the asset-scoped schema endpoint. The
+    // route must resolve a schema (200) or report none (404) — never 500.
+    const listRes = await page.request.get('/api/v1/assets', {
+      headers: { Accept: 'application/json' },
+    });
+    expect(listRes.ok()).toBeTruthy();
+    const assets = await listRes.json();
+    test.skip(!Array.isArray(assets) || assets.length === 0, 'No assets seeded to resolve a schema for');
+
+    const assetId = assets[0].uuid || assets[0].id;
+    const res = await page.request.get(`/api/v1/assets/${assetId}/metadata_schema`, {
+      headers: { Accept: 'application/json' },
+    });
+    expect([ 200, 404 ]).toContain(res.status());
+
+    if (res.status() === 200) {
+      const body = await res.json();
+      expect(body).toHaveProperty('resolved_tabs');
+      expect(String(body.asset_uuid || body.asset_id)).toBeTruthy();
+    }
+  });
 });
 

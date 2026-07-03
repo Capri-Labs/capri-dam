@@ -8,13 +8,19 @@ RSpec.describe 'Api::V1::DuplicateGroups coverage', type: :request do
   it 'filters resolved and dismissed groups in real request specs' do
     resolved = create(:duplicate_group, :resolved)
     dismissed = create(:duplicate_group, :dismissed)
-    create(:duplicate_group, status: 'pending')
+    pending = create(:duplicate_group, status: 'pending')
 
     get '/api/v1/duplicate_groups', params: { status: 'resolved' }, as: :json
     expect(JSON.parse(response.body)['groups'].map { |group| group['id'] }).to eq([ resolved.id ])
 
     get '/api/v1/duplicate_groups', params: { status: 'dismissed' }, as: :json
     expect(JSON.parse(response.body)['groups'].map { |group| group['id'] }).to eq([ dismissed.id ])
+
+    get '/api/v1/duplicate_groups', params: { status: 'all' }, as: :json
+    expect(JSON.parse(response.body)['groups'].map { |group| group['id'] }).to match_array([ pending.id, resolved.id, dismissed.id ])
+
+    get '/api/v1/duplicate_groups', params: { status: 'unexpected' }, as: :json
+    expect(JSON.parse(response.body)['groups'].map { |group| group['id'] }).to eq([ pending.id ])
   end
 
   it 'serializes members with fallbacks and active version metadata' do
@@ -59,6 +65,29 @@ RSpec.describe 'Api::V1::DuplicateGroups coverage', type: :request do
     patch '/api/v1/duplicate_groups/bulk_resolve', params: { group_ids: [] }, as: :json
     expect(response).to have_http_status(:ok)
     expect(JSON.parse(response.body)['resolved_count']).to eq(0)
+  end
+
+  it 'rejects invalid resolve actions' do
+    group = create(:duplicate_group, status: 'pending')
+
+    patch "/api/v1/duplicate_groups/#{group.id}/resolve", params: { action_type: 'bogus' }, as: :json
+
+    expect(response).to have_http_status(:unprocessable_entity)
+    expect(JSON.parse(response.body)['error']).to include('Invalid action')
+  end
+
+  it 'dismisses groups and returns not found for missing groups' do
+    group = create(:duplicate_group, status: 'pending')
+
+    patch "/api/v1/duplicate_groups/#{group.id}/dismiss", as: :json
+
+    expect(response).to have_http_status(:ok)
+    expect(JSON.parse(response.body)).to include('message' => 'Group dismissed.')
+    expect(group.reload.status).to eq('dismissed')
+
+    patch '/api/v1/duplicate_groups/missing-group-id/dismiss', as: :json
+    expect(response).to have_http_status(:not_found)
+    expect(JSON.parse(response.body)).to eq('error' => 'Duplicate group not found.')
   end
 
   it 'returns stats and 401 for unauthenticated access' do

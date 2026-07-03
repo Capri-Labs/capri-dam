@@ -50,11 +50,33 @@ RSpec.describe "Api::V1::Assets coverage", type: :request do
     })
   end
 
+  def build_assets_controller(params = {})
+    Api::V1::AssetsController.new.tap do |controller|
+      controller.set_request!(ActionDispatch::TestRequest.create)
+      controller.set_response!(ActionDispatch::TestResponse.new)
+      allow(controller).to receive(:params).and_return(ActionController::Parameters.new(params))
+    end
+  end
+
   after do
     FileUtils.rm_rf(Rails.root.join("tmp/assets_controller_coverage"))
   end
 
   describe "collection endpoints" do
+    it "searches ready assets by query and format through the legacy action" do
+      jpeg = asset_with_version(title: "Search Hero", properties: { "format" => "jpg" })
+      asset_with_version(title: "Search Hero Alt", properties: { "format" => "png" })
+      asset_with_version(title: "Ignored Pending", status: :pending, properties: { "format" => "jpg" })
+      controller = build_assets_controller(q: "Search Hero", format: "jpg")
+
+      controller.search
+      payload = JSON.parse(controller.response.body)
+
+      expect(controller.response).to have_http_status(:ok)
+      expect(payload["total"]).to eq(1)
+      expect(payload["results"].map { |asset| asset["uuid"] }).to eq([ jpeg.uuid ])
+    end
+
     it "lists active assets and requires authentication" do
       asset = asset_with_version(title: "Listed")
       get "/api/v1/assets", as: :json
@@ -91,6 +113,43 @@ RSpec.describe "Api::V1::Assets coverage", type: :request do
       created = Asset.find_by!(title: "Uploaded Hero")
       expect(created.properties).to include("dc:creator" => "Studio", "original_filename" => "test-image.jpg")
       expect(created.active_version).to be_present
+    end
+
+    it "accepts plain hash metadata payloads and attaches the upload outside test mode" do
+      file = fixture_file_upload(Rails.root.join("spec/fixtures/images/test-image.jpg"), "image/jpeg")
+      attachment = instance_double(ActiveStorage::Attached::One, attach: true)
+      controller = Api::V1::AssetsController.new
+      controller.set_request!(ActionDispatch::TestRequest.create)
+      controller.set_response!(ActionDispatch::TestResponse.new)
+      allow(Rails.env).to receive(:test?).and_return(false)
+      allow_any_instance_of(AssetVersion).to receive(:file).and_return(attachment)
+      allow(controller).to receive(:params).and_return(
+        { file: file, title: "Hash Metadata Upload", metadata: { "dc:creator" => "Hash Creator" } }
+      )
+      allow(controller).to receive(:active_resource_owner).and_return(user)
+
+      controller.create
+
+      expect(controller.response).to have_http_status(:accepted)
+      created = Asset.find_by!(title: "Hash Metadata Upload")
+      expect(created.properties).to include("dc:creator" => "Hash Creator")
+      expect(attachment).to have_received(:attach)
+    end
+
+    it "ignores unsupported metadata payloads during upload" do
+      file = fixture_file_upload(Rails.root.join("spec/fixtures/images/test-image.jpg"), "image/jpeg")
+      allow_any_instance_of(Api::V1::AssetsController).to receive(:params).and_wrap_original do |original|
+        params = original.call
+        params[:metadata] = 123
+        params
+      end
+
+      post "/api/v1/assets", params: { file: file, title: "Unsupported Metadata Upload" }
+
+      expect(response).to have_http_status(:accepted)
+      created = Asset.find_by!(title: "Unsupported Metadata Upload")
+      expect(created.properties).to include("original_filename" => "test-image.jpg")
+      expect(created.properties).not_to have_key("dc:creator")
     end
 
     it "applies active schema and product filename metadata during upload" do
@@ -232,6 +291,25 @@ RSpec.describe "Api::V1::Assets coverage", type: :request do
       expect(asset.reload.active_version_id).to eq(old_version.id)
     end
 
+    it "returns not found for a missing audit trail asset" do
+      get "/api/v1/assets/missing/audit_trail", as: :json
+
+      expect(response).to have_http_status(:not_found)
+      expect(json["error"]).to eq("Asset not found")
+    end
+
+    it "purges the CDN for an asset through the legacy action" do
+      asset = asset_with_version(title: "Purge Me")
+      controller = build_assets_controller(id: asset.uuid)
+
+      controller.purge_cdn
+      payload = JSON.parse(controller.response.body)
+
+      expect(controller.response).to have_http_status(:ok)
+      expect(payload["message"]).to eq("CDN purge initiated.")
+      expect(CdnInvalidationWorker).to have_received(:perform_async).with("asset", asset.uuid)
+    end
+
     it "updates schema metadata and reports missing metadata targets" do
       asset = asset_with_version(title: "Metadata")
       patch "/api/v1/assets/#{asset.uuid}/metadata", params: { metadata: { "dc:description" => "Updated" }, schema_id: "7" }, as: :json
@@ -240,6 +318,16 @@ RSpec.describe "Api::V1::Assets coverage", type: :request do
 
       patch "/api/v1/assets/missing/metadata", params: { metadata: { "x" => "y" } }, as: :json
       expect(response).to have_http_status(:not_found)
+    end
+
+    it "returns metadata update validation errors" do
+      asset = asset_with_version(title: "Broken Metadata")
+      allow_any_instance_of(Asset).to receive(:update!).and_raise(StandardError, "metadata write failed")
+
+      patch "/api/v1/assets/#{asset.uuid}/metadata", params: { metadata: { "dc:title" => "Broken" } }, as: :json
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(json["error"]).to eq("metadata write failed")
     end
 
     it "checks hashes and lists exact and filename duplicates" do
@@ -263,6 +351,13 @@ RSpec.describe "Api::V1::Assets coverage", type: :request do
 
       expect(response).to have_http_status(:ok)
       expect(json["duplicates"]).to eq([])
+    end
+
+    it "returns not found when duplicate candidates are requested for a missing asset" do
+      get "/api/v1/assets/missing/duplicates", as: :json
+
+      expect(response).to have_http_status(:not_found)
+      expect(json["error"]).to eq("Asset not found")
     end
 
     it "covers AI analysis completed, queued and enqueue branches" do
@@ -404,6 +499,46 @@ RSpec.describe "Api::V1::Assets coverage", type: :request do
       FileUtils.rm_rf(dam_path.dirname) if defined?(dam_path) && dam_path.dirname.to_s.end_with?("assets_controller_coverage")
     end
 
+    it "redirects to an attached ActiveStorage file when present" do
+      # NOTE: AssetVersion/Asset use UUID primary keys while
+      # active_storage_attachments.record_id is a bigint column, so real
+      # ActiveStorage attachment/lookup round-trips are unreliable in this
+      # schema. We stub the attachment so this exercises the redirect branch
+      # (AssetsController#local) deterministically instead of depending on
+      # that pre-existing schema mismatch.
+      asset = asset_with_version(title: "Attached Local", properties: { "storage_path" => "unused.txt" })
+      attachment = instance_double(ActiveStorage::Attached::One, attached?: true)
+      allow_any_instance_of(AssetVersion).to receive(:file).and_return(attachment)
+      allow_any_instance_of(Api::V1::AssetsController).to receive(:url_for)
+        .with(attachment).and_return("http://www.example.com/rails/active_storage/blobs/redirect/abc/test-image.jpg")
+
+      get "/api/v1/assets/local/#{asset.uuid}"
+
+      expect(response).to have_http_status(:found)
+      expect(response.headers["Location"]).to include("/rails/active_storage/")
+    end
+
+    it "streams files from the tmp staging area and reports missing files" do
+      staging_path = write_coverage_tmp_file("staged.txt", "staging body")
+      staged = asset_with_version(title: "Staged", properties: {
+        "storage_path" => staging_path,
+        "content_type" => "text/plain",
+      })
+      missing = asset_with_version(title: "Missing Disk", properties: {
+        "storage_path" => "assets_controller_coverage/missing.txt",
+        "content_type" => "text/plain",
+      })
+
+      get "/api/v1/assets/local/#{staged.uuid}"
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to eq("staging body")
+
+      get "/api/v1/assets/local/#{missing.uuid}", as: :json
+      expect(response).to have_http_status(:not_found)
+      expect(json["error"]).to eq("File missing from disk")
+      expect(json["looked_at"]).to include("storage/dam/assets_controller_coverage/missing.txt")
+    end
+
     it "serves the generated web preview when variant=preview is requested" do
       preview_path = Rails.root.join("storage/dam/assets_controller_coverage/preview.png")
       original_path = Rails.root.join("storage/dam/assets_controller_coverage/original.psd")
@@ -499,6 +634,130 @@ RSpec.describe "Api::V1::Assets coverage", type: :request do
       completed_payload = json["instances"].detect { |payload| payload["instance_id"] == completed.id }
       expect(active_payload).to include("workflow_name" => "Approval Flow", "can_force_cancel" => true)
       expect(completed_payload).to include("can_force_cancel" => false, "cancelled_by" => user.email)
+    end
+
+    it "lists trashed folders and assets through the legacy bin action" do
+      trashed_folder = create(:folder, :trashed, user: user, name: "Deleted Folder")
+      trashed_asset = asset_with_version(title: "Deleted Asset", properties: { "format" => "jpg" })
+      trashed_asset.soft_delete
+      controller = build_assets_controller
+
+      controller.bin
+      payload = JSON.parse(controller.response.body)
+
+      expect(controller.response).to have_http_status(:ok)
+      expect(payload["folders"]).to include(include("id" => trashed_folder.id, "name" => "Deleted Folder"))
+      expect(payload["assets"]).to include(include("id" => trashed_asset.id, "title" => "Deleted Asset", "name" => "Deleted Asset"))
+      expect(payload["breadcrumbs"]).to eq([ { "id" => "bin", "name" => "Trash Bin" } ])
+    end
+  end
+
+  describe "GET /api/v1/assets/:id/metadata_schema" do
+    let(:schema) do
+      create(:metadata_schema, :root, :with_basic_tab, name: "Image",
+             is_builtin: true, slug: "default")
+    end
+
+    def photo_asset(extra = {})
+      asset_with_version(title: "Photo", properties: {
+        "content_type"       => "image/jpeg",
+        "applied_schema_id"  => schema.id,
+        "embedded_metadata"  => { "XMP" => { "Title" => "Sunset over the bay" } },
+      }.merge(extra))
+    end
+
+    it "returns the applied schema pre-filled from embedded metadata" do
+      asset = photo_asset
+
+      get "/api/v1/assets/#{asset.uuid}/metadata_schema", as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(json["id"]).to eq(schema.id)
+      expect(json["applied_schema_id"]).to eq(schema.id)
+      title_field = json["resolved_tabs"].flat_map { |t| t["fields"] }
+                                         .detect { |f| f["map_to_property"] == "dc:title" }
+      expect(title_field["value"]).to eq("Sunset over the bay")
+    end
+
+    it "prefers a saved property value over the embedded default" do
+      asset = photo_asset("dc:title" => "Curated Title")
+
+      get "/api/v1/assets/#{asset.uuid}/metadata_schema", as: :json
+
+      expect(response).to have_http_status(:ok)
+      title_field = json["resolved_tabs"].flat_map { |t| t["fields"] }
+                                         .detect { |f| f["map_to_property"] == "dc:title" }
+      expect(title_field["value"]).to eq("Curated Title")
+    end
+
+    it "accepts a numeric asset id as well as a uuid" do
+      asset = photo_asset
+
+      get "/api/v1/assets/#{asset.id}/metadata_schema", as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(json["asset_uuid"]).to eq(asset.uuid)
+    end
+
+    it "returns 404 for an unknown asset" do
+      get "/api/v1/assets/does-not-exist/metadata_schema", as: :json
+
+      expect(response).to have_http_status(:not_found)
+    end
+
+    it "returns 404 when no schema can be resolved" do
+      asset = asset_with_version(title: "Orphan", properties: { "content_type" => "image/jpeg" })
+
+      get "/api/v1/assets/#{asset.uuid}/metadata_schema", as: :json
+
+      expect(response).to have_http_status(:not_found)
+    end
+
+    it "resolves a schema from the asset folder assignment" do
+      folder = create(:folder, user: user)
+      folder_schema = create(:metadata_schema, :root, :with_basic_tab, name: "Folder Schema")
+      create(:metadata_schema_folder_assignment, metadata_schema: folder_schema, folder_id: folder.id)
+      asset = asset_with_version(title: "Folder Scoped", properties: { "content_type" => "image/jpeg" })
+      asset.update!(folder: folder, properties: asset.properties.except("applied_schema_id"))
+
+      get "/api/v1/assets/#{asset.uuid}/metadata_schema", as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(json["id"]).to eq(folder_schema.id)
+      expect(json["applied_schema_id"]).to eq(folder_schema.id)
+    end
+  end
+
+  describe "private helper coverage" do
+    let(:controller) { Api::V1::AssetsController.new }
+
+    it "resolves the OAuth resource owner and falls back to the first user" do
+      oauth_user = create(:user)
+      allow(controller).to receive(:user_signed_in?).and_return(false)
+      allow(controller).to receive(:doorkeeper_token).and_return(instance_double("DoorkeeperToken", resource_owner_id: oauth_user.id))
+      expect(controller.send(:active_resource_owner)).to eq(oauth_user)
+
+      allow(controller).to receive(:doorkeeper_token).and_return(nil)
+      expect(controller.send(:active_resource_owner)).to eq(User.first)
+      expect(User.first).to eq(user)
+    end
+
+    it "treats empty collections as blank but scalar values as present" do
+      expect(controller.send(:asset_metadata_blank?, [])).to be(true)
+      expect(controller.send(:asset_metadata_blank?, 5)).to be(false)
+    end
+
+    it "normalizes update metadata payloads for plain hashes and missing assets" do
+      allow(controller).to receive(:params).and_return(
+        { asset: { "metadata" => { "dc:title" => "Hash Title" }, "tags" => %w[hero banner] } }
+      )
+      expect(controller.send(:update_metadata_payload)).to eq(
+        "dc:title" => "Hash Title",
+        "tags" => %w[hero banner]
+      )
+
+      allow(controller).to receive(:params).and_return({ title: "Top Level Only" })
+      expect(controller.send(:update_metadata_payload)).to eq({})
     end
   end
 end

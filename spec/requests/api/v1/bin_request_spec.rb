@@ -46,6 +46,31 @@ RSpec.describe "Api::V1::Bin coverage", type: :request do
     expect(response).to have_http_status(:unauthorized)
   end
 
+  it "uses asset property sizes in stats and falls back unknown media types to file" do
+    versioned = trashed_asset("Versioned", "content_type" => "image/png", "size" => 256)
+    fallback = create(
+      :asset,
+      :trashed,
+      user: admin,
+      title: "Binary",
+      properties: { "content_type" => "application/octet-stream", "size" => 128 }
+    )
+    fallback.update_column(:deleted_at, 45.days.ago)
+
+    get "/api/v1/bin/stats", as: :json
+
+    expect(response).to have_http_status(:ok)
+    expect(json["total_size_bytes"]).to eq(384)
+
+    get "/api/v1/bin", params: { type: "asset" }, as: :json
+
+    expect(response).to have_http_status(:ok)
+    expect(json["items"]).to include(
+      hash_including("id" => versioned.uuid, "media_type" => "image"),
+      hash_including("id" => fallback.uuid, "media_type" => "file")
+    )
+  end
+
   it "bulk restores and destroys missing items with errors" do
     asset = trashed_asset("Restore Me")
     folder = create(:folder, :trashed, user: admin)
@@ -60,6 +85,18 @@ RSpec.describe "Api::V1::Bin coverage", type: :request do
     expect(response).to have_http_status(:ok)
     expect(json["deleted"]).to eq(1)
     expect(json["errors"]).not_to be_empty
+  end
+
+  it "reports destroy failures when permanent deletion raises unexpectedly" do
+    doomed = trashed_asset("Boom")
+    allow_any_instance_of(Api::V1::BinController).to receive(:permanent_delete_asset).and_raise(StandardError, "kaboom") # rubocop:disable RSpec/AnyInstance
+
+    delete "/api/v1/bin/bulk_destroy", params: { items: [ { id: doomed.id, type: "asset" } ] }, as: :json
+
+    expect(response).to have_http_status(:ok)
+    expect(json["deleted"]).to eq(0)
+    expect(json["errors"]).to contain_exactly("Failed to delete asset ##{doomed.id}: kaboom")
+    expect(doomed.reload).to be_present
   end
 
   it "empties the bin and returns retention policy" do
@@ -87,6 +124,21 @@ RSpec.describe "Api::V1::Bin coverage", type: :request do
     expect(json).to include("retention_days" => 365, "batch_size" => 500, "notify_admins" => true)
   end
 
+  it "keeps the action-level admin guards active when before_actions are bypassed" do
+    allow_any_instance_of(Api::V1::BinController).to receive(:require_admin!).and_return(true) # rubocop:disable RSpec/AnyInstance
+    allow_any_instance_of(Api::V1::BinController).to receive(:require_admin_scope!).and_return(true) # rubocop:disable RSpec/AnyInstance
+
+    sign_in user
+
+    put "/api/v1/bin/retention_policy", params: { retention_days: 9 }, as: :json
+    expect(response).to have_http_status(:forbidden)
+    expect(json).to eq("error" => "Administrator privileges required.")
+
+    post "/api/v1/bin/trigger_purge", as: :json
+    expect(response).to have_http_status(:forbidden)
+    expect(json).to eq("error" => "Administrator privileges required.")
+  end
+
   it "queues purge, detects conflicts and reports status" do
     post "/api/v1/bin/trigger_purge", as: :json
     expect(response).to have_http_status(:ok)
@@ -99,6 +151,32 @@ RSpec.describe "Api::V1::Bin coverage", type: :request do
     get "/api/v1/bin/purge_status", as: :json
     expect(response).to have_http_status(:ok)
     expect(json["last_results"]).to include("deleted" => 2)
+  end
+
+  it "deletes stored files during permanent destroy and logs storage adapter failures" do
+    backend = instance_double(StorageBackend)
+    storage = instance_double("StorageAdapter")
+    stored = trashed_asset("Stored", "storage_path" => "bin/stored.dat")
+    broken = trashed_asset("Broken", "storage_path" => "bin/broken.dat")
+
+    allow(StorageBackend).to receive(:find_by).with(active: true).and_return(backend)
+    allow(StorageManager).to receive(:adapter_for).with(backend).and_return(storage)
+    allow(storage).to receive(:delete).with("bin/stored.dat").and_return(true)
+    allow(storage).to receive(:delete).with("bin/broken.dat").and_raise(StandardError, "storage offline")
+    allow(Rails.logger).to receive(:warn)
+
+    delete "/api/v1/bin/bulk_destroy", params: {
+      items: [ { id: stored.id, type: "asset" }, { id: broken.id, type: "asset" } ],
+    }, as: :json
+
+    expect(response).to have_http_status(:ok)
+    expect(json["deleted"]).to eq(2)
+    expect(json["errors"]).to eq([])
+    expect(StorageManager).to have_received(:adapter_for).with(backend).twice
+    expect(storage).to have_received(:delete).with("bin/stored.dat")
+    expect(storage).to have_received(:delete).with("bin/broken.dat")
+    expect(Rails.logger).to have_received(:warn).with(include("storage offline"))
+    expect(Asset.where(id: [ stored.id, broken.id ])).to be_empty
   end
 
   it "returns AI cleanup suggestions/report for admins and forbids non-admins" do

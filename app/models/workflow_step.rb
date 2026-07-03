@@ -2,6 +2,12 @@ class WorkflowStep < ApplicationRecord
   # Advanced types: 'approval', 'notification', 'automated_action'
   belongs_to :workflow
 
+  # Tasks generated for this step by running workflow instances. Destroying a
+  # step (e.g. when it is removed in the Visual Designer) must cascade to its
+  # tasks, otherwise the workflow_tasks -> workflow_steps foreign key blocks
+  # the delete with a PG::ForeignKeyViolation.
+  has_many :workflow_tasks, dependent: :destroy
+
   # Node types supported by the Visual Workflow Designer v2
   NODE_TYPES = %w[
     approval

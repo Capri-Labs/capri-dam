@@ -32,7 +32,7 @@ RSpec.describe "Api::V1::VideoProfiles coverage", type: :request do
         name: "Adaptive",
         smart_crop_ratios: [ { name: "16:9", crop_ratio: "16:9" } ].to_json,
         encoding_presets_attributes: [
-          { name: "720p", height: 720, video_bitrate_kbps: 3000 },
+          { name: "720p", height: 720, video_bitrate_kbps: 3000, frame_rate_fps: 30, audio_codec: "he_aac", audio_bitrate_kbps: 128 },
         ],
       },
     }, as: :json
@@ -45,6 +45,32 @@ RSpec.describe "Api::V1::VideoProfiles coverage", type: :request do
     }, as: :json
     expect(response).to have_http_status(:created)
     expect(json["smart_crop_ratios"]).to eq([])
+  end
+
+  it "parses preset advanced_params JSON strings and falls back to an empty hash" do
+    post "/api/v1/video_profiles", params: {
+      video_profile: {
+        name: "Advanced Params",
+        encoding_presets_attributes: [
+          {
+            name: "Valid",
+            height: 720,
+            video_bitrate_kbps: 3000,
+            advanced_params: { h264Level: "41" }.to_json,
+          },
+          {
+            name: "Invalid",
+            height: 360,
+            video_bitrate_kbps: 900,
+            advanced_params: "{bad-json",
+          },
+        ],
+      },
+    }, as: :json
+
+    expect(response).to have_http_status(:created)
+    expect(json["encoding_presets"].find { |preset| preset["name"] == "Valid" }["advanced_params"]).to eq("h264Level" => "41")
+    expect(json["encoding_presets"].find { |preset| preset["name"] == "Invalid" }["advanced_params"]).to eq({})
   end
 
   it "rejects invalid updates and missing profiles" do
@@ -82,6 +108,16 @@ RSpec.describe "Api::V1::VideoProfiles coverage", type: :request do
     expect(json["encoding_presets"].size).to eq(3)
   end
 
+  it "returns validation errors when copying fails" do
+    profile = create(:video_profile, :with_adaptive_presets)
+    allow_any_instance_of(VideoProfile).to receive(:save!).and_raise(ActiveRecord::RecordInvalid.new(profile))
+
+    post "/api/v1/video_profiles/#{profile.id}/copy", params: { name: "Broken copy" }, as: :json
+
+    expect(response).to have_http_status(:unprocessable_entity)
+    expect(json["errors"]).to be_present
+  end
+
   it "replaces, lists and removes folder assignments" do
     old_profile = create(:video_profile, name: "Old")
     new_profile = create(:video_profile, name: "New")
@@ -102,6 +138,19 @@ RSpec.describe "Api::V1::VideoProfiles coverage", type: :request do
     delete "/api/v1/video_profiles/#{new_profile.id}/remove_from_folder", params: { folder_id: folder.id }, as: :json
     expect(response).to have_http_status(:no_content)
     expect(VideoProfileFolderAssignment.where(folder_id: folder.id)).to be_empty
+  end
+
+  it "returns validation errors when assigning a folder fails" do
+    profile = create(:video_profile, name: "Broken")
+    folder = create(:folder, user: user, name: "Videos")
+    assignment = VideoProfileFolderAssignment.new(video_profile: profile, folder_id: folder.id)
+    assignment.errors.add(:folder_id, "is invalid")
+    allow(VideoProfileFolderAssignment).to receive(:create!).and_raise(ActiveRecord::RecordInvalid.new(assignment))
+
+    post "/api/v1/video_profiles/#{profile.id}/apply_to_folder", params: { folder_id: folder.id }, as: :json
+
+    expect(response).to have_http_status(:unprocessable_entity)
+    expect(json["error"]).to include("Folder")
   end
 
   it "soft deletes profiles" do

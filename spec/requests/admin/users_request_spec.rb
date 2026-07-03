@@ -36,9 +36,16 @@ RSpec.describe "Admin::Users coverage", type: :request do
   describe "CRUD" do
     before { sign_in admin }
 
-    it "shows a detailed user" do
+    it "shows a detailed user with impersonators" do
+      actor = create(:user, first_name: "Ima", last_name: "Poster")
+      user.grant_impersonation_to(actor)
+
       get "/admin/users/#{user.id}.json", as: :json
+
       expect(response).to have_http_status(:ok)
+      expect(response.parsed_body.dig("user", "impersonators")).to include(
+        a_hash_including("id" => actor.id, "email" => actor.email)
+      )
       expect(response.parsed_body.dig("user", "preferences")).to include("language")
     end
 
@@ -86,6 +93,18 @@ RSpec.describe "Admin::Users coverage", type: :request do
 
       expect(response).to have_http_status(:ok)
       expect(sso_user.reload).to have_attributes(email: "sso@example.com", first_name: "Original", last_name: "Name", department: "IT")
+    end
+
+    it "forbids super-admin group members without the admin flag from changing admin status" do
+      delegated_super_admin = create(:user, admin: false, role: "viewer")
+      delegated_super_admin.user_groups << create(:user_group, :super_administrators)
+
+      sign_in delegated_super_admin
+
+      patch "/admin/users/#{user.id}.json", params: { user: { admin: true } }, as: :json
+
+      expect(response).to have_http_status(:forbidden)
+      expect(response.parsed_body["errors"]).to include("Unauthorized to modify admin status")
     end
 
     it "returns update validation errors" do
@@ -180,6 +199,38 @@ RSpec.describe "Admin::Users coverage", type: :request do
       delete "/admin/users/#{user.id}/remove_group/#{administrators.id}.json", as: :json
       expect(response).to have_http_status(:forbidden)
     end
+
+    it "forbids modifying protected groups on yourself" do
+      admin.user_groups << administrators
+
+      post "/admin/users/#{admin.id}/add_group.json", params: { group_id: administrators.id }, as: :json
+      expect(response).to have_http_status(:forbidden)
+      expect(response.parsed_body["error"]).to include("You cannot add yourself")
+
+      delete "/admin/users/#{admin.id}/remove_group/#{everyone.id}.json", as: :json
+      expect(response).to have_http_status(:forbidden)
+      expect(response.parsed_body["error"]).to eq("Cannot remove users from 'everyone'.")
+    end
+
+    it "returns validation errors when adding a group fails" do
+      group_users = double("group users", include?: false)
+      allow(group_users).to receive(:<<).and_raise(ActiveRecord::RecordInvalid.new(group))
+      failing_group = instance_double(
+        UserGroup,
+        everyone?: false,
+        super_administrators?: false,
+        administrators?: false,
+        users: group_users,
+        name: group.name
+      )
+      allow(UserGroup).to receive(:find_by).and_return(failing_group)
+
+      post "/admin/users/#{user.id}/add_group.json", params: { group_id: group.id }, as: :json
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.parsed_body["success"]).to be(false)
+      expect(response.parsed_body["errors"]).to be_present
+    end
   end
 
   describe "impersonation" do
@@ -216,6 +267,17 @@ RSpec.describe "Admin::Users coverage", type: :request do
 
       post "/admin/users/#{admin.id}/start_impersonation.json", as: :json
       expect(response).to have_http_status(:forbidden)
+    end
+
+    it "returns validation errors when granting impersonation fails" do
+      actor = create(:user)
+      allow_any_instance_of(User).to receive(:grant_impersonation_to).and_raise(ActiveRecord::RecordInvalid.new(user))
+
+      post "/admin/users/#{user.id}/impersonators.json", params: { impersonator_id: actor.id }, as: :json
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.parsed_body["success"]).to be(false)
+      expect(response.parsed_body["errors"]).to be_present
     end
   end
 

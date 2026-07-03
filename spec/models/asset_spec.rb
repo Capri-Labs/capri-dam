@@ -66,4 +66,26 @@ RSpec.describe Asset, type: :model do
       expect(create(:asset).next_version_number).to eq(1)
     end
   end
+
+  describe '#current_file' do
+    it 'returns the file attached to the active version' do
+      asset = create(:asset)
+      expect(asset.current_file).to eq(asset.active_version&.file)
+    end
+  end
+
+  describe '.nearest_to_vector' do
+    it 'returns none when the vector is blank' do
+      expect(Asset.nearest_to_vector(nil)).to eq(Asset.none)
+      expect(Asset.nearest_to_vector([])).to eq(Asset.none)
+    end
+
+    it 'finds assets ordered by cosine similarity to the given embedding' do
+      asset = create(:asset)
+      embedding = Array.new(1536, 0.001)
+      asset.create_asset_embedding!(embedding: embedding, model_name: "text-embedding-3-small")
+
+      expect(Asset.nearest_to_vector(embedding)).to include(asset)
+    end
+  end
 end

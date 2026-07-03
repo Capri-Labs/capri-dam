@@ -80,6 +80,17 @@ RSpec.describe "Api::V1::MetadataSchemas", type: :request do
       expect(response).to have_http_status(:ok)
       expect(schema.reload.description).to eq("Updated")
     end
+
+    it "returns validation errors for invalid updates" do
+      sign_in admin
+
+      patch api_v1_metadata_schema_path(schema),
+            params: { metadata_schema: { name: "" } },
+            as: :json
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.parsed_body["errors"]).to include("Name can't be blank")
+    end
   end
 
   describe "DELETE /api/v1/metadata_schemas/:id" do
@@ -113,6 +124,18 @@ RSpec.describe "Api::V1::MetadataSchemas", type: :request do
 
       expect(response).to have_http_status(:created)
       expect(response.parsed_body["name"]).to start_with("Copy of ")
+    end
+
+    it "returns an error when duplication fails" do
+      sign_in admin
+      allow_any_instance_of(Api::V1::MetadataSchemasController)
+        .to receive(:deep_duplicate)
+        .and_raise(StandardError, "duplicate failed")
+
+      post duplicate_api_v1_metadata_schema_path(schema), as: :json
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.parsed_body).to eq("error" => "duplicate failed")
     end
   end
 
@@ -152,6 +175,21 @@ RSpec.describe "Api::V1::MetadataSchemas", type: :request do
       end.to change(MetadataSchemaFolderAssignment, :count).by(-1)
 
       expect(response).to have_http_status(:no_content)
+    end
+  end
+
+  describe "GET /api/v1/metadata_schemas/:id/folders" do
+    it "returns folders assigned to the schema" do
+      sign_in admin
+      folder = create(:folder, user: admin, name: "Schema Folder")
+      create(:metadata_schema_folder_assignment, metadata_schema: schema, folder_id: folder.id)
+
+      get folders_api_v1_metadata_schema_path(schema), as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body).to include(
+        a_hash_including("id" => folder.id, "name" => "Schema Folder", "path" => folder.path)
+      )
     end
   end
 end

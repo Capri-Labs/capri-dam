@@ -1,6 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe Reports::AnalyticsService, type: :service do
+  include ActiveSupport::Testing::TimeHelpers
   subject(:service) { described_class.new('last_30_days', custom_from: 30.days.ago.beginning_of_day, custom_to: Time.current) }
 
   before do
@@ -182,9 +183,15 @@ RSpec.describe Reports::AnalyticsService, type: :service do
   end
 
   describe 'helper methods' do
-    it 'computes the date range for known presets' do
-      expect(service.send(:compute_date_from, 'last_7_days')).to be_within(1.second).of(7.days.ago.beginning_of_day)
-      expect(service.send(:compute_date_from, 'this_year')).to eq(Time.current.beginning_of_year)
+    it 'computes the date range for supported presets and falls back for unknown keys' do
+      travel_to(Time.zone.parse('2026-07-03 09:27:45')) do
+        expect(service.send(:compute_date_from, 'last_7_days')).to eq(7.days.ago.beginning_of_day)
+        expect(service.send(:compute_date_from, 'last_30_days')).to eq(30.days.ago.beginning_of_day)
+        expect(service.send(:compute_date_from, 'last_90_days')).to eq(90.days.ago.beginning_of_day)
+        expect(service.send(:compute_date_from, 'this_year')).to eq(Time.current.beginning_of_year)
+        expect(service.send(:compute_date_from, 'this_quarter')).to eq(Time.current.beginning_of_quarter)
+        expect(service.send(:compute_date_from, 'unexpected')).to eq(30.days.ago.beginning_of_day)
+      end
     end
 
     it 'returns user-facing range labels' do
@@ -193,7 +200,12 @@ RSpec.describe Reports::AnalyticsService, type: :service do
 
     it 'simplifies known mime types' do
       expect(service.send(:simplify_mime, 'image/jpeg')).to eq('Image (JPEG)')
+      expect(service.send(:simplify_mime, 'video/mp4')).to eq('Video (MP4)')
       expect(service.send(:simplify_mime, 'application/pdf')).to eq('PDF Document')
+      expect(service.send(:simplify_mime, 'application/zip')).to eq('ZIP Archive')
+      expect(service.send(:simplify_mime, 'application/vnd.ms-excel')).to eq('Spreadsheet')
+      expect(service.send(:simplify_mime, 'application/wordprocessingml.document')).to eq('Word Document')
+      expect(service.send(:simplify_mime, 'text/plain')).to eq('text/plain')
       expect(service.send(:simplify_mime, nil)).to eq('Unknown')
     end
 

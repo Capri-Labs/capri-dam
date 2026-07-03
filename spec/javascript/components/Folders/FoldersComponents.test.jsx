@@ -275,14 +275,15 @@ describe('Folders components', () => {
   it('loads schema in AssetMetadataPanel and saves changed metadata', async () => {
     const onAssetUpdated = jest.fn();
     global.fetch = mockFetch({
-      'GET /api/v1/metadata_schemas/5': {
+      'GET /api/v1/assets/1/metadata_schema': {
         id: 5,
         name: 'Product Schema',
+        applied_schema_id: 5,
         resolved_tabs: [
           {
             id: 'general',
             name: 'General',
-            fields: [{ id: 'sku', label: 'SKU', field_type: 'text', map_to_property: 'sku' }],
+            fields: [{ id: 'sku', label: 'SKU', field_type: 'text', map_to_property: 'sku', value: 'SKU-1' }],
           },
         ],
       },
@@ -301,6 +302,78 @@ describe('Folders components', () => {
       expect(JSON.parse(patchCall[1].body)).toEqual({ schema_id: 5, metadata: { applied_schema_id: 5, sku: 'SKU-2' } });
     });
     expect(onAssetUpdated).toHaveBeenCalledWith({ id: 1, properties: { sku: 'SKU-2' } });
+  });
+
+  it('pre-fills schema fields from the asset-scoped metadata_schema endpoint', async () => {
+    global.fetch = mockFetch({
+      'GET /api/v1/assets/2/metadata_schema': {
+        id: 5,
+        name: 'Image Schema',
+        applied_schema_id: 5,
+        resolved_tabs: [
+          {
+            id: 'basic',
+            name: 'Basic',
+            fields: [
+              { id: 'creator', label: 'Creator', field_type: 'text', map_to_property: 'dc:creator', value: 'Jane Photographer' },
+              { id: 'make', label: 'Camera Make', field_type: 'text', map_to_property: 'exif:Make', value: 'Canon' },
+            ],
+          },
+        ],
+      },
+    });
+
+    render(
+      <AssetMetadataPanel
+        asset={{ id: 2, folder_id: 9, properties: { applied_schema_id: 5 } }}
+        onAssetUpdated={jest.fn()}
+      />
+    );
+
+    expect(await screen.findByText('Image Schema')).toBeInTheDocument();
+    expect(screen.getByLabelText('Creator')).toHaveValue('Jane Photographer');
+    expect(screen.getByLabelText('Camera Make')).toHaveValue('Canon');
+  });
+
+  it('falls back to client-side embedded mapping when the asset endpoint is unavailable', async () => {
+    global.fetch = mockFetch({
+      'GET /api/v1/assets/3/metadata_schema': { ok: false, json: () => Promise.resolve({}) },
+      'GET /api/v1/metadata_schemas/5': {
+        id: 5,
+        name: 'Image Schema',
+        resolved_tabs: [
+          {
+            id: 'basic',
+            name: 'Basic',
+            fields: [
+              { id: 'creator', label: 'Creator', field_type: 'text', map_to_property: 'dc:creator' },
+              { id: 'make', label: 'Camera Make', field_type: 'text', map_to_property: 'exif:Make' },
+            ],
+          },
+        ],
+      },
+    });
+
+    render(
+      <AssetMetadataPanel
+        asset={{
+          id: 3,
+          folder_id: 9,
+          properties: {
+            applied_schema_id: 5,
+            embedded_metadata: {
+              XMP: { Creator: 'Jane Photographer' },
+              EXIF: { Make: 'Canon' },
+            },
+          },
+        }}
+        onAssetUpdated={jest.fn()}
+      />
+    );
+
+    expect(await screen.findByText('Image Schema')).toBeInTheDocument();
+    expect(screen.getByLabelText('Creator')).toHaveValue('Jane Photographer');
+    expect(screen.getByLabelText('Camera Make')).toHaveValue('Canon');
   });
 
   it('renders AssetStatisticsTab summary blocks', () => {

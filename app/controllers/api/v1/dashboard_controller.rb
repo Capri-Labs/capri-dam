@@ -99,7 +99,7 @@ module Api
       end
 
       def build_recent_assets
-        Asset.active.order(created_at: :desc).limit(10).map do |asset|
+        Asset.active.order(created_at: :desc).limit(20).map do |asset|
           {
             id: asset.id,
             uuid: asset.uuid,

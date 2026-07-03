@@ -92,6 +92,40 @@ RSpec.describe "GraphQL endpoint", type: :request do
     end
   end
 
+  describe "development error handling" do
+    before do
+      allow(Rails).to receive(:env).and_return(ActiveSupport::StringInquirer.new("development"))
+    end
+
+    it "returns a structured error for unexpected variables payloads" do
+      gql_post(query: "{ __typename }", variables: [], user: viewer_user)
+
+      expect(response).to have_http_status(:internal_server_error)
+      expect(json).to include("data" => {})
+      expect(json.dig("errors", 0, "message")).to include("Unexpected parameter topology")
+      expect(json.dig("errors", 0, "backtrace")).to be_an(Array)
+    end
+
+    it "logs and renders schema execution failures with backtraces" do
+      boom = StandardError.new("boom")
+      boom.set_backtrace([ "app/graphql/spec_failure.rb:1" ])
+      logger = double("logger", error: nil, info?: false)
+
+      allow(HeadlessDamSchema).to receive(:execute).and_raise(boom)
+      allow_any_instance_of(GraphqlController).to receive(:logger).and_return(logger) # rubocop:disable RSpec/AnyInstance
+
+      gql_post(query: "{ __typename }", user: viewer_user)
+
+      expect(response).to have_http_status(:internal_server_error)
+      expect(json.dig("errors", 0)).to include(
+        "message" => "boom",
+        "backtrace" => [ "app/graphql/spec_failure.rb:1" ]
+      )
+      expect(logger).to have_received(:error).with("boom")
+      expect(logger).to have_received(:error).with("app/graphql/spec_failure.rb:1")
+    end
+  end
+
   # ─────────────────────────── queries ────────────────────────────────────────
 
   describe "query: assetDetail" do
@@ -312,6 +346,104 @@ RSpec.describe "GraphQL endpoint", type: :request do
       data = json.dig("data", "imageProfile")
       expect(data).not_to be_nil
       expect(data["id"].to_i).to eq(profile.id)
+    end
+  end
+
+  describe "query: videoProfiles" do
+    let(:query) do
+      <<~GQL
+        {
+          videoProfiles {
+            id
+            name
+          }
+        }
+      GQL
+    end
+
+    it "returns active video profiles ordered by name" do
+      create(:video_profile, name: "Zulu")
+      create(:video_profile, name: "Alpha")
+      create(:video_profile, :deleted, name: "Hidden")
+
+      gql_post(query: query, user: viewer_user)
+
+      expect(response).to have_http_status(:ok)
+      expect(json.dig("data", "videoProfiles").map { |profile| profile["name"] }).to eq(%w[Alpha Zulu])
+    end
+  end
+
+  describe "query: videoProfile (by id)" do
+    let(:query) do
+      <<~GQL
+        query FetchVideoProfile($id: ID!) {
+          videoProfile(id: $id) {
+            id
+            name
+          }
+        }
+      GQL
+    end
+
+    it "returns the matching active video profile" do
+      profile = create(:video_profile, name: "Playback")
+
+      gql_post(query: query, variables: { id: profile.id }, user: viewer_user)
+
+      expect(response).to have_http_status(:ok)
+      expect(json.dig("data", "videoProfile")).to include("id" => profile.id.to_s, "name" => "Playback")
+    end
+  end
+
+  describe "query: duplicateGroups" do
+    let(:query) do
+      <<~GQL
+        query DuplicateGroups($status: String) {
+          duplicateGroups(status: $status, first: 10) {
+            edges {
+              node {
+                id
+                status
+              }
+            }
+          }
+        }
+      GQL
+    end
+
+    it "filters resolved duplicate groups" do
+      create(:duplicate_group, :resolved)
+      create(:duplicate_group, :dismissed)
+      create(:duplicate_group, status: "pending")
+
+      gql_post(query: query, variables: { status: "resolved" }, user: viewer_user)
+
+      expect(response).to have_http_status(:ok)
+      expect(json.dig("data", "duplicateGroups", "edges").pluck("node").pluck("status")).to eq([ "resolved" ])
+    end
+
+    it "filters dismissed duplicate groups" do
+      create(:duplicate_group, :resolved)
+      dismissed = create(:duplicate_group, :dismissed)
+
+      gql_post(query: query, variables: { status: "dismissed" }, user: viewer_user)
+
+      expect(response).to have_http_status(:ok)
+      expect(json.dig("data", "duplicateGroups", "edges").pluck("node")).to include(
+        a_hash_including("id" => dismissed.id, "status" => "dismissed")
+      )
+    end
+
+    it "falls back to pending groups for unknown statuses" do
+      pending = create(:duplicate_group, status: "pending")
+      create(:duplicate_group, :resolved)
+
+      gql_post(query: query, variables: { status: "unexpected" }, user: viewer_user)
+
+      expect(response).to have_http_status(:ok)
+      expect(json.dig("data", "duplicateGroups", "edges").pluck("node")).to include(
+        a_hash_including("id" => pending.id, "status" => "pending")
+      )
     end
   end
 

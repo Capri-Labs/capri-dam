@@ -37,4 +37,22 @@ RSpec.describe SystemConnector, type: :model do
       expect(connector.provider_label).to eq('Adobe Experience Manager')
     end
   end
+
+  describe '#test_connection' do
+    it 'delegates to IngestionAdapters::Factory.test with the connector credentials' do
+      connector = build(:system_connector, provider_type: 'aem')
+      expect(IngestionAdapters::Factory).to receive(:test)
+        .with('aem', { 'endpoint' => connector.endpoint, 'auth_token' => connector.auth_token })
+        .and_return({ success: true })
+
+      expect(connector.test_connection).to eq({ success: true })
+    end
+
+    it 'rescues adapter errors and returns a failure hash' do
+      connector = build(:system_connector, provider_type: 'aem')
+      allow(IngestionAdapters::Factory).to receive(:test).and_raise(StandardError.new('boom'))
+
+      expect(connector.test_connection).to eq({ success: false, message: 'boom' })
+    end
+  end
 end

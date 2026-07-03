@@ -57,6 +57,16 @@ RSpec.describe User, type: :model do
     end
   end
 
+  describe '#local_managed?' do
+    it 'returns true for local users' do
+      expect(build(:user).local_managed?).to be true
+    end
+
+    it 'returns false for SSO users' do
+      expect(build(:user, :sso).local_managed?).to be false
+    end
+  end
+
   # ---------------------------------------------------------------------------
   # Everyone group auto-membership
   # ---------------------------------------------------------------------------
@@ -101,6 +111,16 @@ RSpec.describe User, type: :model do
     end
   end
 
+  describe '#inactive_message' do
+    it 'returns the default Devise message for active users' do
+      expect(build(:user).inactive_message).to eq(:inactive)
+    end
+
+    it 'returns account_deactivated for inactive users' do
+      expect(build(:user, :inactive).inactive_message).to eq(:account_deactivated)
+    end
+  end
+
   # ---------------------------------------------------------------------------
   # Permissions
   # ---------------------------------------------------------------------------
@@ -142,6 +162,17 @@ RSpec.describe User, type: :model do
     end
   end
 
+  describe '#can_see_folder?' do
+    it 'returns the read permission for the folder' do
+      user = build(:user)
+      folder = build(:folder)
+
+      allow(user).to receive(:permissions_for).with(folder).and_return(read: true)
+
+      expect(user.can_see_folder?(folder)).to be true
+    end
+  end
+
   # ---------------------------------------------------------------------------
   # Impersonation
   # ---------------------------------------------------------------------------
@@ -170,6 +201,37 @@ RSpec.describe User, type: :model do
   # ---------------------------------------------------------------------------
   # SSO sync
   # ---------------------------------------------------------------------------
+
+  describe 'callback error handling' do
+    let(:user) { build(:user, email: 'warnings@example.com') }
+
+    before do
+      allow(Rails.logger).to receive(:warn)
+    end
+
+    it 'logs a warning when adding the everyone group fails' do
+      everyone_group = instance_double(UserGroup)
+      group_memberships = double('group_memberships')
+
+      allow(UserGroup).to receive(:find_by).with(slug: 'everyone').and_return(everyone_group)
+      allow(user).to receive(:user_groups).and_return(group_memberships)
+      allow(group_memberships).to receive(:include?).with(everyone_group).and_return(false)
+      allow(group_memberships).to receive(:<<).with(everyone_group).and_raise(StandardError, 'membership error')
+
+      user.send(:add_to_everyone_group)
+
+      expect(Rails.logger).to have_received(:warn).with('[User] Could not add warnings@example.com to everyone group: membership error')
+    end
+
+    it 'logs a warning when creating the default preference fails' do
+      allow(user).to receive(:preference).and_return(nil)
+      allow(user).to receive(:create_preference).and_raise(StandardError, 'preference error')
+
+      user.send(:create_default_preference)
+
+      expect(Rails.logger).to have_received(:warn).with('[User] Could not create preference for warnings@example.com: preference error')
+    end
+  end
 
   describe ".from_omniauth" do
     let(:auth) do

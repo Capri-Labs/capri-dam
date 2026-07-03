@@ -41,6 +41,19 @@ RSpec.describe "Settings coverage", type: :request do
       expect(response.body).not_to include("secret_key&quot;:&quot;secret")
     end
 
+    it "ignores malformed stored provider JSON" do
+      sign_in admin
+      allow(Setting).to receive(:get).and_call_original
+      allow(Setting).to receive(:get).with("active_storage_provider").and_return("local")
+      allow(Setting).to receive(:get).with("storage_config_aws").and_return("{not-json")
+      allow(Setting).to receive(:get_provider_config).with("local").and_return({})
+
+      get "/settings/system"
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("System")
+    end
+
     it "redirects regular users away from system settings" do
       sign_in user
 
@@ -101,6 +114,22 @@ RSpec.describe "Settings coverage", type: :request do
       expect(response).to have_http_status(:unprocessable_entity)
       expect(response.parsed_body["error"]).to include("boom")
     end
+
+    it "continues when syncing the storage backend fails and existing config is not structured" do
+      sign_in admin
+      allow(Setting).to receive(:get).and_call_original
+      allow(Setting).to receive(:get).with("storage_config_aws").and_return(123)
+      allow(StorageBackend).to receive(:find_or_initialize_by).and_raise(StandardError, "sync failed")
+      allow(Rails.logger).to receive(:warn)
+
+      patch "/settings/update_storage", params: {
+        storage_config: { provider: "aws", bucket: "new-bucket" },
+      }, as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body["message"]).to include("AWS")
+      expect(Rails.logger).to have_received(:warn).with(include("sync failed"))
+    end
   end
 
   describe "POST /settings/test_connection" do
@@ -125,6 +154,44 @@ RSpec.describe "Settings coverage", type: :request do
 
       expect(response).to have_http_status(:unprocessable_entity)
       expect(response.parsed_body).to include("success" => false, "error" => "denied")
+    end
+
+    it "tests Google Cloud Storage adapters" do
+      sign_in admin
+      adapter = instance_double(StorageAdapters::GcsAdapter, test_connection: { success: true, message: "gcs ok" })
+      allow(StorageAdapters::GcsAdapter).to receive(:new).with(hash_including("project_id" => "capri")).and_return(adapter)
+
+      post "/settings/test_connection", params: {
+        storage_config: { provider: "google", project_id: "capri", credentials_json: "{}" },
+      }, as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body).to include("success" => true, "message" => "gcs ok")
+    end
+
+    it "tests Azure storage adapters" do
+      sign_in admin
+      adapter = instance_double(StorageAdapters::AzureAdapter, test_connection: { success: true, message: "azure ok" })
+      allow(StorageAdapters::AzureAdapter).to receive(:new).with(hash_including("account_name" => "acct")).and_return(adapter)
+
+      post "/settings/test_connection", params: {
+        storage_config: { provider: "azure", account_name: "acct", account_key: "secret", container: "assets" },
+      }, as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body).to include("success" => true, "message" => "azure ok")
+    end
+
+    it "returns adapter exceptions as validation errors" do
+      sign_in admin
+      allow(StorageAdapters::GcsAdapter).to receive(:new).and_raise(StandardError, "network down")
+
+      post "/settings/test_connection", params: {
+        storage_config: { provider: "google", project_id: "capri", credentials_json: "{}" },
+      }, as: :json
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.parsed_body).to include("success" => false, "error" => "network down")
     end
 
     it "handles unknown providers" do

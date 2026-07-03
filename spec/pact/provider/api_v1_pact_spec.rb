@@ -38,6 +38,22 @@ RSpec.describe "Capri DAM API Pact provider", type: :request, aggregate_failures
       user = create(:user, :admin, email: "folder-admin@example.com", password: "password123")
       folder = create(:folder, user: user, name: "Provider Folder")
       create(:asset, user: user, folder: folder, status: :ready, title: "Folder Asset")
+    when "an asset with a metadata schema exists"
+      user = create(:user, :admin, email: "schema-admin@example.com", password: "password123")
+      schema = create(:metadata_schema, :root, :with_basic_tab,
+                      name: "Image", slug: "default", is_builtin: true)
+      create(
+        :asset,
+        user: user,
+        status: :ready,
+        title: "Schema Asset",
+        uuid: "a1b2c3d4-e5f6-4789-abcd-1234567890ab",
+        properties: {
+          "content_type" => "image/jpeg",
+          "applied_schema_id" => schema.id,
+          "embedded_metadata" => { "XMP" => { "Title" => "Sunset over the bay" } },
+        }
+      )
     when "no assets exist"
       nil
     when "asset uploads are accepted"

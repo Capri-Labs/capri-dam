@@ -58,6 +58,40 @@ RSpec.describe ApplySchemaToFolderJob, type: :job do
       end
     end
 
+
+    context 'when applying to assets with MIME-specific schemas' do
+      let!(:image_schema) do
+        FactoryBot.create(:metadata_schema, name: 'Image Schema', level: 'type', parent: schema_a, mime_segment: 'image')
+      end
+      let!(:png_schema) do
+        FactoryBot.create(:metadata_schema, name: 'PNG Schema', level: 'subtype', parent: image_schema, mime_segment: 'png')
+      end
+      let!(:asset) do
+        FactoryBot.create(
+          :asset,
+          folder: folder,
+          properties: {
+            'content_type' => 'image/png',
+            'existing_key' => 'keep-me',
+          }
+        )
+      end
+
+      it 'applies the most specific schema while preserving existing properties' do
+        described_class.perform_now(
+          folder_id: folder.id, schema_id: schema_a.id, cascade: false
+        )
+
+        expect(asset.reload.properties).to include(
+          'content_type' => 'image/png',
+          'existing_key' => 'keep-me',
+          'applied_schema_id' => png_schema.id,
+          'applied_schema_slug' => png_schema.slug,
+          'applied_schema_name' => png_schema.name
+        )
+      end
+    end
+
     context 'when the schema does not exist' do
       it 'returns early without raising' do
         expect {

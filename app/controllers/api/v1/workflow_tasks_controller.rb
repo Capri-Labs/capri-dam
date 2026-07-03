@@ -51,8 +51,8 @@ module Api
               completed_at: Time.current
             )
 
-            # 4. Optional: Reset asset status
-            instance.asset.update!(status: "archived")
+            # 4. Optional: Archive the asset via soft-delete
+            instance.asset.update!(deleted_at: Time.current)
           end
         end
 

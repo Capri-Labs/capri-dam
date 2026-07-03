@@ -130,6 +130,7 @@ AI batch progress, and health callbacks.
 | `GET/PATCH/DELETE` | `/api/v1/metadata_schemas/:id` | admin | Maintain schema definitions.
 | `GET` | `/api/v1/metadata_schemas/:id/folders` | admin | Folder assignments.
 | `POST` | `/api/v1/metadata_schemas/:id/assign` | admin | Apply schema to folder tree.
+| `GET` | `/api/v1/assets/:id/metadata_schema` | user | Resolve one asset's schema (by id or UUID), pre-filled with its own metadata.
 | `GET/POST/DELETE` | `/api/v1/metadata_exports...` | admin | Create, list, and delete export jobs.
 | `GET` | `/api/v1/metadata_exports/properties` | admin | Discover candidate metadata keys.
 | `GET/POST/DELETE` | `/api/v1/metadata_imports...` | admin | Create, list, and delete import jobs.

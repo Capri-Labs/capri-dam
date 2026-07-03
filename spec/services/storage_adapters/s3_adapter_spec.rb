@@ -65,6 +65,12 @@ RSpec.describe StorageAdapters::S3Adapter, type: :service do
 
       expect(adapter.delete('missing.txt')).to be_nil
     end
+
+    it 'wraps provider delete failures in a storage error' do
+      allow(client).to receive(:delete_object).and_raise(aws_error(Aws::S3::Errors::ServiceError))
+
+      expect { adapter.delete('folder/file.txt') }.to raise_error(StorageAdapters::StorageError, /S3 delete failed/)
+    end
   end
 
   describe '#url' do
@@ -105,6 +111,12 @@ RSpec.describe StorageAdapters::S3Adapter, type: :service do
       expect(adapter.presign_url('folder/file.txt', filename: 'download.txt')).to eq('get-url')
       expect(presigner).to have_received(:presigned_url).with(:get_object, hash_including(response_content_disposition: 'attachment; filename="download.txt"'))
     end
+
+    it 'wraps provider presign failures in a storage error' do
+      allow(presigner).to receive(:presigned_url).and_raise(aws_error(Aws::S3::Errors::ServiceError))
+
+      expect { adapter.presign_url('folder/file.txt') }.to raise_error(StorageAdapters::StorageError, /S3 presign failed/)
+    end
   end
 
   describe '#supports_presigned_urls?' do
@@ -131,6 +143,12 @@ RSpec.describe StorageAdapters::S3Adapter, type: :service do
     it 'copies the object server-side' do
       expect(adapter.copy('from.txt', 'to.txt')).to eq('to.txt')
       expect(client).to have_received(:copy_object).with(hash_including(copy_source: 'assets/from.txt', key: 'to.txt'))
+    end
+
+    it 'wraps provider copy failures in a storage error' do
+      allow(client).to receive(:copy_object).and_raise(aws_error(Aws::S3::Errors::ServiceError))
+
+      expect { adapter.copy('from.txt', 'to.txt') }.to raise_error(StorageAdapters::StorageError, /S3 copy failed/)
     end
   end
 
@@ -188,6 +206,18 @@ RSpec.describe StorageAdapters::S3Adapter, type: :service do
       allow(client).to receive(:head_bucket).and_raise(aws_error(Aws::S3::Errors::Forbidden))
 
       expect(adapter.test_connection).to eq(success: false, error: 'Access denied. Check your credentials and bucket policy.')
+    end
+
+    it 'returns the underlying error message for unexpected failures' do
+      allow(client).to receive(:head_bucket).and_raise(StandardError, 'network timeout')
+
+      expect(adapter.test_connection).to eq(success: false, error: 'network timeout')
+    end
+  end
+
+  describe 'configuration defaults' do
+    it 'falls back to the default region when none is configured' do
+      expect(described_class.new(bucket: 'assets').send(:region)).to eq('us-east-1')
     end
   end
 end

@@ -151,7 +151,7 @@ class Api::V1::VideoProfilesController < ApplicationController
       encoding_presets_attributes: %i[
         id name video_format_codec width height keep_aspect_ratio
         video_bitrate_kbps frame_rate_fps audio_codec audio_bitrate_kbps
-        two_pass_encoding constant_bitrate h264_profile audio_sampling_rate position _destroy
+        two_pass_encoding constant_bitrate h264_profile audio_sampling_rate advanced_params position _destroy
       ]
     )
 

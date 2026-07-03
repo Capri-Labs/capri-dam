@@ -216,6 +216,39 @@
           }
         ]
       }
+    },
+    {
+      "description": "resolve asset metadata schema",
+      "providerStates": [
+        {
+          "name": "an asset with a metadata schema exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/assets/a1b2c3d4-e5f6-4789-abcd-1234567890ab/metadata_schema"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "name": "Image",
+          "asset_uuid": "a1b2c3d4-e5f6-4789-abcd-1234567890ab",
+          "resolved_tabs": [
+            {
+              "name": "Basic",
+              "fields": [
+                {
+                  "map_to_property": "dc:title",
+                  "value": "Sunset over the bay"
+                }
+              ]
+            }
+          ]
+        }
+      }
     }
   ],
   "metadata": {

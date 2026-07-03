@@ -52,6 +52,20 @@ RSpec.describe 'Workflow HTML controller coverage', type: :request do
   end
 
   describe 'GET /workflows/:id.json' do
+    it 'returns the workflow with its steps' do
+      workflow = create(:workflow, name: 'Shown Flow')
+      step = create(:workflow_step, workflow: workflow, title: 'Shown Step', assignee_type: 'user', assignee_id: user.id)
+
+      get "/workflows/#{workflow.id}.json"
+
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body).to include(
+        'id' => workflow.id,
+        'name' => 'Shown Flow',
+        'workflow_steps' => include(hash_including('id' => step.id, 'title' => 'Shown Step'))
+      )
+    end
+
     it 'returns a not found JSON response when the workflow is missing' do
       get '/workflows/0.json'
 
@@ -82,6 +96,14 @@ RSpec.describe 'Workflow HTML controller coverage', type: :request do
       expect(workflow.last_modifier).to eq(user)
       expect(workflow.graph_data).to include('nodes' => [ hash_including('id' => 'n1') ])
     end
+
+    it 'returns validation errors for invalid workflows' do
+      post '/workflows', params: { workflow: { name: '', trigger_type: 'manual' } }
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.parsed_body).to include('success' => false)
+      expect(response.parsed_body['errors']).not_to be_empty
+    end
   end
 
   describe 'PATCH /workflows/:id' do
@@ -99,6 +121,55 @@ RSpec.describe 'Workflow HTML controller coverage', type: :request do
       expect(step.reload).to have_attributes(title: 'New', position: 2)
       expect(workflow.reload.last_modifier).to eq(user)
     end
+
+    it 'destroys a step that still has workflow tasks without a foreign key error' do
+      workflow = create(:workflow)
+      step = create(:workflow_step, workflow: workflow, assignee_type: 'user', assignee_id: user.id)
+      instance = create(:workflow_instance, workflow: workflow)
+      create(:workflow_task, workflow_step: step, workflow_instance: instance, user: user)
+
+      patch "/workflows/#{workflow.id}", params: {
+        workflow: {
+          workflow_steps_attributes: [ { id: step.id, _destroy: true } ],
+        },
+      }
+
+      expect(response).to have_http_status(:ok)
+      expect(WorkflowStep.where(id: step.id)).to be_empty
+      expect(WorkflowTask.where(workflow_step_id: step.id)).to be_empty
+    end
+
+    it 'returns validation errors when the update is invalid' do
+      workflow = create(:workflow, name: 'Rename Me')
+
+      patch "/workflows/#{workflow.id}", params: { workflow: { name: '' } }
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.parsed_body).to include('success' => false)
+      expect(response.parsed_body['errors']).not_to be_empty
+    end
+  end
+
+  describe 'DELETE /workflows/:id' do
+    it 'deletes workflows successfully' do
+      workflow = create(:workflow, name: 'Delete Me')
+
+      delete "/workflows/#{workflow.id}"
+
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body).to eq('success' => true, 'message' => 'Workflow deleted')
+      expect(Workflow.exists?(workflow.id)).to be(false)
+    end
+
+    it 'returns an error when deletion fails' do
+      workflow = create(:workflow)
+      allow_any_instance_of(Workflow).to receive(:destroy).and_return(false) # rubocop:disable RSpec/AnyInstance
+
+      delete "/workflows/#{workflow.id}"
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.parsed_body).to eq('success' => false, 'errors' => [ 'Could not delete workflow' ])
+    end
   end
 
   describe 'PATCH /workflows/:id/toggle_status' do
@@ -111,6 +182,18 @@ RSpec.describe 'Workflow HTML controller coverage', type: :request do
       expect(response).to have_http_status(:ok)
       expect(response.parsed_body).to include('success' => true, 'status' => 'active')
       expect(workflow.reload.last_modifier).to eq(user)
+    end
+
+    it 'returns validation errors when the status change cannot be saved' do
+      workflow = create(:workflow, status: :inactive)
+      allow_any_instance_of(Workflow).to receive(:update).and_return(false) # rubocop:disable RSpec/AnyInstance
+      allow_any_instance_of(Workflow).to receive(:errors).and_return(instance_double(ActiveModel::Errors, full_messages: [ 'Toggle failed' ])) # rubocop:disable RSpec/AnyInstance
+
+      patch "/workflows/#{workflow.id}/toggle_status"
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.parsed_body).to include('success' => false)
+      expect(response.parsed_body['errors']).to eq([ 'Toggle failed' ])
     end
   end
 

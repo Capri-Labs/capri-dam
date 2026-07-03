@@ -74,6 +74,46 @@ RSpec.describe 'Api::V1::Search', type: :request do
         expect(json['results'].map { |result| result['uuid'] }).to contain_exactly(recent_asset.uuid)
       end
 
+      it 'filters by modified_within=day, month, and year' do
+        day_asset = create_search_asset(
+          title: 'Day Asset',
+          content_type: 'image/png',
+          file_size: 300_000,
+          updated_at: 12.hours.ago
+        )
+        month_asset = create_search_asset(
+          title: 'Month Asset',
+          content_type: 'image/png',
+          file_size: 300_000,
+          updated_at: 20.days.ago
+        )
+        year_asset = create_search_asset(
+          title: 'Year Asset',
+          content_type: 'image/png',
+          file_size: 300_000,
+          updated_at: 11.months.ago
+        )
+        create_search_asset(
+          title: 'Ancient Asset',
+          content_type: 'image/png',
+          file_size: 300_000,
+          updated_at: 2.years.ago
+        )
+
+        get '/api/v1/search', params: { modified_within: 'day' }, as: :json
+        expect(json['results'].map { |result| result['uuid'] }).to contain_exactly(day_asset.uuid)
+
+        get '/api/v1/search', params: { modified_within: 'month' }, as: :json
+        expect(json['results'].map { |result| result['uuid'] }).to contain_exactly(day_asset.uuid, month_asset.uuid)
+
+        get '/api/v1/search', params: { modified_within: 'year' }, as: :json
+        expect(json['results'].map { |result| result['uuid'] }).to contain_exactly(
+          day_asset.uuid,
+          month_asset.uuid,
+          year_asset.uuid
+        )
+      end
+
       it 'filters by file_size_group=small' do
         small_asset = create_search_asset(title: 'Tiny Icon', content_type: 'image/png', file_size: 250.kilobytes)
         create_search_asset(title: 'Large Brochure', content_type: 'application/pdf', file_size: 2.megabytes)
@@ -148,6 +188,26 @@ RSpec.describe 'Api::V1::Search', type: :request do
           'total_pages' => 2
         )
         expect(json['results'].length).to eq(10)
+      end
+
+      it 'filters by mode=videos' do
+        video_asset = create_search_asset(title: 'Demo Reel', content_type: 'video/mp4', file_size: 1.megabyte)
+        create_search_asset(title: 'Still', content_type: 'image/png', file_size: 1.megabyte)
+
+        get '/api/v1/search', params: { mode: 'videos' }, as: :json
+
+        expect(response).to have_http_status(:ok)
+        expect(json['results'].map { |result| result['uuid'] }).to contain_exactly(video_asset.uuid)
+      end
+
+      it 'ignores unknown mime groups' do
+        image_asset = create_search_asset(title: 'Poster', content_type: 'image/png', file_size: 1.megabyte)
+        doc_asset = create_search_asset(title: 'Brief', content_type: 'application/pdf', file_size: 1.megabyte)
+
+        get '/api/v1/search', params: { mime_group: 'bogus' }, as: :json
+
+        expect(response).to have_http_status(:ok)
+        expect(json['results'].map { |result| result['uuid'] }).to contain_exactly(image_asset.uuid, doc_asset.uuid)
       end
 
       it 'returns facets including metadata_fields key' do
@@ -365,5 +425,17 @@ RSpec.describe "Api::V1::Search coverage", type: :request do
     get "/api/v1/search", as: :json
     expect(json["results"]).to be_empty
     expect(json["meta"]["facets"]["metadata_fields"]).to eq({})
+  end
+
+  it "preserves raw enum names when normalizing statuses" do
+    asset = search_asset("Approved", { "content_type" => "image/png" }, status: :approved)
+    allow_any_instance_of(Asset).to receive(:read_attribute_before_type_cast).and_wrap_original do |original, *args| # rubocop:disable RSpec/AnyInstance
+      args.first == :status ? "approved" : original.call(*args)
+    end
+
+    get "/api/v1/search", params: { q: asset.title }, as: :json
+
+    expect(response).to have_http_status(:ok)
+    expect(json["results"]).to contain_exactly(hash_including("uuid" => asset.uuid, "status" => "approved"))
   end
 end
