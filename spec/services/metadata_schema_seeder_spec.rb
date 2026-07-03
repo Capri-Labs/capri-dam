@@ -74,4 +74,58 @@ RSpec.describe MetadataSchemaSeeder do
       expect(custom.name).to eq("My Collection Override")
     end
   end
+
+  describe ".upgrade_default_tabs!" do
+    it "returns nil when the Default schema does not exist yet" do
+      expect(described_class.upgrade_default_tabs!).to be_nil
+    end
+
+    it "adds the new XMP/Photoshop/ICC Profile tabs and corrects prefixes on a legacy Default schema" do
+      # Simulate a legacy schema created before the prefix corrections/new tabs.
+      legacy_root = create(
+        :metadata_schema, slug: "default", name: "Default", level: "root", is_builtin: true,
+        tabs: [
+          { "id" => "tab-basic", "name" => "Basic", "position" => 0,
+            "fields" => [ { "id" => "f1", "field_type" => "text", "label" => "Title", "map_to_property" => "dc:title", "position" => 0 } ] },
+          { "id" => "tab-camera", "name" => "Camera", "position" => 2,
+            "fields" => [ { "id" => "f2", "field_type" => "text", "label" => "Camera Make", "map_to_property" => "exif:Make", "position" => 0 } ] },
+        ]
+      )
+
+      updated = described_class.upgrade_default_tabs!
+
+      expect(updated.id).to eq(legacy_root.id)
+      tab_ids = updated.tabs.map { |t| t["id"] }
+      expect(tab_ids).to include("tab-xmp", "tab-photoshop", "tab-icc-profile")
+
+      camera_tab = updated.tabs.find { |t| t["id"] == "tab-camera" }
+      expect(camera_tab["fields"].map { |f| f["map_to_property"] }).to include("tiff:Make", "tiff:Model")
+      expect(camera_tab["conditional"]).to be(true)
+    end
+
+    it "preserves a custom tab an admin added to the Default schema" do
+      create(
+        :metadata_schema, slug: "default", name: "Default", level: "root", is_builtin: true,
+        tabs: [
+          { "id" => "tab-basic", "name" => "Basic", "position" => 0, "fields" => [] },
+          { "id" => "tab-custom-admin", "name" => "Admin Custom", "position" => 9, "fields" => [] },
+        ]
+      )
+
+      updated = described_class.upgrade_default_tabs!
+
+      tab_ids = updated.tabs.map { |t| t["id"] }
+      expect(tab_ids).to include("tab-custom-admin")
+    end
+
+    it "is idempotent — re-running it does not duplicate tabs" do
+      create(:metadata_schema, slug: "default", name: "Default", level: "root", is_builtin: true, tabs: [])
+
+      described_class.upgrade_default_tabs!
+      described_class.upgrade_default_tabs!
+
+      updated = MetadataSchema.unscoped.find_by(slug: "default")
+      expect(updated.tabs.map { |t| t["id"] }.tally.values).to all(eq(1))
+    end
+  end
 end

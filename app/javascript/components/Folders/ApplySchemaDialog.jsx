@@ -10,10 +10,21 @@ import {
     AccountTree, SchemaOutlined, Star, ExpandLess, ExpandMore,
     CheckCircle, CloseOutlined, SubdirectoryArrowRight, InfoOutlined
 } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 import { useNotify } from '../../context/NotificationContext';
+
+const interpolate = (template, values = {}) => template.replace(/\{\{(\w+)\}\}/g, (_match, key) => values[key] ?? '');
+
+const translateWithFallback = (t, key, fallback, options = {}) => {
+    const translated = t(key, { ...options, defaultValue: fallback });
+    return translated === key || (options.count != null && translated === `${key}:${options.count}`)
+        ? interpolate(fallback, options)
+        : translated;
+};
 
 // ── SchemaOptionRow ────────────────────────────────────────────────────────────
 function SchemaOptionRow({ schema, depth = 0, selected, onSelect }) {
+    const { t } = useTranslation();
     const [open, setOpen] = useState(depth === 0);
     const isSelected  = selected?.id === schema.id;
     const hasChildren = schema.children?.length > 0;
@@ -45,10 +56,10 @@ function SchemaOptionRow({ schema, depth = 0, selected, onSelect }) {
                             </Typography>
                             {schema.is_builtin && (
                                 <Chip icon={<Star sx={{ fontSize: '11px !important' }} />}
-                                      label="Built-in" size="small"
+                                      label={translateWithFallback(t, 'applySchemaDialog.option.builtIn', 'Built-in')} size="small"
                                       sx={{ height: 18, fontSize: '0.65rem', bgcolor: '#fef3c7', color: '#92400e' }} />
                             )}
-                            <Chip label={`${schema.child_count ?? schema.children?.length ?? 0} type schemas`}
+                            <Chip label={translateWithFallback(t, 'applySchemaDialog.option.typeSchemas', '{{count}} type schemas', { count: schema.child_count ?? schema.children?.length ?? 0 })}
                                   size="small" sx={{ height: 18, fontSize: '0.65rem', bgcolor: '#e0e7ff', color: '#3730a3' }} />
                         </Box>
                     }
@@ -70,6 +81,8 @@ export default function ApplySchemaDialog({
     targetNames,    // array of names for display
     currentFolderId // the folder context
 }) {
+    const { t } = useTranslation();
+    const translate = (key, fallback, options = {}) => translateWithFallback(t, key, fallback, options);
     const notify = useNotify();
     const [schemas,    setSchemas]    = useState([]);
     const [loading,    setLoading]    = useState(false);
@@ -85,7 +98,7 @@ export default function ApplySchemaDialog({
             // Show only root schemas (they contain type/subtype children for auto-resolution)
             setSchemas(data.filter(s => s.level === 'root'));
         } catch {
-            notify('Failed to load schemas.', 'error');
+            notify(translate('applySchemaDialog.notifications.loadError', 'Failed to load schemas.'), 'error');
         } finally {
             setLoading(false);
         }
@@ -116,8 +129,19 @@ export default function ApplySchemaDialog({
                 );
                 await Promise.all(promises);
                 notify(
-                    `"${selected.name}" schema is being applied to ${targetIds.length} folder${targetIds.length > 1 ? 's' : ''}` +
-                    (cascade ? ' and all sub-folders.' : '.'),
+                    translate(
+                        cascade
+                            ? 'applySchemaDialog.notifications.folderAppliedCascade'
+                            : 'applySchemaDialog.notifications.folderApplied',
+                        cascade
+                            ? (targetIds.length === 1
+                                ? '"{{schemaName}}" schema is being applied to {{count}} folder and all sub-folders.'
+                                : '"{{schemaName}}" schema is being applied to {{count}} folders and all sub-folders.')
+                            : (targetIds.length === 1
+                                ? '"{{schemaName}}" schema is being applied to {{count}} folder.'
+                                : '"{{schemaName}}" schema is being applied to {{count}} folders.'),
+                        { schemaName: selected.name, count: targetIds.length }
+                    ),
                     'success'
                 );
             } else {
@@ -131,13 +155,19 @@ export default function ApplySchemaDialog({
                 );
                 await Promise.all(promises);
                 notify(
-                    `"${selected.name}" schema applied to ${targetIds.length} asset${targetIds.length > 1 ? 's' : ''}.`,
+                    translate(
+                        'applySchemaDialog.notifications.assetApplied',
+                        targetIds.length === 1
+                            ? '"{{schemaName}}" schema applied to {{count}} asset.'
+                            : '"{{schemaName}}" schema applied to {{count}} assets.',
+                        { schemaName: selected.name, count: targetIds.length }
+                    ),
                     'success'
                 );
             }
             onClose(true); // pass true = refresh needed
         } catch {
-            notify('Failed to apply schema. Please try again.', 'error');
+            notify(translate('applySchemaDialog.notifications.applyError', 'Failed to apply schema. Please try again.'), 'error');
         } finally {
             setApplying(false);
         }
@@ -152,12 +182,12 @@ export default function ApplySchemaDialog({
                 <SchemaOutlined sx={{ color: '#5e35b1' }} />
                 <Box sx={{ flex: 1 }}>
                     <Typography fontWeight={700} sx={{ color: '#1e293b' }}>
-                        Apply Metadata Schema
+                        {translate('applySchemaDialog.title', 'Apply Metadata Schema')}
                     </Typography>
                     <Typography variant="caption" sx={{ color: '#94a3b8' }}>
                         {isFolderTarget
-                            ? `Applying to ${targetIds.length} folder${targetIds.length > 1 ? 's' : ''}`
-                            : `Applying to ${targetIds.length} asset${targetIds.length > 1 ? 's' : ''}`}
+                            ? translate('applySchemaDialog.target.folder', targetIds.length === 1 ? 'Applying to {{count}} folder' : 'Applying to {{count}} folders', { count: targetIds.length })
+                            : translate('applySchemaDialog.target.asset', targetIds.length === 1 ? 'Applying to {{count}} asset' : 'Applying to {{count}} assets', { count: targetIds.length })}
                     </Typography>
                 </Box>
                 <IconButton size="small" onClick={() => onClose(false)}>
@@ -169,13 +199,13 @@ export default function ApplySchemaDialog({
                 {/* Target summary */}
                 {targetNames?.length > 0 && (
                     <Box sx={{ mb: 2, p: 1.5, bgcolor: '#f8fafc', borderRadius: 2, border: '1px solid #e2e8f0' }}>
-                        <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600 }}>Selected items:</Typography>
+                        <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600 }}>{translate('applySchemaDialog.selectedItems', 'Selected items:')}</Typography>
                         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
                             {targetNames.slice(0, 5).map((name, i) => (
                                 <Chip key={i} label={name} size="small" sx={{ fontSize: '0.72rem' }} />
                             ))}
                             {targetNames.length > 5 && (
-                                <Chip label={`+${targetNames.length - 5} more`} size="small" sx={{ fontSize: '0.72rem', bgcolor: '#f1f5f9' }} />
+                                <Chip label={translate('applySchemaDialog.more', '+{{count}} more', { count: targetNames.length - 5 })} size="small" sx={{ fontSize: '0.72rem', bgcolor: '#f1f5f9' }} />
                             )}
                         </Box>
                     </Box>
@@ -185,30 +215,31 @@ export default function ApplySchemaDialog({
                 {isFolderTarget && (
                     <Alert severity="info" sx={{ mb: 2, fontSize: '0.8rem' }}
                            icon={<InfoOutlined fontSize="small" />}>
-                        <Typography variant="body2" fontWeight={600}>Schema Cascade</Typography>
+                        <Typography variant="body2" fontWeight={600}>{translate('applySchemaDialog.cascade.title', 'Schema Cascade')}</Typography>
                         <Typography variant="caption">
-                            When applied to a folder, the schema automatically resolves to the best match
-                            for each asset's MIME type (e.g. image/jpeg → JPEG subtype schema).
+                            {translate('applySchemaDialog.cascade.description', 'When applied to a folder, the schema automatically resolves to the best match for each asset\'s MIME type (e.g. image/jpeg → JPEG subtype schema).')}
                         </Typography>
                         <FormControlLabel
                             sx={{ mt: 0.5, display: 'flex' }}
                             control={<Switch size="small" checked={cascade} onChange={e => setCascade(e.target.checked)} />}
                             label={
                                 <Typography variant="caption" fontWeight={600}>
-                                    {cascade ? 'Apply to all sub-folders too' : 'Apply to this folder only'}
+                                    {cascade
+                                        ? translate('applySchemaDialog.cascade.allSubfolders', 'Apply to all sub-folders too')
+                                        : translate('applySchemaDialog.cascade.thisFolderOnly', 'Apply to this folder only')}
                                 </Typography>
                             }
                         />
                         {cascade && (
                             <Typography variant="caption" sx={{ color: '#475569', display: 'block', mt: 0.5 }}>
-                                You can override the schema in any sub-folder individually afterward.
+                                {translate('applySchemaDialog.cascade.overrideHint', 'You can override the schema in any sub-folder individually afterward.')}
                             </Typography>
                         )}
                     </Alert>
                 )}
 
                 <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1.5, color: '#334155' }}>
-                    Available Schemas
+                    {translate('applySchemaDialog.availableSchemas', 'Available Schemas')}
                 </Typography>
 
                 {loading ? (
@@ -216,7 +247,7 @@ export default function ApplySchemaDialog({
                         <CircularProgress size={28} sx={{ color: '#5e35b1' }} />
                     </Box>
                 ) : schemas.length === 0 ? (
-                    <Typography variant="body2" sx={{ color: '#94a3b8' }}>No schemas available.</Typography>
+                    <Typography variant="body2" sx={{ color: '#94a3b8' }}>{translate('applySchemaDialog.noSchemas', 'No schemas available.')}</Typography>
                 ) : (
                     <List disablePadding>
                         {schemas.map(s => (
@@ -228,12 +259,12 @@ export default function ApplySchemaDialog({
                 {selected && (
                     <Box sx={{ mt: 2, p: 1.5, bgcolor: '#f5f3ff', borderRadius: 2, border: '1px solid #ddd6fe' }}>
                         <Typography variant="caption" fontWeight={700} sx={{ color: '#5e35b1' }}>
-                            Selected: {selected.name}
+                            {translate('applySchemaDialog.selectionSummary.selected', 'Selected: {{name}}', { name: selected.name })}
                         </Typography>
                         {selected.tabs?.length > 0 && (
                             <Typography variant="caption" sx={{ display: 'block', color: '#7c3aed', mt: 0.25 }}>
-                                {selected.tabs.length} tab{selected.tabs.length !== 1 ? 's' : ''} •{' '}
-                                {selected.tabs.reduce((n, t) => n + (t.fields?.length ?? 0), 0)} fields
+                                {translate('applySchemaDialog.selectionSummary.tabs', selected.tabs.length === 1 ? '{{count}} tab' : '{{count}} tabs', { count: selected.tabs.length })} •{' '}
+                                {translate('applySchemaDialog.selectionSummary.fields', '{{count}} fields', { count: selected.tabs.reduce((n, t) => n + (t.fields?.length ?? 0), 0) })}
                             </Typography>
                         )}
                     </Box>
@@ -242,7 +273,7 @@ export default function ApplySchemaDialog({
 
             <DialogActions sx={{ px: 3, py: 2, borderTop: '1px solid #f1f5f9' }}>
                 <Button onClick={() => onClose(false)} sx={{ textTransform: 'none', color: '#64748b' }}>
-                    Cancel
+                    {t('common.cancel')}
                 </Button>
                 <Button
                     variant="contained"
@@ -250,10 +281,11 @@ export default function ApplySchemaDialog({
                     disabled={!selected || applying}
                     sx={{ textTransform: 'none', bgcolor: '#5e35b1', '&:hover': { bgcolor: '#4527a0' } }}
                 >
-                    {applying ? 'Applying…' : `Apply "${selected?.name ?? ''}"`}
+                    {applying
+                        ? translate('applySchemaDialog.actions.applying', 'Applying…')
+                        : translate('applySchemaDialog.actions.apply', 'Apply "{{name}}"', { name: selected?.name ?? '' })}
                 </Button>
             </DialogActions>
         </Dialog>
     );
 }
-

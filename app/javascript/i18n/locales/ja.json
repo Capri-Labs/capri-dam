@@ -708,7 +708,26 @@
       "removeFromSubfolders": "サブフォルダーも含む",
       "removeFromSubfoldersHint": "チェックすると、削除アクションがすべての子フォルダーにも伝播されます。",
       "removeTooltip": "このフォルダーからこのポリシーを削除",
-      "removeWithCascadeTooltip": "このフォルダーとすべてのサブフォルダーからこのポリシーを削除"
+      "removeWithCascadeTooltip": "このフォルダーとすべてのサブフォルダーからこのポリシーを削除",
+      "searchGroupsPlaceholder": "名前でグループを検索…",
+      "systemGroup": "システムグループ",
+      "system": "システム",
+      "read": "閲覧",
+      "readHint": "アセットを表示してフォルダーを参照",
+      "modify": "変更",
+      "modifyHint": "メタデータを編集して項目名を変更",
+      "create": "作成",
+      "createHint": "アセットをアップロードしてサブフォルダーを作成",
+      "delete": "削除",
+      "deleteHint": "アセットとフォルダーを削除",
+      "replicate": "複製",
+      "replicateHint": "アセットをCDNエッジノードへ配信",
+      "manage": "管理",
+      "manageHint": "フォルダーのアクセスポリシーを管理",
+      "thisFolder": "このフォルダー",
+      "groupFallback": "グループ {{id}}",
+      "inheritedFromFolder": "↑ {{name}}",
+      "parent": "親"
     }
   },
   "styleHub": {
@@ -1287,13 +1306,44 @@
       "invalidSaturation": "彩度は-100から100の間である必要があります",
       "invalidRotation": "回転は90で割り切れる必要があります",
       "invalidCropAspect": "無効なトリミングアスペクト比",
-      "invalidFilter": "無効なフィルター選択"
+      "invalidFilter": "無効なフィルター選択",
+      "failedToLoadFoldersNoPeriod": "フォルダーを読み込めませんでした",
+      "failedToApplyEdits": "編集を適用できませんでした。",
+      "networkErrorRetry": "ネットワークエラーが発生しました。もう一度お試しください。"
     },
     "notifications": {
       "savedAsNewVersion": "新しい不変バージョンが正常に保存されました。",
       "savedAsCopy": "{{folder}}にコピーとして保存されました。",
       "overwritten": "現在のバージョンは強制的に上書きされました。",
-      "versionSavedAndMoved": "新しいバージョンが保存され、{{folder}}に移動されました。"
+      "versionSavedAndMoved": "新しいバージョンが保存され、{{folder}}に移動されました。",
+      "applied": "適用済み: {{action}}"
+    },
+    "currentFolder": "現在のフォルダー",
+    "editorCanvasAlt": "エディターキャンバス",
+    "filters": {
+      "none": "なし",
+      "vivid": "鮮やか",
+      "west": "ウエスト",
+      "palma": "Palma",
+      "metro": "Metro",
+      "eiffel": "Eiffel",
+      "blush": "ブラッシュ",
+      "modena": "Modena",
+      "vogue": "Vogue"
+    },
+    "processing": {
+      "autoEnhance": "自動補正を適用中...",
+      "dynamicHdr": "HDRとダイナミクスを調整中...",
+      "colorPop": "被写体の色を分離中...",
+      "warmContrast": "スタジオの暖かみを適用中...",
+      "cinematicTone": "シネマティックトーンを調整中...",
+      "magicEraser": "オブジェクトを解析して削除中...",
+      "unblur": "シャープなディテールを復元中...",
+      "portraitLight": "スタジオ照明を調整中...",
+      "generativeExpand": "ローカル拡散で境界を拡張中...",
+      "superResolution": "ローカルESRGANでアップスケール中...",
+      "backgroundSwap": "セマンティックマスクを抽出中...",
+      "depthMap": "3D深度ジオメトリを計算中..."
     }
   },
   "login": {
@@ -1676,7 +1726,12 @@
       "status_label": "ステータス",
       "clear": "クリア",
       "per_page": "ページ",
-      "share_link": "共有リンクをコピー"
+      "share_link": "共有リンクをコピー",
+      "grid_size": {
+        "small": "S",
+        "medium": "M",
+        "large": "L"
+      }
     },
     "duplicates": {
       "title": "重複アセットを検索",
@@ -1690,7 +1745,28 @@
       "delete": "削除",
       "ignore_all": "すべて無視",
       "delete_all": "重複をすべて削除",
-      "folder": "フォルダー"
+      "folder": "フォルダー",
+      "legacy": {
+        "title": "重複を解決: {{title}}",
+        "currentlyInDam": "現在DAM内 ({{count}} 件見つかりました)",
+        "primaryTitle": "タイトル: {{title}}",
+        "locations": "場所:",
+        "newUpload": "新しいアップロード",
+        "pendingStatus": "ステータス: アップロード保留中",
+        "identicalHash": "同一ハッシュ",
+        "aiMergeRecommendation": "AIマージ推奨",
+        "aiMergeDescription": "バイト列は同一です。AI は既存のアセットに新しいタグを追加して、重複を防ぐことができます。",
+        "mergeMetadata": "メタデータをマージ",
+        "skipUpload": "アップロードをスキップ",
+        "uploadAnyway": "重複としてそのままアップロード",
+        "alt": {
+          "existing": "既存",
+          "new": "新規"
+        },
+        "notifications": {
+          "aiMerged": "AI が {{count}} 件の既存アセットに新しいメタデータを正常にマージしました。"
+        }
+      }
     },
     "ai": {
       "title": "AI分析",
@@ -1704,10 +1780,30 @@
       "apply_tags": "提案タグを適用",
       "save_properties": "プロパティに保存",
       "queued": "分析をキューに追加しました。後でもう一度確認してください。",
-      "error": "分析に失敗しました。もう一度お試しください。"
+      "error": "分析に失敗しました。もう一度お試しください。",
+      "asset_alt": "asset"
     },
     "subfolder_count_tip": "{{count}} サブフォルダー",
-    "asset_count_tip": "{{count}} アセット"
+    "asset_count_tip": "{{count}} アセット",
+    "explorer": {
+      "assetNotFound": "アセットが見つかりません ({{status}})",
+      "couldNotOpenAsset": "アセットを開けませんでした: {{message}}",
+      "folderLocationCopiedToClipboard": "フォルダーの場所をクリップボードにコピーしました！",
+      "shareableLinkCopiedToClipboard": "共有リンクをクリップボードにコピーしました！",
+      "failedToCopyLink": "リンクのコピーに失敗しました。",
+      "permanentDeleteWarning": "警告: これにより、これらのファイルはサーバーから完全に削除されます。この操作は元に戻せません！",
+      "deleteSelectedConfirm": "{{count}} 件の選択した項目を削除してもよろしいですか？ この操作は元に戻せません。",
+      "deletionError": "削除中にエラーが発生しました。",
+      "uploadFailed": "アップロードに失敗しました。",
+      "mediaFiles": "メディアとファイル",
+      "createNewFolder": "新しいフォルダーを作成",
+      "folderName": "フォルダー名"
+    },
+    "grid": {
+      "unknown_file": "不明なファイル",
+      "pin_to_collection": "コレクションに固定",
+      "view_details": "詳細を表示"
+    }
   },
   "inbox": {
     "title": "受信トレイ",
@@ -1770,6 +1866,503 @@
       "sentThisWeek": "今週送信",
       "failureRate": "失敗率",
       "pending": "保留中"
+    }
+  },
+  "assetCard": {
+    "unknownAsset": "不明なアセット",
+    "unknownSize": "不明なサイズ",
+    "noPreview": "プレビューなし",
+    "tooltips": {
+      "pinToCollection": "コレクションに固定",
+      "viewDetails": "詳細を表示"
+    },
+    "menu": {
+      "viewDetails": "詳細を表示",
+      "addToCollection": "コレクションに追加",
+      "moveToTrash": "ゴミ箱に移動"
+    }
+  },
+  "assetStatisticsTab": {
+    "title": "アセット統計",
+    "downloads": "ダウンロード数",
+    "cdnViews": "CDNビュー数",
+    "shares": "共有数"
+  },
+  "assetList": {
+    "headers": {
+      "name": "名前",
+      "status": "ステータス",
+      "type": "種類",
+      "size": "サイズ",
+      "version": "Ver.",
+      "modified": "更新日",
+      "created": "作成日",
+      "actions": "アクション"
+    },
+    "unknownFile": "不明なファイル",
+    "tooltips": {
+      "pinToCollection": "コレクションに固定",
+      "viewDetails": "詳細を表示"
+    },
+    "status": {
+      "draft": "下書き",
+      "published": "公開済み",
+      "approved": "承認済み",
+      "rejected": "却下",
+      "archived": "アーカイブ済み"
+    }
+  },
+  "folderGrid": {
+    "tooltips": {
+      "folderProperties": "フォルダーのプロパティ"
+    }
+  },
+  "uploadSidebar": {
+    "title": "アップロードと補完",
+    "imageTypes": {
+      "productImage": "商品画像",
+      "lifestyle": "ライフスタイル",
+      "bannerHero": "バナー / ヒーロー",
+      "headshot": "ヘッドショット",
+      "document": "ドキュメント"
+    },
+    "sections": {
+      "assignment": "割り当て",
+      "metadataSchema": "メタデータスキーマ",
+      "tags": "タグ",
+      "aiAgenticActions": "AIエージェントアクション"
+    },
+    "noCollectionsFound": "コレクションが見つかりません",
+    "placeholders": {
+      "selectExistingCollection": "既存のコレクションを選択...",
+      "selectGlobalAssetType": "グローバルアセットタイプを選択",
+      "selectGlobalSchema": "グローバルスキーマを選択",
+      "typeAndPressEnter": "入力して Enter を押してください"
+    },
+    "schemaHelp": "このスキーマは既定でステージ済みのすべてのファイルに適用されます。ファイルごとの上書きは各カードで利用できます。",
+    "filenamePatternPrefix": "商品画像の場合: サポートされるファイル名パターン:",
+    "filenamePatternExample": "例: 012993112028-en-FR01.jpg",
+    "aiTagsOnUpload": "アップロード時にAIタグを生成",
+    "buttons": {
+      "smartDescribeSelected": "選択項目をスマートに説明",
+      "autoRemoveBackgrounds": "背景を自動削除",
+      "uploadCount": "アップロード ({{selectedCount}})"
+    },
+    "progress": {
+      "uploading": "アップロード中…",
+      "count": "{{done}} / {{total}}"
+    }
+  },
+  "foldersManager": {
+    "title": "すべてのアセット"
+  },
+  "explorerTopBar": {
+    "breadcrumbLabel": "パンくずリスト",
+    "home": "ホーム",
+    "copyFolderLink": "フォルダーリンクをコピー",
+    "selectAll": "すべて選択",
+    "viewTrashBin": "ごみ箱を表示",
+    "backToActiveFiles": "アクティブなファイルに戻る",
+    "tools": "ツール",
+    "metadataSchema": "メタデータスキーマ",
+    "applySchemaToFolder": "フォルダーにスキーマを適用",
+    "folderSelected": "{{count}} 個のフォルダーを選択",
+    "foldersSelected": "{{count}} 個のフォルダーを選択",
+    "applyToCurrentFolder": "現在のフォルダーに適用",
+    "applySchemaToAssets": "アセットにスキーマを適用",
+    "assetSelected": "{{count}} 個のアセットを選択",
+    "assetsSelected": "{{count}} 個のアセットを選択",
+    "imageProcessing": "画像処理",
+    "applyImageProfile": "画像プロファイルを適用",
+    "setProcessingProfileForThisFolder": "このフォルダーの処理プロファイルを設定",
+    "applyVideoProfile": "動画プロファイルを適用",
+    "setVideoEncodingProfileForThisFolder": "このフォルダーの動画エンコードプロファイルを設定",
+    "edgeCdnOps": "Edge CDN 操作",
+    "syncMetadataToCdn": "メタデータを CDN に同期",
+    "forcePushJsonToEdgeKv": "JSON を Edge KV に強制送信",
+    "purgeEdgeCache": "Edge キャッシュを削除",
+    "invalidateDeliveryNodesGlobally": "配信ノードをグローバルに無効化",
+    "workflow": "ワークフロー",
+    "globalLocalization": "グローバルローカリゼーション",
+    "autoTranslateCopyMetadata": "コピーとメタデータを自動翻訳",
+    "brandLicenseGuard": "ブランド・ライセンス保護",
+    "validateUsageTermsSignatures": "利用条件と署名を検証",
+    "smartActions": "スマートアクション",
+    "autoTagEnrich": "自動タグ付けと拡張",
+    "extractSemanticMetadata": "セマンティックメタデータを抽出",
+    "smartOrganize": "スマート整理",
+    "groupIntoSemanticFolders": "意味的なフォルダーにグループ化",
+    "scanForDuplicates": "重複をスキャン",
+    "tdmPayloadDeduplication": "TDM ペイロード重複排除",
+    "moveToBin": "ごみ箱に移動",
+    "deleteForever": "完全に削除",
+    "applyMetadataSchema": "メタデータスキーマを適用",
+    "setSchemaForThisFolder": "このフォルダーのスキーマを設定",
+    "newFolder": "新しいフォルダー",
+    "currentFolder": "現在のフォルダー",
+    "notifications": {
+      "autoEnrichQueued": "LangChain のセマンティック拡張用にアセットをキューに追加しました。",
+      "duplicateScanQueued": "視覚的および暗号学的な重複をスキャンしています...",
+      "smartOrganizeQueued": "AI がベクトルを解析し、項目をサブフォルダーへクラスタリングしています。",
+      "forceSyncStarted": "Edge KV へのメタデータ強制同期を開始しました。",
+      "cachePurgeQueued": "選択した項目の Edge キャッシュ無効化をキューに追加しました。",
+      "localizationTriggered": "ローカリゼーションエージェントを起動しました。",
+      "brandSafetyInitialized": "ブランドセーフティチェックを開始しました。"
+    }
+  },
+  "uploadGrid": {
+    "staging_area": "ステージングエリア",
+    "selection_count": "{{total}} 件中 {{selected}} 件を選択",
+    "select_all": "すべて選択",
+    "dropzone": {
+      "drag_drop": "ここに新しいアセットをドラッグ＆ドロップ",
+      "browse": "またはクリックしてローカルファイルを参照"
+    },
+    "preview_alt": "プレビュー",
+    "file_fallback_extension": "ファイル",
+    "preview_generated_after_upload": "アップロード後にプレビューが生成されます",
+    "status": {
+      "calculating_hash": "ハッシュを計算中...",
+      "checking_dam": "DAM を確認中...",
+      "uploading": "アップロード中..."
+    },
+    "duplicate_found": "重複が見つかりました",
+    "dimensions": {
+      "unknown": "不明",
+      "not_applicable": "N/A"
+    },
+    "type_placeholder": "タイプ",
+    "run_ai_enhance": "このファイルに AI 強化を実行",
+    "select_schema": "スキーマを選択",
+    "product_id": "商品 ID",
+    "language_code": "言語コード",
+    "select_asset_type": "アセットタイプを選択 (dam:asset_type)",
+    "image_types": {
+      "product_image": "商品画像",
+      "lifestyle": "ライフスタイル",
+      "banner_hero": "バナー / ヒーロー",
+      "headshot": "ヘッドショット",
+      "document": "ドキュメント"
+    },
+    "ai_tags": {
+      "studio": "スタジオ",
+      "high_res": "高解像度",
+      "isolated": "切り抜き済み",
+      "enhanced": "強化済み",
+      "web_ready": "Web 用"
+    }
+  },
+  "uploadWorkspace": {
+    "unknown_type": "不明なタイプ",
+    "upload_not_allowed": "アップロードは許可されていません: {{names}}。許可されている MIME タイプは次のとおりです: {{mimeTypes}}。",
+    "ai_auto_tagging_complete": "AI 自動タグ付けが完了しました。",
+    "backgrounds_removed": "背景を削除しました。",
+    "ai_enhancements_applied": "AI 強化を適用しました。",
+    "upload_sequence_complete": "アップロード シーケンスが完了しました。"
+  },
+  "applySchemaDialog": {
+    "title": "メタデータスキーマを適用",
+    "selectedItems": "選択した項目:",
+    "more": "+{{count}} 件追加",
+    "availableSchemas": "利用可能なスキーマ",
+    "noSchemas": "利用可能なスキーマがありません。",
+    "option": {
+      "builtIn": "組み込み",
+      "typeSchemas": "{{count}} 件のタイプスキーマ"
+    },
+    "target": {
+      "folder_one": "{{count}} 件のフォルダに適用中",
+      "folder_other": "{{count}} 件のフォルダに適用中",
+      "asset_one": "{{count}} 件のアセットに適用中",
+      "asset_other": "{{count}} 件のアセットに適用中"
+    },
+    "cascade": {
+      "title": "スキーマのカスケード",
+      "description": "フォルダに適用すると、スキーマは各アセットの MIME タイプに最も適したものへ自動的に解決されます（例: image/jpeg → JPEG サブタイプスキーマ）。",
+      "allSubfolders": "すべてのサブフォルダにも適用",
+      "thisFolderOnly": "このフォルダのみに適用",
+      "overrideHint": "後から任意のサブフォルダで個別にスキーマを上書きできます。"
+    },
+    "selectionSummary": {
+      "selected": "選択中: {{name}}",
+      "tabs_one": "{{count}} 個のタブ",
+      "tabs_other": "{{count}} 個のタブ",
+      "fields": "{{count}} 個のフィールド"
+    },
+    "actions": {
+      "applying": "適用中…",
+      "apply": "「{{name}}」を適用"
+    },
+    "notifications": {
+      "loadError": "スキーマの読み込みに失敗しました。",
+      "folderAppliedCascade_one": "「{{schemaName}}」スキーマを {{count}} 件のフォルダとすべてのサブフォルダに適用しています。",
+      "folderAppliedCascade_other": "「{{schemaName}}」スキーマを {{count}} 件のフォルダとすべてのサブフォルダに適用しています。",
+      "folderApplied_one": "「{{schemaName}}」スキーマを {{count}} 件のフォルダに適用しています。",
+      "folderApplied_other": "「{{schemaName}}」スキーマを {{count}} 件のフォルダに適用しています。",
+      "assetApplied_one": "「{{schemaName}}」スキーマを {{count}} 件のアセットに適用しました。",
+      "assetApplied_other": "「{{schemaName}}」スキーマを {{count}} 件のアセットに適用しました。",
+      "applyError": "スキーマの適用に失敗しました。もう一度お試しください。"
+    }
+  },
+  "pinToCollectionDialog": {
+    "title": "コレクションにピン留め",
+    "searchPlaceholder": "コレクションを検索...",
+    "noResults": "検索に一致するコレクションはありません。",
+    "description": {
+      "before": "",
+      "thisAsset": "このアセット",
+      "after": "を1つ以上のコレクションに追加します。"
+    },
+    "collection": {
+      "smartType": "AIスマートルーティング",
+      "manualType": "手動キュレーション",
+      "assetsCount": "{{count}} 件のアセット"
+    },
+    "tooltips": {
+      "remove": "このコレクションから削除",
+      "add": "このコレクションに追加"
+    },
+    "footer": {
+      "pinnedTo_one": "{{count}} 件のコレクションにピン留め済み",
+      "pinnedTo_other": "{{count}} 件のコレクションにピン留め済み",
+      "notPinned": "どのコレクションにもピン留めされていません"
+    },
+    "actions": {
+      "done": "完了"
+    },
+    "notifications": {
+      "loadError": "コレクションの読み込みに失敗しました。",
+      "removed": "コレクションから削除しました。",
+      "added": "コレクションに追加しました。",
+      "operationFailed": "操作に失敗しました。",
+      "networkError": "ネットワークエラー。"
+    }
+  },
+  "assetViewer": {
+    "actions": {
+      "closeAriaLabel": "閉じる"
+    },
+    "toolbar": {
+      "pinToCollection": "コレクションに固定",
+      "shareAsset": "アセットを共有",
+      "copyImageUrl": "画像URLをコピー",
+      "editUnsupportedTooltip": "このファイル形式（例: PSD、TIFF、RAW）は編集に対応していません。代わりに元のファイルをダウンロードするか、生成されたプレビューを表示してください。",
+      "editImage": "画像を編集"
+    },
+    "download": {
+      "defaultFilename": "ダウンロード",
+      "options": "ダウンロードオプション",
+      "original": "元ファイルをダウンロード",
+      "originalDescription": "高解像度の元ファイル",
+      "secureProxy": "セキュアプロキシをダウンロード",
+      "secureProxyDescription": "除去できない透かしを含みます"
+    },
+    "preview": {
+      "notAvailableForFileType": "このファイルタイプではプレビューを利用できません。"
+    },
+    "tabs": {
+      "info": "情報",
+      "metadata": "メタデータ",
+      "versions": "バージョン",
+      "statistics": "統計",
+      "audit": "監査",
+      "workflows": "ワークフロー",
+      "aiEngine": "AIエンジン"
+    },
+    "info": {
+      "generalMetadata": "一般メタデータ",
+      "tagsCount": "{{count}} 件のタグ",
+      "aiRecognizedAndManual": "AI認識 & 手動",
+      "fileName": "ファイル名",
+      "dateAdded": "追加日",
+      "resolution": "解像度",
+      "fileSize": "ファイルサイズ",
+      "creator": "作成者",
+      "copyright": "著作権",
+      "camera": "カメラ",
+      "lens": "レンズ",
+      "colorMode": "カラーモード",
+      "embeddedMetadataFields": "埋め込みメタデータ項目",
+      "dominantPalette": "主要パレット",
+      "embeddedMetadataSection": "EXIF / IPTC / XMP データ",
+      "noExifDataExtractedYet": "EXIFデータはまだ抽出されていません。"
+    },
+    "ai": {
+      "semanticAndVisionAnalysis": "セマンティック & ビジョン分析"
+    },
+    "fallbacks": {
+      "unknownFile": "不明なファイル",
+      "unknownSize": "不明なサイズ",
+      "unknown": "不明"
+    },
+    "notifications": {
+      "assetUrlCopiedToClipboard": "アセットURLをクリップボードにコピーしました！",
+      "generatingSecureWatermarkedProxy": "セキュアな透かし付きプロキシを生成しています...",
+      "downloadStarted": "ダウンロードを開始しました",
+      "shareDialogComingSoon": "共有ダイアログは近日公開予定です"
+    }
+  },
+  "assetMetadataPanel": {
+    "field": {
+      "inheritedReadOnly": "親スキーマから継承 — 読み取り専用",
+      "selectPlaceholder": "— 選択 —",
+      "tagsHelperSuffix": " — Enterキーで追加"
+    },
+    "notifications": {
+      "metadataSavedSuccessfully": "メタデータを正常に保存しました。"
+    },
+    "errors": {
+      "saveFailed": "保存に失敗しました"
+    },
+    "noSchema": {
+      "line1": "このアセットにはまだメタデータスキーマが適用されていません。",
+      "line2Prefix": "",
+      "action": "Tools → メタデータスキーマを適用",
+      "line2Suffix": "をフォルダービューから使用して割り当ててください。"
+    },
+    "builtIn": "組み込み",
+    "schemaSummary_one": "{{count}} タブ · MIME 解決済みスキーマ",
+    "schemaSummary_other": "{{count}} タブ · MIME 解決済みスキーマ",
+    "reloadSchema": "スキーマを再読み込み",
+    "saving": "保存中…",
+    "saveChanges": "変更を保存",
+    "unsavedMetadataChanges": "未保存のメタデータ変更",
+    "noFieldsDefined": "このタブには定義された項目がありません。",
+    "saveMetadata": "メタデータを保存"
+  },
+  "assetVersionsTab": {
+    "title": "バージョンタイムライン",
+    "description": "このアセットの過去の版を表示します。バージョンを復元すると、新しい編集を削除せずにその版がアクティブファイルになります。",
+    "currentActive": "現在アクティブ",
+    "savedOn": "保存日時",
+    "by": "作成者",
+    "fileSize": "ファイルサイズ",
+    "restore": "復元",
+    "notifications": {
+      "failedToLoadVersionHistory": "バージョン履歴の読み込みに失敗しました。",
+      "assetRolledBack": "選択したバージョンへのロールバックに成功しました。",
+      "failedToRestoreVersion": "バージョンの復元に失敗しました。"
+    }
+  },
+  "assetAuditTab": {
+    "title": "操作履歴",
+    "emptyState": "監査履歴はありません。",
+    "actions": {
+      "imageEdited": "画像を編集",
+      "branchedToNewVersion": "新しいバージョンに分岐",
+      "clonedFromExisting": "既存から複製",
+      "assetIngested": "アセットを取り込み"
+    },
+    "actorId": "実行者ID:",
+    "system": "システム",
+    "modified": "変更済み",
+    "processedAt": "処理済み: {{time}}",
+    "timelineForked": "タイムライン分岐",
+    "fileSize": {
+      "zero": "0 バイト",
+      "units": {
+        "bytes": "バイト",
+        "kb": "KB",
+        "mb": "MB",
+        "gb": "GB"
+      }
+    }
+  },
+  "assetTagsEditor": {
+    "actions": {
+      "closeAriaLabel": "閉じる",
+      "saveChanges": "変更を保存",
+      "runSmartScan": "スマートスキャンを実行"
+    },
+    "title": "タグを管理: {{name}}",
+    "preview": {
+      "alt": "プレビュー",
+      "unavailable": "プレビューを利用できません。"
+    },
+    "sections": {
+      "manualTags": "手動タグ",
+      "aiRecognizedTags": "AI認識タグ"
+    },
+    "manualTags": {
+      "placeholder": "新しいタグを検索または入力...",
+      "helperText": "データベースにないカスタムタグを追加するには Enter キーを押してください。"
+    },
+    "ai": {
+      "faceRecognition": "顔認識 ({{count}})",
+      "noFacesDetected": "顔は検出されませんでした。",
+      "textInImage": "画像内テキスト ({{count}})",
+      "noTextDetected": "テキストは検出されませんでした。",
+      "semanticObjects": "意味オブジェクト ({{count}})",
+      "noObjectsDetected": "オブジェクトは検出されませんでした。"
+    },
+    "notifications": {
+      "aiVisionScanComplete": "AIビジョンスキャンが完了しました。新しいタグが見つかりました。",
+      "tagsUpdatedSuccessfully": "タグが正常に更新されました。"
+    }
+  },
+  "folderInfoPanel": {
+    "header": {
+      "subtitle": "フォルダーのプロパティ"
+    },
+    "tabs": {
+      "general": "一般",
+      "imageProfiles": "画像プロファイル",
+      "videoProfiles": "動画プロファイル",
+      "metadata": "メタデータ",
+      "access": "アクセス"
+    },
+    "general": {
+      "nameRequired": "名前は空にできません。",
+      "updated": "フォルダーを更新しました。",
+      "folderId": "フォルダーID",
+      "slug": "スラッグ",
+      "created": "作成日",
+      "details": "詳細",
+      "name": "名前",
+      "description": "説明",
+      "descriptionPlaceholder": "このフォルダーの説明を追加…",
+      "noDescription": "説明なし"
+    },
+    "imageProfiles": {
+      "removed": "画像プロファイルをフォルダーから削除しました。",
+      "removeError": "画像プロファイルを削除できませんでした。",
+      "title": "画像プロファイル",
+      "change": "変更",
+      "applyProfile": "プロファイルを適用",
+      "smartCrop": "スマートクロップ",
+      "swatch": "スウォッチ",
+      "responsiveCrop": "レスポンシブクロップ",
+      "unsharpMask": "アンシャープ: 量 {{amount}} · 半径 {{radius}}",
+      "removeTooltip": "このフォルダーからプロファイルを削除",
+      "empty": "画像プロファイルが割り当てられていません。このフォルダーにアップロードされた画像には既定の処理設定が使用されます。",
+      "emptyHint": "プロファイルは Tools → Assets → Asset Configurations → Image Profiles で設定できます。"
+    },
+    "videoProfiles": {
+      "removed": "動画プロファイルをフォルダーから削除しました。",
+      "removeError": "動画プロファイルを削除できませんでした。",
+      "title": "動画プロファイル",
+      "change": "変更",
+      "applyProfile": "プロファイルを適用",
+      "adaptiveStreaming": "アダプティブストリーミング",
+      "progressive": "プログレッシブ",
+      "presetCount_one": "{{count}} プリセット",
+      "presetCount_other": "{{count}} プリセット",
+      "removeTooltip": "このフォルダーからプロファイルを削除",
+      "empty": "動画プロファイルが割り当てられていません。このフォルダーにアップロードされた動画は自動トランスコードされません。",
+      "emptyHint": "プロファイルは Tools → Assets → Asset Configurations → Video Profiles で設定してください。"
+    },
+    "metadata": {
+      "removed": "メタデータスキーマをフォルダーから削除しました。",
+      "removeError": "スキーマを削除できませんでした。",
+      "title": "メタデータスキーマ",
+      "change": "変更",
+      "applySchema": "スキーマを適用",
+      "inherited": "継承",
+      "direct": "直接",
+      "tabLabel": "タブ {{index}}",
+      "removeTooltip": "このフォルダーからスキーマを削除",
+      "empty": "このフォルダーにはメタデータスキーマが割り当てられていません。設定されている場合、アセットは既定のスキーマを使用します。",
+      "emptyHint": "スキーマは Tools → Metadata Schemas で設定してください。"
     }
   }
 }

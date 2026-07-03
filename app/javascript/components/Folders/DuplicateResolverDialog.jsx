@@ -30,6 +30,15 @@ const actionHeaders = () => ({
   'X-CSRF-Token': document.querySelector('[name="csrf-token"]')?.content || ''
 });
 
+const interpolate = (template, values = {}) => template.replace(/\{\{(\w+)\}\}/g, (_match, key) => values[key] ?? '');
+
+const translateWithFallback = (t, key, fallback, options = {}) => {
+  const translated = t(key, { ...options, defaultValue: fallback });
+  return translated === key || (options.count != null && translated === `${key}:${options.count}`)
+    ? interpolate(fallback, options)
+    : translated;
+};
+
 const formatBytes = (size) => {
   if (!size) return '—';
   const units = ['B', 'KB', 'MB', 'GB'];
@@ -39,6 +48,8 @@ const formatBytes = (size) => {
 };
 
 function LegacyDuplicateResolverDialog({ open, onClose, fileData, onResolve }) {
+  const { t } = useTranslation();
+  const translate = (key, fallback, options = {}) => translateWithFallback(t, key, fallback, options);
   const notify = useNotify();
   const [isAiAnalyzing, setIsAiAnalyzing] = useState(false);
 
@@ -51,7 +62,7 @@ function LegacyDuplicateResolverDialog({ open, onClose, fileData, onResolve }) {
     setIsAiAnalyzing(true);
     setTimeout(() => {
       setIsAiAnalyzing(false);
-      notify(`AI successfully merged new metadata into ${existingAssets.length} existing asset(s).`, 'success');
+      notify(translate('folders.duplicates.legacy.notifications.aiMerged', 'AI successfully merged new metadata into {{count}} existing asset(s).', { count: existingAssets.length }), 'success');
       onResolve(fileData.id, 'skip');
     }, 1500);
   };
@@ -59,7 +70,7 @@ function LegacyDuplicateResolverDialog({ open, onClose, fileData, onResolve }) {
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle component="div" sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', bgcolor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-        <Typography variant="h6" fontWeight="700">Resolve Duplicate: {fileData.meta.title}</Typography>
+        <Typography variant="h6" fontWeight="700">{translate('folders.duplicates.legacy.title', 'Resolve Duplicate: {{title}}', { title: fileData.meta.title })}</Typography>
         <IconButton onClick={onClose} size="small"><Close /></IconButton>
       </DialogTitle>
 
@@ -67,16 +78,16 @@ function LegacyDuplicateResolverDialog({ open, onClose, fileData, onResolve }) {
         <Grid container spacing={4}>
           <Grid size={6}>
             <Typography variant="subtitle2" color="textSecondary" fontWeight="700" sx={{ mb: 2 }}>
-              Currently in DAM ({existingAssets.length} found)
+              {translate('folders.duplicates.legacy.currentlyInDam', 'Currently in DAM ({{count}} found)', { count: existingAssets.length })}
             </Typography>
             <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, bgcolor: '#f1f5f9' }}>
               <Box sx={{ height: 140, display: 'flex', justifyContent: 'center', mb: 2 }}>
-                <img src={primaryAsset.url} alt="existing" style={{ maxHeight: '100%', objectFit: 'contain' }} />
+                <img src={primaryAsset.url} alt={translate('folders.duplicates.legacy.alt.existing', 'existing')} style={{ maxHeight: '100%', objectFit: 'contain' }} />
               </Box>
-              <Typography variant="body2" fontWeight="700" noWrap>Title: {primaryAsset.title}</Typography>
+              <Typography variant="body2" fontWeight="700" noWrap>{translate('folders.duplicates.legacy.primaryTitle', 'Title: {{title}}', { title: primaryAsset.title })}</Typography>
 
               <Box sx={{ mt: 1.5 }}>
-                <Typography variant="caption" color="textSecondary" display="block" sx={{ mb: 0.5 }}>Locations:</Typography>
+                <Typography variant="caption" color="textSecondary" display="block" sx={{ mb: 0.5 }}>{translate('folders.duplicates.legacy.locations', 'Locations:')}</Typography>
                 {existingAssets.map((existingAsset, index) => (
                   <Chip
                     key={index}
@@ -91,16 +102,16 @@ function LegacyDuplicateResolverDialog({ open, onClose, fileData, onResolve }) {
           </Grid>
 
           <Grid size={6}>
-            <Typography variant="subtitle2" color="primary" fontWeight="700" sx={{ mb: 2 }}>Your New Upload</Typography>
+            <Typography variant="subtitle2" color="primary" fontWeight="700" sx={{ mb: 2 }}>{translate('folders.duplicates.legacy.newUpload', 'Your New Upload')}</Typography>
             <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, borderColor: '#4f46e5', bgcolor: '#eef2ff', height: '100%' }}>
               <Box sx={{ height: 140, display: 'flex', justifyContent: 'center', mb: 2 }}>
-                <img src={fileData.preview} alt="new" style={{ maxHeight: '100%', objectFit: 'contain' }} />
+                <img src={fileData.preview} alt={translate('folders.duplicates.legacy.alt.new', 'new')} style={{ maxHeight: '100%', objectFit: 'contain' }} />
               </Box>
               <Typography variant="body2" fontWeight="700" noWrap>{fileData.meta.title}</Typography>
               <Typography variant="caption" color="textSecondary" display="block">
-                Status: Pending Upload
+                {translate('folders.duplicates.legacy.pendingStatus', 'Status: Pending Upload')}
               </Typography>
-              <Chip label="Identical Hash" size="small" color="warning" sx={{ mt: 1 }} />
+              <Chip label={translate('folders.duplicates.legacy.identicalHash', 'Identical Hash')} size="small" color="warning" sx={{ mt: 1 }} />
             </Paper>
           </Grid>
         </Grid>
@@ -108,10 +119,10 @@ function LegacyDuplicateResolverDialog({ open, onClose, fileData, onResolve }) {
         <Paper sx={{ mt: 4, p: 2, bgcolor: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Box>
             <Typography variant="body2" color="#6d28d9" fontWeight="700" sx={{ display: 'flex', alignItems: 'center' }}>
-              <AutoFixHigh fontSize="small" sx={{ mr: 1 }} /> AI Merge Recommendation
+              <AutoFixHigh fontSize="small" sx={{ mr: 1 }} /> {translate('folders.duplicates.legacy.aiMergeRecommendation', 'AI Merge Recommendation')}
             </Typography>
             <Typography variant="caption" color="#5b21b6">
-              The bytes are identical. AI can append your new tags to the existing asset to prevent clutter.
+              {translate('folders.duplicates.legacy.aiMergeDescription', 'The bytes are identical. AI can append your new tags to the existing asset to prevent clutter.')}
             </Typography>
           </Box>
           <Button
@@ -121,14 +132,14 @@ function LegacyDuplicateResolverDialog({ open, onClose, fileData, onResolve }) {
             sx={{ bgcolor: '#6d28d9', '&:hover': { bgcolor: '#5b21b6' }, textTransform: 'none' }}
             startIcon={isAiAnalyzing ? <CircularProgress size={16} color="inherit" /> : <MergeType />}
           >
-            Merge Metadata
+            {translate('folders.duplicates.legacy.mergeMetadata', 'Merge Metadata')}
           </Button>
         </Paper>
       </DialogContent>
 
       <DialogActions sx={{ p: 3, bgcolor: '#f8fafc', borderTop: '1px solid #e2e8f0' }}>
-        <Button onClick={() => onResolve(fileData.id, 'skip')} color="inherit" startIcon={<SkipNext />}>Skip Upload</Button>
-        <Button onClick={() => onResolve(fileData.id, 'upload')} color="warning" variant="outlined" startIcon={<FileCopy />}>Upload as Duplicate Anyway</Button>
+        <Button onClick={() => onResolve(fileData.id, 'skip')} color="inherit" startIcon={<SkipNext />}>{translate('folders.duplicates.legacy.skipUpload', 'Skip Upload')}</Button>
+        <Button onClick={() => onResolve(fileData.id, 'upload')} color="warning" variant="outlined" startIcon={<FileCopy />}>{translate('folders.duplicates.legacy.uploadAnyway', 'Upload as Duplicate Anyway')}</Button>
       </DialogActions>
     </Dialog>
   );

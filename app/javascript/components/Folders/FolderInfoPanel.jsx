@@ -10,16 +10,25 @@ import {
     LinkOffOutlined, InfoOutlined
 } from '@mui/icons-material';
 import { useNotify } from '../../context/NotificationContext';
+import { useTranslation } from 'react-i18next';
 import { ApplyImageProfileDialog } from '../Tools/AssetConfigurations/ImageProfiles';
 import { ApplyVideoProfileDialog } from '../Tools/AssetConfigurations/VideoProfiles';
 import ApplySchemaDialog from './ApplySchemaDialog';
 import FolderAccessTab from './FolderAccessTab';
+
+const tr = (t, key, fallback, options = {}) => {
+    const translated = t(key, options);
+    if (translated === key) return fallback;
+    if (options.count != null && translated === `${key}:${options.count}`) return fallback;
+    return translated;
+};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // General Tab
 // ─────────────────────────────────────────────────────────────────────────────
 function GeneralTab({ folder, onUpdated }) {
     const notify = useNotify();
+    const { t } = useTranslation();
     const [name,        setName]        = useState(folder?.name || '');
     const [description, setDescription] = useState(folder?.description || '');
     const [saving,      setSaving]      = useState(false);
@@ -32,7 +41,7 @@ function GeneralTab({ folder, onUpdated }) {
     }, [folder?.id]);
 
     const handleSave = async () => {
-        if (!name.trim()) { notify('Name cannot be empty.', 'error'); return; }
+        if (!name.trim()) { notify(tr(t, 'folderInfoPanel.general.nameRequired', 'Name cannot be empty.'), 'error'); return; }
         setSaving(true);
         try {
             const csrfToken = document.querySelector('[name="csrf-token"]')?.content;
@@ -43,7 +52,7 @@ function GeneralTab({ folder, onUpdated }) {
             });
             const data = await res.json();
             if (!res.ok) throw new Error((data.errors || [data.error]).join(', '));
-            notify('Folder updated.', 'success');
+            notify(tr(t, 'folderInfoPanel.general.updated', 'Folder updated.'), 'success');
             setEditing(false);
             if (onUpdated) onUpdated(data);
         } catch (err) {
@@ -59,17 +68,17 @@ function GeneralTab({ folder, onUpdated }) {
             <Paper variant="outlined" sx={{ p: 2, mb: 3, borderRadius: 2, bgcolor: '#f8fafc' }}>
                 <Stack spacing={1.5}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <Typography variant="caption" fontWeight={700} sx={{ color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.5 }}>Folder ID</Typography>
+                        <Typography variant="caption" fontWeight={700} sx={{ color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.5 }}>{tr(t, 'folderInfoPanel.general.folderId', 'Folder ID')}</Typography>
                         <Typography variant="caption" sx={{ color: '#475569', fontFamily: 'monospace', fontSize: '0.72rem', wordBreak: 'break-all', textAlign: 'right', maxWidth: '60%' }}>
                             {folder?.id}
                         </Typography>
                     </Box>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <Typography variant="caption" fontWeight={700} sx={{ color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.5 }}>Slug</Typography>
+                        <Typography variant="caption" fontWeight={700} sx={{ color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.5 }}>{tr(t, 'folderInfoPanel.general.slug', 'Slug')}</Typography>
                         <Typography variant="caption" sx={{ color: '#475569', fontFamily: 'monospace' }}>{folder?.slug || '—'}</Typography>
                     </Box>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <Typography variant="caption" fontWeight={700} sx={{ color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.5 }}>Created</Typography>
+                        <Typography variant="caption" fontWeight={700} sx={{ color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.5 }}>{tr(t, 'folderInfoPanel.general.created', 'Created')}</Typography>
                         <Typography variant="caption" sx={{ color: '#475569' }}>
                             {folder?.created_at ? new Date(folder.created_at).toLocaleDateString() : '—'}
                         </Typography>
@@ -79,17 +88,17 @@ function GeneralTab({ folder, onUpdated }) {
 
             {/* Name & Description */}
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
-                <Typography variant="subtitle2" fontWeight={700} sx={{ color: '#1e293b' }}>Details</Typography>
+                <Typography variant="subtitle2" fontWeight={700} sx={{ color: '#1e293b' }}>{tr(t, 'folderInfoPanel.general.details', 'Details')}</Typography>
                 {!editing && (
                     <Button size="small" startIcon={<EditOutlined />} onClick={() => setEditing(true)}
                             sx={{ textTransform: 'none', color: '#7c3aed', fontSize: '0.75rem' }}>
-                        Edit
+                        {tr(t, 'common.edit', 'Edit')}
                     </Button>
                 )}
             </Box>
 
             <Box sx={{ mb: 2 }}>
-                <Typography variant="body2" fontWeight={700} sx={{ mb: 0.5, color: '#334155', fontSize: '0.78rem' }}>Name</Typography>
+                <Typography variant="body2" fontWeight={700} sx={{ mb: 0.5, color: '#334155', fontSize: '0.78rem' }}>{tr(t, 'folderInfoPanel.general.name', 'Name')}</Typography>
                 <TextField
                     size="small" fullWidth value={name}
                     onChange={e => setName(e.target.value)}
@@ -99,13 +108,15 @@ function GeneralTab({ folder, onUpdated }) {
             </Box>
 
             <Box sx={{ mb: 3 }}>
-                <Typography variant="body2" fontWeight={700} sx={{ mb: 0.5, color: '#334155', fontSize: '0.78rem' }}>Description</Typography>
+                <Typography variant="body2" fontWeight={700} sx={{ mb: 0.5, color: '#334155', fontSize: '0.78rem' }}>{tr(t, 'folderInfoPanel.general.description', 'Description')}</Typography>
                 <TextField
                     size="small" fullWidth multiline rows={3}
                     value={description}
                     onChange={e => setDescription(e.target.value)}
                     disabled={!editing}
-                    placeholder={editing ? 'Add a description for this folder…' : 'No description'}
+                    placeholder={editing
+                        ? tr(t, 'folderInfoPanel.general.descriptionPlaceholder', 'Add a description for this folder…')
+                        : tr(t, 'folderInfoPanel.general.noDescription', 'No description')}
                     sx={{ '& .MuiInputBase-input': { fontSize: '0.85rem' } }}
                 />
             </Box>
@@ -115,11 +126,11 @@ function GeneralTab({ folder, onUpdated }) {
                     <Button variant="contained" size="small" onClick={handleSave} disabled={saving}
                             startIcon={saving ? <CircularProgress size={14} color="inherit" /> : <SaveOutlined />}
                             sx={{ bgcolor: '#7c3aed', '&:hover': { bgcolor: '#6d28d9' }, textTransform: 'none' }}>
-                        {saving ? 'Saving…' : 'Save Changes'}
+                        {saving ? tr(t, 'common.saving', 'Saving…') : tr(t, 'common.saveChanges', 'Save Changes')}
                     </Button>
                     <Button size="small" onClick={() => { setEditing(false); setName(folder?.name || ''); setDescription(folder?.description || ''); }}
                             sx={{ textTransform: 'none', color: '#64748b' }}>
-                        Cancel
+                        {tr(t, 'common.cancel', 'Cancel')}
                     </Button>
                 </Stack>
             )}
@@ -132,6 +143,7 @@ function GeneralTab({ folder, onUpdated }) {
 // ─────────────────────────────────────────────────────────────────────────────
 function ImageProfilesTab({ folder, profiles, onRefresh }) {
     const notify = useNotify();
+    const { t } = useTranslation();
     const [applyOpen, setApplyOpen] = useState(false);
     const [removing,  setRemoving]  = useState(false);
     const profile = profiles?.image_profile;
@@ -147,10 +159,10 @@ function ImageProfilesTab({ folder, profiles, onRefresh }) {
                 body:    JSON.stringify({ folder_id: folder.id }),
             });
             if (!res.ok) throw new Error('Remove failed');
-            notify('Image profile removed from folder.', 'success');
+            notify(tr(t, 'folderInfoPanel.imageProfiles.removed', 'Image profile removed from folder.'), 'success');
             onRefresh();
         } catch {
-            notify('Failed to remove image profile.', 'error');
+            notify(tr(t, 'folderInfoPanel.imageProfiles.removeError', 'Failed to remove image profile.'), 'error');
         } finally {
             setRemoving(false);
         }
@@ -161,11 +173,13 @@ function ImageProfilesTab({ folder, profiles, onRefresh }) {
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <ImageOutlined sx={{ color: '#7c3aed', fontSize: 20 }} />
-                    <Typography variant="subtitle2" fontWeight={700} sx={{ color: '#1e293b' }}>Image Profile</Typography>
+                    <Typography variant="subtitle2" fontWeight={700} sx={{ color: '#1e293b' }}>{tr(t, 'folderInfoPanel.imageProfiles.title', 'Image Profile')}</Typography>
                 </Box>
                 <Button size="small" variant="outlined" onClick={() => setApplyOpen(true)}
                         sx={{ textTransform: 'none', borderColor: '#7c3aed', color: '#7c3aed', '&:hover': { bgcolor: '#faf5ff' }, fontSize: '0.75rem' }}>
-                    {profile ? 'Change' : 'Apply Profile'}
+                    {profile
+                        ? tr(t, 'folderInfoPanel.imageProfiles.change', 'Change')
+                        : tr(t, 'folderInfoPanel.imageProfiles.applyProfile', 'Apply Profile')}
                 </Button>
             </Box>
 
@@ -178,22 +192,27 @@ function ImageProfilesTab({ folder, profiles, onRefresh }) {
   flexWrap: "wrap"
 }}>
                                 {profile.crop_type === 'smart_crop' && (
-                                    <Chip label="Smart Crop" size="small" sx={{ fontSize: '0.65rem', height: 18, bgcolor: '#ede9fe', color: '#6d28d9' }} />
+                                    <Chip label={tr(t, 'folderInfoPanel.imageProfiles.smartCrop', 'Smart Crop')} size="small" sx={{ fontSize: '0.65rem', height: 18, bgcolor: '#ede9fe', color: '#6d28d9' }} />
                                 )}
                                 {profile.swatch_enabled && (
-                                    <Chip label="Swatch" size="small" sx={{ fontSize: '0.65rem', height: 18, bgcolor: '#fce7f3', color: '#9d174d' }} />
+                                    <Chip label={tr(t, 'folderInfoPanel.imageProfiles.swatch', 'Swatch')} size="small" sx={{ fontSize: '0.65rem', height: 18, bgcolor: '#fce7f3', color: '#9d174d' }} />
                                 )}
                                 {profile.responsive_crop_enabled && (
-                                    <Chip label="Responsive Crop" size="small" sx={{ fontSize: '0.65rem', height: 18, bgcolor: '#dbeafe', color: '#1d4ed8' }} />
+                                    <Chip label={tr(t, 'folderInfoPanel.imageProfiles.responsiveCrop', 'Responsive Crop')} size="small" sx={{ fontSize: '0.65rem', height: 18, bgcolor: '#dbeafe', color: '#1d4ed8' }} />
                                 )}
                             </Stack>
                             {profile.unsharp_mask && (
                                 <Typography variant="caption" sx={{ color: '#94a3b8', display: 'block', mt: 1 }}>
-                                    Unsharp: amount {profile.unsharp_mask.amount} · radius {profile.unsharp_mask.radius}
+                                    {tr(
+                                        t,
+                                        'folderInfoPanel.imageProfiles.unsharpMask',
+                                        `Unsharp: amount ${profile.unsharp_mask.amount} · radius ${profile.unsharp_mask.radius}`,
+                                        { amount: profile.unsharp_mask.amount, radius: profile.unsharp_mask.radius },
+                                    )}
                                 </Typography>
                             )}
                         </Box>
-                        <Tooltip title="Remove profile from this folder">
+                        <Tooltip title={tr(t, 'folderInfoPanel.imageProfiles.removeTooltip', 'Remove profile from this folder')}>
                             <IconButton size="small" onClick={handleRemove} disabled={removing}
                                         sx={{ color: '#94a3b8', '&:hover': { color: '#ef4444' } }}>
                                 <LinkOffOutlined fontSize="small" />
@@ -204,10 +223,10 @@ function ImageProfilesTab({ folder, profiles, onRefresh }) {
             ) : (
                 <Alert severity="info" icon={<InfoOutlined />}
                        sx={{ bgcolor: '#f0f9ff', border: '1px solid #bae6fd', fontSize: '0.8rem' }}>
-                    No image profile assigned. Images uploaded to this folder will use default processing settings.
+                    {tr(t, 'folderInfoPanel.imageProfiles.empty', 'No image profile assigned. Images uploaded to this folder will use default processing settings.')}
                     <br />
                     <Typography variant="caption" sx={{ color: '#475569', mt: 0.5, display: 'block' }}>
-                        You can configure profiles under Tools → Assets → Asset Configurations → Image Profiles.
+                        {tr(t, 'folderInfoPanel.imageProfiles.emptyHint', 'You can configure profiles under Tools → Assets → Asset Configurations → Image Profiles.')}
                     </Typography>
                 </Alert>
             )}
@@ -227,6 +246,7 @@ function ImageProfilesTab({ folder, profiles, onRefresh }) {
 // ─────────────────────────────────────────────────────────────────────────────
 function VideoProfilesTab({ folder, profiles, onRefresh }) {
     const notify = useNotify();
+    const { t } = useTranslation();
     const [applyOpen, setApplyOpen] = useState(false);
     const [removing,  setRemoving]  = useState(false);
     const profile = profiles?.video_profile;
@@ -242,10 +262,10 @@ function VideoProfilesTab({ folder, profiles, onRefresh }) {
                 body:    JSON.stringify({ folder_id: folder.id }),
             });
             if (!res.ok) throw new Error('Remove failed');
-            notify('Video profile removed from folder.', 'success');
+            notify(tr(t, 'folderInfoPanel.videoProfiles.removed', 'Video profile removed from folder.'), 'success');
             onRefresh();
         } catch {
-            notify('Failed to remove video profile.', 'error');
+            notify(tr(t, 'folderInfoPanel.videoProfiles.removeError', 'Failed to remove video profile.'), 'error');
         } finally {
             setRemoving(false);
         }
@@ -256,11 +276,13 @@ function VideoProfilesTab({ folder, profiles, onRefresh }) {
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <VideoFileOutlined sx={{ color: '#7c3aed', fontSize: 20 }} />
-                    <Typography variant="subtitle2" fontWeight={700} sx={{ color: '#1e293b' }}>Video Profile</Typography>
+                    <Typography variant="subtitle2" fontWeight={700} sx={{ color: '#1e293b' }}>{tr(t, 'folderInfoPanel.videoProfiles.title', 'Video Profile')}</Typography>
                 </Box>
                 <Button size="small" variant="outlined" onClick={() => setApplyOpen(true)}
                         sx={{ textTransform: 'none', borderColor: '#7c3aed', color: '#7c3aed', '&:hover': { bgcolor: '#faf5ff' }, fontSize: '0.75rem' }}>
-                    {profile ? 'Change' : 'Apply Profile'}
+                    {profile
+                        ? tr(t, 'folderInfoPanel.videoProfiles.change', 'Change')
+                        : tr(t, 'folderInfoPanel.videoProfiles.applyProfile', 'Apply Profile')}
                 </Button>
             </Box>
 
@@ -274,14 +296,19 @@ function VideoProfilesTab({ folder, profiles, onRefresh }) {
                             )}
                             <Stack direction="row" spacing={0.75}>
                                 {profile.encode_for_adaptive_streaming
-                                    ? <Chip label="Adaptive Streaming" size="small" sx={{ fontSize: '0.65rem', height: 18, bgcolor: '#ede9fe', color: '#6d28d9' }} />
-                                    : <Chip label="Progressive" size="small" sx={{ fontSize: '0.65rem', height: 18, bgcolor: '#f1f5f9', color: '#64748b' }} />
+                                    ? <Chip label={tr(t, 'folderInfoPanel.videoProfiles.adaptiveStreaming', 'Adaptive Streaming')} size="small" sx={{ fontSize: '0.65rem', height: 18, bgcolor: '#ede9fe', color: '#6d28d9' }} />
+                                    : <Chip label={tr(t, 'folderInfoPanel.videoProfiles.progressive', 'Progressive')} size="small" sx={{ fontSize: '0.65rem', height: 18, bgcolor: '#f1f5f9', color: '#64748b' }} />
                                 }
-                                <Chip label={`${profile.preset_count ?? 0} preset${profile.preset_count !== 1 ? 's' : ''}`} size="small"
+                                <Chip label={tr(
+                                    t,
+                                    'folderInfoPanel.videoProfiles.presetCount',
+                                    `${profile.preset_count ?? 0} preset${profile.preset_count !== 1 ? 's' : ''}`,
+                                    { count: profile.preset_count ?? 0 },
+                                )} size="small"
                                       sx={{ fontSize: '0.65rem', height: 18, bgcolor: '#dbeafe', color: '#1d4ed8' }} />
                             </Stack>
                         </Box>
-                        <Tooltip title="Remove profile from this folder">
+                        <Tooltip title={tr(t, 'folderInfoPanel.videoProfiles.removeTooltip', 'Remove profile from this folder')}>
                             <IconButton size="small" onClick={handleRemove} disabled={removing}
                                         sx={{ color: '#94a3b8', '&:hover': { color: '#ef4444' } }}>
                                 <LinkOffOutlined fontSize="small" />
@@ -292,10 +319,10 @@ function VideoProfilesTab({ folder, profiles, onRefresh }) {
             ) : (
                 <Alert severity="info" icon={<InfoOutlined />}
                        sx={{ bgcolor: '#f0f9ff', border: '1px solid #bae6fd', fontSize: '0.8rem' }}>
-                    No video profile assigned. Videos uploaded to this folder will not be auto-transcoded.
+                    {tr(t, 'folderInfoPanel.videoProfiles.empty', 'No video profile assigned. Videos uploaded to this folder will not be auto-transcoded.')}
                     <br />
                     <Typography variant="caption" sx={{ color: '#475569', mt: 0.5, display: 'block' }}>
-                        Configure profiles under Tools → Assets → Asset Configurations → Video Profiles.
+                        {tr(t, 'folderInfoPanel.videoProfiles.emptyHint', 'Configure profiles under Tools → Assets → Asset Configurations → Video Profiles.')}
                     </Typography>
                 </Alert>
             )}
@@ -315,6 +342,7 @@ function VideoProfilesTab({ folder, profiles, onRefresh }) {
 // ─────────────────────────────────────────────────────────────────────────────
 function MetadataTab({ folder, profiles, onRefresh }) {
     const notify = useNotify();
+    const { t } = useTranslation();
     const [schemaOpen, setSchemaOpen] = useState(false);
     const [removing,   setRemoving]   = useState(false);
     const schema = profiles?.metadata_schema;
@@ -328,10 +356,10 @@ function MetadataTab({ folder, profiles, onRefresh }) {
                 headers: { 'X-CSRF-Token': csrfToken },
             });
             if (!res.ok) throw new Error('Remove failed');
-            notify('Metadata schema removed from folder.', 'success');
+            notify(tr(t, 'folderInfoPanel.metadata.removed', 'Metadata schema removed from folder.'), 'success');
             onRefresh();
         } catch {
-            notify('Failed to remove schema.', 'error');
+            notify(tr(t, 'folderInfoPanel.metadata.removeError', 'Failed to remove schema.'), 'error');
         } finally {
             setRemoving(false);
         }
@@ -342,11 +370,13 @@ function MetadataTab({ folder, profiles, onRefresh }) {
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <SchemaOutlined sx={{ color: '#7c3aed', fontSize: 20 }} />
-                    <Typography variant="subtitle2" fontWeight={700} sx={{ color: '#1e293b' }}>Metadata Schema</Typography>
+                    <Typography variant="subtitle2" fontWeight={700} sx={{ color: '#1e293b' }}>{tr(t, 'folderInfoPanel.metadata.title', 'Metadata Schema')}</Typography>
                 </Box>
                 <Button size="small" variant="outlined" onClick={() => setSchemaOpen(true)}
                         sx={{ textTransform: 'none', borderColor: '#7c3aed', color: '#7c3aed', '&:hover': { bgcolor: '#faf5ff' }, fontSize: '0.75rem' }}>
-                    {schema ? 'Change' : 'Apply Schema'}
+                    {schema
+                        ? tr(t, 'folderInfoPanel.metadata.change', 'Change')
+                        : tr(t, 'folderInfoPanel.metadata.applySchema', 'Apply Schema')}
                 </Button>
             </Box>
 
@@ -357,7 +387,9 @@ function MetadataTab({ folder, profiles, onRefresh }) {
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                                 <Typography variant="body1" fontWeight={700} sx={{ color: '#1e293b' }}>{schema.name}</Typography>
                                 <Chip
-                                    label={schema.source === 'inherited' ? 'Inherited' : 'Direct'}
+                                    label={schema.source === 'inherited'
+                                        ? tr(t, 'folderInfoPanel.metadata.inherited', 'Inherited')
+                                        : tr(t, 'folderInfoPanel.metadata.direct', 'Direct')}
                                     size="small"
                                     sx={{
                                         fontSize: '0.62rem', height: 16,
@@ -375,14 +407,14 @@ function MetadataTab({ folder, profiles, onRefresh }) {
   flexWrap: "wrap"
 }}>
                                     {schema.tabs.map((tab, i) => (
-                                        <Chip key={i} label={tab.label || tab.name || `Tab ${i+1}`} size="small"
+                                        <Chip key={i} label={tab.label || tab.name || tr(t, 'folderInfoPanel.metadata.tabLabel', `Tab ${i + 1}`, { index: i + 1 })} size="small"
                                               sx={{ fontSize: '0.62rem', height: 16, bgcolor: '#e0e7ff', color: '#3730a3' }} />
                                     ))}
                                 </Stack>
                             )}
                         </Box>
                         {schema.source !== 'inherited' && (
-                            <Tooltip title="Remove schema from this folder">
+                            <Tooltip title={tr(t, 'folderInfoPanel.metadata.removeTooltip', 'Remove schema from this folder')}>
                                 <IconButton size="small" onClick={handleRemove} disabled={removing}
                                             sx={{ color: '#94a3b8', '&:hover': { color: '#ef4444' } }}>
                                     <LinkOffOutlined fontSize="small" />
@@ -394,10 +426,10 @@ function MetadataTab({ folder, profiles, onRefresh }) {
             ) : (
                 <Alert severity="info" icon={<InfoOutlined />}
                        sx={{ bgcolor: '#f0f9ff', border: '1px solid #bae6fd', fontSize: '0.8rem' }}>
-                    No metadata schema assigned to this folder. Assets will use the default schema if one is configured.
+                    {tr(t, 'folderInfoPanel.metadata.empty', 'No metadata schema assigned to this folder. Assets will use the default schema if one is configured.')}
                     <br />
                     <Typography variant="caption" sx={{ color: '#475569', mt: 0.5, display: 'block' }}>
-                        Configure schemas under Tools → Metadata Schemas.
+                        {tr(t, 'folderInfoPanel.metadata.emptyHint', 'Configure schemas under Tools → Metadata Schemas.')}
                     </Typography>
                 </Alert>
             )}
@@ -418,6 +450,7 @@ function MetadataTab({ folder, profiles, onRefresh }) {
 // FolderInfoPanel — main export
 // ─────────────────────────────────────────────────────────────────────────────
 export default function FolderInfoPanel({ folder, open, onClose, onFolderUpdated }) {
+    const { t } = useTranslation();
     const [tab,      setTab]      = useState(0);
     const [profiles, setProfiles] = useState(null);
     const [loading,  setLoading]  = useState(false);
@@ -445,11 +478,11 @@ export default function FolderInfoPanel({ folder, open, onClose, onFolderUpdated
     };
 
     const TABS = [
-        { label: 'General',        icon: <FolderOutlined sx={{ fontSize: 16 }} /> },
-        { label: 'Image Profiles', icon: <ImageOutlined sx={{ fontSize: 16 }} /> },
-        { label: 'Video Profiles', icon: <VideoFileOutlined sx={{ fontSize: 16 }} /> },
-        { label: 'Metadata',       icon: <SchemaOutlined sx={{ fontSize: 16 }} /> },
-        { label: 'Access',         icon: <SecurityOutlined sx={{ fontSize: 16 }} /> },
+        { label: tr(t, 'folderInfoPanel.tabs.general', 'General'), icon: <FolderOutlined sx={{ fontSize: 16 }} /> },
+        { label: tr(t, 'folderInfoPanel.tabs.imageProfiles', 'Image Profiles'), icon: <ImageOutlined sx={{ fontSize: 16 }} /> },
+        { label: tr(t, 'folderInfoPanel.tabs.videoProfiles', 'Video Profiles'), icon: <VideoFileOutlined sx={{ fontSize: 16 }} /> },
+        { label: tr(t, 'folderInfoPanel.tabs.metadata', 'Metadata'), icon: <SchemaOutlined sx={{ fontSize: 16 }} /> },
+        { label: tr(t, 'folderInfoPanel.tabs.access', 'Access'), icon: <SecurityOutlined sx={{ fontSize: 16 }} /> },
     ];
 
     return (
@@ -476,7 +509,7 @@ export default function FolderInfoPanel({ folder, open, onClose, onFolderUpdated
                                 noWrap>
                         {folder?.name}
                     </Typography>
-                    <Typography variant="caption" sx={{ color: '#94a3b8' }}>Folder properties</Typography>
+                    <Typography variant="caption" sx={{ color: '#94a3b8' }}>{tr(t, 'folderInfoPanel.header.subtitle', 'Folder properties')}</Typography>
                 </Box>
                 <IconButton size="small" onClick={onClose}>
                     <CloseOutlined fontSize="small" />
@@ -524,4 +557,3 @@ export default function FolderInfoPanel({ folder, open, onClose, onFolderUpdated
         </Drawer>
     );
 }
-

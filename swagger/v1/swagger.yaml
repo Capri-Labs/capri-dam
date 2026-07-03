@@ -2929,9 +2929,18 @@ paths:
                           format: date-time
                         properties:
                           type: object
+                        content_type:
+                          type: string
+                          nullable: true
+                          example: image/jpeg
                         url:
                           type: string
                           nullable: true
+                        editable:
+                          type: boolean
+                          description: Whether the Image Editor can load this asset
+                            directly (false for formats like PSD/TIFF/RAW that browsers
+                            cannot render natively)
                   breadcrumbs:
                     type: array
                     items:
@@ -4613,6 +4622,16 @@ paths:
                         url:
                           type: string
                           nullable: true
+                        preview_url:
+                          type: string
+                          nullable: true
+                          description: Web-renderable preview URL (falls back to the
+                            asset URL)
+                        editable:
+                          type: boolean
+                          description: Whether the Image Editor can load this asset
+                            directly (false for formats like PSD/TIFF/RAW that browsers
+                            cannot render natively — see AssetProcessorWorker::WEB_RENDERABLE_MIME_TYPES)
                   breadcrumbs:
                     type: array
                     items:

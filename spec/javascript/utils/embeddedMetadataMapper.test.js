@@ -33,10 +33,13 @@ describe('mapEmbeddedMetadata', () => {
     expect(mapped['dc:creator']).toBe('Jane Photographer');
     expect(mapped['dc:rights']).toBe('© Deutsche Küche');
     expect(mapped['dc:date']).toBe('2024-01-01');
-    expect(mapped['Iptc4xmpCore:Headline']).toBe('Giant Brioche Buns');
-    expect(mapped['Iptc4xmpCore:CountryName']).toBe('Germany');
-    expect(mapped['Iptc4xmpCore:SubjectCode']).toEqual(['bread', 'brioche']);
-    expect(mapped['exif:Make']).toBe('Canon');
+    expect(mapped['dc:subject']).toEqual(['bread', 'brioche']);
+    // IPTC Photo Metadata Standard fields live in the `photoshop:` XMP
+    // namespace, not `Iptc4xmpCore:` (see embeddedMetadataMapper.js header).
+    expect(mapped['photoshop:Headline']).toBe('Giant Brioche Buns');
+    expect(mapped['photoshop:Country']).toBe('Germany');
+    // Make/Model are baseline TIFF tags per the Adobe XMP EXIF spec.
+    expect(mapped['tiff:Make']).toBe('Canon');
     expect(mapped['exif:ApertureValue']).toBe(2.8);
     expect(mapped['exif:ISOSpeedRatings']).toBe(100);
     expect(mapped['exif:ShutterSpeedValue']).toBe('1/200');
@@ -44,7 +47,7 @@ describe('mapEmbeddedMetadata', () => {
 
   it('omits properties without an embedded source', () => {
     const mapped = mapEmbeddedMetadata(properties);
-    expect(mapped['Iptc4xmpCore:Source']).toBeUndefined();
+    expect(mapped['photoshop:Source']).toBeUndefined();
   });
 
   it('falls back to later candidates when earlier ones are blank', () => {
@@ -75,8 +78,8 @@ describe('mapEmbeddedMetadata', () => {
       date_taken: '2024-05-01',
     };
     const mapped = mapEmbeddedMetadata(props);
-    expect(mapped['exif:Make']).toBe('NIKON CORPORATION');
-    expect(mapped['exif:Model']).toBe('NIKON D850');
+    expect(mapped['tiff:Make']).toBe('NIKON CORPORATION');
+    expect(mapped['tiff:Model']).toBe('NIKON D850');
     expect(mapped['dc:date']).toBe('2024-05-01');
   });
 
@@ -85,7 +88,7 @@ describe('mapEmbeddedMetadata', () => {
       camera_make: 'NIKON CORPORATION',
       embedded_metadata: { EXIF: { Make: 'Canon' } },
     };
-    expect(mapEmbeddedMetadata(props)['exif:Make']).toBe('Canon');
+    expect(mapEmbeddedMetadata(props)['tiff:Make']).toBe('Canon');
   });
 
   describe('design/document fallbacks', () => {
@@ -99,9 +102,9 @@ describe('mapEmbeddedMetadata', () => {
       expect(mapEmbeddedMetadata(props)['dc:creator']).toBe('Jane Doe');
     });
 
-    it('derives dc:rights from an embedded ICC profile copyright', () => {
+    it('does not derive dc:rights from an embedded ICC profile copyright (misleading — that is the color profile license, not the asset rights)', () => {
       const props = { embedded_metadata: { ICC_Profile: { ProfileCopyright: 'Copyright 2007-2009 Adobe' } } };
-      expect(mapEmbeddedMetadata(props)['dc:rights']).toBe('Copyright 2007-2009 Adobe');
+      expect(mapEmbeddedMetadata(props)['dc:rights']).toBeUndefined();
     });
 
     it('maps PDF document metadata onto Dublin Core fields', () => {
@@ -117,4 +120,89 @@ describe('mapEmbeddedMetadata', () => {
       expect(mapEmbeddedMetadata(props)['dc:date']).toBe('2025-03-27');
     });
   });
+
+  describe('XMP Basic / Media Management fields', () => {
+    it('maps xmp: and xmpMM: properties for the XMP tab', () => {
+      const props = {
+        embedded_metadata: {
+          XMP: {
+            CreatorTool: 'Adobe Photoshop CC 2017 (Macintosh)',
+            CreateDate: '2025:03:12 11:40:48+08:00',
+            ModifyDate: '2025:03:27 18:24:11+08:00',
+            MetadataDate: '2025:03:27 18:24:11+08:00',
+            Label: 'Approved',
+            Rating: 5,
+            DocumentID: 'adobe:docid:photoshop:e9825f6e',
+            InstanceID: 'xmp.iid:e48764ce',
+            OriginalDocumentID: '309AE9520993CC7501F0988836281225',
+          },
+        },
+      };
+      const mapped = mapEmbeddedMetadata(props);
+      expect(mapped['xmp:CreatorTool']).toBe('Adobe Photoshop CC 2017 (Macintosh)');
+      expect(mapped['xmp:CreateDate']).toBe('2025-03-12');
+      expect(mapped['xmp:ModifyDate']).toBe('2025-03-27');
+      expect(mapped['xmp:MetadataDate']).toBe('2025-03-27');
+      expect(mapped['xmp:Label']).toBe('Approved');
+      expect(mapped['xmp:Rating']).toBe(5);
+      expect(mapped['xmpMM:DocumentID']).toBe('adobe:docid:photoshop:e9825f6e');
+      expect(mapped['xmpMM:InstanceID']).toBe('xmp.iid:e48764ce');
+      expect(mapped['xmpMM:OriginalDocumentID']).toBe('309AE9520993CC7501F0988836281225');
+    });
+  });
+
+  describe('Photoshop technical/production fields', () => {
+    it('maps photoshop: properties for the Photoshop tab', () => {
+      const props = {
+        embedded_metadata: {
+          Photoshop: {
+            ColorMode: 'CMYK',
+            BitDepth: 8,
+            LayerCount: 2,
+            LayerNames: ['shadow', 'Product'],
+            Urgency: '5',
+            Category: 'N',
+            SupplementalCategories: ['Retail'],
+            Instructions: 'Do not crop',
+            TransmissionReference: 'REF-123',
+          },
+        },
+      };
+      const mapped = mapEmbeddedMetadata(props);
+      expect(mapped['photoshop:ColorMode']).toBe('CMYK');
+      expect(mapped['photoshop:BitDepth']).toBe(8);
+      expect(mapped['photoshop:LayerCount']).toBe(2);
+      expect(mapped['photoshop:LayerNames']).toEqual(['shadow', 'Product']);
+      expect(mapped['photoshop:Urgency']).toBe('5');
+      expect(mapped['photoshop:Category']).toBe('N');
+      expect(mapped['photoshop:SupplementalCategories']).toEqual(['Retail']);
+      expect(mapped['photoshop:Instructions']).toBe('Do not crop');
+      expect(mapped['photoshop:TransmissionReference']).toBe('REF-123');
+    });
+  });
+
+  describe('ICC color profile fields', () => {
+    it('maps icc: properties for the ICC Profile tab', () => {
+      const props = {
+        embedded_metadata: {
+          ICC_Profile: {
+            ProfileDescription: 'Coated GRACoL 2006 (ISO 12647-2:2004)',
+            ColorSpaceData: 'CMYK',
+            ProfileClass: 'Output Device Profile',
+            DeviceManufacturer: 'Adobe Systems Inc.',
+            RenderingIntent: 'Media-Relative Colorimetric',
+            ProfileVersion: '2.1.0',
+          },
+        },
+      };
+      const mapped = mapEmbeddedMetadata(props);
+      expect(mapped['icc:ProfileDescription']).toBe('Coated GRACoL 2006 (ISO 12647-2:2004)');
+      expect(mapped['icc:ColorSpaceData']).toBe('CMYK');
+      expect(mapped['icc:ProfileClass']).toBe('Output Device Profile');
+      expect(mapped['icc:DeviceManufacturer']).toBe('Adobe Systems Inc.');
+      expect(mapped['icc:RenderingIntent']).toBe('Media-Relative Colorimetric');
+      expect(mapped['icc:ProfileVersion']).toBe('2.1.0');
+    });
+  });
 });
+

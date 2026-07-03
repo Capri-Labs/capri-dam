@@ -4,10 +4,21 @@ import {
     Avatar, Chip, Divider, Button
 } from '@mui/material';
 import { Restore, FolderZip } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 import { useNotify } from '../../context/NotificationContext';
+
+const interpolate = (template, values = {}) => template.replace(/\{\{(\w+)\}\}/g, (_, key) => values[key] ?? '');
 
 //  Removed isVisible from props
 export default function AssetVersionsTab({ asset, onAssetUpdated }) {
+    const { t } = useTranslation();
+    const translate = (key, defaultValue, options = {}) => {
+        const result = t(key, options);
+        if (result === key || (options.count != null && result === `${key}:${options.count}`)) {
+            return interpolate(defaultValue, options);
+        }
+        return result;
+    };
     const notify = useNotify();
     const [versions, setVersions] = useState([]);
     const [isLoadingVersions, setIsLoadingVersions] = useState(false);
@@ -30,7 +41,7 @@ export default function AssetVersionsTab({ asset, onAssetUpdated }) {
                 throw new Error('Failed to fetch');
             }
         } catch (error) {
-            notify("Failed to load version history.", "error");
+            notify(translate('assetVersionsTab.notifications.failedToLoadVersionHistory', 'Failed to load version history.'), "error");
         } finally {
             setIsLoadingVersions(false);
         }
@@ -45,14 +56,14 @@ export default function AssetVersionsTab({ asset, onAssetUpdated }) {
             });
 
             if (res.ok) {
-                notify("Asset successfully rolled back to selected version.", "success");
+                notify(translate('assetVersionsTab.notifications.assetRolledBack', 'Asset successfully rolled back to selected version.'), "success");
                 fetchVersions();
                 if (onAssetUpdated) onAssetUpdated();
             } else {
                 throw new Error('Restore failed');
             }
         } catch (error) {
-            notify("Failed to restore version.", "error");
+            notify(translate('assetVersionsTab.notifications.failedToRestoreVersion', 'Failed to restore version.'), "error");
         }
     };
 
@@ -60,9 +71,9 @@ export default function AssetVersionsTab({ asset, onAssetUpdated }) {
 
     return (
         <Box sx={{ p: 4 }}>
-            <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>Version Timeline</Typography>
+            <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>{translate('assetVersionsTab.title', 'Version Timeline')}</Typography>
             <Typography variant="body2" color="textSecondary" sx={{ mb: 4 }}>
-                View previous iterations of this asset. Restoring a version makes it the active file without deleting newer edits.
+                {translate('assetVersionsTab.description', 'View previous iterations of this asset. Restoring a version makes it the active file without deleting newer edits.')}
             </Typography>
 
             {isLoadingVersions ? (
@@ -86,16 +97,16 @@ export default function AssetVersionsTab({ asset, onAssetUpdated }) {
                                                 {version.action_type}
                                             </Typography>
                                             {version.is_active && (
-                                                <Chip label="Current Active" size="small" sx={{ bgcolor: '#eef2ff', color: '#4f46e5', fontWeight: 700, height: 20 }} />
+                                                <Chip label={translate('assetVersionsTab.currentActive', 'Current Active')} size="small" sx={{ bgcolor: '#eef2ff', color: '#4f46e5', fontWeight: 700, height: 20 }} />
                                             )}
                                         </Box>
 
                                         <Typography variant="body2" color="textSecondary" sx={{ mb: 0.5 }}>
-                                            Saved on {version.created_at} by <strong>{version.created_by}</strong>
+                                            {translate('assetVersionsTab.savedOn', 'Saved on')} {version.created_at} {translate('assetVersionsTab.by', 'by')} <strong>{version.created_by}</strong>
                                         </Typography>
 
                                         <Typography variant="caption" sx={{ color: '#64748b', display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                            <FolderZip fontSize="small" sx={{ fontSize: 14 }} /> File Size: {version.size}
+                                            <FolderZip fontSize="small" sx={{ fontSize: 14 }} /> {translate('assetVersionsTab.fileSize', 'File Size')}: {version.size}
                                         </Typography>
                                     </Box>
                                 </Box>
@@ -107,7 +118,7 @@ export default function AssetVersionsTab({ asset, onAssetUpdated }) {
                                         onClick={() => handleRestoreVersion(version.id)}
                                         sx={{ color: '#4f46e5', borderColor: '#c7d2fe', '&:hover': { bgcolor: '#eef2ff' }, textTransform: 'none' }}
                                     >
-                                        Restore
+                                        {translate('assetVersionsTab.restore', 'Restore')}
                                     </Button>
                                 )}
                             </ListItem>

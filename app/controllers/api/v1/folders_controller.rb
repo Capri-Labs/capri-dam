@@ -350,6 +350,7 @@ module Api
 
           url: asset_url_for(asset),
           preview_url: asset_preview_url_for(asset),
+          editable: AssetProcessorWorker::WEB_RENDERABLE_MIME_TYPES.include?(merged_props["content_type"].to_s),
         }
       end
 

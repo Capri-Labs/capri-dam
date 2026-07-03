@@ -644,7 +644,26 @@
       "removeFromSubfolders": "Also subfolders",
       "removeFromSubfoldersHint": "When checked, the remove action will also cascade to all child folders.",
       "removeTooltip": "Remove this policy from this folder",
-      "removeWithCascadeTooltip": "Remove this policy from this folder and all its subfolders"
+      "removeWithCascadeTooltip": "Remove this policy from this folder and all its subfolders",
+      "searchGroupsPlaceholder": "Search groups by name…",
+      "systemGroup": "System group",
+      "system": "System",
+      "read": "Read",
+      "readHint": "View assets & browse folder",
+      "modify": "Modify",
+      "modifyHint": "Edit metadata & rename items",
+      "create": "Create",
+      "createHint": "Upload assets & create sub-folders",
+      "delete": "Delete",
+      "deleteHint": "Delete assets & folders",
+      "replicate": "Replicate",
+      "replicateHint": "Push assets to CDN edge nodes",
+      "manage": "Manage",
+      "manageHint": "Manage folder access policies",
+      "thisFolder": "this folder",
+      "groupFallback": "Group {{id}}",
+      "inheritedFromFolder": "↑ {{name}}",
+      "parent": "parent"
     }
   },
   "provenance": {
@@ -1287,13 +1306,44 @@
       "invalidSaturation": "Saturation must be between -100 and 100",
       "invalidRotation": "Rotation must be divisible by 90",
       "invalidCropAspect": "Invalid crop aspect ratio",
-      "invalidFilter": "Invalid filter selection"
+      "invalidFilter": "Invalid filter selection",
+      "failedToLoadFoldersNoPeriod": "Failed to load folders",
+      "failedToApplyEdits": "Failed to apply edits.",
+      "networkErrorRetry": "Network error occurred. Please try again."
     },
     "notifications": {
       "savedAsNewVersion": "New immutable version saved successfully.",
       "savedAsCopy": "Saved as copy to {{folder}}.",
       "overwritten": "Current version forcefully overwritten.",
-      "versionSavedAndMoved": "New version saved and moved to {{folder}}."
+      "versionSavedAndMoved": "New version saved and moved to {{folder}}.",
+      "applied": "Applied: {{action}}"
+    },
+    "currentFolder": "current folder",
+    "editorCanvasAlt": "Editor Canvas",
+    "filters": {
+      "none": "None",
+      "vivid": "Vivid",
+      "west": "West",
+      "palma": "Palma",
+      "metro": "Metro",
+      "eiffel": "Eiffel",
+      "blush": "Blush",
+      "modena": "Modena",
+      "vogue": "Vogue"
+    },
+    "processing": {
+      "autoEnhance": "Applying Auto-Enhance...",
+      "dynamicHdr": "Balancing HDR & Dynamics...",
+      "colorPop": "Isolating subject color...",
+      "warmContrast": "Applying studio warmth...",
+      "cinematicTone": "Grading cinematic tones...",
+      "magicEraser": "Analyzing & removing objects...",
+      "unblur": "Restoring sharp details...",
+      "portraitLight": "Adjusting studio lighting...",
+      "generativeExpand": "Outpainting borders via local diffusion...",
+      "superResolution": "Upscaling via local ESRGAN...",
+      "backgroundSwap": "Extracting semantic masks...",
+      "depthMap": "Calculating 3D depth geometry..."
     }
   },
   "login": {
@@ -1676,7 +1726,12 @@
       "status_label": "Status",
       "clear": "Clear",
       "per_page": "page",
-      "share_link": "Copy shareable link"
+      "share_link": "Copy shareable link",
+      "grid_size": {
+        "small": "S",
+        "medium": "M",
+        "large": "L"
+      }
     },
     "duplicates": {
       "title": "Find Duplicate Assets",
@@ -1690,7 +1745,28 @@
       "delete": "Delete",
       "ignore_all": "Ignore All",
       "delete_all": "Delete All Duplicates",
-      "folder": "Folder"
+      "folder": "Folder",
+      "legacy": {
+        "title": "Resolve Duplicate: {{title}}",
+        "currentlyInDam": "Currently in DAM ({{count}} found)",
+        "primaryTitle": "Title: {{title}}",
+        "locations": "Locations:",
+        "newUpload": "Your New Upload",
+        "pendingStatus": "Status: Pending Upload",
+        "identicalHash": "Identical Hash",
+        "aiMergeRecommendation": "AI Merge Recommendation",
+        "aiMergeDescription": "The bytes are identical. AI can append your new tags to the existing asset to prevent clutter.",
+        "mergeMetadata": "Merge Metadata",
+        "skipUpload": "Skip Upload",
+        "uploadAnyway": "Upload as Duplicate Anyway",
+        "alt": {
+          "existing": "existing",
+          "new": "new"
+        },
+        "notifications": {
+          "aiMerged": "AI successfully merged new metadata into {{count}} existing asset(s)."
+        }
+      }
     },
     "ai": {
       "title": "AI Analysis",
@@ -1704,10 +1780,30 @@
       "apply_tags": "Apply Suggested Tags",
       "save_properties": "Save to Properties",
       "queued": "Analysis queued. Check back soon.",
-      "error": "Analysis failed. Please try again."
+      "error": "Analysis failed. Please try again.",
+      "asset_alt": "asset"
     },
     "subfolder_count_tip": "{{count}} sub-folders",
-    "asset_count_tip": "{{count}} assets"
+    "asset_count_tip": "{{count}} assets",
+    "explorer": {
+      "assetNotFound": "Asset not found ({{status}})",
+      "couldNotOpenAsset": "Could not open asset: {{message}}",
+      "folderLocationCopiedToClipboard": "Folder location copied to clipboard!",
+      "shareableLinkCopiedToClipboard": "Shareable link copied to clipboard!",
+      "failedToCopyLink": "Failed to copy link.",
+      "permanentDeleteWarning": "WARNING: This will permanently delete these files from the server. This cannot be undone!",
+      "deleteSelectedConfirm": "Are you sure you want to delete {{count}} selected item(s)? This cannot be undone.",
+      "deletionError": "An error occurred during deletion.",
+      "uploadFailed": "Upload failed.",
+      "mediaFiles": "Media & Files",
+      "createNewFolder": "Create New Folder",
+      "folderName": "Folder Name"
+    },
+    "grid": {
+      "unknown_file": "Unknown File",
+      "pin_to_collection": "Pin to Collection",
+      "view_details": "View Details"
+    }
   },
   "inbox": {
     "title": "Inbox",
@@ -1770,6 +1866,503 @@
       "sentThisWeek": "Sent This Week",
       "failureRate": "Failure Rate",
       "pending": "Pending"
+    }
+  },
+  "assetCard": {
+    "unknownAsset": "Unknown Asset",
+    "unknownSize": "Unknown Size",
+    "noPreview": "No Preview",
+    "tooltips": {
+      "pinToCollection": "Pin to Collection",
+      "viewDetails": "View Details"
+    },
+    "menu": {
+      "viewDetails": "View Details",
+      "addToCollection": "Add to Collection",
+      "moveToTrash": "Move to Trash"
+    }
+  },
+  "assetStatisticsTab": {
+    "title": "Asset Statistics",
+    "downloads": "Downloads",
+    "cdnViews": "CDN Views",
+    "shares": "Shares"
+  },
+  "assetList": {
+    "headers": {
+      "name": "Name",
+      "status": "Status",
+      "type": "Type",
+      "size": "Size",
+      "version": "Ver.",
+      "modified": "Modified",
+      "created": "Created",
+      "actions": "Actions"
+    },
+    "unknownFile": "Unknown File",
+    "tooltips": {
+      "pinToCollection": "Pin to Collection",
+      "viewDetails": "View Details"
+    },
+    "status": {
+      "draft": "draft",
+      "published": "published",
+      "approved": "approved",
+      "rejected": "rejected",
+      "archived": "archived"
+    }
+  },
+  "folderGrid": {
+    "tooltips": {
+      "folderProperties": "Folder properties"
+    }
+  },
+  "uploadSidebar": {
+    "title": "Upload & Enrich",
+    "imageTypes": {
+      "productImage": "Product Image",
+      "lifestyle": "Lifestyle",
+      "bannerHero": "Banner / Hero",
+      "headshot": "Headshot",
+      "document": "Document"
+    },
+    "sections": {
+      "assignment": "Assignment",
+      "metadataSchema": "Metadata Schema",
+      "tags": "Tags",
+      "aiAgenticActions": "AI Agentic Actions"
+    },
+    "noCollectionsFound": "No collections found",
+    "placeholders": {
+      "selectExistingCollection": "Select existing collection...",
+      "selectGlobalAssetType": "Select global asset type",
+      "selectGlobalSchema": "Select global schema",
+      "typeAndPressEnter": "Type and press enter"
+    },
+    "schemaHelp": "This schema is applied to all staged files by default. Per-file override is available in each card.",
+    "filenamePatternPrefix": "For Product Images: filename pattern supported:",
+    "filenamePatternExample": "e.g. 012993112028-en-FR01.jpg",
+    "aiTagsOnUpload": "Generate AI Tags on Upload",
+    "buttons": {
+      "smartDescribeSelected": "Smart Describe Selected",
+      "autoRemoveBackgrounds": "Auto-Remove Backgrounds",
+      "uploadCount": "Upload ({{selectedCount}})"
+    },
+    "progress": {
+      "uploading": "Uploading…",
+      "count": "{{done}} of {{total}}"
+    }
+  },
+  "foldersManager": {
+    "title": "All Assets"
+  },
+  "explorerTopBar": {
+    "breadcrumbLabel": "breadcrumb",
+    "home": "Home",
+    "copyFolderLink": "Copy Folder Link",
+    "selectAll": "Select All",
+    "viewTrashBin": "View Trash Bin",
+    "backToActiveFiles": "Back to Active Files",
+    "tools": "Tools",
+    "metadataSchema": "Metadata Schema",
+    "applySchemaToFolder": "Apply Schema to Folder",
+    "folderSelected": "{{count}} folder selected",
+    "foldersSelected": "{{count}} folders selected",
+    "applyToCurrentFolder": "Apply to current folder",
+    "applySchemaToAssets": "Apply Schema to Assets",
+    "assetSelected": "{{count}} asset selected",
+    "assetsSelected": "{{count}} assets selected",
+    "imageProcessing": "Image Processing",
+    "applyImageProfile": "Apply Image Profile",
+    "setProcessingProfileForThisFolder": "Set processing profile for this folder",
+    "applyVideoProfile": "Apply Video Profile",
+    "setVideoEncodingProfileForThisFolder": "Set video encoding profile for this folder",
+    "edgeCdnOps": "Edge CDN Ops",
+    "syncMetadataToCdn": "Sync Metadata to CDN",
+    "forcePushJsonToEdgeKv": "Force push JSON to Edge KV",
+    "purgeEdgeCache": "Purge Edge Cache",
+    "invalidateDeliveryNodesGlobally": "Invalidate delivery nodes globally",
+    "workflow": "Workflow",
+    "globalLocalization": "Global Localization",
+    "autoTranslateCopyMetadata": "Auto-translate copy & metadata",
+    "brandLicenseGuard": "Brand & License Guard",
+    "validateUsageTermsSignatures": "Validate usage terms & signatures",
+    "smartActions": "Smart Actions",
+    "autoTagEnrich": "Auto-Tag & Enrich",
+    "extractSemanticMetadata": "Extract semantic metadata",
+    "smartOrganize": "Smart Organize",
+    "groupIntoSemanticFolders": "Group into semantic folders",
+    "scanForDuplicates": "Scan for Duplicates",
+    "tdmPayloadDeduplication": "TDM payload deduplication",
+    "moveToBin": "Move to Bin",
+    "deleteForever": "Delete Forever",
+    "applyMetadataSchema": "Apply Metadata Schema",
+    "setSchemaForThisFolder": "Set schema for this folder",
+    "newFolder": "New Folder",
+    "currentFolder": "Current Folder",
+    "notifications": {
+      "autoEnrichQueued": "Assets queued for LangChain semantic enrichment.",
+      "duplicateScanQueued": "Scanning for visual and cryptographic duplicates...",
+      "smartOrganizeQueued": "AI is analyzing vectors to cluster items into sub-folders.",
+      "forceSyncStarted": "Metadata force-sync to Edge KV initiated.",
+      "cachePurgeQueued": "Edge cache invalidation queued for selected items.",
+      "localizationTriggered": "Localization agent triggered.",
+      "brandSafetyInitialized": "Brand safety check initialized."
+    }
+  },
+  "uploadGrid": {
+    "staging_area": "Staging Area",
+    "selection_count": "{{selected}} of {{total}} selected",
+    "select_all": "Select All",
+    "dropzone": {
+      "drag_drop": "Drag & drop new assets here",
+      "browse": "or click to browse local files"
+    },
+    "preview_alt": "preview",
+    "file_fallback_extension": "file",
+    "preview_generated_after_upload": "Preview generated after upload",
+    "status": {
+      "calculating_hash": "Calculating Hash...",
+      "checking_dam": "Checking DAM...",
+      "uploading": "Uploading..."
+    },
+    "duplicate_found": "Duplicate Found",
+    "dimensions": {
+      "unknown": "Unknown",
+      "not_applicable": "N/A"
+    },
+    "type_placeholder": "Type",
+    "run_ai_enhance": "Run AI enhance on this file",
+    "select_schema": "Select schema",
+    "product_id": "Product ID",
+    "language_code": "Language Code",
+    "select_asset_type": "Select Asset Type (dam:asset_type)",
+    "image_types": {
+      "product_image": "Product Image",
+      "lifestyle": "Lifestyle",
+      "banner_hero": "Banner / Hero",
+      "headshot": "Headshot",
+      "document": "Document"
+    },
+    "ai_tags": {
+      "studio": "Studio",
+      "high_res": "High-Res",
+      "isolated": "Isolated",
+      "enhanced": "Enhanced",
+      "web_ready": "Web-Ready"
+    }
+  },
+  "uploadWorkspace": {
+    "unknown_type": "unknown type",
+    "upload_not_allowed": "Upload not allowed: {{names}}. Only the following MIME types are permitted: {{mimeTypes}}.",
+    "ai_auto_tagging_complete": "AI Auto-tagging complete.",
+    "backgrounds_removed": "Backgrounds removed.",
+    "ai_enhancements_applied": "AI enhancements applied.",
+    "upload_sequence_complete": "Upload sequence complete."
+  },
+  "applySchemaDialog": {
+    "title": "Apply Metadata Schema",
+    "selectedItems": "Selected items:",
+    "more": "+{{count}} more",
+    "availableSchemas": "Available Schemas",
+    "noSchemas": "No schemas available.",
+    "option": {
+      "builtIn": "Built-in",
+      "typeSchemas": "{{count}} type schemas"
+    },
+    "target": {
+      "folder_one": "Applying to {{count}} folder",
+      "folder_other": "Applying to {{count}} folders",
+      "asset_one": "Applying to {{count}} asset",
+      "asset_other": "Applying to {{count}} assets"
+    },
+    "cascade": {
+      "title": "Schema Cascade",
+      "description": "When applied to a folder, the schema automatically resolves to the best match for each asset's MIME type (e.g. image/jpeg → JPEG subtype schema).",
+      "allSubfolders": "Apply to all sub-folders too",
+      "thisFolderOnly": "Apply to this folder only",
+      "overrideHint": "You can override the schema in any sub-folder individually afterward."
+    },
+    "selectionSummary": {
+      "selected": "Selected: {{name}}",
+      "tabs_one": "{{count}} tab",
+      "tabs_other": "{{count}} tabs",
+      "fields": "{{count}} fields"
+    },
+    "actions": {
+      "applying": "Applying…",
+      "apply": "Apply \"{{name}}\""
+    },
+    "notifications": {
+      "loadError": "Failed to load schemas.",
+      "folderAppliedCascade_one": "\"{{schemaName}}\" schema is being applied to {{count}} folder and all sub-folders.",
+      "folderAppliedCascade_other": "\"{{schemaName}}\" schema is being applied to {{count}} folders and all sub-folders.",
+      "folderApplied_one": "\"{{schemaName}}\" schema is being applied to {{count}} folder.",
+      "folderApplied_other": "\"{{schemaName}}\" schema is being applied to {{count}} folders.",
+      "assetApplied_one": "\"{{schemaName}}\" schema applied to {{count}} asset.",
+      "assetApplied_other": "\"{{schemaName}}\" schema applied to {{count}} assets.",
+      "applyError": "Failed to apply schema. Please try again."
+    }
+  },
+  "pinToCollectionDialog": {
+    "title": "Pin to Collections",
+    "searchPlaceholder": "Search collections...",
+    "noResults": "No collections match your search.",
+    "description": {
+      "before": "Add",
+      "thisAsset": "this asset",
+      "after": "to one or more collections."
+    },
+    "collection": {
+      "smartType": "AI Smart Routing",
+      "manualType": "Manual Curation",
+      "assetsCount": "{{count}} assets"
+    },
+    "tooltips": {
+      "remove": "Remove from this collection",
+      "add": "Add to this collection"
+    },
+    "footer": {
+      "pinnedTo_one": "Pinned to {{count}} collection",
+      "pinnedTo_other": "Pinned to {{count}} collections",
+      "notPinned": "Not pinned to any collection"
+    },
+    "actions": {
+      "done": "Done"
+    },
+    "notifications": {
+      "loadError": "Failed to load collections.",
+      "removed": "Removed from collection.",
+      "added": "Added to collection.",
+      "operationFailed": "Operation failed.",
+      "networkError": "Network error."
+    }
+  },
+  "assetViewer": {
+    "actions": {
+      "closeAriaLabel": "close"
+    },
+    "toolbar": {
+      "pinToCollection": "Pin to Collection",
+      "shareAsset": "Share Asset",
+      "copyImageUrl": "Copy Image URL",
+      "editUnsupportedTooltip": "Editing isn't supported for this file format (e.g. PSD, TIFF, RAW). Download the original or view the generated preview instead.",
+      "editImage": "Edit Image"
+    },
+    "download": {
+      "defaultFilename": "download",
+      "options": "Download Options",
+      "original": "Download Original",
+      "originalDescription": "High-resolution source file",
+      "secureProxy": "Download Secure Proxy",
+      "secureProxyDescription": "Includes unremovable watermark"
+    },
+    "preview": {
+      "notAvailableForFileType": "Preview not available for this file type."
+    },
+    "tabs": {
+      "info": "Info",
+      "metadata": "Metadata",
+      "versions": "Versions",
+      "statistics": "Statistics",
+      "audit": "Audit",
+      "workflows": "Workflows",
+      "aiEngine": "AI Engine"
+    },
+    "info": {
+      "generalMetadata": "General Metadata",
+      "tagsCount": "{{count}} tags",
+      "aiRecognizedAndManual": "AI-recognized & Manual",
+      "fileName": "File Name",
+      "dateAdded": "Date Added",
+      "resolution": "Resolution",
+      "fileSize": "File Size",
+      "creator": "Creator",
+      "copyright": "Copyright",
+      "camera": "Camera",
+      "lens": "Lens",
+      "colorMode": "Color Mode",
+      "embeddedMetadataFields": "Embedded Metadata Fields",
+      "dominantPalette": "Dominant Palette",
+      "embeddedMetadataSection": "EXIF / IPTC / XMP Data",
+      "noExifDataExtractedYet": "No EXIF data extracted yet."
+    },
+    "ai": {
+      "semanticAndVisionAnalysis": "Semantic & Vision Analysis"
+    },
+    "fallbacks": {
+      "unknownFile": "Unknown File",
+      "unknownSize": "Unknown Size",
+      "unknown": "Unknown"
+    },
+    "notifications": {
+      "assetUrlCopiedToClipboard": "Asset URL copied to clipboard!",
+      "generatingSecureWatermarkedProxy": "Generating secure watermarked proxy...",
+      "downloadStarted": "Download started",
+      "shareDialogComingSoon": "Share dialog coming soon"
+    }
+  },
+  "assetMetadataPanel": {
+    "field": {
+      "inheritedReadOnly": "Inherited from parent schema — read only",
+      "selectPlaceholder": "— select —",
+      "tagsHelperSuffix": " — press Enter to add"
+    },
+    "notifications": {
+      "metadataSavedSuccessfully": "Metadata saved successfully."
+    },
+    "errors": {
+      "saveFailed": "Save failed"
+    },
+    "noSchema": {
+      "line1": "No metadata schema applied to this asset yet.",
+      "line2Prefix": "Use",
+      "action": "Tools → Apply Metadata Schema",
+      "line2Suffix": "from the folder view to assign one."
+    },
+    "builtIn": "Built-in",
+    "schemaSummary_one": "{{count}} tab · MIME-resolved schema",
+    "schemaSummary_other": "{{count}} tabs · MIME-resolved schema",
+    "reloadSchema": "Reload schema",
+    "saving": "Saving…",
+    "saveChanges": "Save Changes",
+    "unsavedMetadataChanges": "Unsaved metadata changes",
+    "noFieldsDefined": "No fields defined for this tab.",
+    "saveMetadata": "Save Metadata"
+  },
+  "assetVersionsTab": {
+    "title": "Version Timeline",
+    "description": "View previous iterations of this asset. Restoring a version makes it the active file without deleting newer edits.",
+    "currentActive": "Current Active",
+    "savedOn": "Saved on",
+    "by": "by",
+    "fileSize": "File Size",
+    "restore": "Restore",
+    "notifications": {
+      "failedToLoadVersionHistory": "Failed to load version history.",
+      "assetRolledBack": "Asset successfully rolled back to selected version.",
+      "failedToRestoreVersion": "Failed to restore version."
+    }
+  },
+  "assetAuditTab": {
+    "title": "Operational Ledger",
+    "emptyState": "No audit history available.",
+    "actions": {
+      "imageEdited": "Image Edited",
+      "branchedToNewVersion": "Branched to New Version",
+      "clonedFromExisting": "Cloned from Existing",
+      "assetIngested": "Asset Ingested"
+    },
+    "actorId": "Actor ID:",
+    "system": "System",
+    "modified": "Modified",
+    "processedAt": "Processed: {{time}}",
+    "timelineForked": "Timeline Forked",
+    "fileSize": {
+      "zero": "0 Bytes",
+      "units": {
+        "bytes": "Bytes",
+        "kb": "KB",
+        "mb": "MB",
+        "gb": "GB"
+      }
+    }
+  },
+  "assetTagsEditor": {
+    "actions": {
+      "closeAriaLabel": "close",
+      "saveChanges": "Save Changes",
+      "runSmartScan": "Run Smart Scan"
+    },
+    "title": "Manage Tags: {{name}}",
+    "preview": {
+      "alt": "Preview",
+      "unavailable": "Preview not available."
+    },
+    "sections": {
+      "manualTags": "Manual Tags",
+      "aiRecognizedTags": "AI-Recognized Tags"
+    },
+    "manualTags": {
+      "placeholder": "Search or type new tag...",
+      "helperText": "Press enter to add custom tags not in the database."
+    },
+    "ai": {
+      "faceRecognition": "Face Recognition ({{count}})",
+      "noFacesDetected": "No faces detected.",
+      "textInImage": "Text-in-Image ({{count}})",
+      "noTextDetected": "No text detected.",
+      "semanticObjects": "Semantic Objects ({{count}})",
+      "noObjectsDetected": "No objects detected."
+    },
+    "notifications": {
+      "aiVisionScanComplete": "AI Vision Scan complete. New tags discovered.",
+      "tagsUpdatedSuccessfully": "Tags updated successfully."
+    }
+  },
+  "folderInfoPanel": {
+    "header": {
+      "subtitle": "Folder properties"
+    },
+    "tabs": {
+      "general": "General",
+      "imageProfiles": "Image Profiles",
+      "videoProfiles": "Video Profiles",
+      "metadata": "Metadata",
+      "access": "Access"
+    },
+    "general": {
+      "nameRequired": "Name cannot be empty.",
+      "updated": "Folder updated.",
+      "folderId": "Folder ID",
+      "slug": "Slug",
+      "created": "Created",
+      "details": "Details",
+      "name": "Name",
+      "description": "Description",
+      "descriptionPlaceholder": "Add a description for this folder…",
+      "noDescription": "No description"
+    },
+    "imageProfiles": {
+      "removed": "Image profile removed from folder.",
+      "removeError": "Failed to remove image profile.",
+      "title": "Image Profile",
+      "change": "Change",
+      "applyProfile": "Apply Profile",
+      "smartCrop": "Smart Crop",
+      "swatch": "Swatch",
+      "responsiveCrop": "Responsive Crop",
+      "unsharpMask": "Unsharp: amount {{amount}} · radius {{radius}}",
+      "removeTooltip": "Remove profile from this folder",
+      "empty": "No image profile assigned. Images uploaded to this folder will use default processing settings.",
+      "emptyHint": "You can configure profiles under Tools → Assets → Asset Configurations → Image Profiles."
+    },
+    "videoProfiles": {
+      "removed": "Video profile removed from folder.",
+      "removeError": "Failed to remove video profile.",
+      "title": "Video Profile",
+      "change": "Change",
+      "applyProfile": "Apply Profile",
+      "adaptiveStreaming": "Adaptive Streaming",
+      "progressive": "Progressive",
+      "presetCount_one": "{{count}} preset",
+      "presetCount_other": "{{count}} presets",
+      "removeTooltip": "Remove profile from this folder",
+      "empty": "No video profile assigned. Videos uploaded to this folder will not be auto-transcoded.",
+      "emptyHint": "Configure profiles under Tools → Assets → Asset Configurations → Video Profiles."
+    },
+    "metadata": {
+      "removed": "Metadata schema removed from folder.",
+      "removeError": "Failed to remove schema.",
+      "title": "Metadata Schema",
+      "change": "Change",
+      "applySchema": "Apply Schema",
+      "inherited": "Inherited",
+      "direct": "Direct",
+      "tabLabel": "Tab {{index}}",
+      "removeTooltip": "Remove schema from this folder",
+      "empty": "No metadata schema assigned to this folder. Assets will use the default schema if one is configured.",
+      "emptyHint": "Configure schemas under Tools → Metadata Schemas."
     }
   }
 }

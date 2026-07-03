@@ -16,12 +16,12 @@ import { useTranslation } from 'react-i18next';
 // ─── constants ────────────────────────────────────────────────────────────────
 
 const PERMISSIONS = [
-    { key: 'read_access',      label: 'Read',      hint: 'View assets & browse folder' },
-    { key: 'modify_access',    label: 'Modify',    hint: 'Edit metadata & rename items' },
-    { key: 'create_access',    label: 'Create',    hint: 'Upload assets & create sub-folders' },
-    { key: 'delete_access',    label: 'Delete',    hint: 'Delete assets & folders' },
-    { key: 'replicate_access', label: 'Replicate', hint: 'Push assets to CDN edge nodes' },
-    { key: 'manage_access',    label: 'Manage',    hint: 'Manage folder access policies' },
+    { key: 'read_access',      labelKey: 'read',      hintKey: 'readHint' },
+    { key: 'modify_access',    labelKey: 'modify',    hintKey: 'modifyHint' },
+    { key: 'create_access',    labelKey: 'create',    hintKey: 'createHint' },
+    { key: 'delete_access',    labelKey: 'delete',    hintKey: 'deleteHint' },
+    { key: 'replicate_access', labelKey: 'replicate', hintKey: 'replicateHint' },
+    { key: 'manage_access',    labelKey: 'manage',    hintKey: 'manageHint' },
 ];
 
 const DEFAULT_PERMS = {
@@ -48,6 +48,7 @@ function PermissionBadge({ label, active, deny }) {
 // ─── GroupSearch ──────────────────────────────────────────────────────────────
 
 function GroupSearch({ onSelect }) {
+    const { t } = useTranslation();
     const [query,   setQuery]   = useState('');
     const [results, setResults] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -77,7 +78,7 @@ function GroupSearch({ onSelect }) {
         <Box sx={{ position: 'relative' }}>
             <TextField
                 size="small" fullWidth
-                placeholder="Search groups by name…"
+                placeholder={t('folder.access.searchGroupsPlaceholder')}
                 value={query}
                 onChange={e => setQuery(e.target.value)}
                 slotProps={{
@@ -104,14 +105,14 @@ function GroupSearch({ onSelect }) {
                             >
                                 <ListItemText
                                     primary={g.name}
-                                    secondary={g.is_system ? 'System group' : (g.description || g.slug)}
+                                    secondary={g.is_system ? t('folder.access.systemGroup') : (g.description || g.slug)}
                                     slotProps={{
                                         primary:   { style: { fontSize: '0.85rem', fontWeight: 600 } },
                                         secondary: { style: { fontSize: '0.72rem' } },
                                     }}
                                 />
                                 {g.is_system && (
-                                    <Chip label="System" size="small"
+                                    <Chip label={t('folder.access.system')} size="small"
                                           sx={{ fontSize: '0.62rem', height: 16, bgcolor: '#f0f9ff', color: '#0369a1' }} />
                                 )}
                             </ListItem>
@@ -187,8 +188,8 @@ function AddPolicyForm({ folderId, folderName, onSaved, onCancel }) {
                 </Typography>
                 <FormGroup>
                     <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0.25 }}>
-                        {PERMISSIONS.map(({ key, label, hint }) => (
-                            <Tooltip key={key} title={hint} placement="right">
+                        {PERMISSIONS.map(({ key, labelKey, hintKey }) => (
+                            <Tooltip key={key} title={t(`folder.access.${hintKey}`)} placement="right">
                                 <FormControlLabel
                                     control={
                                         <Checkbox
@@ -198,7 +199,7 @@ function AddPolicyForm({ folderId, folderName, onSaved, onCancel }) {
                                             sx={{ p: 0.5, color: '#7c3aed', '&.Mui-checked': { color: '#7c3aed' } }}
                                         />
                                     }
-                                    label={<Typography variant="caption" fontWeight={500}>{label}</Typography>}
+                                    label={<Typography variant="caption" fontWeight={500}>{t(`folder.access.${labelKey}`)}</Typography>}
                                     sx={{ m: 0 }}
                                 />
                             </Tooltip>
@@ -247,7 +248,7 @@ function AddPolicyForm({ folderId, folderName, onSaved, onCancel }) {
                         icon={<SubdirectoryArrowRightOutlined fontSize="small" />}
                         sx={{ mt: 1, fontSize: '0.78rem', py: 0.5 }}
                     >
-                        {t('folder.access.cascadeWarning', { name: folderName || 'this folder' })}
+                        {t('folder.access.cascadeWarning', { name: folderName || t('folder.access.thisFolder') })}
                     </Alert>
                 </Collapse>
             </Box>
@@ -311,11 +312,11 @@ function PolicyRow({ policy, folderId, inherited, onRemoved }) {
             <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flexWrap: 'wrap' }}>
                     <Typography variant="body2" fontWeight={700} sx={{ color: '#1e293b' }}>
-                        {policy.group_name || `Group ${policy.group_id}`}
+                        {policy.group_name || t('folder.access.groupFallback', { id: policy.group_id })}
                     </Typography>
                     {inherited && (
                         <Chip
-                            label={`↑ ${policy.source_folder_name || 'parent'}`}
+                            label={t('folder.access.inheritedFromFolder', { name: policy.source_folder_name || t('folder.access.parent') })}
                             size="small"
                             sx={{ fontSize: '0.6rem', height: 16, bgcolor: '#e0e7ff', color: '#3730a3' }}
                         />
@@ -369,12 +370,14 @@ function PolicyRow({ policy, folderId, inherited, onRemoved }) {
   gap: '4px !important',
   flexWrap: "wrap"
 }}>
-                <PermissionBadge label="Read"      active={policy.read_access}      deny={policy.explicit_deny} />
-                <PermissionBadge label="Modify"    active={policy.modify_access}    deny={policy.explicit_deny} />
-                <PermissionBadge label="Create"    active={policy.create_access}    deny={policy.explicit_deny} />
-                <PermissionBadge label="Delete"    active={policy.delete_access}    deny={policy.explicit_deny} />
-                <PermissionBadge label="Replicate" active={policy.replicate_access} deny={policy.explicit_deny} />
-                <PermissionBadge label="Manage"    active={policy.manage_access}    deny={policy.explicit_deny} />
+                {PERMISSIONS.map(({ key, labelKey }) => (
+                    <PermissionBadge
+                        key={key}
+                        label={t(`folder.access.${labelKey}`)}
+                        active={policy[key]}
+                        deny={policy.explicit_deny}
+                    />
+                ))}
             </Stack>
         </Paper>
     );
@@ -527,4 +530,3 @@ export default function FolderAccessTab({ folder }) {
         </Box>
     );
 }
-

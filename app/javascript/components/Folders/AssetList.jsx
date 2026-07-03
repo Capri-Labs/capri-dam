@@ -1,6 +1,7 @@
 import React from 'react';
 import { TableContainer, Table, TableHead, TableRow, TableCell, TableBody, Checkbox, Box, Typography, IconButton, Paper, Tooltip, Stack, Chip } from '@mui/material';
 import { InsertPhoto, PictureAsPdf, VideoFile, InsertDriveFile, InfoOutlined, PushPinOutlined, AudioFile } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 
 function formatBytes(bytes) {
   if (!bytes || bytes === 0) return '—';
@@ -20,6 +21,18 @@ const STATUS_COLORS = {
 };
 
 export default function AssetList({ assets, viewMode, selectedItems, toggleSelection, setSelectedAsset, onPinClick }) {
+  const { t } = useTranslation();
+  const tr = (key, defaultValue) => {
+    const value = t(key, { defaultValue });
+    return value === key ? defaultValue : value;
+  };
+  const statusLabels = {
+    draft: tr('assetList.status.draft', 'draft'),
+    published: tr('assetList.status.published', 'published'),
+    approved: tr('assetList.status.approved', 'approved'),
+    rejected: tr('assetList.status.rejected', 'rejected'),
+    archived: tr('assetList.status.archived', 'archived'),
+  };
 
   const getFileIcon = (contentType) => {
     if (!contentType) return <InsertDriveFile sx={{ color: '#64748b' }} />;
@@ -36,20 +49,20 @@ export default function AssetList({ assets, viewMode, selectedItems, toggleSelec
         <TableHead sx={{ bgcolor: '#f8fafc' }}>
           <TableRow>
             <TableCell padding="checkbox" />
-            <TableCell sx={{ fontWeight: 700, color: '#475569', minWidth: 200 }}>Name</TableCell>
-            <TableCell sx={{ fontWeight: 700, color: '#475569' }}>Status</TableCell>
-            <TableCell sx={{ fontWeight: 700, color: '#475569' }}>Type</TableCell>
-            <TableCell sx={{ fontWeight: 700, color: '#475569' }}>Size</TableCell>
-            <TableCell sx={{ fontWeight: 700, color: '#475569' }}>Ver.</TableCell>
-            <TableCell sx={{ fontWeight: 700, color: '#475569' }}>Modified</TableCell>
-            <TableCell sx={{ fontWeight: 700, color: '#475569' }}>Created</TableCell>
-            <TableCell align="right" sx={{ fontWeight: 700, color: '#475569' }}>Actions</TableCell>
+            <TableCell sx={{ fontWeight: 700, color: '#475569', minWidth: 200 }}>{tr('assetList.headers.name', 'Name')}</TableCell>
+            <TableCell sx={{ fontWeight: 700, color: '#475569' }}>{tr('assetList.headers.status', 'Status')}</TableCell>
+            <TableCell sx={{ fontWeight: 700, color: '#475569' }}>{tr('assetList.headers.type', 'Type')}</TableCell>
+            <TableCell sx={{ fontWeight: 700, color: '#475569' }}>{tr('assetList.headers.size', 'Size')}</TableCell>
+            <TableCell sx={{ fontWeight: 700, color: '#475569' }}>{tr('assetList.headers.version', 'Ver.')}</TableCell>
+            <TableCell sx={{ fontWeight: 700, color: '#475569' }}>{tr('assetList.headers.modified', 'Modified')}</TableCell>
+            <TableCell sx={{ fontWeight: 700, color: '#475569' }}>{tr('assetList.headers.created', 'Created')}</TableCell>
+            <TableCell align="right" sx={{ fontWeight: 700, color: '#475569' }}>{tr('assetList.headers.actions', 'Actions')}</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
           {assets.map((asset) => {
             const isSelected = selectedItems.assets.includes(asset.id);
-            const displayName = asset.name || asset.title || 'Unknown File';
+            const displayName = asset.name || asset.title || tr('assetList.unknownFile', 'Unknown File');
             let props = {};
             try { props = typeof asset.properties === 'string' ? JSON.parse(asset.properties) : (asset.properties || {}); } catch (e) { /* ignore */ }
             const contentType = props.content_type || asset.content_type || '';
@@ -87,7 +100,7 @@ export default function AssetList({ assets, viewMode, selectedItems, toggleSelec
 
                 <TableCell>
                   <Chip
-                    label={status}
+                    label={statusLabels[status] || status}
                     size="small"
                     sx={{
                       bgcolor: statusStyle.bg,
@@ -124,12 +137,12 @@ export default function AssetList({ assets, viewMode, selectedItems, toggleSelec
 
                 <TableCell align="right">
                   <Stack direction="row" spacing={0.5} sx={{justifyContent: 'flex-end'}}>
-                    <Tooltip title="Pin to Collection">
+                    <Tooltip title={tr('assetList.tooltips.pinToCollection', 'Pin to Collection')}>
                       <IconButton size="small" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onPinClick(asset, e); }}>
                         <PushPinOutlined fontSize="small" sx={{ color: '#475569' }} />
                       </IconButton>
                     </Tooltip>
-                    <Tooltip title="View Details">
+                    <Tooltip title={tr('assetList.tooltips.viewDetails', 'View Details')}>
                       <IconButton size="small" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setSelectedAsset(asset); }}>
                         <InfoOutlined fontSize="small" sx={{ color: '#475569' }} />
                       </IconButton>

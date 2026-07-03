@@ -88,6 +88,7 @@ puts "✅ Storage Backend: #{backend.name}"
 # in the historical migration) — `db:schema:load`/`db:prepare` skips migration
 # Ruby code entirely, so a fresh database would otherwise have none of these.
 MetadataSchemaSeeder.seed!
+MetadataSchemaSeeder.upgrade_default_tabs!
 puts "✅ Built-in metadata schemas: Default, Collection, Product Images"
 
 puts "---  Seed Complete! ---"

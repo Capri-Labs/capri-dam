@@ -53,6 +53,40 @@ class MetadataSchemaSeeder
     seed_product_images_root!
   end
 
+  # Merges the corrected/new built-in tabs (Basic, IPTC, Camera, XMP,
+  # Photoshop, ICC Profile) into an *already-existing* "Default" schema, by
+  # tab +id+. Unlike {#seed!} / {#ensure_schema!} (which never touch an
+  # already-active schema's stored +tabs+, to protect admin customisations),
+  # this method exists specifically to backfill environments where the
+  # Default schema was already created — e.g. from an older migration/seed run
+  # — before the namespace-prefix corrections and new tabs (XMP / Photoshop /
+  # ICC Profile) were introduced.
+  #
+  # It is safe to re-run: for each built-in tab id it either inserts the tab
+  # (if missing) or replaces it with the corrected definition (if present) —
+  # it never removes or alters any *other* tab (e.g. a custom tab an admin
+  # added), and it never touches non-"Default" schemas.
+  #
+  # @return [MetadataSchema, nil] the updated Default schema, or +nil+ if it
+  #   does not exist yet (in which case {#seed!} should be run instead)
+  def self.upgrade_default_tabs!
+    new.upgrade_default_tabs!
+  end
+
+  def upgrade_default_tabs!
+    default_root = MetadataSchema.unscoped.find_by(slug: "default")
+    return nil unless default_root
+
+    builtin_tabs = [ basic_tab, iptc_tab, camera_tab, xmp_tab, photoshop_tab, icc_profile_tab ]
+    builtin_ids = builtin_tabs.map { |t| t["id"] }
+
+    existing_tabs = (default_root.tabs || [])
+    custom_tabs = existing_tabs.reject { |t| builtin_ids.include?(t["id"]) }
+
+    default_root.update!(tabs: builtin_tabs + custom_tabs)
+    default_root
+  end
+
   private
 
   # ── Default (by MIME type) ────────────────────────────────────────────────
@@ -61,7 +95,7 @@ class MetadataSchemaSeeder
     default_root = ensure_schema!(
       name: "Default", slug: "default", level: "root",
       description: "Global fallback schema. Used when no other schema resolves.",
-      tabs: [ basic_tab, iptc_tab, camera_tab ]
+      tabs: [ basic_tab, iptc_tab, camera_tab, xmp_tab, photoshop_tab, icc_profile_tab ]
     )
 
     image = ensure_schema!(
@@ -161,29 +195,87 @@ class MetadataSchemaSeeder
       ] }
   end
 
+  # IPTC Photo Metadata Standard fields. Note these map onto the `photoshop:`
+  # XMP namespace (per the real IPTC spec), not `Iptc4xmpCore:` — see
+  # {EmbeddedMetadataMapper}'s header comment for the full rationale. Byline
+  # and Caption intentionally map to the *same* `dc:creator` / `dc:description`
+  # properties as the Basic tab (they are the same XMP property per spec, so
+  # keeping them in sync avoids two disconnected "creator" values on one asset).
   def iptc_tab
     { "id" => "tab-iptc", "name" => "IPTC", "position" => 1,
       "fields" => [
-        field("text",     "Headline", "Iptc4xmpCore:Headline",    0),
-        field("text",     "Byline",   "Iptc4xmpCore:Byline",      1),
-        field("text",     "Credit",   "Iptc4xmpCore:CreditLine",  2),
-        field("text",     "Source",   "Iptc4xmpCore:Source",      3),
-        field("textarea", "Caption",  "Iptc4xmpCore:Description", 4),
-        field("text",     "City",     "Iptc4xmpCore:City",        5),
-        field("text",     "Country",  "Iptc4xmpCore:CountryName", 6),
-        field("tags",     "Keywords", "Iptc4xmpCore:SubjectCode", 7),
+        field("text",     "Headline", "photoshop:Headline", 0),
+        field("text",     "Byline",   "dc:creator",         1),
+        field("text",     "Credit",   "photoshop:Credit",   2),
+        field("text",     "Source",   "photoshop:Source",   3),
+        field("textarea", "Caption",  "dc:description",     4),
+        field("text",     "City",     "photoshop:City",     5),
+        field("text",     "Country",  "photoshop:Country",  6),
+        field("tags",     "Keywords", "dc:subject",         7),
       ] }
   end
 
+  # Camera / EXIF tab. Only shown in the UI when the asset actually carries
+  # camera EXIF data (see `conditional` below and AssetMetadataPanel).
+  # Make/Model are baseline TIFF tags per the Adobe XMP EXIF spec, not `exif:`.
   def camera_tab
-    { "id" => "tab-camera", "name" => "Camera", "position" => 2,
+    { "id" => "tab-camera", "name" => "Camera", "position" => 2, "conditional" => true,
       "fields" => [
-        field("text", "Camera Make",   "exif:Make",              0, read_only: true),
-        field("text", "Camera Model",  "exif:Model",             1, read_only: true),
+        field("text", "Camera Make",   "tiff:Make",              0, read_only: true),
+        field("text", "Camera Model",  "tiff:Model",             1, read_only: true),
         field("text", "Focal Length",  "exif:FocalLength",       2, read_only: true),
         field("text", "Aperture",      "exif:ApertureValue",     3, read_only: true),
         field("text", "ISO",           "exif:ISOSpeedRatings",   4, read_only: true),
         field("text", "Shutter Speed", "exif:ShutterSpeedValue", 5, read_only: true),
+      ] }
+  end
+
+  # XMP Basic / Media Management tab — only shown when the asset carries XMP
+  # metadata (e.g. authored/edited in Adobe tools).
+  def xmp_tab
+    { "id" => "tab-xmp", "name" => "XMP", "position" => 3, "conditional" => true,
+      "fields" => [
+        field("text", "Creator Tool",         "xmp:CreatorTool",          0, read_only: true),
+        field("date", "Create Date",          "xmp:CreateDate",           1, read_only: true),
+        field("date", "Modify Date",          "xmp:ModifyDate",           2, read_only: true),
+        field("date", "Metadata Date",        "xmp:MetadataDate",         3, read_only: true),
+        field("text", "Label",                "xmp:Label",                4, read_only: true),
+        field("text", "Rating",               "xmp:Rating",               5, read_only: true),
+        field("text", "Document ID",          "xmpMM:DocumentID",         6, read_only: true),
+        field("text", "Instance ID",          "xmpMM:InstanceID",         7, read_only: true),
+        field("text", "Original Document ID", "xmpMM:OriginalDocumentID", 8, read_only: true),
+      ] }
+  end
+
+  # Photoshop technical/production tab — only shown when the asset carries
+  # Photoshop-authored metadata (e.g. a PSD, or a JPEG saved from Photoshop).
+  def photoshop_tab
+    { "id" => "tab-photoshop", "name" => "Photoshop", "position" => 4, "conditional" => true,
+      "fields" => [
+        field("text", "Color Mode",             "photoshop:ColorMode",             0, read_only: true),
+        field("text", "Bit Depth",               "photoshop:BitDepth",              1, read_only: true),
+        field("text", "Layer Count",              "photoshop:LayerCount",           2, read_only: true),
+        field("tags", "Layer Names",              "photoshop:LayerNames",           3, read_only: true),
+        field("text", "Urgency",                  "photoshop:Urgency",              4, read_only: true),
+        field("text", "Category",                 "photoshop:Category",             5, read_only: true),
+        field("tags", "Supplemental Categories",  "photoshop:SupplementalCategories", 6, read_only: true),
+        field("textarea", "Instructions",          "photoshop:Instructions",         7, read_only: true),
+        field("text", "Transmission Reference",   "photoshop:TransmissionReference", 8, read_only: true),
+      ] }
+  end
+
+  # ICC color profile tab — only shown when the asset carries an embedded ICC
+  # profile. Uses a pragmatic in-house `icc:` prefix since ICC profiles have no
+  # registered XMP namespace of their own (see {EmbeddedMetadataMapper}).
+  def icc_profile_tab
+    { "id" => "tab-icc-profile", "name" => "ICC Profile", "position" => 5, "conditional" => true,
+      "fields" => [
+        field("text", "Profile Description",  "icc:ProfileDescription",  0, read_only: true),
+        field("text", "Color Space",          "icc:ColorSpaceData",      1, read_only: true),
+        field("text", "Profile Class",        "icc:ProfileClass",        2, read_only: true),
+        field("text", "Device Manufacturer",  "icc:DeviceManufacturer",  3, read_only: true),
+        field("text", "Rendering Intent",     "icc:RenderingIntent",     4, read_only: true),
+        field("text", "Profile Version",      "icc:ProfileVersion",      5, read_only: true),
       ] }
   end
 

@@ -686,6 +686,17 @@ RSpec.describe "Api::V1::Assets coverage", type: :request do
       expect(json["url"]).not_to include("variant=preview")
     end
 
+    it "marks a PSD asset as not editable (the Image Editor cannot render it natively) but a JPEG as editable" do
+      psd = asset_with_version(title: "Psd", properties: { "content_type" => "image/vnd.adobe.photoshop" })
+      jpeg = asset_with_version(title: "Jpeg", properties: { "content_type" => "image/jpeg" })
+
+      get "/api/v1/assets/#{psd.uuid}", as: :json
+      expect(json["editable"]).to be(false)
+
+      get "/api/v1/assets/#{jpeg.uuid}", as: :json
+      expect(json["editable"]).to be(true)
+    end
+
     it "generates and reports failures for watermarked images" do
       require "mini_magick"
 

@@ -136,6 +136,8 @@ RSpec.describe 'Api::V1::Folders', type: :request do
                        created_at:   { type: :string, format: 'date-time' },
                        updated_at:   { type: :string, format: 'date-time' },
                        url:          { type: :string, nullable: true },
+                       preview_url:  { type: :string, nullable: true, description: 'Web-renderable preview URL (falls back to the asset URL)' },
+                       editable:     { type: :boolean, description: 'Whether the Image Editor can load this asset directly (false for formats like PSD/TIFF/RAW that browsers cannot render natively — see AssetProcessorWorker::WEB_RENDERABLE_MIME_TYPES)' },
                      },
                    },
                  },

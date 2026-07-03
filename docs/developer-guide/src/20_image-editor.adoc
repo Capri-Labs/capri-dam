@@ -22,6 +22,24 @@ advanced path.
 | `version` | Create a new `AssetVersion` while keeping the asset identity.
 |===
 
+== Format eligibility (`editable` flag)
+
+`ImageEditorDialog.jsx` renders its live preview from the asset's *original*
+file (`asset.url`), so only formats a browser can decode natively in an
+`<img>` tag can be edited. The whitelist lives in one place —
+`AssetProcessorWorker::WEB_RENDERABLE_MIME_TYPES` (JPEG, PNG, GIF, WebP, SVG,
+AVIF) — and is mirrored on the frontend in
+`app/javascript/utils/webRenderableMimeTypes.js`.
+
+Each asset serializer (`Api::V1::AssetsController#format_asset`,
+`Api::V1::FoldersController#format_asset_payload`,
+`Api::V1::BinController#serialize_asset`) exposes a boolean `editable` field
+derived from that whitelist. `AssetViewer.jsx` disables the "Edit Image"
+button (with an explanatory tooltip) and skips mounting `ImageEditorDialog`
+whenever `editable` is `false` — e.g. PSD, TIFF, HEIC, or RAW files, which
+are only viewable via their server-generated flattened preview
+(`preview_url`), never edited directly.
+
 == UI tabs
 
 `ImageEditorDialog.jsx` exposes:

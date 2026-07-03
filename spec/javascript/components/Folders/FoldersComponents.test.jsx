@@ -316,7 +316,7 @@ describe('Folders components', () => {
             name: 'Basic',
             fields: [
               { id: 'creator', label: 'Creator', field_type: 'text', map_to_property: 'dc:creator', value: 'Jane Photographer' },
-              { id: 'make', label: 'Camera Make', field_type: 'text', map_to_property: 'exif:Make', value: 'Canon' },
+              { id: 'make', label: 'Camera Make', field_type: 'text', map_to_property: 'tiff:Make', value: 'Canon' },
             ],
           },
         ],
@@ -347,7 +347,7 @@ describe('Folders components', () => {
             name: 'Basic',
             fields: [
               { id: 'creator', label: 'Creator', field_type: 'text', map_to_property: 'dc:creator' },
-              { id: 'make', label: 'Camera Make', field_type: 'text', map_to_property: 'exif:Make' },
+              { id: 'make', label: 'Camera Make', field_type: 'text', map_to_property: 'tiff:Make' },
             ],
           },
         ],
@@ -473,6 +473,42 @@ describe('Folders components', () => {
     expect(mockNotify).toHaveBeenCalledWith('Asset URL copied to clipboard!', 'success');
   });
 
+  it('enables Edit Image for web-renderable formats and disables it for PSD (relies on the backend `editable` flag)', () => {
+    const jpegAsset = {
+      id: 12,
+      title: 'Photo.jpg',
+      url: '/photo.jpg',
+      preview_url: '/photo.jpg',
+      editable: true,
+      properties: { content_type: 'image/jpeg' },
+    };
+    const { unmount } = render(<AssetViewer asset={jpegAsset} open onClose={jest.fn()} onAssetUpdated={jest.fn()} />);
+    expect(screen.getByRole('button', { name: /Edit Image/i })).toBeEnabled();
+    unmount();
+
+    const psdAsset = {
+      id: 13,
+      title: 'Artwork.psd',
+      url: '/artwork.psd',
+      preview_url: '/artwork-preview.png',
+      editable: false,
+      properties: { content_type: 'image/vnd.adobe.photoshop', preview_storage_path: 'previews/artwork.png' },
+    };
+    render(<AssetViewer asset={psdAsset} open onClose={jest.fn()} onAssetUpdated={jest.fn()} />);
+    expect(screen.getByRole('button', { name: /Edit Image/i })).toBeDisabled();
+  });
+
+  it('falls back to a client-side content-type check for Edit Image when the backend `editable` flag is absent', () => {
+    const tiffAsset = {
+      id: 14,
+      title: 'Scan.tiff',
+      url: '/scan.tiff',
+      properties: { content_type: 'image/tiff', preview_storage_path: 'previews/scan.png' },
+    };
+    render(<AssetViewer asset={tiffAsset} open onClose={jest.fn()} onAssetUpdated={jest.fn()} />);
+    expect(screen.getByRole('button', { name: /Edit Image/i })).toBeDisabled();
+  });
+
   it('supports legacy duplicate resolution with AI merge', async () => {
     jest.useFakeTimers();
     const onResolve = jest.fn();
@@ -544,9 +580,9 @@ describe('Folders components', () => {
     fireEvent.click(iconButton('ContentCopyIcon'));
     expect(handleCopyPath).toHaveBeenCalled();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Smart Actions' }));
-    fireEvent.click(await screen.findByText('Auto-Tag & Enrich'));
-    expect(mockNotify).toHaveBeenCalledWith('Assets queued for LangChain semantic enrichment.', 'info');
+    fireEvent.click(screen.getByRole('button', { name: 'explorerTopBar.smartActions' }));
+    fireEvent.click(await screen.findByText('explorerTopBar.autoTagEnrich'));
+    expect(mockNotify).toHaveBeenCalledWith('explorerTopBar.notifications.autoEnrichQueued', 'info');
   });
 
   it('renders FolderAccessTab policies and removes an explicit policy', async () => {
@@ -591,7 +627,7 @@ describe('Folders components', () => {
 
   it('renders FoldersManager heading and mounts AssetExplorer', () => {
     render(<FoldersManager someProp="value" />);
-    expect(screen.getByText('All Assets')).toBeInTheDocument();
+    expect(screen.getByText('foldersManager.title')).toBeInTheDocument();
     expect(screen.getByTestId('asset-explorer')).toBeInTheDocument();
     expect(mockAssetExplorer).toHaveBeenCalledWith(expect.objectContaining({ someProp: 'value' }));
   });

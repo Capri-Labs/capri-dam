@@ -441,6 +441,7 @@ module Api
           original_path: asset.folder&.name,
           url:          asset_url_for(asset),
           properties:   props,
+          editable:     AssetProcessorWorker::WEB_RENDERABLE_MIME_TYPES.include?(content_type),
         }
       end
 

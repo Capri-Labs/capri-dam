@@ -9,18 +9,21 @@ import {
     SchemaOutlined, EditOutlined, SaveOutlined, LockOutlined,
     CheckCircleOutlined, WarningAmberOutlined, RefreshOutlined
 } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 import { useNotify } from '../../context/NotificationContext';
 import { mapEmbeddedMetadata } from '../../utils/embeddedMetadataMapper';
 
+const interpolate = (template, values = {}) => template.replace(/\{\{(\w+)\}\}/g, (_, key) => values[key] ?? '');
+
 // ── Field Renderer ─────────────────────────────────────────────────────────────
-function MetadataField({ field, value, onChange, readOnly }) {
+function MetadataField({ field, value, onChange, readOnly, t }) {
     const isLocked = field.inherited || field.read_only || readOnly;
     const label    = (
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
             {field.label}
             {field.required && <span style={{ color: '#ef4444' }}>*</span>}
             {field.inherited && (
-                <Tooltip title="Inherited from parent schema — read only">
+                <Tooltip title={t('assetMetadataPanel.field.inheritedReadOnly')}>
                     <LockOutlined sx={{ fontSize: 12, color: '#94a3b8' }} />
                 </Tooltip>
             )}
@@ -71,7 +74,7 @@ function MetadataField({ field, value, onChange, readOnly }) {
                     </Box>
                     <Select value={value ?? ''} onChange={e => onChange(e.target.value)}
                             displayEmpty size="small" disabled={isLocked}>
-                        <MenuItem value=""><em>— select —</em></MenuItem>
+                        <MenuItem value=""><em>{t('assetMetadataPanel.field.selectPlaceholder')}</em></MenuItem>
                         {(field.options ?? []).map(opt => (
                             <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
                         ))}
@@ -95,7 +98,7 @@ function MetadataField({ field, value, onChange, readOnly }) {
                 <Autocomplete multiple freeSolo size="small" disabled={isLocked} value={Array.isArray(value) ? value : value ? [value] : []} onChange={(_, newVal) => onChange(newVal)} options={[]} renderValue={(val, getTagProps) => val.map((opt, i) => {
   const { key, ...tagProps } = getTagProps({ index: i });
   return <Chip key={key ?? i} label={opt} size="small" {...tagProps} />;
-})} renderInput={params => <TextField {...params} label={label} helperText={`${field.map_to_property} — press Enter to add`} sx={{
+})} renderInput={params => <TextField {...params} label={label} helperText={`${field.map_to_property}${t('assetMetadataPanel.field.tagsHelperSuffix')}`} sx={{
   mb: 2
 }} />} />
             );
@@ -131,6 +134,14 @@ function extractSchemaValues(schema, asset) {
 }
 
 export default function AssetMetadataPanel({ asset, onAssetUpdated }) {
+    const { t } = useTranslation();
+    const translate = (key, defaultValue, options = {}) => {
+        const result = t(key, options);
+        if (result === key || (options.count != null && result === `${key}:${options.count}`)) {
+            return interpolate(defaultValue, options);
+        }
+        return result;
+    };
     const notify = useNotify();
     const [schema,    setSchema]    = useState(null);
     const [loading,   setLoading]   = useState(false);
@@ -224,8 +235,8 @@ export default function AssetMetadataPanel({ asset, onAssetUpdated }) {
                 }),
             });
             const data = await res.json();
-            if (!res.ok) throw new Error(data.error ?? 'Save failed');
-            notify('Metadata saved successfully.', 'success');
+            if (!res.ok) throw new Error(data.error ?? translate('assetMetadataPanel.errors.saveFailed', 'Save failed'));
+            notify(translate('assetMetadataPanel.notifications.metadataSavedSuccessfully', 'Metadata saved successfully.'), 'success');
             setDirty(false);
             if (onAssetUpdated) onAssetUpdated(data);
         } catch (e) {
@@ -247,16 +258,26 @@ export default function AssetMetadataPanel({ asset, onAssetUpdated }) {
         return (
             <Box sx={{ py: 2 }}>
                 <Alert severity="info" icon={<SchemaOutlined />}>
-                    No metadata schema applied to this asset yet.
-                    Use <strong>Tools → Apply Metadata Schema</strong> from the folder view
-                    to assign one.
+                    {translate('assetMetadataPanel.noSchema.line1', 'No metadata schema applied to this asset yet.')}{' '}
+                    {translate('assetMetadataPanel.noSchema.line2Prefix', 'Use')} <strong>{translate('assetMetadataPanel.noSchema.action', 'Tools → Apply Metadata Schema')}</strong> {translate('assetMetadataPanel.noSchema.line2Suffix', 'from the folder view to assign one.')}
                 </Alert>
             </Box>
         );
     }
 
     const tabs = schema.resolved_tabs ?? schema.tabs ?? [];
-    const activeTabs = tabs.filter(t => (t.fields ?? []).length > 0 || !t.inherited);
+    // Tabs marked `conditional` (Camera/EXIF, XMP, Photoshop, ICC Profile) only
+    // render when the asset actually has at least one resolved value for one of
+    // their fields — i.e. the embedded metadata of that kind genuinely exists.
+    // Non-conditional tabs (Basic, IPTC, custom tabs) keep the existing behavior.
+    const hasAnyValue = (tab) => (tab.fields ?? []).some(f => {
+        const v = values[f.map_to_property];
+        return v !== undefined && v !== null && v !== '' && !(Array.isArray(v) && v.length === 0);
+    });
+    const activeTabs = tabs.filter(t => {
+        if (t.conditional) return hasAnyValue(t);
+        return (t.fields ?? []).length > 0 || !t.inherited;
+    });
 
     return (
         <Box>
@@ -269,14 +290,14 @@ export default function AssetMetadataPanel({ asset, onAssetUpdated }) {
                         {schema.name}
                     </Typography>
                     {schema.is_builtin && (
-                        <Chip label="Built-in" size="small"
+                        <Chip label={translate('assetMetadataPanel.builtIn', 'Built-in')} size="small"
                               sx={{ ml: 1, height: 16, fontSize: '0.62rem', bgcolor: '#fef3c7', color: '#92400e' }} />
                     )}
                     <Typography variant="caption" sx={{ display: 'block', color: '#7c3aed' }}>
-                        {tabs.length} tab{tabs.length !== 1 ? 's' : ''} · MIME-resolved schema
+                        {translate('assetMetadataPanel.schemaSummary', '{{count}} tabs · MIME-resolved schema', { count: tabs.length })}
                     </Typography>
                 </Box>
-                <Tooltip title="Reload schema">
+                <Tooltip title={translate('assetMetadataPanel.reloadSchema', 'Reload schema')}>
                     <IconButton size="small" onClick={fetchSchema} sx={{ color: '#7c3aed' }}>
                         <RefreshOutlined sx={{ fontSize: 16 }} />
                     </IconButton>
@@ -292,10 +313,10 @@ export default function AssetMetadataPanel({ asset, onAssetUpdated }) {
                                    startIcon={<SaveOutlined sx={{ fontSize: 14 }} />}
                                    sx={{ textTransform: 'none', fontSize: '0.75rem',
                                         bgcolor: '#5e35b1', '&:hover': { bgcolor: '#4527a0' } }}>
-                               {saving ? 'Saving…' : 'Save Changes'}
+                               {saving ? translate('assetMetadataPanel.saving', 'Saving…') : translate('assetMetadataPanel.saveChanges', 'Save Changes')}
                            </Button>
                        }>
-                    Unsaved metadata changes
+                    {translate('assetMetadataPanel.unsavedMetadataChanges', 'Unsaved metadata changes')}
                 </Alert>
             )}
 
@@ -328,11 +349,12 @@ export default function AssetMetadataPanel({ asset, onAssetUpdated }) {
                         value={values[field.map_to_property]}
                         onChange={val => handleChange(field.map_to_property, val)}
                         readOnly={field.inherited && !field.required}
+                        t={translate}
                     />
                 ))}
                 {(!activeTabs[activeTab]?.fields?.length) && (
                     <Typography variant="caption" sx={{ color: '#94a3b8' }}>
-                        No fields defined for this tab.
+                        {translate('assetMetadataPanel.noFieldsDefined', 'No fields defined for this tab.')}
                     </Typography>
                 )}
             </Box>
@@ -343,7 +365,7 @@ export default function AssetMetadataPanel({ asset, onAssetUpdated }) {
                     <Button variant="contained" onClick={handleSave} disabled={saving}
                             startIcon={<SaveOutlined />}
                             sx={{ textTransform: 'none', bgcolor: '#5e35b1', '&:hover': { bgcolor: '#4527a0' } }}>
-                        {saving ? 'Saving…' : 'Save Metadata'}
+                        {saving ? translate('assetMetadataPanel.saving', 'Saving…') : translate('assetMetadataPanel.saveMetadata', 'Save Metadata')}
                     </Button>
                 </Box>
             )}

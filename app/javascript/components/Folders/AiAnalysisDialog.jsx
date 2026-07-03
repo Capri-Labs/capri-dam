@@ -27,6 +27,11 @@ const requestHeaders = () => ({
   'X-CSRF-Token': document.querySelector('[name="csrf-token"]')?.content || ''
 });
 
+const translateWithFallback = (t, key, fallback) => {
+  const translated = t(key, { defaultValue: fallback });
+  return translated === key ? fallback : translated;
+};
+
 export default function AiAnalysisDialog({ open, onClose, asset }) {
   const { t } = useTranslation();
   const notify = useNotify();
@@ -117,7 +122,7 @@ export default function AiAnalysisDialog({ open, onClose, asset }) {
           <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
             <Box sx={{ width: 120, height: 120, borderRadius: 3, overflow: 'hidden', bgcolor: '#e2e8f0', flexShrink: 0 }}>
               {asset?.url ? (
-                <img src={asset.url} alt={asset?.title || 'asset'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <img src={asset.url} alt={asset?.title || translateWithFallback(t, 'folders.ai.asset_alt', 'asset')} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               ) : null}
             </Box>
             <Box sx={{ flexGrow: 1 }}>

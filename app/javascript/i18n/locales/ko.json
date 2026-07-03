@@ -708,7 +708,26 @@
       "removeFromSubfolders": "하위 폴더도 포함",
       "removeFromSubfoldersHint": "선택 시 제거 작업이 모든 하위 폴더에도 전파됩니다.",
       "removeTooltip": "이 폴더에서 이 정책 제거",
-      "removeWithCascadeTooltip": "이 폴더와 모든 하위 폴더에서 이 정책 제거"
+      "removeWithCascadeTooltip": "이 폴더와 모든 하위 폴더에서 이 정책 제거",
+      "searchGroupsPlaceholder": "이름으로 그룹 검색…",
+      "systemGroup": "시스템 그룹",
+      "system": "시스템",
+      "read": "읽기",
+      "readHint": "에셋 보기 및 폴더 탐색",
+      "modify": "수정",
+      "modifyHint": "메타데이터 편집 및 항목 이름 변경",
+      "create": "생성",
+      "createHint": "에셋 업로드 및 하위 폴더 생성",
+      "delete": "삭제",
+      "deleteHint": "에셋 및 폴더 삭제",
+      "replicate": "복제",
+      "replicateHint": "에셋을 CDN 엣지 노드로 전송",
+      "manage": "관리",
+      "manageHint": "폴더 접근 정책 관리",
+      "thisFolder": "이 폴더",
+      "groupFallback": "그룹 {{id}}",
+      "inheritedFromFolder": "↑ {{name}}",
+      "parent": "상위"
     }
   },
   "styleHub": {
@@ -1287,13 +1306,44 @@
       "invalidSaturation": "채도는 -100에서 100 사이여야 합니다",
       "invalidRotation": "회전은 90으로 나누어떨어져야 합니다",
       "invalidCropAspect": "잘못된 자르기 종횡비",
-      "invalidFilter": "잘못된 필터 선택"
+      "invalidFilter": "잘못된 필터 선택",
+      "failedToLoadFoldersNoPeriod": "폴더를 불러오지 못했습니다",
+      "failedToApplyEdits": "편집을 적용하지 못했습니다.",
+      "networkErrorRetry": "네트워크 오류가 발생했습니다. 다시 시도해 주세요."
     },
     "notifications": {
       "savedAsNewVersion": "새 불변 버전이 성공적으로 저장되었습니다.",
       "savedAsCopy": "{{folder}}에 사본으로 저장되었습니다.",
       "overwritten": "현재 버전이 강제로 덮어씌워졌습니다.",
-      "versionSavedAndMoved": "새 버전이 저장되고 {{folder}}로 이동되었습니다."
+      "versionSavedAndMoved": "새 버전이 저장되고 {{folder}}로 이동되었습니다.",
+      "applied": "적용됨: {{action}}"
+    },
+    "currentFolder": "현재 폴더",
+    "editorCanvasAlt": "에디터 캔버스",
+    "filters": {
+      "none": "없음",
+      "vivid": "선명함",
+      "west": "웨스트",
+      "palma": "Palma",
+      "metro": "Metro",
+      "eiffel": "Eiffel",
+      "blush": "블러시",
+      "modena": "Modena",
+      "vogue": "Vogue"
+    },
+    "processing": {
+      "autoEnhance": "자동 향상 적용 중...",
+      "dynamicHdr": "HDR 및 다이내믹 범위 조정 중...",
+      "colorPop": "피사체 색상 분리 중...",
+      "warmContrast": "스튜디오 온기 적용 중...",
+      "cinematicTone": "영화 같은 톤 보정 중...",
+      "magicEraser": "객체를 분석하고 제거하는 중...",
+      "unblur": "선명한 디테일 복원 중...",
+      "portraitLight": "스튜디오 조명 조정 중...",
+      "generativeExpand": "로컬 확산으로 경계 확장 중...",
+      "superResolution": "로컬 ESRGAN으로 업스케일 중...",
+      "backgroundSwap": "의미론적 마스크 추출 중...",
+      "depthMap": "3D 깊이 기하 계산 중..."
     }
   },
   "login": {
@@ -1676,7 +1726,12 @@
       "status_label": "상태",
       "clear": "초기화",
       "per_page": "페이지",
-      "share_link": "공유 가능한 링크 복사"
+      "share_link": "공유 가능한 링크 복사",
+      "grid_size": {
+        "small": "S",
+        "medium": "M",
+        "large": "L"
+      }
     },
     "duplicates": {
       "title": "중복 에셋 찾기",
@@ -1690,7 +1745,28 @@
       "delete": "삭제",
       "ignore_all": "모두 무시",
       "delete_all": "모든 중복 삭제",
-      "folder": "폴더"
+      "folder": "폴더",
+      "legacy": {
+        "title": "중복 해결: {{title}}",
+        "currentlyInDam": "현재 DAM 내 ({{count}}개 발견)",
+        "primaryTitle": "제목: {{title}}",
+        "locations": "위치:",
+        "newUpload": "새 업로드",
+        "pendingStatus": "상태: 업로드 대기 중",
+        "identicalHash": "동일한 해시",
+        "aiMergeRecommendation": "AI 병합 추천",
+        "aiMergeDescription": "바이트가 동일합니다. AI가 기존 에셋에 새 태그를 추가해 중복을 줄일 수 있습니다.",
+        "mergeMetadata": "메타데이터 병합",
+        "skipUpload": "업로드 건너뛰기",
+        "uploadAnyway": "그래도 중복으로 업로드",
+        "alt": {
+          "existing": "기존",
+          "new": "새 항목"
+        },
+        "notifications": {
+          "aiMerged": "AI가 {{count}}개의 기존 에셋에 새 메타데이터를 성공적으로 병합했습니다."
+        }
+      }
     },
     "ai": {
       "title": "AI 분석",
@@ -1704,10 +1780,30 @@
       "apply_tags": "추천 태그 적용",
       "save_properties": "속성에 저장",
       "queued": "분석이 대기열에 추가되었습니다. 잠시 후 다시 확인하세요.",
-      "error": "분석에 실패했습니다. 다시 시도해 주세요."
+      "error": "분석에 실패했습니다. 다시 시도해 주세요.",
+      "asset_alt": "asset"
     },
     "subfolder_count_tip": "{{count}}개의 하위 폴더",
-    "asset_count_tip": "{{count}}개의 에셋"
+    "asset_count_tip": "{{count}}개의 에셋",
+    "explorer": {
+      "assetNotFound": "자산을 찾을 수 없습니다 ({{status}})",
+      "couldNotOpenAsset": "자산을 열 수 없습니다: {{message}}",
+      "folderLocationCopiedToClipboard": "폴더 위치를 클립보드에 복사했습니다!",
+      "shareableLinkCopiedToClipboard": "공유 가능한 링크를 클립보드에 복사했습니다!",
+      "failedToCopyLink": "링크를 복사하지 못했습니다.",
+      "permanentDeleteWarning": "경고: 이 작업을 수행하면 이 파일들이 서버에서 영구적으로 삭제됩니다. 되돌릴 수 없습니다!",
+      "deleteSelectedConfirm": "선택한 {{count}}개 항목을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.",
+      "deletionError": "삭제 중 오류가 발생했습니다.",
+      "uploadFailed": "업로드에 실패했습니다.",
+      "mediaFiles": "미디어 및 파일",
+      "createNewFolder": "새 폴더 만들기",
+      "folderName": "폴더 이름"
+    },
+    "grid": {
+      "unknown_file": "알 수 없는 파일",
+      "pin_to_collection": "컬렉션에 고정",
+      "view_details": "세부 정보 보기"
+    }
   },
   "inbox": {
     "title": "받은 편지함",
@@ -1770,6 +1866,503 @@
       "sentThisWeek": "이번 주 전송",
       "failureRate": "실패율",
       "pending": "대기 중"
+    }
+  },
+  "assetCard": {
+    "unknownAsset": "알 수 없는 에셋",
+    "unknownSize": "알 수 없는 크기",
+    "noPreview": "미리보기 없음",
+    "tooltips": {
+      "pinToCollection": "컬렉션에 고정",
+      "viewDetails": "자세히 보기"
+    },
+    "menu": {
+      "viewDetails": "자세히 보기",
+      "addToCollection": "컬렉션에 추가",
+      "moveToTrash": "휴지통으로 이동"
+    }
+  },
+  "assetStatisticsTab": {
+    "title": "에셋 통계",
+    "downloads": "다운로드",
+    "cdnViews": "CDN 조회수",
+    "shares": "공유"
+  },
+  "assetList": {
+    "headers": {
+      "name": "이름",
+      "status": "상태",
+      "type": "유형",
+      "size": "크기",
+      "version": "버전",
+      "modified": "수정됨",
+      "created": "생성됨",
+      "actions": "작업"
+    },
+    "unknownFile": "알 수 없는 파일",
+    "tooltips": {
+      "pinToCollection": "컬렉션에 고정",
+      "viewDetails": "자세히 보기"
+    },
+    "status": {
+      "draft": "초안",
+      "published": "게시됨",
+      "approved": "승인됨",
+      "rejected": "거부됨",
+      "archived": "보관됨"
+    }
+  },
+  "folderGrid": {
+    "tooltips": {
+      "folderProperties": "폴더 속성"
+    }
+  },
+  "uploadSidebar": {
+    "title": "업로드 및 보강",
+    "imageTypes": {
+      "productImage": "제품 이미지",
+      "lifestyle": "라이프스타일",
+      "bannerHero": "배너 / 히어로",
+      "headshot": "인물 사진",
+      "document": "문서"
+    },
+    "sections": {
+      "assignment": "할당",
+      "metadataSchema": "메타데이터 스키마",
+      "tags": "태그",
+      "aiAgenticActions": "AI 에이전트 작업"
+    },
+    "noCollectionsFound": "컬렉션을 찾을 수 없습니다",
+    "placeholders": {
+      "selectExistingCollection": "기존 컬렉션 선택...",
+      "selectGlobalAssetType": "전역 에셋 유형 선택",
+      "selectGlobalSchema": "전역 스키마 선택",
+      "typeAndPressEnter": "입력 후 Enter 키를 누르세요"
+    },
+    "schemaHelp": "이 스키마는 기본적으로 모든 대기 파일에 적용됩니다. 파일별 재정의는 각 카드에서 사용할 수 있습니다.",
+    "filenamePatternPrefix": "제품 이미지의 경우: 지원되는 파일명 패턴:",
+    "filenamePatternExample": "예: 012993112028-en-FR01.jpg",
+    "aiTagsOnUpload": "업로드 시 AI 태그 생성",
+    "buttons": {
+      "smartDescribeSelected": "선택 항목 스마트 설명",
+      "autoRemoveBackgrounds": "배경 자동 제거",
+      "uploadCount": "업로드 ({{selectedCount}})"
+    },
+    "progress": {
+      "uploading": "업로드 중…",
+      "count": "{{done}} / {{total}}"
+    }
+  },
+  "foldersManager": {
+    "title": "모든 자산"
+  },
+  "explorerTopBar": {
+    "breadcrumbLabel": "이동 경로",
+    "home": "홈",
+    "copyFolderLink": "폴더 링크 복사",
+    "selectAll": "전체 선택",
+    "viewTrashBin": "휴지통 보기",
+    "backToActiveFiles": "활성 파일로 돌아가기",
+    "tools": "도구",
+    "metadataSchema": "메타데이터 스키마",
+    "applySchemaToFolder": "폴더에 스키마 적용",
+    "folderSelected": "폴더 {{count}}개 선택됨",
+    "foldersSelected": "폴더 {{count}}개 선택됨",
+    "applyToCurrentFolder": "현재 폴더에 적용",
+    "applySchemaToAssets": "자산에 스키마 적용",
+    "assetSelected": "자산 {{count}}개 선택됨",
+    "assetsSelected": "자산 {{count}}개 선택됨",
+    "imageProcessing": "이미지 처리",
+    "applyImageProfile": "이미지 프로필 적용",
+    "setProcessingProfileForThisFolder": "이 폴더의 처리 프로필 설정",
+    "applyVideoProfile": "비디오 프로필 적용",
+    "setVideoEncodingProfileForThisFolder": "이 폴더의 비디오 인코딩 프로필 설정",
+    "edgeCdnOps": "Edge CDN 작업",
+    "syncMetadataToCdn": "메타데이터를 CDN에 동기화",
+    "forcePushJsonToEdgeKv": "JSON을 Edge KV로 강제 푸시",
+    "purgeEdgeCache": "Edge 캐시 비우기",
+    "invalidateDeliveryNodesGlobally": "전 세계 전달 노드 무효화",
+    "workflow": "워크플로",
+    "globalLocalization": "전역 현지화",
+    "autoTranslateCopyMetadata": "문구 및 메타데이터 자동 번역",
+    "brandLicenseGuard": "브랜드 및 라이선스 보호",
+    "validateUsageTermsSignatures": "사용 조건 및 서명 검증",
+    "smartActions": "스마트 작업",
+    "autoTagEnrich": "자동 태그 및 보강",
+    "extractSemanticMetadata": "의미론적 메타데이터 추출",
+    "smartOrganize": "스마트 정리",
+    "groupIntoSemanticFolders": "의미 기반 폴더로 그룹화",
+    "scanForDuplicates": "중복 항목 검사",
+    "tdmPayloadDeduplication": "TDM 페이로드 중복 제거",
+    "moveToBin": "휴지통으로 이동",
+    "deleteForever": "영구 삭제",
+    "applyMetadataSchema": "메타데이터 스키마 적용",
+    "setSchemaForThisFolder": "이 폴더의 스키마 설정",
+    "newFolder": "새 폴더",
+    "currentFolder": "현재 폴더",
+    "notifications": {
+      "autoEnrichQueued": "LangChain 의미론적 보강을 위해 자산이 대기열에 추가되었습니다.",
+      "duplicateScanQueued": "시각적 및 암호학적 중복 항목을 검사하는 중...",
+      "smartOrganizeQueued": "AI가 벡터를 분석하여 항목을 하위 폴더로 군집화하고 있습니다.",
+      "forceSyncStarted": "메타데이터를 Edge KV로 강제 동기화하기 시작했습니다.",
+      "cachePurgeQueued": "선택한 항목에 대한 Edge 캐시 무효화가 대기열에 추가되었습니다.",
+      "localizationTriggered": "현지화 에이전트가 실행되었습니다.",
+      "brandSafetyInitialized": "브랜드 안전 검사가 초기화되었습니다."
+    }
+  },
+  "uploadGrid": {
+    "staging_area": "스테이징 영역",
+    "selection_count": "{{total}}개 중 {{selected}}개 선택됨",
+    "select_all": "전체 선택",
+    "dropzone": {
+      "drag_drop": "여기에 새 에셋을 드래그 앤 드롭하세요",
+      "browse": "또는 클릭하여 로컬 파일 찾아보기"
+    },
+    "preview_alt": "미리보기",
+    "file_fallback_extension": "파일",
+    "preview_generated_after_upload": "업로드 후 미리보기가 생성됩니다",
+    "status": {
+      "calculating_hash": "해시 계산 중...",
+      "checking_dam": "DAM 확인 중...",
+      "uploading": "업로드 중..."
+    },
+    "duplicate_found": "중복 항목 발견",
+    "dimensions": {
+      "unknown": "알 수 없음",
+      "not_applicable": "N/A"
+    },
+    "type_placeholder": "유형",
+    "run_ai_enhance": "이 파일에 AI 향상 실행",
+    "select_schema": "스키마 선택",
+    "product_id": "제품 ID",
+    "language_code": "언어 코드",
+    "select_asset_type": "에셋 유형 선택 (dam:asset_type)",
+    "image_types": {
+      "product_image": "제품 이미지",
+      "lifestyle": "라이프스타일",
+      "banner_hero": "배너 / 히어로",
+      "headshot": "인물 사진",
+      "document": "문서"
+    },
+    "ai_tags": {
+      "studio": "스튜디오",
+      "high_res": "고해상도",
+      "isolated": "배경 제거",
+      "enhanced": "향상됨",
+      "web_ready": "웹용"
+    }
+  },
+  "uploadWorkspace": {
+    "unknown_type": "알 수 없는 유형",
+    "upload_not_allowed": "업로드가 허용되지 않음: {{names}}. 다음 MIME 유형만 허용됩니다: {{mimeTypes}}.",
+    "ai_auto_tagging_complete": "AI 자동 태깅이 완료되었습니다.",
+    "backgrounds_removed": "배경이 제거되었습니다.",
+    "ai_enhancements_applied": "AI 향상이 적용되었습니다.",
+    "upload_sequence_complete": "업로드 시퀀스가 완료되었습니다."
+  },
+  "applySchemaDialog": {
+    "title": "메타데이터 스키마 적용",
+    "selectedItems": "선택된 항목:",
+    "more": "+{{count}}개 더",
+    "availableSchemas": "사용 가능한 스키마",
+    "noSchemas": "사용 가능한 스키마가 없습니다.",
+    "option": {
+      "builtIn": "기본 제공",
+      "typeSchemas": "{{count}}개 유형 스키마"
+    },
+    "target": {
+      "folder_one": "{{count}}개 폴더에 적용 중",
+      "folder_other": "{{count}}개 폴더에 적용 중",
+      "asset_one": "{{count}}개 에셋에 적용 중",
+      "asset_other": "{{count}}개 에셋에 적용 중"
+    },
+    "cascade": {
+      "title": "스키마 캐스케이드",
+      "description": "폴더에 적용하면 각 에셋의 MIME 유형에 가장 적합한 스키마로 자동 해석됩니다(예: image/jpeg → JPEG 하위 유형 스키마).",
+      "allSubfolders": "모든 하위 폴더에도 적용",
+      "thisFolderOnly": "이 폴더에만 적용",
+      "overrideHint": "이후에는 어떤 하위 폴더에서든 개별적으로 스키마를 재정의할 수 있습니다."
+    },
+    "selectionSummary": {
+      "selected": "선택됨: {{name}}",
+      "tabs_one": "탭 {{count}}개",
+      "tabs_other": "탭 {{count}}개",
+      "fields": "필드 {{count}}개"
+    },
+    "actions": {
+      "applying": "적용 중…",
+      "apply": "\"{{name}}\" 적용"
+    },
+    "notifications": {
+      "loadError": "스키마를 불러오지 못했습니다.",
+      "folderAppliedCascade_one": "\"{{schemaName}}\" 스키마가 {{count}}개 폴더와 모든 하위 폴더에 적용되고 있습니다.",
+      "folderAppliedCascade_other": "\"{{schemaName}}\" 스키마가 {{count}}개 폴더와 모든 하위 폴더에 적용되고 있습니다.",
+      "folderApplied_one": "\"{{schemaName}}\" 스키마가 {{count}}개 폴더에 적용되고 있습니다.",
+      "folderApplied_other": "\"{{schemaName}}\" 스키마가 {{count}}개 폴더에 적용되고 있습니다.",
+      "assetApplied_one": "\"{{schemaName}}\" 스키마가 {{count}}개 에셋에 적용되었습니다.",
+      "assetApplied_other": "\"{{schemaName}}\" 스키마가 {{count}}개 에셋에 적용되었습니다.",
+      "applyError": "스키마를 적용하지 못했습니다. 다시 시도해 주세요."
+    }
+  },
+  "pinToCollectionDialog": {
+    "title": "컬렉션에 고정",
+    "searchPlaceholder": "컬렉션 검색...",
+    "noResults": "검색과 일치하는 컬렉션이 없습니다.",
+    "description": {
+      "before": "",
+      "thisAsset": "이 에셋",
+      "after": "을(를) 하나 이상의 컬렉션에 추가합니다."
+    },
+    "collection": {
+      "smartType": "AI 스마트 라우팅",
+      "manualType": "수동 큐레이션",
+      "assetsCount": "에셋 {{count}}개"
+    },
+    "tooltips": {
+      "remove": "이 컬렉션에서 제거",
+      "add": "이 컬렉션에 추가"
+    },
+    "footer": {
+      "pinnedTo_one": "{{count}}개 컬렉션에 고정됨",
+      "pinnedTo_other": "{{count}}개 컬렉션에 고정됨",
+      "notPinned": "어떤 컬렉션에도 고정되지 않음"
+    },
+    "actions": {
+      "done": "완료"
+    },
+    "notifications": {
+      "loadError": "컬렉션을 불러오지 못했습니다.",
+      "removed": "컬렉션에서 제거되었습니다.",
+      "added": "컬렉션에 추가되었습니다.",
+      "operationFailed": "작업에 실패했습니다.",
+      "networkError": "네트워크 오류."
+    }
+  },
+  "assetViewer": {
+    "actions": {
+      "closeAriaLabel": "닫기"
+    },
+    "toolbar": {
+      "pinToCollection": "컬렉션에 고정",
+      "shareAsset": "에셋 공유",
+      "copyImageUrl": "이미지 URL 복사",
+      "editUnsupportedTooltip": "이 파일 형식(예: PSD, TIFF, RAW)은 편집이 지원되지 않습니다. 대신 원본을 다운로드하거나 생성된 미리보기를 확인하세요.",
+      "editImage": "이미지 편집"
+    },
+    "download": {
+      "defaultFilename": "다운로드",
+      "options": "다운로드 옵션",
+      "original": "원본 다운로드",
+      "originalDescription": "고해상도 원본 파일",
+      "secureProxy": "보안 프록시 다운로드",
+      "secureProxyDescription": "제거할 수 없는 워터마크 포함"
+    },
+    "preview": {
+      "notAvailableForFileType": "이 파일 형식에는 미리보기를 사용할 수 없습니다."
+    },
+    "tabs": {
+      "info": "정보",
+      "metadata": "메타데이터",
+      "versions": "버전",
+      "statistics": "통계",
+      "audit": "감사",
+      "workflows": "워크플로",
+      "aiEngine": "AI 엔진"
+    },
+    "info": {
+      "generalMetadata": "일반 메타데이터",
+      "tagsCount": "{{count}}개 태그",
+      "aiRecognizedAndManual": "AI 인식 및 수동",
+      "fileName": "파일 이름",
+      "dateAdded": "추가 날짜",
+      "resolution": "해상도",
+      "fileSize": "파일 크기",
+      "creator": "작성자",
+      "copyright": "저작권",
+      "camera": "카메라",
+      "lens": "렌즈",
+      "colorMode": "색상 모드",
+      "embeddedMetadataFields": "임베드된 메타데이터 필드",
+      "dominantPalette": "주요 팔레트",
+      "embeddedMetadataSection": "EXIF / IPTC / XMP 데이터",
+      "noExifDataExtractedYet": "아직 EXIF 데이터가 추출되지 않았습니다."
+    },
+    "ai": {
+      "semanticAndVisionAnalysis": "시맨틱 및 비전 분석"
+    },
+    "fallbacks": {
+      "unknownFile": "알 수 없는 파일",
+      "unknownSize": "알 수 없는 크기",
+      "unknown": "알 수 없음"
+    },
+    "notifications": {
+      "assetUrlCopiedToClipboard": "에셋 URL이 클립보드에 복사되었습니다!",
+      "generatingSecureWatermarkedProxy": "보안 워터마크 프록시를 생성하는 중...",
+      "downloadStarted": "다운로드가 시작되었습니다",
+      "shareDialogComingSoon": "공유 대화상자가 곧 제공됩니다"
+    }
+  },
+  "assetMetadataPanel": {
+    "field": {
+      "inheritedReadOnly": "상위 스키마에서 상속됨 — 읽기 전용",
+      "selectPlaceholder": "— 선택 —",
+      "tagsHelperSuffix": " — Enter 키를 눌러 추가"
+    },
+    "notifications": {
+      "metadataSavedSuccessfully": "메타데이터가 성공적으로 저장되었습니다."
+    },
+    "errors": {
+      "saveFailed": "저장 실패"
+    },
+    "noSchema": {
+      "line1": "이 에셋에는 아직 메타데이터 스키마가 적용되지 않았습니다.",
+      "line2Prefix": "",
+      "action": "Tools → 메타데이터 스키마 적용",
+      "line2Suffix": "을(를) 폴더 보기에서 사용해 할당하세요."
+    },
+    "builtIn": "기본 제공",
+    "schemaSummary_one": "{{count}}개 탭 · MIME 확인 스키마",
+    "schemaSummary_other": "{{count}}개 탭 · MIME 확인 스키마",
+    "reloadSchema": "스키마 새로고침",
+    "saving": "저장 중…",
+    "saveChanges": "변경 사항 저장",
+    "unsavedMetadataChanges": "저장되지 않은 메타데이터 변경 사항",
+    "noFieldsDefined": "이 탭에 정의된 필드가 없습니다.",
+    "saveMetadata": "메타데이터 저장"
+  },
+  "assetVersionsTab": {
+    "title": "버전 타임라인",
+    "description": "이 에셋의 이전 버전을 확인합니다. 버전을 복원하면 최신 편집을 삭제하지 않고 해당 버전이 활성 파일이 됩니다.",
+    "currentActive": "현재 활성",
+    "savedOn": "저장일",
+    "by": "작성자",
+    "fileSize": "파일 크기",
+    "restore": "복원",
+    "notifications": {
+      "failedToLoadVersionHistory": "버전 기록을 불러오지 못했습니다.",
+      "assetRolledBack": "에셋이 선택한 버전으로 성공적으로 롤백되었습니다.",
+      "failedToRestoreVersion": "버전을 복원하지 못했습니다."
+    }
+  },
+  "assetAuditTab": {
+    "title": "운영 기록",
+    "emptyState": "감사 기록이 없습니다.",
+    "actions": {
+      "imageEdited": "이미지 편집됨",
+      "branchedToNewVersion": "새 버전으로 분기됨",
+      "clonedFromExisting": "기존 버전에서 복제됨",
+      "assetIngested": "에셋 수집됨"
+    },
+    "actorId": "작업자 ID:",
+    "system": "시스템",
+    "modified": "수정됨",
+    "processedAt": "처리됨: {{time}}",
+    "timelineForked": "타임라인 분기됨",
+    "fileSize": {
+      "zero": "0 바이트",
+      "units": {
+        "bytes": "바이트",
+        "kb": "KB",
+        "mb": "MB",
+        "gb": "GB"
+      }
+    }
+  },
+  "assetTagsEditor": {
+    "actions": {
+      "closeAriaLabel": "닫기",
+      "saveChanges": "변경 사항 저장",
+      "runSmartScan": "스마트 스캔 실행"
+    },
+    "title": "태그 관리: {{name}}",
+    "preview": {
+      "alt": "미리보기",
+      "unavailable": "미리보기를 사용할 수 없습니다."
+    },
+    "sections": {
+      "manualTags": "수동 태그",
+      "aiRecognizedTags": "AI 인식 태그"
+    },
+    "manualTags": {
+      "placeholder": "새 태그를 검색하거나 입력하세요...",
+      "helperText": "데이터베이스에 없는 사용자 지정 태그를 추가하려면 Enter 키를 누르세요."
+    },
+    "ai": {
+      "faceRecognition": "얼굴 인식 ({{count}})",
+      "noFacesDetected": "감지된 얼굴이 없습니다.",
+      "textInImage": "이미지 내 텍스트 ({{count}})",
+      "noTextDetected": "감지된 텍스트가 없습니다.",
+      "semanticObjects": "의미 객체 ({{count}})",
+      "noObjectsDetected": "감지된 객체가 없습니다."
+    },
+    "notifications": {
+      "aiVisionScanComplete": "AI 비전 스캔이 완료되었습니다. 새 태그를 발견했습니다.",
+      "tagsUpdatedSuccessfully": "태그가 성공적으로 업데이트되었습니다."
+    }
+  },
+  "folderInfoPanel": {
+    "header": {
+      "subtitle": "폴더 속성"
+    },
+    "tabs": {
+      "general": "일반",
+      "imageProfiles": "이미지 프로필",
+      "videoProfiles": "비디오 프로필",
+      "metadata": "메타데이터",
+      "access": "접근"
+    },
+    "general": {
+      "nameRequired": "이름은 비워 둘 수 없습니다.",
+      "updated": "폴더가 업데이트되었습니다.",
+      "folderId": "폴더 ID",
+      "slug": "슬러그",
+      "created": "생성일",
+      "details": "세부 정보",
+      "name": "이름",
+      "description": "설명",
+      "descriptionPlaceholder": "이 폴더에 대한 설명 추가…",
+      "noDescription": "설명 없음"
+    },
+    "imageProfiles": {
+      "removed": "이미지 프로필이 폴더에서 제거되었습니다.",
+      "removeError": "이미지 프로필을 제거하지 못했습니다.",
+      "title": "이미지 프로필",
+      "change": "변경",
+      "applyProfile": "프로필 적용",
+      "smartCrop": "스마트 크롭",
+      "swatch": "스와치",
+      "responsiveCrop": "반응형 크롭",
+      "unsharpMask": "언샤프: 양 {{amount}} · 반경 {{radius}}",
+      "removeTooltip": "이 폴더에서 프로필 제거",
+      "empty": "이미지 프로필이 할당되지 않았습니다. 이 폴더에 업로드된 이미지는 기본 처리 설정을 사용합니다.",
+      "emptyHint": "프로필은 Tools → Assets → Asset Configurations → Image Profiles 에서 구성할 수 있습니다."
+    },
+    "videoProfiles": {
+      "removed": "비디오 프로필이 폴더에서 제거되었습니다.",
+      "removeError": "비디오 프로필을 제거하지 못했습니다.",
+      "title": "비디오 프로필",
+      "change": "변경",
+      "applyProfile": "프로필 적용",
+      "adaptiveStreaming": "적응형 스트리밍",
+      "progressive": "프로그레시브",
+      "presetCount_one": "프리셋 {{count}}개",
+      "presetCount_other": "프리셋 {{count}}개",
+      "removeTooltip": "이 폴더에서 프로필 제거",
+      "empty": "비디오 프로필이 할당되지 않았습니다. 이 폴더에 업로드된 비디오는 자동으로 트랜스코딩되지 않습니다.",
+      "emptyHint": "프로필은 Tools → Assets → Asset Configurations → Video Profiles 에서 구성하세요."
+    },
+    "metadata": {
+      "removed": "메타데이터 스키마가 폴더에서 제거되었습니다.",
+      "removeError": "스키마를 제거하지 못했습니다.",
+      "title": "메타데이터 스키마",
+      "change": "변경",
+      "applySchema": "스키마 적용",
+      "inherited": "상속됨",
+      "direct": "직접",
+      "tabLabel": "탭 {{index}}",
+      "removeTooltip": "이 폴더에서 스키마 제거",
+      "empty": "이 폴더에 메타데이터 스키마가 할당되지 않았습니다. 기본 스키마가 구성되어 있으면 에셋은 해당 스키마를 사용합니다.",
+      "emptyHint": "스키마는 Tools → Metadata Schemas 에서 구성하세요."
     }
   }
 }

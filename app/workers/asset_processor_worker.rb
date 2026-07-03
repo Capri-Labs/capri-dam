@@ -469,9 +469,10 @@ class AssetProcessorWorker
   end
 
   # Maps the grouped embedded metadata onto the +map_to_property+ keys used by
-  # the built-in metadata schemas (+dc:*+, +exif:*+, +Iptc4xmpCore:*+) so the
-  # asset's schema editor pre-fills those fields with the values embedded in the
-  # file.  Existing keys are never overwritten, keeping any prior user edits.
+  # the built-in metadata schemas (+dc:*+, +tiff:*+, +exif:*+, +photoshop:*+,
+  # +xmp:*+, +icc:*+ — see {EmbeddedMetadataMapper}) so the asset's schema
+  # editor pre-fills those fields with the values embedded in the file.
+  # Existing keys are never overwritten, keeping any prior user edits.
   #
   # @param meta [Hash] mutable metadata hash (must contain +:embedded_metadata+)
   # @return [void]

@@ -52,3 +52,33 @@ extracted metadata pre-filled without the client needing to know the schema id
 or map metadata itself. The `:id` segment accepts either the numeric asset id or
 its UUID. The endpoint responds `404` when the asset is unknown or no schema can
 be resolved.
+
+== Field prefix conventions
+
+Default schema fields use industry-standard XMP/Exif namespace prefixes for
+their `map_to_property` keys, matching the actual namespaces `exiftool`/Adobe
+tools emit, so mappings stay portable and self-documenting:
+
+[cols="1,3", options="header"]
+|===
+| Prefix | Namespace
+| `dc:` | Dublin Core (`title`, `description`, `subject`, `creator`, `rights`)
+| `exif:` | Exif (camera settings — `Make`, `Model`, `FocalLength`, `ApertureValue`, `ISOSpeedRatings`, `ShutterSpeedValue`)
+| `photoshop:` | Adobe Photoshop namespace (`Credit`, `Source`, `City`, `Country`)
+| `Iptc4xmpCore:` | IPTC Core (`Byline`, `Location`, `CountryCode`)
+| `xmp:` | XMP basic schema (`CreateDate`, `ModifyDate`, `CreatorTool`)
+| `tiff:` | TIFF-derived properties on raster images
+|===
+
+`EmbeddedMetadataMapper` resolves these keys against the nested `EXIF`,
+`IPTC`, `XMP`, `Photoshop`, and `ICC_Profile` blocks returned by the
+metadata-extraction pipeline.
+
+== Conditional metadata tabs
+
+The default root schema seeded by `MetadataSchemaSeeder` includes six tabs:
+Basic, IPTC, Camera (Exif), XMP, Photoshop, and ICC Profile. The last three
+are **conditionally rendered** in `AssetMetadataPanel` — they only appear when
+the asset's embedded metadata actually contains a matching `XMP`,
+`Photoshop`, or `ICC_Profile` block, so assets without that embedded data
+(e.g. a plain web JPEG) don't show empty tabs.

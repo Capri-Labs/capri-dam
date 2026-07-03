@@ -2,7 +2,7 @@
  * i18n configuration tests.
  *
  * Verifies that:
- *  1. All 9 locale bundles are correctly loaded.
+ *  1. All 10 locale bundles are correctly loaded.
  *  2. Every key present in en.json exists in every other locale (no silent gaps).
  *  3. English strings match the expected values (regression guard).
  *  4. German strings are correctly translated (spot-check).
@@ -24,7 +24,7 @@ function flatKeys(obj, prefix = '') {
   });
 }
 
-const LOCALES = ['en', 'de', 'fr', 'es', 'pt', 'nl', 'ja', 'zh', 'ko'];
+const LOCALES = ['en', 'de', 'fr', 'es', 'pt', 'nl', 'ja', 'zh', 'ko', 'ar'];
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
@@ -318,7 +318,7 @@ describe('i18n — missing key fallback', () => {
   });
 });
 
-describe('i18n — all 9 locales load without errors', () => {
+describe('i18n — all 10 locales load without errors', () => {
   LOCALES.forEach(locale => {
     it(`${locale} loads successfully`, () => {
       i18n.changeLanguage(locale);
@@ -528,4 +528,106 @@ describe('Reports i18n', () => {
       expect(val.length).toBeGreaterThan(0);
     });
   });
+});
+
+describe('i18n — Folders components English strings (regression guard)', () => {
+  beforeEach(() => i18n.changeLanguage('en'));
+
+  it('assetCard.unknownAsset', () => expect(i18n.t('assetCard.unknownAsset')).toBe('Unknown Asset'));
+  it('assetCard.tooltips.pinToCollection', () => expect(i18n.t('assetCard.tooltips.pinToCollection')).toBe('Pin to Collection'));
+  it('assetStatisticsTab.title', () => expect(i18n.t('assetStatisticsTab.title')).toBe('Asset Statistics'));
+  it('foldersManager.title', () => expect(i18n.t('foldersManager.title')).toBe('All Assets'));
+  it('uploadSidebar.title', () => expect(i18n.t('uploadSidebar.title')).toBe('Upload & Enrich'));
+  it('explorerTopBar.smartActions', () => expect(i18n.t('explorerTopBar.smartActions')).toBe('Smart Actions'));
+  it('explorerTopBar.viewTrashBin', () => expect(i18n.t('explorerTopBar.viewTrashBin')).toBe('View Trash Bin'));
+  it('folders.explorer.mediaFiles', () => expect(i18n.t('folders.explorer.mediaFiles')).toBe('Media & Files'));
+  it('assetViewer.toolbar.editImage', () => expect(i18n.t('assetViewer.toolbar.editImage')).toBe('Edit Image'));
+  it('assetViewer.toolbar.editUnsupportedTooltip', () => expect(i18n.t('assetViewer.toolbar.editUnsupportedTooltip'))
+    .toBe("Editing isn't supported for this file format (e.g. PSD, TIFF, RAW). Download the original or view the generated preview instead."));
+  it('assetMetadataPanel.noSchema.line1', () => expect(i18n.t('assetMetadataPanel.noSchema.line1')).toBe('No metadata schema applied to this asset yet.'));
+  it('assetVersionsTab.title', () => expect(i18n.t('assetVersionsTab.title')).toBe('Version Timeline'));
+  it('assetVersionsTab.restore', () => expect(i18n.t('assetVersionsTab.restore')).toBe('Restore'));
+  it('assetAuditTab.title', () => expect(i18n.t('assetAuditTab.title')).toBe('Operational Ledger'));
+  it('assetAuditTab.emptyState', () => expect(i18n.t('assetAuditTab.emptyState')).toBe('No audit history available.'));
+  it('assetTagsEditor.sections.manualTags', () => expect(i18n.t('assetTagsEditor.sections.manualTags')).toBe('Manual Tags'));
+  it('uploadGrid.staging_area', () => expect(i18n.t('uploadGrid.staging_area')).toBe('Staging Area'));
+  it('uploadGrid.dropzone.drag_drop', () => expect(i18n.t('uploadGrid.dropzone.drag_drop')).toBe('Drag & drop new assets here'));
+  it('uploadWorkspace.upload_sequence_complete', () => expect(i18n.t('uploadWorkspace.upload_sequence_complete')).toBe('Upload sequence complete.'));
+  it('applySchemaDialog.title', () => expect(i18n.t('applySchemaDialog.title')).toBe('Apply Metadata Schema'));
+  it('pinToCollectionDialog.title', () => expect(i18n.t('pinToCollectionDialog.title')).toBe('Pin to Collections'));
+  it('folderInfoPanel.header.subtitle', () => expect(i18n.t('folderInfoPanel.header.subtitle')).toBe('Folder properties'));
+  it('folderInfoPanel.tabs.general', () => expect(i18n.t('folderInfoPanel.tabs.general')).toBe('General'));
+  it('duplicateManager.group.identicalFiles interpolates {{count}}', () => {
+    expect(i18n.t('duplicateManager.group.identicalFiles', { count: 3 })).toBe('3 identical files');
+  });
+});
+
+describe('i18n — Folders components interpolation', () => {
+  beforeEach(() => i18n.changeLanguage('en'));
+
+  it('explorerTopBar.folderSelected interpolates {{count}}', () => {
+    expect(i18n.t('explorerTopBar.folderSelected', { count: 2 })).toBe('2 folder selected');
+  });
+
+  it('assetTagsEditor.title interpolates {{name}}', () => {
+    expect(i18n.t('assetTagsEditor.title', { name: 'summer-banner.png' })).toBe('Manage Tags: summer-banner.png');
+  });
+
+  it('uploadGrid.selection_count interpolates {{selected}} and {{total}}', () => {
+    expect(i18n.t('uploadGrid.selection_count', { selected: 2, total: 5 })).toBe('2 of 5 selected');
+  });
+
+  it('applySchemaDialog.target.folder_one/folder_other pluralizes on {{count}}', () => {
+    expect(i18n.t('applySchemaDialog.target.folder', { count: 1 })).toBe('Applying to 1 folder');
+    expect(i18n.t('applySchemaDialog.target.folder', { count: 4 })).toBe('Applying to 4 folders');
+  });
+});
+
+describe('i18n — German Folders components translations (spot-check)', () => {
+  beforeEach(() => i18n.changeLanguage('de'));
+  afterAll(() => i18n.changeLanguage('en'));
+
+  it('assetCard.unknownAsset → Unbekanntes Asset', () => expect(i18n.t('assetCard.unknownAsset')).toBe('Unbekanntes Asset'));
+  it('foldersManager.title → Alle Assets', () => expect(i18n.t('foldersManager.title')).toBe('Alle Assets'));
+  it('explorerTopBar.smartActions → Smarte Aktionen', () => expect(i18n.t('explorerTopBar.smartActions')).toBe('Smarte Aktionen'));
+  it('assetViewer.toolbar.editImage → Bild bearbeiten', () => expect(i18n.t('assetViewer.toolbar.editImage')).toBe('Bild bearbeiten'));
+  it('assetVersionsTab.title → Versionsverlauf', () => expect(i18n.t('assetVersionsTab.title')).toBe('Versionsverlauf'));
+  it('folderInfoPanel.header.subtitle → Ordnereigenschaften', () => expect(i18n.t('folderInfoPanel.header.subtitle')).toBe('Ordnereigenschaften'));
+});
+
+describe('i18n — Arabic Folders components translations (spot-check)', () => {
+  beforeEach(() => i18n.changeLanguage('ar'));
+  afterAll(() => i18n.changeLanguage('en'));
+
+  it('assetCard.unknownAsset resolves to a non-English, non-key string', () => {
+    const val = i18n.t('assetCard.unknownAsset');
+    expect(val).not.toBe('assetCard.unknownAsset');
+    expect(val).not.toBe('Unknown Asset');
+  });
+
+  it('duplicateManager.group.identicalFiles is translated (not left as literal English)', () => {
+    const val = i18n.t('duplicateManager.group.identicalFiles', { count: 3 });
+    expect(val).not.toBe('3 identical files');
+    expect(val).toContain('3');
+  });
+});
+
+describe('i18n — Folders components load across all 10 locales', () => {
+  LOCALES.forEach(locale => {
+    it(`${locale} has assetViewer.toolbar.editImage`, () => {
+      i18n.changeLanguage(locale);
+      const val = i18n.t('assetViewer.toolbar.editImage');
+      expect(val).not.toBe('assetViewer.toolbar.editImage');
+      expect(val.length).toBeGreaterThan(0);
+    });
+
+    it(`${locale} has folderInfoPanel.header.subtitle`, () => {
+      i18n.changeLanguage(locale);
+      const val = i18n.t('folderInfoPanel.header.subtitle');
+      expect(val).not.toBe('folderInfoPanel.header.subtitle');
+      expect(val.length).toBeGreaterThan(0);
+    });
+  });
+
+  afterAll(() => i18n.changeLanguage('en'));
 });

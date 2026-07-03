@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { Box } from '@mui/material';
 import { useDropzone } from 'react-dropzone';
+import { useTranslation } from 'react-i18next';
 import { useNotify } from '../../context/NotificationContext';
 import { calculateFileHash } from '../../utils/globalutils';
 import { parseProductFilename, defaultSchemaSlugForMime } from '../../utils/productFilename';
@@ -42,6 +43,11 @@ function isWebRenderableImage(mimeType) {
 }
 
 export default function UploadWorkspace({ folderId, onClose, onUploadComplete }) {
+    const { t } = useTranslation();
+    const translate = (key, fallback, options) => {
+        const value = t(key, options);
+        return value === key ? fallback : value;
+    };
     const notify = useNotify();
     const [filesData, setFilesData] = useState([]);
 
@@ -146,9 +152,9 @@ export default function UploadWorkspace({ folderId, onClose, onUploadComplete })
         const permitted = acceptedFiles.filter(f => isMimeAllowed(f.type, allowedMimes));
 
         if (rejected.length > 0) {
-            const names = rejected.map(f => `"${f.name}" (${f.type || 'unknown type'})`).join(', ');
+            const names = rejected.map(f => `"${f.name}" (${f.type || translate('uploadWorkspace.unknown_type', 'unknown type')})`).join(', ');
             notify(
-                `Upload not allowed: ${names}. Only the following MIME types are permitted: ${allowedMimes.join(', ')}.`,
+                translate('uploadWorkspace.upload_not_allowed', `Upload not allowed: ${names}. Only the following MIME types are permitted: ${allowedMimes.join(', ')}.`, { names, mimeTypes: allowedMimes.join(', ') }),
                 'error'
             );
         }
@@ -210,7 +216,7 @@ export default function UploadWorkspace({ folderId, onClose, onUploadComplete })
         }));
 
         checkDuplicates(hashedFiles);
-    }, [schemaOptions, allowedMimes]);
+    }, [allowedMimes, findDefaultSchemaForMime, notify, t]);
 
     const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop });
 
@@ -257,7 +263,7 @@ export default function UploadWorkspace({ folderId, onClose, onUploadComplete })
                     : f
             ));
             setIsAiProcessing(false);
-            notify(actionType === 'tag' ? 'AI Auto-tagging complete.' : 'Backgrounds removed.', 'success');
+            notify(actionType === 'tag' ? translate('uploadWorkspace.ai_auto_tagging_complete', 'AI Auto-tagging complete.') : translate('uploadWorkspace.backgrounds_removed', 'Backgrounds removed.'), 'success');
         }, 2000);
     };
 
@@ -266,7 +272,7 @@ export default function UploadWorkspace({ folderId, onClose, onUploadComplete })
             ? { ...f, meta: { ...f.meta, aiTags: ['Enhanced', 'Web-Ready'] } }
             : f
         ));
-        notify('AI enhancements applied.', 'success');
+        notify(translate('uploadWorkspace.ai_enhancements_applied', 'AI enhancements applied.'), 'success');
     };
 
     // Global schema change can apply to all staged files (left-panel behavior)
@@ -338,7 +344,7 @@ export default function UploadWorkspace({ folderId, onClose, onUploadComplete })
         }
 
         setIsUploading(false);
-        notify('Upload sequence complete.', 'success');
+        notify(translate('uploadWorkspace.upload_sequence_complete', 'Upload sequence complete.'), 'success');
         if (onUploadComplete) onUploadComplete();
     };
 

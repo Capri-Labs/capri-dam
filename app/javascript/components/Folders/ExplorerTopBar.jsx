@@ -10,6 +10,7 @@ import {
     Psychology, Translate, Security, Difference, Style,
     CloudSync, Publish, DeleteSweep, BuildOutlined, SchemaOutlined, ImageOutlined, VideoFileOutlined
 } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 import { useNotify } from '../../context/NotificationContext';
 import UploadWorkspace from './UploadWorkspace';
 import ApplySchemaDialog from './ApplySchemaDialog';
@@ -23,6 +24,7 @@ export default function ExplorerTopBar({
                                            onUploadSuccess, selectedItems, onSchemaApplied
                                        }) {
     const notify = useNotify();
+    const { t } = useTranslation();
 
     const [uploadWorkspaceOpen, setUploadWorkspaceOpen] = useState(false);
 
@@ -45,9 +47,9 @@ export default function ExplorerTopBar({
 
     // AI Handlers
     const handleAiMenuClose = () => setSmartMenuAnchor(null);
-    const handleAutoEnrich  = () => { handleAiMenuClose(); notify("Assets queued for LangChain semantic enrichment.", "info"); };
-    const handleTdmScan     = () => { handleAiMenuClose(); notify("Scanning for visual and cryptographic duplicates...", "warning"); };
-    const handleSmartOrganize = () => { handleAiMenuClose(); notify("AI is analyzing vectors to cluster items into sub-folders.", "info"); };
+    const handleAutoEnrich  = () => { handleAiMenuClose(); notify(t('explorerTopBar.notifications.autoEnrichQueued'), "info"); };
+    const handleTdmScan     = () => { handleAiMenuClose(); notify(t('explorerTopBar.notifications.duplicateScanQueued'), "warning"); };
+    const handleSmartOrganize = () => { handleAiMenuClose(); notify(t('explorerTopBar.notifications.smartOrganizeQueued'), "info"); };
 
     // Edge Operations Handlers
     const handleEdgeMenuClose = () => setEdgeMenuAnchor(null);
@@ -63,7 +65,7 @@ export default function ExplorerTopBar({
             })
         })
             .then(res => res.json())
-            .then(data => { if (data.success) notify("Metadata force-sync to Edge KV initiated.", "success"); });
+            .then(data => { if (data.success) notify(t('explorerTopBar.notifications.forceSyncStarted'), "success"); });
     };
 
     const handleForcePurge = () => {
@@ -77,7 +79,7 @@ export default function ExplorerTopBar({
             })
         })
             .then(res => res.json())
-            .then(data => { if (data.success) notify("Edge cache invalidation queued for selected items.", "warning"); });
+            .then(data => { if (data.success) notify(t('explorerTopBar.notifications.cachePurgeQueued'), "warning"); });
     };
 
     // ── Schema application helpers ──────────────────────────────────────────
@@ -87,7 +89,7 @@ export default function ExplorerTopBar({
         const names = (viewData.folders ?? []).filter(f => ids.includes(f.id)).map(f => f.name);
         setSchemaTargetType('folder');
         setSchemaTargetIds(ids.length > 0 ? ids : [currentId]);
-        setSchemaTargetNames(names.length > 0 ? names : [viewData.breadcrumbs?.slice(-1)[0]?.name ?? 'Current Folder']);
+        setSchemaTargetNames(names.length > 0 ? names : [viewData.breadcrumbs?.slice(-1)[0]?.name ?? t('explorerTopBar.currentFolder')]);
         setSchemaDialogOpen(true);
     };
 
@@ -103,15 +105,21 @@ export default function ExplorerTopBar({
 
     const hasFolderSelection = (selectedItems?.folders?.length ?? 0) > 0;
     const hasAssetSelection  = (selectedItems?.assets?.length  ?? 0) > 0;
+    const folderSelectionText = selectedItems.folders.length === 1
+        ? t('explorerTopBar.folderSelected', { count: selectedItems.folders.length })
+        : t('explorerTopBar.foldersSelected', { count: selectedItems.folders.length });
+    const assetSelectionText = selectedItems.assets.length === 1
+        ? t('explorerTopBar.assetSelected', { count: selectedItems.assets.length })
+        : t('explorerTopBar.assetsSelected', { count: selectedItems.assets.length });
 
     return (
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2, width: '100%', pb: 2 }}>
 
             {/* Left Side: Navigation Context */}
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Breadcrumbs aria-label="breadcrumb">
+                <Breadcrumbs aria-label={t('explorerTopBar.breadcrumbLabel')}>
                     <Link underline="hover" color={currentId === 'root' ? "text.primary" : "inherit"} onClick={() => handleNavigate('root')} sx={{ cursor: 'pointer', display: 'flex', alignItems: 'center', fontWeight: currentId === 'root' ? 700 : 400 }}>
-                        <Home sx={{ mr: 0.5 }} fontSize="small" /> Home
+                        <Home sx={{ mr: 0.5 }} fontSize="small" /> {t('explorerTopBar.home')}
                     </Link>
                     {viewData.breadcrumbs && viewData.breadcrumbs.filter(c => c.id !== 'root').map((crumb, index, arr) => (
                         <Link key={crumb.id} underline="hover" color={index === arr.length - 1 ? "text.primary" : "inherit"} onClick={() => handleNavigate(crumb.id)} sx={{ cursor: 'pointer', fontWeight: index === arr.length - 1 ? 700 : 400 }}>
@@ -119,7 +127,7 @@ export default function ExplorerTopBar({
                         </Link>
                     ))}
                 </Breadcrumbs>
-                <Tooltip title="Copy Folder Link">
+                <Tooltip title={t('explorerTopBar.copyFolderLink')}>
                     <IconButton size="small" onClick={handleCopyPath} sx={{ ml: 1, color: '#64748b' }}>
                         <ContentCopy fontSize="small" />
                     </IconButton>
@@ -134,7 +142,7 @@ export default function ExplorerTopBar({
                 {(viewData.folders?.length > 0 || viewData.assets?.length > 0) && (
                     <FormControlLabel
                         control={<Checkbox size="small" checked={isAllSelected} onChange={handleSelectAll} />}
-                        label={<Typography variant="body2" sx={{ fontWeight: 600 }}>Select All</Typography>}
+                        label={<Typography variant="body2" sx={{ fontWeight: 600 }}>{t('explorerTopBar.selectAll')}</Typography>}
                         sx={{ mr: 1 }}
                     />
                 )}
@@ -145,7 +153,7 @@ export default function ExplorerTopBar({
                     onClick={() => { setViewMode(viewMode === 'active' ? 'bin' : 'active'); handleNavigate('root'); }}
                     sx={{ textTransform: 'none', borderRadius: '8px', bgcolor: viewMode === 'active' ? 'white' : '' }}
                 >
-                    {viewMode === 'active' ? 'View Trash Bin' : 'Back to Active Files'}
+                    {viewMode === 'active' ? t('explorerTopBar.viewTrashBin') : t('explorerTopBar.backToActiveFiles')}
                 </Button>
 
                 {hasSelection && viewMode === 'active' && (
@@ -159,7 +167,7 @@ export default function ExplorerTopBar({
                                  borderColor: '#ddd6fe', bgcolor: '#faf5ff',
                                  '&:hover': { bgcolor: '#f5f3ff' } }}
                         >
-                            Tools
+                            {t('explorerTopBar.tools')}
                         </Button>
                         <Menu
                             anchorEl={toolsMenuAnchor}
@@ -168,7 +176,7 @@ export default function ExplorerTopBar({
                         >
                             <MenuItem disabled sx={{ opacity: 1 }}>
                                 <Typography variant="caption" fontWeight={700} sx={{ color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                                    Metadata Schema
+                                    {t('explorerTopBar.metadataSchema')}
                                 </Typography>
                             </MenuItem>
                             <MenuItem
@@ -177,25 +185,25 @@ export default function ExplorerTopBar({
                             >
                                 <ListItemIcon><SchemaOutlined fontSize="small" sx={{ color: '#7c3aed' }} /></ListItemIcon>
                                 <ListItemText
-                                    primary="Apply Schema to Folder"
+                                    primary={t('explorerTopBar.applySchemaToFolder')}
                                     secondary={hasFolderSelection
-                                        ? `${selectedItems.folders.length} folder${selectedItems.folders.length > 1 ? 's' : ''} selected`
-                                        : "Apply to current folder"}
+                                        ? folderSelectionText
+                                        : t('explorerTopBar.applyToCurrentFolder')}
                                 />
                             </MenuItem>
                             {hasAssetSelection && (
                                 <MenuItem onClick={openSchemaForAssets}>
                                     <ListItemIcon><SchemaOutlined fontSize="small" sx={{ color: '#7c3aed' }} /></ListItemIcon>
                                     <ListItemText
-                                        primary="Apply Schema to Assets"
-                                        secondary={`${selectedItems.assets.length} asset${selectedItems.assets.length > 1 ? 's' : ''} selected`}
+                                        primary={t('explorerTopBar.applySchemaToAssets')}
+                                        secondary={assetSelectionText}
                                     />
                                 </MenuItem>
                             )}
                             <Divider />
                             <MenuItem disabled sx={{ opacity: 1 }}>
                                 <Typography variant="caption" fontWeight={700} sx={{ color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                                    Image Processing
+                                    {t('explorerTopBar.imageProcessing')}
                                 </Typography>
                             </MenuItem>
                             <MenuItem
@@ -204,8 +212,8 @@ export default function ExplorerTopBar({
                             >
                                 <ListItemIcon><ImageOutlined fontSize="small" sx={{ color: '#7c3aed' }} /></ListItemIcon>
                                 <ListItemText
-                                    primary="Apply Image Profile"
-                                    secondary="Set processing profile for this folder"
+                                    primary={t('explorerTopBar.applyImageProfile')}
+                                    secondary={t('explorerTopBar.setProcessingProfileForThisFolder')}
                                 />
                             </MenuItem>
                             <MenuItem
@@ -214,8 +222,8 @@ export default function ExplorerTopBar({
                             >
                                 <ListItemIcon><VideoFileOutlined fontSize="small" sx={{ color: '#7c3aed' }} /></ListItemIcon>
                                 <ListItemText
-                                    primary="Apply Video Profile"
-                                    secondary="Set video encoding profile for this folder"
+                                    primary={t('explorerTopBar.applyVideoProfile')}
+                                    secondary={t('explorerTopBar.setVideoEncodingProfileForThisFolder')}
                                 />
                             </MenuItem>
                         </Menu>
@@ -227,7 +235,7 @@ export default function ExplorerTopBar({
                             startIcon={<CloudSync />}
                             sx={{ textTransform: 'none', borderRadius: '8px', color: '#059669', borderColor: '#a7f3d0', bgcolor: '#ecfdf5', '&:hover': { bgcolor: '#d1fae5' } }}
                         >
-                            Edge CDN Ops
+                            {t('explorerTopBar.edgeCdnOps')}
                         </Button>
                         <Menu
                             anchorEl={edgeMenuAnchor}
@@ -236,12 +244,12 @@ export default function ExplorerTopBar({
                         >
                             <MenuItem onClick={handleForceSync}>
                                 <ListItemIcon><Publish fontSize="small" sx={{ color: '#059669' }} /></ListItemIcon>
-                                <ListItemText primary="Sync Metadata to CDN" secondary="Force push JSON to Edge KV" />
+                                <ListItemText primary={t('explorerTopBar.syncMetadataToCdn')} secondary={t('explorerTopBar.forcePushJsonToEdgeKv')} />
                             </MenuItem>
                             <Divider />
                             <MenuItem onClick={handleForcePurge}>
                                 <ListItemIcon><DeleteSweep fontSize="small" sx={{ color: '#ea580c' }} /></ListItemIcon>
-                                <ListItemText primary="Purge Edge Cache" secondary="Invalidate delivery nodes globally" />
+                                <ListItemText primary={t('explorerTopBar.purgeEdgeCache')} secondary={t('explorerTopBar.invalidateDeliveryNodesGlobally')} />
                             </MenuItem>
                         </Menu>
 
@@ -252,20 +260,20 @@ export default function ExplorerTopBar({
                             startIcon={<Psychology />}
                             sx={{ textTransform: 'none', borderRadius: '8px', color: '#4f46e5', borderColor: '#c7d2fe' }}
                         >
-                            Workflow
+                            {t('explorerTopBar.workflow')}
                         </Button>
                         <Menu
                             anchorEl={workflowMenuAnchor}
                             open={Boolean(workflowMenuAnchor)}
                             onClose={() => setWorkflowMenuAnchor(null)} slotProps={{paper: { elevation: 3, sx: { mt: 1, minWidth: 260, borderRadius: 2 } } }}
                         >
-                            <MenuItem onClick={() => { setWorkflowMenuAnchor(null); notify("Localization agent triggered.", "info"); }}>
+                            <MenuItem onClick={() => { setWorkflowMenuAnchor(null); notify(t('explorerTopBar.notifications.localizationTriggered'), "info"); }}>
                                 <ListItemIcon><Translate fontSize="small" color="primary" /></ListItemIcon>
-                                <ListItemText primary="Global Localization" secondary="Auto-translate copy & metadata" />
+                                <ListItemText primary={t('explorerTopBar.globalLocalization')} secondary={t('explorerTopBar.autoTranslateCopyMetadata')} />
                             </MenuItem>
-                            <MenuItem onClick={() => { setWorkflowMenuAnchor(null); notify("Brand safety check initialized.", "warning"); }}>
+                            <MenuItem onClick={() => { setWorkflowMenuAnchor(null); notify(t('explorerTopBar.notifications.brandSafetyInitialized'), "warning"); }}>
                                 <ListItemIcon><Security fontSize="small" sx={{ color: '#10b981' }} /></ListItemIcon>
-                                <ListItemText primary="Brand & License Guard" secondary="Validate usage terms & signatures" />
+                                <ListItemText primary={t('explorerTopBar.brandLicenseGuard')} secondary={t('explorerTopBar.validateUsageTermsSignatures')} />
                             </MenuItem>
                         </Menu>
 
@@ -276,7 +284,7 @@ export default function ExplorerTopBar({
                             startIcon={<AutoAwesome />}
                             sx={{ textTransform: 'none', borderRadius: '8px', boxShadow: 'none', bgcolor: '#8b5cf6', '&:hover': { bgcolor: '#7c3aed' } }}
                         >
-                            Smart Actions
+                            {t('explorerTopBar.smartActions')}
                         </Button>
                         <Menu
                             anchorEl={smartMenuAnchor}
@@ -285,29 +293,29 @@ export default function ExplorerTopBar({
                         >
                             <MenuItem onClick={handleAutoEnrich}>
                                 <ListItemIcon><Style fontSize="small" sx={{ color: '#8b5cf6' }} /></ListItemIcon>
-                                <ListItemText primary="Auto-Tag & Enrich" secondary="Extract semantic metadata" />
+                                <ListItemText primary={t('explorerTopBar.autoTagEnrich')} secondary={t('explorerTopBar.extractSemanticMetadata')} />
                             </MenuItem>
                             <MenuItem onClick={handleSmartOrganize}>
                                 <ListItemIcon><AccountTree fontSize="small" sx={{ color: '#0ea5e9' }} /></ListItemIcon>
-                                <ListItemText primary="Smart Organize" secondary="Group into semantic folders" />
+                                <ListItemText primary={t('explorerTopBar.smartOrganize')} secondary={t('explorerTopBar.groupIntoSemanticFolders')} />
                             </MenuItem>
                             <Divider />
                             <MenuItem onClick={handleTdmScan}>
                                 <ListItemIcon><Difference fontSize="small" sx={{ color: '#f59e0b' }} /></ListItemIcon>
-                                <ListItemText primary="Scan for Duplicates" secondary="TDM payload deduplication" />
+                                <ListItemText primary={t('explorerTopBar.scanForDuplicates')} secondary={t('explorerTopBar.tdmPayloadDeduplication')} />
                             </MenuItem>
                         </Menu>
 
                         <Button variant="outlined" color="error" startIcon={<DeleteOutlined />} onClick={handleDeleteSelected}>
-                            Move to Bin
+                            {t('explorerTopBar.moveToBin')}
                         </Button>
                     </>
                 )}
 
                 {hasSelection && viewMode === 'bin' && (
                     <>
-                        <Button variant="contained" color="success" onClick={handleRestoreSelected}>Restore</Button>
-                        <Button variant="contained" color="error" startIcon={<DeleteOutlined />} onClick={handlePermanentDelete}>Delete Forever</Button>
+                        <Button variant="contained" color="success" onClick={handleRestoreSelected}>{t('bin.item.restore')}</Button>
+                        <Button variant="contained" color="error" startIcon={<DeleteOutlined />} onClick={handlePermanentDelete}>{t('explorerTopBar.deleteForever')}</Button>
                     </>
                 )}
 
@@ -324,7 +332,7 @@ export default function ExplorerTopBar({
                                          borderColor: '#ddd6fe', bgcolor: '#faf5ff',
                                          '&:hover': { bgcolor: '#f5f3ff' } }}
                                 >
-                                    Tools
+                                    {t('explorerTopBar.tools')}
                                 </Button>
                                 <Menu
                                     anchorEl={toolsMenuAnchor}
@@ -333,23 +341,23 @@ export default function ExplorerTopBar({
                                 >
                                     <MenuItem onClick={openSchemaForFolders}>
                                         <ListItemIcon><SchemaOutlined fontSize="small" sx={{ color: '#7c3aed' }} /></ListItemIcon>
-                                        <ListItemText primary="Apply Metadata Schema" secondary="Set schema for this folder" />
+                                        <ListItemText primary={t('explorerTopBar.applyMetadataSchema')} secondary={t('explorerTopBar.setSchemaForThisFolder')} />
                                     </MenuItem>
                                     <Divider />
                                     <MenuItem onClick={() => { setToolsMenuAnchor(null); setProfileDialogOpen(true); }}>
                                         <ListItemIcon><ImageOutlined fontSize="small" sx={{ color: '#7c3aed' }} /></ListItemIcon>
-                                        <ListItemText primary="Apply Image Profile" secondary="Set processing profile for this folder" />
+                                        <ListItemText primary={t('explorerTopBar.applyImageProfile')} secondary={t('explorerTopBar.setProcessingProfileForThisFolder')} />
                                     </MenuItem>
                                     <MenuItem onClick={() => { setToolsMenuAnchor(null); setVideoProfileDialogOpen(true); }}>
                                         <ListItemIcon><VideoFileOutlined fontSize="small" sx={{ color: '#7c3aed' }} /></ListItemIcon>
-                                        <ListItemText primary="Apply Video Profile" secondary="Set video encoding profile for this folder" />
+                                        <ListItemText primary={t('explorerTopBar.applyVideoProfile')} secondary={t('explorerTopBar.setVideoEncodingProfileForThisFolder')} />
                                     </MenuItem>
                                 </Menu>
                             </>
                         )}
 
                         <Button variant="outlined" startIcon={<CreateNewFolder />} onClick={() => setOpenFolderDialog(true)} sx={{ textTransform: 'none', borderRadius: '8px', bgcolor: 'white' }}>
-                            New Folder
+                            {t('explorerTopBar.newFolder')}
                         </Button>
                         <Button
                             variant="contained"
@@ -357,7 +365,7 @@ export default function ExplorerTopBar({
                             onClick={() => setUploadWorkspaceOpen(true)}
                             sx={{ textTransform: 'none', borderRadius: '8px', boxShadow: 'none', bgcolor: '#4f46e5', '&:hover': { bgcolor: '#4338ca' } }}
                         >
-                            Upload Asset
+                            {t('header.uploadAsset')}
                         </Button>
                     </>
                 )}
@@ -395,7 +403,7 @@ export default function ExplorerTopBar({
                     if (needsRefresh && onSchemaApplied) onSchemaApplied();
                 }}
                 folderId={currentId}
-                folderName={viewData.breadcrumbs?.slice(-1)[0]?.name ?? 'Current Folder'}
+                folderName={viewData.breadcrumbs?.slice(-1)[0]?.name ?? t('explorerTopBar.currentFolder')}
             />
 
             {/* ── Apply Video Profile Dialog ── */}
@@ -406,7 +414,7 @@ export default function ExplorerTopBar({
                     if (needsRefresh && onSchemaApplied) onSchemaApplied();
                 }}
                 folderId={currentId}
-                folderName={viewData.breadcrumbs?.slice(-1)[0]?.name ?? 'Current Folder'}
+                folderName={viewData.breadcrumbs?.slice(-1)[0]?.name ?? t('explorerTopBar.currentFolder')}
             />
         </Box>
     );

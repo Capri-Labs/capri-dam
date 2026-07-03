@@ -17,7 +17,9 @@ import {
     ChevronRight,
     ContentCopy, PushPin, Share, PolicyOutlined, SchemaOutlined
 } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 import ImageEditorDialog from './ImageEditorDialog';
+import { isWebRenderableImage } from '../../utils/webRenderableMimeTypes';
 import WorkflowPanel from '../WorkflowPanel';
 import AssetTagsEditor from './AssetTagsEditor';
 import PinToCollectionDialog from './PinToCollectionDialog';
@@ -27,6 +29,8 @@ import AssetVersionsTab from './AssetVersionsTab';
 import AssetStatisticsTab from './AssetStatisticsTab';
 import AssetAuditTab from './AssetAuditTab';
 import AssetMetadataPanel from './AssetMetadataPanel';
+
+const interpolate = (template, values = {}) => template.replace(/\{\{(\w+)\}\}/g, (_, key) => values[key] ?? '');
 
 function TabPanel(props) {
     const { children, value, index, ...other } = props;
@@ -38,6 +42,14 @@ function TabPanel(props) {
 }
 
 export default function AssetViewer({ asset: initialAsset, open, onClose, onAssetUpdated }) {
+    const { t } = useTranslation();
+    const translate = (key, defaultValue, options = {}) => {
+        const result = t(key, options);
+        if (result === key || (options.count != null && result === `${key}:${options.count}`)) {
+            return interpolate(defaultValue, options);
+        }
+        return result;
+    };
     const notify = useNotify();
     const [asset, setAsset] = useState(initialAsset);
     const [editorOpen, setEditorOpen] = useState(false);
@@ -57,12 +69,12 @@ export default function AssetViewer({ asset: initialAsset, open, onClose, onAsse
 
     const handleCopyUrl = () => {
         navigator.clipboard.writeText(asset.url);
-        notify("Asset URL copied to clipboard!", "success");
+        notify(translate('assetViewer.notifications.assetUrlCopiedToClipboard', 'Asset URL copied to clipboard!'), "success");
     };
 
     const handleDownloadWatermarked = () => {
         setDownloadMenuAnchor(null);
-        notify("Generating secure watermarked proxy...", "info");
+        notify(translate('assetViewer.notifications.generatingSecureWatermarkedProxy', 'Generating secure watermarked proxy...'), "info");
 
         // Use standard browser navigation to trigger the Rails send_data stream
         window.location.href = `/api/v1/assets/${asset.id}/watermarked`;
@@ -77,13 +89,13 @@ export default function AssetViewer({ asset: initialAsset, open, onClose, onAsse
 
             const link = document.createElement('a');
             link.href = blobUrl;
-            link.download = asset.properties?.original_filename || asset.title || 'download';
+            link.download = asset.properties?.original_filename || asset.title || translate('assetViewer.download.defaultFilename', 'download');
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
             window.URL.revokeObjectURL(blobUrl);
 
-            notify("Download started", "info");
+            notify(translate('assetViewer.notifications.downloadStarted', 'Download started'), "info");
         } catch (error) {
             // Fallback
             window.open(asset.url, '_blank');
@@ -95,8 +107,17 @@ export default function AssetViewer({ asset: initialAsset, open, onClose, onAsse
         asset.properties?.preview_storage_path || asset.properties?.preview_content_type
     );
     const canPreview = isImage || hasGeneratedPreview;
-    const displayName = asset.title || asset.name || "Unknown File";
-    const fileSize = asset.properties?.file_size || "Unknown Size";
+    // The interactive Image Editor renders the *original* file directly (not
+    // the flattened preview), so it only works for formats browsers can decode
+    // natively. Trust the backend-computed `editable` flag when present (see
+    // Api::V1::AssetsController#web_renderable_image?); fall back to a
+    // client-side check by content type for any response shape that predates it.
+    const canEditImage = asset.editable ?? (isImage && isWebRenderableImage(asset.properties?.content_type));
+    const displayName = asset.title || asset.name || translate('assetViewer.fallbacks.unknownFile', 'Unknown File');
+    const fileSize = asset.properties?.file_size || translate('assetViewer.fallbacks.unknownSize', 'Unknown Size');
+    const statusLabel = asset.status
+        ? translate(`asset.status.${asset.status}`, asset.status)
+        : translate('asset.status.pending', 'Pending');
 
     // Prefer a generated web preview (e.g. flattened PNG for PSD/TIFF) for
     // display; the original URL is still used for downloads.
@@ -125,18 +146,18 @@ export default function AssetViewer({ asset: initialAsset, open, onClose, onAsse
         <Dialog fullScreen open={open} onClose={onClose}>
             <AppBar sx={{ position: 'relative', bgcolor: '#1e293b', boxShadow: 'none' }}>
                 <Toolbar>
-                    <IconButton edge="start" color="inherit" onClick={onClose} aria-label="close"><Close /></IconButton>
+                    <IconButton edge="start" color="inherit" onClick={onClose} aria-label={translate('assetViewer.actions.closeAriaLabel', 'close')}><Close /></IconButton>
                     <Typography sx={{ ml: 2, flex: 1 }} variant="h6" component="div" noWrap>{displayName}</Typography>
 
-                    <Tooltip title="Pin to Collection">
+                    <Tooltip title={translate('assetViewer.toolbar.pinToCollection', 'Pin to Collection')}>
                         <IconButton color="inherit" onClick={() => setPinOpen(true)}><PushPin fontSize="small" /></IconButton>
                     </Tooltip>
 
-                    <Tooltip title="Share Asset">
-                        <IconButton color="inherit" onClick={() => notify("Share dialog coming soon", "info")}><Share fontSize="small" /></IconButton>
+                    <Tooltip title={translate('assetViewer.toolbar.shareAsset', 'Share Asset')}>
+                        <IconButton color="inherit" onClick={() => notify(translate('assetViewer.notifications.shareDialogComingSoon', 'Share dialog coming soon'), "info")}><Share fontSize="small" /></IconButton>
                     </Tooltip>
 
-                    <Tooltip title="Copy Image URL">
+                    <Tooltip title={translate('assetViewer.toolbar.copyImageUrl', 'Copy Image URL')}>
                         <IconButton color="inherit" onClick={handleCopyUrl}><ContentCopy fontSize="small" /></IconButton>
                     </Tooltip>
 
@@ -144,14 +165,20 @@ export default function AssetViewer({ asset: initialAsset, open, onClose, onAsse
 
                     {/*  MOVED: Launch Image Editor Button */}
                     {isImage && (
-                        <Button
-                            variant="outlined"
-                            startIcon={<Edit />}
-                            onClick={() => setEditorOpen(true)}
-                            sx={{ color: '#fff', borderColor: 'rgba(255,255,255,0.5)', '&:hover': { borderColor: '#fff' }, mr: 1, textTransform: 'none' }}
-                        >
-                            Edit Image
-                        </Button>
+                        <Tooltip title={canEditImage ? '' : translate('assetViewer.toolbar.editUnsupportedTooltip', "Editing isn't supported for this file format (e.g. PSD, TIFF, RAW). Download the original or view the generated preview instead.")}>
+                            <span>
+                                <Button
+                                    variant="outlined"
+                                    startIcon={<Edit />}
+                                    onClick={() => setEditorOpen(true)}
+                                    disabled={!canEditImage}
+                                    sx={{ color: '#fff', borderColor: 'rgba(255,255,255,0.5)', '&:hover': { borderColor: '#fff' }, mr: 1, textTransform: 'none',
+                                          '&.Mui-disabled': { color: 'rgba(255,255,255,0.35)', borderColor: 'rgba(255,255,255,0.2)' } }}
+                                >
+                                    {translate('assetViewer.toolbar.editImage', 'Edit Image')}
+                                </Button>
+                            </span>
+                        </Tooltip>
                     )}
 
                     <Button
@@ -160,7 +187,7 @@ export default function AssetViewer({ asset: initialAsset, open, onClose, onAsse
                         onClick={(e) => setDownloadMenuAnchor(e.currentTarget)}
                         sx={{ bgcolor: '#4f46e5', '&:hover': { bgcolor: '#4338ca' }, textTransform: 'none' }}
                     >
-                        Download Options
+                        {translate('assetViewer.download.options', 'Download Options')}
                     </Button>
                     <Menu
                         anchorEl={downloadMenuAnchor}
@@ -168,13 +195,13 @@ export default function AssetViewer({ asset: initialAsset, open, onClose, onAsse
                         onClose={() => setDownloadMenuAnchor(null)} slotProps={{paper: { elevation: 3, sx: { mt: 1, minWidth: 200, borderRadius: 2 } } }}
                     >
                         <MenuItem onClick={() => { setDownloadMenuAnchor(null); handleDownload(); }}>
-                            <ListItemText primary="Download Original" secondary="High-resolution source file" />
+                            <ListItemText primary={translate('assetViewer.download.original', 'Download Original')} secondary={translate('assetViewer.download.originalDescription', 'High-resolution source file')} />
                         </MenuItem>
                         <Divider />
                         <MenuItem onClick={handleDownloadWatermarked}>
                             <ListItemText
-                                primary="Download Secure Proxy"
-                                secondary="Includes unremovable watermark"
+                                primary={translate('assetViewer.download.secureProxy', 'Download Secure Proxy')}
+                                secondary={translate('assetViewer.download.secureProxyDescription', 'Includes unremovable watermark')}
                                 slotProps={{ primary: { color: 'error', fontWeight: 600 } }}
                             />
                         </MenuItem>
@@ -198,7 +225,7 @@ export default function AssetViewer({ asset: initialAsset, open, onClose, onAsse
                                  transform: `scaleX(${geometry.flip_horizontal ? -1 : 1}) rotate(${geometry.rotate || 0}deg)`
                         }} />
                     ) : (
-                        <Typography color="textSecondary">Preview not available for this file type.</Typography>
+                        <Typography color="textSecondary">{translate('assetViewer.preview.notAvailableForFileType', 'Preview not available for this file type.')}</Typography>
                     )}
                 </Grid>
 
@@ -206,13 +233,13 @@ export default function AssetViewer({ asset: initialAsset, open, onClose, onAsse
                 <Grid  sx={{ width: '35%', bgcolor: '#ffffff', display: 'flex', flexDirection: 'column' }}>
                     <Box sx={{ borderBottom: 1, borderColor: 'divider', px: 2, pt: 1 }}>
                         <Tabs value={activeTab} onChange={handleTabChange} variant="scrollable" scrollButtons="auto" sx={{ '& .MuiTab-root': { textTransform: 'none', minWidth: 'auto', px: 2 } }}>
-                            <Tab icon={<InfoOutlined fontSize="small" />} iconPosition="start" label="Info" />
-                            <Tab icon={<SchemaOutlined fontSize="small" />} iconPosition="start" label="Metadata" />
-                            <Tab icon={<History fontSize="small" />} iconPosition="start" label="Versions" />
-                            <Tab icon={<AnalyticsOutlined fontSize="small" />} iconPosition="start" label="Statistics" />
-                            <Tab icon={<PolicyOutlined fontSize="small" />} iconPosition="start" label="Audit" />
-                            <Tab icon={<AccountTreeOutlined fontSize="small" />} iconPosition="start" label="Workflows" />
-                            <Tab icon={<AutoAwesome fontSize="small" />} iconPosition="start" label="AI Engine" />
+                            <Tab icon={<InfoOutlined fontSize="small" />} iconPosition="start" label={translate('assetViewer.tabs.info', 'Info')} />
+                            <Tab icon={<SchemaOutlined fontSize="small" />} iconPosition="start" label={translate('assetViewer.tabs.metadata', 'Metadata')} />
+                            <Tab icon={<History fontSize="small" />} iconPosition="start" label={translate('assetViewer.tabs.versions', 'Versions')} />
+                            <Tab icon={<AnalyticsOutlined fontSize="small" />} iconPosition="start" label={translate('assetViewer.tabs.statistics', 'Statistics')} />
+                            <Tab icon={<PolicyOutlined fontSize="small" />} iconPosition="start" label={translate('assetViewer.tabs.audit', 'Audit')} />
+                            <Tab icon={<AccountTreeOutlined fontSize="small" />} iconPosition="start" label={translate('assetViewer.tabs.workflows', 'Workflows')} />
+                            <Tab icon={<AutoAwesome fontSize="small" />} iconPosition="start" label={translate('assetViewer.tabs.aiEngine', 'AI Engine')} />
                         </Tabs>
                     </Box>
 
@@ -221,8 +248,8 @@ export default function AssetViewer({ asset: initialAsset, open, onClose, onAsse
                         {/* TAB 0: INFO */}
                         <TabPanel value={activeTab} index={0}>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                                <Typography variant="subtitle1" fontWeight="700">General Metadata</Typography>
-                                <Chip label={asset.status || 'Pending'} color={asset.status === 'approved' ? 'success' : 'warning'} size="small" />
+                                <Typography variant="subtitle1" fontWeight="700">{translate('assetViewer.info.generalMetadata', 'General Metadata')}</Typography>
+                                <Chip label={statusLabel} color={asset.status === 'approved' ? 'success' : 'warning'} size="small" />
                             </Box>
 
                             {/*   The Tags Entry Point matching your UI mock */}
@@ -234,8 +261,8 @@ export default function AssetViewer({ asset: initialAsset, open, onClose, onAsse
                                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
                                     <LocalOffer sx={{ color: '#475569', mr: 2 }} />
                                     <Box>
-                                        <Typography variant="body2" fontWeight="700" color="textPrimary">{totalTagsCount} tags</Typography>
-                                        <Typography variant="caption" color="textSecondary">AI-recognized & Manual</Typography>
+                                        <Typography variant="body2" fontWeight="700" color="textPrimary">{translate('assetViewer.info.tagsCount', '{{count}} tags', { count: totalTagsCount })}</Typography>
+                                        <Typography variant="caption" color="textSecondary">{translate('assetViewer.info.aiRecognizedAndManual', 'AI-recognized & Manual')}</Typography>
                                     </Box>
                                 </Box>
                                 <IconButton size="small" sx={{ bgcolor: '#4f46e5', color: '#fff', '&:hover': { bgcolor: '#4338ca' } }}>
@@ -244,27 +271,27 @@ export default function AssetViewer({ asset: initialAsset, open, onClose, onAsse
                             </Paper>
 
                             <List dense disablePadding sx={{ mb: 4 }}>
-                                <ListItem disableGutters><ListItemText primary="File Name" secondary={displayName} /></ListItem>
-                                <ListItem disableGutters><ListItemText primary="Date Added" secondary={new Date(asset.created_at).toLocaleString()} /></ListItem>
-                                <ListItem disableGutters><ListItemText primary="Resolution" secondary={asset.properties?.resolution || "Unknown"} /></ListItem>
-                                <ListItem disableGutters><ListItemText primary="File Size" secondary={fileSize} /></ListItem>
+                                <ListItem disableGutters><ListItemText primary={translate('assetViewer.info.fileName', 'File Name')} secondary={displayName} /></ListItem>
+                                <ListItem disableGutters><ListItemText primary={translate('assetViewer.info.dateAdded', 'Date Added')} secondary={new Date(asset.created_at).toLocaleString()} /></ListItem>
+                                <ListItem disableGutters><ListItemText primary={translate('assetViewer.info.resolution', 'Resolution')} secondary={asset.properties?.resolution || translate('assetViewer.fallbacks.unknown', 'Unknown')} /></ListItem>
+                                <ListItem disableGutters><ListItemText primary={translate('assetViewer.info.fileSize', 'File Size')} secondary={fileSize} /></ListItem>
                                 {asset.properties?.creator && (
-                                    <ListItem disableGutters><ListItemText primary="Creator" secondary={[].concat(asset.properties.creator).join(', ')} /></ListItem>
+                                    <ListItem disableGutters><ListItemText primary={translate('assetViewer.info.creator', 'Creator')} secondary={[].concat(asset.properties.creator).join(', ')} /></ListItem>
                                 )}
                                 {asset.properties?.copyright && (
-                                    <ListItem disableGutters><ListItemText primary="Copyright" secondary={asset.properties.copyright} /></ListItem>
+                                    <ListItem disableGutters><ListItemText primary={translate('assetViewer.info.copyright', 'Copyright')} secondary={asset.properties.copyright} /></ListItem>
                                 )}
                                 {(asset.properties?.camera_make || asset.properties?.camera_model) && (
-                                    <ListItem disableGutters><ListItemText primary="Camera" secondary={[asset.properties.camera_make, asset.properties.camera_model].filter(Boolean).join(' ')} /></ListItem>
+                                    <ListItem disableGutters><ListItemText primary={translate('assetViewer.info.camera', 'Camera')} secondary={[asset.properties.camera_make, asset.properties.camera_model].filter(Boolean).join(' ')} /></ListItem>
                                 )}
                                 {asset.properties?.lens && (
-                                    <ListItem disableGutters><ListItemText primary="Lens" secondary={asset.properties.lens} /></ListItem>
+                                    <ListItem disableGutters><ListItemText primary={translate('assetViewer.info.lens', 'Lens')} secondary={asset.properties.lens} /></ListItem>
                                 )}
                                 {asset.properties?.color_mode && (
-                                    <ListItem disableGutters><ListItemText primary="Color Mode" secondary={asset.properties.color_mode} /></ListItem>
+                                    <ListItem disableGutters><ListItemText primary={translate('assetViewer.info.colorMode', 'Color Mode')} secondary={asset.properties.color_mode} /></ListItem>
                                 )}
                                 {asset.properties?.metadata_field_count > 0 && (
-                                    <ListItem disableGutters><ListItemText primary="Embedded Metadata Fields" secondary={asset.properties.metadata_field_count} /></ListItem>
+                                    <ListItem disableGutters><ListItemText primary={translate('assetViewer.info.embeddedMetadataFields', 'Embedded Metadata Fields')} secondary={asset.properties.metadata_field_count} /></ListItem>
                                 )}
                             </List>
 
@@ -272,7 +299,7 @@ export default function AssetViewer({ asset: initialAsset, open, onClose, onAsse
                             {asset.properties?.color_palette && asset.properties.color_palette.length > 0 && (
                                 <Box sx={{ mb: 4 }}>
                                     <Typography variant="caption" sx={{ color: '#475569', mb: 1, display: 'block', fontWeight: 600 }}>
-                                        Dominant Palette
+                                        {translate('assetViewer.info.dominantPalette', 'Dominant Palette')}
                                     </Typography>
                                     <Box sx={{ display: 'flex', gap: 1 }}>
                                         {asset.properties.color_palette.map((hex, index) => (
@@ -293,14 +320,14 @@ export default function AssetViewer({ asset: initialAsset, open, onClose, onAsse
 
                             <Divider sx={{ mb: 3 }} />
 
-                            <Typography variant="subtitle2" fontWeight="700" sx={{ mb: 2 }}>EXIF / IPTC / XMP Data</Typography>
+                            <Typography variant="subtitle2" fontWeight="700" sx={{ mb: 2 }}>{translate('assetViewer.info.embeddedMetadataSection', 'EXIF / IPTC / XMP Data')}</Typography>
                             <Paper elevation={0} sx={{ p: 2, bgcolor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 2, maxHeight: 360, overflowY: 'auto' }}>
                                 <Typography component="pre" variant="caption" color="textSecondary" sx={{ fontFamily: 'monospace', whiteSpace: 'pre-wrap', m: 0 }}>
                                     {asset.properties?.embedded_metadata
                                         ? JSON.stringify(asset.properties.embedded_metadata, null, 2)
                                         : asset.properties?.exif_data
                                             ? JSON.stringify(asset.properties.exif_data, null, 2)
-                                            : "No EXIF data extracted yet."}
+                                            : translate('assetViewer.info.noExifDataExtractedYet', 'No EXIF data extracted yet.')}
                                 </Typography>
                             </Paper>
                         </TabPanel>
@@ -330,7 +357,7 @@ export default function AssetViewer({ asset: initialAsset, open, onClose, onAsse
                         </TabPanel>
                         {/* TAB 6: AI */}
                         <TabPanel value={activeTab} index={6}>
-                            <Typography variant="subtitle1" fontWeight="700" sx={{ mb: 2 }}>Semantic & Vision Analysis</Typography>
+                            <Typography variant="subtitle1" fontWeight="700" sx={{ mb: 2 }}>{translate('assetViewer.ai.semanticAndVisionAnalysis', 'Semantic & Vision Analysis')}</Typography>
                         </TabPanel>
 
                     </Box>
@@ -338,7 +365,7 @@ export default function AssetViewer({ asset: initialAsset, open, onClose, onAsse
             </Grid>
 
             {/* OVERLAYS */}
-            {isImage && (
+            {canEditImage && (
                 <ImageEditorDialog
                     asset={asset}
                     open={editorOpen}

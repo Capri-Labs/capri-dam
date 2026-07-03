@@ -708,7 +708,26 @@
       "removeFromSubfolders": "También subcarpetas",
       "removeFromSubfoldersHint": "Cuando está marcado, la acción de eliminar también se propagará a todas las carpetas secundarias.",
       "removeTooltip": "Eliminar esta política de esta carpeta",
-      "removeWithCascadeTooltip": "Eliminar esta política de esta carpeta y todas sus subcarpetas"
+      "removeWithCascadeTooltip": "Eliminar esta política de esta carpeta y todas sus subcarpetas",
+      "searchGroupsPlaceholder": "Buscar grupos por nombre…",
+      "systemGroup": "Grupo del sistema",
+      "system": "Sistema",
+      "read": "Leer",
+      "readHint": "Ver recursos y explorar la carpeta",
+      "modify": "Modificar",
+      "modifyHint": "Editar metadatos y renombrar elementos",
+      "create": "Crear",
+      "createHint": "Subir recursos y crear subcarpetas",
+      "delete": "Eliminar",
+      "deleteHint": "Eliminar recursos y carpetas",
+      "replicate": "Replicar",
+      "replicateHint": "Enviar recursos a nodos edge del CDN",
+      "manage": "Administrar",
+      "manageHint": "Administrar políticas de acceso de carpetas",
+      "thisFolder": "esta carpeta",
+      "groupFallback": "Grupo {{id}}",
+      "inheritedFromFolder": "↑ {{name}}",
+      "parent": "principal"
     }
   },
   "styleHub": {
@@ -1287,13 +1306,44 @@
       "invalidSaturation": "La saturación debe estar entre -100 y 100",
       "invalidRotation": "La rotación debe ser divisible por 90",
       "invalidCropAspect": "Relación de aspecto de recorte inválida",
-      "invalidFilter": "Selección de filtro inválida"
+      "invalidFilter": "Selección de filtro inválida",
+      "failedToLoadFoldersNoPeriod": "No se pudieron cargar las carpetas",
+      "failedToApplyEdits": "No se pudieron aplicar las ediciones.",
+      "networkErrorRetry": "Se produjo un error de red. Inténtalo de nuevo."
     },
     "notifications": {
       "savedAsNewVersion": "Nueva versión inmutable guardada exitosamente.",
       "savedAsCopy": "Guardado como copia en {{folder}}.",
       "overwritten": "Versión actual sobrescrita de manera forzada.",
-      "versionSavedAndMoved": "Nueva versión guardada y movida a {{folder}}."
+      "versionSavedAndMoved": "Nueva versión guardada y movida a {{folder}}.",
+      "applied": "Aplicado: {{action}}"
+    },
+    "currentFolder": "carpeta actual",
+    "editorCanvasAlt": "Lienzo del editor",
+    "filters": {
+      "none": "Ninguno",
+      "vivid": "Vívido",
+      "west": "Oeste",
+      "palma": "Palma",
+      "metro": "Metro",
+      "eiffel": "Eiffel",
+      "blush": "Rubor",
+      "modena": "Modena",
+      "vogue": "Vogue"
+    },
+    "processing": {
+      "autoEnhance": "Aplicando mejora automática...",
+      "dynamicHdr": "Equilibrando HDR y dinámica...",
+      "colorPop": "Aislando el color del sujeto...",
+      "warmContrast": "Aplicando calidez de estudio...",
+      "cinematicTone": "Ajustando tonos cinematográficos...",
+      "magicEraser": "Analizando y eliminando objetos...",
+      "unblur": "Restaurando detalles nítidos...",
+      "portraitLight": "Ajustando la iluminación de estudio...",
+      "generativeExpand": "Ampliando bordes mediante difusión local...",
+      "superResolution": "Escalando mediante ESRGAN local...",
+      "backgroundSwap": "Extrayendo máscaras semánticas...",
+      "depthMap": "Calculando geometría de profundidad 3D..."
     }
   },
   "login": {
@@ -1676,7 +1726,12 @@
       "status_label": "Estado",
       "clear": "Borrar",
       "per_page": "página",
-      "share_link": "Copiar enlace compartible"
+      "share_link": "Copiar enlace compartible",
+      "grid_size": {
+        "small": "S",
+        "medium": "M",
+        "large": "L"
+      }
     },
     "duplicates": {
       "title": "Buscar assets duplicados",
@@ -1690,7 +1745,28 @@
       "delete": "Eliminar",
       "ignore_all": "Ignorar todos",
       "delete_all": "Eliminar todos los duplicados",
-      "folder": "Carpeta"
+      "folder": "Carpeta",
+      "legacy": {
+        "title": "Resolver duplicado: {{title}}",
+        "currentlyInDam": "Actualmente en el DAM ({{count}} encontrado(s))",
+        "primaryTitle": "Título: {{title}}",
+        "locations": "Ubicaciones:",
+        "newUpload": "Tu nueva carga",
+        "pendingStatus": "Estado: carga pendiente",
+        "identicalHash": "Hash idéntico",
+        "aiMergeRecommendation": "Recomendación de fusión con IA",
+        "aiMergeDescription": "Los bytes son idénticos. La IA puede añadir tus nuevas etiquetas al asset existente para evitar el desorden.",
+        "mergeMetadata": "Fusionar metadatos",
+        "skipUpload": "Omitir carga",
+        "uploadAnyway": "Cargar como duplicado de todos modos",
+        "alt": {
+          "existing": "existente",
+          "new": "nuevo"
+        },
+        "notifications": {
+          "aiMerged": "La IA fusionó correctamente los nuevos metadatos en {{count}} asset(s) existente(s)."
+        }
+      }
     },
     "ai": {
       "title": "Análisis de IA",
@@ -1704,10 +1780,30 @@
       "apply_tags": "Aplicar etiquetas sugeridas",
       "save_properties": "Guardar en propiedades",
       "queued": "Análisis en cola. Vuelve pronto.",
-      "error": "El análisis falló. Inténtalo de nuevo."
+      "error": "El análisis falló. Inténtalo de nuevo.",
+      "asset_alt": "asset"
     },
     "subfolder_count_tip": "{{count}} subcarpetas",
-    "asset_count_tip": "{{count}} activos"
+    "asset_count_tip": "{{count}} activos",
+    "explorer": {
+      "assetNotFound": "Asset no encontrado ({{status}})",
+      "couldNotOpenAsset": "No se pudo abrir el asset: {{message}}",
+      "folderLocationCopiedToClipboard": "¡Ubicación de la carpeta copiada al portapapeles!",
+      "shareableLinkCopiedToClipboard": "¡Enlace compartible copiado al portapapeles!",
+      "failedToCopyLink": "No se pudo copiar el enlace.",
+      "permanentDeleteWarning": "ADVERTENCIA: Esto eliminará permanentemente estos archivos del servidor. ¡No se puede deshacer!",
+      "deleteSelectedConfirm": "¿Seguro que quieres eliminar {{count}} elemento(s) seleccionado(s)? Esto no se puede deshacer.",
+      "deletionError": "Se produjo un error durante la eliminación.",
+      "uploadFailed": "La carga falló.",
+      "mediaFiles": "Medios y archivos",
+      "createNewFolder": "Crear nueva carpeta",
+      "folderName": "Nombre de la carpeta"
+    },
+    "grid": {
+      "unknown_file": "Archivo desconocido",
+      "pin_to_collection": "Anclar a la colección",
+      "view_details": "Ver detalles"
+    }
   },
   "inbox": {
     "title": "Bandeja de entrada",
@@ -1770,6 +1866,503 @@
       "sentThisWeek": "Enviados esta semana",
       "failureRate": "Tasa de fallos",
       "pending": "Pendiente"
+    }
+  },
+  "assetCard": {
+    "unknownAsset": "Activo desconocido",
+    "unknownSize": "Tamaño desconocido",
+    "noPreview": "Sin vista previa",
+    "tooltips": {
+      "pinToCollection": "Fijar a la colección",
+      "viewDetails": "Ver detalles"
+    },
+    "menu": {
+      "viewDetails": "Ver detalles",
+      "addToCollection": "Añadir a la colección",
+      "moveToTrash": "Mover a la papelera"
+    }
+  },
+  "assetStatisticsTab": {
+    "title": "Estadísticas del activo",
+    "downloads": "Descargas",
+    "cdnViews": "Vistas de CDN",
+    "shares": "Compartidos"
+  },
+  "assetList": {
+    "headers": {
+      "name": "Nombre",
+      "status": "Estado",
+      "type": "Tipo",
+      "size": "Tamaño",
+      "version": "Ver.",
+      "modified": "Modificado",
+      "created": "Creado",
+      "actions": "Acciones"
+    },
+    "unknownFile": "Archivo desconocido",
+    "tooltips": {
+      "pinToCollection": "Fijar a la colección",
+      "viewDetails": "Ver detalles"
+    },
+    "status": {
+      "draft": "borrador",
+      "published": "publicado",
+      "approved": "aprobado",
+      "rejected": "rechazado",
+      "archived": "archivado"
+    }
+  },
+  "folderGrid": {
+    "tooltips": {
+      "folderProperties": "Propiedades de la carpeta"
+    }
+  },
+  "uploadSidebar": {
+    "title": "Cargar y enriquecer",
+    "imageTypes": {
+      "productImage": "Imagen de producto",
+      "lifestyle": "Estilo de vida",
+      "bannerHero": "Banner / Hero",
+      "headshot": "Retrato",
+      "document": "Documento"
+    },
+    "sections": {
+      "assignment": "Asignación",
+      "metadataSchema": "Esquema de metadatos",
+      "tags": "Etiquetas",
+      "aiAgenticActions": "Acciones de agentes de IA"
+    },
+    "noCollectionsFound": "No se encontraron colecciones",
+    "placeholders": {
+      "selectExistingCollection": "Selecciona una colección existente...",
+      "selectGlobalAssetType": "Selecciona el tipo de activo global",
+      "selectGlobalSchema": "Selecciona el esquema global",
+      "typeAndPressEnter": "Escribe y pulsa Intro"
+    },
+    "schemaHelp": "Este esquema se aplica a todos los archivos preparados de forma predeterminada. La anulación por archivo está disponible en cada tarjeta.",
+    "filenamePatternPrefix": "Para imágenes de producto: patrón de nombre de archivo compatible:",
+    "filenamePatternExample": "p. ej. 012993112028-en-FR01.jpg",
+    "aiTagsOnUpload": "Generar etiquetas de IA al cargar",
+    "buttons": {
+      "smartDescribeSelected": "Describir inteligentemente la selección",
+      "autoRemoveBackgrounds": "Eliminar fondos automáticamente",
+      "uploadCount": "Cargar ({{selectedCount}})"
+    },
+    "progress": {
+      "uploading": "Cargando…",
+      "count": "{{done}} de {{total}}"
+    }
+  },
+  "foldersManager": {
+    "title": "Todos los assets"
+  },
+  "explorerTopBar": {
+    "breadcrumbLabel": "migas de pan",
+    "home": "Inicio",
+    "copyFolderLink": "Copiar enlace de la carpeta",
+    "selectAll": "Seleccionar todo",
+    "viewTrashBin": "Ver papelera",
+    "backToActiveFiles": "Volver a archivos activos",
+    "tools": "Herramientas",
+    "metadataSchema": "Esquema de metadatos",
+    "applySchemaToFolder": "Aplicar esquema a la carpeta",
+    "folderSelected": "{{count}} carpeta seleccionada",
+    "foldersSelected": "{{count}} carpetas seleccionadas",
+    "applyToCurrentFolder": "Aplicar a la carpeta actual",
+    "applySchemaToAssets": "Aplicar esquema a los assets",
+    "assetSelected": "{{count}} asset seleccionado",
+    "assetsSelected": "{{count}} assets seleccionados",
+    "imageProcessing": "Procesamiento de imagen",
+    "applyImageProfile": "Aplicar perfil de imagen",
+    "setProcessingProfileForThisFolder": "Establecer perfil de procesamiento para esta carpeta",
+    "applyVideoProfile": "Aplicar perfil de video",
+    "setVideoEncodingProfileForThisFolder": "Establecer perfil de codificación de video para esta carpeta",
+    "edgeCdnOps": "Operaciones de CDN Edge",
+    "syncMetadataToCdn": "Sincronizar metadatos con CDN",
+    "forcePushJsonToEdgeKv": "Forzar envío de JSON a Edge KV",
+    "purgeEdgeCache": "Purgar caché Edge",
+    "invalidateDeliveryNodesGlobally": "Invalidar nodos de entrega globalmente",
+    "workflow": "Flujo de trabajo",
+    "globalLocalization": "Localización global",
+    "autoTranslateCopyMetadata": "Traducir automáticamente textos y metadatos",
+    "brandLicenseGuard": "Protección de marca y licencia",
+    "validateUsageTermsSignatures": "Validar condiciones de uso y firmas",
+    "smartActions": "Acciones inteligentes",
+    "autoTagEnrich": "Etiquetar y enriquecer automáticamente",
+    "extractSemanticMetadata": "Extraer metadatos semánticos",
+    "smartOrganize": "Organización inteligente",
+    "groupIntoSemanticFolders": "Agrupar en carpetas semánticas",
+    "scanForDuplicates": "Buscar duplicados",
+    "tdmPayloadDeduplication": "Deduplicación de carga TDM",
+    "moveToBin": "Mover a la papelera",
+    "deleteForever": "Eliminar para siempre",
+    "applyMetadataSchema": "Aplicar esquema de metadatos",
+    "setSchemaForThisFolder": "Establecer esquema para esta carpeta",
+    "newFolder": "Nueva carpeta",
+    "currentFolder": "Carpeta actual",
+    "notifications": {
+      "autoEnrichQueued": "Assets en cola para enriquecimiento semántico con LangChain.",
+      "duplicateScanQueued": "Buscando duplicados visuales y criptográficos...",
+      "smartOrganizeQueued": "La IA está analizando vectores para agrupar elementos en subcarpetas.",
+      "forceSyncStarted": "Se inició la sincronización forzada de metadatos con Edge KV.",
+      "cachePurgeQueued": "Invalidación de caché Edge en cola para los elementos seleccionados.",
+      "localizationTriggered": "Agente de localización activado.",
+      "brandSafetyInitialized": "Comprobación de seguridad de marca iniciada."
+    }
+  },
+  "uploadGrid": {
+    "staging_area": "Área de preparación",
+    "selection_count": "{{selected}} de {{total}} seleccionados",
+    "select_all": "Seleccionar todo",
+    "dropzone": {
+      "drag_drop": "Arrastra y suelta nuevos recursos aquí",
+      "browse": "o haz clic para explorar archivos locales"
+    },
+    "preview_alt": "vista previa",
+    "file_fallback_extension": "archivo",
+    "preview_generated_after_upload": "Vista previa generada después de la carga",
+    "status": {
+      "calculating_hash": "Calculando hash...",
+      "checking_dam": "Comprobando DAM...",
+      "uploading": "Subiendo..."
+    },
+    "duplicate_found": "Duplicado encontrado",
+    "dimensions": {
+      "unknown": "Desconocido",
+      "not_applicable": "N/A"
+    },
+    "type_placeholder": "Tipo",
+    "run_ai_enhance": "Ejecutar mejora de IA en este archivo",
+    "select_schema": "Seleccionar esquema",
+    "product_id": "ID de producto",
+    "language_code": "Código de idioma",
+    "select_asset_type": "Seleccionar tipo de recurso (dam:asset_type)",
+    "image_types": {
+      "product_image": "Imagen de producto",
+      "lifestyle": "Lifestyle",
+      "banner_hero": "Banner / Hero",
+      "headshot": "Retrato",
+      "document": "Documento"
+    },
+    "ai_tags": {
+      "studio": "Estudio",
+      "high_res": "Alta resolución",
+      "isolated": "Aislado",
+      "enhanced": "Mejorado",
+      "web_ready": "Listo para la web"
+    }
+  },
+  "uploadWorkspace": {
+    "unknown_type": "tipo desconocido",
+    "upload_not_allowed": "Carga no permitida: {{names}}. Solo se permiten los siguientes tipos MIME: {{mimeTypes}}.",
+    "ai_auto_tagging_complete": "Etiquetado automático con IA completado.",
+    "backgrounds_removed": "Fondos eliminados.",
+    "ai_enhancements_applied": "Mejoras de IA aplicadas.",
+    "upload_sequence_complete": "Secuencia de carga completada."
+  },
+  "applySchemaDialog": {
+    "title": "Aplicar esquema de metadatos",
+    "selectedItems": "Elementos seleccionados:",
+    "more": "+{{count}} más",
+    "availableSchemas": "Esquemas disponibles",
+    "noSchemas": "No hay esquemas disponibles.",
+    "option": {
+      "builtIn": "Integrado",
+      "typeSchemas": "{{count}} esquemas de tipo"
+    },
+    "target": {
+      "folder_one": "Aplicando a {{count}} carpeta",
+      "folder_other": "Aplicando a {{count}} carpetas",
+      "asset_one": "Aplicando a {{count}} asset",
+      "asset_other": "Aplicando a {{count}} assets"
+    },
+    "cascade": {
+      "title": "Cascada de esquema",
+      "description": "Cuando se aplica a una carpeta, el esquema se resuelve automáticamente con la mejor coincidencia para el tipo MIME de cada asset (p. ej. image/jpeg → subesquema JPEG).",
+      "allSubfolders": "Aplicar también a todas las subcarpetas",
+      "thisFolderOnly": "Aplicar solo a esta carpeta",
+      "overrideHint": "Después podrás reemplazar el esquema individualmente en cualquier subcarpeta."
+    },
+    "selectionSummary": {
+      "selected": "Seleccionado: {{name}}",
+      "tabs_one": "{{count}} pestaña",
+      "tabs_other": "{{count}} pestañas",
+      "fields": "{{count}} campos"
+    },
+    "actions": {
+      "applying": "Aplicando…",
+      "apply": "Aplicar \"{{name}}\""
+    },
+    "notifications": {
+      "loadError": "No se pudieron cargar los esquemas.",
+      "folderAppliedCascade_one": "El esquema \"{{schemaName}}\" se está aplicando a {{count}} carpeta y a todas las subcarpetas.",
+      "folderAppliedCascade_other": "El esquema \"{{schemaName}}\" se está aplicando a {{count}} carpetas y a todas las subcarpetas.",
+      "folderApplied_one": "El esquema \"{{schemaName}}\" se está aplicando a {{count}} carpeta.",
+      "folderApplied_other": "El esquema \"{{schemaName}}\" se está aplicando a {{count}} carpetas.",
+      "assetApplied_one": "El esquema \"{{schemaName}}\" se aplicó a {{count}} asset.",
+      "assetApplied_other": "El esquema \"{{schemaName}}\" se aplicó a {{count}} assets.",
+      "applyError": "No se pudo aplicar el esquema. Inténtalo de nuevo."
+    }
+  },
+  "pinToCollectionDialog": {
+    "title": "Anclar a colecciones",
+    "searchPlaceholder": "Buscar colecciones...",
+    "noResults": "Ninguna colección coincide con tu búsqueda.",
+    "description": {
+      "before": "Añadir",
+      "thisAsset": "este asset",
+      "after": "a una o más colecciones."
+    },
+    "collection": {
+      "smartType": "Enrutamiento inteligente con IA",
+      "manualType": "Curación manual",
+      "assetsCount": "{{count}} assets"
+    },
+    "tooltips": {
+      "remove": "Quitar de esta colección",
+      "add": "Añadir a esta colección"
+    },
+    "footer": {
+      "pinnedTo_one": "Anclado a {{count}} colección",
+      "pinnedTo_other": "Anclado a {{count}} colecciones",
+      "notPinned": "No está anclado a ninguna colección"
+    },
+    "actions": {
+      "done": "Listo"
+    },
+    "notifications": {
+      "loadError": "No se pudieron cargar las colecciones.",
+      "removed": "Se quitó de la colección.",
+      "added": "Se añadió a la colección.",
+      "operationFailed": "La operación falló.",
+      "networkError": "Error de red."
+    }
+  },
+  "assetViewer": {
+    "actions": {
+      "closeAriaLabel": "cerrar"
+    },
+    "toolbar": {
+      "pinToCollection": "Fijar a la colección",
+      "shareAsset": "Compartir asset",
+      "copyImageUrl": "Copiar URL de la imagen",
+      "editUnsupportedTooltip": "La edición no es compatible con este formato de archivo (p. ej. PSD, TIFF, RAW). Descarga el original o consulta la vista previa generada en su lugar.",
+      "editImage": "Editar imagen"
+    },
+    "download": {
+      "defaultFilename": "descarga",
+      "options": "Opciones de descarga",
+      "original": "Descargar original",
+      "originalDescription": "Archivo fuente de alta resolución",
+      "secureProxy": "Descargar proxy seguro",
+      "secureProxyDescription": "Incluye marca de agua no removible"
+    },
+    "preview": {
+      "notAvailableForFileType": "Vista previa no disponible para este tipo de archivo."
+    },
+    "tabs": {
+      "info": "Información",
+      "metadata": "Metadatos",
+      "versions": "Versiones",
+      "statistics": "Estadísticas",
+      "audit": "Auditoría",
+      "workflows": "Flujos de trabajo",
+      "aiEngine": "Motor de IA"
+    },
+    "info": {
+      "generalMetadata": "Metadatos generales",
+      "tagsCount": "{{count}} etiquetas",
+      "aiRecognizedAndManual": "Reconocido por IA y manual",
+      "fileName": "Nombre del archivo",
+      "dateAdded": "Fecha de incorporación",
+      "resolution": "Resolución",
+      "fileSize": "Tamaño del archivo",
+      "creator": "Creador",
+      "copyright": "Copyright",
+      "camera": "Cámara",
+      "lens": "Lente",
+      "colorMode": "Modo de color",
+      "embeddedMetadataFields": "Campos de metadatos incrustados",
+      "dominantPalette": "Paleta dominante",
+      "embeddedMetadataSection": "Datos EXIF / IPTC / XMP",
+      "noExifDataExtractedYet": "Aún no se han extraído datos EXIF."
+    },
+    "ai": {
+      "semanticAndVisionAnalysis": "Análisis semántico y visual"
+    },
+    "fallbacks": {
+      "unknownFile": "Archivo desconocido",
+      "unknownSize": "Tamaño desconocido",
+      "unknown": "Desconocido"
+    },
+    "notifications": {
+      "assetUrlCopiedToClipboard": "¡URL del asset copiada al portapapeles!",
+      "generatingSecureWatermarkedProxy": "Generando proxy seguro con marca de agua...",
+      "downloadStarted": "Descarga iniciada",
+      "shareDialogComingSoon": "El diálogo para compartir llegará pronto"
+    }
+  },
+  "assetMetadataPanel": {
+    "field": {
+      "inheritedReadOnly": "Heredado del esquema principal — solo lectura",
+      "selectPlaceholder": "— seleccionar —",
+      "tagsHelperSuffix": " — pulsa Intro para añadir"
+    },
+    "notifications": {
+      "metadataSavedSuccessfully": "Metadatos guardados correctamente."
+    },
+    "errors": {
+      "saveFailed": "Error al guardar"
+    },
+    "noSchema": {
+      "line1": "Todavía no se ha aplicado ningún esquema de metadatos a este asset.",
+      "line2Prefix": "Usa",
+      "action": "Tools → Aplicar esquema de metadatos",
+      "line2Suffix": "desde la vista de carpetas para asignar uno."
+    },
+    "builtIn": "Integrado",
+    "schemaSummary_one": "{{count}} pestaña · esquema resuelto por MIME",
+    "schemaSummary_other": "{{count}} pestañas · esquema resuelto por MIME",
+    "reloadSchema": "Recargar esquema",
+    "saving": "Guardando…",
+    "saveChanges": "Guardar cambios",
+    "unsavedMetadataChanges": "Cambios de metadatos sin guardar",
+    "noFieldsDefined": "No hay campos definidos para esta pestaña.",
+    "saveMetadata": "Guardar metadatos"
+  },
+  "assetVersionsTab": {
+    "title": "Cronología de versiones",
+    "description": "Ver iteraciones anteriores de este asset. Restaurar una versión la convierte en el archivo activo sin eliminar ediciones más recientes.",
+    "currentActive": "Activo actual",
+    "savedOn": "Guardado el",
+    "by": "por",
+    "fileSize": "Tamaño del archivo",
+    "restore": "Restaurar",
+    "notifications": {
+      "failedToLoadVersionHistory": "No se pudo cargar el historial de versiones.",
+      "assetRolledBack": "El asset se revirtió correctamente a la versión seleccionada.",
+      "failedToRestoreVersion": "No se pudo restaurar la versión."
+    }
+  },
+  "assetAuditTab": {
+    "title": "Registro operativo",
+    "emptyState": "No hay historial de auditoría disponible.",
+    "actions": {
+      "imageEdited": "Imagen editada",
+      "branchedToNewVersion": "Ramificado a nueva versión",
+      "clonedFromExisting": "Clonado desde existente",
+      "assetIngested": "Asset ingerido"
+    },
+    "actorId": "ID del actor:",
+    "system": "Sistema",
+    "modified": "Modificado",
+    "processedAt": "Procesado: {{time}}",
+    "timelineForked": "Cronología bifurcada",
+    "fileSize": {
+      "zero": "0 bytes",
+      "units": {
+        "bytes": "bytes",
+        "kb": "KB",
+        "mb": "MB",
+        "gb": "GB"
+      }
+    }
+  },
+  "assetTagsEditor": {
+    "actions": {
+      "closeAriaLabel": "cerrar",
+      "saveChanges": "Guardar cambios",
+      "runSmartScan": "Ejecutar análisis inteligente"
+    },
+    "title": "Gestionar etiquetas: {{name}}",
+    "preview": {
+      "alt": "Vista previa",
+      "unavailable": "Vista previa no disponible."
+    },
+    "sections": {
+      "manualTags": "Etiquetas manuales",
+      "aiRecognizedTags": "Etiquetas reconocidas por IA"
+    },
+    "manualTags": {
+      "placeholder": "Buscar o escribir una nueva etiqueta...",
+      "helperText": "Pulsa Intro para añadir etiquetas personalizadas que no estén en la base de datos."
+    },
+    "ai": {
+      "faceRecognition": "Reconocimiento facial ({{count}})",
+      "noFacesDetected": "No se detectaron rostros.",
+      "textInImage": "Texto en la imagen ({{count}})",
+      "noTextDetected": "No se detectó texto.",
+      "semanticObjects": "Objetos semánticos ({{count}})",
+      "noObjectsDetected": "No se detectaron objetos."
+    },
+    "notifications": {
+      "aiVisionScanComplete": "Análisis visual de IA completado. Se descubrieron nuevas etiquetas.",
+      "tagsUpdatedSuccessfully": "Etiquetas actualizadas correctamente."
+    }
+  },
+  "folderInfoPanel": {
+    "header": {
+      "subtitle": "Propiedades de la carpeta"
+    },
+    "tabs": {
+      "general": "General",
+      "imageProfiles": "Perfiles de imagen",
+      "videoProfiles": "Perfiles de video",
+      "metadata": "Metadatos",
+      "access": "Acceso"
+    },
+    "general": {
+      "nameRequired": "El nombre no puede estar vacío.",
+      "updated": "Carpeta actualizada.",
+      "folderId": "ID de carpeta",
+      "slug": "Slug",
+      "created": "Creado",
+      "details": "Detalles",
+      "name": "Nombre",
+      "description": "Descripción",
+      "descriptionPlaceholder": "Agrega una descripción para esta carpeta…",
+      "noDescription": "Sin descripción"
+    },
+    "imageProfiles": {
+      "removed": "Perfil de imagen eliminado de la carpeta.",
+      "removeError": "No se pudo eliminar el perfil de imagen.",
+      "title": "Perfil de imagen",
+      "change": "Cambiar",
+      "applyProfile": "Aplicar perfil",
+      "smartCrop": "Recorte inteligente",
+      "swatch": "Muestra",
+      "responsiveCrop": "Recorte adaptable",
+      "unsharpMask": "Enfoque: cantidad {{amount}} · radio {{radius}}",
+      "removeTooltip": "Eliminar el perfil de esta carpeta",
+      "empty": "No hay ningún perfil de imagen asignado. Las imágenes subidas a esta carpeta usarán la configuración de procesamiento predeterminada.",
+      "emptyHint": "Puedes configurar perfiles en Tools → Assets → Asset Configurations → Image Profiles."
+    },
+    "videoProfiles": {
+      "removed": "Perfil de video eliminado de la carpeta.",
+      "removeError": "No se pudo eliminar el perfil de video.",
+      "title": "Perfil de video",
+      "change": "Cambiar",
+      "applyProfile": "Aplicar perfil",
+      "adaptiveStreaming": "Streaming adaptativo",
+      "progressive": "Progresivo",
+      "presetCount_one": "{{count}} ajuste preestablecido",
+      "presetCount_other": "{{count}} ajustes preestablecidos",
+      "removeTooltip": "Eliminar el perfil de esta carpeta",
+      "empty": "No hay ningún perfil de video asignado. Los videos subidos a esta carpeta no se transcodificarán automáticamente.",
+      "emptyHint": "Configura perfiles en Tools → Assets → Asset Configurations → Video Profiles."
+    },
+    "metadata": {
+      "removed": "Esquema de metadatos eliminado de la carpeta.",
+      "removeError": "No se pudo eliminar el esquema.",
+      "title": "Esquema de metadatos",
+      "change": "Cambiar",
+      "applySchema": "Aplicar esquema",
+      "inherited": "Heredado",
+      "direct": "Directo",
+      "tabLabel": "Pestaña {{index}}",
+      "removeTooltip": "Eliminar el esquema de esta carpeta",
+      "empty": "No hay ningún esquema de metadatos asignado a esta carpeta. Los recursos usarán el esquema predeterminado si hay uno configurado.",
+      "emptyHint": "Configura esquemas en Tools → Metadata Schemas."
     }
   }
 }

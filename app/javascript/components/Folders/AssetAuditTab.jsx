@@ -1,18 +1,34 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Typography, Stepper, Step, StepLabel, StepContent, CircularProgress, Paper, Chip, Stack } from '@mui/material';
 import { Person, AccessTime, DataObject, AspectRatio, Storage, CallSplit, Palette, TaskAlt } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
+
+const interpolate = (template, values = {}) => template.replace(/\{\{(\w+)\}\}/g, (_, key) => values[key] ?? '');
 
 // Helper to make byte sizes human-readable
-const formatBytes = (bytes, decimals = 1) => {
-    if (!bytes || bytes === 0) return '0 Bytes';
+const formatBytes = (bytes, t, decimals = 1) => {
+    if (!bytes || bytes === 0) return t('assetAuditTab.fileSize.zero', '0 Bytes');
     const k = 1024;
     const dm = decimals < 0 ? 0 : decimals;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const sizes = [
+        t('assetAuditTab.fileSize.units.bytes', 'Bytes'),
+        t('assetAuditTab.fileSize.units.kb', 'KB'),
+        t('assetAuditTab.fileSize.units.mb', 'MB'),
+        t('assetAuditTab.fileSize.units.gb', 'GB')
+    ];
     const i = Math.floor(Math.log(Math.abs(bytes)) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 };
 
 export default function AssetAuditTab({ asset }) {
+    const { t } = useTranslation();
+    const translate = (key, defaultValue, options = {}) => {
+        const result = t(key, options);
+        if (result === key || (options.count != null && result === `${key}:${options.count}`)) {
+            return interpolate(defaultValue, options);
+        }
+        return result;
+    };
     const [auditLogs, setAuditLogs] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -42,7 +58,7 @@ export default function AssetAuditTab({ asset }) {
     return (
         <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
             <Typography variant="subtitle1" fontWeight="700" sx={{ mb: 2 }}>
-                Operational Ledger
+                {translate('assetAuditTab.title', 'Operational Ledger')}
             </Typography>
 
             <Box sx={{
@@ -55,7 +71,7 @@ export default function AssetAuditTab({ asset }) {
                 '&::-webkit-scrollbar-track': { backgroundColor: 'transparent' }
             }}>
                 {auditLogs.length === 0 ? (
-                    <Typography variant="body2" color="textSecondary">No audit history available.</Typography>
+                    <Typography variant="body2" color="textSecondary">{translate('assetAuditTab.emptyState', 'No audit history available.')}</Typography>
                 ) : (
                     <Stepper orientation="vertical">
                         {auditLogs.map((log, index) => {
@@ -73,10 +89,10 @@ export default function AssetAuditTab({ asset }) {
                             const isResolutionChanged = prevLog && currentProps.resolution && currentProps.resolution !== prevProps.resolution;
                             const isColorSpaceChanged = prevLog && currentProps.color_space && currentProps.color_space !== prevProps.color_space;
 
-                            const actionLabel = log.action_type === 'image_edit' ? 'Image Edited' :
-                                log.action_type === 'branched_edit' ? 'Branched to New Version' :
-                                    log.action_type === 'cloned_edit' ? 'Cloned from Existing' :
-                                        'Asset Ingested';
+                            const actionLabel = log.action_type === 'image_edit' ? translate('assetAuditTab.actions.imageEdited', 'Image Edited') :
+                                log.action_type === 'branched_edit' ? translate('assetAuditTab.actions.branchedToNewVersion', 'Branched to New Version') :
+                                    log.action_type === 'cloned_edit' ? translate('assetAuditTab.actions.clonedFromExisting', 'Cloned from Existing') :
+                                        translate('assetAuditTab.actions.assetIngested', 'Asset Ingested');
 
                             return (
                                 <Step key={log.id} expanded active={isLatest}>
@@ -113,7 +129,7 @@ export default function AssetAuditTab({ asset }) {
                                                 {/* Actor Info */}
                                                 <Typography variant="caption" sx={{ display: 'flex', alignItems: 'center', color: '#475569' }}>
                                                     <Person fontSize="inherit" sx={{ mr: 0.75, color: '#94a3b8' }} />
-                                                    Actor ID:&nbsp;<strong>{log.created_by_id || 'System'}</strong>
+                                                    {translate('assetAuditTab.actorId', 'Actor ID:')}&nbsp;<strong>{log.created_by_id || translate('assetAuditTab.system', 'System')}</strong>
                                                 </Typography>
 
                                                 {/* Delta Indicators */}
@@ -124,10 +140,10 @@ export default function AssetAuditTab({ asset }) {
                                                             icon={<Storage fontSize="small" />}
                                                             label={
                                                                 <span>
-                                                                    {formatBytes(currentProps.size)}
+                                                                    {formatBytes(currentProps.size, translate)}
                                                                     {isSizeChanged && (
                                                                         <span style={{ color: sizeDiff > 0 ? '#ef4444' : '#22c55e', marginLeft: '4px' }}>
-                                                                            ({sizeDiff > 0 ? '+' : ''}{formatBytes(sizeDiff)})
+                                                                            ({sizeDiff > 0 ? '+' : ''}{formatBytes(sizeDiff, translate)})
                                                                         </span>
                                                                     )}
                                                                 </span>
@@ -145,7 +161,7 @@ export default function AssetAuditTab({ asset }) {
                                                             label={
                                                                 <span>
                                                                     {currentProps.resolution}
-                                                                    {isResolutionChanged && <span style={{ color: '#f59e0b', marginLeft: '4px' }}>(Modified)</span>}
+                                                                    {isResolutionChanged && <span style={{ color: '#f59e0b', marginLeft: '4px' }}>({translate('assetAuditTab.modified', 'Modified')})</span>}
                                                                 </span>
                                                             }
                                                             size="small"
@@ -161,7 +177,7 @@ export default function AssetAuditTab({ asset }) {
                                                             label={
                                                                 <span>
                                                                     {currentProps.color_space}
-                                                                    {isColorSpaceChanged && <span style={{ color: '#f59e0b', marginLeft: '4px' }}>(Modified)</span>}
+                                                                    {isColorSpaceChanged && <span style={{ color: '#f59e0b', marginLeft: '4px' }}>({translate('assetAuditTab.modified', 'Modified')})</span>}
                                                                 </span>
                                                             }
                                                             size="small"
@@ -174,7 +190,9 @@ export default function AssetAuditTab({ asset }) {
                                                     {currentProps.processed_at && (
                                                         <Chip
                                                             icon={<TaskAlt fontSize="small" />}
-                                                            label={`Processed: ${new Date(currentProps.processed_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`}
+                                                            label={translate('assetAuditTab.processedAt', 'Processed: {{time}}', {
+                                                                time: new Date(currentProps.processed_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+                                                            })}
                                                             size="small"
                                                             variant="outlined"
                                                             sx={{ fontSize: '0.7rem', color: '#475569', borderColor: '#e2e8f0' }}
@@ -185,7 +203,7 @@ export default function AssetAuditTab({ asset }) {
                                                     {(log.action_type === 'branched_edit' || log.action_type === 'cloned_edit') && (
                                                         <Chip
                                                             icon={<CallSplit fontSize="small" />}
-                                                            label="Timeline Forked"
+                                                            label={translate('assetAuditTab.timelineForked', 'Timeline Forked')}
                                                             size="small"
                                                             sx={{ fontSize: '0.7rem', bgcolor: '#fef3c7', color: '#b45309', border: 'none' }}
                                                         />

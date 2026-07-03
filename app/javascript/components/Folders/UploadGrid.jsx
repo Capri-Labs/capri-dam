@@ -4,9 +4,23 @@ import {
     Select, MenuItem, Paper, IconButton, Chip, Tooltip, Divider
 } from '@mui/material';
 import { Close, Sync, WarningAmber, AddPhotoAlternate, AutoAwesome, Cancel, InsertDriveFile } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 
-const IMAGE_TYPES = ['Product Image', 'Lifestyle', 'Banner / Hero', 'Headshot', 'Document'];
+const IMAGE_TYPES = [
+    { value: 'Product Image', labelKey: 'uploadGrid.image_types.product_image' },
+    { value: 'Lifestyle', labelKey: 'uploadGrid.image_types.lifestyle' },
+    { value: 'Banner / Hero', labelKey: 'uploadGrid.image_types.banner_hero' },
+    { value: 'Headshot', labelKey: 'uploadGrid.image_types.headshot' },
+    { value: 'Document', labelKey: 'uploadGrid.image_types.document' }
+];
 const ASSET_TYPE_CODES = ['FR01', 'FR02', 'FR03', 'BK01', 'BK02', 'SD01', 'SD02', 'TQ01', 'TQ02', 'TP01', 'TP02', 'DT01', 'DT02', 'DT03'];
+const AI_TAG_LABEL_KEYS = {
+    Studio: 'uploadGrid.ai_tags.studio',
+    'High-Res': 'uploadGrid.ai_tags.high_res',
+    Isolated: 'uploadGrid.ai_tags.isolated',
+    Enhanced: 'uploadGrid.ai_tags.enhanced',
+    'Web-Ready': 'uploadGrid.ai_tags.web_ready'
+};
 
 export default function UploadGrid({
     filesData,
@@ -25,6 +39,11 @@ export default function UploadGrid({
     handleSingleFileAi,
     onOpenDuplicate
 }) {
+    const { t } = useTranslation();
+    const translate = (key, fallback, options) => {
+        const value = t(key, options);
+        return value === key ? fallback : value;
+    };
     const updateFileMeta = (id, patch) => {
         setFilesData(prev => prev.map(f => f.id === id ? { ...f, meta: { ...f.meta, ...patch } } : f));
     };
@@ -33,15 +52,15 @@ export default function UploadGrid({
         <Box sx={{ flexGrow: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
             <Box sx={{ p: 2, px: 4, borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', bgcolor: '#ffffff' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                    <Typography variant="h6" fontWeight="700" sx={{ mr: 3 }}>Staging Area</Typography>
-                    <Chip label={`${selectedCount} of ${filesData.length} selected`} size="small" sx={{ bgcolor: '#eef2ff', color: '#4f46e5', fontWeight: 600 }} />
+                    <Typography variant="h6" fontWeight="700" sx={{ mr: 3 }}>{translate('uploadGrid.staging_area', 'Staging Area')}</Typography>
+                    <Chip label={translate('uploadGrid.selection_count', `${selectedCount} of ${filesData.length} selected`, { selected: selectedCount, total: filesData.length })} size="small" sx={{ bgcolor: '#eef2ff', color: '#4f46e5', fontWeight: 600 }} />
                 </Box>
 
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                     {filesData.length > 0 && (
-                        <FormControlLabel control={<Checkbox checked={allSelected} onChange={handleToggleSelectAll} size="small" />} label={<Typography variant="body2" fontWeight="600">Select All</Typography>} sx={{ m: 0 }} />
+                        <FormControlLabel control={<Checkbox checked={allSelected} onChange={handleToggleSelectAll} size="small" />} label={<Typography variant="body2" fontWeight="600">{translate('uploadGrid.select_all', 'Select All')}</Typography>} sx={{ m: 0 }} />
                     )}
-                    <Button variant="outlined" startIcon={<Cancel />} size="small" onClick={onClose} sx={{ textTransform: 'none' }}>Cancel</Button>
+                    <Button variant="outlined" startIcon={<Cancel />} size="small" onClick={onClose} sx={{ textTransform: 'none' }}>{translate('common.cancel', 'Cancel')}</Button>
                 </Box>
             </Box>
 
@@ -49,8 +68,8 @@ export default function UploadGrid({
                 <Paper {...getRootProps()} elevation={0} sx={{ p: 4, mb: 4, textAlign: 'center', bgcolor: isDragActive ? '#eef2ff' : '#ffffff', border: '2px dashed', borderColor: isDragActive ? '#4f46e5' : '#cbd5e1', cursor: 'pointer', borderRadius: 3, '&:hover': { borderColor: '#4f46e5', bgcolor: '#f8fafc' } }}>
                     <input {...getInputProps()} />
                     <AddPhotoAlternate sx={{ fontSize: 48, color: '#94a3b8', mb: 2 }} />
-                    <Typography variant="h6" color="#1e293b" fontWeight="600">Drag & drop new assets here</Typography>
-                    <Typography variant="body2" color="#64748b">or click to browse local files</Typography>
+                    <Typography variant="h6" color="#1e293b" fontWeight="600">{translate('uploadGrid.dropzone.drag_drop', 'Drag & drop new assets here')}</Typography>
+                    <Typography variant="body2" color="#64748b">{translate('uploadGrid.dropzone.browse', 'or click to browse local files')}</Typography>
                 </Paper>
 
                 <Grid container spacing={3}>
@@ -68,22 +87,22 @@ export default function UploadGrid({
 
                                     <Box sx={{ height: 180, position: 'relative', bgcolor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                         {fData.preview ? (
-                                            <img src={fData.preview} alt="preview" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                                            <img src={fData.preview} alt={translate('uploadGrid.preview_alt', 'preview')} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
                                         ) : (
                                             <Box sx={{ textAlign: 'center', px: 1 }}>
                                                 <InsertDriveFile sx={{ fontSize: 40, color: '#94a3b8' }} />
                                                 <Typography variant="caption" sx={{ display: 'block', color: '#64748b', fontWeight: 700, textTransform: 'uppercase' }}>
-                                                    {(fData.file?.name?.split('.').pop() || 'file')}
+                                                    {(fData.file?.name?.split('.').pop() || translate('uploadGrid.file_fallback_extension', 'file'))}
                                                 </Typography>
                                                 <Typography variant="caption" sx={{ display: 'block', color: '#94a3b8' }}>
-                                                    Preview generated after upload
+                                                    {translate('uploadGrid.preview_generated_after_upload', 'Preview generated after upload')}
                                                 </Typography>
                                             </Box>
                                         )}
                                         {['hashing', 'checking', 'uploading'].includes(fData.status) && (
                                             <Box sx={{ position: 'absolute', inset: 0, bgcolor: 'rgba(255,255,255,0.85)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                                                 <Sync sx={{ animation: 'spin 2s linear infinite', color: '#4f46e5', mb: 1 }} />
-                                                <Typography variant="caption" fontWeight="700" color="#4f46e5">{fData.status === 'hashing' ? 'Calculating Hash...' : fData.status === 'checking' ? 'Checking DAM...' : 'Uploading...'}</Typography>
+                                                <Typography variant="caption" fontWeight="700" color="#4f46e5">{fData.status === 'hashing' ? translate('uploadGrid.status.calculating_hash', 'Calculating Hash...') : fData.status === 'checking' ? translate('uploadGrid.status.checking_dam', 'Checking DAM...') : translate('uploadGrid.status.uploading', 'Uploading...')}</Typography>
                                                 <style>{`@keyframes spin { 100% { transform: rotate(360deg); } }`}</style>
                                             </Box>
                                         )}
@@ -93,7 +112,7 @@ export default function UploadGrid({
                                         {fData.isDuplicate && (
                                             <Chip
                                                 icon={<WarningAmber fontSize="small" />}
-                                                label="Duplicate Found"
+                                                label={translate('uploadGrid.duplicate_found', 'Duplicate Found')}
                                                 size="small"
                                                 onClick={() => onOpenDuplicate(fData)}
                                                 sx={{ bgcolor: '#fef3c7', color: '#d97706', fontWeight: 700, mb: 1.5, cursor: 'pointer', '&:hover': { bgcolor: '#fde68a' } }}
@@ -107,15 +126,15 @@ export default function UploadGrid({
                                             value={fData.meta.title}
                                             onChange={(e) => updateFileMeta(fData.id, { title: e.target.value })} slotProps={{input: { disableUnderline: true, sx: { fontSize: '0.875rem', fontWeight: 700, color: '#1e293b' } } }}
                                         />
-                                        <Typography variant="caption" sx={{ display: 'block', color: '#64748b', mb: 1.5, mt: 0.5 }}>{fData.meta.size} • {fData.meta.dimensions}</Typography>
+                                        <Typography variant="caption" sx={{ display: 'block', color: '#64748b', mb: 1.5, mt: 0.5 }}>{fData.meta.size} • {fData.meta.dimensions === 'Unknown' ? translate('uploadGrid.dimensions.unknown', 'Unknown') : fData.meta.dimensions === 'N/A' ? translate('uploadGrid.dimensions.not_applicable', 'N/A') : fData.meta.dimensions}</Typography>
                                         <Divider sx={{ my: 1.5 }} />
 
                                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.2 }}>
                                             <Select size="small" value={fData.meta.type || globalMeta.imageType} displayEmpty onChange={(e) => updateFileMeta(fData.id, { type: e.target.value })} sx={{ flexGrow: 1, fontSize: '0.75rem', height: 32 }}>
-                                                <MenuItem value="" disabled>Type</MenuItem>
-                                                {IMAGE_TYPES.map(t => <MenuItem key={t} value={t}>{t}</MenuItem>)}
+                                                <MenuItem value="" disabled>{translate('uploadGrid.type_placeholder', 'Type')}</MenuItem>
+                                                {IMAGE_TYPES.map(({ value, labelKey }) => <MenuItem key={value} value={value}>{translate(labelKey, value)}</MenuItem>)}
                                             </Select>
-                                            <Tooltip title="Run AI enhance on this file">
+                                            <Tooltip title={translate('uploadGrid.run_ai_enhance', 'Run AI enhance on this file')}>
                                                 <IconButton size="small" onClick={() => handleSingleFileAi(fData.id)} sx={{ border: '1px solid #ddd6fe', color: '#6d28d9', borderRadius: 1, height: 32, width: 32 }}><AutoAwesome fontSize="small" /></IconButton>
                                             </Tooltip>
                                         </Box>
@@ -129,7 +148,7 @@ export default function UploadGrid({
                                             onChange={(e) => updateFileMeta(fData.id, { schemaId: e.target.value ? Number(e.target.value) : null })}
                                             sx={{ mb: 1.2, fontSize: '0.75rem', height: 32 }}
                                         >
-                                            <MenuItem value="" disabled>Select schema</MenuItem>
+                                            <MenuItem value="" disabled>{translate('uploadGrid.select_schema', 'Select schema')}</MenuItem>
                                             {schemaOptions.map(s => <MenuItem key={s.id} value={s.id}>{s.name}</MenuItem>)}
                                         </Select>
 
@@ -139,7 +158,7 @@ export default function UploadGrid({
                                                 <TextField
                                                     fullWidth
                                                     size="small"
-                                                    label="Product ID"
+                                                    label={translate('uploadGrid.product_id', 'Product ID')}
                                                     value={fData.meta.productId || ''}
                                                     onChange={(e) => updateFileMeta(fData.id, { productId: e.target.value })}
                                                     sx={{ mb: 1.2 }}
@@ -147,7 +166,7 @@ export default function UploadGrid({
                                                 <TextField
                                                     fullWidth
                                                     size="small"
-                                                    label="Language Code"
+                                                    label={translate('uploadGrid.language_code', 'Language Code')}
                                                     value={fData.meta.languageCode || ''}
                                                     onChange={(e) => updateFileMeta(fData.id, { languageCode: e.target.value })}
                                                     sx={{ mb: 1.2 }}
@@ -159,7 +178,7 @@ export default function UploadGrid({
                                                     displayEmpty
                                                     onChange={(e) => updateFileMeta(fData.id, { assetTypeCode: e.target.value })}
                                                 >
-                                                    <MenuItem value="" disabled>Select Asset Type (dam:asset_type)</MenuItem>
+                                                    <MenuItem value="" disabled>{translate('uploadGrid.select_asset_type', 'Select Asset Type (dam:asset_type)')}</MenuItem>
                                                     {ASSET_TYPE_CODES.map(code => <MenuItem key={code} value={code}>{code}</MenuItem>)}
                                                 </Select>
                                             </Box>
@@ -167,7 +186,7 @@ export default function UploadGrid({
 
                                         {fData.meta.aiTags.length > 0 && (
                                             <Box sx={{ mt: 1.5, display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                                                {fData.meta.aiTags.map(tag => <Chip key={tag} label={tag} size="small" sx={{ height: 20, fontSize: '0.65rem', bgcolor: '#f3e8ff', color: '#6d28d9' }} />)}
+                                                {fData.meta.aiTags.map(tag => <Chip key={tag} label={AI_TAG_LABEL_KEYS[tag] ? translate(AI_TAG_LABEL_KEYS[tag], tag) : tag} size="small" sx={{ height: 20, fontSize: '0.65rem', bgcolor: '#f3e8ff', color: '#6d28d9' }} />)}
                                             </Box>
                                         )}
                                     </Box>

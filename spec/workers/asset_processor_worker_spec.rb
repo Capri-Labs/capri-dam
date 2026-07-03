@@ -230,8 +230,8 @@ RSpec.describe AssetProcessorWorker, type: :worker do
       expect(meta[:"dc:creator"]).to eq([ "Andy Thoma" ])
       expect(meta[:"dc:rights"]).to eq("ALDI US")
       expect(meta[:"dc:date"]).to eq("2026-02-09")
-      expect(meta[:"exif:Make"]).to eq("NIKON CORPORATION")
-      expect(meta[:"exif:Model"]).to eq("NIKON D850")
+      expect(meta[:"tiff:Make"]).to eq("NIKON CORPORATION")
+      expect(meta[:"tiff:Model"]).to eq("NIKON D850")
     end
 
     it "does not overwrite existing schema-mapped values" do

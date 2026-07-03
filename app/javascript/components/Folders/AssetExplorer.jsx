@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Box, Divider, Typography, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Pagination } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 import { useNotify } from '../../context/NotificationContext';
 import AssetViewer from './AssetViewer';
 import AssetFilterBar, { PER_PAGE_OPTIONS } from './AssetFilterBar';
@@ -48,6 +49,7 @@ function buildFilterUrl(folderId, { query, typeFilters, statusFilters, sort, per
 
 export default function AssetExplorer({ initialTargetAssetId }) {
   const notify = useNotify();
+  const { t } = useTranslation();
   const [viewData, setViewData] = useState({ folders: [], assets: [], breadcrumbs: [] });
   const [viewLayout, setViewLayout] = useState('grid');
   const [viewMode, setViewMode] = useState('active');
@@ -160,7 +162,7 @@ export default function AssetExplorer({ initialTargetAssetId }) {
 
     fetch(`/api/v1/assets/${initialTargetAssetId}`)
       .then((response) => {
-        if (!response.ok) throw new Error(`Asset not found (${response.status})`);
+        if (!response.ok) throw new Error(t('folders.explorer.assetNotFound', { status: response.status }));
         return response.json();
       })
       .then((data) => {
@@ -168,21 +170,21 @@ export default function AssetExplorer({ initialTargetAssetId }) {
         deepLinkProcessed.current = true;
       })
       .catch((error) => {
-        notify(`Could not open asset: ${error.message}`, 'error');
+        notify(t('folders.explorer.couldNotOpenAsset', { message: error.message }), 'error');
         deepLinkProcessed.current = true;
       });
-  }, [initialTargetAssetId, notify, viewData.assets]);
+  }, [initialTargetAssetId, notify, t, viewData.assets]);
 
   const handleCopyPath = () => {
     navigator.clipboard.writeText(window.location.href)
-      .then(() => notify('Folder location copied to clipboard!', 'success'))
-      .catch(() => notify('Failed to copy link.', 'error'));
+      .then(() => notify(t('folders.explorer.folderLocationCopiedToClipboard'), 'success'))
+      .catch(() => notify(t('folders.explorer.failedToCopyLink'), 'error'));
   };
 
   const handleShareLink = () => {
     navigator.clipboard.writeText(window.location.href)
-      .then(() => notify('Shareable link copied to clipboard!', 'success'))
-      .catch(() => notify('Failed to copy link.', 'error'));
+      .then(() => notify(t('folders.explorer.shareableLinkCopiedToClipboard'), 'success'))
+      .catch(() => notify(t('folders.explorer.failedToCopyLink'), 'error'));
   };
 
   const handleRestoreSelected = async () => {
@@ -194,7 +196,7 @@ export default function AssetExplorer({ initialTargetAssetId }) {
   };
 
   const handlePermanentDelete = async () => {
-    if (!window.confirm('WARNING: This will permanently delete these files from the server. This cannot be undone!')) return;
+    if (!window.confirm(t('folders.explorer.permanentDeleteWarning'))) return;
     const headers = requestHeaders();
     const assetPromises = selectedItems.assets.map((id) => fetch(`/api/v1/assets/${id}/permanent`, { method: 'DELETE', headers }));
     const folderPromises = selectedItems.folders.map((id) => fetch(`/api/v1/folders/${id}/permanent`, { method: 'DELETE', headers }));
@@ -204,7 +206,7 @@ export default function AssetExplorer({ initialTargetAssetId }) {
 
   const handleDeleteSelected = async () => {
     const totalCount = selectedItems.folders.length + selectedItems.assets.length;
-    if (!window.confirm(`Are you sure you want to delete ${totalCount} selected item(s)? This cannot be undone.`)) return;
+    if (!window.confirm(t('folders.explorer.deleteSelectedConfirm', { count: totalCount }))) return;
 
     try {
       const headers = requestHeaders();
@@ -213,7 +215,7 @@ export default function AssetExplorer({ initialTargetAssetId }) {
       await Promise.all([...assetPromises, ...folderPromises]);
       loadContent();
     } catch {
-      notify('An error occurred during deletion.', 'error');
+      notify(t('folders.explorer.deletionError'), 'error');
     }
   };
 
@@ -256,7 +258,7 @@ export default function AssetExplorer({ initialTargetAssetId }) {
       });
       if (response.ok) loadContent();
     } catch {
-      notify('Upload failed.', 'error');
+      notify(t('folders.explorer.uploadFailed'), 'error');
     } finally {
       event.target.value = null;
     }
@@ -405,7 +407,7 @@ export default function AssetExplorer({ initialTargetAssetId }) {
       {visibleAssets.length > 0 && (
         <Box>
           <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', mb: 2 }}>
-            Media & Files
+            {t('folders.explorer.mediaFiles')}
           </Typography>
 
           {viewLayout === 'grid' ? (
@@ -449,13 +451,13 @@ export default function AssetExplorer({ initialTargetAssetId }) {
       )}
 
       <Dialog open={openFolderDialog} onClose={() => setOpenFolderDialog(false)}>
-        <DialogTitle>Create New Folder</DialogTitle>
+        <DialogTitle>{t('folders.explorer.createNewFolder')}</DialogTitle>
         <DialogContent>
-          <TextField autoFocus margin="dense" label="Folder Name" fullWidth variant="standard" value={newFolderName} onChange={(event) => setNewFolderName(event.target.value)} />
+          <TextField autoFocus margin="dense" label={t('folders.explorer.folderName')} fullWidth variant="standard" value={newFolderName} onChange={(event) => setNewFolderName(event.target.value)} />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpenFolderDialog(false)}>Cancel</Button>
-          <Button onClick={handleCreateFolder} variant="contained" disabled={!newFolderName.trim()}>Create</Button>
+          <Button onClick={() => setOpenFolderDialog(false)}>{t('common.cancel')}</Button>
+          <Button onClick={handleCreateFolder} variant="contained" disabled={!newFolderName.trim()}>{t('common.create')}</Button>
         </DialogActions>
       </Dialog>
 

@@ -365,7 +365,7 @@
     "subtitle": "Review and resolve duplicate assets detected in your repository",
     "emptyState": "No duplicate groups found. Your repository is clean!",
     "group": {
-      "identicalFiles": "{{count}} identical files",
+      "identicalFiles": "{{count}} ملف مطابق",
       "potentialMatch": "Potential Match",
       "sha256": "SHA-256"
     },
@@ -644,7 +644,26 @@
       "removeFromSubfolders": "Also subfolders",
       "removeFromSubfoldersHint": "When checked, the remove action will also cascade to all child folders.",
       "removeTooltip": "Remove this policy from this folder",
-      "removeWithCascadeTooltip": "Remove this policy from this folder and all its subfolders"
+      "removeWithCascadeTooltip": "Remove this policy from this folder and all its subfolders",
+      "searchGroupsPlaceholder": "ابحث عن المجموعات بالاسم…",
+      "systemGroup": "مجموعة النظام",
+      "system": "النظام",
+      "read": "قراءة",
+      "readHint": "عرض الأصول وتصفح المجلد",
+      "modify": "تعديل",
+      "modifyHint": "تحرير البيانات الوصفية وإعادة تسمية العناصر",
+      "create": "إنشاء",
+      "createHint": "رفع الأصول وإنشاء مجلدات فرعية",
+      "delete": "حذف",
+      "deleteHint": "حذف الأصول والمجلدات",
+      "replicate": "نسخ متماثل",
+      "replicateHint": "دفع الأصول إلى عقد الحافة في CDN",
+      "manage": "إدارة",
+      "manageHint": "إدارة سياسات الوصول إلى المجلد",
+      "thisFolder": "هذا المجلد",
+      "groupFallback": "المجموعة {{id}}",
+      "inheritedFromFolder": "↑ {{name}}",
+      "parent": "الأصل"
     }
   },
   "provenance": {
@@ -1287,13 +1306,44 @@
       "invalidSaturation": "Saturation must be between -100 and 100",
       "invalidRotation": "Rotation must be divisible by 90",
       "invalidCropAspect": "Invalid crop aspect ratio",
-      "invalidFilter": "Invalid filter selection"
+      "invalidFilter": "Invalid filter selection",
+      "failedToLoadFoldersNoPeriod": "فشل تحميل المجلدات",
+      "failedToApplyEdits": "فشل تطبيق التعديلات.",
+      "networkErrorRetry": "حدث خطأ في الشبكة. يرجى المحاولة مرة أخرى."
     },
     "notifications": {
       "savedAsNewVersion": "New immutable version saved successfully.",
       "savedAsCopy": "Saved as copy to {{folder}}.",
       "overwritten": "Current version forcefully overwritten.",
-      "versionSavedAndMoved": "New version saved and moved to {{folder}}."
+      "versionSavedAndMoved": "New version saved and moved to {{folder}}.",
+      "applied": "تم التطبيق: {{action}}"
+    },
+    "currentFolder": "المجلد الحالي",
+    "editorCanvasAlt": "لوحة المحرر",
+    "filters": {
+      "none": "بدون",
+      "vivid": "زاهٍ",
+      "west": "الغرب",
+      "palma": "Palma",
+      "metro": "Metro",
+      "eiffel": "Eiffel",
+      "blush": "وردي",
+      "modena": "Modena",
+      "vogue": "Vogue"
+    },
+    "processing": {
+      "autoEnhance": "جارٍ تطبيق التحسين التلقائي...",
+      "dynamicHdr": "جارٍ موازنة HDR والنطاق الديناميكي...",
+      "colorPop": "جارٍ عزل لون العنصر...",
+      "warmContrast": "جارٍ تطبيق دفء الاستوديو...",
+      "cinematicTone": "جارٍ ضبط الدرجات السينمائية...",
+      "magicEraser": "جارٍ تحليل العناصر وإزالتها...",
+      "unblur": "جارٍ استعادة التفاصيل الحادة...",
+      "portraitLight": "جارٍ ضبط إضاءة الاستوديو...",
+      "generativeExpand": "جارٍ توسيع الحدود عبر الانتشار المحلي...",
+      "superResolution": "جارٍ الارتقاء بالدقة عبر ESRGAN المحلي...",
+      "backgroundSwap": "جارٍ استخراج الأقنعة الدلالية...",
+      "depthMap": "جارٍ حساب هندسة العمق ثلاثية الأبعاد..."
     }
   },
   "login": {
@@ -1676,7 +1726,12 @@
       "status_label": "Status",
       "clear": "Clear",
       "per_page": "page",
-      "share_link": "Copy shareable link"
+      "share_link": "Copy shareable link",
+      "grid_size": {
+        "small": "S",
+        "medium": "M",
+        "large": "L"
+      }
     },
     "duplicates": {
       "title": "Find Duplicate Assets",
@@ -1690,7 +1745,28 @@
       "delete": "Delete",
       "ignore_all": "Ignore All",
       "delete_all": "Delete All Duplicates",
-      "folder": "Folder"
+      "folder": "Folder",
+      "legacy": {
+        "title": "حل التكرار: {{title}}",
+        "currentlyInDam": "موجود حاليًا في DAM (تم العثور على {{count}})",
+        "primaryTitle": "العنوان: {{title}}",
+        "locations": "المواقع:",
+        "newUpload": "الرفع الجديد الخاص بك",
+        "pendingStatus": "الحالة: الرفع قيد الانتظار",
+        "identicalHash": "تجزئة متطابقة",
+        "aiMergeRecommendation": "توصية دمج بالذكاء الاصطناعي",
+        "aiMergeDescription": "البايتات متطابقة. يمكن للذكاء الاصطناعي إلحاق علاماتك الجديدة بالأصل الموجود لتجنب الفوضى.",
+        "mergeMetadata": "دمج البيانات الوصفية",
+        "skipUpload": "تخطي الرفع",
+        "uploadAnyway": "ارفعه كنسخة مكررة على أي حال",
+        "alt": {
+          "existing": "موجود",
+          "new": "جديد"
+        },
+        "notifications": {
+          "aiMerged": "نجح الذكاء الاصطناعي في دمج البيانات الوصفية الجديدة في {{count}} أصل/أصول موجودة."
+        }
+      }
     },
     "ai": {
       "title": "AI Analysis",
@@ -1704,10 +1780,30 @@
       "apply_tags": "Apply Suggested Tags",
       "save_properties": "Save to Properties",
       "queued": "Analysis queued. Check back soon.",
-      "error": "Analysis failed. Please try again."
+      "error": "Analysis failed. Please try again.",
+      "asset_alt": "asset"
     },
     "subfolder_count_tip": "{{count}} sub-folders",
-    "asset_count_tip": "{{count}} assets"
+    "asset_count_tip": "{{count}} assets",
+    "explorer": {
+      "assetNotFound": "تعذر العثور على الأصل ({{status}})",
+      "couldNotOpenAsset": "تعذر فتح الأصل: {{message}}",
+      "folderLocationCopiedToClipboard": "تم نسخ موقع المجلد إلى الحافظة!",
+      "shareableLinkCopiedToClipboard": "تم نسخ الرابط القابل للمشاركة إلى الحافظة!",
+      "failedToCopyLink": "فشل نسخ الرابط.",
+      "permanentDeleteWarning": "تحذير: سيؤدي هذا إلى حذف هذه الملفات نهائيًا من الخادم. لا يمكن التراجع عن ذلك!",
+      "deleteSelectedConfirm": "هل أنت متأكد من أنك تريد حذف {{count}} عنصر(عناصر) محدد(ة)؟ لا يمكن التراجع عن ذلك.",
+      "deletionError": "حدث خطأ أثناء الحذف.",
+      "uploadFailed": "فشل الرفع.",
+      "mediaFiles": "الوسائط والملفات",
+      "createNewFolder": "إنشاء مجلد جديد",
+      "folderName": "اسم المجلد"
+    },
+    "grid": {
+      "unknown_file": "ملف غير معروف",
+      "pin_to_collection": "تثبيت في المجموعة",
+      "view_details": "عرض التفاصيل"
+    }
   },
   "inbox": {
     "title": "صندوق الوارد",
@@ -1770,6 +1866,503 @@
       "sentThisWeek": "أُرسل هذا الأسبوع",
       "failureRate": "معدل الفشل",
       "pending": "قيد الانتظار"
+    }
+  },
+  "assetCard": {
+    "unknownAsset": "أصل غير معروف",
+    "unknownSize": "حجم غير معروف",
+    "noPreview": "لا توجد معاينة",
+    "tooltips": {
+      "pinToCollection": "تثبيت في المجموعة",
+      "viewDetails": "عرض التفاصيل"
+    },
+    "menu": {
+      "viewDetails": "عرض التفاصيل",
+      "addToCollection": "إضافة إلى المجموعة",
+      "moveToTrash": "نقل إلى سلة المهملات"
+    }
+  },
+  "assetStatisticsTab": {
+    "title": "إحصاءات الأصل",
+    "downloads": "التنزيلات",
+    "cdnViews": "مشاهدات CDN",
+    "shares": "المشاركات"
+  },
+  "assetList": {
+    "headers": {
+      "name": "الاسم",
+      "status": "الحالة",
+      "type": "النوع",
+      "size": "الحجم",
+      "version": "الإصدار",
+      "modified": "المعدل",
+      "created": "تاريخ الإنشاء",
+      "actions": "الإجراءات"
+    },
+    "unknownFile": "ملف غير معروف",
+    "tooltips": {
+      "pinToCollection": "تثبيت في المجموعة",
+      "viewDetails": "عرض التفاصيل"
+    },
+    "status": {
+      "draft": "مسودة",
+      "published": "منشور",
+      "approved": "معتمد",
+      "rejected": "مرفوض",
+      "archived": "مؤرشف"
+    }
+  },
+  "folderGrid": {
+    "tooltips": {
+      "folderProperties": "خصائص المجلد"
+    }
+  },
+  "uploadSidebar": {
+    "title": "رفع وإثراء",
+    "imageTypes": {
+      "productImage": "صورة المنتج",
+      "lifestyle": "نمط الحياة",
+      "bannerHero": "لافتة / رئيسية",
+      "headshot": "صورة شخصية",
+      "document": "مستند"
+    },
+    "sections": {
+      "assignment": "تعيين",
+      "metadataSchema": "مخطط البيانات الوصفية",
+      "tags": "الوسوم",
+      "aiAgenticActions": "إجراءات وكلاء الذكاء الاصطناعي"
+    },
+    "noCollectionsFound": "لم يتم العثور على مجموعات",
+    "placeholders": {
+      "selectExistingCollection": "اختر مجموعة موجودة...",
+      "selectGlobalAssetType": "اختر نوع الأصل العام",
+      "selectGlobalSchema": "اختر المخطط العام",
+      "typeAndPressEnter": "اكتب ثم اضغط Enter"
+    },
+    "schemaHelp": "يُطبَّق هذا المخطط افتراضيًا على جميع الملفات المُدرجة. ويتوفر تجاوز لكل ملف في كل بطاقة.",
+    "filenamePatternPrefix": "لصور المنتجات: نمط اسم الملف المدعوم:",
+    "filenamePatternExample": "مثال: 012993112028-en-FR01.jpg",
+    "aiTagsOnUpload": "إنشاء وسوم الذكاء الاصطناعي عند الرفع",
+    "buttons": {
+      "smartDescribeSelected": "وصف المحدد بذكاء",
+      "autoRemoveBackgrounds": "إزالة الخلفيات تلقائيًا",
+      "uploadCount": "رفع ({{selectedCount}})"
+    },
+    "progress": {
+      "uploading": "جارٍ الرفع…",
+      "count": "{{done}} من {{total}}"
+    }
+  },
+  "foldersManager": {
+    "title": "جميع الأصول"
+  },
+  "explorerTopBar": {
+    "breadcrumbLabel": "مسار التنقل",
+    "home": "الرئيسية",
+    "copyFolderLink": "نسخ رابط المجلد",
+    "selectAll": "تحديد الكل",
+    "viewTrashBin": "عرض سلة المهملات",
+    "backToActiveFiles": "العودة إلى الملفات النشطة",
+    "tools": "الأدوات",
+    "metadataSchema": "مخطط البيانات الوصفية",
+    "applySchemaToFolder": "تطبيق المخطط على المجلد",
+    "folderSelected": "تم تحديد {{count}} مجلد",
+    "foldersSelected": "تم تحديد {{count}} مجلدات",
+    "applyToCurrentFolder": "تطبيق على المجلد الحالي",
+    "applySchemaToAssets": "تطبيق المخطط على الأصول",
+    "assetSelected": "تم تحديد {{count}} أصل",
+    "assetsSelected": "تم تحديد {{count}} أصول",
+    "imageProcessing": "معالجة الصور",
+    "applyImageProfile": "تطبيق ملف تعريف الصورة",
+    "setProcessingProfileForThisFolder": "تعيين ملف تعريف المعالجة لهذا المجلد",
+    "applyVideoProfile": "تطبيق ملف تعريف الفيديو",
+    "setVideoEncodingProfileForThisFolder": "تعيين ملف تعريف ترميز الفيديو لهذا المجلد",
+    "edgeCdnOps": "عمليات Edge CDN",
+    "syncMetadataToCdn": "مزامنة البيانات الوصفية إلى CDN",
+    "forcePushJsonToEdgeKv": "فرض دفع JSON إلى Edge KV",
+    "purgeEdgeCache": "مسح ذاكرة Edge المؤقتة",
+    "invalidateDeliveryNodesGlobally": "إبطال عقد التسليم عالميًا",
+    "workflow": "سير العمل",
+    "globalLocalization": "التوطين العالمي",
+    "autoTranslateCopyMetadata": "ترجمة النصوص والبيانات الوصفية تلقائيًا",
+    "brandLicenseGuard": "حماية العلامة التجارية والترخيص",
+    "validateUsageTermsSignatures": "التحقق من شروط الاستخدام والتوقيعات",
+    "smartActions": "إجراءات ذكية",
+    "autoTagEnrich": "وضع الوسوم والإثراء تلقائيًا",
+    "extractSemanticMetadata": "استخراج البيانات الوصفية الدلالية",
+    "smartOrganize": "تنظيم ذكي",
+    "groupIntoSemanticFolders": "تجميع ضمن مجلدات دلالية",
+    "scanForDuplicates": "فحص العناصر المكررة",
+    "tdmPayloadDeduplication": "إزالة تكرار حمولة TDM",
+    "moveToBin": "نقل إلى سلة المهملات",
+    "deleteForever": "حذف نهائي",
+    "applyMetadataSchema": "تطبيق مخطط البيانات الوصفية",
+    "setSchemaForThisFolder": "تعيين المخطط لهذا المجلد",
+    "newFolder": "مجلد جديد",
+    "currentFolder": "المجلد الحالي",
+    "notifications": {
+      "autoEnrichQueued": "تمت إضافة الأصول إلى قائمة انتظار الإثراء الدلالي عبر LangChain.",
+      "duplicateScanQueued": "جارٍ فحص التكرارات المرئية والتشفيرية...",
+      "smartOrganizeQueued": "يقوم الذكاء الاصطناعي بتحليل المتجهات لتجميع العناصر في مجلدات فرعية.",
+      "forceSyncStarted": "تم بدء المزامنة القسرية للبيانات الوصفية إلى Edge KV.",
+      "cachePurgeQueued": "تمت إضافة إبطال ذاكرة Edge المؤقتة للعناصر المحددة إلى قائمة الانتظار.",
+      "localizationTriggered": "تم تشغيل وكيل الترجمة المحلية.",
+      "brandSafetyInitialized": "تم تهيئة فحص سلامة العلامة التجارية."
+    }
+  },
+  "uploadGrid": {
+    "staging_area": "منطقة التجهيز",
+    "selection_count": "تم تحديد {{selected}} من {{total}}",
+    "select_all": "تحديد الكل",
+    "dropzone": {
+      "drag_drop": "اسحب الأصول الجديدة وأفلتها هنا",
+      "browse": "أو انقر لتصفح الملفات المحلية"
+    },
+    "preview_alt": "معاينة",
+    "file_fallback_extension": "ملف",
+    "preview_generated_after_upload": "يتم إنشاء المعاينة بعد الرفع",
+    "status": {
+      "calculating_hash": "جارٍ حساب التجزئة...",
+      "checking_dam": "جارٍ التحقق من DAM...",
+      "uploading": "جارٍ الرفع..."
+    },
+    "duplicate_found": "تم العثور على نسخة مكررة",
+    "dimensions": {
+      "unknown": "غير معروف",
+      "not_applicable": "N/A"
+    },
+    "type_placeholder": "النوع",
+    "run_ai_enhance": "تشغيل تحسين الذكاء الاصطناعي على هذا الملف",
+    "select_schema": "اختر المخطط",
+    "product_id": "معرّف المنتج",
+    "language_code": "رمز اللغة",
+    "select_asset_type": "اختر نوع الأصل (dam:asset_type)",
+    "image_types": {
+      "product_image": "صورة منتج",
+      "lifestyle": "نمط حياة",
+      "banner_hero": "بانر / رئيسية",
+      "headshot": "لقطة رأس",
+      "document": "مستند"
+    },
+    "ai_tags": {
+      "studio": "استوديو",
+      "high_res": "عالي الدقة",
+      "isolated": "معزول",
+      "enhanced": "محسّن",
+      "web_ready": "جاهز للويب"
+    }
+  },
+  "uploadWorkspace": {
+    "unknown_type": "نوع غير معروف",
+    "upload_not_allowed": "الرفع غير مسموح: {{names}}. يُسمح فقط بأنواع MIME التالية: {{mimeTypes}}.",
+    "ai_auto_tagging_complete": "اكتمل وضع العلامات التلقائي بالذكاء الاصطناعي.",
+    "backgrounds_removed": "تمت إزالة الخلفيات.",
+    "ai_enhancements_applied": "تم تطبيق تحسينات الذكاء الاصطناعي.",
+    "upload_sequence_complete": "اكتمل تسلسل الرفع."
+  },
+  "applySchemaDialog": {
+    "title": "تطبيق مخطط البيانات الوصفية",
+    "selectedItems": "العناصر المحددة:",
+    "more": "+{{count}} المزيد",
+    "availableSchemas": "المخططات المتاحة",
+    "noSchemas": "لا توجد مخططات متاحة.",
+    "option": {
+      "builtIn": "مضمن",
+      "typeSchemas": "{{count}} مخططات نوع"
+    },
+    "target": {
+      "folder_one": "يتم التطبيق على {{count}} مجلد",
+      "folder_other": "يتم التطبيق على {{count}} مجلدات",
+      "asset_one": "يتم التطبيق على {{count}} أصل",
+      "asset_other": "يتم التطبيق على {{count}} أصول"
+    },
+    "cascade": {
+      "title": "تسلسل المخطط",
+      "description": "عند تطبيقه على مجلد، يتم حل المخطط تلقائيًا إلى أفضل تطابق لنوع MIME لكل أصل (مثل image/jpeg ← مخطط فرعي JPEG).",
+      "allSubfolders": "طبّق أيضًا على جميع المجلدات الفرعية",
+      "thisFolderOnly": "طبّق على هذا المجلد فقط",
+      "overrideHint": "يمكنك تجاوز المخطط في أي مجلد فرعي بشكل فردي بعد ذلك."
+    },
+    "selectionSummary": {
+      "selected": "المحدد: {{name}}",
+      "tabs_one": "{{count}} علامة تبويب",
+      "tabs_other": "{{count}} علامات تبويب",
+      "fields": "{{count}} حقول"
+    },
+    "actions": {
+      "applying": "جارٍ التطبيق…",
+      "apply": "تطبيق \"{{name}}\""
+    },
+    "notifications": {
+      "loadError": "فشل تحميل المخططات.",
+      "folderAppliedCascade_one": "يجري تطبيق مخطط \"{{schemaName}}\" على {{count}} مجلد وجميع المجلدات الفرعية.",
+      "folderAppliedCascade_other": "يجري تطبيق مخطط \"{{schemaName}}\" على {{count}} مجلدات وجميع المجلدات الفرعية.",
+      "folderApplied_one": "يجري تطبيق مخطط \"{{schemaName}}\" على {{count}} مجلد.",
+      "folderApplied_other": "يجري تطبيق مخطط \"{{schemaName}}\" على {{count}} مجلدات.",
+      "assetApplied_one": "تم تطبيق مخطط \"{{schemaName}}\" على {{count}} أصل.",
+      "assetApplied_other": "تم تطبيق مخطط \"{{schemaName}}\" على {{count}} أصول.",
+      "applyError": "فشل تطبيق المخطط. يرجى المحاولة مرة أخرى."
+    }
+  },
+  "pinToCollectionDialog": {
+    "title": "تثبيت في المجموعات",
+    "searchPlaceholder": "ابحث في المجموعات...",
+    "noResults": "لا توجد مجموعات تطابق بحثك.",
+    "description": {
+      "before": "أضف",
+      "thisAsset": "هذا الأصل",
+      "after": "إلى مجموعة واحدة أو أكثر."
+    },
+    "collection": {
+      "smartType": "توجيه ذكي بالذكاء الاصطناعي",
+      "manualType": "تنسيق يدوي",
+      "assetsCount": "{{count}} أصول"
+    },
+    "tooltips": {
+      "remove": "إزالة من هذه المجموعة",
+      "add": "إضافة إلى هذه المجموعة"
+    },
+    "footer": {
+      "pinnedTo_one": "مثبت في مجموعة واحدة",
+      "pinnedTo_other": "مثبت في {{count}} مجموعات",
+      "notPinned": "غير مثبت في أي مجموعة"
+    },
+    "actions": {
+      "done": "تم"
+    },
+    "notifications": {
+      "loadError": "فشل تحميل المجموعات.",
+      "removed": "تمت الإزالة من المجموعة.",
+      "added": "تمت الإضافة إلى المجموعة.",
+      "operationFailed": "فشلت العملية.",
+      "networkError": "خطأ في الشبكة."
+    }
+  },
+  "assetViewer": {
+    "actions": {
+      "closeAriaLabel": "إغلاق"
+    },
+    "toolbar": {
+      "pinToCollection": "تثبيت في المجموعة",
+      "shareAsset": "مشاركة الأصل",
+      "copyImageUrl": "نسخ رابط الصورة",
+      "editUnsupportedTooltip": "التحرير غير مدعوم لهذا النوع من الملفات (مثل PSD وTIFF وRAW). نزّل الملف الأصلي أو اعرض المعاينة المُنشأة بدلاً من ذلك.",
+      "editImage": "تحرير الصورة"
+    },
+    "download": {
+      "defaultFilename": "تنزيل",
+      "options": "خيارات التنزيل",
+      "original": "تنزيل الملف الأصلي",
+      "originalDescription": "ملف المصدر عالي الدقة",
+      "secureProxy": "تنزيل الوكيل الآمن",
+      "secureProxyDescription": "يتضمن علامة مائية غير قابلة للإزالة"
+    },
+    "preview": {
+      "notAvailableForFileType": "المعاينة غير متاحة لهذا النوع من الملفات."
+    },
+    "tabs": {
+      "info": "معلومات",
+      "metadata": "البيانات الوصفية",
+      "versions": "الإصدارات",
+      "statistics": "الإحصاءات",
+      "audit": "التدقيق",
+      "workflows": "سير العمل",
+      "aiEngine": "محرك الذكاء الاصطناعي"
+    },
+    "info": {
+      "generalMetadata": "البيانات الوصفية العامة",
+      "tagsCount": "{{count}} من العلامات",
+      "aiRecognizedAndManual": "تم التعرف عليها بالذكاء الاصطناعي ويدويًا",
+      "fileName": "اسم الملف",
+      "dateAdded": "تاريخ الإضافة",
+      "resolution": "الدقة",
+      "fileSize": "حجم الملف",
+      "creator": "المنشئ",
+      "copyright": "حقوق النشر",
+      "camera": "الكاميرا",
+      "lens": "العدسة",
+      "colorMode": "وضع اللون",
+      "embeddedMetadataFields": "حقول البيانات الوصفية المضمّنة",
+      "dominantPalette": "لوحة الألوان السائدة",
+      "embeddedMetadataSection": "بيانات EXIF / IPTC / XMP",
+      "noExifDataExtractedYet": "لم يتم استخراج بيانات EXIF بعد."
+    },
+    "ai": {
+      "semanticAndVisionAnalysis": "التحليل الدلالي والبصري"
+    },
+    "fallbacks": {
+      "unknownFile": "ملف غير معروف",
+      "unknownSize": "حجم غير معروف",
+      "unknown": "غير معروف"
+    },
+    "notifications": {
+      "assetUrlCopiedToClipboard": "تم نسخ رابط الأصل إلى الحافظة!",
+      "generatingSecureWatermarkedProxy": "جارٍ إنشاء وكيل آمن بعلامة مائية...",
+      "downloadStarted": "بدأ التنزيل",
+      "shareDialogComingSoon": "سيتم توفير نافذة المشاركة قريبًا"
+    }
+  },
+  "assetMetadataPanel": {
+    "field": {
+      "inheritedReadOnly": "موروث من المخطط الأب — للقراءة فقط",
+      "selectPlaceholder": "— تحديد —",
+      "tagsHelperSuffix": " — اضغط Enter للإضافة"
+    },
+    "notifications": {
+      "metadataSavedSuccessfully": "تم حفظ البيانات الوصفية بنجاح."
+    },
+    "errors": {
+      "saveFailed": "فشل الحفظ"
+    },
+    "noSchema": {
+      "line1": "لم يتم تطبيق أي مخطط بيانات وصفية على هذا الأصل بعد.",
+      "line2Prefix": "استخدم",
+      "action": "Tools → تطبيق مخطط البيانات الوصفية",
+      "line2Suffix": "من عرض المجلد لتعيين واحد."
+    },
+    "builtIn": "مضمّن",
+    "schemaSummary_one": "{{count}} علامة تبويب · مخطط محلول عبر MIME",
+    "schemaSummary_other": "{{count}} علامات تبويب · مخطط محلول عبر MIME",
+    "reloadSchema": "إعادة تحميل المخطط",
+    "saving": "جارٍ الحفظ…",
+    "saveChanges": "حفظ التغييرات",
+    "unsavedMetadataChanges": "تغييرات بيانات وصفية غير محفوظة",
+    "noFieldsDefined": "لا توجد حقول معرّفة لعلامة التبويب هذه.",
+    "saveMetadata": "حفظ البيانات الوصفية"
+  },
+  "assetVersionsTab": {
+    "title": "المخطط الزمني للإصدارات",
+    "description": "اعرض الإصدارات السابقة لهذا الأصل. تؤدي استعادة إصدار إلى جعله الملف النشط من دون حذف التعديلات الأحدث.",
+    "currentActive": "النشط حاليًا",
+    "savedOn": "تم الحفظ في",
+    "by": "بواسطة",
+    "fileSize": "حجم الملف",
+    "restore": "استعادة",
+    "notifications": {
+      "failedToLoadVersionHistory": "فشل تحميل سجل الإصدارات.",
+      "assetRolledBack": "تمت إعادة الأصل بنجاح إلى الإصدار المحدد.",
+      "failedToRestoreVersion": "فشلت استعادة الإصدار."
+    }
+  },
+  "assetAuditTab": {
+    "title": "السجل التشغيلي",
+    "emptyState": "لا يتوفر سجل تدقيق.",
+    "actions": {
+      "imageEdited": "تم تحرير الصورة",
+      "branchedToNewVersion": "تم التفريع إلى إصدار جديد",
+      "clonedFromExisting": "تم الاستنساخ من موجود",
+      "assetIngested": "تم استيعاب الأصل"
+    },
+    "actorId": "معرّف المنفّذ:",
+    "system": "النظام",
+    "modified": "معدّل",
+    "processedAt": "تمت المعالجة: {{time}}",
+    "timelineForked": "تم تفريع المخطط الزمني",
+    "fileSize": {
+      "zero": "0 بايت",
+      "units": {
+        "bytes": "بايت",
+        "kb": "KB",
+        "mb": "MB",
+        "gb": "GB"
+      }
+    }
+  },
+  "assetTagsEditor": {
+    "actions": {
+      "closeAriaLabel": "إغلاق",
+      "saveChanges": "حفظ التغييرات",
+      "runSmartScan": "تشغيل الفحص الذكي"
+    },
+    "title": "إدارة العلامات: {{name}}",
+    "preview": {
+      "alt": "معاينة",
+      "unavailable": "المعاينة غير متاحة."
+    },
+    "sections": {
+      "manualTags": "العلامات اليدوية",
+      "aiRecognizedTags": "العلامات التي تعرّف عليها الذكاء الاصطناعي"
+    },
+    "manualTags": {
+      "placeholder": "ابحث عن علامة جديدة أو اكتبها...",
+      "helperText": "اضغط Enter لإضافة علامات مخصصة غير موجودة في قاعدة البيانات."
+    },
+    "ai": {
+      "faceRecognition": "التعرّف على الوجوه ({{count}})",
+      "noFacesDetected": "لم يتم اكتشاف وجوه.",
+      "textInImage": "النص داخل الصورة ({{count}})",
+      "noTextDetected": "لم يتم اكتشاف نص.",
+      "semanticObjects": "الكائنات الدلالية ({{count}})",
+      "noObjectsDetected": "لم يتم اكتشاف كائنات."
+    },
+    "notifications": {
+      "aiVisionScanComplete": "اكتمل فحص الرؤية بالذكاء الاصطناعي. تم اكتشاف علامات جديدة.",
+      "tagsUpdatedSuccessfully": "تم تحديث العلامات بنجاح."
+    }
+  },
+  "folderInfoPanel": {
+    "header": {
+      "subtitle": "خصائص المجلد"
+    },
+    "tabs": {
+      "general": "عام",
+      "imageProfiles": "ملفات تعريف الصور",
+      "videoProfiles": "ملفات تعريف الفيديو",
+      "metadata": "البيانات الوصفية",
+      "access": "الوصول"
+    },
+    "general": {
+      "nameRequired": "لا يمكن أن يكون الاسم فارغًا.",
+      "updated": "تم تحديث المجلد.",
+      "folderId": "معرّف المجلد",
+      "slug": "Slug",
+      "created": "تاريخ الإنشاء",
+      "details": "التفاصيل",
+      "name": "الاسم",
+      "description": "الوصف",
+      "descriptionPlaceholder": "أضف وصفًا لهذا المجلد…",
+      "noDescription": "لا يوجد وصف"
+    },
+    "imageProfiles": {
+      "removed": "تمت إزالة ملف تعريف الصورة من المجلد.",
+      "removeError": "فشلت إزالة ملف تعريف الصورة.",
+      "title": "ملف تعريف الصورة",
+      "change": "تغيير",
+      "applyProfile": "تطبيق الملف",
+      "smartCrop": "قص ذكي",
+      "swatch": "عينة",
+      "responsiveCrop": "قص متجاوب",
+      "unsharpMask": "حدة: المقدار {{amount}} · نصف القطر {{radius}}",
+      "removeTooltip": "إزالة الملف من هذا المجلد",
+      "empty": "لم يتم تعيين ملف تعريف صورة. ستستخدم الصور المرفوعة إلى هذا المجلد إعدادات المعالجة الافتراضية.",
+      "emptyHint": "يمكنك تكوين الملفات ضمن Tools → Assets → Asset Configurations → Image Profiles."
+    },
+    "videoProfiles": {
+      "removed": "تمت إزالة ملف تعريف الفيديو من المجلد.",
+      "removeError": "فشلت إزالة ملف تعريف الفيديو.",
+      "title": "ملف تعريف الفيديو",
+      "change": "تغيير",
+      "applyProfile": "تطبيق الملف",
+      "adaptiveStreaming": "بث متكيف",
+      "progressive": "تدريجي",
+      "presetCount_one": "إعداد مسبق واحد",
+      "presetCount_other": "{{count}} إعدادات مسبقة",
+      "removeTooltip": "إزالة الملف من هذا المجلد",
+      "empty": "لم يتم تعيين ملف تعريف فيديو. لن يتم ترميز الفيديوهات المرفوعة إلى هذا المجلد تلقائيًا.",
+      "emptyHint": "قم بتكوين الملفات ضمن Tools → Assets → Asset Configurations → Video Profiles."
+    },
+    "metadata": {
+      "removed": "تمت إزالة مخطط البيانات الوصفية من المجلد.",
+      "removeError": "فشلت إزالة المخطط.",
+      "title": "مخطط البيانات الوصفية",
+      "change": "تغيير",
+      "applySchema": "تطبيق المخطط",
+      "inherited": "موروث",
+      "direct": "مباشر",
+      "tabLabel": "علامة تبويب {{index}}",
+      "removeTooltip": "إزالة المخطط من هذا المجلد",
+      "empty": "لا يوجد مخطط بيانات وصفية معيّن لهذا المجلد. ستستخدم الأصول المخطط الافتراضي إذا كان قد تم تكوينه.",
+      "emptyHint": "قم بتكوين المخططات ضمن Tools → Metadata Schemas."
     }
   }
 }

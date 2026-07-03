@@ -708,7 +708,26 @@
       "removeFromSubfolders": "Ook submappen",
       "removeFromSubfoldersHint": "Indien aangevinkt, wordt de verwijderactie ook doorgevoerd naar alle onderliggende mappen.",
       "removeTooltip": "Dit beleid uit deze map verwijderen",
-      "removeWithCascadeTooltip": "Dit beleid uit deze map en alle submappen verwijderen"
+      "removeWithCascadeTooltip": "Dit beleid uit deze map en alle submappen verwijderen",
+      "searchGroupsPlaceholder": "Groepen op naam zoeken…",
+      "systemGroup": "Systeemgroep",
+      "system": "Systeem",
+      "read": "Lezen",
+      "readHint": "Assets bekijken en door de map bladeren",
+      "modify": "Wijzigen",
+      "modifyHint": "Metagegevens bewerken en items hernoemen",
+      "create": "Aanmaken",
+      "createHint": "Assets uploaden en submappen aanmaken",
+      "delete": "Verwijderen",
+      "deleteHint": "Assets en mappen verwijderen",
+      "replicate": "Repliceren",
+      "replicateHint": "Assets naar CDN-edgeknooppunten pushen",
+      "manage": "Beheren",
+      "manageHint": "Toegangsbeleid voor mappen beheren",
+      "thisFolder": "deze map",
+      "groupFallback": "Groep {{id}}",
+      "inheritedFromFolder": "↑ {{name}}",
+      "parent": "bovenliggend"
     }
   },
   "styleHub": {
@@ -1287,13 +1306,44 @@
       "invalidSaturation": "Verzadiging moet tussen -100 en 100 zijn",
       "invalidRotation": "Rotatie moet deelbaar zijn door 90",
       "invalidCropAspect": "Ongeldige bijsnijdverhouding",
-      "invalidFilter": "Ongeldige filterselect"
+      "invalidFilter": "Ongeldige filterselect",
+      "failedToLoadFoldersNoPeriod": "Mappen laden mislukt",
+      "failedToApplyEdits": "Bewerkingen konden niet worden toegepast.",
+      "networkErrorRetry": "Er is een netwerkfout opgetreden. Probeer het opnieuw."
     },
     "notifications": {
       "savedAsNewVersion": "Nieuwe onveranderbare versie succesvol opgeslagen.",
       "savedAsCopy": "Opgeslagen als kopie in {{folder}}.",
       "overwritten": "Huidigeversie geforceerd overschreven.",
-      "versionSavedAndMoved": "Nieuwe versie opgeslagen en verplaatst naar {{folder}}."
+      "versionSavedAndMoved": "Nieuwe versie opgeslagen en verplaatst naar {{folder}}.",
+      "applied": "Toegepast: {{action}}"
+    },
+    "currentFolder": "huidige map",
+    "editorCanvasAlt": "Editorcanvas",
+    "filters": {
+      "none": "Geen",
+      "vivid": "Levendig",
+      "west": "West",
+      "palma": "Palma",
+      "metro": "Metro",
+      "eiffel": "Eiffel",
+      "blush": "Blos",
+      "modena": "Modena",
+      "vogue": "Vogue"
+    },
+    "processing": {
+      "autoEnhance": "Automatische verbetering toepassen...",
+      "dynamicHdr": "HDR en dynamiek balanceren...",
+      "colorPop": "Kleur van onderwerp isoleren...",
+      "warmContrast": "Studiowarmte toepassen...",
+      "cinematicTone": "Filmische tonen graden...",
+      "magicEraser": "Objecten analyseren en verwijderen...",
+      "unblur": "Scherpe details herstellen...",
+      "portraitLight": "Studioverlichting aanpassen...",
+      "generativeExpand": "Randen uitbreiden via lokale diffusie...",
+      "superResolution": "Opschalen via lokale ESRGAN...",
+      "backgroundSwap": "Semantische maskers extraheren...",
+      "depthMap": "3D-dieptegeometrie berekenen..."
     }
   },
   "login": {
@@ -1676,7 +1726,12 @@
       "status_label": "Status",
       "clear": "Wissen",
       "per_page": "pagina",
-      "share_link": "Deelbare link kopiëren"
+      "share_link": "Deelbare link kopiëren",
+      "grid_size": {
+        "small": "S",
+        "medium": "M",
+        "large": "L"
+      }
     },
     "duplicates": {
       "title": "Dubbele assets zoeken",
@@ -1690,7 +1745,28 @@
       "delete": "Verwijderen",
       "ignore_all": "Alles negeren",
       "delete_all": "Alle duplicaten verwijderen",
-      "folder": "Map"
+      "folder": "Map",
+      "legacy": {
+        "title": "Duplicaat oplossen: {{title}}",
+        "currentlyInDam": "Momenteel in DAM ({{count}} gevonden)",
+        "primaryTitle": "Titel: {{title}}",
+        "locations": "Locaties:",
+        "newUpload": "Je nieuwe upload",
+        "pendingStatus": "Status: upload in behandeling",
+        "identicalHash": "Identieke hash",
+        "aiMergeRecommendation": "AI-samenvoegingsaanbeveling",
+        "aiMergeDescription": "De bytes zijn identiek. AI kan je nieuwe tags aan het bestaande asset toevoegen om rommel te voorkomen.",
+        "mergeMetadata": "Metagegevens samenvoegen",
+        "skipUpload": "Upload overslaan",
+        "uploadAnyway": "Toch als duplicaat uploaden",
+        "alt": {
+          "existing": "bestaand",
+          "new": "nieuw"
+        },
+        "notifications": {
+          "aiMerged": "AI heeft nieuwe metagegevens succesvol samengevoegd in {{count}} bestaand(e) asset(s)."
+        }
+      }
     },
     "ai": {
       "title": "AI-analyse",
@@ -1704,10 +1780,30 @@
       "apply_tags": "Voorgestelde tags toepassen",
       "save_properties": "Opslaan in eigenschappen",
       "queued": "Analyse in wachtrij geplaatst. Controleer later opnieuw.",
-      "error": "Analyse mislukt. Probeer het opnieuw."
+      "error": "Analyse mislukt. Probeer het opnieuw.",
+      "asset_alt": "asset"
     },
     "subfolder_count_tip": "{{count}} submappen",
-    "asset_count_tip": "{{count}} assets"
+    "asset_count_tip": "{{count}} assets",
+    "explorer": {
+      "assetNotFound": "Asset niet gevonden ({{status}})",
+      "couldNotOpenAsset": "Kan asset niet openen: {{message}}",
+      "folderLocationCopiedToClipboard": "Maplocatie naar klembord gekopieerd!",
+      "shareableLinkCopiedToClipboard": "Deelbare link naar klembord gekopieerd!",
+      "failedToCopyLink": "Link kopiëren mislukt.",
+      "permanentDeleteWarning": "WAARSCHUWING: Hierdoor worden deze bestanden permanent van de server verwijderd. Dit kan niet ongedaan worden gemaakt!",
+      "deleteSelectedConfirm": "Weet je zeker dat je {{count}} geselecteerd(e) item(s) wilt verwijderen? Dit kan niet ongedaan worden gemaakt.",
+      "deletionError": "Er is een fout opgetreden tijdens het verwijderen.",
+      "uploadFailed": "Upload mislukt.",
+      "mediaFiles": "Media en bestanden",
+      "createNewFolder": "Nieuwe map maken",
+      "folderName": "Mapnaam"
+    },
+    "grid": {
+      "unknown_file": "Onbekend bestand",
+      "pin_to_collection": "Aan collectie vastmaken",
+      "view_details": "Details bekijken"
+    }
   },
   "inbox": {
     "title": "Inbox",
@@ -1770,6 +1866,503 @@
       "sentThisWeek": "Deze week verzonden",
       "failureRate": "Foutenpercentage",
       "pending": "In behandeling"
+    }
+  },
+  "assetCard": {
+    "unknownAsset": "Onbekend asset",
+    "unknownSize": "Onbekende grootte",
+    "noPreview": "Geen voorbeeld",
+    "tooltips": {
+      "pinToCollection": "Aan collectie vastmaken",
+      "viewDetails": "Details bekijken"
+    },
+    "menu": {
+      "viewDetails": "Details bekijken",
+      "addToCollection": "Aan collectie toevoegen",
+      "moveToTrash": "Naar prullenbak verplaatsen"
+    }
+  },
+  "assetStatisticsTab": {
+    "title": "Assetstatistieken",
+    "downloads": "Downloads",
+    "cdnViews": "CDN-weergaven",
+    "shares": "Delen"
+  },
+  "assetList": {
+    "headers": {
+      "name": "Naam",
+      "status": "Status",
+      "type": "Type",
+      "size": "Grootte",
+      "version": "Ver.",
+      "modified": "Gewijzigd",
+      "created": "Gemaakt",
+      "actions": "Acties"
+    },
+    "unknownFile": "Onbekend bestand",
+    "tooltips": {
+      "pinToCollection": "Aan collectie vastmaken",
+      "viewDetails": "Details bekijken"
+    },
+    "status": {
+      "draft": "concept",
+      "published": "gepubliceerd",
+      "approved": "goedgekeurd",
+      "rejected": "afgewezen",
+      "archived": "gearchiveerd"
+    }
+  },
+  "folderGrid": {
+    "tooltips": {
+      "folderProperties": "Mapeigenschappen"
+    }
+  },
+  "uploadSidebar": {
+    "title": "Uploaden & verrijken",
+    "imageTypes": {
+      "productImage": "Productafbeelding",
+      "lifestyle": "Lifestyle",
+      "bannerHero": "Banner / Hero",
+      "headshot": "Portret",
+      "document": "Document"
+    },
+    "sections": {
+      "assignment": "Toewijzing",
+      "metadataSchema": "Metadataschema",
+      "tags": "Tags",
+      "aiAgenticActions": "AI-agentacties"
+    },
+    "noCollectionsFound": "Geen collecties gevonden",
+    "placeholders": {
+      "selectExistingCollection": "Bestaande collectie selecteren...",
+      "selectGlobalAssetType": "Globaal assettype selecteren",
+      "selectGlobalSchema": "Globaal schema selecteren",
+      "typeAndPressEnter": "Typ en druk op Enter"
+    },
+    "schemaHelp": "Dit schema wordt standaard toegepast op alle klaargezette bestanden. Overschrijven per bestand is beschikbaar op elke kaart.",
+    "filenamePatternPrefix": "Voor productafbeeldingen: ondersteund bestandsnaampatroon:",
+    "filenamePatternExample": "bijv. 012993112028-en-FR01.jpg",
+    "aiTagsOnUpload": "AI-tags genereren bij uploaden",
+    "buttons": {
+      "smartDescribeSelected": "Selectie slim beschrijven",
+      "autoRemoveBackgrounds": "Achtergronden automatisch verwijderen",
+      "uploadCount": "Uploaden ({{selectedCount}})"
+    },
+    "progress": {
+      "uploading": "Uploaden…",
+      "count": "{{done}} van {{total}}"
+    }
+  },
+  "foldersManager": {
+    "title": "Alle assets"
+  },
+  "explorerTopBar": {
+    "breadcrumbLabel": "broodkruimelpad",
+    "home": "Home",
+    "copyFolderLink": "Maplink kopiëren",
+    "selectAll": "Alles selecteren",
+    "viewTrashBin": "Prullenbak bekijken",
+    "backToActiveFiles": "Terug naar actieve bestanden",
+    "tools": "Hulpmiddelen",
+    "metadataSchema": "Metadataschema",
+    "applySchemaToFolder": "Schema op map toepassen",
+    "folderSelected": "{{count}} map geselecteerd",
+    "foldersSelected": "{{count}} mappen geselecteerd",
+    "applyToCurrentFolder": "Toepassen op huidige map",
+    "applySchemaToAssets": "Schema op assets toepassen",
+    "assetSelected": "{{count}} asset geselecteerd",
+    "assetsSelected": "{{count}} assets geselecteerd",
+    "imageProcessing": "Beeldverwerking",
+    "applyImageProfile": "Afbeeldingsprofiel toepassen",
+    "setProcessingProfileForThisFolder": "Verwerkingsprofiel voor deze map instellen",
+    "applyVideoProfile": "Videoprofiel toepassen",
+    "setVideoEncodingProfileForThisFolder": "Videocoderingsprofiel voor deze map instellen",
+    "edgeCdnOps": "Edge CDN-bewerkingen",
+    "syncMetadataToCdn": "Metadata synchroniseren naar CDN",
+    "forcePushJsonToEdgeKv": "JSON geforceerd naar Edge KV pushen",
+    "purgeEdgeCache": "Edge-cache legen",
+    "invalidateDeliveryNodesGlobally": "Leveringsknooppunten wereldwijd ongeldig maken",
+    "workflow": "Workflow",
+    "globalLocalization": "Wereldwijde lokalisatie",
+    "autoTranslateCopyMetadata": "Tekst en metadata automatisch vertalen",
+    "brandLicenseGuard": "Merk- en licentiebewaking",
+    "validateUsageTermsSignatures": "Gebruiksvoorwaarden en handtekeningen valideren",
+    "smartActions": "Slimme acties",
+    "autoTagEnrich": "Automatisch taggen en verrijken",
+    "extractSemanticMetadata": "Semantische metadata extraheren",
+    "smartOrganize": "Slim organiseren",
+    "groupIntoSemanticFolders": "Groeperen in semantische mappen",
+    "scanForDuplicates": "Scannen op duplicaten",
+    "tdmPayloadDeduplication": "TDM-payload-ontdubbeling",
+    "moveToBin": "Naar prullenbak verplaatsen",
+    "deleteForever": "Definitief verwijderen",
+    "applyMetadataSchema": "Metadataschema toepassen",
+    "setSchemaForThisFolder": "Schema voor deze map instellen",
+    "newFolder": "Nieuwe map",
+    "currentFolder": "Huidige map",
+    "notifications": {
+      "autoEnrichQueued": "Assets in wachtrij geplaatst voor LangChain semantische verrijking.",
+      "duplicateScanQueued": "Scannen op visuele en cryptografische duplicaten...",
+      "smartOrganizeQueued": "AI analyseert vectoren om items in submappen te clusteren.",
+      "forceSyncStarted": "Geforceerde synchronisatie van metadata naar Edge KV gestart.",
+      "cachePurgeQueued": "Ongeldig maken van Edge-cache in wachtrij geplaatst voor geselecteerde items.",
+      "localizationTriggered": "Lokalisatie-agent gestart.",
+      "brandSafetyInitialized": "Controle op merkveiligheid gestart."
+    }
+  },
+  "uploadGrid": {
+    "staging_area": "Staginggebied",
+    "selection_count": "{{selected}} van {{total}} geselecteerd",
+    "select_all": "Alles selecteren",
+    "dropzone": {
+      "drag_drop": "Sleep hier nieuwe assets naartoe",
+      "browse": "of klik om lokale bestanden te bladeren"
+    },
+    "preview_alt": "voorvertoning",
+    "file_fallback_extension": "bestand",
+    "preview_generated_after_upload": "Voorvertoning wordt na upload gegenereerd",
+    "status": {
+      "calculating_hash": "Hash wordt berekend...",
+      "checking_dam": "DAM wordt gecontroleerd...",
+      "uploading": "Bezig met uploaden..."
+    },
+    "duplicate_found": "Duplicaat gevonden",
+    "dimensions": {
+      "unknown": "Onbekend",
+      "not_applicable": "N/A"
+    },
+    "type_placeholder": "Type",
+    "run_ai_enhance": "AI-verbetering op dit bestand uitvoeren",
+    "select_schema": "Schema selecteren",
+    "product_id": "Product-ID",
+    "language_code": "Taalcode",
+    "select_asset_type": "Assettype selecteren (dam:asset_type)",
+    "image_types": {
+      "product_image": "Productafbeelding",
+      "lifestyle": "Lifestyle",
+      "banner_hero": "Banner / Hero",
+      "headshot": "Portretfoto",
+      "document": "Document"
+    },
+    "ai_tags": {
+      "studio": "Studio",
+      "high_res": "Hoge resolutie",
+      "isolated": "Vrijstaand",
+      "enhanced": "Verbeterd",
+      "web_ready": "Klaar voor het web"
+    }
+  },
+  "uploadWorkspace": {
+    "unknown_type": "onbekend type",
+    "upload_not_allowed": "Upload niet toegestaan: {{names}}. Alleen de volgende MIME-typen zijn toegestaan: {{mimeTypes}}.",
+    "ai_auto_tagging_complete": "Automatisch taggen met AI voltooid.",
+    "backgrounds_removed": "Achtergronden verwijderd.",
+    "ai_enhancements_applied": "AI-verbeteringen toegepast.",
+    "upload_sequence_complete": "Uploadreeks voltooid."
+  },
+  "applySchemaDialog": {
+    "title": "Metadataschema toepassen",
+    "selectedItems": "Geselecteerde items:",
+    "more": "+{{count}} meer",
+    "availableSchemas": "Beschikbare schema's",
+    "noSchemas": "Geen schema's beschikbaar.",
+    "option": {
+      "builtIn": "Ingebouwd",
+      "typeSchemas": "{{count}} typeschema's"
+    },
+    "target": {
+      "folder_one": "Toepassen op {{count}} map",
+      "folder_other": "Toepassen op {{count}} mappen",
+      "asset_one": "Toepassen op {{count}} asset",
+      "asset_other": "Toepassen op {{count}} assets"
+    },
+    "cascade": {
+      "title": "Schema-cascade",
+      "description": "Wanneer het op een map wordt toegepast, wordt het schema automatisch opgelost naar de beste overeenkomst voor het MIME-type van elk asset (bijv. image/jpeg → JPEG-subtypeschema).",
+      "allSubfolders": "Ook op alle submappen toepassen",
+      "thisFolderOnly": "Alleen op deze map toepassen",
+      "overrideHint": "Je kunt het schema daarna afzonderlijk in elke submap overschrijven."
+    },
+    "selectionSummary": {
+      "selected": "Geselecteerd: {{name}}",
+      "tabs_one": "{{count}} tabblad",
+      "tabs_other": "{{count}} tabbladen",
+      "fields": "{{count}} velden"
+    },
+    "actions": {
+      "applying": "Toepassen…",
+      "apply": "\"{{name}}\" toepassen"
+    },
+    "notifications": {
+      "loadError": "Schema's laden mislukt.",
+      "folderAppliedCascade_one": "Schema \"{{schemaName}}\" wordt toegepast op {{count}} map en alle submappen.",
+      "folderAppliedCascade_other": "Schema \"{{schemaName}}\" wordt toegepast op {{count}} mappen en alle submappen.",
+      "folderApplied_one": "Schema \"{{schemaName}}\" wordt toegepast op {{count}} map.",
+      "folderApplied_other": "Schema \"{{schemaName}}\" wordt toegepast op {{count}} mappen.",
+      "assetApplied_one": "Schema \"{{schemaName}}\" toegepast op {{count}} asset.",
+      "assetApplied_other": "Schema \"{{schemaName}}\" toegepast op {{count}} assets.",
+      "applyError": "Schema toepassen mislukt. Probeer het opnieuw."
+    }
+  },
+  "pinToCollectionDialog": {
+    "title": "Aan collecties vastmaken",
+    "searchPlaceholder": "Collecties zoeken...",
+    "noResults": "Geen collecties komen overeen met je zoekopdracht.",
+    "description": {
+      "before": "Voeg",
+      "thisAsset": "dit asset",
+      "after": "toe aan een of meer collecties."
+    },
+    "collection": {
+      "smartType": "AI-slimme routering",
+      "manualType": "Handmatige curatie",
+      "assetsCount": "{{count}} assets"
+    },
+    "tooltips": {
+      "remove": "Uit deze collectie verwijderen",
+      "add": "Aan deze collectie toevoegen"
+    },
+    "footer": {
+      "pinnedTo_one": "Vastgemaakt aan {{count}} collectie",
+      "pinnedTo_other": "Vastgemaakt aan {{count}} collecties",
+      "notPinned": "Niet vastgemaakt aan een collectie"
+    },
+    "actions": {
+      "done": "Gereed"
+    },
+    "notifications": {
+      "loadError": "Collecties laden mislukt.",
+      "removed": "Uit collectie verwijderd.",
+      "added": "Aan collectie toegevoegd.",
+      "operationFailed": "Bewerking mislukt.",
+      "networkError": "Netwerkfout."
+    }
+  },
+  "assetViewer": {
+    "actions": {
+      "closeAriaLabel": "sluiten"
+    },
+    "toolbar": {
+      "pinToCollection": "Aan collectie vastzetten",
+      "shareAsset": "Asset delen",
+      "copyImageUrl": "Afbeeldings-URL kopiëren",
+      "editUnsupportedTooltip": "Bewerken wordt niet ondersteund voor dit bestandsformaat (bijv. PSD, TIFF, RAW). Download in plaats daarvan het origineel of bekijk de gegenereerde preview.",
+      "editImage": "Afbeelding bewerken"
+    },
+    "download": {
+      "defaultFilename": "download",
+      "options": "Downloadopties",
+      "original": "Origineel downloaden",
+      "originalDescription": "Bronbestand met hoge resolutie",
+      "secureProxy": "Beveiligde proxy downloaden",
+      "secureProxyDescription": "Bevat een niet-verwijderbaar watermerk"
+    },
+    "preview": {
+      "notAvailableForFileType": "Preview niet beschikbaar voor dit bestandstype."
+    },
+    "tabs": {
+      "info": "Info",
+      "metadata": "Metadata",
+      "versions": "Versies",
+      "statistics": "Statistieken",
+      "audit": "Audit",
+      "workflows": "Workflows",
+      "aiEngine": "AI-engine"
+    },
+    "info": {
+      "generalMetadata": "Algemene metadata",
+      "tagsCount": "{{count}} tags",
+      "aiRecognizedAndManual": "AI-herkend & handmatig",
+      "fileName": "Bestandsnaam",
+      "dateAdded": "Toegevoegd op",
+      "resolution": "Resolutie",
+      "fileSize": "Bestandsgrootte",
+      "creator": "Maker",
+      "copyright": "Copyright",
+      "camera": "Camera",
+      "lens": "Lens",
+      "colorMode": "Kleurmodus",
+      "embeddedMetadataFields": "Ingesloten metadata-velden",
+      "dominantPalette": "Dominant palet",
+      "embeddedMetadataSection": "EXIF / IPTC / XMP-gegevens",
+      "noExifDataExtractedYet": "Nog geen EXIF-gegevens geëxtraheerd."
+    },
+    "ai": {
+      "semanticAndVisionAnalysis": "Semantische en visuele analyse"
+    },
+    "fallbacks": {
+      "unknownFile": "Onbekend bestand",
+      "unknownSize": "Onbekende grootte",
+      "unknown": "Onbekend"
+    },
+    "notifications": {
+      "assetUrlCopiedToClipboard": "Asset-URL naar klembord gekopieerd!",
+      "generatingSecureWatermarkedProxy": "Beveiligde proxy met watermerk wordt gegenereerd...",
+      "downloadStarted": "Download gestart",
+      "shareDialogComingSoon": "Deeldialoog komt binnenkort"
+    }
+  },
+  "assetMetadataPanel": {
+    "field": {
+      "inheritedReadOnly": "Overgenomen van bovenliggend schema — alleen-lezen",
+      "selectPlaceholder": "— selecteren —",
+      "tagsHelperSuffix": " — druk op Enter om toe te voegen"
+    },
+    "notifications": {
+      "metadataSavedSuccessfully": "Metadata succesvol opgeslagen."
+    },
+    "errors": {
+      "saveFailed": "Opslaan mislukt"
+    },
+    "noSchema": {
+      "line1": "Er is nog geen metadataschema op dit asset toegepast.",
+      "line2Prefix": "Gebruik",
+      "action": "Tools → Metadataschema toepassen",
+      "line2Suffix": "in de mapweergave om er een toe te wijzen."
+    },
+    "builtIn": "Ingebouwd",
+    "schemaSummary_one": "{{count}} tabblad · MIME-opgelost schema",
+    "schemaSummary_other": "{{count}} tabbladen · MIME-opgelost schema",
+    "reloadSchema": "Schema opnieuw laden",
+    "saving": "Opslaan…",
+    "saveChanges": "Wijzigingen opslaan",
+    "unsavedMetadataChanges": "Niet-opgeslagen metadatawijzigingen",
+    "noFieldsDefined": "Geen velden gedefinieerd voor dit tabblad.",
+    "saveMetadata": "Metadata opslaan"
+  },
+  "assetVersionsTab": {
+    "title": "Versietijdlijn",
+    "description": "Bekijk eerdere iteraties van dit asset. Door een versie te herstellen wordt deze het actieve bestand zonder nieuwere bewerkingen te verwijderen.",
+    "currentActive": "Huidig actief",
+    "savedOn": "Opgeslagen op",
+    "by": "door",
+    "fileSize": "Bestandsgrootte",
+    "restore": "Herstellen",
+    "notifications": {
+      "failedToLoadVersionHistory": "Kan versiegeschiedenis niet laden.",
+      "assetRolledBack": "Asset is succesvol teruggezet naar de geselecteerde versie.",
+      "failedToRestoreVersion": "Kan versie niet herstellen."
+    }
+  },
+  "assetAuditTab": {
+    "title": "Operationeel logboek",
+    "emptyState": "Geen auditgeschiedenis beschikbaar.",
+    "actions": {
+      "imageEdited": "Afbeelding bewerkt",
+      "branchedToNewVersion": "Vertakt naar nieuwe versie",
+      "clonedFromExisting": "Gekloond vanuit bestaand",
+      "assetIngested": "Asset opgenomen"
+    },
+    "actorId": "Actor-ID:",
+    "system": "Systeem",
+    "modified": "Gewijzigd",
+    "processedAt": "Verwerkt: {{time}}",
+    "timelineForked": "Tijdlijn vertakt",
+    "fileSize": {
+      "zero": "0 bytes",
+      "units": {
+        "bytes": "bytes",
+        "kb": "KB",
+        "mb": "MB",
+        "gb": "GB"
+      }
+    }
+  },
+  "assetTagsEditor": {
+    "actions": {
+      "closeAriaLabel": "sluiten",
+      "saveChanges": "Wijzigingen opslaan",
+      "runSmartScan": "Slimme scan uitvoeren"
+    },
+    "title": "Tags beheren: {{name}}",
+    "preview": {
+      "alt": "Preview",
+      "unavailable": "Preview niet beschikbaar."
+    },
+    "sections": {
+      "manualTags": "Handmatige tags",
+      "aiRecognizedTags": "Door AI herkende tags"
+    },
+    "manualTags": {
+      "placeholder": "Zoek of typ een nieuwe tag...",
+      "helperText": "Druk op Enter om aangepaste tags toe te voegen die niet in de database staan."
+    },
+    "ai": {
+      "faceRecognition": "Gezichtsherkenning ({{count}})",
+      "noFacesDetected": "Geen gezichten gedetecteerd.",
+      "textInImage": "Tekst in afbeelding ({{count}})",
+      "noTextDetected": "Geen tekst gedetecteerd.",
+      "semanticObjects": "Semantische objecten ({{count}})",
+      "noObjectsDetected": "Geen objecten gedetecteerd."
+    },
+    "notifications": {
+      "aiVisionScanComplete": "AI-visiescan voltooid. Nieuwe tags ontdekt.",
+      "tagsUpdatedSuccessfully": "Tags succesvol bijgewerkt."
+    }
+  },
+  "folderInfoPanel": {
+    "header": {
+      "subtitle": "Mapeigenschappen"
+    },
+    "tabs": {
+      "general": "Algemeen",
+      "imageProfiles": "Afbeeldingsprofielen",
+      "videoProfiles": "Videoprofielen",
+      "metadata": "Metadata",
+      "access": "Toegang"
+    },
+    "general": {
+      "nameRequired": "Naam mag niet leeg zijn.",
+      "updated": "Map bijgewerkt.",
+      "folderId": "Map-ID",
+      "slug": "Slug",
+      "created": "Aangemaakt",
+      "details": "Details",
+      "name": "Naam",
+      "description": "Beschrijving",
+      "descriptionPlaceholder": "Voeg een beschrijving toe voor deze map…",
+      "noDescription": "Geen beschrijving"
+    },
+    "imageProfiles": {
+      "removed": "Afbeeldingsprofiel uit map verwijderd.",
+      "removeError": "Verwijderen van afbeeldingsprofiel mislukt.",
+      "title": "Afbeeldingsprofiel",
+      "change": "Wijzigen",
+      "applyProfile": "Profiel toepassen",
+      "smartCrop": "Slim uitsnijden",
+      "swatch": "Staal",
+      "responsiveCrop": "Responsief uitsnijden",
+      "unsharpMask": "Onscherp: hoeveelheid {{amount}} · straal {{radius}}",
+      "removeTooltip": "Profiel uit deze map verwijderen",
+      "empty": "Geen afbeeldingsprofiel toegewezen. Afbeeldingen die naar deze map worden geüpload gebruiken de standaardverwerkingsinstellingen.",
+      "emptyHint": "Je kunt profielen configureren onder Tools → Assets → Asset Configurations → Image Profiles."
+    },
+    "videoProfiles": {
+      "removed": "Videoprofiel uit map verwijderd.",
+      "removeError": "Verwijderen van videoprofiel mislukt.",
+      "title": "Videoprofiel",
+      "change": "Wijzigen",
+      "applyProfile": "Profiel toepassen",
+      "adaptiveStreaming": "Adaptieve streaming",
+      "progressive": "Progressief",
+      "presetCount_one": "{{count}} preset",
+      "presetCount_other": "{{count}} presets",
+      "removeTooltip": "Profiel uit deze map verwijderen",
+      "empty": "Geen videoprofiel toegewezen. Video’s die naar deze map worden geüpload, worden niet automatisch getranscodeerd.",
+      "emptyHint": "Configureer profielen onder Tools → Assets → Asset Configurations → Video Profiles."
+    },
+    "metadata": {
+      "removed": "Metadataschema uit map verwijderd.",
+      "removeError": "Verwijderen van schema mislukt.",
+      "title": "Metadataschema",
+      "change": "Wijzigen",
+      "applySchema": "Schema toepassen",
+      "inherited": "Overgenomen",
+      "direct": "Direct",
+      "tabLabel": "Tab {{index}}",
+      "removeTooltip": "Schema uit deze map verwijderen",
+      "empty": "Er is geen metadataschema aan deze map toegewezen. Assets gebruiken het standaardschema als er een is geconfigureerd.",
+      "emptyHint": "Configureer schema’s onder Tools → Metadata Schemas."
     }
   }
 }

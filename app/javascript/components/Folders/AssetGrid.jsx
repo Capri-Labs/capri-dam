@@ -69,6 +69,10 @@ export default function AssetGrid({
   gridSize = 'medium',
 }) {
   const { t } = useTranslation();
+  const translate = (key, fallback) => {
+    const value = t(key);
+    return value === key ? fallback : value;
+  };
   const cardConfig = GRID_SIZE_CONFIG[gridSize] || GRID_SIZE_CONFIG.medium;
 
   return (
@@ -83,7 +87,7 @@ export default function AssetGrid({
     >
       {assets.map((asset) => {
         const metadata = asset.properties || {};
-        const displayName = asset.name || asset.title || 'Unknown File';
+        const displayName = asset.name || asset.title || translate('folders.grid.unknown_file', 'Unknown File');
         const contentType = asset.content_type || metadata.content_type || '';
         const isImage = contentType.startsWith('image/');
         const hasGeneratedPreview = Boolean(
@@ -207,7 +211,7 @@ export default function AssetGrid({
                       </IconButton>
                     </Tooltip>
 
-                    <Tooltip title="Pin to Collection">
+                    <Tooltip title={translate('folders.grid.pin_to_collection', 'Pin to Collection')}>
                       <IconButton
                         size="small"
                         sx={{ color: '#fff', bgcolor: 'rgba(15,23,42,0.32)' }}
@@ -222,7 +226,7 @@ export default function AssetGrid({
                   </>
                 )}
 
-                <Tooltip title="View Details">
+                <Tooltip title={translate('folders.grid.view_details', 'View Details')}>
                   <IconButton
                     size="small"
                     sx={{ color: '#fff', bgcolor: 'rgba(15,23,42,0.32)' }}

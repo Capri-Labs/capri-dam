@@ -18,6 +18,13 @@ const CARD_SIZE_CONFIG = {
 
 export default function FolderGrid({ folders, viewMode, selectedItems, toggleSelection, handleNavigate, onFolderInfo, gridSize = 'medium' }) {
   const { t } = useTranslation();
+  const tr = (key, defaultValue, options = {}) => {
+    const value = t(key, { defaultValue, ...options });
+    if (value === key || (options.count != null && value === `${key}:${options.count}`)) {
+      return defaultValue.replace(/\{\{(\w+)\}\}/g, (_, token) => options[token] ?? '');
+    }
+    return value;
+  };
   const size = GRID_SIZE_CONFIG[gridSize] || GRID_SIZE_CONFIG.medium;
   const card = CARD_SIZE_CONFIG[gridSize] || CARD_SIZE_CONFIG.medium;
 
@@ -76,7 +83,7 @@ export default function FolderGrid({ folders, viewMode, selectedItems, toggleSel
                     </Tooltip>
                     <Stack direction="row" spacing={0.75} sx={{mt: 0.75, flexWrap: 'wrap', gap: 0.5, alignItems: 'center'}}>
                       {typeof folder.subfolder_count === 'number' && (
-                        <Tooltip title={t('folders.subfolder_count_tip', '{{count}} sub-folders', { count: folder.subfolder_count })}>
+                      <Tooltip title={tr('folders.subfolder_count_tip', '{{count}} sub-folders', { count: folder.subfolder_count })}>
                           <Chip
                             icon={<FolderIcon sx={{ fontSize: 12, ml: 0.5 }} />}
                             label={folder.subfolder_count}
@@ -86,7 +93,7 @@ export default function FolderGrid({ folders, viewMode, selectedItems, toggleSel
                         </Tooltip>
                       )}
                       {typeof folder.asset_count === 'number' && (
-                        <Tooltip title={t('folders.asset_count_tip', '{{count}} assets', { count: folder.asset_count })}>
+                        <Tooltip title={tr('folders.asset_count_tip', '{{count}} assets', { count: folder.asset_count })}>
                           <Chip
                             icon={<InsertDriveFileOutlined sx={{ fontSize: 12, ml: 0.5 }} />}
                             label={folder.asset_count}
@@ -105,7 +112,7 @@ export default function FolderGrid({ folders, viewMode, selectedItems, toggleSel
                 </Stack>
 
                 {viewMode !== 'bin' && onFolderInfo && (
-                  <Tooltip title="Folder properties">
+                  <Tooltip title={tr('folderGrid.tooltips.folderProperties', 'Folder properties')}>
                     <IconButton
                       className="folder-info-btn"
                       size="small"

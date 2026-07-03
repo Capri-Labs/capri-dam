@@ -223,6 +223,17 @@ RSpec.describe Api::V1::FoldersController, type: :controller do
       )
       expect(payload.fetch("properties")).to include("content_type" => "image/jpeg", "file_size" => 42)
     end
+
+    it "marks a PSD asset as not editable but a JPEG asset as editable" do
+      psd = create(:asset, user: admin, folder: folder, title: "Artwork", properties: { "content_type" => "image/vnd.adobe.photoshop" })
+      jpeg = create(:asset, user: admin, folder: folder, title: "Photo", properties: { "content_type" => "image/jpeg" })
+
+      get :show, params: { id: folder.id }, format: :json
+
+      assets = response.parsed_body.fetch("assets")
+      expect(assets.find { |entry| entry["id"] == psd.id }["editable"]).to be(false)
+      expect(assets.find { |entry| entry["id"] == jpeg.id }["editable"]).to be(true)
+    end
   end
 
   describe "GET #profiles" do

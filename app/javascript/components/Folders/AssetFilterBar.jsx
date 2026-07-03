@@ -61,9 +61,9 @@ const STATUS_OPTIONS = [
 export const PER_PAGE_OPTIONS = [25, 50, 100];
 
 const GRID_SIZES = [
-  { key: 'small',  label: 'S' },
-  { key: 'medium', label: 'M' },
-  { key: 'large',  label: 'L' },
+  { key: 'small',  labelKey: 'folders.filter.grid_size.small' },
+  { key: 'medium', labelKey: 'folders.filter.grid_size.medium' },
+  { key: 'large',  labelKey: 'folders.filter.grid_size.large' },
 ];
 
 // ─── Reusable multi-select dropdown ──────────────────────────────────────────
@@ -156,6 +156,10 @@ export default function AssetFilterBar({
   onShareLink,
 }) {
   const { t } = useTranslation();
+  const translate = (key, fallback) => {
+    const value = t(key);
+    return value === key ? fallback : value;
+  };
   const [sortAnchor, setSortAnchor] = useState(null);
 
   const activeSort = SORT_OPTIONS.find(
@@ -260,7 +264,7 @@ export default function AssetFilterBar({
 
         {/* Share link */}
         {onShareLink && (
-          <Tooltip title={t('folders.filter.share_link', 'Copy shareable link')}>
+          <Tooltip title={t('folders.filter.share_link')}>
             <IconButton size="small" onClick={onShareLink} sx={{ color: '#64748b', flexShrink: 0 }}>
               <IosShare fontSize="small" />
             </IconButton>
@@ -287,7 +291,7 @@ export default function AssetFilterBar({
           >
             {PER_PAGE_OPTIONS.map((n) => (
               <MenuItem key={n} value={n} dense>
-                <Typography variant="body2">{n} / {t('folders.filter.per_page', 'page')}</Typography>
+                <Typography variant="body2">{n} / {t('folders.filter.per_page')}</Typography>
               </MenuItem>
             ))}
           </Select>
@@ -304,7 +308,7 @@ export default function AssetFilterBar({
             size="small"
             sx={{ flexShrink: 0 }}
           >
-            {GRID_SIZES.map(({ key, label }) => (
+            {GRID_SIZES.map(({ key, labelKey }) => (
               <ToggleButton
                 key={key}
                 value={key}
@@ -314,7 +318,7 @@ export default function AssetFilterBar({
                   '&.Mui-selected': { bgcolor: '#334155 !important', color: '#fff !important' },
                 }}
               >
-                {label}
+                {translate(labelKey, key === 'small' ? 'S' : key === 'medium' ? 'M' : 'L')}
               </ToggleButton>
             ))}
           </ToggleButtonGroup>

@@ -453,7 +453,7 @@ module Api
 
       # "applied_schema_name"  → "Applied Schema Name"
       # "dc:creator"           → "Creator"
-      # "Iptc4xmpCore:City"    → "City"
+      # "photoshop:City"       → "City"
       # "editor_state_filter"  → "Editor State Filter"
       def humanize_property_key(key)
         field = key.include?(":") ? key.split(":", 2).last : key

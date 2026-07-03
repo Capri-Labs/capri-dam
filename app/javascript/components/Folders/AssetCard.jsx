@@ -7,8 +7,14 @@ import {
     PushPinOutlined, InfoOutlined, MoreVert,
     CloudDownload, DeleteOutlined
 } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 
 export default function AssetCard({ asset, onPin, onViewMore }) {
+    const { t } = useTranslation();
+    const tr = (key, defaultValue) => {
+        const value = t(key, { defaultValue });
+        return value === key ? defaultValue : value;
+    };
     const [anchorEl, setAnchorEl] = useState(null);
 
     const handleMenuOpen = (e) => {
@@ -22,8 +28,8 @@ export default function AssetCard({ asset, onPin, onViewMore }) {
     };
 
     // Fallback for missing data
-    const filename = asset.original_filename || asset.title || 'Unknown Asset';
-    const fileSize = asset.file_size || asset.size || 'Unknown Size';
+    const filename = asset.original_filename || asset.title || tr('assetCard.unknownAsset', 'Unknown Asset');
+    const fileSize = asset.file_size || asset.size || tr('assetCard.unknownSize', 'Unknown Size');
 
     return (
         <Card
@@ -54,7 +60,7 @@ export default function AssetCard({ asset, onPin, onViewMore }) {
                     />
                 ) : (
                     <Box sx={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <Typography variant="caption" color="textSecondary">No Preview</Typography>
+                        <Typography variant="caption" color="textSecondary">{tr('assetCard.noPreview', 'No Preview')}</Typography>
                     </Box>
                 )}
 
@@ -70,12 +76,12 @@ export default function AssetCard({ asset, onPin, onViewMore }) {
                         boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
                     }}
                 >
-                    <Tooltip title="Pin to Collection">
+                    <Tooltip title={tr('assetCard.tooltips.pinToCollection', 'Pin to Collection')}>
                         <IconButton size="small" onClick={(e) => { e.stopPropagation(); onPin(asset); }} sx={{ color: '#5e35b1' }}>
                             <PushPinOutlined fontSize="small" />
                         </IconButton>
                     </Tooltip>
-                    <Tooltip title="View Details">
+                    <Tooltip title={tr('assetCard.tooltips.viewDetails', 'View Details')}>
                         <IconButton size="small" onClick={(e) => { e.stopPropagation(); onViewMore(asset); }} sx={{ color: '#0ea5e9' }}>
                             <InfoOutlined fontSize="small" />
                         </IconButton>
@@ -108,17 +114,17 @@ export default function AssetCard({ asset, onPin, onViewMore }) {
             {/* Standard Asset Context Menu */}
             <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose} elevation={2} slotProps={{paper: { sx: { borderRadius: 2, minWidth: 160 } } }}>
                 <MenuItem onClick={(e) => { handleMenuClose(e); onViewMore(asset); }}>
-                    <InfoOutlined fontSize="small" sx={{ mr: 1.5, color: '#475569' }} /> View Details
+                    <InfoOutlined fontSize="small" sx={{ mr: 1.5, color: '#475569' }} /> {tr('assetCard.menu.viewDetails', 'View Details')}
                 </MenuItem>
                 <MenuItem onClick={(e) => { handleMenuClose(e); onPin(asset); }}>
-                    <PushPinOutlined fontSize="small" sx={{ mr: 1.5, color: '#5e35b1' }} /> Add to Collection
+                    <PushPinOutlined fontSize="small" sx={{ mr: 1.5, color: '#5e35b1' }} /> {tr('assetCard.menu.addToCollection', 'Add to Collection')}
                 </MenuItem>
                 <Divider />
                 <MenuItem onClick={handleMenuClose}>
-                    <CloudDownload fontSize="small" sx={{ mr: 1.5, color: '#64748b' }} /> Download
+                    <CloudDownload fontSize="small" sx={{ mr: 1.5, color: '#64748b' }} /> {tr('asset.url.download', 'Download')}
                 </MenuItem>
                 <MenuItem onClick={handleMenuClose} sx={{ color: '#d32f2f' }}>
-                    <DeleteOutlined fontSize="small" sx={{ mr: 1.5 }} /> Move to Trash
+                    <DeleteOutlined fontSize="small" sx={{ mr: 1.5 }} /> {tr('assetCard.menu.moveToTrash', 'Move to Trash')}
                 </MenuItem>
             </Menu>
         </Card>

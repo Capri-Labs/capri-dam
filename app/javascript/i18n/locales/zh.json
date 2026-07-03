@@ -708,7 +708,26 @@
       "removeFromSubfolders": "同时包括子文件夹",
       "removeFromSubfoldersHint": "选中后，删除操作也将传播到所有子文件夹。",
       "removeTooltip": "从此文件夹中删除此策略",
-      "removeWithCascadeTooltip": "从此文件夹及其所有子文件夹中删除此策略"
+      "removeWithCascadeTooltip": "从此文件夹及其所有子文件夹中删除此策略",
+      "searchGroupsPlaceholder": "按名称搜索组…",
+      "systemGroup": "系统组",
+      "system": "系统",
+      "read": "读取",
+      "readHint": "查看资源并浏览文件夹",
+      "modify": "修改",
+      "modifyHint": "编辑元数据并重命名项目",
+      "create": "创建",
+      "createHint": "上传资源并创建子文件夹",
+      "delete": "删除",
+      "deleteHint": "删除资源和文件夹",
+      "replicate": "复制",
+      "replicateHint": "将资源推送到 CDN 边缘节点",
+      "manage": "管理",
+      "manageHint": "管理文件夹访问策略",
+      "thisFolder": "此文件夹",
+      "groupFallback": "组 {{id}}",
+      "inheritedFromFolder": "↑ {{name}}",
+      "parent": "父级"
     }
   },
   "styleHub": {
@@ -1287,13 +1306,44 @@
       "invalidSaturation": "饱和度必须在-100至100之间",
       "invalidRotation": "旋转必须能被90整除",
       "invalidCropAspect": "无效的裁剪宽高比",
-      "invalidFilter": "无效的滤镜选择"
+      "invalidFilter": "无效的滤镜选择",
+      "failedToLoadFoldersNoPeriod": "加载文件夹失败",
+      "failedToApplyEdits": "应用编辑失败。",
+      "networkErrorRetry": "发生网络错误。请重试。"
     },
     "notifications": {
       "savedAsNewVersion": "新的不可变版本已成功保存。",
       "savedAsCopy": "已另存为{{folder}}中的副本。",
       "overwritten": "当前版本被强制覆盖。",
-      "versionSavedAndMoved": "新版本已保存并移动到{{folder}}。"
+      "versionSavedAndMoved": "新版本已保存并移动到{{folder}}。",
+      "applied": "已应用：{{action}}"
+    },
+    "currentFolder": "当前文件夹",
+    "editorCanvasAlt": "编辑器画布",
+    "filters": {
+      "none": "无",
+      "vivid": "鲜艳",
+      "west": "西部",
+      "palma": "Palma",
+      "metro": "Metro",
+      "eiffel": "Eiffel",
+      "blush": "腮红",
+      "modena": "Modena",
+      "vogue": "Vogue"
+    },
+    "processing": {
+      "autoEnhance": "正在应用自动增强...",
+      "dynamicHdr": "正在平衡 HDR 与动态范围...",
+      "colorPop": "正在分离主体颜色...",
+      "warmContrast": "正在应用摄影棚暖色调...",
+      "cinematicTone": "正在调整电影感色调...",
+      "magicEraser": "正在分析并移除对象...",
+      "unblur": "正在恢复清晰细节...",
+      "portraitLight": "正在调整摄影棚光线...",
+      "generativeExpand": "正在通过本地扩散扩展边界...",
+      "superResolution": "正在通过本地 ESRGAN 放大...",
+      "backgroundSwap": "正在提取语义蒙版...",
+      "depthMap": "正在计算 3D 深度几何..."
     }
   },
   "login": {
@@ -1676,7 +1726,12 @@
       "status_label": "状态",
       "clear": "清除",
       "per_page": "页",
-      "share_link": "复制可分享链接"
+      "share_link": "复制可分享链接",
+      "grid_size": {
+        "small": "S",
+        "medium": "M",
+        "large": "L"
+      }
     },
     "duplicates": {
       "title": "查找重复资产",
@@ -1690,7 +1745,28 @@
       "delete": "删除",
       "ignore_all": "全部忽略",
       "delete_all": "删除所有重复项",
-      "folder": "文件夹"
+      "folder": "文件夹",
+      "legacy": {
+        "title": "解决重复项：{{title}}",
+        "currentlyInDam": "当前在 DAM 中（找到 {{count}} 个）",
+        "primaryTitle": "标题：{{title}}",
+        "locations": "位置：",
+        "newUpload": "你的新上传",
+        "pendingStatus": "状态：等待上传",
+        "identicalHash": "相同哈希",
+        "aiMergeRecommendation": "AI 合并建议",
+        "aiMergeDescription": "字节完全相同。AI 可以将你的新标签追加到现有资源中，以避免重复。",
+        "mergeMetadata": "合并元数据",
+        "skipUpload": "跳过上传",
+        "uploadAnyway": "仍然作为重复项上传",
+        "alt": {
+          "existing": "现有",
+          "new": "新"
+        },
+        "notifications": {
+          "aiMerged": "AI 已成功将新元数据合并到 {{count}} 个现有资源中。"
+        }
+      }
     },
     "ai": {
       "title": "AI 分析",
@@ -1704,10 +1780,30 @@
       "apply_tags": "应用建议标签",
       "save_properties": "保存到属性",
       "queued": "分析已加入队列。请稍后再查看。",
-      "error": "分析失败。请重试。"
+      "error": "分析失败。请重试。",
+      "asset_alt": "asset"
     },
     "subfolder_count_tip": "{{count}} 个子文件夹",
-    "asset_count_tip": "{{count}} 个资产"
+    "asset_count_tip": "{{count}} 个资产",
+    "explorer": {
+      "assetNotFound": "未找到资产 ({{status}})",
+      "couldNotOpenAsset": "无法打开资产：{{message}}",
+      "folderLocationCopiedToClipboard": "文件夹位置已复制到剪贴板！",
+      "shareableLinkCopiedToClipboard": "可分享链接已复制到剪贴板！",
+      "failedToCopyLink": "复制链接失败。",
+      "permanentDeleteWarning": "警告：这将从服务器永久删除这些文件。此操作无法撤销！",
+      "deleteSelectedConfirm": "确定要删除已选择的 {{count}} 个项目吗？此操作无法撤销。",
+      "deletionError": "删除过程中发生错误。",
+      "uploadFailed": "上传失败。",
+      "mediaFiles": "媒体和文件",
+      "createNewFolder": "创建新文件夹",
+      "folderName": "文件夹名称"
+    },
+    "grid": {
+      "unknown_file": "未知文件",
+      "pin_to_collection": "固定到集合",
+      "view_details": "查看详情"
+    }
   },
   "inbox": {
     "title": "收件箱",
@@ -1770,6 +1866,503 @@
       "sentThisWeek": "本周已发送",
       "failureRate": "失败率",
       "pending": "待处理"
+    }
+  },
+  "assetCard": {
+    "unknownAsset": "未知资产",
+    "unknownSize": "未知大小",
+    "noPreview": "无预览",
+    "tooltips": {
+      "pinToCollection": "固定到集合",
+      "viewDetails": "查看详情"
+    },
+    "menu": {
+      "viewDetails": "查看详情",
+      "addToCollection": "添加到集合",
+      "moveToTrash": "移至回收站"
+    }
+  },
+  "assetStatisticsTab": {
+    "title": "资产统计",
+    "downloads": "下载",
+    "cdnViews": "CDN 浏览量",
+    "shares": "分享"
+  },
+  "assetList": {
+    "headers": {
+      "name": "名称",
+      "status": "状态",
+      "type": "类型",
+      "size": "大小",
+      "version": "版本",
+      "modified": "已修改",
+      "created": "已创建",
+      "actions": "操作"
+    },
+    "unknownFile": "未知文件",
+    "tooltips": {
+      "pinToCollection": "固定到集合",
+      "viewDetails": "查看详情"
+    },
+    "status": {
+      "draft": "草稿",
+      "published": "已发布",
+      "approved": "已批准",
+      "rejected": "已拒绝",
+      "archived": "已归档"
+    }
+  },
+  "folderGrid": {
+    "tooltips": {
+      "folderProperties": "文件夹属性"
+    }
+  },
+  "uploadSidebar": {
+    "title": "上传并丰富",
+    "imageTypes": {
+      "productImage": "产品图片",
+      "lifestyle": "生活方式",
+      "bannerHero": "横幅 / 主视觉",
+      "headshot": "头像",
+      "document": "文档"
+    },
+    "sections": {
+      "assignment": "分配",
+      "metadataSchema": "元数据架构",
+      "tags": "标签",
+      "aiAgenticActions": "AI 代理动作"
+    },
+    "noCollectionsFound": "未找到集合",
+    "placeholders": {
+      "selectExistingCollection": "选择现有集合...",
+      "selectGlobalAssetType": "选择全局资产类型",
+      "selectGlobalSchema": "选择全局架构",
+      "typeAndPressEnter": "输入后按回车"
+    },
+    "schemaHelp": "默认情况下，此架构会应用于所有已暂存文件。每张卡片都可按文件覆盖。",
+    "filenamePatternPrefix": "对于产品图片：支持的文件名模式：",
+    "filenamePatternExample": "例如 012993112028-en-FR01.jpg",
+    "aiTagsOnUpload": "上传时生成 AI 标签",
+    "buttons": {
+      "smartDescribeSelected": "智能描述所选内容",
+      "autoRemoveBackgrounds": "自动移除背景",
+      "uploadCount": "上传 ({{selectedCount}})"
+    },
+    "progress": {
+      "uploading": "正在上传…",
+      "count": "{{done}} / {{total}}"
+    }
+  },
+  "foldersManager": {
+    "title": "所有资产"
+  },
+  "explorerTopBar": {
+    "breadcrumbLabel": "面包屑",
+    "home": "首页",
+    "copyFolderLink": "复制文件夹链接",
+    "selectAll": "全选",
+    "viewTrashBin": "查看回收站",
+    "backToActiveFiles": "返回活动文件",
+    "tools": "工具",
+    "metadataSchema": "元数据架构",
+    "applySchemaToFolder": "将架构应用到文件夹",
+    "folderSelected": "已选择 {{count}} 个文件夹",
+    "foldersSelected": "已选择 {{count}} 个文件夹",
+    "applyToCurrentFolder": "应用到当前文件夹",
+    "applySchemaToAssets": "将架构应用到资产",
+    "assetSelected": "已选择 {{count}} 个资产",
+    "assetsSelected": "已选择 {{count}} 个资产",
+    "imageProcessing": "图像处理",
+    "applyImageProfile": "应用图像配置",
+    "setProcessingProfileForThisFolder": "为此文件夹设置处理配置",
+    "applyVideoProfile": "应用视频配置",
+    "setVideoEncodingProfileForThisFolder": "为此文件夹设置视频编码配置",
+    "edgeCdnOps": "Edge CDN 操作",
+    "syncMetadataToCdn": "将元数据同步到 CDN",
+    "forcePushJsonToEdgeKv": "强制将 JSON 推送到 Edge KV",
+    "purgeEdgeCache": "清除 Edge 缓存",
+    "invalidateDeliveryNodesGlobally": "全局使分发节点失效",
+    "workflow": "工作流",
+    "globalLocalization": "全局本地化",
+    "autoTranslateCopyMetadata": "自动翻译文案和元数据",
+    "brandLicenseGuard": "品牌与许可保护",
+    "validateUsageTermsSignatures": "验证使用条款和签名",
+    "smartActions": "智能操作",
+    "autoTagEnrich": "自动打标并增强",
+    "extractSemanticMetadata": "提取语义元数据",
+    "smartOrganize": "智能整理",
+    "groupIntoSemanticFolders": "分组到语义文件夹",
+    "scanForDuplicates": "扫描重复项",
+    "tdmPayloadDeduplication": "TDM 负载去重",
+    "moveToBin": "移入回收站",
+    "deleteForever": "永久删除",
+    "applyMetadataSchema": "应用元数据架构",
+    "setSchemaForThisFolder": "为此文件夹设置架构",
+    "newFolder": "新建文件夹",
+    "currentFolder": "当前文件夹",
+    "notifications": {
+      "autoEnrichQueued": "资产已加入 LangChain 语义增强队列。",
+      "duplicateScanQueued": "正在扫描视觉和加密重复项...",
+      "smartOrganizeQueued": "AI 正在分析向量，以将项目聚类到子文件夹中。",
+      "forceSyncStarted": "已启动将元数据强制同步到 Edge KV。",
+      "cachePurgeQueued": "已为所选项目加入 Edge 缓存失效队列。",
+      "localizationTriggered": "已触发本地化代理。",
+      "brandSafetyInitialized": "已初始化品牌安全检查。"
+    }
+  },
+  "uploadGrid": {
+    "staging_area": "暂存区",
+    "selection_count": "已选择 {{selected}} / {{total}}",
+    "select_all": "全选",
+    "dropzone": {
+      "drag_drop": "将新资源拖放到此处",
+      "browse": "或点击浏览本地文件"
+    },
+    "preview_alt": "预览",
+    "file_fallback_extension": "文件",
+    "preview_generated_after_upload": "上传后生成预览",
+    "status": {
+      "calculating_hash": "正在计算哈希...",
+      "checking_dam": "正在检查 DAM...",
+      "uploading": "正在上传..."
+    },
+    "duplicate_found": "发现重复项",
+    "dimensions": {
+      "unknown": "未知",
+      "not_applicable": "N/A"
+    },
+    "type_placeholder": "类型",
+    "run_ai_enhance": "对此文件运行 AI 增强",
+    "select_schema": "选择架构",
+    "product_id": "产品 ID",
+    "language_code": "语言代码",
+    "select_asset_type": "选择资源类型 (dam:asset_type)",
+    "image_types": {
+      "product_image": "产品图片",
+      "lifestyle": "生活方式",
+      "banner_hero": "横幅 / 主视觉",
+      "headshot": "头像",
+      "document": "文档"
+    },
+    "ai_tags": {
+      "studio": "影棚",
+      "high_res": "高分辨率",
+      "isolated": "已抠图",
+      "enhanced": "已增强",
+      "web_ready": "网页就绪"
+    }
+  },
+  "uploadWorkspace": {
+    "unknown_type": "未知类型",
+    "upload_not_allowed": "不允许上传：{{names}}。仅允许以下 MIME 类型：{{mimeTypes}}。",
+    "ai_auto_tagging_complete": "AI 自动标记已完成。",
+    "backgrounds_removed": "背景已移除。",
+    "ai_enhancements_applied": "AI 增强已应用。",
+    "upload_sequence_complete": "上传序列已完成。"
+  },
+  "applySchemaDialog": {
+    "title": "应用元数据架构",
+    "selectedItems": "已选项目：",
+    "more": "+{{count}} 个更多",
+    "availableSchemas": "可用架构",
+    "noSchemas": "没有可用的架构。",
+    "option": {
+      "builtIn": "内置",
+      "typeSchemas": "{{count}} 个类型架构"
+    },
+    "target": {
+      "folder_one": "正在应用到 {{count}} 个文件夹",
+      "folder_other": "正在应用到 {{count}} 个文件夹",
+      "asset_one": "正在应用到 {{count}} 个资源",
+      "asset_other": "正在应用到 {{count}} 个资源"
+    },
+    "cascade": {
+      "title": "架构级联",
+      "description": "当应用到文件夹时，架构会自动解析为最适合每个资源 MIME 类型的匹配项（例如 image/jpeg → JPEG 子类型架构）。",
+      "allSubfolders": "也应用到所有子文件夹",
+      "thisFolderOnly": "仅应用到此文件夹",
+      "overrideHint": "之后你可以在任何子文件夹中单独覆盖该架构。"
+    },
+    "selectionSummary": {
+      "selected": "已选择：{{name}}",
+      "tabs_one": "{{count}} 个标签页",
+      "tabs_other": "{{count}} 个标签页",
+      "fields": "{{count}} 个字段"
+    },
+    "actions": {
+      "applying": "应用中…",
+      "apply": "应用“{{name}}”"
+    },
+    "notifications": {
+      "loadError": "加载架构失败。",
+      "folderAppliedCascade_one": "“{{schemaName}}”架构正在应用到 {{count}} 个文件夹及其所有子文件夹。",
+      "folderAppliedCascade_other": "“{{schemaName}}”架构正在应用到 {{count}} 个文件夹及其所有子文件夹。",
+      "folderApplied_one": "“{{schemaName}}”架构正在应用到 {{count}} 个文件夹。",
+      "folderApplied_other": "“{{schemaName}}”架构正在应用到 {{count}} 个文件夹。",
+      "assetApplied_one": "“{{schemaName}}”架构已应用到 {{count}} 个资源。",
+      "assetApplied_other": "“{{schemaName}}”架构已应用到 {{count}} 个资源。",
+      "applyError": "应用架构失败。请重试。"
+    }
+  },
+  "pinToCollectionDialog": {
+    "title": "固定到集合",
+    "searchPlaceholder": "搜索集合...",
+    "noResults": "没有与搜索匹配的集合。",
+    "description": {
+      "before": "将",
+      "thisAsset": "此资源",
+      "after": "添加到一个或多个集合中。"
+    },
+    "collection": {
+      "smartType": "AI 智能路由",
+      "manualType": "手动策展",
+      "assetsCount": "{{count}} 个资源"
+    },
+    "tooltips": {
+      "remove": "从此集合中移除",
+      "add": "添加到此集合"
+    },
+    "footer": {
+      "pinnedTo_one": "已固定到 {{count}} 个集合",
+      "pinnedTo_other": "已固定到 {{count}} 个集合",
+      "notPinned": "未固定到任何集合"
+    },
+    "actions": {
+      "done": "完成"
+    },
+    "notifications": {
+      "loadError": "加载集合失败。",
+      "removed": "已从集合中移除。",
+      "added": "已添加到集合。",
+      "operationFailed": "操作失败。",
+      "networkError": "网络错误。"
+    }
+  },
+  "assetViewer": {
+    "actions": {
+      "closeAriaLabel": "关闭"
+    },
+    "toolbar": {
+      "pinToCollection": "固定到集合",
+      "shareAsset": "分享资产",
+      "copyImageUrl": "复制图片 URL",
+      "editUnsupportedTooltip": "此文件格式（例如 PSD、TIFF、RAW）不支持编辑。请改为下载原始文件或查看生成的预览。",
+      "editImage": "编辑图片"
+    },
+    "download": {
+      "defaultFilename": "下载",
+      "options": "下载选项",
+      "original": "下载原始文件",
+      "originalDescription": "高分辨率源文件",
+      "secureProxy": "下载安全代理",
+      "secureProxyDescription": "包含不可移除的水印"
+    },
+    "preview": {
+      "notAvailableForFileType": "此文件类型不提供预览。"
+    },
+    "tabs": {
+      "info": "信息",
+      "metadata": "元数据",
+      "versions": "版本",
+      "statistics": "统计",
+      "audit": "审计",
+      "workflows": "工作流",
+      "aiEngine": "AI 引擎"
+    },
+    "info": {
+      "generalMetadata": "常规元数据",
+      "tagsCount": "{{count}} 个标签",
+      "aiRecognizedAndManual": "AI 识别与手动",
+      "fileName": "文件名",
+      "dateAdded": "添加日期",
+      "resolution": "分辨率",
+      "fileSize": "文件大小",
+      "creator": "创建者",
+      "copyright": "版权",
+      "camera": "相机",
+      "lens": "镜头",
+      "colorMode": "颜色模式",
+      "embeddedMetadataFields": "嵌入式元数据字段",
+      "dominantPalette": "主色板",
+      "embeddedMetadataSection": "EXIF / IPTC / XMP 数据",
+      "noExifDataExtractedYet": "尚未提取 EXIF 数据。"
+    },
+    "ai": {
+      "semanticAndVisionAnalysis": "语义与视觉分析"
+    },
+    "fallbacks": {
+      "unknownFile": "未知文件",
+      "unknownSize": "未知大小",
+      "unknown": "未知"
+    },
+    "notifications": {
+      "assetUrlCopiedToClipboard": "资产 URL 已复制到剪贴板！",
+      "generatingSecureWatermarkedProxy": "正在生成安全水印代理...",
+      "downloadStarted": "下载已开始",
+      "shareDialogComingSoon": "分享对话框即将推出"
+    }
+  },
+  "assetMetadataPanel": {
+    "field": {
+      "inheritedReadOnly": "继承自父级架构 — 只读",
+      "selectPlaceholder": "— 选择 —",
+      "tagsHelperSuffix": " — 按 Enter 添加"
+    },
+    "notifications": {
+      "metadataSavedSuccessfully": "元数据保存成功。"
+    },
+    "errors": {
+      "saveFailed": "保存失败"
+    },
+    "noSchema": {
+      "line1": "此资产尚未应用元数据架构。",
+      "line2Prefix": "请使用",
+      "action": "Tools → 应用元数据架构",
+      "line2Suffix": "从文件夹视图中进行分配。"
+    },
+    "builtIn": "内置",
+    "schemaSummary_one": "{{count}} 个标签页 · MIME 解析架构",
+    "schemaSummary_other": "{{count}} 个标签页 · MIME 解析架构",
+    "reloadSchema": "重新加载架构",
+    "saving": "保存中…",
+    "saveChanges": "保存更改",
+    "unsavedMetadataChanges": "未保存的元数据更改",
+    "noFieldsDefined": "此标签页未定义任何字段。",
+    "saveMetadata": "保存元数据"
+  },
+  "assetVersionsTab": {
+    "title": "版本时间线",
+    "description": "查看此资产的先前版本。恢复某个版本会使其成为当前活动文件，而不会删除更新的编辑内容。",
+    "currentActive": "当前活动",
+    "savedOn": "保存于",
+    "by": "由",
+    "fileSize": "文件大小",
+    "restore": "恢复",
+    "notifications": {
+      "failedToLoadVersionHistory": "加载版本历史失败。",
+      "assetRolledBack": "资产已成功回滚到所选版本。",
+      "failedToRestoreVersion": "恢复版本失败。"
+    }
+  },
+  "assetAuditTab": {
+    "title": "操作日志",
+    "emptyState": "暂无审计历史。",
+    "actions": {
+      "imageEdited": "图片已编辑",
+      "branchedToNewVersion": "已分支为新版本",
+      "clonedFromExisting": "已从现有版本克隆",
+      "assetIngested": "资产已摄取"
+    },
+    "actorId": "操作人 ID:",
+    "system": "系统",
+    "modified": "已修改",
+    "processedAt": "处理时间: {{time}}",
+    "timelineForked": "时间线已分叉",
+    "fileSize": {
+      "zero": "0 字节",
+      "units": {
+        "bytes": "字节",
+        "kb": "KB",
+        "mb": "MB",
+        "gb": "GB"
+      }
+    }
+  },
+  "assetTagsEditor": {
+    "actions": {
+      "closeAriaLabel": "关闭",
+      "saveChanges": "保存更改",
+      "runSmartScan": "运行智能扫描"
+    },
+    "title": "管理标签: {{name}}",
+    "preview": {
+      "alt": "预览",
+      "unavailable": "预览不可用。"
+    },
+    "sections": {
+      "manualTags": "手动标签",
+      "aiRecognizedTags": "AI 识别标签"
+    },
+    "manualTags": {
+      "placeholder": "搜索或输入新标签...",
+      "helperText": "按 Enter 键可添加数据库中不存在的自定义标签。"
+    },
+    "ai": {
+      "faceRecognition": "人脸识别 ({{count}})",
+      "noFacesDetected": "未检测到人脸。",
+      "textInImage": "图像内文本 ({{count}})",
+      "noTextDetected": "未检测到文本。",
+      "semanticObjects": "语义对象 ({{count}})",
+      "noObjectsDetected": "未检测到对象。"
+    },
+    "notifications": {
+      "aiVisionScanComplete": "AI 视觉扫描完成。发现了新标签。",
+      "tagsUpdatedSuccessfully": "标签更新成功。"
+    }
+  },
+  "folderInfoPanel": {
+    "header": {
+      "subtitle": "文件夹属性"
+    },
+    "tabs": {
+      "general": "常规",
+      "imageProfiles": "图像配置",
+      "videoProfiles": "视频配置",
+      "metadata": "元数据",
+      "access": "访问"
+    },
+    "general": {
+      "nameRequired": "名称不能为空。",
+      "updated": "文件夹已更新。",
+      "folderId": "文件夹 ID",
+      "slug": "Slug",
+      "created": "创建时间",
+      "details": "详情",
+      "name": "名称",
+      "description": "描述",
+      "descriptionPlaceholder": "为此文件夹添加描述…",
+      "noDescription": "无描述"
+    },
+    "imageProfiles": {
+      "removed": "图像配置已从文件夹中移除。",
+      "removeError": "移除图像配置失败。",
+      "title": "图像配置",
+      "change": "更改",
+      "applyProfile": "应用配置",
+      "smartCrop": "智能裁剪",
+      "swatch": "色板",
+      "responsiveCrop": "响应式裁剪",
+      "unsharpMask": "锐化：数量 {{amount}} · 半径 {{radius}}",
+      "removeTooltip": "从此文件夹中移除此配置",
+      "empty": "未分配图像配置。上传到此文件夹的图像将使用默认处理设置。",
+      "emptyHint": "你可以在 Tools → Assets → Asset Configurations → Image Profiles 下配置配置文件。"
+    },
+    "videoProfiles": {
+      "removed": "视频配置已从文件夹中移除。",
+      "removeError": "移除视频配置失败。",
+      "title": "视频配置",
+      "change": "更改",
+      "applyProfile": "应用配置",
+      "adaptiveStreaming": "自适应流媒体",
+      "progressive": "渐进式",
+      "presetCount_one": "{{count}} 个预设",
+      "presetCount_other": "{{count}} 个预设",
+      "removeTooltip": "从此文件夹中移除此配置",
+      "empty": "未分配视频配置。上传到此文件夹的视频不会自动转码。",
+      "emptyHint": "请在 Tools → Assets → Asset Configurations → Video Profiles 下配置配置文件。"
+    },
+    "metadata": {
+      "removed": "元数据模式已从文件夹中移除。",
+      "removeError": "移除模式失败。",
+      "title": "元数据模式",
+      "change": "更改",
+      "applySchema": "应用模式",
+      "inherited": "继承",
+      "direct": "直接",
+      "tabLabel": "标签 {{index}}",
+      "removeTooltip": "从此文件夹中移除模式",
+      "empty": "此文件夹未分配元数据模式。如果已配置默认模式，资源将使用默认模式。",
+      "emptyHint": "请在 Tools → Metadata Schemas 下配置模式。"
     }
   }
 }
