@@ -11,6 +11,10 @@ RSpec.describe StorageAdapters::SpacesAdapter, type: :service do
     allow(Aws::S3::Client).to receive(:new).and_return(client)
   end
 
+  def aws_error(klass, message = 'boom')
+    klass.new(nil, message)
+  end
+
   describe 'configuration defaults' do
     it 'falls back to the Spaces default region when none is configured' do
       default_region_adapter = described_class.new(bucket: 'space')
@@ -31,6 +35,12 @@ RSpec.describe StorageAdapters::SpacesAdapter, type: :service do
   describe '#test_connection' do
     it 'customizes the provider success message' do
       expect(adapter.send(:test_connection)).to eq(success: true, message: "Connected to DigitalOcean Space 'space' in fra1")
+    end
+
+    it 'preserves failure payloads from the base adapter' do
+      allow(client).to receive(:head_bucket).and_raise(aws_error(Aws::S3::Errors::NotFound))
+
+      expect(adapter.send(:test_connection)).to eq(success: false, error: "Bucket 'space' not found.")
     end
   end
 end

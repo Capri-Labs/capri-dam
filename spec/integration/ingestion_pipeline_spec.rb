@@ -44,11 +44,7 @@ RSpec.describe "Ingestion pipeline", type: :integration, aggregate_failures: tru
       File.binwrite(runtime_file, File.binread(fixture_path))
       runtime_file.to_s
     end
-    stub_const("Ingestion", Module.new) unless defined?(Ingestion)
-    stub_const("Ingestion::Factory", Class.new do
-      def self.build(*); end
-    end)
-    allow(Ingestion::Factory).to receive(:build).and_return(adapter)
+    allow(IngestionAdapters::Factory).to receive(:build).and_return(adapter)
 
     post "/api/v1/system_connectors",
          params: {

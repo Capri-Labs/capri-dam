@@ -100,7 +100,19 @@ class Api::V1::ImageProfilesController < ApplicationController
     # responsive_crops must be pre-parsed JSON array from the frontend
     parsed_crops = begin
       raw = params.dig(:image_profile, :responsive_crops)
-      raw.is_a?(Array) ? raw : (raw.present? ? JSON.parse(raw) : [])
+      if raw.is_a?(Array)
+        raw.map do |crop|
+          if crop.respond_to?(:to_unsafe_h)
+            crop.to_unsafe_h
+          elsif crop.respond_to?(:to_h)
+            crop.to_h
+          else
+            crop
+          end
+        end
+      else
+        raw.present? ? JSON.parse(raw) : []
+      end
     rescue JSON::ParserError
       []
     end

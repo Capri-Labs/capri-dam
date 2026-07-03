@@ -23,11 +23,33 @@ RSpec.describe CdnManager do
       expect(described_class.adapter).to eq(adapter)
     end
 
+    it "builds Akamai adapters when configured" do
+      allow(CdnConfiguration).to receive(:find_by).with(is_active: true).and_return(nil)
+      adapter = instance_double(CdnAdapters::AkamaiAdapter)
+      allow(Rails.application).to receive(:config_for).with(:cdn_settings).and_return(
+        active_provider: "akamai",
+        akamai: { token: "secret" },
+      )
+      allow(CdnAdapters::AkamaiAdapter).to receive(:new).with({ token: "secret" }).and_return(adapter)
+
+      expect(described_class.adapter).to eq(adapter)
+    end
+
     it "raises when no configuration exists" do
       allow(CdnConfiguration).to receive(:find_by).with(is_active: true).and_return(nil)
       allow(Rails.application).to receive(:config_for).with(:cdn_settings).and_return({})
 
       expect { described_class.adapter }.to raise_error("FATAL: No CDN configured in Database or YAML.")
+    end
+
+    it "raises for unknown providers" do
+      allow(CdnConfiguration).to receive(:find_by).with(is_active: true).and_return(nil)
+      allow(Rails.application).to receive(:config_for).with(:cdn_settings).and_return(
+        active_provider: "edgecast",
+        edgecast: { token: "secret" },
+      )
+
+      expect { described_class.adapter }.to raise_error("Unknown CDN Provider: edgecast")
     end
   end
 

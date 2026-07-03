@@ -397,6 +397,10 @@ RSpec.describe ImageProcessingService, type: :service do
       expect { service.process({ focal_point: { x: 10, y: 120 } }) }.to raise_error(described_class::ValidationError, /focal_point y/)
     end
 
+    it 'rejects focal points that are not hashes' do
+      expect { service.process({ focal_point: "10,20" }) }.to raise_error(described_class::ValidationError, /x and y/)
+    end
+
     it 'rejects files larger than the configured maximum' do
       allow(File).to receive(:exist?).with('huge.jpg').and_return(true)
       allow(File).to receive(:readable?).with('huge.jpg').and_return(true)
@@ -454,6 +458,30 @@ RSpec.describe ImageProcessingService, type: :service do
 
       service.send(:apply_filter, cmd, { filter: nil })
       service.send(:apply_filter, cmd, { filter: 'None' })
+
+      expect(cmd.calls).to be_empty
+    end
+
+    it 'uses positive shadow values and skips negative-only highlights and hdr operations' do
+      cmd = CommandRecorder.new
+
+      service.send(:apply_lighting, cmd, { highlights: -10, shadows: 12, hdr: -20 })
+
+      expect(cmd.calls).to contain_exactly([ :level, [ "-12%" ] ])
+    end
+
+    it 'skips negative skin-tone and blue-tone enhancements' do
+      cmd = CommandRecorder.new
+
+      service.send(:apply_color, cmd, { skin_tone: -25, blue_tone: -40 })
+
+      expect(cmd.calls).to be_empty
+    end
+
+    it 'treats unknown filter names as no-op fallback filters' do
+      cmd = CommandRecorder.new
+
+      service.send(:apply_filter, cmd, { filter: "Unknown" })
 
       expect(cmd.calls).to be_empty
     end

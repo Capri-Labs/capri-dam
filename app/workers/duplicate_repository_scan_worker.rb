@@ -56,6 +56,13 @@ class DuplicateRepositoryScanWorker
   # Number of duplicate checksums processed per transaction slice.
   BATCH_SIZE = 100
 
+  # A "running" scan whose progress hasn't been touched in this long is
+  # considered abandoned (e.g. the Sidekiq process was killed/crashed
+  # mid-scan, so the `ensure`/`rescue` cleanup never ran) and is
+  # automatically reclaimed so a new scan can be triggered instead of the
+  # UI being stuck on "running" forever.
+  STALE_AFTER = 15.minutes
+
   # ── Entry point ─────────────────────────────────────────────────────────────
 
   # @return [void]
@@ -234,7 +241,7 @@ class DuplicateRepositoryScanWorker
 
   # @return [Boolean]
   def scan_running?
-    Setting.get("duplicate_manager_scan_status") == "running"
+    self.class.scan_running?
   end
 
   # Persists scan status + progress atomically.
@@ -250,19 +257,78 @@ class DuplicateRepositoryScanWorker
                   error:        kwargs[:error])
   end
 
+  # Merges new progress fields into the persisted progress hash so fields set
+  # earlier in the scan (e.g. +started_at+) survive later partial updates
+  # that don't repeat them.
+  #
   # @param processed  [Integer]
   # @param total      [Integer]
   # @param kwargs     [Hash]
   # @return [void]
   def mark_progress(processed, total, **kwargs)
-    progress = {
+    existing = Setting.get("duplicate_manager_scan_progress")
+    existing = existing.is_a?(Hash) ? existing.symbolize_keys : {}
+
+    progress = existing.merge(
       processed:  processed,
       total:      total,
       updated_at: Time.current.iso8601,
-    }
+    )
     %i[started_at completed_at error].each do |key|
       progress[key] = kwargs[key] if kwargs.key?(key)
     end
     Setting.set("duplicate_manager_scan_progress", progress)
+  end
+
+  class << self
+    # Checks whether a scan is currently "running", automatically reclaiming
+    # (marking as "failed") a stuck lock whose progress hasn't been updated
+    # in {STALE_AFTER} — this happens when the worker process is killed
+    # (crash, OOM, forced deploy/restart) between marking "running" and
+    # reaching its `ensure`/`rescue` cleanup, since the +Setting+-based lock
+    # is otherwise held forever.
+    #
+    # @return [Boolean]
+    def scan_running?
+      return false unless Setting.get("duplicate_manager_scan_status") == "running"
+
+      if stale_progress?
+        reclaim_stale_scan!
+        return false
+      end
+
+      true
+    end
+
+    private
+
+    # @return [Boolean]
+    def stale_progress?
+      progress   = Setting.get("duplicate_manager_scan_progress")
+      updated_at = progress.is_a?(Hash) ? (progress[:updated_at] || progress["updated_at"]) : nil
+      return true if updated_at.blank?
+
+      Time.zone.parse(updated_at.to_s) < STALE_AFTER.ago
+    rescue ArgumentError, TypeError
+      true
+    end
+
+    # @return [void]
+    def reclaim_stale_scan!
+      Rails.logger.warn(
+        "[DuplicateRepositoryScanWorker] Reclaiming stale 'running' scan lock " \
+        "(no progress update in over #{STALE_AFTER.inspect} — worker likely crashed)."
+      )
+      Setting.set("duplicate_manager_scan_status", "failed")
+      progress = Setting.get("duplicate_manager_scan_progress")
+      progress = progress.is_a?(Hash) ? progress.symbolize_keys : {}
+      Setting.set(
+        "duplicate_manager_scan_progress",
+        progress.merge(
+          error:      "Scan appears to have stalled (worker process was interrupted) and was automatically reset.",
+          updated_at: Time.current.iso8601,
+        )
+      )
+    end
   end
 end

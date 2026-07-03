@@ -21,6 +21,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: write
+
 env:
   RUBY_VERSION: "4.0.3"
   NODE_VERSION: "22"
@@ -203,6 +206,29 @@ jobs:
         with:
           name: coverage-backend
           path: coverage/backend/
+
+      - name: Generate coverage badge data
+        if: always() && github.ref == 'refs/heads/master' && github.event_name == 'push'
+        run: |
+          mkdir -p .github/badges
+          ruby -rjson -e '
+            data  = JSON.parse(File.read("coverage/backend/.last_run.json"))
+            line  = data.dig("result", "line").to_f
+            color = line >= 95 ? "brightgreen" : line >= 90 ? "green" : line >= 80 ? "yellow" : "red"
+            File.write(".github/badges/coverage.json", JSON.generate({
+              schemaVersion: 1,
+              label: "coverage",
+              message: format("%.2f%%", line),
+              color: color,
+            }))
+          '
+
+      - name: Commit coverage badge
+        if: always() && github.ref == 'refs/heads/master' && github.event_name == 'push'
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore: update coverage badge [skip ci]"
+          file_pattern: .github/badges/coverage.json
 
   # ─── 4. Frontend unit tests (Jest) ──────────────────────────────────────────
   jest:

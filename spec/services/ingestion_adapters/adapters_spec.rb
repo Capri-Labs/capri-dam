@@ -122,6 +122,36 @@ RSpec.describe 'IngestionAdapters subclasses', type: :service do
                   expected_download_url: 'https://downloads.example.com/logo.svg',
                   expected_connection_path: 'https://brandfolder.example.com/api/v4/brandfolders/bf-key?fields=name'
 
+  describe IngestionAdapters::BrandfolderAdapter do
+    subject(:adapter) { described_class.new(nil, endpoint: "https://brandfolder.example.com", auth_token: "token", brandfolder_key: "bf-key") }
+
+    it "uses non-zero cursors, rejects missing attachment URLs, and reports missing brandfolder keys" do
+      allow(adapter).to receive(:get_json)
+        .with("https://brandfolder.example.com/api/v4/brandfolders/bf-key/assets?page[number]=2&page[size]=2&include=attachments&fields=name,description")
+        .and_return(
+          "data" => [
+            {
+              "id" => "bf-2",
+              "attributes" => { "file_size" => 7, "name" => "second-page.png" },
+            },
+          ],
+          "meta" => { "total_pages" => 3 }
+        )
+      allow(adapter).to receive(:get_json)
+        .with("https://brandfolder.example.com/api/v4/assets/bf-2/attachments")
+        .and_return("data" => [ { "attributes" => {} } ])
+
+      result = adapter.fetch_next_chunk("2", 2)
+
+      expect(result).to include(next_cursor: "3", has_more: true)
+      expect(result[:files].first).to include(identifier: "bf-2", original_name: "second-page.png")
+      expect { adapter.download_and_stream("bf-2") }.to raise_error("Brandfolder: no attachment URL for asset bf-2")
+
+      blank = described_class.new(nil, endpoint: "https://brandfolder.example.com", auth_token: "token", brandfolder_key: "")
+      expect(blank.test_connection).to include(success: false, message: include("brandfolder_key is required"))
+    end
+  end
+
   it_behaves_like 'an HTTP ingestion adapter',
                   adapter_class: IngestionAdapters::BynderAdapter,
                   credentials: { endpoint: 'https://company.bynder.com', auth_token: 'token' },
@@ -181,6 +211,84 @@ RSpec.describe 'IngestionAdapters subclasses', type: :service do
                   expected_connection_path: 'https://api.cloudinary.com/v1_1/demo/usage',
                   stream_extension: '.jpg'
 
+  describe IngestionAdapters::CantoAdapter do
+    subject(:adapter) { described_class.new(nil, endpoint: 'https://canto.example.com', auth_token: 'token') }
+
+    it 'honors non-zero cursors and uses directUrlOriginal as a fallback download URL' do
+      allow(adapter).to receive(:get_json)
+        .with('https://canto.example.com/api/v1/search?keyword=*&start=5&limit=2&sortBy=time&sortDirection=ascending')
+        .and_return(
+          'results' => [ { 'id' => 'canto-2', 'size' => 9, 'name' => nil } ],
+          'found' => 9
+        )
+      allow(adapter).to receive(:get_json)
+        .with('https://canto.example.com/api/v1/image/canto-2')
+        .and_return('directUrlOriginal' => 'https://downloads.example.com/canto-2')
+      allow(adapter).to receive(:stream_http_file).and_return('fallback-download')
+
+      result = adapter.fetch_next_chunk('5', 2)
+
+      expect(result).to include(next_cursor: '6', has_more: true)
+      expect(result[:files].first).to include(original_name: 'canto-2')
+      expect(adapter.download_and_stream('canto-2')).to eq('fallback-download')
+      expect(adapter).to have_received(:stream_http_file)
+        .with('https://downloads.example.com/canto-2', '.bin')
+    end
+
+    it 'raises when neither a primary nor fallback download URL is present' do
+      allow(adapter).to receive(:get_json)
+        .with('https://canto.example.com/api/v1/image/canto-404')
+        .and_return({})
+
+      expect { adapter.download_and_stream('canto-404') }
+        .to raise_error('Canto: no direct URL for canto-404')
+    end
+  end
+
+  describe IngestionAdapters::AprimoAdapter do
+    subject(:adapter) { described_class.new(nil, endpoint: 'https://aprimo.example.com', auth_token: 'token') }
+
+    it 'honors non-zero cursors, preserves title fallbacks, and rejects missing download URLs' do
+      allow(adapter).to receive(:get_json)
+        .with('https://aprimo.example.com/api/dam/v1/assets?offset=5&limit=2&sortBy=createdOn&sortOrder=ASC')
+        .and_return(
+          'items' => [ {
+            'id' => 'aprimo-2',
+            'fileSize' => 7,
+            'title' => 'Only Title',
+            'tags' => nil,
+          } ]
+        )
+      allow(adapter).to receive(:get_json)
+        .with('https://aprimo.example.com/api/dam/v1/assets/aprimo-2/download')
+        .and_return({})
+
+      result = adapter.fetch_next_chunk('5', 2)
+
+      expect(result).to include(next_cursor: '6', has_more: false)
+      expect(result[:files].first).to include(
+        original_name: 'Only Title',
+        metadata: include('tags' => [])
+      )
+
+      expect { adapter.download_and_stream('aprimo-2') }.to raise_error('Aprimo: no download URL for aprimo-2')
+    end
+  end
+
+  describe IngestionAdapters::CloudinaryAdapter do
+    subject(:adapter) { described_class.new(nil, cloud_name: 'demo', access_key: 'key', secret_key: 'secret') }
+
+    it 'passes through next_cursor values and fails fast without a cloud name' do
+      allow(adapter).to receive(:get_json).and_return('resources' => [], 'next_cursor' => 'cursor-9')
+
+      expect(adapter.fetch_next_chunk('cursor-7', 5)).to include(next_cursor: 'cursor-9', has_more: true)
+      expect(adapter).to have_received(:get_json).with('https://api.cloudinary.com/v1_1/demo/resources/image?max_results=5&next_cursor=cursor-7')
+
+      blank_cloud = described_class.new(nil, cloud_name: '', access_key: 'key', secret_key: 'secret')
+      expect(blank_cloud.test_connection).to include(success: false, message: include('cloud_name is required'))
+    end
+  end
+
   it_behaves_like 'an HTTP ingestion adapter',
                   adapter_class: IngestionAdapters::ExtensisAdapter,
                   credentials: { endpoint: 'https://portfolio.example.com', auth_token: 'token' },
@@ -200,6 +308,24 @@ RSpec.describe 'IngestionAdapters subclasses', type: :service do
                   download_id: 'ext-1',
                   expected_download_url: 'https://portfolio.example.com/api/v1/assets/ext-1/download',
                   expected_connection_path: 'https://portfolio.example.com/api/v1/assets?per_page=1'
+
+  describe IngestionAdapters::ExtensisAdapter do
+    subject(:adapter) { described_class.new(nil, endpoint: "https://portfolio.example.com", auth_token: "token") }
+
+    it "uses explicit cursors when fetching subsequent pages" do
+      allow(adapter).to receive(:get_json)
+        .with("https://portfolio.example.com/api/v1/assets?page=3&per_page=2&sort=created_at&direction=asc")
+        .and_return(
+          "assets" => [ { "id" => "ext-3", "file_size" => 9, "name" => "page-three.mov", "mime_type" => "video/quicktime" } ],
+          "total_count" => 10
+        )
+
+      result = adapter.fetch_next_chunk("3", 2)
+
+      expect(result).to include(next_cursor: "4", has_more: true)
+      expect(result[:files].first).to include(identifier: "ext-3", original_name: "page-three.mov")
+    end
+  end
 
   it_behaves_like 'an HTTP ingestion adapter',
                   adapter_class: IngestionAdapters::MediaValetAdapter,
@@ -291,6 +417,44 @@ RSpec.describe 'IngestionAdapters subclasses', type: :service do
                   expected_download_url: 'https://downloads.example.com/widen-1',
                   expected_connection_path: 'https://api.widencollective.com/v2/assets/search?query=*&pageSize=1'
 
+  describe IngestionAdapters::BynderAdapter do
+    subject(:adapter) { described_class.new(nil, endpoint: "https://company.bynder.com", auth_token: "token") }
+
+    it "uses the provided cursor page, tolerates missing extensions, and raises without a download URL" do
+      allow(adapter).to receive(:get_json)
+        .with("https://company.bynder.com/api/v4/media/?page=3&count=1&orderby=dateCreated+asc")
+        .and_return([ { "id" => "bynder-2", "name" => "untagged", "extensions" => nil } ])
+      allow(adapter).to receive(:get_json)
+        .with("https://company.bynder.com/api/v4/media/bynder-2/download/")
+        .and_return({})
+
+      result = adapter.fetch_next_chunk("3", 1)
+
+      expect(result[:next_cursor]).to eq("4")
+      expect(result[:files].first[:metadata]["content_type"]).to be_nil
+      expect { adapter.download_and_stream("bynder-2") }.to raise_error(/No download URL returned/)
+    end
+  end
+
+  describe IngestionAdapters::MediaValetAdapter do
+    subject(:adapter) { described_class.new(nil, endpoint: "https://api.mediavalet.com", auth_token: "token") }
+
+    it "uses the provided cursor page and raises without a download URL" do
+      allow(adapter).to receive(:get_json)
+        .with("https://api.mediavalet.com/api/v1.4/assets?page=4&pageSize=1&sortBy=createdAt&sortOrder=asc")
+        .and_return({ "payload" => { "assets" => [ { "id" => "mv-2", "attributes" => { "title" => "Still" } } ], "total" => 4 } })
+      allow(adapter).to receive(:get_json)
+        .with("https://api.mediavalet.com/api/v1.4/assets/mv-2/download")
+        .and_return({})
+
+      result = adapter.fetch_next_chunk("4", 1)
+
+      expect(result[:next_cursor]).to eq("5")
+      expect(result[:has_more]).to be(false)
+      expect { adapter.download_and_stream("mv-2") }.to raise_error(/MediaValet: no download URL/)
+    end
+  end
+
   describe IngestionAdapters::S3Adapter do
     subject(:adapter) { described_class.new(nil, region: 'eu-central-1', access_key: 'key', secret_key: 'secret', bucket: 'legacy-bucket') }
 
@@ -342,6 +506,15 @@ RSpec.describe 'IngestionAdapters subclasses', type: :service do
       expect(tempfile).to have_received(:write).with('abc')
       expect(tempfile).to have_received(:write).with('def')
     end
+
+    it 'downloads chunks without requiring a block' do
+      allow(client).to receive(:get_object) do |_, &block|
+        block.call('abc')
+      end
+
+      expect(adapter.download_and_stream('folder/file.jpg')).to eq('spec/fixtures/files/s3.bin')
+      expect(tempfile).to have_received(:write).with('abc')
+    end
   end
 
   describe IngestionAdapters::FtpAdapter do
@@ -388,10 +561,97 @@ RSpec.describe 'IngestionAdapters subclasses', type: :service do
       expect(seen).to eq([ 'chunk-1', 'chunk-2' ])
     end
 
+    it 'supports cursor offsets when paginating FTP listings' do
+      allow(ftp).to receive(:chdir).with('/exports')
+      allow(ftp).to receive(:list).with('*').and_return([
+        '-rw-r--r-- 1 user grp 100 Jun 01 12:00 one.jpg',
+        '-rw-r--r-- 1 user grp 200 Jun 01 12:00 two.jpg',
+        '-rw-r--r-- 1 user grp 300 Jun 01 12:00 three.jpg',
+      ])
+
+      result = adapter.fetch_next_chunk('1', 1)
+
+      expect(result).to eq(
+        files: [ {
+          identifier: '/exports/two.jpg',
+          size: 200,
+          original_name: 'two.jpg',
+          metadata: { 'modified' => 'Jun 01 12:00', 'source' => 'ftp' },
+        } ],
+        next_cursor: '2',
+        has_more: true
+      )
+    end
+
+    it 'downloads FTP contents without requiring a block' do
+      allow(ftp).to receive(:getbinaryfile) do |_, _, _, &block|
+        block.call('chunk-1')
+      end
+
+      expect(adapter.download_and_stream('/exports/image.jpg')).to eq('spec/fixtures/files/ftp.bin')
+      expect(tempfile).to have_received(:write).with('chunk-1')
+    end
+
+    it 'handles tempfile allocation failures before ensure can close anything' do
+      allow(Tempfile).to receive(:new).and_raise(StandardError, 'disk full')
+
+      expect { adapter.download_and_stream('/exports/image.jpg') }.to raise_error(StandardError, 'disk full')
+    end
+
     it 'tests the connection by listing the remote path' do
       allow(ftp).to receive(:list).and_return([])
 
       expect(adapter.test_connection).to eq(success: true, message: 'Connected to FTP server ftp.example.com.')
+    end
+  end
+
+  describe IngestionAdapters::AemAdapter do
+    subject(:adapter) { described_class.new(nil, endpoint: "https://aem.example.com", auth_token: "token") }
+
+    it "falls back to the item id when no self link is present" do
+      allow(adapter).to receive(:get_json).and_return(
+        "entities" => [ {
+          "id" => "asset-1",
+          "name" => "hero.jpg",
+          "links" => [ { "rel" => nil, "href" => "/ignored" } ],
+          "properties" => {},
+        } ]
+      )
+
+      result = adapter.fetch_next_chunk
+
+      expect(result.dig(:files, 0, :identifier)).to eq("asset-1")
+    end
+
+    it "reuses an original-rendition identifier without appending it twice" do
+      allow(adapter).to receive(:stream_http_file).and_return("downloaded-file")
+
+      adapter.download_and_stream("/content/dam/hero.jpg/jcr:content/renditions/original")
+
+      expect(adapter).to have_received(:stream_http_file).with(
+        "https://aem.example.com/content/dam/hero.jpg/jcr:content/renditions/original",
+        ".bin"
+      )
+    end
+  end
+
+  describe IngestionAdapters::WidenAdapter do
+    subject(:adapter) { described_class.new(nil, endpoint: "https://widen.example.com", auth_token: "token") }
+
+    it "uses the provided page cursor when it is non-zero" do
+      expect(adapter).to receive(:get_json).with(
+        "https://widen.example.com/v2/assets/search?query=*&page=5&pageSize=10&expand=file_properties,metadata,embeds"
+      ).and_return("items" => [])
+
+      result = adapter.fetch_next_chunk("5", 10)
+
+      expect(result[:next_cursor]).to eq("6")
+    end
+
+    it "raises when a Widen asset has no downloadable embed URL" do
+      allow(adapter).to receive(:get_json).and_return("embeds" => [])
+
+      expect { adapter.download_and_stream("widen-1") }.to raise_error("Widen: no download URL for asset widen-1")
     end
   end
 
@@ -406,6 +666,39 @@ RSpec.describe 'IngestionAdapters subclasses', type: :service do
       expect(cloudinary.send(:default_headers)['Authorization']).to start_with('Basic ')
       expect(widen.send(:default_headers)).to include('X-Requested-With' => 'XMLHttpRequest')
       expect(nuxeo.send(:default_headers)['Authorization']).to start_with('Basic ')
+    end
+
+    it 'falls back to bearer auth headers for Nuxeo token credentials' do
+      nuxeo = IngestionAdapters::NuxeoAdapter.new(nil, endpoint: 'https://nuxeo.example.com', auth_token: 'token')
+
+      expect(nuxeo.send(:default_headers)).to include('Authorization' => 'Bearer token')
+    end
+  end
+
+  describe IngestionAdapters::NuxeoAdapter do
+    subject(:adapter) { described_class.new(nil, endpoint: 'https://nuxeo.example.com/nuxeo', auth_token: 'token') }
+
+    it 'uses the cursor offset when requesting later pages' do
+      allow(adapter).to receive(:get_json).with(
+        'https://nuxeo.example.com/nuxeo/api/v1/query?query=SELECT+*+FROM+Document+WHERE+ecm%3AmixinType+%3D+%27Picture%27+AND+ecm%3AisProxy+%3D+0+ORDER+BY+dc%3Acreated&pageSize=100&currentPageIndex=1'
+      ).and_return({ 'entries' => [], 'isLastPageAvailable' => true })
+
+      result = adapter.fetch_next_chunk('100', 100)
+
+      expect(result).to include(next_cursor: '100', has_more: false)
+    end
+  end
+
+  describe IngestionAdapters::SharepointAdapter do
+    subject(:adapter) { described_class.new(nil, endpoint: 'https://graph.microsoft.com/v1.0/drives/drive-1', auth_token: 'token', folder_path: 'root') }
+
+    it 'uses continuation URLs as-is for subsequent pages' do
+      next_link = 'https://graph.microsoft.com/v1.0/next-page?$skiptoken=abc'
+      allow(adapter).to receive(:get_json).with(next_link).and_return({ 'value' => [] })
+
+      result = adapter.fetch_next_chunk(next_link, 25)
+
+      expect(result).to include(files: [], next_cursor: nil, has_more: false)
     end
   end
 end

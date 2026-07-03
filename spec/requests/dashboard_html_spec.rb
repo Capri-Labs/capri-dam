@@ -21,6 +21,18 @@ RSpec.describe "Dashboard HTML coverage", type: :request do
     expect(assigns(:assets_json)).to eq("[]")
   end
 
+  it "falls back to unknown metadata labels when asset properties are missing" do
+    relation = instance_double(ActiveRecord::Relation)
+    asset = instance_double(Asset, id: 1, uuid: "asset-1", title: nil, properties: nil)
+    allow(Asset).to receive(:active).and_return(relation)
+    allow(relation).to receive(:limit).with(20).and_return([ asset ])
+
+    get "/dashboard"
+
+    expect(response).to have_http_status(:ok)
+    expect(assigns(:assets_json)).to include("Untitled Asset", "Unknown", "0 KB")
+  end
+
   it "renders all dashboard shells and records view state" do
     get "/bin"
     expect(response).to have_http_status(:ok)

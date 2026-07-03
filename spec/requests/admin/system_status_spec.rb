@@ -158,6 +158,51 @@ RSpec.describe "Admin::SystemStatus coverage additions", type: :request do
     expect(response.parsed_body.dig("storage_backend", "status")).to eq("unreachable")
   end
 
+  it "reports offline database status when the connection is inactive" do
+    allow(Setting).to receive(:get).and_return({})
+    allow_any_instance_of(Admin::SystemStatusController).to receive(:system_uptime).and_return("up") # rubocop:disable RSpec/AnyInstance
+
+    pool = instance_double(ActiveRecord::ConnectionAdapters::ConnectionPool, size: 5, stat: { connections: 2 })
+    connection = instance_double(
+      ActiveRecord::ConnectionAdapters::AbstractAdapter,
+      active?: false,
+      adapter_name: "PostgreSQL",
+      pool: pool
+    )
+    allow(ActiveRecord::Base).to receive(:connection).and_return(connection)
+
+    redis = instance_double("Redis", info: { "redis_version" => "7.2" })
+    allow(Sidekiq).to receive(:redis).and_yield(redis)
+    allow(Sidekiq::Stats).to receive(:new).and_return(instance_double(Sidekiq::Stats, enqueued: 0, processed: 0, failed: 0))
+    allow(Sidekiq::Workers).to receive(:new).and_return(double(size: 0))
+    allow(Sidekiq::ProcessSet).to receive(:new).and_return(double(size: 0))
+    service = double("storage", upload: true, download: "1", delete: true)
+    allow(ActiveStorage::Blob).to receive(:service).and_return(service)
+
+    get "/admin/system_status.json", as: :json
+
+    expect(response).to have_http_status(:ok)
+    expect(response.parsed_body.dig("database", "status")).to eq("offline")
+  end
+
+  it "falls back to an unknown redis version when redis info is unavailable" do
+    allow(Setting).to receive(:get).and_return({})
+    allow_any_instance_of(Admin::SystemStatusController).to receive(:system_uptime).and_return("up") # rubocop:disable RSpec/AnyInstance
+
+    redis = instance_double("Redis", info: nil)
+    allow(Sidekiq).to receive(:redis).and_yield(redis)
+    allow(Sidekiq::Stats).to receive(:new).and_return(instance_double(Sidekiq::Stats, enqueued: 0, processed: 0, failed: 0))
+    allow(Sidekiq::Workers).to receive(:new).and_return(double(size: 1))
+    allow(Sidekiq::ProcessSet).to receive(:new).and_return(double(size: 1))
+    service = double("storage", upload: true, download: "1", delete: true)
+    allow(ActiveStorage::Blob).to receive(:service).and_return(service)
+
+    get "/admin/system_status.json", as: :json
+
+    expect(response).to have_http_status(:ok)
+    expect(response.parsed_body.dig("cache_queue", "redis_version")).to eq("Unknown")
+  end
+
   it "returns restart errors when the trigger file cannot be touched" do
     allow(FileUtils).to receive(:mkdir_p)
     allow(FileUtils).to receive(:touch).and_raise(StandardError, "readonly")

@@ -21,6 +21,13 @@ RSpec.describe CollectionAsset, type: :model do
       expect(a1.position).to eq(1)
       expect(a2.position).to eq(2)
     end
+
+    it "preserves an explicit positive position" do
+      collection = create(:collection)
+      collection_asset = create(:collection_asset, collection: collection, position: 5)
+
+      expect(collection_asset.position).to eq(5)
+    end
   end
 
   describe '#manually_curated?' do

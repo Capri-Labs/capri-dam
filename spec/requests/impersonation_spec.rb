@@ -82,5 +82,22 @@ RSpec.describe "Impersonation::Sessions", type: :request do
         delete impersonation_stop_path, as: :json
       }.to change { AuditLog.where(action: "impersonation_end").count }.by(1)
     end
+
+    it "returns success even when no impersonation session is active" do
+      delete impersonation_stop_path, as: :json
+      delete impersonation_stop_path, as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body).to eq("success" => true)
+    end
+
+    it "writes a nil impersonated email when the target user has been deleted" do
+      regular.destroy!
+
+      delete impersonation_stop_path, as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(AuditLog.where(action: "impersonation_end").last.changes_data["impersonated_user"]).to be_nil
+    end
   end
 end

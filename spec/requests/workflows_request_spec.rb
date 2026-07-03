@@ -28,6 +28,22 @@ RSpec.describe 'Workflow HTML controller coverage', type: :request do
       ))
     end
 
+    it 'falls back to an empty JSON array and default modifier name' do
+      workflow = create(:workflow, name: 'Fallback Flow', updated_by_id: nil)
+
+      get '/workflows'
+
+      workflows_json = JSON.parse(assigns(:workflows_json))
+      expect(workflows_json).to include(hash_including(
+        'id' => workflow.id,
+        'last_modified_by' => 'Admin'
+      ))
+
+      Workflow.delete_all
+      get '/workflows'
+      expect(assigns(:workflows_json)).to eq('[]')
+    end
+
     it 'returns workflows with steps as JSON' do
       workflow = create(:workflow, name: 'JSON Flow')
       step = create(:workflow_step, workflow: workflow, title: 'Approve', assignee_type: 'user', assignee_id: user.id)
@@ -181,6 +197,18 @@ RSpec.describe 'Workflow HTML controller coverage', type: :request do
 
       expect(response).to have_http_status(:ok)
       expect(response.parsed_body).to include('success' => true, 'status' => 'active')
+      expect(workflow.reload.last_modifier).to eq(user)
+    end
+
+    it 'deactivates an active workflow when validation passes' do
+      workflow = create(:workflow, status: :inactive)
+      create(:workflow_step, workflow: workflow, assignee_type: 'user', assignee_id: user.id)
+      workflow.update_column(:status, 'active')
+
+      patch "/workflows/#{workflow.id}/toggle_status"
+
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body).to include('success' => true, 'status' => 'inactive')
       expect(workflow.reload.last_modifier).to eq(user)
     end
 

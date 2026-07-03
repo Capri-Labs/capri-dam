@@ -55,6 +55,11 @@ RSpec.describe ImageProfile, type: :model do
         profile = build(:image_profile, unsharp_mask: { 'amount' => 0, 'radius' => 250, 'threshold' => 255 })
         expect(profile).to be_valid
       end
+
+      it 'skips unsharp mask validation when the setting is blank' do
+        profile = build(:image_profile, unsharp_mask: nil)
+        expect(profile).to be_valid
+      end
     end
 
     context 'responsive crops structure' do
@@ -77,6 +82,12 @@ RSpec.describe ImageProfile, type: :model do
       it 'accepts an empty crops array' do
         profile = build(:image_profile, responsive_crops: [])
         expect(profile).to be_valid
+      end
+
+      it 'rejects non-array responsive crops' do
+        profile = build(:image_profile, responsive_crops: { 'name' => 'Bad' })
+        expect(profile).not_to be_valid
+        expect(profile.errors[:responsive_crops]).to include('must be an array')
       end
     end
 

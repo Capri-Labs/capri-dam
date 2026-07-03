@@ -56,6 +56,15 @@ RSpec.describe CdnAdapters::AkamaiAdapter, type: :service do
 
       expect(adapter.purge_batch([ 'asset-1' ])).to be(false)
     end
+
+    it 'returns false when Akamai responds with a non-success HTTP status' do
+      response = Net::HTTPBadRequest.new('1.1', '400', 'Bad Request')
+      allow(response).to receive(:body).and_return('{"detail":"invalid tag"}')
+      allow(http_client).to receive(:request).and_return(response)
+
+      expect(adapter.purge_batch([ 'asset-1' ])).to be(false)
+      expect(Rails.logger).to have_received(:error).with(include('HTTP failed: 400'))
+    end
   end
 
   describe '#purge_tag' do

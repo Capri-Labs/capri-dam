@@ -97,6 +97,17 @@ RSpec.describe "Api::V1::AgentWorkflows coverage", type: :request do
       expect(json["error"]).to include("offline")
     end
 
+    it "returns validation errors when updating an existing workflow with invalid attributes" do
+      workflow = create(:agent_workflow, created_by: admin)
+
+      patch "/api/v1/agent_workflows/#{workflow.id}",
+            params: { agent_workflow: { name: "", trigger_event: "bogus" } },
+            as: :json
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(json["errors"]).to be_present
+    end
+
     it "publishes manual trigger payloads" do
       workflow = create(:agent_workflow)
 
@@ -146,6 +157,16 @@ RSpec.describe "Api::V1::AgentWorkflows coverage", type: :request do
 
       expect(response).to have_http_status(:unprocessable_entity)
       expect(json["errors"]).to be_present
+    end
+
+    it "serializes workflows without a creator email" do
+      sign_in user
+      workflow.update!(created_by: nil)
+
+      get "/api/v1/agent_workflows/#{workflow.id}", as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(json["created_by"]).to be_nil
     end
   end
 end

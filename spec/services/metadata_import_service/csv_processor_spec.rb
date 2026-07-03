@@ -12,6 +12,12 @@ RSpec.describe MetadataImportService::CsvProcessor do
   end
 
   describe '#process' do
+    it 'raises when the source file is missing' do
+      import = create(:metadata_import, user: user)
+
+      expect { described_class.new(import).process }.to raise_error("Source file missing")
+    end
+
     it 'updates metadata for an asset matched by absolute path' do
       folder = create(:folder, user: user, name: 'Adventures')
       asset  = create(:asset, title: 'bike.jpg', folder: folder, user: user,
@@ -56,6 +62,15 @@ RSpec.describe MetadataImportService::CsvProcessor do
       expect(asset.properties).not_to have_key('internal_note')
     end
 
+    it 'marks rows with blank asset paths as failed' do
+      csv = +"asset_path,copyright\n   ,ACME\n"
+
+      result = described_class.new(import_with_csv(csv)).process
+
+      expect(result.failure).to eq(1)
+      expect(result.csv_string).to include("Missing 'asset_path' value")
+    end
+
     it 'marks rows with no matching asset as failed' do
       csv = +"asset_path,copyright\n/does/not/exist.jpg,ACME\n"
       result = described_class.new(import_with_csv(csv)).process
@@ -77,6 +92,18 @@ RSpec.describe MetadataImportService::CsvProcessor do
       expect(header.last(2)).to eq(%w[import_status import_message])
     end
 
+    it 'updates titles, reports singular property updates, and normalizes missing leading slashes' do
+      folder = create(:folder, user: user, name: 'Adventures')
+      asset  = create(:asset, title: 'bike.jpg', folder: folder, user: user, properties: { 'copyright' => 'Original' })
+
+      csv = +"asset_path,title,copyright\nAdventures/bike.jpg,Renamed Bike,ACME\n"
+      result = described_class.new(import_with_csv(csv)).process
+
+      expect(asset.reload.title).to eq('Renamed Bike')
+      expect(asset.properties['copyright']).to eq('ACME')
+      expect(result.csv_string).to include('Updated 1 property')
+    end
+
     it 'honours a custom field separator' do
       folder = create(:folder, user: user, name: 'Adventures')
       asset  = create(:asset, title: 'bike.jpg', folder: folder, user: user)
@@ -85,6 +112,18 @@ RSpec.describe MetadataImportService::CsvProcessor do
       described_class.new(import_with_csv(csv, field_separator: ';')).process
 
       expect(asset.reload.properties['copyright']).to eq('ACME')
+    end
+
+    it 'matches root-level assets and launches workflows when enabled' do
+      asset = create(:asset, title: 'root.jpg', folder: nil, user: user, properties: {})
+      import = import_with_csv("asset_path,copyright\nroot.jpg,ACME\n", launch_workflows: true)
+      allow(Rails.logger).to receive(:info)
+
+      result = described_class.new(import).process
+
+      expect(result.success).to eq(1)
+      expect(asset.reload.properties['copyright']).to eq('ACME')
+      expect(Rails.logger).to have_received(:info).with(/\[MetadataImport ##{import.id}\] WriteBack workflow launch/)
     end
   end
 end

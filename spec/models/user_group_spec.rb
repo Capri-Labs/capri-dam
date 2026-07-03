@@ -61,6 +61,20 @@ RSpec.describe UserGroup, type: :model do
       everyone.is_system = false
       expect(everyone).not_to be_valid
     end
+
+    it "skips immutability checks for unsaved system-like groups" do
+      draft_group = build(:user_group, slug: "preview-system-group", is_system: true)
+
+      expect(draft_group).to be_valid
+    end
+
+    it "returns early from immutability enforcement for unsaved groups" do
+      draft_group = build(:user_group, slug: "preview-system-group", is_system: true)
+
+      expect { draft_group.send(:enforce_system_group_immutability) }.not_to change {
+        draft_group.errors.full_messages
+      }
+    end
   end
 
   # ---------------------------------------------------------------------------

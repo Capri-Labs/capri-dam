@@ -99,5 +99,17 @@ RSpec.describe "Admin::FolderPolicies", type: :request do
       expect(response).to have_http_status(:ok)
       expect(response.parsed_body["success"]).to be(true)
     end
+
+    it "returns success when there is no explicit policy to remove" do
+      sign_in admin
+      policy.destroy!
+
+      expect do
+        delete admin_folder_folder_policy_path(folder, group_id: group.id), as: :json
+      end.not_to change(FolderPolicy, :count)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body).to include("success" => true, "message" => "Folder policy removed.")
+    end
   end
 end

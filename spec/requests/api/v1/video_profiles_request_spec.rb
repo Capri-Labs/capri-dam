@@ -73,6 +73,36 @@ RSpec.describe "Api::V1::VideoProfiles coverage", type: :request do
     expect(json["encoding_presets"].find { |preset| preset["name"] == "Invalid" }["advanced_params"]).to eq({})
   end
 
+  it "keeps array smart crop ratios and hash advanced_params when params are already permitted" do
+    controller = Api::V1::VideoProfilesController.new
+    controller.set_request!(ActionDispatch::TestRequest.create)
+    controller.set_response!(ActionDispatch::TestResponse.new)
+    raw_params = instance_double(ActionController::Parameters)
+    nested_params = instance_double(ActionController::Parameters)
+    permitted_payload = {
+      name: "Already Parsed",
+      encoding_presets_attributes: [
+        {
+          name: "Hash Params",
+          height: 1080,
+          video_bitrate_kbps: 4500,
+          advanced_params: { "maxBitrate" => "6000" },
+        },
+      ],
+    }
+
+    allow(raw_params).to receive(:dig).with(:video_profile, :smart_crop_ratios)
+      .and_return([ { name: "4:5", crop_ratio: "4:5" } ])
+    allow(raw_params).to receive(:require).with(:video_profile).and_return(nested_params)
+    allow(nested_params).to receive(:permit).and_return(permitted_payload)
+    allow(controller).to receive(:params).and_return(raw_params)
+
+    permitted = controller.send(:profile_params)
+
+    expect(permitted[:smart_crop_ratios].map(&:to_h)).to eq([ { name: "4:5", crop_ratio: "4:5" } ])
+    expect(permitted[:encoding_presets_attributes].first[:advanced_params]).to eq("maxBitrate" => "6000")
+  end
+
   it "rejects invalid updates and missing profiles" do
     profile = create(:video_profile)
 
@@ -160,5 +190,17 @@ RSpec.describe "Api::V1::VideoProfiles coverage", type: :request do
 
     expect(response).to have_http_status(:no_content)
     expect(profile.reload.deleted_at).to be_present
+  end
+
+  it "renders the admin error when the guard runs without a current user" do
+    controller = Api::V1::VideoProfilesController.new
+    controller.set_request!(ActionDispatch::TestRequest.create)
+    controller.set_response!(ActionDispatch::TestResponse.new)
+    allow(controller).to receive(:current_user).and_return(nil)
+
+    controller.send(:require_admin!)
+
+    expect(controller.response).to have_http_status(:forbidden)
+    expect(JSON.parse(controller.response.body)).to eq("error" => "Administrator privileges required.")
   end
 end

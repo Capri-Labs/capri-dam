@@ -36,4 +36,21 @@ RSpec.describe EmailDispatcherWorker, type: :worker do
     expect(delivery.reload.retry_count).to eq(1)
     expect(delivery.error_log).to include("smtp down")
   end
+
+  it "marks the delivery failed when Sidekiq retries are exhausted and ignores missing deliveries" do
+    described_class.sidekiq_retries_exhausted_block.call(
+      { "args" => [ delivery.id ] },
+      StandardError.new("smtp permanently down")
+    )
+
+    expect(delivery.reload.status).to eq("failed")
+    expect(delivery.error_log).to include("Final SMTP Error: smtp permanently down")
+
+    expect do
+      described_class.sidekiq_retries_exhausted_block.call(
+        { "args" => [ 0 ] },
+        StandardError.new("missing")
+      )
+    end.not_to raise_error
+  end
 end

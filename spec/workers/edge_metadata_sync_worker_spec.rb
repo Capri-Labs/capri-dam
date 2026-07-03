@@ -30,4 +30,29 @@ RSpec.describe EdgeMetadataSyncWorker, type: :worker do
 
     expect { described_class.new.perform(asset.uuid) }.to raise_error(RuntimeError, /Edge Metadata Sync Failed/)
   end
+
+  it "falls back to asset-level metadata when no active version is present" do
+    versionless = create(
+      :asset,
+      properties: {
+        "content_type" => "image/png",
+        "storage_path" => "edge/fallback.png",
+      }
+    )
+    versionless.update!(active_version: nil, title: "Fallback Title")
+    allow(CdnManager).to receive(:sync_metadata).and_return(true)
+
+    described_class.new.perform(versionless.uuid)
+
+    expect(CdnManager).to have_received(:sync_metadata) do |uuid, payload_json|
+      payload = JSON.parse(payload_json)
+      expect(uuid).to eq(versionless.uuid)
+      expect(payload).to include(
+        "version" => 1,
+        "alt_text" => "Fallback Title",
+        "content_type" => "image/png",
+        "focal_point" => { "x" => 50, "y" => 50 }
+      )
+    end
+  end
 end

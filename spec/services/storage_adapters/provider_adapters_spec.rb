@@ -15,12 +15,30 @@ RSpec.describe 'Storage adapter provider variants', type: :service do
     expect(adapter.send(:test_connection)).to eq(success: true, message: "Connected to Wasabi bucket 'bucket' in us-east-2")
   end
 
+  it 'keeps provider failure payloads when the Wasabi connection test fails' do
+    allow(client).to receive(:head_bucket).and_raise(Aws::S3::Errors::Forbidden.new(nil, 'denied'))
+
+    adapter = StorageAdapters::WasabiAdapter.new(bucket: 'bucket', region: 'us-east-2')
+
+    expect(adapter.send(:test_connection)).to eq(
+      success: false,
+      error: 'Access denied. Check your credentials and bucket policy.'
+    )
+  end
+
   it 'derives the Backblaze endpoint and success message' do
     adapter = StorageAdapters::BackblazeAdapter.new(bucket: 'bucket', region: 'eu-central-003')
 
     expect(adapter.send(:client_options)[:endpoint]).to eq('https://s3.eu-central-003.backblazeb2.com')
     expect(adapter.send(:force_path_style?)).to be(true)
     expect(adapter.send(:test_connection)).to eq(success: true, message: "Connected to Backblaze B2 bucket 'bucket' in eu-central-003")
+  end
+
+  it 'preserves the parent failure payload when the Backblaze probe fails' do
+    adapter = StorageAdapters::BackblazeAdapter.new(bucket: 'bucket', region: 'eu-central-003')
+    allow(client).to receive(:head_bucket).and_raise(StandardError, 'timed out')
+
+    expect(adapter.send(:test_connection)).to eq(success: false, error: 'timed out')
   end
 
   it 'builds virtual-hosted Spaces URLs for public buckets' do
@@ -48,5 +66,12 @@ RSpec.describe 'Storage adapter provider variants', type: :service do
     expect(adapter.send(:client_options)[:endpoint]).to eq('https://acct-123.r2.cloudflarestorage.com')
     expect(adapter.send(:force_path_style?)).to be(true)
     expect(adapter.send(:test_connection)).to eq(success: true, message: "Connected to Cloudflare R2 bucket 'bucket'")
+  end
+
+  it 'preserves R2 connection failures from the base adapter' do
+    adapter = StorageAdapters::R2Adapter.new(bucket: 'bucket', account_id: 'acct-123')
+    allow(client).to receive(:head_bucket).and_raise(Aws::S3::Errors::NotFound.new(nil, 'missing'))
+
+    expect(adapter.send(:test_connection)).to eq(success: false, error: "Bucket 'bucket' not found.")
   end
 end

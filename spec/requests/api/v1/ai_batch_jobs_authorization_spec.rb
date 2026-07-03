@@ -130,4 +130,21 @@ RSpec.describe "Api::V1::AiBatchJobs authorization", type: :request do
       expect(job.reload.completed_at).to be_present
     end
   end
+
+  describe "serialization branches" do
+    it "renders nil task labels and creators when registry metadata is unavailable" do
+      sign_in admin
+      job = create(:ai_batch_job, created_by: nil)
+      job.update_columns(task_type: "missing_registry_task")
+
+      get "/api/v1/ai_batch_jobs/#{job.id}"
+
+      expect(response).to have_http_status(:ok)
+      expect(JSON.parse(response.body)).to include(
+        "task_label" => nil,
+        "created_by" => nil,
+        "task_type" => "missing_registry_task"
+      )
+    end
+  end
 end

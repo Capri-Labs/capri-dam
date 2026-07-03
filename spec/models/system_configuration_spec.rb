@@ -1,6 +1,10 @@
 require 'rails_helper'
 
 RSpec.describe SystemConfiguration, type: :model do
+  before do
+    allow(Sidekiq).to receive(:redis).and_yield(instance_double("Redis", publish: true))
+  end
+
   describe 'validations' do
     it 'is valid with valid attributes' do
       expect(build(:system_configuration)).to be_valid
@@ -34,6 +38,20 @@ RSpec.describe SystemConfiguration, type: :model do
 
     it 'returns default when key is absent' do
       expect(SystemConfiguration.get('missing', default: 'fallback')).to eq('fallback')
+    end
+
+    it 'reverts expired values to the fallback before returning them' do
+      config = create(
+        :system_configuration,
+        key: 'banner_message',
+        value: 'stale',
+        fallback_value: 'fresh',
+        expires_at: 5.minutes.ago
+      )
+
+      expect(SystemConfiguration.get('banner_message')).to eq('fresh')
+      expect(config.reload.value).to eq('fresh')
+      expect(config.expires_at).to be_nil
     end
   end
 

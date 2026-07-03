@@ -7,6 +7,10 @@ RSpec.describe "Api::V1::AiModelConfigs", type: :request do
   let(:member)  { create(:user) }
   let(:headers) { { "Content-Type" => "application/json", "Accept" => "application/json" } }
 
+  before do
+    allow(Sidekiq).to receive(:redis).and_yield(instance_double(Redis, publish: true))
+  end
+
   def auth_headers(user)
     sign_in user
     headers
@@ -27,6 +31,13 @@ RSpec.describe "Api::V1::AiModelConfigs", type: :request do
         create(:ai_model_config, :embedding)
         get "/api/v1/ai_model_configs?capability=embedding", headers: auth_headers(admin)
         expect(json["configs"].all? { |c| c["capability"] == "embedding" }).to be true
+      end
+
+      it "filters by enabled state" do
+        disabled = create(:ai_model_config, :disabled, name: 'Disabled Model')
+        get "/api/v1/ai_model_configs?enabled=false", headers: auth_headers(admin)
+
+        expect(json["configs"]).to contain_exactly(hash_including('id' => disabled.id, 'enabled' => false))
       end
     end
 

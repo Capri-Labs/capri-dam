@@ -19,5 +19,15 @@ RSpec.describe CdnConfiguration, type: :model do
       # type: :json is not fully supported in the test environment.
       cdn.run_callbacks(:save) { }
     end
+
+    it 'does not deactivate other providers when the record is inactive' do
+      active_other = instance_double(ActiveRecord::Relation)
+      allow(CdnConfiguration).to receive(:where).and_return(active_other)
+      allow(active_other).to receive(:update_all)
+
+      build(:cdn_configuration, is_active: false).send(:ensure_single_active_provider)
+
+      expect(active_other).not_to have_received(:update_all)
+    end
   end
 end

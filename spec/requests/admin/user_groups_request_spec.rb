@@ -32,6 +32,13 @@ RSpec.describe "Admin::UserGroups coverage", type: :request do
       expect(entry).to include("name" => "Editors", "member_count" => 1)
     end
 
+    it "keeps parent_id nil when no parent closure exists" do
+      group
+      get "/admin/user_groups.json", as: :json
+
+      expect(response.parsed_body["user_groups"]).to include(include("parent_id" => nil))
+    end
+
     it "creates a child group under a parent" do
       parent = group
 
@@ -50,6 +57,13 @@ RSpec.describe "Admin::UserGroups coverage", type: :request do
       post "/admin/user_groups.json", params: { user_group: { name: "" } }, as: :json
       expect(response).to have_http_status(:unprocessable_entity)
       expect(response.parsed_body["errors"]).to include(a_string_matching(/Name/))
+    end
+
+    it "creates a group without nesting when the parent cannot be found" do
+      post "/admin/user_groups.json", params: { user_group: { name: "Orphans" }, parent_id: 0 }, as: :json
+
+      expect(response).to have_http_status(:created)
+      expect(UserGroup.find_by!(name: "Orphans").parent_id).to be_nil
     end
 
     it "shows members and direct child groups" do
@@ -153,6 +167,16 @@ RSpec.describe "Admin::UserGroups coverage", type: :request do
       delete "/admin/user_groups/#{administrators.id}/remove_member.json", params: { user_id: user.id }, as: :json
       expect(response).to have_http_status(:forbidden)
     end
+
+    it "does not duplicate existing group members" do
+      group.users << user
+
+      expect do
+        post "/admin/user_groups/#{group.id}/add_member.json", params: { user_id: user.id }, as: :json
+      end.not_to change { group.reload.users.count }
+
+      expect(response).to have_http_status(:ok)
+    end
   end
 
   describe "sub-group membership" do
@@ -179,6 +203,17 @@ RSpec.describe "Admin::UserGroups coverage", type: :request do
       delete "/admin/user_groups/#{group.id}/remove_group_member.json", params: { child_group_id: 0 }, as: :json
       expect(response).to have_http_status(:ok)
       expect(response.parsed_body["success"]).to be(true)
+    end
+
+    it "keeps the other parent link untouched when removing an unrelated child" do
+      other_parent = create(:user_group, name: "Other Parent")
+      child = create(:user_group, name: "Nested Elsewhere")
+      other_parent.add_child(child)
+
+      delete "/admin/user_groups/#{group.id}/remove_group_member.json", params: { child_group_id: child.id }, as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(child.reload.parent_id).to eq(other_parent.id)
     end
   end
 end

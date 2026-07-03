@@ -79,6 +79,17 @@ backend = StorageBackend.find_or_create_by!(name: 'Local Disk') do |sb|
 end
 puts "✅ Storage Backend: #{backend.name}"
 
+# ---------------------------------------------------------------------------
+# 5. Built-in Metadata Schemas (Default / Collection / Product Images)
+# ---------------------------------------------------------------------------
+# Idempotent: safe to re-run in any environment. Restores schemas that are
+# missing or were soft-deleted, without touching ones that already exist and
+# are active. See MetadataSchemaSeeder for why this must live here (not only
+# in the historical migration) — `db:schema:load`/`db:prepare` skips migration
+# Ruby code entirely, so a fresh database would otherwise have none of these.
+MetadataSchemaSeeder.seed!
+puts "✅ Built-in metadata schemas: Default, Collection, Product Images"
+
 puts "---  Seed Complete! ---"
 
 

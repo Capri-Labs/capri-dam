@@ -88,5 +88,15 @@ RSpec.describe AiBatchJob, type: :model do
       expect(payload[:capability]).to eq("metadata.extract")
       expect(payload[:target_ids]).to eq(%w[a b])
     end
+
+    it "falls back to nil capability and empty tools when the registry descriptor is unavailable" do
+      job = build(:ai_batch_job)
+      allow(job).to receive(:task_descriptor).and_return(nil)
+
+      payload = job.to_gateway_payload(%w[a b])
+
+      expect(payload[:capability]).to be_nil
+      expect(payload[:tools]).to eq([])
+    end
   end
 end

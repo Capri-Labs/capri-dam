@@ -67,8 +67,11 @@ class DataHealthRemediationWorker
   # Triggers a full repository scan to (re)build duplicate groups.
   def remediate_duplicates
     current = Setting.get("duplicate_manager_scan_status").to_s
-    if %w[running queued].include?(current)
-      Rails.logger.info("[DataHealthRemediationWorker] Duplicate scan already #{current}, skipping.")
+    if current == "running" && DuplicateRepositoryScanWorker.scan_running?
+      Rails.logger.info("[DataHealthRemediationWorker] Duplicate scan already running, skipping.")
+      return
+    elsif current == "queued"
+      Rails.logger.info("[DataHealthRemediationWorker] Duplicate scan already queued, skipping.")
       return
     end
     Setting.set("duplicate_manager_scan_status", "queued")

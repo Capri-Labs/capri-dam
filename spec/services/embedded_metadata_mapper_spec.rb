@@ -44,6 +44,16 @@ RSpec.describe EmbeddedMetadataMapper, type: :service do
       expect(dashed["dc:date"]).to eq("2025-03-12")
     end
 
+    it "leaves date-like strings untouched for non-date metadata fields" do
+      result = described_class.call("embedded_metadata" => { "XMP" => { "Creator" => "2025:03:12 11:40:48" } })
+      expect(result["dc:creator"]).to eq("2025:03:12 11:40:48")
+    end
+
+    it "returns unparseable date strings unchanged" do
+      result = described_class.call("embedded_metadata" => { "XMP" => { "CreateDate" => "Spring 2025" } })
+      expect(result["dc:date"]).to eq("Spring 2025")
+    end
+
     it "maps IPTC core fields" do
       expect(mapped["Iptc4xmpCore:Headline"]).to eq("Giant Brioche Buns")
       expect(mapped["Iptc4xmpCore:City"]).to eq("Berlin")
@@ -117,9 +127,9 @@ RSpec.describe EmbeddedMetadataMapper, type: :service do
         expect(described_class.call(props)["dc:creator"]).to eq("Jane Doe")
       end
 
-      it "derives dc:rights from an embedded ICC profile copyright as a fallback" do
+      it "does not derive dc:rights from an embedded ICC profile copyright (misleading — that's the color profile's own license, not the asset's rights)" do
         props = { "embedded_metadata" => { "ICC_Profile" => { "ProfileCopyright" => "Copyright 2007-2009 Adobe" } } }
-        expect(described_class.call(props)["dc:rights"]).to eq("Copyright 2007-2009 Adobe")
+        expect(described_class.call(props)["dc:rights"]).to be_nil
       end
 
       it "maps PDF document metadata onto Dublin Core fields" do

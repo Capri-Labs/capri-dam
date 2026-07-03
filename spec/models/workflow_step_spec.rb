@@ -92,8 +92,19 @@ RSpec.describe WorkflowStep, type: :model do
       expect(step.resolve_assignee).to eq(user)
     end
 
+    it 'returns a UserGroup when assignee_type is group' do
+      group = create(:user_group)
+      step = create(:workflow_step, assignee_type: 'group', assignee_id: group.id)
+      expect(step.resolve_assignee).to eq(group)
+    end
+
     it 'returns nil for an unknown ID' do
       step = create(:workflow_step, assignee_type: 'user', assignee_id: 0)
+      expect(step.resolve_assignee).to be_nil
+    end
+
+    it 'returns nil for an unsupported assignee type' do
+      step = create(:workflow_step, assignee_type: 'service', assignee_id: 1)
       expect(step.resolve_assignee).to be_nil
     end
   end
@@ -131,6 +142,11 @@ RSpec.describe WorkflowStep, type: :model do
 
       it 'returns nil for an unknown fallback id' do
         step = create(:workflow_step, fallback_assignee_type: 'user', fallback_assignee_id: '0')
+        expect(step.resolve_fallback_assignee).to be_nil
+      end
+
+      it 'returns nil for an unsupported fallback assignee type' do
+        step = create(:workflow_step, fallback_assignee_type: 'service', fallback_assignee_id: '42')
         expect(step.resolve_fallback_assignee).to be_nil
       end
     end

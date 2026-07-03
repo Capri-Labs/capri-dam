@@ -152,6 +152,18 @@ RSpec.describe BinPurgeService do
       expect(result.deleted).to eq(1)
       expect(group.reload.status).to eq("resolved")
     end
+
+    it "keeps groups pending when two or more members remain" do
+      asset = create(:asset)
+      group = create(:duplicate_group, status: "pending")
+      create(:duplicate_group_asset, duplicate_group: group, asset: asset)
+      create_list(:duplicate_group_asset, 2, duplicate_group: group)
+
+      described_class.new.send(:cleanup_duplicate_groups!, asset)
+
+      expect(group.reload.status).to eq("pending")
+      expect(group.duplicate_group_assets.count).to eq(2)
+    end
   end
 
   describe "folder purge" do
@@ -198,6 +210,29 @@ RSpec.describe BinPurgeService do
       expect(service.send(:storage_adapter)).to be_nil
       expect(StorageManager).not_to have_received(:adapter_for)
       expect(StorageBackend).to have_received(:find_by).once
+    end
+  end
+
+  describe "attachment cleanup branches" do
+    it "purges attached version and asset files while tracking reclaimed bytes" do
+      asset = create(:asset)
+      version = create(:asset_version, asset: asset, properties: { "storage_path" => "store/version.bin", "size" => 12 })
+      version.file.attach(io: StringIO.new("version-bytes"), filename: "version.txt", content_type: "text/plain")
+      asset.file.attach(io: StringIO.new("asset-bytes"), filename: "asset.txt", content_type: "text/plain")
+
+      service = described_class.new
+      service.send(:delete_storage_files!, asset)
+
+      expect(version.reload.file).not_to be_attached
+      expect(asset.reload.file).not_to be_attached
+      expect(service.instance_variable_get(:@storage_reclaimed_bytes)).to be > 0
+    end
+
+    it "handles attached asset files whose blobs are unexpectedly unavailable" do
+      asset = create(:asset)
+      allow(asset).to receive(:file).and_return(double("asset_file", attached?: true, blob: nil, purge: true))
+
+      expect { described_class.new.send(:delete_storage_files!, asset) }.not_to raise_error
     end
   end
 

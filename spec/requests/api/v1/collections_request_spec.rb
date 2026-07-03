@@ -46,6 +46,15 @@ RSpec.describe "Api::V1::Collections coverage", type: :request do
     expect(Collection.find_by(slug: slug).deleted_at).to be_present
   end
 
+  it "returns validation errors when updating a collection with invalid attributes" do
+    collection = create(:collection, user: user, name: "Campaign")
+
+    patch "/api/v1/collections/#{collection.slug}", params: { collection: { name: "" } }, as: :json
+
+    expect(response).to have_http_status(:unprocessable_entity)
+    expect(json["errors"]).to be_present
+  end
+
   it "handles missing and forbidden collections" do
     get "/api/v1/collections/missing", as: :json
     expect(response).to have_http_status(:not_found)
@@ -116,6 +125,16 @@ RSpec.describe "Api::V1::Collections coverage", type: :request do
     expect(response).to have_http_status(:not_found)
   end
 
+  it "returns not found when toggling a pin for an asset outside the collection" do
+    collection = create(:collection, user: user)
+    asset = create(:asset, user: user)
+
+    patch "/api/v1/collections/#{collection.slug}/assets/#{asset.id}/pin", as: :json
+
+    expect(response).to have_http_status(:not_found)
+    expect(json).to eq("error" => "Asset not in collection")
+  end
+
   it "configures smart rules, cluster maps, purges CDN and simulates rules" do
     collection = create(:collection, user: user)
     asset = create(:asset, user: user, title: "Published", status: :ready)
@@ -140,5 +159,41 @@ RSpec.describe "Api::V1::Collections coverage", type: :request do
 
     post "/api/v1/collections/simulate_rule", as: :json
     expect(response).to have_http_status(:bad_request)
+  end
+
+  it "defaults smart rules to active and surfaces validation failures" do
+    collection = create(:collection, user: user)
+
+    post "/api/v1/collections/#{collection.slug}/rule", params: { semantic_prompt: "product shots" }, as: :json
+    expect(response).to have_http_status(:ok)
+    expect(collection.reload.collection_rule.active).to be(true)
+
+    post "/api/v1/collections/#{collection.slug}/rule", params: { semantic_prompt: "" }, as: :json
+    expect(response).to have_http_status(:unprocessable_entity)
+    expect(json["errors"]).to include("Semantic prompt can't be blank")
+  end
+
+  it "includes asset URLs in the cluster map when the asset object exposes them" do
+    collection = create(:collection, user: user)
+    asset = double("Asset", id: 101, title: "Published", original_filename: "published.jpg", url: "/api/v1/assets/local/example.jpg")
+    allow(asset).to receive(:respond_to?).with(:url).and_return(true)
+    allow_any_instance_of(Collection).to receive(:assets).and_return([ asset ])
+
+    get "/api/v1/collections/#{collection.slug}/cluster_map", as: :json
+
+    expect(response).to have_http_status(:ok)
+    expect(json["nodes"]).to include(
+      a_hash_including("id" => 101, "url" => "/api/v1/assets/local/example.jpg")
+    )
+  end
+
+  it "surfaces archive failures" do
+    collection = create(:collection, user: user)
+    allow_any_instance_of(Collection).to receive(:update).and_return(false)
+
+    delete "/api/v1/collections/#{collection.slug}", as: :json
+
+    expect(response).to have_http_status(:unprocessable_entity)
+    expect(json).to eq("error" => "Failed to archive workspace.")
   end
 end

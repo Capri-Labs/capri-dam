@@ -128,6 +128,10 @@ class Api::V1::DataHealthController < ApplicationController
   end
 
   def current_scan_status
+    # Reclaim a stuck "running" lock left behind by a crashed/killed worker
+    # before reading — see DuplicateRepositoryScanWorker::STALE_AFTER.
+    DuplicateRepositoryScanWorker.scan_running? if Setting.get("duplicate_manager_scan_status").to_s == "running"
+
     raw_progress = Setting.get("duplicate_manager_scan_progress")
     progress     = raw_progress.is_a?(Hash) ? raw_progress : {}
     {

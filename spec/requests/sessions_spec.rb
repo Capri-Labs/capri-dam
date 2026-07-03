@@ -1,7 +1,7 @@
 require 'rails_helper'
 
 RSpec.describe "Users::Sessions", type: :request do
-  let(:user) { create(:user, password: "password123") }
+  let(:user) { create(:user, email: "sessions-#{SecureRandom.hex(4)}@example.com", password: "password123") }
 
   # ── Standard login ────────────────────────────────────────────────────────
 
@@ -142,6 +142,20 @@ RSpec.describe "Users::Sessions", type: :request do
 
       expect(response).to have_http_status(:unprocessable_entity)
       expect(response.parsed_body["success"]).to be false
+    end
+
+    it "returns unauthorized when the email does not match a user" do
+      post "/users/force_password_update",
+           params: {
+             email:                    "missing@example.com",
+             current_password:         "temp_pass",
+             new_password:             "NewPass123!",
+             new_password_confirmation: "NewPass123!",
+           },
+           as: :json
+
+      expect(response).to have_http_status(:unauthorized)
+      expect(response.parsed_body).to eq("success" => false, "error" => "Invalid temporary password.")
     end
   end
 end

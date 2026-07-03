@@ -60,6 +60,12 @@ RSpec.describe StorageAdapters::GcsAdapter, type: :service do
       expect(adapter.delete('missing.txt')).to be_nil
     end
 
+    it 'returns nil when the bucket lookup returns no file' do
+      allow(bucket).to receive(:file).with('missing.txt').and_return(nil)
+
+      expect(adapter.delete('missing.txt')).to be_nil
+    end
+
     it 'wraps non-not-found provider failures' do
       allow(bucket).to receive(:file).and_raise(Google::Cloud::Error.new('boom'))
 
@@ -240,6 +246,14 @@ RSpec.describe StorageAdapters::GcsAdapter, type: :service do
         scope: 'https://www.googleapis.com/auth/devstorage.full_control'
       )
       expect(Google::Cloud::Storage).to have_received(:new).with(project_id: 'project-1', credentials: creds)
+    end
+
+    it 'falls back to application default credentials when none are configured' do
+      storage = instance_double('Google::Cloud::Storage::Project')
+      allow(Google::Cloud::Storage).to receive(:new).and_return(storage)
+
+      expect(described_class.new(project_id: 'project-1', bucket: 'assets').send(:storage_client)).to eq(storage)
+      expect(Google::Cloud::Storage).to have_received(:new).with(project_id: 'project-1')
     end
   end
 end

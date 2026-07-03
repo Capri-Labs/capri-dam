@@ -40,11 +40,51 @@ RSpec.describe Collection, type: :model do
     end
 
     it 'denies access when the user is in a denied group' do
+      group = create(:user_group, name: 'Blocked')
       user = create(:user, admin: false)
-      col  = create(:collection)
-      col.update!(denied_groups: [])
-      # No explicit groups set -> default allow
+      user.user_groups << group
+      col = create(:collection, denied_groups: [ group.name ])
+
+      expect(col.accessible_by?(user)).to be(false)
+    end
+
+    it 'requires membership in at least one allowed group when allow-lists are configured' do
+      allowed = create(:user_group, name: 'Approved')
+      user = create(:user, admin: false)
+      outsider = create(:user, admin: false)
+      user.user_groups << allowed
+      col = create(:collection, allowed_groups: [ allowed.name ])
+
       expect(col.accessible_by?(user)).to be(true)
+      expect(col.accessible_by?(outsider)).to be(false)
+    end
+  end
+
+  describe '#compliance_violations' do
+    it 'flags internal-use assets only when the collection is externally accessible' do
+      external = create(:collection, allowed_groups: [ 'External Agencies' ])
+      internal = create(:collection, allowed_groups: [ 'Employees' ])
+      asset = create(:asset, properties: { 'usage_terms' => 'Internal Use Only' })
+      other_asset = create(:asset, properties: { 'usage_terms' => 'Internal Use Only' })
+      create(:collection_asset, collection: external, asset: asset)
+      create(:collection_asset, collection: internal, asset: other_asset)
+
+      expect(external.compliance_violations.map { |violation| violation[:reason] })
+        .to include("Asset is restricted to 'Internal Use Only' but workspace allows external access.")
+      expect(internal.compliance_violations).to be_empty
+    end
+
+    it 'flags assets whose license expires before the collection expires' do
+      collection = create(:collection, expires_at: 10.days.from_now)
+      expiring = create(:asset, properties: { 'usage_terms' => 'Licensed', 'license_expires_at' => 2.days.from_now.iso8601 })
+      safe = create(:asset, properties: { 'usage_terms' => 'Licensed', 'license_expires_at' => 20.days.from_now.iso8601 })
+      create(:collection_asset, collection: collection, asset: expiring)
+      create(:collection_asset, collection: collection, asset: safe)
+
+      expect(collection.compliance_violations).to include(
+        a_hash_including(asset_id: expiring.id, reason: 'Asset license expires before the campaign workspace TTL finishes.')
+      )
+      expect(collection.compliance_violations).not_to include(a_hash_including(asset_id: safe.id))
     end
   end
 

@@ -14,7 +14,7 @@ class ExtractionWorker
     batch.update!(status: :extracting) if batch.initializing?
 
     # Using the new app/adapters/ingestion/ directory structure
-    adapter = Ingestion::Factory.build(batch)
+    adapter = IngestionAdapters::Factory.build(batch)
 
     process_chunk(batch, adapter)
   end

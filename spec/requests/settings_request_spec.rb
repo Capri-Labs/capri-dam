@@ -61,6 +61,23 @@ RSpec.describe "Settings coverage", type: :request do
 
       expect(response).to redirect_to(settings_path)
     end
+
+    it "masks only populated secret-like provider settings" do
+      sign_in admin
+      Setting.set("active_storage_provider", "aws")
+      Setting.set("storage_config_aws", {
+        "secret_key" => "top-secret",
+        "bucket" => "assets",
+        "access_key" => "",
+      }.to_json)
+
+      get "/settings/system"
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("********")
+      expect(response.body).to include("assets")
+      expect(response.body).not_to include("top-secret")
+    end
   end
 
   describe "PATCH /settings" do
@@ -201,6 +218,19 @@ RSpec.describe "Settings coverage", type: :request do
 
       expect(response).to have_http_status(:unprocessable_entity)
       expect(response.parsed_body["error"]).to include("Unknown provider")
+    end
+
+    it "unmasks secrets from hash-backed provider settings" do
+      sign_in admin
+      allow(Setting).to receive(:get).and_call_original
+      allow(Setting).to receive(:get).with("storage_config_aws").and_return({ "secret_key" => "hash-secret" })
+      adapter = instance_double(StorageAdapters::S3Adapter, test_connection: { success: true, message: "ok" })
+      allow(StorageAdapters::S3Adapter).to receive(:new).with(hash_including("secret_key" => "hash-secret")).and_return(adapter)
+
+      post "/settings/test_connection", params: { storage_config: { provider: "aws", secret_key: "********" } }, as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body).to include("success" => true, "message" => "ok")
     end
   end
 end

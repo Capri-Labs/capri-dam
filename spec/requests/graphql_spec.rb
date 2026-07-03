@@ -89,6 +89,22 @@ RSpec.describe "GraphQL endpoint", type: :request do
           end
         end
       end
+
+      it "lifts depth and complexity limits for introspection and accepts blank variable strings" do
+        allow(Rails).to receive(:env).and_return(ActiveSupport::StringInquirer.new("development"))
+        allow(HeadlessDamSchema).to receive(:execute).and_return({ "data" => { "__typename" => "Query" } })
+
+        post "/graphql",
+             params: { query: introspection_query, operationName: "IntrospectionQuery", variables: "" },
+             headers: { "Accept" => "application/json" },
+             as: :json
+
+        expect(response).to have_http_status(:ok)
+        expect(HeadlessDamSchema).to have_received(:execute).with(
+          introspection_query,
+          hash_including(variables: {}, max_depth: nil, max_complexity: nil)
+        )
+      end
     end
   end
 
@@ -124,6 +140,15 @@ RSpec.describe "GraphQL endpoint", type: :request do
       expect(logger).to have_received(:error).with("boom")
       expect(logger).to have_received(:error).with("app/graphql/spec_failure.rb:1")
     end
+
+    it "re-raises schema execution errors outside development" do
+      allow(Rails).to receive(:env).and_return(ActiveSupport::StringInquirer.new("test"))
+      allow(HeadlessDamSchema).to receive(:execute).and_raise(StandardError, "boom")
+
+      expect do
+        gql_post(query: "{ __typename }", user: viewer_user)
+      end.to raise_error(StandardError, "boom")
+    end
   end
 
   # ─────────────────────────── queries ────────────────────────────────────────
@@ -153,6 +178,22 @@ RSpec.describe "GraphQL endpoint", type: :request do
         expect(data).not_to be_nil
         expect(data["uuid"]).to eq(asset.uuid)
         expect(data).to have_key("previewUrl")
+      end
+
+      it "returns the active version number when requested" do
+        version = create(:asset_version, asset: asset, version_number: 3)
+        asset.update!(active_version: version)
+
+        gql_post(query: <<~GQL,
+          query FetchAssetVersion($uuid: String!) {
+            assetDetail(uuid: $uuid) { id versionNumber }
+          }
+        GQL
+                 variables: { uuid: asset.uuid },
+                 user: viewer_user)
+
+        expect(response).to have_http_status(:ok)
+        expect(json.dig("data", "assetDetail", "versionNumber")).to eq(3)
       end
 
       it "returns the preview variant URL when the asset has a generated preview" do
@@ -438,10 +479,14 @@ RSpec.describe "GraphQL endpoint", type: :request do
       pending = create(:duplicate_group, status: "pending")
       create(:duplicate_group, :resolved)
 
-      gql_post(query: query, variables: { status: "unexpected" }, user: viewer_user)
+      result = HeadlessDamSchema.execute(
+        query,
+        variables: { status: "unexpected" },
+        context: { current_user: viewer_user }
+      ).to_h
 
-      expect(response).to have_http_status(:ok)
-      expect(json.dig("data", "duplicateGroups", "edges").pluck("node")).to include(
+      expect(result["errors"]).to be_nil
+      expect(result.dig("data", "duplicateGroups", "edges").pluck("node")).to include(
         a_hash_including("id" => pending.id, "status" => "pending")
       )
     end
@@ -486,6 +531,18 @@ RSpec.describe "GraphQL endpoint", type: :request do
         payload = json.dig("data", "updateAssetMetadata")
         expect(payload["errors"]).not_to be_empty
         expect(payload["asset"]).to be_nil
+      end
+    end
+
+    context "when the asset is missing" do
+      it "returns a not found payload" do
+        gql_post(query: mutation,
+                 variables: { uuid: SecureRandom.uuid, updates: { "campaign" => "x" } },
+                 user: manager_user)
+        expect(response).to have_http_status(:ok)
+        payload = json.dig("data", "updateAssetMetadata")
+        expect(payload["asset"]).to be_nil
+        expect(payload["errors"]).to include("Target asset structural signature not found.")
       end
     end
   end
@@ -598,6 +655,28 @@ RSpec.describe "GraphQL endpoint", type: :request do
         expect(payload["imageProfile"]).to be_nil
       end
     end
+
+    it "returns validation errors for invalid attributes and rejects unauthenticated callers" do
+      invalid_mutation = <<~GQL
+        mutation {
+          createImageProfile(input: { name: "", cropType: "smart_crop" }) {
+            imageProfile { id }
+            errors
+          }
+        }
+      GQL
+
+      gql_post(query: invalid_mutation, user: admin_user)
+      expect(json.dig("data", "createImageProfile", "imageProfile")).to be_nil
+      expect(json.dig("data", "createImageProfile", "errors")).not_to be_empty
+
+      unauthenticated = HeadlessDamSchema.execute(
+        mutation,
+        variables: { name: "No Session" },
+        context: {}
+      ).to_h
+      expect(unauthenticated.dig("data", "createImageProfile", "errors")).to include("Administrator privileges required.")
+    end
   end
 
   describe "mutation: updateImageProfile" do
@@ -621,6 +700,40 @@ RSpec.describe "GraphQL endpoint", type: :request do
       payload = json.dig("data", "updateImageProfile")
       expect(payload["errors"]).to be_empty
       expect(payload["imageProfile"]["name"]).to eq("New Name")
+    end
+
+    it "returns authorization and missing-profile errors" do
+      profile = create(:image_profile, name: "Old Name")
+
+      unauthenticated = HeadlessDamSchema.execute(
+        mutation,
+        variables: { id: profile.id, name: "New Name" },
+        context: {}
+      ).to_h
+      expect(unauthenticated.dig("data", "updateImageProfile", "errors")).to include("Administrator privileges required.")
+
+      gql_post(query: mutation, variables: { id: 0, name: "Missing" }, user: admin_user)
+      expect(json.dig("data", "updateImageProfile", "errors")).to include("Image profile not found.")
+    end
+
+    it "returns validation errors when updating invalid attributes without changing the name" do
+      profile = create(:image_profile, name: "Old Name")
+      invalid_mutation = <<~GQL
+        mutation UpdateProfile($id: ID!, $cropType: String!) {
+          updateImageProfile(input: { id: $id, cropType: $cropType }) {
+            imageProfile { id name cropType }
+            errors
+          }
+        }
+      GQL
+
+      gql_post(query: invalid_mutation,
+               variables: { id: profile.id, cropType: "invalid" },
+               user: admin_user)
+
+      payload = json.dig("data", "updateImageProfile")
+      expect(payload["imageProfile"]).to be_nil
+      expect(payload["errors"]).to include("Crop type must be 'none' or 'smart_crop'")
     end
   end
 
@@ -730,7 +843,7 @@ RSpec.describe "GraphQL coverage scenarios", type: :request do
   let(:viewer) { create(:user, first_name: "Vic", last_name: "Viewer") }
 
   before do
-    allow(Redis).to receive(:new).and_return(instance_double(Redis, publish: true))
+    allow(Redis).to receive(:new).and_return(double("RedisClient", publish: true, subscribe: true, clear: true))
     allow(EmailOrchestrator).to receive(:trigger)
     allow(AuditLog).to receive(:record)
     allow(DuplicateRepositoryScanWorker).to receive(:perform_async)
@@ -836,6 +949,55 @@ RSpec.describe "GraphQL coverage scenarios", type: :request do
       expect(body.dig("data", "inboxUnreadCount")).to eq(1)
     end
 
+    it "returns inbox defaults and empty inbox data when unauthenticated" do
+      create(:inbox_message, :unread, recipient: viewer, subject: "Unread")
+      create(:inbox_message, :read, recipient: viewer, subject: "Read")
+
+      default_result = schema_exec("query { inbox { subject } }", context: { current_user: viewer })
+      unauthenticated = schema_exec("query { inbox { id } inboxUnreadCount }", context: {})
+
+      expect(default_result["errors"]).to be_nil
+      expect(default_result.dig("data", "inbox").map { |message| message["subject"] }).to match_array(%w[Unread Read])
+      expect([ [], nil ]).to include(unauthenticated.dig("data", "inbox"))
+      expect([ 0, nil ]).to include(unauthenticated.dig("data", "inboxUnreadCount"))
+    end
+
+    it "filters admin-only AI hub queries and hides them without authentication" do
+      queued_job = create(:ai_batch_job, status: "queued")
+      create(:ai_batch_job, :completed)
+      c2pa_configuration = create(:c2pa_configuration, :enabled)
+      matching_record = create(:asset_provenance_record, :ai_modified)
+      create(:asset_provenance_record, :verified)
+
+      query = <<~GQL
+        query($jobId: ID!, $recordId: ID!) {
+          aiBatchJobs(status: "queued") { id status }
+          aiBatchJob(id: $jobId) { id }
+          c2paConfiguration { id gatewayC2paEnabled }
+          assetProvenanceRecords(status: "ai_modified", aiModified: true) { id manifestStatus }
+          assetProvenanceRecord(id: $recordId) { id }
+        }
+      GQL
+
+      authenticated = schema_exec(query,
+                                  variables: { jobId: queued_job.id, recordId: matching_record.id },
+                                  context: { current_user: admin })
+      unauthenticated = schema_exec(query,
+                                    variables: { jobId: queued_job.id, recordId: matching_record.id },
+                                    context: {})
+
+      expect(authenticated["errors"]).to be_nil
+      expect(authenticated.dig("data", "aiBatchJobs")).to eq([ { "id" => queued_job.id.to_s, "status" => "queued" } ])
+      expect(authenticated.dig("data", "c2paConfiguration", "id")).to eq(c2pa_configuration.id.to_s)
+      expect(authenticated.dig("data", "assetProvenanceRecords")).to eq([ { "id" => matching_record.id.to_s, "manifestStatus" => "ai_modified" } ])
+
+      expect([ [], nil ]).to include(unauthenticated.dig("data", "aiBatchJobs"))
+      expect(unauthenticated.dig("data", "aiBatchJob")).to be_nil
+      expect([ [], nil ]).to include(unauthenticated.dig("data", "assetProvenanceRecords"))
+      expect(unauthenticated.dig("data", "assetProvenanceRecord")).to be_nil
+      expect(unauthenticated["errors"].map { |error| error["message"] }).to include("Cannot return null for non-nullable field Query.c2paConfiguration")
+    end
+
     it "returns duplicate manager query data across status branches" do
       pending = create(:duplicate_group, total_count: 2)
       asset = create(:asset, title: "Original")
@@ -866,7 +1028,9 @@ RSpec.describe "GraphQL coverage scenarios", type: :request do
       expect(body["errors"]).to be_nil
       expect(body.dig("data", "duplicateGroups", "edges").length).to be >= 3
       expect(body.dig("data", "duplicateGroup", "resolvedBy")).to eq(resolved.resolved_by.email)
-      expect(body.dig("data", "duplicateManagerScanStatus", "scan_status")).to eq("running")
+      scan_status = body.dig("data", "duplicateManagerScanStatus", "scan_status") ||
+                    body.dig("data", "duplicateManagerScanStatus", "scanStatus")
+      expect(scan_status).to eq("running")
     end
 
     it "returns bin policy, status, stats, and AI purge suggestions for admins" do
@@ -895,10 +1059,69 @@ RSpec.describe "GraphQL coverage scenarios", type: :request do
       expect(body.dig("data", "binAiSuggestions", 0, "title")).to eq("Old Huge Asset")
     end
 
+    it "falls back for non-hash bin settings and excludes active workflow suggestions" do
+      Setting.set("duplicate_manager_scan_progress", "invalid")
+      Setting.set("bin_purge_notify_admins", nil)
+      Setting.set("bin_purge_triggered_by", "manual")
+      Setting.set("bin_purge_last_results", "invalid")
+
+      pinned_asset = create(:asset, :trashed, title: "Pinned Asset", deleted_at: 120.days.ago)
+      create(:collection_asset, asset: pinned_asset, collection: create(:collection))
+
+      sized_asset = create(:asset, :trashed, title: "Versioned Asset", deleted_at: 150.days.ago)
+      version = create(:asset_version, asset: sized_asset, properties: { "size" => 2_048 })
+      sized_asset.update!(active_version: version)
+
+      create(:asset, :trashed, title: "Nil Properties", deleted_at: 90.days.ago, properties: {})
+
+      protected_asset = create(:asset, :trashed, title: "Protected Asset", deleted_at: 200.days.ago)
+      create(:workflow_instance, asset: protected_asset, status: "in_progress")
+
+      body = gql(<<~GQL)
+        query {
+          duplicateManagerScanStatus
+          binStats { totalSizeBytes }
+          binRetentionPolicy { notifyAdmins }
+          binPurgeStatus { triggeredBy lastResults }
+          binAiSuggestions(limit: 10) { title sizeBytes hasCollectionPin }
+        }
+      GQL
+
+      suggestions = body.dig("data", "binAiSuggestions")
+
+      expect(body["errors"]).to be_nil
+      scan_progress = body.dig("data", "duplicateManagerScanStatus", "scan_progress") ||
+                      body.dig("data", "duplicateManagerScanStatus", "scanProgress")
+      expect(scan_progress).to eq({})
+      expect(body.dig("data", "binRetentionPolicy", "notifyAdmins")).to eq(BinPurgeWorker::DEFAULT_NOTIFY_ADMINS)
+      expect(body.dig("data", "binPurgeStatus", "triggeredBy")).to eq({})
+      expect(body.dig("data", "binPurgeStatus", "lastResults")).to eq({})
+      expect(body.dig("data", "binStats", "totalSizeBytes")).to eq(2_048)
+      expect(suggestions.map { |entry| entry["title"] }).to include("Pinned Asset", "Versioned Asset", "Nil Properties")
+      expect(suggestions.map { |entry| entry["title"] }).not_to include("Protected Asset")
+      expect(suggestions.find { |entry| entry["title"] == "Pinned Asset" }).to include("hasCollectionPin" => true)
+      expect(suggestions.find { |entry| entry["title"] == "Versioned Asset" }).to include("sizeBytes" => 2_048)
+    end
+
     it "blocks bin AI suggestions for non-admins" do
       body = gql("{ binAiSuggestions { id } }", user: viewer)
 
       expect(body["errors"].first["message"]).to include("Administrator privileges required")
+    end
+
+    it "reports authentication errors for workflow and bin queries without a current user" do
+      result = schema_exec(<<~GQL, context: {})
+        query {
+          workflowSteps(workflowId: 1) { id }
+          workflowInstances(assetId: 1) { id }
+          binAiSuggestions(limit: 1) { id }
+        }
+      GQL
+
+      expect(result["errors"].map { |error| error["message"] }).to include(
+        "Authentication required.",
+        "Administrator privileges required."
+      )
     end
 
     it "returns workflow steps and instances and handles missing workflow/asset branches" do
@@ -929,6 +1152,30 @@ RSpec.describe "GraphQL coverage scenarios", type: :request do
   end
 
   describe "admin profile and hub mutations" do
+    it "updates asset metadata from plain hashes and reports missing assets" do
+      manager = create(:user, role: "manager")
+      asset = create(:asset, properties: { "brand" => "capri" })
+      mutation = <<~GQL
+        mutation($uuid: String!, $updates: Json!) {
+          updateAssetMetadata(input: { uuid: $uuid, updates: $updates }) {
+            asset { uuid properties }
+            errors
+          }
+        }
+      GQL
+
+      updated = schema_exec(mutation,
+                            variables: { uuid: asset.uuid, updates: { "campaign" => "spring" } },
+                            context: { current_user: manager })
+      missing = schema_exec(mutation,
+                            variables: { uuid: SecureRandom.uuid, updates: {} },
+                            context: { current_user: manager })
+
+      expect(updated.dig("data", "updateAssetMetadata", "errors")).to eq([])
+      expect(asset.reload.properties).to include("brand" => "capri", "campaign" => "spring")
+      expect(missing.dig("data", "updateAssetMetadata", "errors")).to include("Target asset structural signature not found.")
+    end
+
     it "creates and updates video profiles, including invalid JSON branches" do
       create_query = <<~GQL
         mutation($input: CreateVideoProfileInput!) {
@@ -964,6 +1211,34 @@ RSpec.describe "GraphQL coverage scenarios", type: :request do
       expect(update_body.dig("data", "updateVideoProfile", "videoProfile", "name")).to eq("OTT Updated")
     end
 
+    it "returns validation errors for invalid video profiles and rejects unauthenticated creation" do
+      invalid_mutation = <<~GQL
+        mutation {
+          createVideoProfile(input: { name: "", encodeForAdaptiveStreaming: true }) {
+            videoProfile { id }
+            errors
+          }
+        }
+      GQL
+
+      invalid = schema_exec(invalid_mutation, context: { current_user: admin })
+      unauthenticated = schema_exec(
+        <<~GQL,
+          mutation {
+            createVideoProfile(input: { name: "No Session", encodeForAdaptiveStreaming: true }) {
+              videoProfile { id }
+              errors
+            }
+          }
+        GQL
+        context: {}
+      )
+
+      expect(invalid.dig("data", "createVideoProfile", "videoProfile")).to be_nil
+      expect(invalid.dig("data", "createVideoProfile", "errors")).not_to be_empty
+      expect(unauthenticated.dig("data", "createVideoProfile", "errors")).to include("Administrator privileges required.")
+    end
+
     it "returns video profile authorization and not-found errors" do
       mutation = <<~GQL
         mutation($input: UpdateVideoProfileInput!) {
@@ -971,11 +1246,65 @@ RSpec.describe "GraphQL coverage scenarios", type: :request do
         }
       GQL
 
-      unauthorized = gql(mutation, variables: { input: { id: 0, name: "Nope" } }, user: viewer)
-      missing = gql(mutation, variables: { input: { id: 0, name: "Missing" } })
+      unauthorized = schema_exec(mutation,
+                                 variables: { input: { id: 0, name: "Nope" } },
+                                 context: { current_user: viewer })
+      missing = schema_exec(mutation,
+                            variables: { input: { id: 0, name: "Missing" } },
+                            context: { current_user: admin })
 
       expect(unauthorized.dig("data", "updateVideoProfile", "errors")).to include("Administrator privileges required.")
       expect(missing.dig("data", "updateVideoProfile", "errors")).to include("Video profile not found.")
+    end
+
+    it "updates selected video profile fields without replacing omitted JSON fields" do
+      profile = create(
+        :video_profile,
+        name: "Original",
+        description: "Before",
+        encode_for_adaptive_streaming: false,
+        smart_crop_ratios: [ { "name" => "Wide", "crop_ratio" => "16:9" } ]
+      )
+
+      mutation = <<~GQL
+        mutation($input: UpdateVideoProfileInput!) {
+          updateVideoProfile(input: $input) {
+            videoProfile { id name description encodeForAdaptiveStreaming smartCropRatios }
+            errors
+          }
+        }
+      GQL
+
+      body = gql(mutation, variables: {
+        input: { id: profile.id, description: "After", encodeForAdaptiveStreaming: true },
+      })
+
+      expect(body.dig("data", "updateVideoProfile", "errors")).to eq([])
+      expect(body.dig("data", "updateVideoProfile", "videoProfile")).to include(
+        "name" => "Original",
+        "description" => "After",
+        "encodeForAdaptiveStreaming" => true,
+        "smartCropRatios" => [ { "name" => "Wide", "crop_ratio" => "16:9" } ]
+      )
+    end
+
+    it "returns validation and unauthenticated errors for video profile updates" do
+      profile = create(:video_profile, name: "Keep")
+      mutation = <<~GQL
+        mutation($input: UpdateVideoProfileInput!) {
+          updateVideoProfile(input: $input) { videoProfile { id } errors }
+        }
+      GQL
+
+      invalid = schema_exec(mutation,
+                            variables: { input: { id: profile.id, name: "" } },
+                            context: { current_user: admin })
+      unauthenticated = schema_exec(mutation,
+                                    variables: { input: { id: profile.id, name: "Nope" } },
+                                    context: {})
+
+      expect(invalid.dig("data", "updateVideoProfile", "errors")).not_to be_empty
+      expect(unauthenticated.dig("data", "updateVideoProfile", "errors")).to include("Administrator privileges required.")
     end
 
     it "updates image profiles with crop and unsharp branches" do
@@ -1017,19 +1346,38 @@ RSpec.describe "GraphQL coverage scenarios", type: :request do
         }
       GQL
 
-      body = gql(mutation, variables: {
+      body = schema_exec(mutation, variables: {
         model: { id: config.id, name: "Claude", enabled: false, metadata: { "tier" => "gold" } },
         preset: { id: preset.id, name: "Muted", active: false, styleParams: { "tone" => "soft" } },
-      })
-      forbidden = gql(mutation, variables: {
+      }, context: { current_user: admin })
+      forbidden = schema_exec(mutation, variables: {
         model: { id: config.id, name: "Bad" },
         preset: { id: preset.id, name: "Bad" },
-      }, user: viewer)
+      }, context: { current_user: viewer })
 
       expect(body["errors"]).to be_nil
       expect(body.dig("data", "updateAiModelConfig", "aiModelConfig", "enabled")).to be(false)
       expect(body.dig("data", "updateStylePreset", "stylePreset", "active")).to be(false)
       expect(forbidden["errors"].first["message"]).to include("Administrator privileges required")
+    end
+
+    it "returns validation and unauthenticated errors for model config updates" do
+      config = create(:ai_model_config)
+      mutation = <<~GQL
+        mutation($id: ID!, $name: String!) {
+          updateAiModelConfig(input: { id: $id, name: $name }) {
+            aiModelConfig { id name }
+            errors
+          }
+        }
+      GQL
+
+      invalid = gql(mutation, variables: { id: config.id, name: "" })
+      unauthenticated = schema_exec(mutation, variables: { id: config.id, name: "Blocked" })
+
+      expect(invalid.dig("data", "updateAiModelConfig", "aiModelConfig")).to be_nil
+      expect(invalid.dig("data", "updateAiModelConfig", "errors")).to include("Name can't be blank")
+      expect(unauthenticated["errors"].first["message"]).to include("Administrator privileges required.")
     end
 
     it "returns not found payloads for model and style updates" do
@@ -1044,6 +1392,25 @@ RSpec.describe "GraphQL coverage scenarios", type: :request do
 
       expect(body.dig("data", "updateAiModelConfig", "errors")).to include("Not found")
       expect(body.dig("data", "updateStylePreset", "errors")).to include("Not found")
+    end
+
+    it "returns validation and unauthenticated errors for style preset updates" do
+      preset = create(:style_preset)
+      mutation = <<~GQL
+        mutation($id: ID!) {
+          updateStylePreset(input: { id: $id, name: "" }) {
+            stylePreset { id }
+            errors
+          }
+        }
+      GQL
+
+      invalid = gql(mutation, variables: { id: preset.id })
+      unauthenticated = schema_exec(mutation, variables: { id: preset.id }, context: {})
+
+      expect(invalid.dig("data", "updateStylePreset", "stylePreset")).to be_nil
+      expect(invalid.dig("data", "updateStylePreset", "errors")).not_to be_empty
+      expect(unauthenticated["errors"].first["message"]).to include("Administrator privileges required.")
     end
   end
 
@@ -1104,6 +1471,29 @@ RSpec.describe "GraphQL coverage scenarios", type: :request do
       expect(missing.dig("data", "updateUser", "errors")).to include("User not found")
     end
 
+    it "rejects unauthenticated updates and returns update validation failures" do
+      target = create(:user, first_name: "Before")
+      query = <<~GQL
+        mutation($input: UpdateUserInput!) {
+          updateUser(input: $input) { user { id firstName } errors }
+        }
+      GQL
+
+      unauthenticated = schema_exec(query, variables: { input: { id: target.id, firstName: "Blocked" } }, context: {})
+      allow(User).to receive(:find_by).and_call_original
+      allow(User).to receive(:find_by).with(hash_including(id: target.id)).and_return(target)
+      allow(User).to receive(:find_by).with(hash_including(id: target.id.to_s)).and_return(target)
+      allow(target).to receive(:update).and_return(false)
+      allow(target).to receive_message_chain(:errors, :full_messages).and_return([ "Update failed" ])
+      invalid = schema_exec(query,
+                            variables: { input: { id: target.id, firstName: "Broken" } },
+                            context: { current_user: admin })
+
+      expect(unauthenticated.dig("data", "updateUser", "errors")).to include("Unauthorized")
+      expect(invalid.dig("data", "updateUser", "user")).to be_nil
+      expect(invalid.dig("data", "updateUser", "errors")).to eq([ "Update failed" ])
+    end
+
     it "creates, updates, and deletes user groups" do
       parent = create(:user_group, name: "Parent")
       create_query = <<~GQL
@@ -1131,6 +1521,26 @@ RSpec.describe "GraphQL coverage scenarios", type: :request do
       expect(deleted.dig("data", "deleteUserGroup", "success")).to be(true)
     end
 
+    it "creates root groups, ignores missing parents, and reports validation and unauthenticated errors" do
+      create_query = <<~GQL
+        mutation($input: CreateUserGroupInput!) {
+          createUserGroup(input: $input) { userGroup { id name parentId } errors }
+        }
+      GQL
+
+      root = gql(create_query, variables: { input: { name: "Root Team" } })
+      orphan = gql(create_query, variables: { input: { name: "Orphan Team", parentId: 0 } })
+      invalid = gql(create_query, variables: { input: { name: "" } })
+      unauthenticated = schema_exec(create_query, variables: { input: { name: "No Session" } })
+
+      expect(root.dig("data", "createUserGroup", "errors")).to eq([])
+      expect(root.dig("data", "createUserGroup", "userGroup", "parentId")).to be_nil
+      expect(orphan.dig("data", "createUserGroup", "errors")).to eq([])
+      expect(UserGroup.find(orphan.dig("data", "createUserGroup", "userGroup", "id")).parent).to be_nil
+      expect(invalid.dig("data", "createUserGroup", "errors")).not_to be_empty
+      expect(unauthenticated.dig("data", "createUserGroup", "errors")).to include("Unauthorized")
+    end
+
     it "returns group authorization, not-found, and system protection errors" do
       system_group = create(:user_group, :administrators)
       query = <<~GQL
@@ -1153,6 +1563,22 @@ RSpec.describe "GraphQL coverage scenarios", type: :request do
       expect(protected_body.dig("data", "updateUserGroup", "errors").first).to include("Only super-administrators")
       expect(protected_body.dig("data", "deleteUserGroup", "errors")).to include("System groups cannot be deleted")
       expect(super_body.dig("data", "updateUserGroup", "errors")).to eq([])
+    end
+
+    it "returns unauthenticated and validation errors for updateUserGroup" do
+      group = create(:user_group, name: "Editors")
+      unauthenticated = schema_exec(
+        "mutation($id: ID!) { updateUserGroup(input: { id: $id, name: \"Nope\" }) { userGroup { id } errors } }",
+        variables: { id: group.id },
+        context: {}
+      )
+      invalid = gql(
+        "mutation($id: ID!) { updateUserGroup(input: { id: $id, name: \"\" }) { userGroup { id } errors } }",
+        variables: { id: group.id }
+      )
+
+      expect(unauthenticated.dig("data", "updateUserGroup", "errors")).to include("Unauthorized")
+      expect(invalid.dig("data", "updateUserGroup", "errors")).not_to be_empty
     end
   end
 
@@ -1190,6 +1616,16 @@ RSpec.describe "GraphQL coverage scenarios", type: :request do
       expect(unauthenticated["errors"].first["message"]).to eq("Not authenticated")
     end
 
+    it "rejects personal access token revocation without an authenticated user" do
+      body = schema_exec(
+        "mutation($id: ID!) { revokePersonalAccessToken(input: { id: $id }) { success message } }",
+        variables: { id: create(:personal_access_token, user: viewer).id },
+        context: {}
+      )
+
+      expect(body["errors"].first["message"]).to eq("Not authenticated")
+    end
+
     it "marks inbox messages read and archives only the current user's messages" do
       message = create(:inbox_message, :unread, recipient: viewer)
       archive = create(:inbox_message, :unread, recipient: viewer)
@@ -1208,6 +1644,29 @@ RSpec.describe "GraphQL coverage scenarios", type: :request do
       expect(body.dig("data", "markInboxMessageRead", "success")).to be(true)
       expect(body.dig("data", "archiveInboxMessage", "success")).to be(true)
       expect(body["errors"].first["message"]).to eq("Message not found")
+    end
+
+    it "rejects inbox message updates without an authenticated user" do
+      message = create(:inbox_message, :unread, recipient: viewer)
+
+      body = schema_exec(
+        "mutation($id: ID!) { markInboxMessageRead(input: { id: $id }) { success } }",
+        variables: { id: message.id },
+        context: {}
+      )
+
+      expect(body["errors"].first["message"]).to eq("Message not found")
+    end
+
+    it "rejects archive requests for unauthenticated users and other users' messages" do
+      other_message = create(:inbox_message, recipient: create(:user))
+      mutation = "mutation($id: ID!) { archiveInboxMessage(input: { id: $id }) { success } }"
+
+      foreign = gql(mutation, variables: { id: other_message.id }, user: viewer)
+      unauthenticated = schema_exec(mutation, variables: { id: other_message.id })
+
+      expect(foreign["errors"].first["message"]).to eq("Message not found")
+      expect(unauthenticated["errors"].first["message"]).to eq("Message not found")
     end
   end
 
@@ -1245,6 +1704,30 @@ RSpec.describe "GraphQL coverage scenarios", type: :request do
       expect(unauthenticated.dig("data", "resolveDuplicateGroup", "errors")).to include("Authentication required.")
     end
 
+    it "resolves duplicate groups without deleting assets when no ids are supplied and ignores missing ids" do
+      group = create(:duplicate_group, total_count: 2)
+      original = create(:asset)
+      duplicate = create(:asset)
+      create(:duplicate_group_asset, :original, duplicate_group: group, asset: original)
+      create(:duplicate_group_asset, duplicate_group: group, asset: duplicate)
+
+      no_ids = gql(
+        "mutation($id: String!) { resolveDuplicateGroup(input: { groupId: $id, action: \"deleted_duplicates\" }) { group { status } errors } }",
+        variables: { id: group.id },
+        user: viewer
+      )
+      group.update!(status: "pending", resolved_at: nil, resolved_by: nil, resolution_action: nil)
+      missing_asset = gql(
+        "mutation($id: String!, $assetId: [String!]) { resolveDuplicateGroup(input: { groupId: $id, action: \"deleted_duplicates\", assetIdsToDelete: $assetId }) { group { status } errors } }",
+        variables: { id: group.id, assetId: [ "missing-id" ] },
+        user: viewer
+      )
+
+      expect(no_ids.dig("data", "resolveDuplicateGroup", "errors")).to eq([])
+      expect(duplicate.reload.deleted_at).to be_nil
+      expect(missing_asset.dig("data", "resolveDuplicateGroup", "errors")).to eq([])
+    end
+
     it "triggers duplicate scans through disabled, queued, and success branches" do
       mutation = "mutation { triggerDuplicateScan(input: {}) { status message errors } }"
 
@@ -1256,6 +1739,16 @@ RSpec.describe "GraphQL coverage scenarios", type: :request do
       expect(disabled.dig("data", "triggerDuplicateScan", "errors").first).to include("Enable duplicate detection")
       expect(queued.dig("data", "triggerDuplicateScan", "status")).to eq("queued")
       expect(already.dig("data", "triggerDuplicateScan", "errors").first).to include("already queued")
+    end
+
+    it "rejects duplicate scans without authentication or admin privileges" do
+      mutation = "mutation { triggerDuplicateScan(input: {}) { status message errors } }"
+
+      unauthenticated = schema_exec(mutation)
+      forbidden = gql(mutation, user: viewer)
+
+      expect(unauthenticated.dig("data", "triggerDuplicateScan", "errors")).to include("Authentication required.")
+      expect(forbidden.dig("data", "triggerDuplicateScan", "errors")).to include("Administrator privileges required.")
     end
 
     it "updates bin retention policy and rejects invalid or unauthorized updates" do
@@ -1285,6 +1778,13 @@ RSpec.describe "GraphQL coverage scenarios", type: :request do
       expect(forbidden.dig("data", "triggerBinPurge", "errors")).to include("Administrator privileges required.")
     end
 
+    it "requires authentication before triggering a bin purge" do
+      body = schema_exec("mutation { triggerBinPurge(input: {}) { queued status errors } }")
+
+      expect(body.dig("data", "triggerBinPurge", "errors")).to include("Authentication required.")
+      expect(body.dig("data", "triggerBinPurge", "queued")).to be_nil
+    end
+
     it "restores bin items, reports missing items, and empties the bin for admins only" do
       restored_asset = instance_double(Asset, restore: true)
       asset_scope = double("AssetTrashScope")
@@ -1305,6 +1805,17 @@ RSpec.describe "GraphQL coverage scenarios", type: :request do
       expect(restored.dig("data", "bulkRestoreFromBin", "errors").first).to include("Folder #0 not found")
       expect(forbidden_empty.dig("data", "emptyBin", "errors")).to include("Administrator privileges required.")
       expect(empty.dig("data", "emptyBin", "errors")).to eq([])
+    end
+
+    it "requires authentication for bulk restore" do
+      result = schema_exec(<<~GQL, variables: { items: [ { id: 1, type: "asset" } ] }, context: {})
+        mutation($items: [BinItemInput!]!) {
+          bulkRestoreFromBin(input: { items: $items }) { restored errors }
+        }
+      GQL
+
+      expect(result.dig("data", "bulkRestoreFromBin", "restored")).to be_nil
+      expect(result.dig("data", "bulkRestoreFromBin", "errors")).to include("Authentication required.")
     end
   end
 
@@ -1345,8 +1856,33 @@ RSpec.describe "GraphQL coverage scenarios", type: :request do
       expect(unauthenticated["errors"].first["message"]).to eq("Not authenticated")
     end
 
+    it "stops impersonation even without a session and logs missing impersonated users safely" do
+      allow(AuditLog).to receive(:record)
+
+      no_session = schema_exec(
+        "mutation { stopImpersonation(input: {}) { success message } }",
+        context: { current_user: admin, true_user: admin }
+      )
+      missing_session = { impersonated_user_id: 999_999, impersonator_id: admin.id }
+      missing_user = schema_exec(
+        "mutation { stopImpersonation(input: {}) { success message } }",
+        context: { current_user: viewer, true_user: admin, session: missing_session }
+      )
+
+      expect(no_session.dig("data", "stopImpersonation")).to include("success" => true, "message" => "Impersonation session ended.")
+      expect(missing_user.dig("data", "stopImpersonation", "success")).to be(true)
+      expect(missing_session).to eq({})
+      expect(AuditLog).to have_received(:record).with(hash_including(
+        auditable: admin,
+        user: admin,
+        changes_data: { impersonated_user: nil }
+      ))
+    end
+
     it "uses schema rescue_from and loads base GraphQL abstractions" do
-      allow(Asset).to receive(:active).and_raise(StandardError, "boom")
+      error = StandardError.new("boom")
+      error.set_backtrace(nil)
+      allow(Asset).to receive(:active).and_raise(error)
 
       result = schema_exec("query { assetDetail(uuid: \"x\") { id } }", context: { current_user: viewer })
 

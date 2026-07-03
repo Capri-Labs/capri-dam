@@ -120,4 +120,36 @@ RSpec.describe "Api::V1::StylePresets", type: :request do
   def json
     JSON.parse(response.body)
   end
+
+  describe "additional serialization branches" do
+    it "filters index results when active=true is supplied" do
+      create(:style_preset, active: true, name: 'Visible')
+      create(:style_preset, active: false, name: 'Hidden')
+
+      get "/api/v1/style_presets", params: { active: 'true' }, headers: auth_headers(admin)
+
+      expect(response).to have_http_status(:ok)
+      expect(json['presets'].map { |preset| preset['name'] }).to eq([ 'Visible' ])
+    end
+
+    it "returns validation errors when updates are invalid" do
+      preset = create(:style_preset)
+
+      patch "/api/v1/style_presets/#{preset.id}",
+            params: { style_preset: { name: '' } }.to_json,
+            headers: auth_headers(admin)
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(json['errors']).not_to be_empty
+    end
+
+    it "serializes a nil creator email safely" do
+      preset = create(:style_preset, created_by: nil)
+
+      get "/api/v1/style_presets/#{preset.id}", headers: auth_headers(admin)
+
+      expect(response).to have_http_status(:ok)
+      expect(json['created_by']).to be_nil
+    end
+  end
 end

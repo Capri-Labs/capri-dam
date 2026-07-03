@@ -46,5 +46,12 @@ RSpec.describe CdnAdapters::FastlyAdapter, type: :service do
 
       expect(adapter.sync_metadata('asset-1', '{}')).to be(false)
     end
+
+    it "returns false for non-success HTTP responses" do
+      stub_request(:put, "https://api.fastly.com/service/svc-1/dictionary/dict-1/item/asset-1")
+        .to_return(status: 500, body: "nope")
+
+      expect(adapter.sync_metadata("asset-1", "{}")).to be(false)
+    end
   end
 end

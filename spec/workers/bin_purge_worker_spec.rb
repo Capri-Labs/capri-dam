@@ -78,6 +78,14 @@ RSpec.describe BinPurgeWorker, type: :worker do
 
       expect { asset.reload }.not_to raise_error
     end
+
+    it "falls back to the default notify_admins value for unparseable settings" do
+      Setting.set("bin_purge_notify_admins", "maybe")
+
+      policy = described_class.new.send(:load_policy)
+
+      expect(policy[:notify_admins]).to eq(BinPurgeWorker::DEFAULT_NOTIFY_ADMINS)
+    end
   end
 
   # ── Status lifecycle ─────────────────────────────────────────────────────────

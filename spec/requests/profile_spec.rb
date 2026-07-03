@@ -169,4 +169,37 @@ RSpec.describe "Profile API", type: :request do
       expect(response).to have_http_status(:not_found)
     end
   end
+
+  describe "additional failure branches" do
+    it "returns validation errors for invalid profile updates" do
+      patch profile_path, params: { user: { email: '' } }, as: :json
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.parsed_body['errors']).to include("Email can't be blank")
+    end
+
+    it "returns validation errors when the new password is invalid" do
+      patch password_profile_path,
+            params: {
+              current_password: 'password123',
+              new_password: 'short',
+              new_password_confirmation: 'short',
+            },
+            as: :json
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.parsed_body['errors']).not_to be_empty
+    end
+
+    it "serializes last_used_at on personal access token index responses" do
+      token = create(:personal_access_token, user: user, last_used_at: Time.zone.parse('2026-07-01T10:00:00Z'))
+
+      get profile_personal_access_tokens_path, as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body['tokens']).to include(
+        a_hash_including('id' => token.id, 'last_used_at' => '2026-07-01T10:00:00Z')
+      )
+    end
+  end
 end

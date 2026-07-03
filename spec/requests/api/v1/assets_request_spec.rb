@@ -77,6 +77,19 @@ RSpec.describe "Api::V1::Assets coverage", type: :request do
       expect(payload["results"].map { |asset| asset["uuid"] }).to eq([ jpeg.uuid ])
     end
 
+    it "returns every ready asset when no optional search filters are supplied" do
+      first = asset_with_version(title: "First Ready")
+      second = asset_with_version(title: "Second Ready")
+      asset_with_version(title: "Pending", status: :pending)
+      controller = build_assets_controller
+
+      controller.search
+      payload = JSON.parse(controller.response.body)
+
+      expect(controller.response).to have_http_status(:ok)
+      expect(payload["results"].map { |asset| asset["uuid"] }).to contain_exactly(first.uuid, second.uuid)
+    end
+
     it "lists active assets and requires authentication" do
       asset = asset_with_version(title: "Listed")
       get "/api/v1/assets", as: :json
@@ -176,6 +189,17 @@ RSpec.describe "Api::V1::Assets coverage", type: :request do
       )
       expect(created.properties).not_to have_key("blank")
     end
+
+    it "ignores stale schema ids and uploads without inline metadata" do
+      file = fixture_file_upload(Rails.root.join("spec/fixtures/images/test-image.jpg"), "image/jpeg")
+
+      post "/api/v1/assets", params: { file: file, schema_id: -1 }
+
+      expect(response).to have_http_status(:accepted)
+      created = Asset.find_by!(uuid: json["id"])
+      expect(created.properties).to include("original_filename" => "test-image.jpg")
+      expect(created.properties).not_to have_key("applied_schema_id")
+    end
   end
 
   describe "member read/update/delete endpoints" do
@@ -228,6 +252,27 @@ RSpec.describe "Api::V1::Assets coverage", type: :request do
       allow_any_instance_of(Asset).to receive(:update!).and_raise(StandardError, "forced validation failure")
       patch "/api/v1/assets/#{asset.uuid}", params: { asset: { title: "Still Valid", metadata: { "x" => "y" } } }, as: :json
       expect(response).to have_http_status(:unprocessable_entity)
+    end
+
+    it "updates metadata snapshots without an acting user or active version" do
+      asset = create(:asset, user: user, title: "Detached", properties: { "existing" => "value" })
+      controller = Api::V1::AssetsController.new
+      controller.set_request!(ActionDispatch::TestRequest.create)
+      controller.set_response!(ActionDispatch::TestResponse.new)
+      allow(controller).to receive(:find_asset_record).and_return(asset)
+      allow(controller).to receive(:check_asset_modify!)
+      allow(controller).to receive(:performed?).and_return(false)
+      allow(controller).to receive(:active_resource_owner).and_return(nil)
+      allow(controller).to receive(:params).and_return(
+        ActionController::Parameters.new(id: asset.uuid, asset: { metadata: { "dc:title" => "Updated" } })
+      )
+
+      controller.update
+
+      expect(controller.response).to have_http_status(:ok)
+      asset.reload
+      expect(asset.active_version.created_by_id).to be_nil
+      expect(asset.active_version.properties["metadata_snapshot"]).to eq("dc:title" => "Updated")
     end
 
     it "soft-deletes, restores and permanently deletes a trashed asset" do
@@ -289,6 +334,17 @@ RSpec.describe "Api::V1::Assets coverage", type: :request do
       post "/api/v1/assets/#{asset.uuid}/versions/#{old_version.id}/restore", as: :json
       expect(response).to have_http_status(:ok)
       expect(asset.reload.active_version_id).to eq(old_version.id)
+    end
+
+    it "formats version history fallbacks when creator and size metadata are missing" do
+      asset = asset_with_version(title: "Fallback Version")
+      system_version = create(:asset_version, asset: asset, version_number: 2, created_by: nil, properties: {})
+      asset.update!(active_version: system_version)
+
+      get "/api/v1/assets/#{asset.uuid}/versions", as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(json["versions"].first).to include("created_by" => "System User", "size" => "Unknown")
     end
 
     it "returns not found for a missing audit trail asset" do
@@ -407,6 +463,16 @@ RSpec.describe "Api::V1::Assets coverage", type: :request do
       expect(json["error"]).to eq("Image processing failed. Please try again.")
     end
 
+    it "returns not found when image processing cannot resolve an asset record" do
+      controller = build_assets_controller(id: "missing")
+      allow(controller).to receive(:find_asset_record).and_return(nil)
+
+      controller.process_image
+
+      expect(controller.response).to have_http_status(:not_found)
+      expect(JSON.parse(controller.response.body)).to eq("error" => "Asset not found.")
+    end
+
     it "processes images as a copy, an overwrite, and a first version when no active version exists" do
       processed_path = write_coverage_tmp_file("processed-copy.jpg", "processed")
       processor = instance_double(ImageProcessingService, process: processed_path)
@@ -445,6 +511,23 @@ RSpec.describe "Api::V1::Assets coverage", type: :request do
       post "/api/v1/assets/#{no_version.uuid}/process_image", params: { save_mode: "overwrite" }, as: :json
       expect(response).to have_http_status(:ok)
       expect(no_version.reload.active_version).to be_present
+    end
+
+    it "copies processed images into the source folder when no target folder is supplied" do
+      processed_path = write_coverage_tmp_file("processed-same-folder.jpg", "processed")
+      processor = instance_double(ImageProcessingService, process: processed_path)
+      allow(ImageProcessingService).to receive(:new).and_return(processor)
+
+      folder = create(:folder, user: user)
+      source = processable_asset(title: "Copy Same Folder")
+      source.update!(folder: folder)
+
+      expect do
+        post "/api/v1/assets/#{source.uuid}/process_image", params: { save_mode: "new" }, as: :json
+      end.to change(Asset, :count).by(1)
+
+      expect(response).to have_http_status(:created)
+      expect(json["folder_id"]).to eq(folder.id)
     end
 
     it "processes images as in-place and branched new versions" do
@@ -493,6 +576,28 @@ RSpec.describe "Api::V1::Assets coverage", type: :request do
       expect(response.headers["ETag"]).to be_present
 
       get "/api/v1/assets/local/#{asset.uuid}", headers: { "If-None-Match" => response.headers["ETag"] }
+      expect(response).to have_http_status(:not_modified)
+    ensure
+      FileUtils.rm_f(dam_path)
+      FileUtils.rm_rf(dam_path.dirname) if defined?(dam_path) && dam_path.dirname.to_s.end_with?("assets_controller_coverage")
+    end
+
+    it "falls back to asset-level storage for preview requests and honors If-Modified-Since" do
+      dam_path = Rails.root.join("storage/dam/assets_controller_coverage/fallback-preview.txt")
+      FileUtils.mkdir_p(dam_path.dirname)
+      File.binwrite(dam_path, "preview fallback")
+      asset = create(:asset, user: user, title: "Previewless", properties: {
+        "storage_path" => "assets_controller_coverage/fallback-preview.txt",
+        "content_type" => "text/plain",
+      })
+
+      get "/api/v1/assets/local/#{asset.uuid}", params: { variant: "preview" }
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to eq("preview fallback")
+
+      get "/api/v1/assets/local/#{asset.uuid}",
+          params: { variant: "preview" },
+          headers: { "If-Modified-Since" => 5.minutes.from_now.httpdate }
       expect(response).to have_http_status(:not_modified)
     ensure
       FileUtils.rm_f(dam_path)
@@ -603,6 +708,25 @@ RSpec.describe "Api::V1::Assets coverage", type: :request do
       expect(json["error"]).to eq("Failed to generate secure proxy.")
     end
 
+    it "watermarks asset-level images even when no active version is selected" do
+      require "mini_magick"
+
+      asset = create(:asset, user: user, title: "Standalone", properties: {
+        "storage_path" => "standalone.jpg",
+        "content_type" => "image/jpeg",
+      })
+      image = instance_double(MiniMagick::Image, to_blob: "asset-level-bytes")
+      options = double("MiniMagick options", gravity: nil, fill: nil, font: nil, pointsize: nil, annotate: nil)
+      allow(image).to receive(:combine_options).and_yield(options)
+      allow(MiniMagick::Image).to receive(:open).and_return(image)
+
+      get "/api/v1/assets/#{asset.uuid}/watermarked"
+
+      expect(response).to have_http_status(:ok)
+      expect(response.headers["Content-Disposition"]).to include("watermarked_v_Standalone.jpg")
+      expect(response.body).to eq("asset-level-bytes")
+    end
+
     it "returns empty workflow history when no workflows are attached" do
       asset = asset_with_version(title: "Workflowless")
       get "/api/v1/assets/#{asset.uuid}/workflow_history", as: :json
@@ -649,6 +773,32 @@ RSpec.describe "Api::V1::Assets coverage", type: :request do
       expect(payload["folders"]).to include(include("id" => trashed_folder.id, "name" => "Deleted Folder"))
       expect(payload["assets"]).to include(include("id" => trashed_asset.id, "title" => "Deleted Asset", "name" => "Deleted Asset"))
       expect(payload["breadcrumbs"]).to eq([ { "id" => "bin", "name" => "Trash Bin" } ])
+    end
+
+    it "handles bin assets without an active version" do
+      orphaned = create(:asset, :trashed, user: user, title: "No Version", properties: { "storage_path" => "orphaned.txt" })
+      controller = build_assets_controller
+
+      controller.bin
+      payload = JSON.parse(controller.response.body)
+
+      expect(controller.response).to have_http_status(:ok)
+      expect(payload["assets"]).to include(include("id" => orphaned.id, "properties" => include("storage_path" => "orphaned.txt")))
+    end
+
+    it "returns forbidden duplicate and AI-analysis requests for unreadable assets" do
+      protected_folder = create(:folder)
+      asset = asset_with_version(title: "Restricted")
+      asset.update!(folder: protected_folder)
+
+      sign_out user
+      sign_in create(:user)
+
+      get "/api/v1/assets/#{asset.uuid}/duplicates", as: :json
+      expect(response).to have_http_status(:forbidden)
+
+      post "/api/v1/assets/#{asset.uuid}/ai_analysis", as: :json
+      expect(response).to have_http_status(:forbidden)
     end
   end
 
@@ -726,6 +876,34 @@ RSpec.describe "Api::V1::Assets coverage", type: :request do
       expect(json["id"]).to eq(folder_schema.id)
       expect(json["applied_schema_id"]).to eq(folder_schema.id)
     end
+
+    it "falls back to MIME resolution when an applied schema id is stale" do
+      asset = asset_with_version(title: "Stale Applied", properties: {
+        "content_type" => "image/jpeg",
+        "applied_schema_id" => 99_999,
+      })
+      allow(MetadataSchema).to receive(:resolve_for_mime).with("image/jpeg").and_return(schema)
+
+      get "/api/v1/assets/#{asset.uuid}/metadata_schema", as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(json["id"]).to eq(schema.id)
+    end
+
+    it "falls back to MIME resolution when folder assignments are missing or stale" do
+      folder = create(:folder, user: user)
+      asset = asset_with_version(title: "Folder Fallback", properties: { "content_type" => "image/jpeg" })
+      asset.update!(folder: folder, properties: asset.properties.except("applied_schema_id"))
+      stale_schema = create(:metadata_schema, :root, name: "Stale Folder Schema")
+      create(:metadata_schema_folder_assignment, folder_id: folder.id, metadata_schema: stale_schema)
+      stale_schema.update_column(:deleted_at, Time.current) # rubocop:disable Rails/SkipsModelValidations
+      allow(MetadataSchema).to receive(:resolve_for_mime).with("image/jpeg").and_return(schema)
+
+      get "/api/v1/assets/#{asset.uuid}/metadata_schema", as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(json["id"]).to eq(schema.id)
+    end
   end
 
   describe "private helper coverage" do
@@ -758,6 +936,37 @@ RSpec.describe "Api::V1::Assets coverage", type: :request do
 
       allow(controller).to receive(:params).and_return({ title: "Top Level Only" })
       expect(controller.send(:update_metadata_payload)).to eq({})
+    end
+
+    it "covers filename parsing, worker dispatch, and asset-level helper fallbacks" do
+      asset = create(:asset, user: user, status: "ready", properties: {
+        "storage_path" => "helpers/file.txt",
+        "content_type" => "text/plain",
+      })
+      schema_record = create(:metadata_schema, :root, name: "Unmapped", tabs: [
+        { "name" => "General", "fields" => [ { "label" => "Notes" } ] },
+      ])
+      allow(schema_record).to receive(:resolved_tabs).and_return(schema_record.tabs)
+
+      expect(controller.send(:parse_product_filename, nil)).to be_nil
+      expect(controller.send(:parse_product_filename, "123-en-invalid.jpg")).to be_nil
+      expect(controller.send(:resolve_source_file_path, asset)).to eq(Rails.root.join("storage/dam/helpers/file.txt").to_s)
+      expect(controller.send(:format_asset, asset)).to include(version: 1, content_type: "text/plain")
+      expect(controller.send(:merged_asset_properties, asset)).to include("storage_path" => "helpers/file.txt")
+      expect(controller.send(:folder_path_for, double(path_hierarchy: [ { name: "Root" }, { name: "Child" } ]))).to eq("/Root/Child")
+      expect(controller.send(:normalised_asset_status, double(
+        attributes_before_type_cast: { "status" => "queued_review" },
+        :[] => nil,
+        status: "ready"
+      ))).to eq("queued_review")
+
+      serialized = controller.send(:serialize_asset_schema, schema_record, asset)
+      expect(serialized[:resolved_tabs].first["fields"].first["value"]).to be_nil
+
+      hide_const("AssetProcessorWorker")
+      hide_const("CdnInvalidationWorker")
+      hide_const("EdgeMetadataSyncWorker")
+      expect { controller.send(:dispatch_asset_workers, asset, build_stubbed(:asset_version), "file.txt") }.not_to raise_error
     end
   end
 end

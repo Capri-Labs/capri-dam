@@ -7,6 +7,20 @@ RSpec.describe StorageAdapters::BaseAdapter, type: :service do
     it 'stringifies configuration keys' do
       expect(adapter.config).to eq('access_key' => 'key', 'cdn_base_url' => 'https://cdn.example.com')
     end
+
+    it 'ignores non-hash configuration values' do
+      expect(described_class.new('raw-string').config).to eq({})
+    end
+  end
+
+  describe 'StorageError constant' do
+    it 'does not redefine StorageError when the file is loaded again' do
+      original = StorageAdapters::StorageError
+
+      load Rails.root.join('app/services/storage_adapters/base_adapter.rb')
+
+      expect(StorageAdapters::StorageError).to equal(original)
+    end
   end
 
   describe 'abstract methods' do
@@ -49,7 +63,7 @@ RSpec.describe StorageAdapters::BaseAdapter, type: :service do
     end
 
     it 'falls back to #url when no CDN base is configured' do
-      plain_adapter = described_class.new
+      plain_adapter = described_class.new(cdn_base_url: '')
       allow(plain_adapter).to receive(:url).with('assets/file.jpg').and_return('https://origin.example.com/assets/file.jpg')
 
       expect(plain_adapter.cdn_url('assets/file.jpg')).to eq('https://origin.example.com/assets/file.jpg')

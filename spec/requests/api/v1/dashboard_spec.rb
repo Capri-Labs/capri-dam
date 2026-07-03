@@ -64,6 +64,8 @@ end
 # ---- merged from dashboard_coverage_spec.rb ----
 RSpec.describe "Api::V1::Dashboard coverage", type: :request do
   let(:user) { create(:user) }
+  let(:controller) { Api::V1::DashboardController.new }
+
   before { sign_in user }
 
   it "categorizes mime types, storage, workflows and AI insights" do
@@ -78,5 +80,60 @@ RSpec.describe "Api::V1::Dashboard coverage", type: :request do
     expect(body["assets_by_type"].map { |row| row["type"] }).to include("Videos", "Audio", "PDF", "Documents")
     expect(body["storage"]["total_human"]).not_to eq("0 B")
     expect(body["ai_insights"].map { |i| i["key"] }).to include("failed_analysis", "no_schema", "recent_24h")
+  end
+
+  it "maps image and fallback mime buckets" do
+    expect(controller.send(:simplify_mime, "image/png")).to eq("Images")
+    expect(controller.send(:simplify_mime, "text/plain")).to eq("Other")
+  end
+
+  it "falls back to zero storage when the aggregate query returns no rows" do
+    allow(ActiveRecord::Base.connection).to receive(:execute).and_return([])
+
+    expect(controller.send(:build_storage)).to eq(total_bytes: 0, total_human: "0 B")
+  end
+
+  it "falls back to filenames and unknown metadata for recent assets" do
+    asset_with_filename = instance_double(
+      Asset,
+      id: 1,
+      uuid: "uuid-1",
+      title: nil,
+      properties: { "original_filename" => "cover.png", "content_type" => "image/png", "file_size" => "12" },
+      created_at: Time.zone.parse("2026-07-03 10:00:00"),
+      status: "ready"
+    )
+    untitled_asset = instance_double(
+      Asset,
+      id: 2,
+      uuid: "uuid-2",
+      title: nil,
+      properties: nil,
+      created_at: Time.zone.parse("2026-07-03 10:01:00"),
+      status: nil
+    )
+
+    allow(Asset).to receive_message_chain(:active, :order, :limit).and_return([ asset_with_filename, untitled_asset ])
+
+    expect(controller.send(:build_recent_assets)).to include(
+      a_hash_including(title: "cover.png", content_type: "image/png", file_size: 12),
+      a_hash_including(title: "Untitled", content_type: "unknown", file_size: 0, status: "draft")
+    )
+  end
+
+  it "omits failed-analysis and no-schema insights when the counts are zero" do
+    asset_active_scope = instance_double(ActiveRecord::Relation)
+    failed_scope = instance_double(ActiveRecord::Relation, count: 0)
+    schema_scope = instance_double(ActiveRecord::Relation, count: 0)
+    recent_scope = instance_double(ActiveRecord::Relation, count: 1)
+
+    allow(Asset).to receive(:active).and_return(asset_active_scope)
+    allow(asset_active_scope).to receive(:where).with("properties->>'image_analysis_status' = 'failed'").and_return(failed_scope)
+    allow(asset_active_scope).to receive(:where).with("properties->>'applied_schema_name' IS NULL").and_return(schema_scope)
+    allow(asset_active_scope).to receive(:where).with("created_at >= ?", anything).and_return(recent_scope)
+
+    result = controller.send(:build_ai_insights)
+
+    expect(result).to eq([ { type: "success", key: "recent_24h", count: 1 } ])
   end
 end

@@ -4,7 +4,8 @@
 # Called by the git pre-commit hook (installed at .git/hooks/pre-commit).
 #
 # Checks performed on every commit:
-#   1. RuboCop — lint staged Ruby files (blocks on offense)
+#   1. RuboCop — safe auto-correct staged Ruby files, re-stage, then lint (blocks
+#      on any offense that auto-correct couldn't fix)
 #   2. REST docs guard — warn when api/v1 controllers change without swagger update
 #   3. GraphQL docs guard — warn when graphql/ changes without SDL/HTML update
 #   4. YAML syntax — validate staged .yml/.yaml files (blocks on parse error)
@@ -16,6 +17,7 @@
 #
 # Bypass flags (not recommended):
 #   RUBOCOP_WARN_ONLY=1   — warn but don't block on RuboCop offenses
+#   RUBOCOP_AUTOFIX=0     — disable the automatic `rubocop -a` re-stage step
 #   DOCS_WARN_ONLY=1      — warn but don't block on stale docs
 #   LINT_WARN_ONLY=1      — warn but don't block on YAML/JSON/Python/ESLint issues
 
@@ -54,6 +56,40 @@ if [[ -n "$STAGED_RUBY" ]]; then
     FORMAT_ARG=""
   fi
 
+  autofix_rubocop="${RUBOCOP_AUTOFIX:-1}"
+
+  if [[ "$autofix_rubocop" -eq 1 ]]; then
+    # Safe auto-correct (`-a`, never `-A`) staged Ruby files and re-stage them,
+    # so mechanical style nits (spacing, trailing empty lines, etc.) never
+    # block a commit. Only files staged *in full* (no unstaged changes on top,
+    # i.e. not a partial `git add -p`) are auto-corrected — for those we'd have
+    # to reconcile the fix against an unstaged diff, which risks conflicts, so
+    # we skip them and let RuboCop report normally instead.
+    FULLY_STAGED_RUBY=""
+    PARTIALLY_STAGED_RUBY=""
+    while IFS= read -r f; do
+      [[ -z "$f" ]] && continue
+      if git diff --quiet -- "$f" 2>/dev/null; then
+        FULLY_STAGED_RUBY="$FULLY_STAGED_RUBY $f"
+      else
+        PARTIALLY_STAGED_RUBY="$PARTIALLY_STAGED_RUBY $f"
+      fi
+    done <<< "$STAGED_RUBY"
+
+    if [[ -n "$FULLY_STAGED_RUBY" ]]; then
+      # shellcheck disable=SC2086
+      bundle exec rubocop -a --force-exclusion --no-color $FULLY_STAGED_RUBY >/dev/null 2>&1 || true
+      # shellcheck disable=SC2086
+      git add -- $FULLY_STAGED_RUBY
+      echo -e "${CYAN}   ↳ ran safe auto-correct (rubocop -a) and re-staged fixed files.${NC}"
+    fi
+
+    if [[ -n "$PARTIALLY_STAGED_RUBY" ]]; then
+      echo -e "${YELLOW}   ↳ skipped auto-correct for partially-staged file(s) (has unstaged changes):${NC}"
+      echo "$PARTIALLY_STAGED_RUBY" | tr ' ' '\n' | sed '/^$/d;s/^/       • /'
+    fi
+  fi
+
   # Stash unstaged changes so RuboCop only sees the staged version
   # (use a temporary file list; avoid stashing if nothing unstaged)
   RUBOCOP_RESULT=0
@@ -62,7 +98,7 @@ if [[ -n "$STAGED_RUBY" ]]; then
 
   if [[ "$RUBOCOP_RESULT" -ne 0 ]]; then
     echo ""
-    echo -e "${YELLOW}⚠  RUBOCOP OFFENSES DETECTED${NC}"
+    echo -e "${YELLOW}⚠  RUBOCOP OFFENSES DETECTED (not auto-fixable — needs manual review)${NC}"
     echo "   Run one of the following to fix:"
     echo "     bundle exec rubocop -a            # safe auto-correct"
     echo "     bundle exec rubocop -A            # unsafe auto-correct (review carefully)"
@@ -88,17 +124,39 @@ if [[ -n "$REST_CTRL_CHANGED" ]]; then
   SWAGGER_STAGED=$(echo "$STAGED" | grep -E '^swagger/v1/swagger\.yaml$' || true)
 
   if [[ -z "$SWAGGER_STAGED" ]]; then
-    echo -e "${YELLOW}⚠  REST DOCS OUT OF DATE${NC}"
-    echo "   The following REST controllers were changed but swagger/v1/swagger.yaml was NOT updated:"
+    echo -e "${YELLOW}⚠  REST controllers changed — regenerating swagger/v1/swagger.yaml…${NC}"
     echo "$REST_CTRL_CHANGED" | sed 's/^/     • /'
     echo ""
-    echo "   Run:  make swagger-docs"
-    echo "   Then: git add swagger/v1/swagger.yaml"
-    echo ""
-    if [[ "$warn_only_docs" -eq 1 ]]; then
-      echo -e "${YELLOW}DOCS_WARN_ONLY=1 — commit allowed despite stale docs.${NC}"
+
+    SWAGGER_REGEN_OK=0
+    if make swagger-docs >/dev/null 2>&1; then
+      # Touch the file to guarantee a new mtime even if content is unchanged,
+      # so git always sees it as modified and stages it cleanly.
+      touch swagger/v1/swagger.yaml
+      git add swagger/v1/swagger.yaml
+      echo -e "${GREEN}✓ swagger/v1/swagger.yaml regenerated and staged automatically.${NC}"
+      SWAGGER_REGEN_OK=1
     else
-      BLOCKED=1
+      echo -e "${YELLOW}⚠  'make swagger-docs' failed. Retrying with RAILS_ENV=test…${NC}"
+      if RAILS_ENV=test make swagger-docs >/dev/null 2>&1; then
+        touch swagger/v1/swagger.yaml
+        git add swagger/v1/swagger.yaml
+        echo -e "${GREEN}✓ swagger/v1/swagger.yaml regenerated and staged automatically.${NC}"
+        SWAGGER_REGEN_OK=1
+      fi
+    fi
+
+    if [[ "$SWAGGER_REGEN_OK" -eq 0 ]]; then
+      echo -e "${YELLOW}⚠  Could not auto-regenerate swagger docs. Please run manually:${NC}"
+      echo "     make swagger-docs"
+      echo "     git add swagger/v1/swagger.yaml"
+      echo ""
+      if [[ "$warn_only_docs" -eq 1 ]]; then
+        echo -e "${YELLOW}DOCS_WARN_ONLY=1 — commit allowed despite stale docs.${NC}"
+      else
+        echo -e "${RED}Commit blocked: regenerate swagger docs first.${NC}"
+        BLOCKED=1
+      fi
     fi
   else
     echo -e "${GREEN}✓ REST docs are up to date.${NC}"
@@ -118,19 +176,37 @@ if [[ -n "$GQL_SRC_CHANGED" ]]; then
   [[ -z "$HTML_STAGED" ]] && MISSING_ARTIFACTS="$MISSING_ARTIFACTS public/graphql-docs/index.html"
 
   if [[ -n "$MISSING_ARTIFACTS" ]]; then
-    echo -e "${YELLOW}⚠  GRAPHQL DOCS OUT OF DATE${NC}"
-    echo "   The following GraphQL source files were changed:"
+    echo -e "${YELLOW}⚠  GraphQL source changed — regenerating docs…${NC}"
     echo "$GQL_SRC_CHANGED" | sed 's/^/     • /'
     echo ""
-    echo "   Missing staged artifacts:$MISSING_ARTIFACTS"
-    echo ""
-    echo "   Run:  make graphql-docs"
-    echo "   Then: git add swagger/graphql/schema.graphql public/graphql-docs/index.html"
-    echo ""
-    if [[ "$warn_only_docs" -eq 1 ]]; then
-      echo -e "${YELLOW}DOCS_WARN_ONLY=1 — commit allowed despite stale docs.${NC}"
+
+    GQL_REGEN_OK=0
+    if make graphql-docs >/dev/null 2>&1; then
+      touch swagger/graphql/schema.graphql public/graphql-docs/index.html 2>/dev/null || true
+      git add swagger/graphql/schema.graphql public/graphql-docs/index.html 2>/dev/null || true
+      echo -e "${GREEN}✓ GraphQL docs regenerated and staged automatically.${NC}"
+      GQL_REGEN_OK=1
     else
-      BLOCKED=1
+      echo -e "${YELLOW}⚠  'make graphql-docs' failed. Retrying with RAILS_ENV=test…${NC}"
+      if RAILS_ENV=test make graphql-docs >/dev/null 2>&1; then
+        touch swagger/graphql/schema.graphql public/graphql-docs/index.html 2>/dev/null || true
+        git add swagger/graphql/schema.graphql public/graphql-docs/index.html 2>/dev/null || true
+        echo -e "${GREEN}✓ GraphQL docs regenerated and staged automatically.${NC}"
+        GQL_REGEN_OK=1
+      fi
+    fi
+
+    if [[ "$GQL_REGEN_OK" -eq 0 ]]; then
+      echo -e "${YELLOW}⚠  Could not auto-regenerate GraphQL docs. Please run manually:${NC}"
+      echo "     make graphql-docs"
+      echo "     git add swagger/graphql/schema.graphql public/graphql-docs/index.html"
+      echo ""
+      if [[ "$warn_only_docs" -eq 1 ]]; then
+        echo -e "${YELLOW}DOCS_WARN_ONLY=1 — commit allowed despite stale docs.${NC}"
+      else
+        echo -e "${RED}Commit blocked: regenerate GraphQL docs first.${NC}"
+        BLOCKED=1
+      fi
     fi
   else
     echo -e "${GREEN}✓ GraphQL docs are up to date.${NC}"

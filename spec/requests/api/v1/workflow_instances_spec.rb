@@ -114,4 +114,40 @@ RSpec.describe 'Api::V1::WorkflowInstances', type: :request do
       end
     end
   end
+
+    describe 'POST /api/v1/workflows/bulk_reassign' do
+      let(:admin)    { create(:user, admin: true) }
+      let(:member)   { create(:user) }
+      let(:asset)    { create(:asset) }
+      let(:workflow) { create(:workflow) }
+      let(:instance) do
+        create(:workflow_instance, asset: asset, workflow: workflow, status: 'in_progress', started_at: Time.current)
+      end
+
+      it 'reassigns pending tasks without notifying when none exist' do
+        sign_in admin
+        idle_instance = create(:workflow_instance, asset: asset, workflow: workflow, status: 'in_progress')
+
+        post '/api/v1/workflows/bulk_reassign',
+             params: { ids: [ idle_instance.id ], user_id: member.id }.to_json,
+             headers: { 'Content-Type' => 'application/json' }
+
+        expect(response).to have_http_status(:ok)
+        expect(response.parsed_body['message']).to eq('1 instance(s) reassigned.')
+      end
+
+      it 'ignores unknown reassignment groups' do
+        sign_in admin
+        task = create(:workflow_task, workflow_instance: instance, workflow_step: create(:workflow_step, workflow: workflow), user: member)
+        allow(TaskNotificationWorker).to receive(:perform_async)
+
+        post '/api/v1/workflows/bulk_reassign',
+             params: { ids: [ instance.id ], group_id: -1 }.to_json,
+             headers: { 'Content-Type' => 'application/json' }
+
+        expect(response).to have_http_status(:ok)
+        expect(response.parsed_body['message']).to eq('0 instance(s) reassigned.')
+        expect(task.reload.user).to eq(member)
+      end
+    end
 end

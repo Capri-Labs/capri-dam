@@ -147,4 +147,14 @@ RSpec.describe IngestionWorker, type: :worker do
     expect(asset.asset_embedding).to be_nil
     expect(SmartCollectionRouterWorker).not_to have_received(:perform_async)
   end
+
+  it "raises when no asset owner can be resolved" do
+    allow_any_instance_of(described_class).to receive(:fetch_vector_embedding).and_return(nil)
+    allow(User).to receive(:find_by).with(id: nil).and_return(nil)
+    allow(User).to receive(:first).and_return(nil)
+
+    expect {
+      described_class.new.send(:ingest_clean_asset!, connector, "orphan.txt", {}, {})
+    }.to raise_error(ActiveRecord::RecordNotFound, /No user available/)
+  end
 end

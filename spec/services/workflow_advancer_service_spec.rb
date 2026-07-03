@@ -207,4 +207,51 @@ RSpec.describe WorkflowAdvancerService, 'additional branch coverage' do
 
     expect(instance.workflow_tasks.last.user).to eq(fallback_member)
   end
+
+  it "prefers a matching true-branch node id over linear position fallback" do
+    condition = automated_step(1, "condition", { "field" => "status", "operator" => "equals", "value" => "in_review" })
+    linear = approval_step(2, title: "Linear Fallback")
+    targeted = approval_step(3, title: "True Branch")
+    workflow.update!(graph_data: {
+      "edges" => [ { "source" => condition.id.to_s, "sourceHandle" => "true", "target" => "true-node" } ],
+    })
+    base_columns = WorkflowStep.column_names.dup
+    allow(WorkflowStep).to receive(:column_names).and_return(base_columns + [ "node_id" ])
+    allow(workflow.workflow_steps).to receive(:find_by).and_call_original
+    allow(workflow.workflow_steps).to receive(:find_by).with(node_id: "true-node").and_return(targeted)
+
+    described_class.new(instance).process_step(condition)
+
+    expect(instance.reload.current_step).to eq(targeted)
+    expect(instance.workflow_tasks.pluck(:workflow_step_id)).to eq([ targeted.id ])
+    expect(linear.reload.workflow_tasks).to be_empty
+  end
+
+  describe "private assignee resolution" do
+    subject(:service) { described_class.new(instance) }
+
+    it "returns an empty array for unknown primary assignee types" do
+      step = approval_step(1, assignee_type: "team")
+
+      expect(service.send(:resolve_assignees, step)).to eq([])
+    end
+
+    it "returns an empty array when a primary group cannot be found" do
+      step = approval_step(1, assignee_type: "group", assignee_id: -1)
+
+      expect(service.send(:resolve_assignees, step)).to eq([])
+    end
+
+    it "returns an empty array when a step fallback group cannot be found" do
+      step = approval_step(1, fallback_assignee_type: "group", fallback_assignee_id: -1)
+
+      expect(service.send(:resolve_step_fallback, step)).to eq([])
+    end
+
+    it "returns an empty array when a workflow fallback group cannot be found" do
+      workflow.update!(fallback_assignee_type: "group", fallback_assignee_id: -1)
+
+      expect(service.send(:resolve_workflow_fallback, instance)).to eq([])
+    end
+  end
 end

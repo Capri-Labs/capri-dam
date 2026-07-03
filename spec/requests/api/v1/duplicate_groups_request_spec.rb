@@ -5,6 +5,15 @@ RSpec.describe 'Api::V1::DuplicateGroups coverage', type: :request do
 
   before { sign_in user }
 
+  def create_duplicate_group_with_retry(**attrs)
+    retries ||= 0
+    create(:duplicate_group, **attrs)
+  rescue ActiveRecord::Deadlocked
+    raise if (retries += 1) > 3
+
+    retry
+  end
+
   it 'filters resolved and dismissed groups in real request specs' do
     resolved = create(:duplicate_group, :resolved)
     dismissed = create(:duplicate_group, :dismissed)
@@ -36,6 +45,43 @@ RSpec.describe 'Api::V1::DuplicateGroups coverage', type: :request do
 
     data = JSON.parse(response.body)['group']
     expect(data['assets'].first).to include('asset_id' => original.id, 'is_original' => true, 'folder_name' => 'Root / Uncategorized', 'content_type' => 'image/png', 'file_size' => 123)
+  end
+
+  it 'serializes present folders and falls back when member attributes are missing' do
+    folder = create(:folder, user: user, name: 'Archive')
+    group = create(:duplicate_group, status: 'pending', total_count: 2)
+    asset = create(:asset, user: user, folder: folder, title: 'Leaf')
+    version = create(:asset_version, asset: asset, properties: { 'content_type' => 'image/png', 'size' => 123 })
+    asset.update!(active_version: version)
+    create(:duplicate_group_asset, duplicate_group: group, asset: asset, is_original: true)
+
+    allow_any_instance_of(Asset).to receive(:created_at).and_return(nil)
+    allow_any_instance_of(Asset).to receive(:user).and_return(nil)
+
+    get "/api/v1/duplicate_groups/#{group.id}", as: :json
+
+    data = JSON.parse(response.body)['group']['assets'].first
+    expect(data).to include(
+      'folder_name' => 'Archive',
+      'folder_path' => folder.path,
+      'uploaded_at' => nil,
+      'uploaded_by' => nil
+    )
+  end
+
+  it 'returns minimal member payloads when a duplicate member no longer has an asset record' do
+    group = create_duplicate_group_with_retry(status: 'pending', total_count: 1)
+    asset = create(:asset, user: user)
+    member = create(:duplicate_group_asset, duplicate_group: group, asset: asset, is_original: false)
+    allow_any_instance_of(DuplicateGroupAsset).to receive(:asset).and_return(nil) # rubocop:disable RSpec/AnyInstance
+
+    get "/api/v1/duplicate_groups/#{group.id}", as: :json
+
+    expect(response).to have_http_status(:ok)
+    expect(JSON.parse(response.body).dig('group', 'assets', 0)).to eq(
+      'asset_id' => member.asset_id,
+      'is_original' => false
+    )
   end
 
   it 'does not soft-delete the original or missing assets when resolving duplicates' do

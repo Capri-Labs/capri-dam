@@ -89,5 +89,15 @@ RSpec.describe "GraphQL Provenance queries", type: :request do
       body  = gql_post(query: query, user: viewer)
       expect(body.dig("data", "assetProvenanceRecord")).to be_nil
     end
+
+    it "returns nil asset fields when the provenance record cannot load its asset" do
+      rec = create(:asset_provenance_record, :verified)
+      query = "{ assetProvenanceRecord(id: #{rec.id}) { id assetUuid assetTitle } }"
+      allow_any_instance_of(AssetProvenanceRecord).to receive(:asset).and_return(nil) # rubocop:disable RSpec/AnyInstance
+
+      body = gql_post(query: query, user: admin)
+
+      expect(body.dig("data", "assetProvenanceRecord")).to include("assetUuid" => nil, "assetTitle" => nil)
+    end
   end
 end

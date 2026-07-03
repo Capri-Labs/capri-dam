@@ -55,6 +55,31 @@ RSpec.describe Assets::AiAnalysisJob, type: :job do
 
       expect(asset.reload.properties["image_analysis_status"]).to eq("failed")
     end
+
+    it "logs lookup failures without trying to update a missing asset" do
+      allow(Asset).to receive(:includes).and_raise(StandardError, "lookup failed")
+
+      expect(Rails.logger).to receive(:error).with(include("lookup failed"))
+      expect { described_class.perform_now(SecureRandom.uuid) }.not_to raise_error
+    end
+
+    it "uses video-specific defaults and falls back when similar assets have no active version" do
+      folder = create(:folder)
+      asset = create(:asset, title: "Launch Cutdown", folder: folder, properties: { "content_type" => "video/mp4" })
+      similar = create(:asset, title: "Sibling Video", folder: folder, properties: {})
+      create(:asset_version, asset: asset, properties: { "content_type" => "video/mp4" }).tap { |version| asset.update!(active_version: version) }
+
+      described_class.perform_now(asset.id)
+
+      analysis = asset.reload.properties["ai_analysis"]
+      expect(analysis["labels"]).to include("video", "motion", "campaign")
+      expect(analysis["quality_score"]).to eq(86)
+      expect(analysis["suggested_tags"]).to include("cutdown", "motion", "campaign")
+      expect(analysis["description"]).to include("video ready for cataloging")
+      expect(analysis["similar_assets"]).to include(
+        a_hash_including("id" => similar.id, "content_type" => "video/mp4")
+      )
+    end
   end
 
   describe ".analysis_payload_for" do

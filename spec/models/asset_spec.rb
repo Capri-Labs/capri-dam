@@ -72,6 +72,17 @@ RSpec.describe Asset, type: :model do
       asset = create(:asset)
       expect(asset.current_file).to eq(asset.active_version&.file)
     end
+
+    it 'delegates to the active version when one is present' do
+      asset = create(:asset)
+      version = create(:asset_version, asset: asset)
+      attachment = instance_double(ActiveStorage::Attached::One)
+
+      asset.update!(active_version: version)
+      allow(version).to receive(:file).and_return(attachment)
+
+      expect(asset.current_file).to eq(attachment)
+    end
   end
 
   describe '.nearest_to_vector' do

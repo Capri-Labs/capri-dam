@@ -101,4 +101,47 @@ RSpec.describe 'Api::V1::IngestionItems', type: :request do
       end
     end
   end
+
+  describe "coverage scenarios" do
+    let(:admin) { create(:user, :admin) }
+
+    before { sign_in admin }
+
+    it "lists ingestion items without applying a batch filter when no batch_id is provided" do
+      first = create(:ingestion_item)
+      second = create(:ingestion_item)
+
+      get "/api/v1/ingestion_items", as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body.fetch("items").map { |item| item.fetch("id") }).to include(first.id, second.id)
+    end
+
+    it "returns validation errors for invalid updates" do
+      item = create(:ingestion_item)
+      allow(IngestionItem).to receive(:find).with(item.id.to_s).and_return(item)
+      allow(item).to receive(:update).and_return(false)
+      allow(item).to receive_message_chain(:errors, :full_messages).and_return([ "Status is invalid" ])
+
+      patch "/api/v1/ingestion_items/#{item.id}",
+            params: { ingestion_item: { status: "committed" } },
+            as: :json
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.parsed_body.fetch("errors")).to include("Status is invalid")
+    end
+
+    it "keeps transforming batches unchanged while other active items remain" do
+      batch = create(:ingestion_batch, status: :transforming)
+      item = create(:ingestion_item, ingestion_batch: batch, status: :ai_processing)
+      create(:ingestion_item, ingestion_batch: batch, status: :pending)
+
+      patch "/api/v1/ingestion_items/#{item.id}",
+            params: { ingestion_item: { status: :committed } },
+            as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(batch.reload.status).to eq("transforming")
+    end
+  end
 end

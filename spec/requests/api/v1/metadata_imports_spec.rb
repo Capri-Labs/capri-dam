@@ -155,4 +155,34 @@ RSpec.describe "Api::V1::MetadataImports coverage", type: :request do
     expect(MetadataImport.exists?(import.id)).to be(false)
     expect(json).to eq("success" => true)
   end
+
+  it "returns validation errors when an import cannot be saved" do
+    allow_any_instance_of(MetadataImport).to receive(:save).and_return(false) # rubocop:disable RSpec/AnyInstance
+    allow_any_instance_of(MetadataImport).to receive_message_chain(:errors, :full_messages).and_return([ "Nope" ]) # rubocop:disable RSpec/AnyInstance
+
+    post "/api/v1/metadata_imports", params: {
+      metadata_import: {
+        source_file: upload,
+        batch_size: 25,
+        field_separator: ",",
+        multi_value_delimiter: "|",
+        asset_path_column: "asset_path",
+      },
+    }, as: :json
+
+    expect(response).to have_http_status(:unprocessable_entity)
+    expect(json).to eq("errors" => [ "Nope" ])
+  end
+
+  it "serializes email fallbacks and nil timestamps safely" do
+    controller = Api::V1::MetadataImportsController.new
+    import_without_user = build(:metadata_import)
+    import_without_user.user = nil
+    email_only_user = instance_double(User, name: nil, email: "email-only@example.com")
+    import_with_email = build(:metadata_import)
+    allow(import_with_email).to receive(:user).and_return(email_only_user)
+
+    expect(controller.send(:serialize, import_without_user)).to include(created_by: nil, created_at: nil)
+    expect(controller.send(:serialize, import_with_email)[:created_by]).to eq("email-only@example.com")
+  end
 end

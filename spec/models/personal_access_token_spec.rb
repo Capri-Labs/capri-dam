@@ -66,6 +66,10 @@ RSpec.describe PersonalAccessToken, type: :model do
       expect(PersonalAccessToken.authenticate("ghp_abc123")).to be_nil
     end
 
+    it "returns nil for a nil token" do
+      expect(PersonalAccessToken.authenticate(nil)).to be_nil
+    end
+
     it "touches last_used_at on a successful auth" do
       pat, raw_token = PersonalAccessToken.generate_for(user, name: "Used")
       expect { PersonalAccessToken.authenticate(raw_token) }

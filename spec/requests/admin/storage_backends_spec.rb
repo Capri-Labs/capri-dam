@@ -67,5 +67,17 @@ RSpec.describe "Admin::StorageBackends", type: :request do
       expect(response.parsed_body["success"]).to be(false)
       expect(response.parsed_body["errors"]).to include(a_string_matching(/Provider type is not included/))
     end
+
+    it "does not deactivate the other backends when the updated backend remains inactive" do
+      sign_in admin
+      backend.update!(active: false)
+
+      patch admin_storage_backend_path(backend),
+            params: { storage_backend: { name: "Inactive", active: false } },
+            as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(secondary_backend.reload.active).to be(true)
+    end
   end
 end

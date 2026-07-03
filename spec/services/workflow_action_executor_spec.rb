@@ -465,4 +465,69 @@ RSpec.describe WorkflowActionExecutor, 'additional branch coverage' do
 
     expect(Notification.last.message).to eq('')
   end
+
+  it 'leaves the folder unchanged when move targets are blank and skips copy dispatch without a worker' do
+    folder = create(:folder)
+    asset.update!(folder: folder)
+    hide_const('AssetCopyWorker')
+
+    described_class.new(instance, build_step('move_asset', { 'folder' => '' })).call
+    described_class.new(instance, build_step('copy_asset', { 'folder' => folder.id.to_s })).call
+
+    expect(asset.reload.folder_id).to eq(folder.id)
+  end
+
+  it 'skips blank metadata pair keys' do
+    step = build_step('update_metadata', {
+      'pairs' => [
+        { 'key' => '', 'value' => 'ignored' },
+        { 'key' => 'campaign', 'value' => 'Launch' },
+      ],
+    })
+
+    described_class.new(instance, step).call
+
+    expect(asset.reload.properties).to include('campaign' => 'Launch')
+    expect(asset.reload.properties).not_to have_key('')
+  end
+
+  it 'creates AI jobs without enqueueing them when the batch worker is unavailable' do
+    hide_const('AiBatchJobWorker')
+
+    expect do
+      described_class.new(instance, build_step('ai_metadata', { 'aiTask' => 'metadata_extraction' })).call
+    end.to change(AiBatchJob, :count).by(1)
+  end
+
+  it 'returns nil when thumbnail regeneration workers are unavailable' do
+    hide_const('ImageProcessingWorker')
+    hide_const('IngestionWorker')
+    allow(Rails.logger).to receive(:info)
+
+    expect(described_class.new(instance, build_step('generate_thumbnail')).call).to be_nil
+    expect(Rails.logger).not_to have_received(:info)
+  end
+
+  it 'skips CDN sync when no edge worker is available' do
+    hide_const('EdgeMetadataSyncWorker')
+
+    expect(described_class.new(instance, build_step('cdn_sync')).call).to be_nil
+  end
+
+  it 'returns no direct recipients for custom email notifications' do
+    executor = described_class.new(instance, build_step('email_notification', {
+      'recipient' => 'custom',
+      'subject' => 'Custom',
+      'body' => 'Body',
+    }))
+
+    expect(executor.send(:resolve_recipients)).to eq([])
+  end
+
+  it 'maps warning and fallback Teams colors' do
+    executor = described_class.new(instance, build_step('teams'))
+
+    expect(executor.send(:teams_theme_color, 'warning')).to eq('FF8C00')
+    expect(executor.send(:teams_theme_color, 'neutral')).to eq('00B050')
+  end
 end

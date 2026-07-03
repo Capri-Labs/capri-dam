@@ -49,7 +49,7 @@ class EmbeddedMetadataMapper
     ],
     "dc:rights" => %w[
       XMP:Rights IPTC:CopyrightNotice EXIF:Copyright
-      XMP:UsageTerms XMP:WebStatement ICC_Profile:ProfileCopyright
+      XMP:UsageTerms XMP:WebStatement
     ],
 
     # ── IPTC Core (IPTC tab) ─────────────────────────────────────────────
@@ -78,12 +78,18 @@ class EmbeddedMetadataMapper
   }.freeze
 
   # Reference note for maintainers: the trailing candidates in +dc:creator+
-  # (+XMP:CreatorTool+, +EXIF:Software+), +dc:rights+
-  # (+ICC_Profile:ProfileCopyright+) and +dc:title+ / +Iptc4xmpCore:Headline+
+  # (+XMP:CreatorTool+, +EXIF:Software+) and +dc:title+ / +Iptc4xmpCore:Headline+
   # (+Photoshop:SlicesGroupName+ — the export/web-slice name) are heuristic
   # fallbacks, not true descriptive values.  Keep them last so genuine
   # descriptive tags always win.
-  LOW_CONFIDENCE_NOTE = "creator←Software, rights←ICC copyright, title←Photoshop slice name are heuristic fallbacks"
+  #
+  # +dc:rights+ deliberately does **not** fall back to +ICC_Profile:ProfileCopyright+:
+  # that field is the copyright notice of the embedded *color profile* (e.g.
+  # "Copyright Adobe Systems Incorporated"), not the asset's usage rights — using
+  # it as a fallback previously caused assets to be mis-labelled with Adobe's ICC
+  # profile license text as their rights holder. Better to leave +dc:rights+ blank
+  # than show a misleading value.
+  LOW_CONFIDENCE_NOTE = "creator←Software, title←Photoshop slice name are heuristic fallbacks"
 
   # +map_to_property+ keys backed by a schema +date+ field.  Embedded dates are
   # stored by ExifTool in the EXIF "YYYY:MM:DD HH:MM:SS" form, which an HTML

@@ -32,6 +32,10 @@ RSpec.describe StorageAdapters::LocalStorageAdapter, type: :service do
 
       expect(root_path.join('nested/file.txt')).not_to exist
     end
+
+    it 'does nothing when the file is already missing' do
+      expect { adapter.delete('nested/missing.txt') }.not_to raise_error
+    end
   end
 
   describe '#url' do
@@ -60,6 +64,16 @@ RSpec.describe StorageAdapters::LocalStorageAdapter, type: :service do
 
       expect(adapter.presign_url('nested/file.txt')).to eq('/api/v1/assets/local/nested/file.txt')
       expect(Rails.logger).to have_received(:warn).with(/Presign failed/)
+    end
+
+    it 'omits the filename query parameter when no download filename is provided' do
+      verifier = instance_double(ActiveSupport::MessageVerifier, generate: 'signed-token')
+      allow(Rails.application).to receive(:message_verifier).with(:storage_presign).and_return(verifier)
+
+      url = adapter.presign_url('nested/file.txt', expires_in: 60)
+
+      expect(url).to include('token=signed-token')
+      expect(url).not_to include('filename=')
     end
   end
 
@@ -110,6 +124,10 @@ RSpec.describe StorageAdapters::LocalStorageAdapter, type: :service do
       result = adapter.list(prefix: 'assets', limit: 10)
 
       expect(result.map { |entry| entry[:key] }).to contain_exactly('assets/one.txt', 'assets/sub/two.txt')
+    end
+
+    it 'returns an empty array when the prefix directory does not exist' do
+      expect(adapter.list(prefix: 'missing', limit: 10)).to eq([])
     end
   end
 

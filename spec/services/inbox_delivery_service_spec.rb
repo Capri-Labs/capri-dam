@@ -11,6 +11,24 @@ RSpec.describe InboxDeliveryService do
         described_class.deliver(recipient: recipient, subject: 'Hello', body_html: '<p>Hello</p>')
       end.to change(InboxMessage, :count).by(1)
     end
+
+    it 'stores reference metadata and skips email delivery when mention emails are disabled' do
+      recipient.preference.update!(receive_mention_emails: false)
+      asset = create(:asset, user: sender)
+
+      expect(EmailDispatcherWorker).not_to receive(:perform_async)
+
+      message = described_class.deliver(
+        recipient: recipient,
+        sender: sender,
+        subject: 'Asset updated',
+        body_html: '<p>Updated</p>',
+        reference: asset
+      )
+
+      expect(message.reference_type).to eq('Asset')
+      expect(message.reference_id).to eq(asset.id)
+    end
   end
 
   describe '.deliver_mention' do
@@ -37,6 +55,17 @@ RSpec.describe InboxDeliveryService do
 
       described_class.deliver_mention(text: 'Hello @bob', sender: sender)
 
+      expect(EmailDispatcherWorker).to have_received(:perform_async).once
+    end
+
+    it 'defaults to email delivery when the recipient preference is missing and includes the context link' do
+      mentioned_one.preference.destroy!
+      allow(EmailDispatcherWorker).to receive(:perform_async)
+
+      described_class.deliver_mention(text: 'Hello @bob', sender: sender, context_url: '/assets/123')
+
+      message = InboxMessage.order(:created_at).last
+      expect(message.body_html).to include('View in context', '/assets/123')
       expect(EmailDispatcherWorker).to have_received(:perform_async).once
     end
   end

@@ -31,6 +31,16 @@ RSpec.describe "Admin::Users coverage", type: :request do
       expect(response.parsed_body["users"].map { |entry| entry["email"] }).to include(user.email)
       expect(response.parsed_body["users"].map { |entry| entry["email"] }).not_to include(admin.email)
     end
+
+    it "returns all users when no search filter is provided" do
+      sign_in admin
+      user
+
+      get "/admin/users.json", as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body["users"].map { |entry| entry["email"] }).to include(user.email, admin.email)
+    end
   end
 
   describe "CRUD" do
@@ -53,6 +63,15 @@ RSpec.describe "Admin::Users coverage", type: :request do
       get "/admin/users/0.json", as: :json
       expect(response).to have_http_status(:not_found)
       expect(response.parsed_body["error"]).to eq("User not found.")
+    end
+
+    it "shows an empty preferences hash when the user has no preference record" do
+      user.preference&.destroy!
+
+      get "/admin/users/#{user.id}.json", as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body.dig("user", "preferences")).to eq({})
     end
 
     it "creates a user and triggers the welcome email" do
@@ -212,6 +231,13 @@ RSpec.describe "Admin::Users coverage", type: :request do
       expect(response.parsed_body["error"]).to eq("Cannot remove users from 'everyone'.")
     end
 
+    it "returns not found when removing an unknown group" do
+      delete "/admin/users/#{user.id}/remove_group/0.json", as: :json
+
+      expect(response).to have_http_status(:not_found)
+      expect(response.parsed_body["error"]).to eq("Group not found.")
+    end
+
     it "returns validation errors when adding a group fails" do
       group_users = double("group users", include?: false)
       allow(group_users).to receive(:<<).and_raise(ActiveRecord::RecordInvalid.new(group))
@@ -267,6 +293,20 @@ RSpec.describe "Admin::Users coverage", type: :request do
 
       post "/admin/users/#{admin.id}/start_impersonation.json", as: :json
       expect(response).to have_http_status(:forbidden)
+    end
+
+    it "lists impersonators without a search filter and tolerates missing revoke targets" do
+      actor = create(:user, first_name: "Ivy")
+      user.grant_impersonation_to(actor)
+
+      get "/admin/users/#{user.id}/impersonators.json", as: :json
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body["impersonators"].map { |entry| entry["email"] }).to include(actor.email)
+
+      delete "/admin/users/#{user.id}/impersonators/0.json", as: :json
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body["success"]).to be(true)
+      expect(AuditLog).to have_received(:record).with(hash_including(changes_data: hash_including(revoked_from: nil)))
     end
 
     it "returns validation errors when granting impersonation fails" do

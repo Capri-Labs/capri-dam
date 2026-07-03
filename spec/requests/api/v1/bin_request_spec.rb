@@ -71,6 +71,18 @@ RSpec.describe "Api::V1::Bin coverage", type: :request do
     )
   end
 
+  it "falls back to asset properties when the active version metadata is missing and classifies audio files" do
+    audio = trashed_asset("Podcast", "content_type" => "audio/mpeg", "size" => 512)
+    audio.active_version.update_column(:properties, nil)
+
+    get "/api/v1/bin/stats", as: :json
+    expect(response).to have_http_status(:ok)
+    expect(json["total_size_bytes"]).to eq(512)
+
+    get "/api/v1/bin", params: { type: "asset" }, as: :json
+    expect(json["items"]).to include(hash_including("id" => audio.uuid, "media_type" => "audio"))
+  end
+
   it "bulk restores and destroys missing items with errors" do
     asset = trashed_asset("Restore Me")
     folder = create(:folder, :trashed, user: admin)
@@ -111,6 +123,15 @@ RSpec.describe "Api::V1::Bin coverage", type: :request do
     get "/api/v1/bin/retention_policy", as: :json
     expect(response).to have_http_status(:ok)
     expect(json).to include("retention_days", "workflow_behavior", "next_scheduled_at")
+  end
+
+  it "empties storage-backed versions even when no storage adapter is available" do
+    asset = trashed_asset("Detached", "storage_path" => "bin/detached.dat")
+
+    delete "/api/v1/bin/empty", as: :json
+
+    expect(response).to have_http_status(:ok)
+    expect(Asset.exists?(asset.id)).to be(false)
   end
 
   it "updates policy for admins and forbids non-admin users" do
@@ -177,6 +198,88 @@ RSpec.describe "Api::V1::Bin coverage", type: :request do
     expect(storage).to have_received(:delete).with("bin/broken.dat")
     expect(Rails.logger).to have_received(:warn).with(include("storage offline"))
     expect(Asset.where(id: [ stored.id, broken.id ])).to be_empty
+  end
+
+  it "purges attached files during empty and permanent destroy flows" do
+    backend = instance_double(StorageBackend)
+    storage = instance_double("StorageAdapter", delete: true)
+    empty_asset = trashed_asset("Empty Attached", "storage_path" => "bin/empty.txt")
+    empty_asset.active_version.file.attach(io: StringIO.new("version"), filename: "empty.txt", content_type: "text/plain")
+
+    allow(StorageBackend).to receive(:find_by).with(active: true).and_return(backend)
+    allow(StorageManager).to receive(:adapter_for).with(backend).and_return(storage)
+
+    delete "/api/v1/bin/empty", as: :json
+
+    expect(response).to have_http_status(:ok)
+    expect(storage).to have_received(:delete).with("bin/empty.txt")
+
+    destroy_asset = trashed_asset("Destroy Attached")
+    destroy_asset.active_version.file.attach(io: StringIO.new("version"), filename: "destroy.txt", content_type: "text/plain")
+    destroy_asset.file.attach(io: StringIO.new("asset"), filename: "asset.txt", content_type: "text/plain")
+
+    # NOTE: don't assert via ActiveStorage::Attachment.exists?(blob_id:) here —
+    # active_storage_attachments.record_id is a bigint while Asset/AssetVersion
+    # use UUID primary keys, so real attach/query round-trips against that
+    # column are unreliable (the UUID gets silently truncated by Ruby's
+    # String#to_i). Instead verify #purge was actually invoked on each file.
+    # `permanent_delete_asset` re-fetches versions via `asset.asset_versions`,
+    # yielding fresh AR objects, so stub at the class level to intercept them.
+    version_file = destroy_asset.active_version.file
+    asset_file   = destroy_asset.file
+    allow_any_instance_of(AssetVersion).to receive(:file).and_return(version_file) # rubocop:disable RSpec/AnyInstance
+    allow(destroy_asset).to receive(:file).and_return(asset_file)
+    allow(version_file).to receive(:purge).and_call_original
+    allow(asset_file).to receive(:purge).and_call_original
+
+    controller = Api::V1::BinController.new
+    allow(StorageBackend).to receive(:find_by).with(active: true).and_return(nil)
+
+    controller.send(:permanent_delete_asset, destroy_asset)
+
+    expect(version_file).to have_received(:purge)
+    expect(asset_file).to have_received(:purge)
+  end
+
+  it "keeps admin-only actions forbidden when current_user resolves to nil" do
+    allow_any_instance_of(Api::V1::BinController).to receive(:authenticate_hybrid!).and_return(true) # rubocop:disable RSpec/AnyInstance
+    allow_any_instance_of(Api::V1::BinController).to receive(:require_admin!).and_return(true) # rubocop:disable RSpec/AnyInstance
+    allow_any_instance_of(Api::V1::BinController).to receive(:require_admin_scope!).and_return(true) # rubocop:disable RSpec/AnyInstance
+    allow_any_instance_of(Api::V1::BinController).to receive(:current_user).and_return(nil) # rubocop:disable RSpec/AnyInstance
+
+    put "/api/v1/bin/retention_policy", params: { retention_days: 5 }, as: :json
+    expect(response).to have_http_status(:forbidden)
+
+    post "/api/v1/bin/trigger_purge", as: :json
+    expect(response).to have_http_status(:forbidden)
+
+    get "/api/v1/bin/ai/smart_suggestions", as: :json
+    expect(response).to have_http_status(:forbidden)
+
+    get "/api/v1/bin/ai/cleanup_report", as: :json
+    expect(response).to have_http_status(:forbidden)
+  end
+
+  it "keeps pinned suggestions but gives them a lower heuristic score" do
+    pinned = trashed_asset("Pinned", "size" => 8.megabytes)
+    unpinned = trashed_asset("Unpinned", "size" => 8.megabytes)
+    collection = create(:collection, user: admin)
+    create(:collection_asset, collection: collection, asset: pinned, user: admin)
+
+    get "/api/v1/bin/ai/smart_suggestions", as: :json
+
+    scores = json["suggestions"].index_by { |item| item["id"] }
+    expect(scores[pinned.id]["has_collection_pin"]).to be(true)
+    expect(scores[pinned.id]["heuristic_score"]).to be < scores[unpinned.id]["heuristic_score"]
+  end
+
+  it "returns a same-day next_scheduled_at before the 03:00 UTC cutoff" do
+    allow(Time).to receive(:current).and_return(Time.utc(2026, 7, 3, 1, 0, 0))
+
+    get "/api/v1/bin/retention_policy", as: :json
+
+    expect(response).to have_http_status(:ok)
+    expect(json["next_scheduled_at"]).to eq("2026-07-03T03:00:00Z")
   end
 
   it "returns AI cleanup suggestions/report for admins and forbids non-admins" do

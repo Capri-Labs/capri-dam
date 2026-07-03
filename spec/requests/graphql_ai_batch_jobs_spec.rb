@@ -41,4 +41,32 @@ RSpec.describe "GraphQL aiBatchJobs", type: :request do
     expect(body.dig("data", "aiBatchJob", "status")).to eq("completed")
     expect(body.dig("data", "aiBatchJob", "taskLabel")).to eq("Metadata Extraction")
   end
+
+  it "exposes createdBy when present and returns nil when the task descriptor is unavailable" do
+    present_job = create(:ai_batch_job, created_by: admin)
+    missing_descriptor_job = create(:ai_batch_job, created_by: nil)
+    allow_any_instance_of(AiBatchJob).to receive(:task_descriptor) do |job|
+      job.id == missing_descriptor_job.id ? nil : Ai::BatchTaskRegistry.task(job.task_type)
+    end
+
+    query = <<~GQL
+      {
+        present: aiBatchJob(id: #{present_job.id}) { createdBy taskLabel }
+        missing: aiBatchJob(id: #{missing_descriptor_job.id}) { createdBy taskLabel }
+      }
+    GQL
+    body = gql_post(query: query, user: admin)
+
+    expect(body.dig("data", "present", "createdBy")).to eq(admin.email)
+    expect(body.dig("data", "missing", "createdBy")).to be_nil
+    expect(body.dig("data", "missing", "taskLabel")).to be_nil
+  end
+
+  it "rejects type access for non-admin and anonymous contexts" do
+    job = create(:ai_batch_job)
+
+    expect(Types::AiBatchJobType.authorized?(job, { current_user: admin })).to be(true)
+    expect(Types::AiBatchJobType.authorized?(job, { current_user: viewer })).to be(false)
+    expect(Types::AiBatchJobType.authorized?(job, {})).to be_nil
+  end
 end

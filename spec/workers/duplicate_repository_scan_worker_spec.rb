@@ -31,10 +31,50 @@ RSpec.describe DuplicateRepositoryScanWorker, type: :worker do
   # Guard: scan already running
   # ---------------------------------------------------------------------------
   describe "when a scan is already running" do
-    before { Setting.set("duplicate_manager_scan_status", "running") }
+    before do
+      Setting.set("duplicate_manager_scan_status", "running")
+      Setting.set("duplicate_manager_scan_progress", { processed: 1, total: 2, updated_at: Time.current.iso8601 })
+    end
 
     it "returns immediately without creating groups" do
       expect { worker.perform }.not_to change(DuplicateGroup, :count)
+    end
+
+    it "does not change the scan status away from 'running'" do
+      worker.perform
+      expect(Setting.get("duplicate_manager_scan_status")).to eq("running")
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # Guard: stale "running" lock is reclaimed (worker crashed mid-scan)
+  # ---------------------------------------------------------------------------
+  describe "when a previous scan is stuck 'running' with stale progress" do
+    let(:stale_time) { (DuplicateRepositoryScanWorker::STALE_AFTER + 5.minutes).ago.iso8601 }
+
+    before do
+      Setting.set("duplicate_manager_scan_status", "running")
+      Setting.set("duplicate_manager_scan_progress", { processed: 3, total: 10, updated_at: stale_time })
+    end
+
+    it "no longer reports the scan as running" do
+      expect(DuplicateRepositoryScanWorker.scan_running?).to be(false)
+    end
+
+    it "reclaims the lock by marking the stale scan as 'failed'" do
+      DuplicateRepositoryScanWorker.scan_running?
+      expect(Setting.get("duplicate_manager_scan_status")).to eq("failed")
+      expect(Setting.get("duplicate_manager_scan_progress")[:error]).to match(/stalled/i)
+    end
+
+    it "allows a fresh scan to run instead of being skipped" do
+      expect { worker.perform }.not_to raise_error
+      expect(Setting.get("duplicate_manager_scan_status")).to eq("completed")
+    end
+
+    it "treats a 'running' status with no progress payload at all as stale too" do
+      Setting.set("duplicate_manager_scan_progress", nil)
+      expect(DuplicateRepositoryScanWorker.scan_running?).to be(false)
     end
   end
 
@@ -288,6 +328,31 @@ RSpec.describe DuplicateRepositoryScanWorker, type: :worker do
   describe "Sidekiq configuration" do
     it "uses the duplicate_detection queue" do
       expect(described_class.get_sidekiq_options["queue"]).to eq("duplicate_detection")
+    end
+  end
+
+  describe 'private edge cases' do
+    it 'returns early when a checksum group has fewer than two asset ids' do
+      expect do
+        worker.send(:process_checksum_group, checksum_a, [ 'only-one' ])
+      end.not_to change(DuplicateGroup, :count)
+    end
+
+    it 'leaves duplicate groups untouched when no oldest asset can be found' do
+      group = create(:duplicate_group, checksum: checksum_a, total_count: 0)
+
+      expect { worker.send(:mark_original, group) }.not_to raise_error
+      expect(group.duplicate_group_assets).to be_empty
+    end
+
+    it 'logs failures without assuming a backtrace is present' do
+      error = RuntimeError.new('db error')
+      error.set_backtrace(nil)
+      allow(worker).to receive(:fetch_duplicate_checksums).and_raise(error)
+      allow(Rails.logger).to receive(:error)
+
+      expect { worker.perform }.to raise_error(RuntimeError, 'db error')
+      expect(Rails.logger).to have_received(:error).with(/Scan failed: RuntimeError: db error/)
     end
   end
 end

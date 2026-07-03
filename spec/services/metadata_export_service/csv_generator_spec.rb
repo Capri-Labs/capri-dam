@@ -4,11 +4,43 @@ RSpec.describe MetadataExportService::CsvGenerator do
   let(:user) { create(:user) }
 
   def build_asset(title, folder, props = {})
+    retries ||= 0
     create(:asset, title: title, folder: folder, user: user,
                    properties: { 'description' => '', 'tags' => [] }.merge(props))
+  rescue ActiveRecord::Deadlocked
+    raise if (retries += 1) > 3
+
+    retry
   end
 
   describe '#generate' do
+    it 'exports only root assets when no folder is selected and include_subfolders is false' do
+      root_asset = build_asset('Homepage Hero', nil, 'copyright' => 'ACME')
+      folder = create(:folder, user: user, name: 'Campaigns')
+      build_asset('Nested Asset', folder, 'copyright' => 'Hidden')
+
+      export = create(:metadata_export, user: user, folder: nil, include_subfolders: false)
+      allow(export).to receive(:name).and_return('')
+
+      files, total = described_class.new(export).generate
+
+      expect(total).to eq(1)
+      expect(files.first.filename).to eq('metadata_export.csv')
+      _header, row = CSV.parse(files.first.data)
+      expect(row).to include(root_asset.id.to_s, 'Homepage Hero', '/', 'ACME')
+    end
+
+    it 'includes nested assets when exporting from the root with cascading enabled' do
+      root = create(:folder, user: user)
+      build_asset('Top Level', nil)
+      build_asset('Nested', root)
+
+      export = create(:metadata_export, user: user, folder: nil, include_subfolders: true)
+      _files, total = described_class.new(export).generate
+
+      expect(total).to eq(2)
+    end
+
     it 'exports assets in a folder with the base + property columns (all mode)' do
       folder = create(:folder, user: user)
       build_asset('Logo', folder, 'copyright' => 'ACME', 'tags' => %w[brand logo])
@@ -77,6 +109,38 @@ RSpec.describe MetadataExportService::CsvGenerator do
       expect(total).to eq(3)
       expect(files.size).to eq(2)
       expect(files.map(&:filename)).to all(match(/_part\d+\.csv\z/))
+    end
+
+    it 'skips non-hash properties and flattens hash/array values when building rows' do
+      folder = create(:folder, user: user, name: 'Marketing')
+      asset = build_asset('Logo', folder, 'meta' => { 'author' => 'Ada' }, 'tags' => %w[brand launch])
+
+      export = create(:metadata_export, user: user, folder: folder)
+      generator = described_class.new(export)
+
+      allow(Asset).to receive_message_chain(:where, :pluck).and_return([
+        { 'meta' => { 'author' => 'Ada' }, 'tags' => %w[brand launch] },
+        'not-a-hash',
+      ])
+
+      expect(generator.send(:discover_all_keys, [ asset.id ])).to eq(%w[meta tags])
+
+      row = generator.send(
+        :row_for,
+        instance_double(
+          Asset,
+          id: asset.id,
+          title: asset.title,
+          folder_id: folder.id,
+          status: asset.status,
+          created_at: nil,
+          properties: asset.properties
+        ),
+        %w[asset_id created_at meta tags],
+        { folder.id => '/Marketing' }
+      )
+
+      expect(row).to eq([ asset.id, nil, '{"author":"Ada"}', 'brand; launch' ])
     end
   end
 end

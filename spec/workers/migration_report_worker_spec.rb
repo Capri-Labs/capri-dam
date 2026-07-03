@@ -43,4 +43,32 @@ RSpec.describe MigrationReportWorker, type: :worker do
     expect { described_class.new.perform(batch.id) }.not_to raise_error
     expect(batch.reload.report_snapshot_id).to be_nil
   end
+
+  it "records zero duration and a nil completion timestamp for incomplete batches" do
+    batch.update!(started_at: nil, completed_at: nil)
+    allow(EmailOrchestrator).to receive(:trigger)
+    allow(ReportSnapshot).to receive(:create!).and_wrap_original do |method, attributes|
+      method.call(attributes.merge(format: "csv"))
+    end
+
+    described_class.new.perform(batch.id)
+
+    snapshot = ReportSnapshot.find(batch.reload.report_snapshot_id)
+    expect(snapshot.parameters["stats"]).to include("duration_seconds" => 0)
+    expect(EmailOrchestrator).to have_received(:trigger).with(
+      "migration_batch_complete",
+      user.email,
+      hash_including("batch" => hash_including("completed_at" => nil))
+    )
+  end
+
+  it "skips email delivery when no recipient address can be found" do
+    batch.update!(initiated_by_id: nil)
+    allow(User).to receive(:find_by).with(id: nil).and_return(nil)
+    allow(User).to receive(:find_by).with(admin: true).and_return(nil)
+    allow(EmailOrchestrator).to receive(:trigger)
+
+    expect { described_class.new.perform(batch.id) }.not_to raise_error
+    expect(EmailOrchestrator).not_to have_received(:trigger)
+  end
 end

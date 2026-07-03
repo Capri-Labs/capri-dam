@@ -84,15 +84,20 @@ class Asset < ApplicationRecord
 
   # @!attribute [rw] status
   #   @return [String] current processing / approval state of the asset
+  #
+  # NOTE: the backing column (`assets.status`) is a string, so the enum must
+  # map to string values (not the default integer indices) or every read
+  # after a save/reload silently returns nil (the integer DB value can never
+  # match the string stored by ActiveRecord's type cast).
   enum :status, {
-    draft:      0,
-    pending:    1,
-    processing: 2,
-    ready:      3,
-    in_review:  4,
-    approved:   5,
-    rejected:   6,
-    failed:     7,
+    draft:      "draft",
+    pending:    "pending",
+    processing: "processing",
+    ready:      "ready",
+    in_review:  "in_review",
+    approved:   "approved",
+    rejected:   "rejected",
+    failed:     "failed",
   }, default: :draft
 
   # ---------------------------------------------------------------------------
@@ -101,7 +106,7 @@ class Asset < ApplicationRecord
 
   # Active (non-deleted) assets that have been fully processed and published.
   # @return [ActiveRecord::Relation]
-  scope :published, -> { where(status: :active) }
+  scope :published, -> { where(status: :ready) }
 
   # Nearest-neighbour cosine search using the +neighbor+ gem and pgvector.
   #

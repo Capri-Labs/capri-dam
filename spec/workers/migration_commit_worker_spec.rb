@@ -61,4 +61,57 @@ RSpec.describe MigrationCommitWorker, type: :worker do
     expect(item.reload).to be_flagged_error
     expect(batch.reload.error_count).to eq(1)
   end
+
+  it "falls back to the first user when initiated_by_id is missing" do
+    fallback_user = create(:user)
+    batch = create(:ingestion_batch, status: :review_needed, initiated_by_id: nil, total_count: 1)
+    create(:ingestion_item, ingestion_batch: batch, status: :ready_for_import, clean_properties: {})
+    worker = described_class.new
+
+    allow(worker).to receive(:resolve_target_folder).and_return(nil)
+    allow_any_instance_of(Asset).to receive(:broadcast_for_embedding)
+    allow(described_class).to receive(:perform_async)
+
+    worker.perform(batch.id)
+
+    asset = Asset.order(:created_at).last
+    expect(asset.user_id).to eq(fallback_user.id)
+  end
+
+  it "passes nil user fallbacks to asset creation when no users exist" do
+    batch = create(:ingestion_batch, status: :review_needed, initiated_by_id: nil)
+    item = create(:ingestion_item, ingestion_batch: batch, status: :ready_for_import, original_filename: "hero.jpg")
+    asset_versions = instance_double(ActiveRecord::Associations::CollectionProxy)
+    version = instance_double(AssetVersion, id: SecureRandom.uuid)
+    asset = instance_double(Asset, asset_versions: asset_versions, uuid: SecureRandom.uuid)
+    worker = described_class.new
+
+    allow(User).to receive(:first).and_return(nil)
+    allow(worker).to receive(:resolve_target_folder).and_return(nil)
+    allow(asset_versions).to receive(:create!).and_return(version)
+    allow(asset).to receive(:update!)
+    allow(asset).to receive(:respond_to?).with(:broadcast_for_embedding, true).and_return(false)
+    expect(Asset).to receive(:create!).with(hash_including(user_id: nil)).and_return(asset)
+
+    worker.send(:commit_item!, batch, item)
+  end
+
+  it "creates fallback folders with the first user when initiated_by_id is missing" do
+    fallback_user = create(:user)
+    batch = create(:ingestion_batch, initiated_by_id: nil, source_type: "ftp", created_at: Time.zone.parse("2026-07-01"))
+
+    folder = described_class.new.send(:resolve_target_folder, batch, {})
+
+    expect(folder.user_id).to eq(fallback_user.id)
+    expect(folder.name).to include("FTP")
+  end
+
+  it "passes nil user_id when resolving a fallback folder without any users" do
+    batch = create(:ingestion_batch, initiated_by_id: nil, source_type: "ftp", created_at: Time.zone.parse("2026-07-01"))
+    allow(User).to receive(:first).and_return(nil)
+
+    expect(Folder).to receive(:find_or_create_by!).with(hash_including(user_id: nil)).and_call_original
+
+    described_class.new.send(:resolve_target_folder, batch, {})
+  end
 end

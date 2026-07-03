@@ -105,6 +105,13 @@ RSpec.describe StorageAdapters::S3Adapter, type: :service do
       expect(presigner).to have_received(:presigned_url).with(:put_object, hash_including(content_type: 'text/plain'))
     end
 
+    it 'omits the content type for upload presigns when none is provided' do
+      allow(presigner).to receive(:presigned_url).and_return('put-url')
+
+      expect(adapter.presign_url('folder/file.txt', method: :put)).to eq('put-url')
+      expect(presigner).to have_received(:presigned_url).with(:put_object, hash_excluding(:content_type))
+    end
+
     it 'creates download presigns with an optional filename' do
       allow(presigner).to receive(:presigned_url).and_return('get-url')
 
@@ -165,6 +172,18 @@ RSpec.describe StorageAdapters::S3Adapter, type: :service do
       expect(adapter.metadata('folder/file.txt')).to include(size: 7, content_type: 'text/plain', etag: 'etag', metadata: { 'foo' => 'bar' })
     end
 
+    it 'preserves a nil etag in metadata responses' do
+      response = instance_double(Aws::S3::Types::HeadObjectOutput,
+                                 content_length: 7,
+                                 content_type: 'text/plain',
+                                 etag: nil,
+                                 last_modified: Time.current,
+                                 metadata: {})
+      allow(client).to receive(:head_object).and_return(response)
+
+      expect(adapter.metadata('folder/file.txt')).to include(etag: nil)
+    end
+
     it 'returns nil when the object is missing' do
       allow(client).to receive(:head_object).and_raise(aws_error(Aws::S3::Errors::NoSuchKey))
 
@@ -179,6 +198,14 @@ RSpec.describe StorageAdapters::S3Adapter, type: :service do
       allow(client).to receive(:list_objects_v2).and_return(response)
 
       expect(adapter.list(prefix: 'folder/')).to eq([ { key: 'folder/file.txt', size: 5, last_modified: contents.first.last_modified, etag: 'etag' } ])
+    end
+
+    it 'keeps nil etags when listing objects' do
+      contents = [ instance_double(Aws::S3::Types::Object, key: 'folder/file.txt', size: 5, last_modified: Time.current, etag: nil) ]
+      response = instance_double(Aws::S3::Types::ListObjectsV2Output, contents: contents)
+      allow(client).to receive(:list_objects_v2).and_return(response)
+
+      expect(adapter.list).to eq([ { key: 'folder/file.txt', size: 5, last_modified: contents.first.last_modified, etag: nil } ])
     end
 
     it 'logs and returns an empty array on provider failures' do
@@ -218,6 +245,10 @@ RSpec.describe StorageAdapters::S3Adapter, type: :service do
   describe 'configuration defaults' do
     it 'falls back to the default region when none is configured' do
       expect(described_class.new(bucket: 'assets').send(:region)).to eq('us-east-1')
+    end
+
+    it 'includes a custom endpoint in the client options when configured' do
+      expect(described_class.new(bucket: 'assets', endpoint: 'https://objects.example.com').send(:client_options)[:endpoint]).to eq('https://objects.example.com')
     end
   end
 end

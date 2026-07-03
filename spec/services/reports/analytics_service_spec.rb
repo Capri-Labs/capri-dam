@@ -82,6 +82,50 @@ RSpec.describe Reports::AnalyticsService, type: :service do
       )
     end
 
+    it 'falls back to zeroed workflow and embedding values when aggregate rows are missing' do
+      asset_counts = instance_double('AssetCounts', attributes: {
+        'total_assets' => '0',
+        'active_assets' => '0',
+        'pending_assets' => '0',
+        'new_in_range' => '0',
+        'in_trash' => '0',
+      })
+
+      asset_unscoped = instance_double('AssetUnscoped')
+      asset_selected = instance_double('AssetSelected')
+      asset_limited = instance_double('AssetLimited', to_a: [ asset_counts ])
+      allow(Asset).to receive(:unscoped).and_return(asset_unscoped)
+      allow(asset_unscoped).to receive(:select).and_return(asset_selected)
+      allow(asset_selected).to receive(:where).with('1=1').and_return(asset_selected)
+      allow(asset_selected).to receive(:limit).with(1).and_return(asset_limited)
+
+      workflow_selected = instance_double('WorkflowSelected')
+      workflow_limited = instance_double('WorkflowLimited', to_a: [])
+      allow(WorkflowInstance).to receive(:select).and_return(workflow_selected)
+      allow(workflow_selected).to receive(:where).with('1=1').and_return(workflow_selected)
+      allow(workflow_selected).to receive(:limit).with(1).and_return(workflow_limited)
+
+      embedding_relation = instance_double('EmbeddingRelation')
+      embedding_limited = instance_double('EmbeddingLimit', to_a: [])
+      allow(AssetEmbedding).to receive(:select).and_return(embedding_relation)
+      allow(embedding_relation).to receive(:limit).with(1).and_return(embedding_limited)
+      allow(IngestionBatch).to receive(:sum).with(:duplicate_count).and_return(0)
+      allow(ActiveRecord::Base.connection).to receive(:select_value).and_return(0)
+
+      result = service.send(:stats)
+
+      expect(result).to include(
+        total_assets: 0,
+        active_workflows: 0,
+        pending_approvals: 0,
+        approved_in_range: 0,
+        rejected_in_range: 0,
+        avg_approval_hours: 0.0,
+        ai_assets_covered: 0,
+        ai_embedding_coverage_pct: 0
+      )
+    end
+
     it 'returns an empty hash when aggregation fails' do
       allow(Asset).to receive(:unscoped).and_raise(StandardError, 'boom')
 
@@ -137,6 +181,23 @@ RSpec.describe Reports::AnalyticsService, type: :service do
       expect(result[:by_user]).to eq([ { user: 'jane', count: 3 } ])
     end
 
+    it 'preserves nil usernames when contributor emails are missing' do
+      allow(ActiveRecord::Base.connection).to receive(:select_all).and_return(
+        [ { 'type' => 'image/jpeg', 'count' => '2' } ],
+        [ { 'email' => nil, 'count' => '3' } ]
+      )
+      allow(Asset).to receive_message_chain(:unscoped, :where, :group, :count).and_return({ 'ready' => 2 })
+      allow(Folder).to receive_message_chain(:active, :left_joins, :where, :group, :order, :limit, :pluck).and_return([ [ 'Marketing', 4 ] ])
+      allow(WorkflowInstance).to receive(:count).and_return(8)
+      allow(WorkflowInstance).to receive(:where).with(status: %w[pending in_progress]).and_return(instance_double(ActiveRecord::Relation, count: 5))
+      allow(WorkflowInstance).to receive(:where).with(status: 'approved').and_return(instance_double(ActiveRecord::Relation, count: 2))
+      allow(WorkflowInstance).to receive(:where).with(status: 'rejected').and_return(instance_double(ActiveRecord::Relation, count: 1))
+
+      result = service.send(:breakdowns)
+
+      expect(result[:by_user]).to eq([ { user: nil, count: 3 } ])
+    end
+
     it 'returns an empty hash when breakdown generation fails' do
       allow(ActiveRecord::Base.connection).to receive(:select_all).and_raise(StandardError, 'boom')
 
@@ -173,6 +234,54 @@ RSpec.describe Reports::AnalyticsService, type: :service do
       expect(result[:anomalies].join(' ')).to include('Upload spike detected', 'licenses expiring', 'workflow reviews')
       expect(result[:suggestions].join(' ')).to include('missing alt_text', 'lack vector embeddings', 'in the bin')
       expect(result[:opportunities].join(' ')).to include('duplicate storage has been blocked')
+    end
+
+    it 'skips the upload-spike anomaly when there are fewer than seven days of data' do
+      allow(ActiveRecord::Base.connection).to receive(:select_all).and_return(
+        [
+          { 'date' => '2026-06-01', 'cnt' => '4' },
+          { 'date' => '2026-06-02', 'cnt' => '4' },
+          { 'date' => '2026-06-03', 'cnt' => '4' },
+        ]
+      )
+
+      asset_active_scope = instance_double(ActiveRecord::Relation)
+      allow(Asset).to receive(:active).and_return(asset_active_scope)
+      allow(asset_active_scope).to receive(:where).with("properties->>'alt_text' IS NULL OR properties->>'alt_text' = ''").and_return(instance_double(ActiveRecord::Relation, count: 1))
+      allow(asset_active_scope).to receive(:where).with("(properties->>'license_expires_at')::timestamp < ?", anything).and_return(instance_double(ActiveRecord::Relation, count: 0))
+      allow(asset_active_scope).to receive(:count).and_return(10)
+      allow(AssetEmbedding).to receive(:count).and_return(9)
+      allow(Asset).to receive(:trashed).and_return(instance_double(ActiveRecord::Relation, count: 50))
+      allow(WorkflowInstance).to receive(:where).with(status: 'pending').and_return(instance_double(ActiveRecord::Relation, where: instance_double(ActiveRecord::Relation, count: 0)))
+      allow(IngestionBatch).to receive(:sum).with(:duplicate_count).and_return(100)
+
+      result = service.send(:ai_insights)
+
+      expect(result[:anomalies]).to eq([])
+      expect(result[:suggestions]).to eq([])
+      expect(result[:opportunities]).to eq([])
+    end
+
+    it 'skips threshold-based messages when counts stay below alert levels' do
+      allow(ActiveRecord::Base.connection).to receive(:select_all).and_return(
+        Array.new(7) { |i| { 'date' => "2026-06-0#{i + 1}", 'cnt' => '10' } }
+      )
+
+      asset_active_scope = instance_double(ActiveRecord::Relation)
+      allow(Asset).to receive(:active).and_return(asset_active_scope)
+      allow(asset_active_scope).to receive(:where).with("properties->>'alt_text' IS NULL OR properties->>'alt_text' = ''").and_return(instance_double(ActiveRecord::Relation, count: 2))
+      allow(asset_active_scope).to receive(:where).with("(properties->>'license_expires_at')::timestamp < ?", anything).and_return(instance_double(ActiveRecord::Relation, count: 0))
+      allow(asset_active_scope).to receive(:count).and_return(20)
+      allow(AssetEmbedding).to receive(:count).and_return(19)
+      allow(Asset).to receive(:trashed).and_return(instance_double(ActiveRecord::Relation, count: 10))
+      allow(WorkflowInstance).to receive(:where).with(status: 'pending').and_return(instance_double(ActiveRecord::Relation, where: instance_double(ActiveRecord::Relation, count: 0)))
+      allow(IngestionBatch).to receive(:sum).with(:duplicate_count).and_return(50)
+
+      result = service.send(:ai_insights)
+
+      expect(result[:anomalies]).to eq([])
+      expect(result[:suggestions]).to eq([])
+      expect(result[:opportunities]).to eq([])
     end
 
     it 'returns empty arrays when insight generation fails' do

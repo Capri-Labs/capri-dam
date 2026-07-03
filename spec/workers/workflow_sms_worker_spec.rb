@@ -35,6 +35,12 @@ RSpec.describe WorkflowSmsWorker, type: :worker do
     described_class.new.perform(instance.id, '+15550001234', 'Check {{asset.title}}')
   end
 
+  it 'logs messages even when the workflow instance cannot be found' do
+    expect(Rails.logger).to receive(:info).with(a_string_including('SMS to +15550001234'))
+
+    described_class.new.perform('missing-id', '+15550001234', 'Check {{asset.title}} {{asset.id}} {{asset.status}}')
+  end
+
   it 'raises and retries on Faraday errors' do
     ENV['TWILIO_ACCOUNT_SID'] = 'ACtest'
     ENV['TWILIO_AUTH_TOKEN']  = 'token'

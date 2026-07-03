@@ -40,4 +40,45 @@ RSpec.describe MetadataImportWorker, type: :worker do
     expect(import.error_message).to eq('kapow')
     expect(user.notifications.last.title).to match(/import failed/i)
   end
+
+  it 'returns early for missing and already completed imports' do
+    import = create(:metadata_import, :completed, user: user)
+
+    expect(MetadataImportService::CsvProcessor).not_to receive(:new)
+
+    expect { described_class.new.perform(0) }.not_to raise_error
+    expect { described_class.new.perform(import.id) }.not_to change { import.reload.updated_at }
+  end
+
+  it 'replaces an existing result file and falls back to the default results filename' do
+    import = import_with_csv("asset_path\n/Adventures/bike.jpg\n")
+    import.result_file.attach(io: StringIO.new("old"), filename: "old.csv", content_type: "text/csv")
+    old_blob_id = import.result_file.blob.id
+    allow(import).to receive(:name).and_return("")
+    result = instance_double(
+      "MetadataImportResult",
+      csv_string: "asset_path,import_status\n/Adventures/bike.jpg,ok\n",
+      total: 1,
+      success: 1,
+      failure: 0
+    )
+
+    allow(MetadataImportService::CsvProcessor).to receive(:new).and_return(instance_double(MetadataImportService::CsvProcessor, process: result))
+
+    described_class.new.perform(import.id)
+
+    import.reload
+    expect(import.result_file).to be_attached
+    expect(import.result_file.blob.id).not_to eq(old_blob_id)
+    expect(described_class.new.send(:results_filename, import)).to eq("metadata_import_results.csv")
+  end
+
+  it 'skips notifications when an import no longer resolves to a user' do
+    import = build_stubbed(:metadata_import)
+    allow(import).to receive(:user).and_return(nil)
+
+    expect(Notification).not_to receive(:create!)
+
+    described_class.new.send(:notify_user, import, success: true)
+  end
 end

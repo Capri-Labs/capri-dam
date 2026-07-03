@@ -63,6 +63,16 @@ RSpec.describe "Api::V1::Ai::Lab coverage", type: :request do
       expect(JSON.parse(response.body)["error"]).to eq("invalid prompt")
     end
 
+    it "falls back to the HTTP status when the gateway body is not a hash" do
+      stub_request(:post, "#{gateway_url}/v1/chat")
+        .to_return(status: 500, body: "upstream exploded", headers: { "Content-Type" => "text/plain" })
+
+      post "/api/v1/ai/lab/chat", params: { messages: [ { role: "user", content: "Hello" } ] }, as: :json
+
+      expect(response).to have_http_status(:internal_server_error)
+      expect(JSON.parse(response.body)["error"]).to eq("AI Gateway returned 500")
+    end
+
     it "returns 503 when the gateway is unavailable" do
       stub_request(:post, "#{gateway_url}/v1/chat").to_timeout
 

@@ -135,10 +135,11 @@ class AssetProcessorWorker
       backend = ::StorageBackend.find_by(active: true)
       storage = ::StorageManager.adapter_for(backend)
 
+      asset_props = asset.properties.is_a?(Hash) ? asset.properties : {}
       extracted_meta = {}
 
       # Extract naming-convention metadata from the original filename.
-      original_name = asset.properties&.dig("original_filename").to_s
+      original_name = asset_props["original_filename"].to_s
       name_meta     = parse_product_filename(original_name)
       extracted_meta.merge!(name_meta) if name_meta
 
@@ -191,7 +192,7 @@ class AssetProcessorWorker
 
       asset.update!(
         status: "ready",
-        properties: asset.properties.merge(extracted_meta.stringify_keys).merge(
+        properties: asset_props.merge(extracted_meta.stringify_keys).merge(
           "storage_path" => file_path
         )
       )

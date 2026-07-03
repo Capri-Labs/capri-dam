@@ -38,6 +38,26 @@ RSpec.describe 'Api::V1::Inbox', type: :request do
       expect(response.parsed_body.fetch('messages').map { |message| message.fetch('message_type') }).to all(eq('mention'))
     end
 
+    it 'filters starred messages only' do
+      sign_in user
+      mention_message.update!(starred_at: Time.current)
+
+      get '/api/v1/inbox', params: { starred_only: true }, as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body.fetch('messages').map { |message| message.fetch('id') }).to eq([ mention_message.id ])
+    end
+
+    it 'returns a nil snippet when the message body is blank' do
+      sign_in user
+      blank_message = create(:inbox_message, recipient: user, body_text: nil)
+
+      get '/api/v1/inbox', params: { page: 1, per_page: 25 }, as: :json
+
+      payload = response.parsed_body.fetch('messages').find { |message| message.fetch('id') == blank_message.id }
+      expect(payload.fetch('snippet')).to be_nil
+    end
+
     it 'returns 401 without authentication' do
       get '/api/v1/inbox', as: :json
 

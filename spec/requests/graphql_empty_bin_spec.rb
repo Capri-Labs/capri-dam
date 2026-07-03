@@ -58,6 +58,40 @@ RSpec.describe "EmptyBin mutation", type: :request do
       expect(body.dig("data", "emptyBin")).to eq("deleted" => 1, "errors" => [])
     end
 
+    it "purges attached version files even when no storage_path is present" do
+      asset = create(:asset, :trashed)
+      version = create(:asset_version, asset: asset, properties: {})
+      version.file.attach(
+        io: StringIO.new("binary"),
+        filename: "version.bin",
+        content_type: "application/octet-stream"
+      )
+      allow(StorageBackend).to receive(:find_by).with(active: true).and_return(nil)
+
+      body = gql(mutation)
+
+      expect(body.dig("data", "emptyBin")).to eq("deleted" => 1, "errors" => [])
+      expect { version.reload }.to raise_error(ActiveRecord::RecordNotFound)
+      expect(ActiveStorage::Attachment.where(record_type: "AssetVersion", record_id: version.id)).to be_empty
+    end
+
+    it "skips storage deletion when no backend exists but still purges attached files" do
+      asset = create(:asset, :trashed)
+      version = create(:asset_version, asset: asset, properties: { "storage_path" => "assets/original.jpg" })
+      version.file.attach(
+        io: StringIO.new("binary"),
+        filename: "version.bin",
+        content_type: "application/octet-stream"
+      )
+      allow(StorageBackend).to receive(:find_by).with(active: true).and_return(nil)
+      expect(StorageManager).not_to receive(:adapter_for)
+
+      body = gql(mutation)
+
+      expect(body.dig("data", "emptyBin")).to eq("deleted" => 1, "errors" => [])
+      expect { version.reload }.to raise_error(ActiveRecord::RecordNotFound)
+    end
+
     it "returns rescued errors" do
       allow(Folder).to receive(:trashed).and_raise(StandardError, "database unavailable")
 

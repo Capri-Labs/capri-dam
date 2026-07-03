@@ -57,6 +57,31 @@ RSpec.describe "Api::V1::ImageProfiles coverage", type: :request do
     expect(json).to eq("error" => "Image profile not found")
   end
 
+  it "shows folders for a profile and serializes them on the show endpoint" do
+    profile = create(:image_profile)
+    folder = create(:folder, user: user, name: "Hero Images")
+    ImageProfileFolderAssignment.create!(image_profile: profile, folder_id: folder.id)
+
+    get "/api/v1/image_profiles/#{profile.id}", as: :json
+
+    expect(response).to have_http_status(:ok)
+    expect(json["folders"]).to contain_exactly(hash_including("id" => folder.id, "name" => "Hero Images"))
+    expect(json["folder_count"]).to eq(1)
+  end
+
+  it "accepts pre-parsed responsive_crops arrays during create" do
+    post "/api/v1/image_profiles", params: {
+      image_profile: {
+        name: "Array Input",
+        crop_type: "smart_crop",
+        responsive_crops: [ { name: "Tablet", width: 1024, height: 768 } ],
+      },
+    }, as: :json
+
+    expect(response).to have_http_status(:created)
+    expect(json["responsive_crops"]).to contain_exactly(hash_including("name" => "Tablet", "width" => 1024, "height" => 768))
+  end
+
   it "requires administrators for mutating actions" do
     sign_in create(:user, admin: false)
 

@@ -22,6 +22,16 @@ RSpec.describe "Api::V1::CdnConfigurations", type: :request do
       expect(response.parsed_body.dig("fastly", "settings", "api_key")).to eq("••••••••1234")
       expect(response.parsed_body["cloudflare"]).to eq("is_active" => false, "settings" => {})
     end
+
+    it "renders blank settings without mask characters" do
+      sign_in user
+      fastly = instance_double(CdnConfiguration, provider: "fastly", is_active: true, settings: { "api_key" => "" })
+      allow(CdnConfiguration).to receive(:all).and_return([ fastly ])
+
+      get api_v1_cdn_configurations_path, as: :json
+
+      expect(response.parsed_body.dig("fastly", "settings", "api_key")).to eq("")
+    end
   end
 
   describe "PUT /api/v1/cdn_configurations" do
@@ -68,6 +78,24 @@ RSpec.describe "Api::V1::CdnConfigurations", type: :request do
 
       expect(response).to have_http_status(:unprocessable_entity)
       expect(response.parsed_body["errors"]).to eq([ "Provider can't be blank" ])
+    end
+
+    it "keeps existing settings when the request omits nested settings params" do
+      sign_in admin
+      config = instance_double(CdnConfiguration, settings: { "api_key" => "old-key" }, errors: instance_double(ActiveModel::Errors, full_messages: []))
+      allow(config).to receive(:is_active=)
+      allow(config).to receive(:settings=)
+      allow(config).to receive(:save).and_return(true)
+      allow(CdnConfiguration).to receive(:find_or_initialize_by).with(provider: "fastly").and_return(config)
+      allow_any_instance_of(Api::V1::CdnConfigurationsController).to receive(:params).and_return(
+        ActiveSupport::HashWithIndifferentAccess.new(provider: "fastly", is_active: false)
+      )
+
+      put api_v1_cdn_configurations_path,
+          as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(config).to have_received(:settings=).with("api_key" => "old-key")
     end
   end
 end

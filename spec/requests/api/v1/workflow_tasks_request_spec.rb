@@ -89,6 +89,16 @@ RSpec.describe 'API workflow task coverage', type: :request do
         'status' => 'completed'
       ))
     end
+
+    it 'falls back to Processing when an active workflow has no current step' do
+      task
+      instance.update!(current_step: nil)
+
+      get '/api/v1/workflows/dashboard'
+
+      active_payload = response.parsed_body['active_workflows'].find { |row| row['instance_id'] == instance.id }
+      expect(active_payload).to include('current_step' => 'Processing')
+    end
   end
 
   describe 'POST /api/v1/workflows/bulk_stop' do

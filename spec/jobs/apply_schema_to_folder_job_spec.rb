@@ -100,5 +100,23 @@ RSpec.describe ApplySchemaToFolderJob, type: :job do
         expect(MetadataSchemaFolderAssignment.where(folder_id: folder.id)).to be_empty
       end
     end
+
+    context 'when applying a root schema to root assets' do
+      let!(:root_asset) { create(:asset, folder: nil, properties: {}) }
+      let!(:nested_asset) { create(:asset, folder: folder, properties: { 'content_type' => 'image/jpeg' }) }
+
+      it 'updates only root assets and skips folder assignments' do
+        expect {
+          described_class.perform_now(folder_id: 'root', schema_id: schema_a.id, cascade: false)
+        }.not_to change(MetadataSchemaFolderAssignment, :count)
+
+        expect(root_asset.reload.properties).to include(
+          'applied_schema_id' => schema_a.id,
+          'applied_schema_slug' => schema_a.slug,
+          'applied_schema_name' => schema_a.name
+        )
+        expect(nested_asset.reload.properties).not_to have_key('applied_schema_id')
+      end
+    end
   end
 end

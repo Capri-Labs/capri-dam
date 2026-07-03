@@ -122,4 +122,30 @@ RSpec.describe "Api::V1::SystemConnectors coverage", type: :request do
       expect(json["error"]).to be_present
     end
   end
+
+  describe "additional update branches" do
+    before { sign_in admin }
+
+    it "replaces auth tokens when a non-blank value is provided" do
+      connector = create(:system_connector, auth_token: 'old-secret')
+
+      patch "/api/v1/system_connectors/#{connector.id}", params: {
+        system_connector: { auth_token: 'new-secret' },
+      }, as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(connector.reload.auth_token).to eq('new-secret')
+    end
+
+    it "returns validation errors for invalid updates" do
+      connector = create(:system_connector)
+
+      patch "/api/v1/system_connectors/#{connector.id}", params: {
+        system_connector: { name: '' },
+      }, as: :json
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(json['errors']).not_to be_empty
+    end
+  end
 end

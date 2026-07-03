@@ -99,6 +99,12 @@ RSpec.describe StorageAdapters::AzureAdapter, type: :service do
       expect(url).to include('rscd=attachment%3B+filename%3D%22download.txt%22')
     end
 
+    it 'does not add a download filename when none is provided' do
+      url = adapter.presign_url('folder/file.txt')
+
+      expect(url).not_to include('rscd=')
+    end
+
     it 'wraps SAS generation failures' do
       allow(Base64).to receive(:decode64).and_raise(ArgumentError, 'bad key')
 
@@ -154,6 +160,13 @@ RSpec.describe StorageAdapters::AzureAdapter, type: :service do
       expect(adapter.metadata('folder/file.txt')).to include(size: 12, content_type: 'text/plain', etag: 'etag', metadata: { 'foo' => 'bar' })
     end
 
+    it 'preserves nil etags in metadata responses' do
+      blob = instance_double('Blob', properties: { content_length: 12, content_type: 'text/plain', etag: nil, last_modified: Time.current }, metadata: {})
+      allow(blob_client).to receive(:get_blob_properties).and_return([ nil, blob ])
+
+      expect(adapter.metadata('folder/file.txt')).to include(etag: nil)
+    end
+
     it 'returns nil for a missing blob' do
       allow(blob_client).to receive(:get_blob_properties).and_raise(azure_error(404))
 
@@ -174,6 +187,13 @@ RSpec.describe StorageAdapters::AzureAdapter, type: :service do
       allow(blob_client).to receive(:list_blobs).and_return([ blob ])
 
       expect(adapter.list(prefix: 'folder/')).to eq([ { key: 'folder/file.txt', size: 1, last_modified: blob.properties[:last_modified], etag: 'etag' } ])
+    end
+
+    it 'keeps nil etags when listing blobs' do
+      blob = instance_double('Blob', name: 'folder/file.txt', properties: { content_length: 1, last_modified: Time.current, etag: nil })
+      allow(blob_client).to receive(:list_blobs).and_return([ blob ])
+
+      expect(adapter.list).to eq([ { key: 'folder/file.txt', size: 1, last_modified: blob.properties[:last_modified], etag: nil } ])
     end
 
     it 'logs and returns an empty array when listing fails' do

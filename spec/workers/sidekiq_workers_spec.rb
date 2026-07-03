@@ -80,6 +80,17 @@ RSpec.describe FolderMetadataSyncWorker, type: :worker do
     expect(EdgeMetadataSyncWorker).to have_received(:perform_async).with(asset.uuid)
     expect(described_class).to have_received(:perform_async).with(child.id)
   end
+
+  it "returns without enqueuing when the folder cannot be found" do
+    allow(Folder).to receive_message_chain(:active, :find_by).and_return(nil)
+    allow(EdgeMetadataSyncWorker).to receive(:perform_async)
+    allow(described_class).to receive(:perform_async)
+
+    described_class.new.perform('missing-folder-id')
+
+    expect(EdgeMetadataSyncWorker).not_to have_received(:perform_async)
+    expect(described_class).not_to have_received(:perform_async)
+  end
 end
 
 RSpec.describe IngestionWorker, type: :worker do

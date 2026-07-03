@@ -106,10 +106,15 @@ module Api
         end
 
         current_status = Setting.get("duplicate_manager_scan_status")
-        if %w[running queued].include?(current_status.to_s)
+        if current_status.to_s == "running" && DuplicateRepositoryScanWorker.scan_running?
           return render json: {
-            error:  "A scan is already #{current_status}. Please wait for it to finish.",
-            status: current_status,
+            error:  "A scan is already running. Please wait for it to finish.",
+            status: "running",
+          }, status: :unprocessable_entity
+        elsif current_status.to_s == "queued"
+          return render json: {
+            error:  "A scan is already queued. Please wait for it to finish.",
+            status: "queued",
           }, status: :unprocessable_entity
         end
 
@@ -158,6 +163,11 @@ module Api
 
       # @return [Hash]
       def current_scan_status
+        # Reclaims a stuck "running" lock left behind by a crashed/killed
+        # worker process before reading, so the UI never shows a
+        # permanently-spinning progress bar.
+        DuplicateRepositoryScanWorker.scan_running? if Setting.get("duplicate_manager_scan_status").to_s == "running"
+
         raw_status   = Setting.get("duplicate_manager_scan_status")
         raw_progress = Setting.get("duplicate_manager_scan_progress")
         last_scan_at = Setting.get("duplicate_manager_last_scan_at")

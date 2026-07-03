@@ -86,4 +86,30 @@ RSpec.describe "Api::V1::Copilot coverage", type: :request do
       expect(response).to have_http_status(:unauthorized)
     end
   end
+
+  describe "#serialize_asset" do
+    it "handles missing versions, folders, and similarity scores" do
+      controller = Api::V1::CopilotsController.new
+      asset = create(:asset, user: user, folder: nil, properties: { "original_filename" => "raw.bin" })
+
+      result = controller.send(:serialize_asset, asset)
+
+      expect(result).to include(
+        title: asset.title,
+        folder_name: nil,
+        content_type: nil,
+        similarity_score: nil
+      )
+    end
+  end
+
+  describe "#fetch_query_embedding" do
+    it "raises when the gateway returns a non-success response" do
+      controller = Api::V1::CopilotsController.new
+      response = instance_double(Faraday::Response, success?: false, status: 502)
+      allow(controller).to receive(:gateway_client).and_return(instance_double(Faraday::Connection, post: response))
+
+      expect { controller.send(:fetch_query_embedding, "broken") }.to raise_error("AI Gateway Error: 502")
+    end
+  end
 end

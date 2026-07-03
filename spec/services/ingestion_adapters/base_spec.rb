@@ -10,6 +10,12 @@ RSpec.describe IngestionAdapters::Base, type: :service do
       expect(adapter.batch).to eq(batch)
       expect(adapter.credentials).to eq('endpoint' => 'https://dam.example.com/', 'auth_token' => 'secret')
     end
+
+    it 'falls back to an empty credential hash for non-hash input' do
+      blank_adapter = described_class.new(batch, 'not-a-hash')
+
+      expect(blank_adapter.credentials).to eq({})
+    end
   end
 
   describe 'abstract interface' do
@@ -81,6 +87,27 @@ RSpec.describe IngestionAdapters::Base, type: :service do
         expect(chunks).to eq(%w[abc def])
         expect(tempfile).to have_received(:write).with('abc')
         expect(tempfile).to have_received(:write).with('def')
+      end
+
+      it 'streams the response body without yielding when no block is given' do
+        http = instance_double(Net::HTTP)
+        response = instance_double(Net::HTTPResponse)
+
+        allow(Tempfile).to receive(:new).and_return(tempfile)
+        allow(Net::HTTP).to receive(:start).and_yield(http)
+        allow(http).to receive(:request) { |_, &block| block.call(response) }
+        allow(response).to receive(:read_body).and_yield('abc')
+
+        expect(adapter.send(:stream_http_file, 'https://dam.example.com/file.jpg', '.jpg')).to eq('spec/fixtures/files/streamed.bin')
+        expect(tempfile).to have_received(:write).with('abc')
+      end
+
+      it 'closes safely when tempfile creation fails before assignment completes' do
+        allow(Tempfile).to receive(:new).and_raise(StandardError, 'disk full')
+
+        expect do
+          adapter.send(:stream_http_file, 'https://dam.example.com/file.jpg', '.jpg')
+        end.to raise_error(StandardError, 'disk full')
       end
     end
 

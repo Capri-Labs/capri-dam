@@ -113,6 +113,52 @@ RSpec.describe "Api::V1::Folders coverage", type: :request do
     expect(response).to have_http_status(:ok)
   end
 
+  it "handles root and missing folder schema lookups and root schema application" do
+    schema = create(:metadata_schema, name: "Root Schema")
+    assignment = create(:metadata_schema_folder_assignment, folder_id: create(:folder, user: user).id, metadata_schema: schema)
+    assignment.update_column(:folder_id, "")
+
+    get "/api/v1/folders/root/schema", as: :json
+    expect(response).to have_http_status(:ok)
+    expect(json).to include("source" => "direct", "schema" => a_hash_including("id" => schema.id))
+
+    schema.update_column(:deleted_at, Time.current)
+    get "/api/v1/folders/root/schema", as: :json
+    expect(json).to eq("schema" => nil, "source" => "direct")
+
+    get "/api/v1/folders/#{SecureRandom.uuid}/schema", as: :json
+    expect(json).to eq("schema" => nil, "source" => "none")
+
+    active_schema = create(:metadata_schema, name: "Fresh Root Schema")
+    post "/api/v1/folders/root/apply_schema", params: { schema_id: active_schema.id }, as: :json
+    expect(response).to have_http_status(:accepted)
+    expect(ApplySchemaToFolderJob).to have_received(:perform_later).with(
+      folder_id: "",
+      schema_id: active_schema.id,
+      cascade: true,
+      initiated_by: user.id
+    )
+
+    delete "/api/v1/folders/root/remove_schema", as: :json
+    expect(response).to have_http_status(:ok)
+    expect(MetadataSchemaFolderAssignment.where(folder_id: "")).to be_empty
+  end
+
+  it "returns inherited schemas for descendants and none for an unassigned root" do
+    parent = create(:folder, user: user, name: "Parent")
+    child = create(:folder, user: user, parent: parent, name: "Child")
+    schema = create(:metadata_schema, name: "Inherited Schema")
+    create(:metadata_schema_folder_assignment, folder_id: parent.id, metadata_schema: schema)
+
+    get "/api/v1/folders/#{child.id}/schema", as: :json
+    expect(response).to have_http_status(:ok)
+    expect(json).to include("source" => "inherited", "schema" => a_hash_including("id" => schema.id))
+
+    MetadataSchemaFolderAssignment.where(folder_id: "").delete_all
+    get "/api/v1/folders/root/schema", as: :json
+    expect(json).to eq("schema" => nil, "source" => "none")
+  end
+
   it "returns explicit and inherited policies and handles missing folders" do
     group = create(:user_group, name: "Marketing")
     parent = create(:folder, user: user, name: "Parent")
@@ -125,6 +171,27 @@ RSpec.describe "Api::V1::Folders coverage", type: :request do
 
     get "/api/v1/folders/0/policies", as: :json
     expect(response).to have_http_status(:not_found)
+  end
+
+  it "skips duplicate inherited groups and merges active version data" do
+    parent = create(:folder, user: user, name: "Parent")
+    child = create(:folder, user: user, parent: parent, name: "Child")
+    editors = create(:user_group, name: "Editors")
+    create(:folder_policy, folder: parent, user_group: editors, read_access: true)
+    create(:folder_policy, folder: child, user_group: editors, manage_access: true)
+
+    asset = create(:asset, user: user, folder: parent, title: "Versioned", properties: { "file_size" => 7 })
+    version = create(:asset_version, asset: asset, version_number: 3, properties: { "content_type" => "image/jpeg", "file_size" => 42 })
+    asset.update_column(:active_version_id, version.id)
+
+    get "/api/v1/folders/#{child.id}/policies", as: :json
+    expect(response).to have_http_status(:ok)
+    expect(json["inherited_policies"].map { |row| row["group_id"] }).not_to include(editors.id)
+
+    get "/api/v1/folders/#{parent.id}", as: :json
+    payload = json["assets"].find { |entry| entry["id"] == asset.id }
+    expect(payload).to include("version" => 3, "content_type" => "image/jpeg", "size" => 42)
+    expect(payload.fetch("properties")).to include("content_type" => "image/jpeg", "file_size" => 42)
   end
 
   it "upserts and removes folder policies including cascade branch" do

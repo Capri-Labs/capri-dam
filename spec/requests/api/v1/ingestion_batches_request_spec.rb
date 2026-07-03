@@ -168,4 +168,40 @@ RSpec.describe 'Api::V1::IngestionBatches coverage', type: :request do
 
     expect(response).to have_http_status(:unauthorized)
   end
+
+  describe 'additional filtering branches' do
+    it 'returns batches unchanged when no filters are supplied' do
+      first = create(:ingestion_batch, name: 'One', source_type: 'aem', status: :review_needed)
+      second = create(:ingestion_batch, name: 'Two', source_type: 'cloudinary', status: :failed)
+
+      get '/api/v1/ingestion_batches', as: :json
+
+      body = JSON.parse(response.body)
+      expect(response).to have_http_status(:ok)
+      expect(body['meta']['total']).to be >= 2
+      expect(body['batches'].map { |batch| batch['id'] }).to include(first.id, second.id)
+    end
+
+    it 'returns all items when no status filter is provided on show' do
+      batch = create(:ingestion_batch)
+      create(:ingestion_item, ingestion_batch: batch, status: :flagged_error)
+      create(:ingestion_item, ingestion_batch: batch, status: :pending)
+
+      get "/api/v1/ingestion_batches/#{batch.id}", as: :json
+
+      body = JSON.parse(response.body)
+      expect(response).to have_http_status(:ok)
+      expect(body['items'].size).to eq(2)
+      expect(body['meta']['total']).to eq(2)
+    end
+
+    it 'returns an empty report when the snapshot reference is stale' do
+      batch = create(:ingestion_batch, report_snapshot_id: 999_999, status: :failed)
+
+      get "/api/v1/ingestion_batches/#{batch.id}/report", as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(JSON.parse(response.body)['report']).to eq({})
+    end
+  end
 end

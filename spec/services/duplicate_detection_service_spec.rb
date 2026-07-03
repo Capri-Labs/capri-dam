@@ -156,4 +156,62 @@ RSpec.describe DuplicateDetectionService, type: :service do
       expect(group.duplicate_group_assets.count).to eq(2)
     end
   end
+
+  context "when duplicate processing raises an error" do
+    let!(:existing_asset) do
+      create(:asset, user: user).tap do |record|
+        create(:asset_version, asset: record, properties: { "checksum_sha256" => checksum })
+      end
+    end
+
+    before { allow(Rails.logger).to receive(:error) }
+
+    it "returns a safe result when the asset is missing" do
+      result = described_class.call(asset: nil, checksum: checksum, user: user)
+
+      expect(result.duplicate_detected?).to be(false)
+      expect(result.enabled).to be(true)
+      expect(Rails.logger).to have_received(:error).with(include("Error for asset :"))
+    end
+
+    it "returns a safe result when group creation fails for a real asset" do
+      allow(DuplicateGroup).to receive(:find_or_initialize_by).and_raise(StandardError, "boom")
+
+      result = described_class.call(asset: asset, checksum: checksum, user: user)
+
+      expect(result.duplicate_detected?).to be(false)
+      expect(result.enabled).to be(true)
+      expect(Rails.logger).to have_received(:error).with(include("Error for asset #{asset.id}: StandardError: boom"))
+    end
+  end
+
+  describe "private helper branches" do
+    let(:service) { described_class.new(asset: asset, checksum: checksum, user: user) }
+
+    it "leaves empty duplicate groups untouched when there is no oldest asset" do
+      group = create(:duplicate_group, checksum: checksum, status: "pending")
+
+      expect { service.send(:mark_original, group) }.not_to raise_error
+      expect(group.duplicate_group_assets.reload).to be_empty
+    end
+
+    it "returns early when there is no user to notify" do
+      silent_service = described_class.new(asset: asset, checksum: checksum, user: nil)
+
+      expect {
+        silent_service.send(:send_inbox_notification, create(:duplicate_group, total_count: 2))
+      }.not_to change(Notification, :count)
+    end
+
+    it "logs notification failures for real users without raising" do
+      allow(Notification).to receive(:create!).and_raise(StandardError, "inbox down")
+      allow(Rails.logger).to receive(:warn)
+
+      expect {
+        service.send(:send_inbox_notification, create(:duplicate_group, total_count: 2))
+      }.not_to raise_error
+
+      expect(Rails.logger).to have_received(:warn).with(include("Notification failed for user #{user.id}: inbox down"))
+    end
+  end
 end

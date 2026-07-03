@@ -58,5 +58,11 @@ RSpec.describe AiBatchJobWorker, type: :worker do
       expect(job.reload.status).to eq("failed")
       expect(job.error_message).to eq("boom")
     end
+
+    it "re-raises lookup failures before a job record is assigned" do
+      allow(AiBatchJob).to receive(:find_by).and_raise(StandardError, "boom")
+
+      expect { described_class.new.perform(123) }.to raise_error(StandardError, "boom")
+    end
   end
 end

@@ -57,4 +57,19 @@ RSpec.describe WorkflowEngineWorker, type: :worker do
 
     expect(instance.reload.status).to eq("in_progress")
   end
+
+  it "does nothing for non-terminal task statuses" do
+    task = create(:workflow_task, workflow_instance: instance, workflow_step: step, user: user, status: "pending")
+
+    described_class.new.perform(task.id)
+
+    expect(instance.reload.status).to eq("in_progress")
+    expect(asset.reload.read_attribute_before_type_cast("status")).to eq(Asset.statuses["in_review"].to_s)
+  end
+
+  it "treats unknown step logic as complete to avoid hangs" do
+    step.update!(logic: "corrupted")
+
+    expect(described_class.new.send(:step_complete?, step, instance)).to be(true)
+  end
 end

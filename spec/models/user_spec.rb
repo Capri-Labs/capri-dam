@@ -231,6 +231,15 @@ RSpec.describe User, type: :model do
 
       expect(Rails.logger).to have_received(:warn).with('[User] Could not create preference for warnings@example.com: preference error')
     end
+
+    it 'does not create a default preference when one already exists' do
+      allow(user).to receive(:preference).and_return(instance_double(UserPreference))
+      allow(user).to receive(:create_preference)
+
+      user.send(:create_default_preference)
+
+      expect(user).not_to have_received(:create_preference)
+    end
   end
 
   describe ".from_omniauth" do

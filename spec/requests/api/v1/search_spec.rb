@@ -438,4 +438,60 @@ RSpec.describe "Api::V1::Search coverage", type: :request do
     expect(response).to have_http_status(:ok)
     expect(json["results"]).to contain_exactly(hash_including("uuid" => asset.uuid, "status" => "approved"))
   end
+
+  it "ignores invalid dynamic filters and blank filter values from the raw query string" do
+    keep = search_asset("Keep", { "dc:creator" => "Maya" })
+    skip = search_asset("Skip", { "dc:creator" => "Other" })
+
+    get "/api/v1/search?dc%3Acreator=%20,%20&bad%20key=x&editor_state.=Reviewed&title..value=bad",
+      headers: { "Accept" => "application/json" }
+
+    expect(response).to have_http_status(:ok)
+    expect(json["results"].map { |result| result["uuid"] }).to contain_exactly(keep.uuid, skip.uuid)
+  end
+
+  it "splits scalar and nested metadata facet values while skipping unusable schema and discovered keys" do
+    create(:metadata_schema, tabs: [ { "fields" => [
+      { "field_type" => "select", "map_to_property" => nil, "label" => "Missing Map" },
+      { "field_type" => "select", "map_to_property" => "bad key!", "label" => "Bad Key" },
+      { "field_type" => "select", "map_to_property" => "unused_field", "label" => "Unused Field" },
+    ] } ])
+
+    search_asset("Facet One", {
+      "dc:creator" => "Maya, Lee",
+      "editor_state" => { "filter" => "Reviewed, Approved", "geometry" => { "x" => 10 } },
+      "empty_state" => { "filter" => " " },
+    })
+    search_asset("Facet Two", {
+      "dc:creator" => "Maya",
+      "editor_state" => { "filter" => "Reviewed" },
+    })
+
+    get "/api/v1/search", as: :json
+
+    facets = json.dig("meta", "facets", "metadata_fields")
+    expect(facets.dig("dc:creator", "label")).to eq("Creator")
+    expect(facets.dig("dc:creator", "values")).to include(
+      { "value" => "Maya", "count" => 2 },
+      { "value" => "Lee", "count" => 1 }
+    )
+    expect(facets.dig("editor_state.filter", "values")).to include(
+      { "value" => "Reviewed", "count" => 2 },
+      { "value" => "Approved", "count" => 1 }
+    )
+    expect(facets).not_to have_key("unused_field")
+    expect(facets).not_to have_key("editor_state.geometry")
+    expect(facets).not_to have_key("empty_state.filter")
+  end
+
+  it "returns nil timestamps when an asset lacks created_at and updated_at values" do
+    asset = search_asset("Untimed")
+    allow_any_instance_of(Asset).to receive(:created_at).and_return(nil) # rubocop:disable RSpec/AnyInstance
+    allow_any_instance_of(Asset).to receive(:updated_at).and_return(nil) # rubocop:disable RSpec/AnyInstance
+
+    get "/api/v1/search", params: { q: asset.title }, as: :json
+
+    expect(response).to have_http_status(:ok)
+    expect(json["results"]).to contain_exactly(hash_including("uuid" => asset.uuid, "created_at" => nil, "updated_at" => nil))
+  end
 end

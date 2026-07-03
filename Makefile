@@ -190,15 +190,19 @@ dev: ## Start the full engine (Server + Ingest Workers)
 	@echo "--- Launching Capri DAM Ecosystem ---"
 	RAILS_ENV=development ./bin/dev
 
-stop: ## Stop the running dev server (Rails web + Sidekiq worker started by 'make dev')
-	@echo "--- Stopping Capri DAM Ecosystem ---"
+stop: ## Force-stop the running dev server (Rails web + Sidekiq worker + Redis started by 'make dev')
+	@echo "--- Force-stopping Capri DAM Ecosystem ---"
 	@echo "Stopping foreman launcher (bin/dev)..."
-	@pkill -f "bin/dev" 2>/dev/null || echo "  No bin/dev launcher running"
+	@pkill -9 -f "bin/dev" 2>/dev/null || echo "  No bin/dev launcher running"
+	@pkill -9 -f "foreman start" 2>/dev/null || true
 	@echo "Stopping Rails server on port 3000..."
-	@lsof -ti tcp:3000 | xargs kill 2>/dev/null || echo "  No process on port 3000"
+	@lsof -ti tcp:3000 | xargs -r kill -9 2>/dev/null || echo "  No process on port 3000"
 	@echo "Stopping Sidekiq worker..."
-	@pkill -f "sidekiq -C config/sidekiq.yml" 2>/dev/null || echo "  No Sidekiq worker running"
-	@echo "--- Stopped (Redis left running; stop it with: redis-cli shutdown) ---"
+	@pkill -9 -f "sidekiq -C config/sidekiq.yml" 2>/dev/null || echo "  No Sidekiq worker running"
+	@echo "Stopping Redis on port 6379..."
+	@lsof -ti tcp:6379 | xargs -r kill -9 2>/dev/null || echo "  No Redis running on 6379"
+	@rm -f tmp/pids/server.pid
+	@echo "--- Stopped (all processes force-killed, including Redis) ---"
 
 all-tests: ## Run all RSpec tests
 	@echo "--- Running Tests ---"

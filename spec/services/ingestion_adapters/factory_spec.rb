@@ -30,6 +30,15 @@ RSpec.describe IngestionAdapters::Factory, type: :service do
 
       expect { described_class.build(batch) }.to raise_error(ArgumentError, /Unknown migration source/)
     end
+
+    it 'uses empty credentials when the batch has no source credentials accessor' do
+      batch = Object.new
+      batch.define_singleton_method(:source_type) { 'aem' }
+
+      expect(IngestionAdapters::AemAdapter).to receive(:new).with(batch, {}).and_return(:adapter)
+
+      expect(described_class.build(batch)).to eq(:adapter)
+    end
   end
 
   describe '.test' do

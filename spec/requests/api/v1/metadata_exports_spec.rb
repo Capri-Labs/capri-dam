@@ -107,6 +107,19 @@ RSpec.describe "Api::V1::MetadataExports coverage", type: :request do
     expect(json["files"].first["download_url"]).to include("/api/v1/metadata_exports/#{export.id}/download")
   end
 
+  it "ignores non-hash properties when listing keys" do
+    export = create(:metadata_export, :completed, user: user)
+    create(:asset, user: user, properties: "unexpected")
+    create(:asset, user: user, properties: { "copyright" => "ACME" })
+
+    get "/api/v1/metadata_exports/#{export.id}", as: :json
+    expect(response).to have_http_status(:ok)
+
+    get "/api/v1/metadata_exports/properties", params: { folder_id: "root", include_subfolders: true }, as: :json
+    expect(response).to have_http_status(:ok)
+    expect(json["properties"]).to include("copyright")
+  end
+
   it "collects root and cascading child property keys" do
     parent = create(:folder, user: user)
     child = create(:folder, user: user, parent: parent)
@@ -122,6 +135,10 @@ RSpec.describe "Api::V1::MetadataExports coverage", type: :request do
     get "/api/v1/metadata_exports/properties", params: { folder_id: parent.id, include_subfolders: true }, as: :json
     expect(response).to have_http_status(:ok)
     expect(json["properties"]).to include("parent_key", "child_key")
+
+    get "/api/v1/metadata_exports/properties", params: { folder_id: "root", include_subfolders: true }, as: :json
+    expect(response).to have_http_status(:ok)
+    expect(json["properties"]).to include("root_only", "parent_key", "child_key")
   end
 
   it "creates root scheduled exports and reports validation errors" do

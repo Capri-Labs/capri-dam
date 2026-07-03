@@ -53,4 +53,42 @@ RSpec.describe Reports::Orchestrator, type: :service do
       error_message: 'Unsupported report format: json'
     ))
   end
+
+  it "routes xlsx snapshots to the XLSX generator" do
+    xlsx_snapshot = create(
+      :report_snapshot,
+      format: "xlsx",
+      status: :pending,
+      report_definition: create(:report_definition, name: "Xlsx Report #{SecureRandom.hex(4)}")
+    )
+    xlsx_class = class_double("Reports::Generators::Xlsx").as_stubbed_const
+    xlsx_generator = instance_double("Reports::Generators::Xlsx")
+    allow(xlsx_class).to receive(:new).and_return(xlsx_generator)
+    allow(xlsx_generator).to receive(:generate).and_return([ StringIO.new("xlsx"), "usage.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ])
+
+    described_class.execute!(xlsx_snapshot.id)
+
+    expect(xlsx_class).to have_received(:new).with([ { name: "Asset 1" } ], xlsx_snapshot)
+    expect(xlsx_snapshot.reload).to be_completed
+    expect(xlsx_snapshot.generated_file.filename.to_s).to eq("usage.xlsx")
+  end
+
+  it "routes pdf snapshots to the PDF generator" do
+    pdf_snapshot = create(
+      :report_snapshot,
+      format: "pdf",
+      status: :pending,
+      report_definition: create(:report_definition, name: "Pdf Report #{SecureRandom.hex(4)}")
+    )
+    pdf_class = class_double("Reports::Generators::Pdf").as_stubbed_const
+    pdf_generator = instance_double("Reports::Generators::Pdf")
+    allow(pdf_class).to receive(:new).and_return(pdf_generator)
+    allow(pdf_generator).to receive(:generate).and_return([ StringIO.new("%PDF"), "usage.pdf", "application/pdf" ])
+
+    described_class.execute!(pdf_snapshot.id)
+
+    expect(pdf_class).to have_received(:new).with([ { name: "Asset 1" } ], pdf_snapshot)
+    expect(pdf_snapshot.reload).to be_completed
+    expect(pdf_snapshot.generated_file.filename.to_s).to eq("usage.pdf")
+  end
 end

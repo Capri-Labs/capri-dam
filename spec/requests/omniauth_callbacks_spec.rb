@@ -155,6 +155,37 @@ RSpec.describe "Users::OmniauthCallbacks", type: :request do
         expect(controller.current_user).to be_nil
       end
     end
+
+    context "when the user cannot be persisted" do
+      before do
+        mock_keycloak_auth
+        unsaved_user = User.new
+        unsaved_user.errors.add(:base, "Provisioning failed")
+        allow(User).to receive(:from_omniauth).and_return(unsaved_user)
+      end
+
+      it "stores the auth payload in the session and redirects with an alert" do
+        get "/users/auth/keycloak_openid/callback"
+
+        expect(response).to redirect_to("/")
+        expect(request.session["devise.keycloak_data"]).to include("provider" => "keycloak_openid", "uid" => "kc-uid-100")
+        expect(flash[:alert]).to include("Provisioning failed")
+      end
+    end
+
+    context "when the callback is not navigational" do
+      before do
+        mock_keycloak_auth
+        allow_any_instance_of(Users::OmniauthCallbacksController).to receive(:is_navigational_format?).and_return(false) # rubocop:disable RSpec/AnyInstance
+      end
+
+      it "signs the user in without setting a success flash" do
+        get "/users/auth/keycloak_openid/callback"
+
+        expect(response).to redirect_to(authenticated_root_path)
+        expect(flash[:notice]).to be_nil
+      end
+    end
   end
 
   # ── OmniAuth failure ─────────────────────────────────────────────────────

@@ -4,7 +4,7 @@ require "rails_helper"
 
 RSpec.describe "GraphQL — Style & Model Hub queries", type: :request do
   let(:admin)  { create(:user, :admin) }
-  let(:member) { create(:user) }
+  let(:member) { build_stubbed(:user) }
 
   def gql(query, variables: {}, user: admin)
     sign_in user if user
@@ -13,6 +13,10 @@ RSpec.describe "GraphQL — Style & Model Hub queries", type: :request do
          headers: { "Accept" => "application/json" },
          as:      :json
     JSON.parse(response.body)
+  end
+
+  def schema_exec(query, variables: {}, context: {})
+    HeadlessDamSchema.execute(query, variables: variables, context: context).to_h
   end
 
   # ---------------------------------------------------------------------------
@@ -45,8 +49,23 @@ RSpec.describe "GraphQL — Style & Model Hub queries", type: :request do
       expect(caps).to all(eq("embedding"))
     end
 
+    it "filters by enabled state" do
+      create(:ai_model_config, :disabled, capability: "generation")
+
+      result = gql(query.sub("query($capability: String)", "query($capability: String, $enabled: Boolean)")
+                       .sub("aiModelConfigs(capability: $capability)", "aiModelConfigs(capability: $capability, enabled: $enabled)"),
+                   variables: { enabled: false })
+
+      expect(result.dig("data", "aiModelConfigs").map { |config| config["enabled"] }).to all(eq(false))
+    end
+
     it "returns empty array for non-admin" do
-      result = gql(query, user: member)
+      result = schema_exec(query, context: { current_user: member })
+      expect(result.dig("data", "aiModelConfigs")).to eq([])
+    end
+
+    it "returns empty array when unauthenticated" do
+      result = schema_exec(query, context: {})
       expect(result.dig("data", "aiModelConfigs")).to eq([])
     end
   end
@@ -75,7 +94,12 @@ RSpec.describe "GraphQL — Style & Model Hub queries", type: :request do
     end
 
     it "returns nil for non-admin" do
-      result = gql(query, variables: { id: config.id }, user: member)
+      result = schema_exec(query, variables: { id: config.id }, context: { current_user: member })
+      expect(result.dig("data", "aiModelConfig")).to be_nil
+    end
+
+    it "returns nil when unauthenticated" do
+      result = schema_exec(query, variables: { id: config.id }, context: {})
       expect(result.dig("data", "aiModelConfig")).to be_nil
     end
   end
@@ -112,7 +136,12 @@ RSpec.describe "GraphQL — Style & Model Hub queries", type: :request do
     end
 
     it "returns empty for non-admin" do
-      result = gql(query, user: member)
+      result = schema_exec(query, context: { current_user: member })
+      expect(result.dig("data", "stylePresets")).to eq([])
+    end
+
+    it "returns empty when unauthenticated" do
+      result = schema_exec(query, context: {})
       expect(result.dig("data", "stylePresets")).to eq([])
     end
   end
@@ -138,6 +167,11 @@ RSpec.describe "GraphQL — Style & Model Hub queries", type: :request do
       result = gql(query, variables: { id: preset.id })
       expect(result.dig("data", "stylePreset", "id").to_i).to eq(preset.id)
       expect(result.dig("data", "stylePreset", "gatewayRef")).to eq(preset.gateway_ref)
+    end
+
+    it "returns nil when unauthenticated" do
+      result = schema_exec(query, variables: { id: preset.id }, context: {})
+      expect(result.dig("data", "stylePreset")).to be_nil
     end
   end
 
@@ -166,8 +200,25 @@ RSpec.describe "GraphQL — Style & Model Hub queries", type: :request do
     end
 
     it "fails for non-admin" do
-      result = gql(mutation, variables: { input: { name: "X", provider: "openai", modelId: "gpt-4", capability: "generation" } }, user: member)
+      result = schema_exec(mutation,
+                           variables: { input: { name: "X", provider: "openai", modelId: "gpt-4", capability: "generation" } },
+                           context: { current_user: member })
       expect(result["errors"]).not_to be_empty
+    end
+
+    it "fails when unauthenticated" do
+      result = schema_exec(mutation,
+                           variables: { input: { name: "Anon", provider: "openai", modelId: "gpt-4", capability: "generation" } },
+                           context: {})
+
+      expect(result["errors"].first["message"]).to include("Administrator privileges required")
+    end
+
+    it "returns validation errors for invalid configs" do
+      result = gql(mutation, variables: { input: { name: "Broken", provider: "invalid", modelId: "gpt-4", capability: "generation" } })
+
+      expect(result.dig("data", "createAiModelConfig", "aiModelConfig")).to be_nil
+      expect(result.dig("data", "createAiModelConfig", "errors")).to include("Provider is not included in the list")
     end
   end
 
@@ -191,6 +242,19 @@ RSpec.describe "GraphQL — Style & Model Hub queries", type: :request do
       result = gql(mutation, variables: { input: { name: "Neon Night Market" } })
       expect(result.dig("data", "createStylePreset", "errors")).to eq([])
       expect(result.dig("data", "createStylePreset", "stylePreset", "slug")).to eq("neon-night-market")
+    end
+
+    it "fails when unauthenticated" do
+      result = schema_exec(mutation, variables: { input: { name: "Anonymous Preset" } }, context: {})
+
+      expect(result["errors"].first["message"]).to include("Administrator privileges required")
+    end
+
+    it "returns validation errors for invalid presets" do
+      result = gql(mutation, variables: { input: { name: "" } })
+
+      expect(result.dig("data", "createStylePreset", "stylePreset")).to be_nil
+      expect(result.dig("data", "createStylePreset", "errors")).to include("Name can't be blank", "Slug can't be blank")
     end
   end
 end

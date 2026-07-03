@@ -14,5 +14,13 @@ RSpec.describe AdminMailer, type: :mailer do
       expect(mail.body.encoded).to include(Rails.env)
       expect(mail.body.encoded).to include(Rails.version)
     end
+
+    it "falls back to the default sender when smtp settings are not a hash" do
+      allow(Setting).to receive(:get).with("smtp_settings").and_return("disabled")
+
+      mail = described_class.test_connection_email("user@example.com")
+
+      expect(mail.from).to eq([ "noreply@yourdomain.com" ])
+    end
   end
 end

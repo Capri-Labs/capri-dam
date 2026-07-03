@@ -153,6 +153,8 @@ RSpec.describe "Duplicate Manager Settings API", type: :request do
           sign_in admin
           Setting.set("duplicate_manager_enabled", true)
           Setting.set("duplicate_manager_scan_status", "running")
+          Setting.set("duplicate_manager_scan_progress",
+                      { processed: 1, total: 2, updated_at: Time.current.iso8601 })
         end
 
         run_test! do |response|

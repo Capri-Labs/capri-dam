@@ -118,7 +118,7 @@ RSpec.describe "Api::V1::DataHealth coverage", type: :request do
   describe "GET /api/v1/data_health/overview" do
     before do
       Setting.set("duplicate_manager_scan_status", "running")
-      Setting.set("duplicate_manager_scan_progress", { processed: 3, total: 5 })
+      Setting.set("duplicate_manager_scan_progress", { processed: 3, total: 5, updated_at: Time.current.iso8601 })
       Setting.set("duplicate_manager_last_scan_at", "2026-07-01T12:00:00Z")
 
       create(:duplicate_group, status: "pending")
@@ -157,7 +157,8 @@ RSpec.describe "Api::V1::DataHealth coverage", type: :request do
       )
       expect(json["duplicates"]).to include("pending" => 1, "resolved" => 1, "dismissed" => 1, "total" => 3)
       expect(json["connectors"]).to include("total" => 3, "active" => 1, "idle" => 1, "disabled" => 1)
-      expect(json["scan"]).to include("status" => "running", "progress" => { "processed" => 3, "total" => 5 })
+      expect(json["scan"]).to include("status" => "running")
+      expect(json["scan"]["progress"]).to include("processed" => 3, "total" => 5)
       expect(json["debt_flags"].pluck("type")).to eq(%w[duplicates missing_metadata copyright review_pipeline])
       expect(json["debt_flags"].find { |flag| flag["type"] == "missing_metadata" }).to include(
         "count" => 250,
@@ -204,6 +205,61 @@ RSpec.describe "Api::V1::DataHealth coverage", type: :request do
       post "/api/v1/data_health/remediate", params: { debt_type: "bogus" }, as: :json
       expect(response).to have_http_status(:unprocessable_entity)
       expect(json["error"]).to include("Unknown debt type")
+    end
+  end
+
+  describe "private branch helpers" do
+    subject(:controller) { Api::V1::DataHealthController.new }
+
+    it "normalizes malformed scan progress payloads" do
+      Setting.set("duplicate_manager_scan_status", "")
+      Setting.set("duplicate_manager_scan_progress", "bad-data")
+      Setting.set("duplicate_manager_last_scan_at", "2026-07-01T12:00:00Z")
+
+      expect(controller.send(:current_scan_status)).to eq(
+        status: "idle",
+        progress: {},
+        last_scan_at: "2026-07-01T12:00:00Z"
+      )
+    end
+
+    it "builds debt flags for critical, high, and none thresholds" do
+      relation = double("connectors_relation")
+      connector_with_nil_report = instance_double(SystemConnector, analysis_report: nil)
+
+      allow(IngestionBatch).to receive_message_chain(:where, :count).and_return(6)
+      allow(SystemConnector).to receive(:where).and_return(relation)
+      allow(relation).to receive(:not).with(analysis_report: nil).and_return(relation)
+      allow(relation).to receive(:sum) { |&block| [ connector_with_nil_report ].sum(&block) }
+      allow(Asset).to receive_message_chain(:where, :count).and_return(600)
+
+      flags = controller.send(:build_debt_flags, { pending: 600 }, {})
+
+      expect(flags.find { |flag| flag[:type] == "duplicates" }[:impact]).to eq("Critical")
+      expect(flags.find { |flag| flag[:type] == "copyright" }[:impact]).to eq("Critical")
+      expect(flags.find { |flag| flag[:type] == "review_pipeline" }[:impact]).to eq("High")
+    end
+
+    it "covers high and none debt-flag branches" do
+      relation = double("connectors_relation")
+
+      allow(IngestionBatch).to receive_message_chain(:where, :count).and_return(0)
+      allow(SystemConnector).to receive(:where).and_return(relation)
+      allow(relation).to receive(:not).with(analysis_report: nil).and_return(relation)
+      allow(relation).to receive(:sum) { |_ = nil| 0 }
+      allow(Asset).to receive_message_chain(:where, :count).and_return(80)
+
+      flags = controller.send(:build_debt_flags, { pending: 0 }, {})
+
+      expect(flags.find { |flag| flag[:type] == "duplicates" }[:impact]).to eq("None")
+      expect(flags.find { |flag| flag[:type] == "copyright" }[:impact]).to eq("High")
+      expect(flags.find { |flag| flag[:type] == "review_pipeline" }[:impact]).to eq("None")
+    end
+
+    it "subtracts points when a connector lacks an analysis report" do
+      connector = build_stubbed(:system_connector, status: "active", last_sync: 1.day.ago)
+
+      expect(controller.send(:compute_health_score, connector, nil)).to eq(90)
     end
   end
 end

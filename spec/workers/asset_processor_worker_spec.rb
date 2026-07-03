@@ -102,6 +102,26 @@ RSpec.describe AssetProcessorWorker, type: :worker do
     expect(asset.reload.read_attribute_before_type_cast("status")).to eq(Asset.statuses["processing"].to_s)
   end
 
+  it "stores unknown staged files with a fallback extension and without workflow hooks" do
+    staging_path = Rails.root.join("storage", "asset_processor_worker_#{SecureRandom.hex}.unknown")
+    File.binwrite(staging_path, "opaque bytes")
+    allow(AssetVersion).to receive(:find_by).with(id: version.id).and_return(version)
+    allow(version).to receive(:asset).and_return(asset)
+    allow(asset).to receive(:properties).and_return(nil)
+    hide_const("AssetWorkflowTriggerWorker")
+    allow(Marcel::MimeType).to receive(:for).and_return("application/x-opaque")
+    allow(Marcel::Magic).to receive(:new).and_return(instance_double("Marcel::Magic", extensions: nil))
+
+    described_class.new.perform(version.id, staging_path.to_s)
+
+    expect(version.reload.properties["storage_path"]).to match(%r{\A#{asset.uuid}/v1_[0-9a-f]+\.bin\z})
+    expect(version.properties).not_to have_key("dam:product_id")
+    expect(Asset.find(asset.id).properties["content_type"]).to eq("application/x-opaque")
+    expect(DuplicateDetectionWorker).to have_received(:perform_async)
+  ensure
+    File.delete(staging_path) if staging_path && File.exist?(staging_path)
+  end
+
   it "handles private image helper failures without aborting processing" do
     meta = {}
     worker = described_class.new
@@ -246,6 +266,61 @@ RSpec.describe AssetProcessorWorker, type: :worker do
       worker.send(:extract_embedded_metadata, "image.jpg", meta)
 
       expect(meta).to be_empty
+    end
+
+    it "ignores non-hash exiftool payloads" do
+      worker = described_class.new
+      allow(worker).to receive(:exiftool_available?).and_return(true)
+      allow(Open3).to receive(:capture3).and_return([ [ "not-a-hash" ].to_json, "", instance_double(Process::Status, success?: true) ])
+
+      meta = { exif_data: { "Make" => "Canon" } }
+      worker.send(:extract_embedded_metadata, "image.jpg", meta)
+
+      expect(meta).to eq(exif_data: { "Make" => "Canon" })
+    end
+
+    it "ignores exiftool payloads that only contain skipped or binary fields" do
+      worker = described_class.new
+      allow(worker).to receive(:exiftool_available?).and_return(true)
+      allow(Open3).to receive(:capture3).and_return([
+        [ {
+          "SourceFile" => "image.jpg",
+          "EXIF:ThumbnailImage" => "(Binary data 12 bytes, use -b option to extract)",
+        } ].to_json,
+        "",
+        instance_double(Process::Status, success?: true),
+      ])
+
+      meta = {}
+      worker.send(:extract_embedded_metadata, "image.jpg", meta)
+
+      expect(meta).to be_empty
+    end
+
+    it "keeps XMP metadata without forcing an EXIF merge and skips blank descriptive fallbacks" do
+      worker = described_class.new
+      allow(worker).to receive(:exiftool_available?).and_return(true)
+      allow(Open3).to receive(:capture3).and_return([
+        [ {
+          "XMP:Creator" => "   ",
+          "IPTC:By-line" => [],
+          "XMP:Headline" => "  Launch Story  ",
+        } ].to_json,
+        "",
+        instance_double(Process::Status, success?: true),
+      ])
+
+      meta = {}
+      worker.send(:extract_embedded_metadata, "image.jpg", meta)
+
+      expect(meta[:embedded_metadata]).to eq(
+        "EXIF" => {},
+        "XMP" => { "Creator" => "   ", "Headline" => "  Launch Story  " },
+        "IPTC" => { "By-line" => [] }
+      )
+      expect(meta[:exif_data]).to be_nil
+      expect(meta[:creator]).to be_nil
+      expect(meta[:headline]).to eq("Launch Story")
     end
   end
 
@@ -407,10 +482,23 @@ RSpec.describe AssetProcessorWorker, type: :worker do
       expect(described_class.new.backfill_preview(png)).to be_nil
     end
 
+    it "skips assets without an active version" do
+      orphan = create(:asset, status: :ready, properties: { "content_type" => "image/vnd.adobe.photoshop" })
+
+      expect(described_class.new.backfill_preview(orphan)).to be_nil
+    end
+
     it "skips assets that already have a preview" do
       psd_version.update!(properties: psd_version.properties.merge("preview_storage_path" => "uuid/existing.png"))
 
       expect(described_class.new.backfill_preview(psd_asset)).to be_nil
+    end
+
+    it "skips assets without a stored original path" do
+      no_source = create(:asset, status: :ready, properties: { "content_type" => "image/vnd.adobe.photoshop" })
+      create(:asset_version, asset: no_source, version_number: 1, properties: nil)
+
+      expect(described_class.new.backfill_preview(no_source)).to be_nil
     end
 
     it "skips when the original cannot be fetched" do
@@ -419,6 +507,76 @@ RSpec.describe AssetProcessorWorker, type: :worker do
       expect(worker).not_to receive(:generate_web_preview)
 
       expect(worker.backfill_preview(psd_asset)).to be_nil
+    end
+
+    it "cleans up fetched originals when preview generation does not produce a path" do
+      worker = described_class.new
+      fetched_path = nil
+      allow(worker).to receive(:fetch_original) do |_storage, _storage_path, tmp|
+        fetched_path = tmp
+        File.binwrite(tmp, "source")
+        true
+      end
+      allow(worker).to receive(:generate_web_preview)
+
+      expect(worker.backfill_preview(psd_asset)).to be_nil
+      expect(fetched_path).to be_present
+      expect(File.exist?(fetched_path)).to be(false)
+    end
+  end
+
+  describe "#parse_product_filename" do
+    it "returns nil for filenames without enough dash-separated parts" do
+      expect(described_class.new.send(:parse_product_filename, "poster.jpg")).to be_nil
+    end
+  end
+
+  describe "#clean_exif" do
+    it "drops blank keys and blank values while preserving non-string values" do
+      cleaned = described_class.new.send(:clean_exif, {
+        "" => "skip",
+        "ExposureTime" => 0.5,
+        "BlankValue" => "   ",
+        "NilValue" => nil,
+      })
+
+      expect(cleaned).to eq("ExposureTime" => 0.5)
+    end
+  end
+
+  describe "#extract_extended_image_properties" do
+    it "records technical image fields when they are present" do
+      image = instance_double("MiniMagick::Image", type: "PSD", layers: [ :bg, :text ])
+      allow(image).to receive(:[]).with("%[bit-depth]").and_return("16")
+      allow(image).to receive(:[]).with("%[channels]").and_return("rgba")
+      allow(image).to receive(:[]).with("%C").and_return("Zip")
+      allow(image).to receive(:[]).with("%[orientation]").and_return("TopLeft")
+      allow(image).to receive(:[]).with("%x x %y").and_return("300 x 300")
+      allow(image).to receive(:[]).with("%[profile:icc]").and_return("Adobe RGB")
+
+      meta = {}
+      described_class.new.send(:extract_extended_image_properties, image, meta)
+
+      expect(meta).to include(
+        format: "PSD",
+        bit_depth: "16",
+        channels: "rgba",
+        compression: "Zip",
+        orientation: "TopLeft",
+        dpi: "300 x 300",
+        color_profile: "Adobe RGB",
+        layer_count: 2
+      )
+    end
+
+    it "omits layer counts when the image exposes no layers collection" do
+      image = instance_double("MiniMagick::Image", type: "PNG", layers: nil)
+      allow(image).to receive(:[]).and_return(nil)
+
+      meta = {}
+      described_class.new.send(:extract_extended_image_properties, image, meta)
+
+      expect(meta).not_to have_key(:layer_count)
     end
   end
 
@@ -536,6 +694,14 @@ RSpec.describe AssetProcessorWorker, type: :worker do
       expect { worker.send(:extract_text_from_image, "image.jpg", meta) }.not_to raise_error
       expect(meta).to eq({})
     end
+
+    it "memoizes the exiftool availability probe" do
+      worker.instance_variable_set(:@exiftool_available, true)
+      allow(worker).to receive(:system)
+
+      expect(worker.send(:exiftool_available?)).to be(true)
+      expect(worker).not_to have_received(:system)
+    end
   end
 
   it "falls back to an empty color palette when ImageMagick fails" do
@@ -559,6 +725,30 @@ RSpec.describe AssetProcessorWorker, type: :worker do
     expect(meta).to include(extracted_text: "extracted words")
   end
 
+  it "skips storing OCR text when Tesseract returns only whitespace" do
+    meta = {}
+    tesseract_image = instance_double("RTesseract", to_s: "   ")
+    tesseract_class = class_double("RTesseract", new: tesseract_image)
+    stub_const("RTesseract", tesseract_class)
+
+    described_class.new.send(:extract_text_from_image, "image.jpg", meta)
+
+    expect(meta).to eq({})
+  end
+
+  it "does not store a preview when ImageMagick produces no file" do
+    worker = described_class.new
+    convert = double("MiniMagick convert", background: nil, flatten: nil)
+    allow(convert).to receive(:<<)
+    allow(MiniMagick).to receive(:convert).and_yield(convert)
+
+    meta = {}
+    worker.send(:generate_web_preview, "source.psd", asset, version, storage, meta)
+
+    expect(storage).not_to have_received(:store)
+    expect(meta).to be_empty
+  end
+
   it "marks assets failed and removes the staged file when retries are exhausted" do
     staging_path = Rails.root.join("storage", "asset_processor_worker_#{SecureRandom.hex}.bin")
     File.binwrite(staging_path, "staged")
@@ -572,5 +762,14 @@ RSpec.describe AssetProcessorWorker, type: :worker do
     expect(File.exist?(staging_path)).to be(false)
   ensure
     File.delete(staging_path) if staging_path && File.exist?(staging_path)
+  end
+
+  it "handles exhausted retries when the version and staged file are already gone" do
+    expect do
+      described_class.sidekiq_retries_exhausted_block.call(
+        { "args" => [ -1, nil ] },
+        StandardError.new("permanent")
+      )
+    end.not_to raise_error
   end
 end

@@ -93,6 +93,20 @@ RSpec.describe Authorization, type: :controller do
     )
   end
 
+  describe "module inclusion" do
+    it "does not require helper_method support when included in a plain class" do
+      klass = Class.new do
+        include Authorization
+
+        def current_user
+          nil
+        end
+      end
+
+      expect(klass.new.current_user_admin?).to be(false)
+    end
+  end
+
   describe "role guards" do
     it "forbids non-admins and allows administrator-group members" do
       regular = user_double
@@ -122,6 +136,14 @@ RSpec.describe Authorization, type: :controller do
       controller.current_user = nil
 
       expect(controller.current_user_admin?).to be(false)
+    end
+
+    it "forbids missing users from super-admin actions" do
+      controller.current_user = nil
+
+      get :super_admin_action
+
+      expect(response).to have_http_status(:forbidden)
     end
   end
 
@@ -162,6 +184,16 @@ RSpec.describe Authorization, type: :controller do
       expect(response).to have_http_status(:forbidden)
       expect(JSON.parse(response.body)["error"]).to include("'admin'")
     end
+
+    it "returns false when PAT scope lookup cannot authenticate the header" do
+      expect(controller.send(:pat_has_scope?, %w[write])).to be(false)
+
+      request.headers["Authorization"] = "Bearer ghp_invalid"
+      expect(controller.send(:pat_has_scope?, %w[write])).to be(false)
+
+      request.headers["Authorization"] = "Bearer dat_missingtoken"
+      expect(controller.send(:pat_has_scope?, %w[write])).to be(false)
+    end
   end
 
   describe "folder and asset permission guards" do
@@ -186,12 +218,32 @@ RSpec.describe Authorization, type: :controller do
       expect(JSON.parse(response.body)["error"]).to include("'delete' permission")
     end
 
+    it "renders forbidden when no current user can resolve folder permissions" do
+      controller.current_user = nil
+
+      get :folder_action, params: { folder_id: folder.id, permission: "read" }
+
+      expect(response).to have_http_status(:forbidden)
+      expect(JSON.parse(response.body)["error"]).to include("'read' permission")
+    end
+
     it "allows asset read checks for root-level assets" do
       root_asset = create(:asset, folder: nil)
       controller.current_user = user_double
 
       get :asset_read_action, params: { asset_id: root_asset.id }
 
+      expect(response).to have_http_status(:ok)
+    end
+
+    it "allows modify and delete checks for root-level assets" do
+      root_asset = create(:asset, folder: nil)
+      controller.current_user = user_double
+
+      patch :asset_modify_action, params: { asset_id: root_asset.id }
+      expect(response).to have_http_status(:ok)
+
+      delete :asset_delete_action, params: { asset_id: root_asset.id }
       expect(response).to have_http_status(:ok)
     end
 

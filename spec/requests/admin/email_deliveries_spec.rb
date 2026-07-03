@@ -100,6 +100,23 @@ RSpec.describe "Admin::EmailDeliveries coverage additions", type: :request do
       expect(response.parsed_body["pagination"]).to include("page" => 1, "per_page" => 100, "total" => 1)
     end
 
+    it "labels deliveries without a template as deleted templates" do
+      delivery = instance_double(
+        EmailDelivery,
+        id: 123,
+        recipient_email: "orphan@example.com",
+        email_template: nil,
+        status: "pending",
+        retry_count: 0,
+        error_log: nil,
+        created_at: Time.zone.parse("2026-07-01 09:00:00")
+      )
+
+      controller_instance = Admin::EmailDeliveriesController.new
+
+      expect(controller_instance.send(:serialize_delivery, delivery)[:template_name]).to eq("Deleted Template")
+    end
+
     it "returns an empty page when filters match nothing" do
       create(:email_delivery, email_template: template, recipient_email: "person@example.com", status: "sent")
 

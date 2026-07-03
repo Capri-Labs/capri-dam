@@ -13,7 +13,10 @@ RSpec.describe DataHealthRemediationWorker, type: :worker do
   end
 
   it "skips duplicate scans already queued or running" do
-    allow(Setting).to receive(:get).and_return("running")
+    allow(Setting).to receive(:get).with("duplicate_manager_scan_status").and_return("running")
+    allow(Setting).to receive(:get).with("duplicate_manager_scan_progress").and_return(
+      { processed: 1, total: 2, updated_at: Time.current.iso8601 }
+    )
     allow(Setting).to receive(:set)
     allow(DuplicateRepositoryScanWorker).to receive(:perform_async)
 

@@ -22,4 +22,17 @@ RSpec.describe ReportDefinition, type: :model do
       expect(rd.report_snapshots).to include(snap)
     end
   end
+
+  describe '#description' do
+    it 'returns the configured description when present' do
+      definition = build(:report_definition, query_config: { 'description' => 'Usage by folder' })
+
+      expect(definition.description).to eq('Usage by folder')
+    end
+
+    it 'returns nil when query_config is nil or missing the description key' do
+      expect(build(:report_definition, query_config: nil).description).to be_nil
+      expect(build(:report_definition, query_config: { 'title' => 'No description' }).description).to be_nil
+    end
+  end
 end

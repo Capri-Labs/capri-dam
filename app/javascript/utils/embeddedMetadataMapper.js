@@ -8,13 +8,18 @@
 // clobbering fields that have no embedded source.
 
 // Candidate ordering within each list runs from most-authoritative to
-// least-authoritative. The last one or two entries in several lists are
-// deliberately low-confidence fallbacks (e.g. deriving `dc:creator` from the
-// authoring `Software`, or `dc:rights` from an embedded ICC profile's
-// copyright). They let design/document assets (PSD, AI, PDF, PNG, …) that carry
-// no photographic descriptive tags still pre-fill something rather than showing
-// every field blank. Keep the heuristic entries last so genuine descriptive
-// tags always win. Mirrors the backend `EmbeddedMetadataMapper::PROPERTY_SOURCES`.
+// least-authoritative. The last entry in `dc:creator` and `dc:title` is
+// deliberately a low-confidence fallback (e.g. deriving `dc:creator` from the
+// authoring `Software`). It lets design/document assets (PSD, AI, PDF, PNG, …)
+// that carry no photographic descriptive tags still pre-fill something rather
+// than showing every field blank. Keep the heuristic entries last so genuine
+// descriptive tags always win. Mirrors the backend `EmbeddedMetadataMapper::PROPERTY_SOURCES`.
+//
+// `dc:rights` deliberately does NOT fall back to `ICC_Profile:ProfileCopyright`:
+// that field is the copyright notice of the embedded *color profile* (e.g.
+// "Copyright Adobe Systems Incorporated"), not the asset's usage rights — using
+// it as a fallback previously mis-labelled assets with Adobe's ICC profile
+// license text as their rights holder.
 const PROPERTY_SOURCES = {
   'dc:title': [
     'XMP:Title', 'IPTC:ObjectName', 'XMP:Headline', 'IPTC:Headline',
@@ -35,7 +40,7 @@ const PROPERTY_SOURCES = {
   ],
   'dc:rights': [
     'XMP:Rights', 'IPTC:CopyrightNotice', 'EXIF:Copyright',
-    'XMP:UsageTerms', 'XMP:WebStatement', 'ICC_Profile:ProfileCopyright',
+    'XMP:UsageTerms', 'XMP:WebStatement',
   ],
 
   'Iptc4xmpCore:Headline': ['XMP:Headline', 'IPTC:Headline', 'XMP:Title', 'IPTC:ObjectName', 'Photoshop:SlicesGroupName'],
