@@ -56,12 +56,97 @@ RSpec.describe "Admin::SystemStatus", type: :request do
       sign_in admin
       allow(Setting).to receive(:set)
       allow(Setting).to receive(:apply_smtp_settings!)
+      allow(SmtpConnectionValidator).to receive(:new).and_return(instance_double(SmtpConnectionValidator, call: SmtpConnectionValidator::Result.new(success: true)))
 
       post admin_system_status_update_smtp_path, params: smtp_params, as: :json
 
       expect(response).to have_http_status(:ok)
       expect(Setting).to have_received(:set).with("smtp_settings", hash_including("address" => "smtp.example.com"))
       expect(Setting).to have_received(:apply_smtp_settings!)
+    end
+
+    it "rejects invalid configuration without persisting or handshaking" do
+      sign_in admin
+      allow(Setting).to receive(:set)
+      allow(SmtpConnectionValidator).to receive(:new)
+
+      post admin_system_status_update_smtp_path, params: {
+        smtp_config: smtp_params[:smtp_config].merge(address: ""),
+      }, as: :json
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.parsed_body["success"]).to be(false)
+      expect(Setting).not_to have_received(:set)
+      expect(SmtpConnectionValidator).not_to have_received(:new)
+    end
+
+    it "rejects and does not persist settings that fail the SMTP handshake" do
+      sign_in admin
+      allow(Setting).to receive(:set)
+      failure = SmtpConnectionValidator::Result.new(success: false, error_code: "SMTP_AUTHENTICATION_FAILED", message: "bad credentials")
+      allow(SmtpConnectionValidator).to receive(:new).and_return(instance_double(SmtpConnectionValidator, call: failure))
+
+      post admin_system_status_update_smtp_path, params: smtp_params, as: :json
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.parsed_body["success"]).to be(false)
+      expect(response.parsed_body["error_code"]).to eq("SMTP_AUTHENTICATION_FAILED")
+      expect(Setting).not_to have_received(:set)
+    end
+  end
+
+  describe "POST /admin/system_status/test_connection" do
+    let(:smtp_params) do
+      {
+        smtp_config: {
+          enabled: "true",
+          address: "smtp.example.com",
+          port: "587",
+          domain: "example.com",
+          user_name: "mailer",
+          password: "secret",
+          authentication: "plain",
+          enable_starttls_auto: "true",
+          sender_address: "ops@example.com",
+        },
+      }
+    end
+
+    it "returns success without persisting when the handshake succeeds" do
+      sign_in admin
+      allow(Setting).to receive(:set)
+      allow(SmtpConnectionValidator).to receive(:new).and_return(instance_double(SmtpConnectionValidator, call: SmtpConnectionValidator::Result.new(success: true)))
+
+      post admin_system_status_test_connection_path, params: smtp_params, as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body["success"]).to be(true)
+      expect(Setting).not_to have_received(:set)
+    end
+
+    it "returns a structured error code when the handshake fails" do
+      sign_in admin
+      failure = SmtpConnectionValidator::Result.new(success: false, error_code: "CONNECTION_TIMEOUT", message: "timed out")
+      allow(SmtpConnectionValidator).to receive(:new).and_return(instance_double(SmtpConnectionValidator, call: failure))
+
+      post admin_system_status_test_connection_path, params: smtp_params, as: :json
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.parsed_body["success"]).to be(false)
+      expect(response.parsed_body["error_code"]).to eq("CONNECTION_TIMEOUT")
+    end
+
+    it "returns INVALID_CONFIGURATION without attempting a handshake when required fields are missing" do
+      sign_in admin
+      allow(SmtpConnectionValidator).to receive(:new)
+
+      post admin_system_status_test_connection_path, params: {
+        smtp_config: smtp_params[:smtp_config].merge(address: ""),
+      }, as: :json
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.parsed_body["error_code"]).to eq("INVALID_CONFIGURATION")
+      expect(SmtpConnectionValidator).not_to have_received(:new)
     end
   end
 

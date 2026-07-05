@@ -1,9 +1,6 @@
 class AdminMailer < ApplicationMailer
   # Dynamic 'from' address resolving to your database configuration or falling back safely
-  default from: -> {
-    smtp_config = Setting.get("smtp_settings")
-    smtp_config.is_a?(Hash) ? (smtp_config["sender_address"] || "noreply@yourdomain.com") : "noreply@yourdomain.com"
-  }
+  default from: -> { SystemEmailConfig.current.from_address_with_name }
 
   # Sends a highly informative, diagnostic test email to verify credentials and routing
   def test_connection_email(recipient)

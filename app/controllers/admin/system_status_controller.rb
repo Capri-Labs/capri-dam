@@ -18,11 +18,50 @@ class Admin::SystemStatusController < ApplicationController
 
   # POST /admin/system_status/update_smtp
   def update_smtp
-    # Convert parameters to hash cleanly
-    Setting.set("smtp_settings", smtp_params.to_h)
-    # Re-apply config changes to the current environment context
-    Setting.apply_smtp_settings!
+    config = build_config_from_params
+
+    unless config.valid?
+      return render json: { success: false, errors: config.errors.full_messages }, status: :unprocessable_entity
+    end
+
+    if config.enabled
+      validation = SmtpConnectionValidator.new(config).call
+      unless validation.success?
+        return render json: {
+          success: false,
+          error_code: validation.error_code,
+          error: "SMTP handshake failed: #{validation.message}",
+        }, status: :unprocessable_entity
+      end
+    end
+
+    config.persist!
     render json: { success: true, message: "SMTP configuration updated successfully." }
+  end
+
+  # POST /admin/system_status/test_connection
+  #
+  # Pre-flight, non-blocking connection validation only -- performs a raw
+  # SMTP handshake against the submitted (not-yet-saved) parameters without
+  # sending any email. Used by both the "Test Connection" button and as a
+  # guard inside #update_smtp before persisting new credentials.
+  def test_connection
+    config = build_config_from_params
+
+    unless config.valid?
+      return render json: {
+        success: false,
+        error_code: "INVALID_CONFIGURATION",
+        error: config.errors.full_messages.to_sentence,
+      }, status: :unprocessable_entity
+    end
+
+    result = SmtpConnectionValidator.new(config).call
+    if result.success?
+      render json: { success: true, message: "SMTP handshake succeeded. Connection is reachable and authenticated." }
+    else
+      render json: { success: false, error_code: result.error_code, error: result.message }, status: :unprocessable_entity
+    end
   end
 
   # POST /admin/system_status/test_email
@@ -33,8 +72,7 @@ class Admin::SystemStatusController < ApplicationController
     end
 
     begin
-      Setting.apply_smtp_settings!
-      AdminMailer.test_connection_email(recipient).deliver_now
+      CentralNotificationMailer.build_admin_test_mail(recipient).deliver_now
       render json: { success: true, message: "Test connection successful. Email sent to #{recipient}." }
     rescue => e
       render json: { success: false, error: "SMTP Error: #{e.message}" }, status: :internal_server_error
@@ -64,8 +102,18 @@ class Admin::SystemStatusController < ApplicationController
   def smtp_params
     params.require(:smtp_config).permit(
       :enabled, :address, :port, :domain, :user_name, :password,
-      :authentication, :enable_starttls_auto, :sender_address
+      :authentication, :enable_starttls_auto, :sender_address,
+      :sender_name, :security_protocol
     )
+  end
+
+  # Builds a SystemEmailConfig from the submitted params, transparently
+  # keeping the existing stored password when the UI sends back the masked
+  # placeholder instead of a real secret.
+  def build_config_from_params
+    config = SystemEmailConfig.from_raw(smtp_params.to_h)
+    config.smtp_password = SystemEmailConfig.current.smtp_password if smtp_params[:password].to_s.strip == "********"
+    config
   end
 
   def diagnostic_report

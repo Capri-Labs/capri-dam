@@ -28,6 +28,19 @@ RSpec.describe "Api::V1::SystemConnectors coverage", type: :request do
       expect(json.map { |connector| connector["name"] }).to eq(%w[New Old])
       expect(json.first["provider_label"]).to eq("FTP / SFTP")
     end
+
+    it "returns a paginated shape when a page param is given" do
+      15.times { |i| create(:system_connector, name: "Connector #{i}", created_at: i.hours.ago) }
+
+      sign_in user
+      get "/api/v1/system_connectors", params: { page: 2, per_page: 12 }, as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(json["connectors"].size).to eq(3)
+      expect(json["pagination"]).to include(
+        "page" => 2, "per_page" => 12, "total" => 15, "total_pages" => 2
+      )
+    end
   end
 
   describe "admin connector writes" do

@@ -65,8 +65,9 @@ controls instead of compile-time environment switching.
 |===
 | Method | Path | Purpose
 | `GET /admin/system_status` | shell | Render operations dashboard.
-| `POST /admin/system_status/test_smtp` | action | Validate SMTP settings.
-| `PATCH /admin/system_status/update_smtp` | action | Persist SMTP config.
+| `POST /admin/system_status/test_connection` | action | Pre-flight-only SMTP handshake check (`SmtpConnectionValidator`); sends no email.
+| `POST /admin/system_status/update_smtp` | action | Validate (`SmtpConnectionValidator`) and persist SMTP config via `SystemEmailConfig`.
+| `POST /admin/system_status/test_email` | action | Send a real diagnostic email via `CentralNotificationMailer`.
 | `GET /admin/reports` | shell | Analytics and export dashboard.
 | `GET /admin/report_snapshots` | shell | Snapshot history.
 | `GET /admin/intelligence` | shell | AI operations console.

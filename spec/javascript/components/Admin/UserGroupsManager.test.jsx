@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 
 const mockNotify = jest.fn();
 const mockApiFetch = jest.fn();
@@ -46,5 +46,30 @@ describe('UserGroupsManager', () => {
     render(<UserGroupsManager isAdmin currentUserId={1} />);
     expect(await screen.findByText('Everyone')).toBeInTheDocument();
     expect(screen.getByText('Editors')).toBeInTheDocument();
+  });
+
+  it('paginates root-level custom groups and keeps children with their parent', async () => {
+    const rootGroups = Array.from({ length: 15 }, (_, i) => ({
+      id: 100 + i, name: `Root Group ${i}`, slug: `root-${i}`, member_count: 0, is_system: false, parent_id: null,
+    }));
+    // Child of the very first root group — must always render alongside its parent.
+    const child = { id: 200, name: 'Child Of Root 0', slug: 'child-0', member_count: 0, is_system: false, parent_id: 100 };
+
+    mockApiFetch.mockResolvedValue({ user_groups: [ ...rootGroups, child ] });
+
+    render(<UserGroupsManager isAdmin currentUserId={1} />);
+
+    expect(await screen.findByText('Root Group 0')).toBeInTheDocument();
+    expect(screen.getByText('Child Of Root 0')).toBeInTheDocument();
+    expect(screen.getByText('Root Group 9')).toBeInTheDocument();
+    expect(screen.queryByText('Root Group 10')).not.toBeInTheDocument();
+    expect(screen.getByText('Page 1 of 2')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /Next/ }));
+
+    expect(await screen.findByText('Root Group 10')).toBeInTheDocument();
+    expect(screen.queryByText('Root Group 0')).not.toBeInTheDocument();
+    expect(screen.queryByText('Child Of Root 0')).not.toBeInTheDocument();
+    expect(screen.getByText('Page 2 of 2')).toBeInTheDocument();
   });
 });

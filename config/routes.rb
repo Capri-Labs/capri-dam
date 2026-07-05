@@ -455,6 +455,7 @@ Rails.application.routes.draw do
     # System Status & Configs
     get "system_status", to: "system_status#index"
     post "system_status/update_smtp", to: "system_status#update_smtp"
+    post "system_status/test_connection", to: "system_status#test_connection"
     post "system_status/test_email", to: "system_status#test_email"
     post "system_status/restart_server", to: "system_status#restart_server"
 

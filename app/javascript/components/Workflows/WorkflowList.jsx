@@ -1,14 +1,14 @@
 import React from 'react';
 import {
     Box, Typography, Button, Table, TableBody, TableCell,
-    TableHead, TableRow, Chip, IconButton, Paper, Tooltip
+    TableHead, TableRow, Chip, IconButton, Paper, Tooltip, Stack
 } from '@mui/material';
 import {
     Add, Edit, Delete, ToggleOn, ToggleOff,
     History, AccountTree
 } from '@mui/icons-material';
 
-export default function WorkflowList({ workflows = [], onCreate, onEdit, onToggleStatus, onDelete }) {
+export default function WorkflowList({ workflows = [], pagination, loading = false, onPageChange, onCreate, onEdit, onToggleStatus, onDelete }) {
 
     const handleDelete = async (id) => {
         // 1. Ask for confirmation
@@ -28,6 +28,7 @@ export default function WorkflowList({ workflows = [], onCreate, onEdit, onToggl
 
             if (response.ok) {
                 console.log("Workflow deleted successfully");
+                onDelete?.(id);
             } else {
                 const data = await response.json();
                 alert(`Error: ${data.errors || 'Could not delete workflow'}`);
@@ -136,6 +137,29 @@ export default function WorkflowList({ workflows = [], onCreate, onEdit, onToggl
                     </TableBody>
                 </Table>
             </Paper>
+
+            {/* Pagination */}
+            {pagination && pagination.total_pages > 1 && (
+                <Stack direction="row" spacing={1} sx={{ mt: 2, justifyContent: 'center' }}>
+                    <Button
+                        size="small"
+                        disabled={loading || pagination.page <= 1}
+                        onClick={() => onPageChange?.(pagination.page - 1)}
+                    >
+                        ← Prev
+                    </Button>
+                    <Typography variant="caption" sx={{ alignSelf: 'center', px: 1 }}>
+                        Page {pagination.page} of {pagination.total_pages}
+                    </Typography>
+                    <Button
+                        size="small"
+                        disabled={loading || pagination.page >= pagination.total_pages}
+                        onClick={() => onPageChange?.(pagination.page + 1)}
+                    >
+                        Next →
+                    </Button>
+                </Stack>
+            )}
         </Box>
     );
 }

@@ -73,7 +73,10 @@
     "copyDismiss": "Kopieren & Schließen",
     "refresh": "Aktualisieren",
     "actions": "Actions",
-    "back": "Zurück"
+    "back": "Zurück",
+    "previous": "Zurück",
+    "next": "Weiter",
+    "pageOf": "Seite {{page}} von {{pages}}"
   },
   "header": {
     "myProfile": "Mein Profil",
@@ -2371,6 +2374,22 @@
       "removeTooltip": "Schema aus diesem Ordner entfernen",
       "empty": "Diesem Ordner ist kein Metadatenschema zugewiesen. Assets verwenden das Standardschema, falls eines konfiguriert ist.",
       "emptyHint": "Konfigurieren Sie Schemas unter Tools → Metadata Schemas."
+    }
+  },
+  "smtpSettings": {
+    "testConnection": "Verbindung testen",
+    "testingConnection": "Verbindung wird getestet...",
+    "connectionVerified": "Verbindung bestätigt! Handshake erfolgreich.",
+    "connectionFailed": "Verbindung fehlgeschlagen",
+    "errorCodes": {
+      "CONNECTION_TIMEOUT": "Zeitüberschreitung der Verbindung",
+      "CONNECTION_REFUSED": "Verbindung vom Host abgelehnt",
+      "HOST_UNREACHABLE": "Host nicht erreichbar",
+      "SMTP_AUTHENTICATION_FAILED": "Authentifizierung fehlgeschlagen",
+      "SSL_CERTIFICATE_ERROR": "SSL-Zertifikatfehler",
+      "SMTP_SERVER_BUSY": "SMTP-Server ausgelastet, bitte später erneut versuchen",
+      "SMTP_ERROR": "SMTP-Fehler",
+      "INVALID_CONFIGURATION": "Ungültige Konfiguration"
     }
   }
 }

@@ -73,7 +73,10 @@
     "copyDismiss": "Kopiëren & Sluiten",
     "refresh": "Vernieuwen",
     "actions": "Actions",
-    "back": "Terug"
+    "back": "Terug",
+    "previous": "Vorige",
+    "next": "Volgende",
+    "pageOf": "Pagina {{page}} van {{pages}}"
   },
   "header": {
     "myProfile": "Mijn profiel",
@@ -2371,6 +2374,22 @@
       "removeTooltip": "Schema uit deze map verwijderen",
       "empty": "Er is geen metadataschema aan deze map toegewezen. Assets gebruiken het standaardschema als er een is geconfigureerd.",
       "emptyHint": "Configureer schema’s onder Tools → Metadata Schemas."
+    }
+  },
+  "smtpSettings": {
+    "testConnection": "Verbinding testen",
+    "testingConnection": "Verbinding testen...",
+    "connectionVerified": "Verbinding geverifieerd! Handshake geslaagd.",
+    "connectionFailed": "Verbinding mislukt",
+    "errorCodes": {
+      "CONNECTION_TIMEOUT": "Verbinding verlopen",
+      "CONNECTION_REFUSED": "Verbinding geweigerd door host",
+      "HOST_UNREACHABLE": "Host niet bereikbaar",
+      "SMTP_AUTHENTICATION_FAILED": "Authenticatie mislukt",
+      "SSL_CERTIFICATE_ERROR": "SSL-certificaatfout",
+      "SMTP_SERVER_BUSY": "SMTP-server bezet, probeer het later opnieuw",
+      "SMTP_ERROR": "SMTP-fout",
+      "INVALID_CONFIGURATION": "Ongeldige configuratie"
     }
   }
 }

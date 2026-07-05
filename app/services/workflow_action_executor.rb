@@ -81,18 +81,18 @@ class WorkflowActionExecutor
       )
     end
 
-    # Fire the real email through WorkflowMailer when available
-    # (deliver_later uses Sidekiq under the hood)
-    if defined?(WorkflowMailer) && WorkflowMailer.respond_to?(:workflow_email)
-      recipients.each do |user|
-        WorkflowMailer.workflow_email(
-          to:       user.email,
-          cc:       @config[:cc].presence,
-          subject:  subject,
-          body:     body,
-          priority: @config[:priority].presence || "normal",
-        ).deliver_later
-      end
+    # Fire the real email through the centralized notification dispatcher
+    # (deliver_later uses Sidekiq under the hood). Routing exclusively through
+    # CentralNotificationMailer guarantees the validated database SMTP
+    # configuration is applied before every transmission.
+    recipients.each do |user|
+      CentralNotificationMailer.deliver_workflow_alert(
+        to:       user.email,
+        cc:       @config[:cc].presence,
+        subject:  subject,
+        body:     body,
+        priority: @config[:priority].presence || "normal",
+      )
     end
     nil
   end

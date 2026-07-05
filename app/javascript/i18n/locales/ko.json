@@ -73,7 +73,10 @@
     "copyDismiss": "복사하고 닫기",
     "refresh": "새로 고침",
     "actions": "Actions",
-    "back": "뒤로"
+    "back": "뒤로",
+    "previous": "이전",
+    "next": "다음",
+    "pageOf": "{{pages}}페이지 중 {{page}}페이지"
   },
   "header": {
     "myProfile": "내 프로필",
@@ -2371,6 +2374,22 @@
       "removeTooltip": "이 폴더에서 스키마 제거",
       "empty": "이 폴더에 메타데이터 스키마가 할당되지 않았습니다. 기본 스키마가 구성되어 있으면 에셋은 해당 스키마를 사용합니다.",
       "emptyHint": "스키마는 Tools → Metadata Schemas 에서 구성하세요."
+    }
+  },
+  "smtpSettings": {
+    "testConnection": "연결 테스트",
+    "testingConnection": "연결 테스트 중...",
+    "connectionVerified": "연결이 확인되었습니다! 핸드셰이크에 성공했습니다.",
+    "connectionFailed": "연결 실패",
+    "errorCodes": {
+      "CONNECTION_TIMEOUT": "연결 시간이 초과되었습니다",
+      "CONNECTION_REFUSED": "호스트가 연결을 거부했습니다",
+      "HOST_UNREACHABLE": "호스트에 연결할 수 없습니다",
+      "SMTP_AUTHENTICATION_FAILED": "인증에 실패했습니다",
+      "SSL_CERTIFICATE_ERROR": "SSL 인증서 오류",
+      "SMTP_SERVER_BUSY": "SMTP 서버가 사용 중입니다. 나중에 다시 시도하세요",
+      "SMTP_ERROR": "SMTP 오류",
+      "INVALID_CONFIGURATION": "잘못된 구성입니다"
     }
   }
 }

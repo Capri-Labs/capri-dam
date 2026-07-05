@@ -46,4 +46,37 @@ describe('EmailEngineManager', () => {
     await act(async () => { fireEvent.click(screen.getByText('Outbox')); });
     await waitFor(() => expect(screen.getByText('alice@example.com')).toBeInTheDocument());
   });
+
+  it('paginates the Templates tab client-side while keeping Event Mapping unaffected', async () => {
+    const templates = Array.from({ length: 15 }, (_, i) => ({
+      id: i + 1, name: `Template ${i}`, subject: `Subject ${i}`, event_trigger: 'user_created', active: true,
+    }));
+
+    global.fetch = jest.fn((url) => {
+      if (url === '/admin/email_templates.json') {
+        return Promise.resolve({ json: () => Promise.resolve({ email_templates: templates }) });
+      }
+      if (url.startsWith('/admin/email_deliveries.json')) {
+        return Promise.resolve({ json: () => Promise.resolve({ email_deliveries: [] }) });
+      }
+      return Promise.resolve({ json: () => Promise.resolve({ success: true, message: 'ok' }) });
+    });
+
+    await act(async () => { render(<EmailEngineManager />); });
+
+    expect(await screen.findByText('Template 0')).toBeInTheDocument();
+    expect(screen.getByText('Template 9')).toBeInTheDocument();
+    expect(screen.queryByText('Template 10')).not.toBeInTheDocument();
+    expect(screen.getByText('Page 1 of 2')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /Next/ }));
+
+    expect(await screen.findByText('Template 10')).toBeInTheDocument();
+    expect(screen.queryByText('Template 0')).not.toBeInTheDocument();
+    expect(screen.getByText('Page 2 of 2')).toBeInTheDocument();
+
+    // Event Mapping tab must still see the full (unpaginated) template list.
+    fireEvent.click(screen.getByText('Event Mapping'));
+    expect(screen.getByText('User Provisioned (Welcome)')).toBeInTheDocument();
+  });
 });

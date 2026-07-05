@@ -355,6 +355,38 @@ describe('WorkflowList', () => {
     render(<WorkflowList workflows={[]} onCreate={jest.fn()} onEdit={jest.fn()} />);
     expect(screen.getByText(/No workflows created yet/)).toBeInTheDocument();
   });
+
+  it('renders pagination controls and invokes onPageChange', async () => {
+    const onPageChange = jest.fn();
+    render(
+      <WorkflowList
+        workflows={[{ id: 1, name: 'Legal Review', status: 'active', updated_at: '2026-07-01' }]}
+        pagination={{ page: 2, per_page: 25, total: 60, total_pages: 3 }}
+        onPageChange={onPageChange}
+        onCreate={jest.fn()}
+        onEdit={jest.fn()}
+      />
+    );
+
+    expect(screen.getByText('Page 2 of 3')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: /Next/ }));
+    expect(onPageChange).toHaveBeenCalledWith(3);
+
+    await userEvent.click(screen.getByRole('button', { name: /Prev/ }));
+    expect(onPageChange).toHaveBeenCalledWith(1);
+  });
+
+  it('does not render pagination controls when there is only one page', () => {
+    render(
+      <WorkflowList
+        workflows={[{ id: 1, name: 'Legal Review', status: 'active', updated_at: '2026-07-01' }]}
+        pagination={{ page: 1, per_page: 25, total: 1, total_pages: 1 }}
+        onCreate={jest.fn()}
+        onEdit={jest.fn()}
+      />
+    );
+    expect(screen.queryByText(/Page 1 of 1/)).not.toBeInTheDocument();
+  });
 });
 
 describe('WorkflowContainer', () => {
@@ -421,6 +453,36 @@ describe('WorkflowContainer', () => {
     await waitFor(() => expect(global.fetch).toHaveBeenCalledWith('/workflows/1.json'));
     expect(await screen.findByRole('button', { name: /savechanges/i })).toBeInTheDocument();
   });
+
+  it('fetches the next page of workflows when pagination controls are used', async () => {
+    global.fetch.mockImplementation((url) => {
+      if (String(url).startsWith('/workflows.json?page=2')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            workflows: [{ id: 2, name: 'Second Page Flow', status: 'active', updated_at: '2026-07-02' }],
+            pagination: { page: 2, per_page: 25, total: 30, total_pages: 2 },
+          }),
+        });
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({ success: true }) });
+    });
+
+    render(
+      <WorkflowContainer
+        workflows={JSON.stringify([{ id: 1, name: 'Review Flow', status: 'active', updated_at: '2026-07-01' }])}
+        workflowsPagination={JSON.stringify({ page: 1, per_page: 25, total: 30, total_pages: 2 })}
+      />
+    );
+
+    expect(screen.getByText('Page 1 of 2')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: /Next/ }));
+
+    await waitFor(() => expect(global.fetch).toHaveBeenCalledWith('/workflows.json?page=2'));
+    expect(await screen.findByText('Second Page Flow')).toBeInTheDocument();
+    expect(screen.getByText('Page 2 of 2')).toBeInTheDocument();
+  });
 });
 
 describe('WorkflowDashboard', () => {
@@ -431,7 +493,7 @@ describe('WorkflowDashboard', () => {
     mockNotify.mockClear();
     window.history.replaceState({}, '', '/workflows/dashboard');
     global.fetch = jest.fn((url, options = {}) => {
-      if (url === '/api/v1/workflows/dashboard') {
+      if (String(url).startsWith('/api/v1/workflows/dashboard')) {
         return Promise.resolve({
           ok: true,
           json: () => Promise.resolve({
@@ -465,6 +527,11 @@ describe('WorkflowDashboard', () => {
                 completed_at: '2026-07-01T08:00:00Z',
               },
             ],
+            pagination: {
+              my_tasks: { page: 1, per_page: 10, total: 1, total_pages: 1 },
+              active_workflows: { page: 1, per_page: 10, total: 1, total_pages: 1 },
+              completed_workflows: { page: 1, per_page: 10, total: 1, total_pages: 1 },
+            },
           }),
         });
       }
@@ -498,7 +565,7 @@ describe('WorkflowDashboard', () => {
     expect(screen.getByText('My Pending Tasks')).toBeInTheDocument();
     expect(screen.getByText('Active Workflows')).toBeInTheDocument();
     expect(screen.getByText('Completed (recent)')).toBeInTheDocument();
-    expect(screen.getByText('Homepage Banner')).toBeInTheDocument();
+    expect(await screen.findByText('Homepage Banner')).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('button', { name: 'Review' }));
 
@@ -511,5 +578,49 @@ describe('WorkflowDashboard', () => {
     render(<WorkflowDashboard />);
 
     expect(await screen.findByTestId('workflow-panel')).toHaveTextContent('asset:321');
+  });
+
+  it('shows pagination controls and requests the next page for My Pending Tasks', async () => {
+    global.fetch = jest.fn((url) => {
+      if (String(url).startsWith('/api/v1/workflows/dashboard')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            my_tasks: [
+              {
+                task_id: 1,
+                asset_id: 55,
+                asset_name: 'Homepage Banner',
+                asset_thumb: '/banner.png',
+                step_title: 'Brand Review',
+                assigned_at: '2026-07-01T10:00:00Z',
+              },
+            ],
+            active_workflows: [],
+            completed_workflows: [],
+            pagination: {
+              my_tasks: { page: 1, per_page: 10, total: 15, total_pages: 2 },
+              active_workflows: { page: 1, per_page: 10, total: 0, total_pages: 1 },
+              completed_workflows: { page: 1, per_page: 10, total: 0, total_pages: 1 },
+            },
+          }),
+        });
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
+    });
+
+    render(<WorkflowDashboard />);
+
+    expect(await screen.findByText('Homepage Banner')).toBeInTheDocument();
+    const nextButton = screen.getByRole('button', { name: /Next/ });
+    expect(nextButton).toBeEnabled();
+
+    await userEvent.click(nextButton);
+
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenLastCalledWith(
+        expect.stringContaining('my_tasks_page=2')
+      );
+    });
   });
 });

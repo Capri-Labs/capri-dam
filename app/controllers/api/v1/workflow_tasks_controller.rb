@@ -61,18 +61,29 @@ module Api
 
       # GET /api/v1/workflows/dashboard
       def dashboard
-        my_tasks = WorkflowTask.includes(workflow_instance: :asset, workflow_step: [])
+        per_page = 10
+
+        my_tasks_page = [ params[:my_tasks_page].to_i, 1 ].max
+        active_page    = [ params[:active_page].to_i, 1 ].max
+        completed_page = [ params[:completed_page].to_i, 1 ].max
+
+        my_tasks_scope = WorkflowTask.includes(workflow_instance: :asset, workflow_step: [])
                                .where(user: current_user, status: "pending")
                                .order(created_at: :desc)
+        my_tasks_total = my_tasks_scope.count
+        my_tasks = my_tasks_scope.limit(per_page).offset((my_tasks_page - 1) * per_page)
 
-        active_instances = WorkflowInstance.includes(:asset, :workflow, :current_step)
+        active_scope = WorkflowInstance.includes(:asset, :workflow, :current_step)
                                            .where(status: "in_progress")
                                            .order(started_at: :desc)
+        active_total = active_scope.count
+        active_instances = active_scope.limit(per_page).offset((active_page - 1) * per_page)
 
-        completed_instances = WorkflowInstance.includes(:workflow, :asset)
+        completed_scope = WorkflowInstance.includes(:workflow, :asset)
                                               .where(status: [ "completed", "rejected", "canceled" ])
                                               .order(completed_at: :desc)
-                                              .limit(50)
+        completed_total = completed_scope.count
+        completed_instances = completed_scope.limit(per_page).offset((completed_page - 1) * per_page)
 
         completed_data = completed_instances.map do |instance|
           {
@@ -89,11 +100,24 @@ module Api
           my_tasks: my_tasks.map { |t| format_task(t) },
           active_workflows: active_instances.map { |i| format_instance(i) },
           completed_workflows: completed_data,
+          pagination: {
+            my_tasks: pagination_meta(my_tasks_page, per_page, my_tasks_total),
+            active_workflows: pagination_meta(active_page, per_page, active_total),
+            completed_workflows: pagination_meta(completed_page, per_page, completed_total),
+          },
         }
       end
 
       private
 
+      def pagination_meta(page, per_page, total)
+        {
+          page: page,
+          per_page: per_page,
+          total: total,
+          total_pages: [ (total.to_f / per_page).ceil, 1 ].max,
+        }
+      end
 
       def format_task(task)
         asset = task.workflow_instance.asset

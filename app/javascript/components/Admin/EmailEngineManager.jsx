@@ -92,6 +92,8 @@ export default function EmailEngineManager() {
     const [filters, setFilters] = useState({ status: '', search: '', date_from: '', date_to: '', page: 1, per_page: 25 });
     const [deliveryPagination, setDeliveryPagination] = useState({ page: 1, total_pages: 1, total: 0 });
     const [eventMappings, setEventMappings] = useState(SYSTEM_EVENTS);
+    const [templatesPage, setTemplatesPage] = useState(1);
+    const TEMPLATES_PER_PAGE = 10;
 
     const csrfToken = document.querySelector('[name="csrf-token"]')?.content;
 
@@ -142,6 +144,16 @@ export default function EmailEngineManager() {
     }, [editForm.event_trigger, eventMappings]);
 
     const previewHtml = useMemo(() => renderTemplate(editForm.html_body || '', editForm.preview_data || {}), [editForm.html_body, editForm.preview_data]);
+
+    // Client-side pagination for the Templates tab. `templates` itself stays
+    // as the full list because Event Mapping (tab index 1) needs to look up
+    // any template by event_trigger regardless of the Templates tab's page.
+    const templatesTotalPages = Math.max(1, Math.ceil(templates.length / TEMPLATES_PER_PAGE));
+    const clampedTemplatesPage = Math.min(templatesPage, templatesTotalPages);
+    const pagedTemplates = templates.slice(
+        (clampedTemplatesPage - 1) * TEMPLATES_PER_PAGE,
+        clampedTemplatesPage * TEMPLATES_PER_PAGE
+    );
 
     const openEditor = (template = null, prefillEvent = '') => {
         if (template) {
@@ -292,6 +304,7 @@ export default function EmailEngineManager() {
 
                     <Box sx={{ p: 3 }}>
                         {currentTab === 0 && (
+                            <>
                             <Table stickyHeader>
                                 <TableHead>
                                     <TableRow>
@@ -302,7 +315,7 @@ export default function EmailEngineManager() {
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
-                                    {templates.map(template => (
+                                    {pagedTemplates.map(template => (
                                         <TableRow key={template.id} hover>
                                             <TableCell>
                                                 <Typography variant="subtitle2">{template.name}</Typography>
@@ -325,6 +338,28 @@ export default function EmailEngineManager() {
                                     ))}
                                 </TableBody>
                             </Table>
+                            {templatesTotalPages > 1 && (
+                                <Stack direction="row" spacing={1} sx={{ mt: 2, justifyContent: 'center', alignItems: 'center' }}>
+                                    <Button
+                                        size="small"
+                                        disabled={clampedTemplatesPage <= 1}
+                                        onClick={() => setTemplatesPage(clampedTemplatesPage - 1)}
+                                    >
+                                        {t('common.previous', { defaultValue: 'Previous' })}
+                                    </Button>
+                                    <Typography variant="body2" color="text.secondary">
+                                        {t('common.pageOf', { defaultValue: `Page ${clampedTemplatesPage} of ${templatesTotalPages}` })}
+                                    </Typography>
+                                    <Button
+                                        size="small"
+                                        disabled={clampedTemplatesPage >= templatesTotalPages}
+                                        onClick={() => setTemplatesPage(clampedTemplatesPage + 1)}
+                                    >
+                                        {t('common.next', { defaultValue: 'Next' })}
+                                    </Button>
+                                </Stack>
+                            )}
+                            </>
                         )}
 
                         {currentTab === 1 && (

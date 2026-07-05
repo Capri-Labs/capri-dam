@@ -27,6 +27,9 @@ RSpec.describe 'Workflow HTML controller coverage', type: :request do
         'step_count' => 1,
         'last_modified_by' => 'Ada Lovelace'
       ))
+      pagination_json = JSON.parse(assigns(:workflows_pagination_json))
+      expect(pagination_json).to include('page' => 1, 'per_page' => 25, 'total' => 1, 'total_pages' => 1)
+      expect(response.body).to include('data-workflows-pagination=')
     end
 
     it 'falls back to an empty JSON array and default modifier name' do
@@ -57,6 +60,17 @@ RSpec.describe 'Workflow HTML controller coverage', type: :request do
         'name' => 'JSON Flow',
         'workflow_steps' => include(hash_including('id' => step.id, 'title' => 'Approve'))
       ))
+    end
+
+    it 'paginates the JSON response when a page param is given' do
+      30.times { |i| create(:workflow, name: "Bulk Flow #{i}") }
+
+      get '/workflows.json', params: { page: 2 }
+
+      expect(response).to have_http_status(:ok)
+      body = response.parsed_body
+      expect(body['workflows'].length).to eq(5) # 30 total, 25 per page => 5 remaining
+      expect(body['pagination']).to include('page' => 2, 'per_page' => 25, 'total' => 30, 'total_pages' => 2)
     end
   end
 

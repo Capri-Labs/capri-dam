@@ -88,6 +88,27 @@ RSpec.describe 'API workflow task coverage', type: :request do
         'asset_name' => 'Untitled Asset',
         'status' => 'completed'
       ))
+      expect(body['pagination']).to include(
+        'my_tasks' => hash_including('page' => 1, 'per_page' => 10, 'total' => 1, 'total_pages' => 1),
+        'active_workflows' => hash_including('page' => 1, 'per_page' => 10),
+        'completed_workflows' => hash_including('page' => 1, 'per_page' => 10)
+      )
+    end
+
+    it 'paginates each tab independently via my_tasks_page/active_page/completed_page params' do
+      other_step = create(:workflow_step, workflow: workflow, title: 'Second Approval', position: 2)
+      12.times do |i|
+        other_asset = create(:asset, title: "Task Asset #{i}")
+        other_instance = create(:workflow_instance, workflow: workflow, asset: other_asset, current_step: other_step)
+        create(:workflow_task, workflow_instance: other_instance, workflow_step: other_step, user: user, status: 'pending')
+      end
+      task
+
+      get '/api/v1/workflows/dashboard', params: { my_tasks_page: 2 }
+
+      body = response.parsed_body
+      expect(body['my_tasks'].length).to eq(3) # 13 total tasks, page 2 of 10-per-page => 3 remaining
+      expect(body['pagination']['my_tasks']).to include('page' => 2, 'per_page' => 10, 'total' => 13, 'total_pages' => 2)
     end
 
     it 'falls back to Processing when an active workflow has no current step' do

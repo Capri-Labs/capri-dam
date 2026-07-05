@@ -73,7 +73,10 @@
     "copyDismiss": "Copier & Fermer",
     "refresh": "Actualiser",
     "actions": "Actions",
-    "back": "Retour"
+    "back": "Retour",
+    "previous": "Précédent",
+    "next": "Suivant",
+    "pageOf": "Page {{page}} sur {{pages}}"
   },
   "header": {
     "myProfile": "Mon profil",
@@ -2371,6 +2374,22 @@
       "removeTooltip": "Retirer le schéma de ce dossier",
       "empty": "Aucun schéma de métadonnées attribué à ce dossier. Les ressources utiliseront le schéma par défaut si l’un d’eux est configuré.",
       "emptyHint": "Configurez les schémas sous Tools → Metadata Schemas."
+    }
+  },
+  "smtpSettings": {
+    "testConnection": "Tester la connexion",
+    "testingConnection": "Test de connexion en cours...",
+    "connectionVerified": "Connexion vérifiée ! Handshake réussi.",
+    "connectionFailed": "Échec de la connexion",
+    "errorCodes": {
+      "CONNECTION_TIMEOUT": "Délai de connexion dépassé",
+      "CONNECTION_REFUSED": "Connexion refusée par l'hôte",
+      "HOST_UNREACHABLE": "Hôte inaccessible",
+      "SMTP_AUTHENTICATION_FAILED": "Échec de l'authentification",
+      "SSL_CERTIFICATE_ERROR": "Erreur de certificat SSL",
+      "SMTP_SERVER_BUSY": "Serveur SMTP occupé, réessayez plus tard",
+      "SMTP_ERROR": "Erreur SMTP",
+      "INVALID_CONFIGURATION": "Configuration invalide"
     }
   }
 }

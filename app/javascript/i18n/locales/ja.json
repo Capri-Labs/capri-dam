@@ -73,7 +73,10 @@
     "copyDismiss": "コピーして閉じる",
     "refresh": "更新",
     "actions": "Actions",
-    "back": "戻る"
+    "back": "戻る",
+    "previous": "前へ",
+    "next": "次へ",
+    "pageOf": "{{pages}}ページ中{{page}}ページ目"
   },
   "header": {
     "myProfile": "マイプロフィール",
@@ -2371,6 +2374,22 @@
       "removeTooltip": "このフォルダーからスキーマを削除",
       "empty": "このフォルダーにはメタデータスキーマが割り当てられていません。設定されている場合、アセットは既定のスキーマを使用します。",
       "emptyHint": "スキーマは Tools → Metadata Schemas で設定してください。"
+    }
+  },
+  "smtpSettings": {
+    "testConnection": "接続テスト",
+    "testingConnection": "接続をテスト中...",
+    "connectionVerified": "接続を確認しました！ハンドシェイクに成功しました。",
+    "connectionFailed": "接続に失敗しました",
+    "errorCodes": {
+      "CONNECTION_TIMEOUT": "接続がタイムアウトしました",
+      "CONNECTION_REFUSED": "ホストに接続を拒否されました",
+      "HOST_UNREACHABLE": "ホストに到達できません",
+      "SMTP_AUTHENTICATION_FAILED": "認証に失敗しました",
+      "SSL_CERTIFICATE_ERROR": "SSL証明書エラー",
+      "SMTP_SERVER_BUSY": "SMTPサーバーがビジー状態です。後でもう一度お試しください",
+      "SMTP_ERROR": "SMTPエラー",
+      "INVALID_CONFIGURATION": "無効な構成です"
     }
   }
 }

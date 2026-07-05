@@ -9,20 +9,46 @@ class WorkflowsController < ApplicationController
 
   def index
     @active_view = "Workflows"
+    page     = [ params[:page].to_i, 1 ].max
+    per_page = 25
+
     respond_to do |format|
       # ---------------------------------------------------------
       # 1. THE API RESPONSE (For React fetch requests)
       # ---------------------------------------------------------
       format.json do
-        @workflows = Workflow.all.order(created_at: :desc)
-        render json: @workflows.as_json(include: :workflow_steps)
+        scope = Workflow.all.order(created_at: :desc)
+
+        # Backward compatible: when no `page` param is given, return the
+        # legacy bare array (consumed by TriggerWorkflowDialog.jsx's workflow
+        # picker, which needs the full list of active workflows to choose from).
+        if params[:page].present?
+          total = scope.count
+          @workflows = scope.limit(per_page).offset((page - 1) * per_page)
+          render json: {
+            workflows: @workflows.as_json(include: :workflow_steps),
+            pagination: {
+              page: page,
+              per_page: per_page,
+              total: total,
+              total_pages: (total.to_f / per_page).ceil,
+            },
+          }
+        else
+          @workflows = scope
+          render json: @workflows.as_json(include: :workflow_steps)
+        end
       end
 
       # ---------------------------------------------------------
       # 2. THE HTML PAGE RESPONSE (For initial browser loads)
       # ---------------------------------------------------------
       format.html do
-        @workflows_json = Workflow.all.map do |wf|
+        scope = Workflow.all.order(created_at: :desc)
+        total = scope.count
+        workflows_page = scope.limit(per_page).offset((page - 1) * per_page)
+
+        @workflows_json = workflows_page.map do |wf|
           {
             id: wf.id,
             name: wf.name,
@@ -36,6 +62,12 @@ class WorkflowsController < ApplicationController
         end.to_json
 
         @workflows_json = "[]" if @workflows_json.blank?
+        @workflows_pagination_json = {
+          page: page,
+          per_page: per_page,
+          total: total,
+          total_pages: (total.to_f / per_page).ceil,
+        }.to_json
         # Rails automatically renders app/views/workflows/index.html.erb here
       end
     end

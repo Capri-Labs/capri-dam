@@ -31,9 +31,10 @@ AI batch progress, and health callbacks.
 | `GET` | `/admin/storage_backends` | admin | Storage backend administration shell.
 | `GET` | `/admin/system_configurations` | admin | Runtime system configuration screen.
 | `GET` | `/admin/system_status` | admin | Operational status shell for app, DB, Redis/Sidekiq, SMTP, and AI gateway.
-| `POST` | `/admin/system_status/test_smtp` | admin | Sends a test email using the configured SMTP settings.
-| `PATCH` | `/admin/system_status/update_smtp` | admin | Persists SMTP-related settings.
-| `POST` | `/admin/system_status/restart` | admin | Triggers a restart/maintenance action.
+| `POST` | `/admin/system_status/update_smtp` | admin | Validates (via `SmtpConnectionValidator`) and persists SMTP settings through `SystemEmailConfig`.
+| `POST` | `/admin/system_status/test_connection` | admin | Pre-flight-only SMTP handshake check; never sends an email.
+| `POST` | `/admin/system_status/test_email` | admin | Sends a real diagnostic test email via `CentralNotificationMailer`.
+| `POST` | `/admin/system_status/restart_server` | admin | Triggers a restart/maintenance action.
 | `GET` | `/admin/email_templates` | admin | Email template manager shell.
 | `GET` | `/admin/email_deliveries` | admin | Email outbox / delivery audit shell.
 | `GET` | `/admin/reports` | admin | Analytics and report-definition shell.
@@ -163,3 +164,127 @@ AI batch progress, and health callbacks.
 
 NOTE: Admin controllers mainly render HTML shells; the React screens then call
 JSON endpoints in `/api/v1/` or nested `/admin/...` JSON actions.
+
+== Pagination conventions
+
+No pagination gem (Kaminari/will_paginate/Pagy) is used. All list endpoints
+paginate manually with `limit`/`offset` (or in-memory `Array#[]` slicing for
+data already loaded) and a hand-rolled metadata hash.
+
+**Standard shape** — new/updated endpoints return:
+
+[source,json]
+----
+{
+  "workflows": [ /* current page's items */ ],
+  "pagination": { "page": 1, "per_page": 25, "total": 42, "total_pages": 2 }
+}
+----
+
+`total_pages` is precomputed server-side so the frontend never needs
+`Math.ceil`. (An older `meta: { total, page, per_page }` shape, without
+`total_pages`, still exists on `Api::V1::IngestionBatchesController` and
+`Admin::EmailDeliveriesController#index` for backward compatibility — do not
+change those without auditing their consumers.)
+
+**Backward-compatible optional pagination** — endpoints that are consumed both
+by a paginated screen *and* by code that needs the full unpaginated list
+(e.g. a workflow-picker dropdown) accept an optional `page` param:
+
+* No `page` param → legacy bare array (`[ {...}, {...} ]`), unchanged for
+  existing consumers.
+* `page` param present → paginated shape (`{ resource_key: [...], pagination: {...} }`).
+
+Used by `WorkflowsController#index` (`.json` format) and
+`Api::V1::SystemConnectorsController#index`.
+
+**Client-side-only pagination** — for screens where the underlying data has
+structural relationships that backend `LIMIT/OFFSET` would break (e.g. a
+parent/child group tree), pagination is applied only to the top-level/root
+items *after* the full list is fetched, so children always render alongside
+their parent. Used by `UserGroupsManager.jsx` (root-level groups) and the
+Templates tab of `EmailEngineManager.jsx` (whose full `templates` list is
+still needed intact by the Event Mapping tab's lookups).
+
+**Frontend UI pattern** — a simple `Prev` / `Page X of Y` / `Next` `Stack` of
+`Button`s (not the MUI DataGrid's `paginationMode="server"`), matching
+`IngestionDashboard.jsx`. Prev/Next labels are plain, untranslated English by
+established convention for this specific widget (see `WorkflowList.jsx`,
+`WorkflowDashboard.jsx`'s `TabPagination`, `SystemConnectors.jsx`,
+`UserGroupsManager.jsx`). The `EmailEngineManager.jsx` Templates tab instead
+uses the file's own pre-existing translated `common.previous`/`common.next`/
+`common.pageOf` i18n keys, matching its Delivery Log tab's existing pattern.
+
+Screens with server-backed pagination added: `/workflows`,
+`/workflows/dashboard` (all 3 tabs, independently paginated), and
+`/admin/migrations/connectors`. `/admin/migrations/ingestion` already had this
+pattern. `/admin/user_groups` and the Templates tab of `/admin/email_templates`
+use client-side-only pagination as described above — no new database
+tables/columns were required for any of these screens.
+
+== Centralized SMTP configuration & notification dispatch
+
+All outbound system email (workflow alerts, workflow task assignments, admin
+SMTP diagnostics, and templated/audited `EmailDelivery` records) is routed
+through a small set of collaborating objects so there is exactly one place
+that reads/writes SMTP credentials and exactly one place that applies them to
+`ActionMailer::Base` before every send:
+
+[cols="1,3", options="header"]
+|===
+| Component | Responsibility
+
+| `SystemEmailConfig` (`app/models/system_email_config.rb`)
+| Strongly-typed `ActiveModel` mapper around the `smtp_settings` row in the
+`settings` table (already encrypted at rest via `Setting#apply_smtp_settings!`'s
+backing `encrypts :value, deterministic: false`). Exposes `smtp_host`,
+`smtp_port`, `smtp_username`, `smtp_password`, `security_protocol`
+(`none`/`starttls`/`ssl`), `authentication`, `default_from_address`, and
+`default_from_name`, plus `.current` (load), `#persist!` (validate + save +
+re-apply), and `#net_smtp_options` (shape consumed by `Net::SMTP`/the validator).
+
+| `SmtpConnectionValidator` (`app/services/smtp_connection_validator.rb`)
+| Strict, non-blocking pre-flight `Net::SMTP` handshake (connect + EHLO/HELO +
+AUTH, no `MAIL FROM`/`DATA`, i.e. no email is sent). Returns a `Result` with
+`success`, `error_code` (`CONNECTION_TIMEOUT`, `CONNECTION_REFUSED`,
+`HOST_UNREACHABLE`, `SMTP_AUTHENTICATION_FAILED`, `SSL_CERTIFICATE_ERROR`,
+`SMTP_SERVER_BUSY`, `SMTP_ERROR`, `INVALID_CONFIGURATION`), and `message`.
+Invoked both from `POST /admin/system_status/test_connection` (the "Test
+Connection" button) and from `POST /admin/system_status/update_smtp` itself --
+invalid or unreachable settings are never persisted as active.
+
+| `CentralNotificationMailer` (`app/services/central_notification_mailer.rb`)
+| Thread-safe `Singleton` and the single entrypoint every application segment
+must call to dispatch mail -- `build_template_mail`, `build_admin_test_mail`,
+`deliver_workflow_task_assigned`, `deliver_workflow_alert`. Each method first
+re-applies `SystemEmailConfig.current` to `ActionMailer::Base` and then
+delegates to the appropriate `ActionMailer` class (`DynamicMailer`,
+`AdminMailer`, `WorkflowMailer`). No other code should build a mail message
+directly against a locally-configured mailer.
+
+| `EmailDispatcherWorker` (`app/workers/email_dispatcher_worker.rb`)
+| Sidekiq worker (`queue: "mailers", retry: 3`) that renders the Liquid
+template payload and calls `CentralNotificationMailer.build_template_mail`.
+Explicit exponential backoff (`sidekiq_retry_in`: 10s / 40s / 90s) for
+transient failures (timeouts, `421 Service unavailable`, etc.).
+`Net::SMTPAuthenticationError`/`Net::SMTPSyntaxError` are treated as
+permanent -- the delivery is marked `failed` immediately without consuming a
+retry, since retrying identical bad credentials cannot succeed.
+|===
+
+**Routes**: `POST /admin/system_status/update_smtp` (validate + persist),
+`POST /admin/system_status/test_connection` (pre-flight handshake only, no
+email sent), `POST /admin/system_status/test_email` (sends a real diagnostic
+email via `CentralNotificationMailer.build_admin_test_mail`).
+
+**Frontend**: `SmtpSettingsTab.jsx` (second tab, "SMTP & Email Settings", at
+`/settings/system`) gained a "Test Connection" button (`smtpSettings.*` i18n
+namespace, all 10 locales) that calls `test_connection` and surfaces the
+validator's `error_code` as a localized message before the user commits
+credentials via "Commit System Credentials".
+
+**Devise note**: `Devise::Mailer` is not routed through
+`CentralNotificationMailer` directly (it has no custom mailer class in this
+app), but because `SystemEmailConfig#apply!` mutates `ActionMailer::Base`
+globally, registration/password-reset emails automatically inherit the same
+validated SMTP transport as every other mailer.

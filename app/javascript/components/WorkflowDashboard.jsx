@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Box, Typography, Paper, Tabs, Tab, Table, TableBody, TableCell,
     TableContainer, TableHead, TableRow, Button, Avatar, Chip, CssBaseline,
@@ -30,19 +30,55 @@ function StatCard({ icon: Icon, label, value, color, bg }) {
     );
 }
 
+// ─── Tab pagination controls (Prev/Next) ──────────────────────────────────────
+function TabPagination({ pagination, onPageChange }) {
+    if (!pagination || pagination.total_pages <= 1) return null;
+    return (
+        <Stack direction="row" spacing={1} sx={{ p: 2, justifyContent: 'center' }}>
+            <Button size="small" disabled={pagination.page <= 1} onClick={() => onPageChange(pagination.page - 1)}>
+                ← Prev
+            </Button>
+            <Typography variant="caption" sx={{ alignSelf: 'center', px: 1 }}>
+                Page {pagination.page} of {pagination.total_pages}
+            </Typography>
+            <Button size="small" disabled={pagination.page >= pagination.total_pages} onClick={() => onPageChange(pagination.page + 1)}>
+                Next →
+            </Button>
+        </Stack>
+    );
+}
+
+const DEFAULT_TAB_PAGINATION = { page: 1, per_page: 10, total: 0, total_pages: 1 };
+
+
 export default function WorkflowDashboard() {
     const notify = useNotify();
     const { t } = useTranslation();
     const [tab, setTab] = useState(0);
     const [data, setData] = useState({ my_tasks: [], active_workflows: [], completed_workflows: [] });
+    const [tabPagination, setTabPagination] = useState({
+        my_tasks: DEFAULT_TAB_PAGINATION,
+        active_workflows: DEFAULT_TAB_PAGINATION,
+        completed_workflows: DEFAULT_TAB_PAGINATION,
+    });
     const [selectedWorkflows, setSelectedWorkflows] = useState([]);
     const [selectedAsset, setSelectedAsset] = useState(null);
     const [reassignOpen, setReassignOpen] = useState(false);
     const [users] = useState([]);
     const selectedWorkflowObjects = data.active_workflows.filter(w => selectedWorkflows.includes(w.instance_id));
 
-    const fetchDashboardData = useCallback(() => {
-        fetch('/api/v1/workflows/dashboard')
+    const fetchDashboardData = (pages = {}) => {
+        const myTasksPage = pages.my_tasks_page || tabPagination.my_tasks.page;
+        const activePage = pages.active_page || tabPagination.active_workflows.page;
+        const completedPage = pages.completed_page || tabPagination.completed_workflows.page;
+
+        const params = new URLSearchParams({
+            my_tasks_page: myTasksPage,
+            active_page: activePage,
+            completed_page: completedPage,
+        });
+
+        fetch(`/api/v1/workflows/dashboard?${params.toString()}`)
             .then(res => res.json())
             .then(json => {
                 setData({
@@ -50,17 +86,25 @@ export default function WorkflowDashboard() {
                     active_workflows: json.active_workflows || [],
                     completed_workflows: json.completed_workflows || [],
                 });
+                if (json.pagination) setTabPagination(json.pagination);
                 setSelectedWorkflows([]);
             })
             .catch(err => notify(err.message || t('workflowOps.fetchError', { defaultValue: 'Failed to fetch dashboard data' }), 'error'));
-    }, [notify, t]);
+    };
+
+    const handleMyTasksPageChange = (page) => fetchDashboardData({ my_tasks_page: page });
+    const handleActivePageChange = (page) => fetchDashboardData({ active_page: page });
+    const handleCompletedPageChange = (page) => fetchDashboardData({ completed_page: page });
 
     useEffect(() => {
         fetchDashboardData();
         const params = new URLSearchParams(window.location.search);
         const urlAssetId = params.get('asset_id');
         if (urlAssetId) setSelectedAsset({ id: urlAssetId, thumb: null });
-    }, [fetchDashboardData]);
+        // Run once on mount only; fetchDashboardData is intentionally not memoized
+        // so it always reads fresh pagination state on subsequent manual calls.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const csrf = () => document.querySelector('[name="csrf-token"]').content;
 
@@ -174,13 +218,13 @@ export default function WorkflowDashboard() {
                 {/* Stat cards */}
                 <Grid container spacing={2} sx={{ mb: 3 }}>
                     <Grid size={{ xs: 12, sm: 4 }}>
-                        <StatCard icon={PendingActions} label={t('workflowOps.statPending', { defaultValue: 'My Pending Tasks' })} value={data.my_tasks.length} color="#d97706" bg="#fef3c7" />
+                        <StatCard icon={PendingActions} label={t('workflowOps.statPending', { defaultValue: 'My Pending Tasks' })} value={tabPagination.my_tasks.total} color="#d97706" bg="#fef3c7" />
                     </Grid>
                     <Grid size={{ xs: 12, sm: 4 }}>
-                        <StatCard icon={AdminPanelSettings} label={t('workflowOps.statActive', { defaultValue: 'Active Workflows' })} value={data.active_workflows.length} color="#2563eb" bg="#dbeafe" />
+                        <StatCard icon={AdminPanelSettings} label={t('workflowOps.statActive', { defaultValue: 'Active Workflows' })} value={tabPagination.active_workflows.total} color="#2563eb" bg="#dbeafe" />
                     </Grid>
                     <Grid size={{ xs: 12, sm: 4 }}>
-                        <StatCard icon={CheckCircle} label={t('workflowOps.statCompleted', { defaultValue: 'Completed (recent)' })} value={data.completed_workflows.length} color="#16a34a" bg="#dcfce7" />
+                        <StatCard icon={CheckCircle} label={t('workflowOps.statCompleted', { defaultValue: 'Completed (recent)' })} value={tabPagination.completed_workflows.total} color="#16a34a" bg="#dcfce7" />
                     </Grid>
                 </Grid>
 
@@ -196,8 +240,8 @@ export default function WorkflowDashboard() {
     }
   }
 }}>
-                        <Tab icon={<Assignment />} iconPosition="start" label={`${t('workflowOps.tabPending', { defaultValue: 'My Pending Tasks' })} (${data.my_tasks.length})`} sx={{ '&.Mui-selected': { color: '#5e35b1' } }} />
-                        <Tab icon={<AdminPanelSettings />} iconPosition="start" label={`${t('workflowOps.tabActive', { defaultValue: 'Active Workflows' })} (${data.active_workflows.length})`} sx={{ '&.Mui-selected': { color: '#5e35b1' } }} />
+                        <Tab icon={<Assignment />} iconPosition="start" label={`${t('workflowOps.tabPending', { defaultValue: 'My Pending Tasks' })} (${tabPagination.my_tasks.total})`} sx={{ '&.Mui-selected': { color: '#5e35b1' } }} />
+                        <Tab icon={<AdminPanelSettings />} iconPosition="start" label={`${t('workflowOps.tabActive', { defaultValue: 'Active Workflows' })} (${tabPagination.active_workflows.total})`} sx={{ '&.Mui-selected': { color: '#5e35b1' } }} />
                         <Tab icon={<History />} iconPosition="start" label={t('workflowOps.tabAudit', { defaultValue: 'Audit History' })} sx={{ '&.Mui-selected': { color: '#5e35b1' } }} />
                     </Tabs>
 
@@ -217,6 +261,7 @@ export default function WorkflowDashboard() {
                     <Box sx={{ bgcolor: '#ffffff' }}>
                         {/* TAB 0: MY TASKS */}
                         {tab === 0 && (
+                            <>
                             <TableContainer>
                                 <Table size="medium">
                                     <TableHead sx={{ bgcolor: '#f1f5f9' }}>
@@ -247,10 +292,13 @@ export default function WorkflowDashboard() {
                                     </TableBody>
                                 </Table>
                             </TableContainer>
+                            <TabPagination pagination={tabPagination.my_tasks} onPageChange={handleMyTasksPageChange} />
+                            </>
                         )}
 
                         {/* TAB 1: ACTIVE WORKFLOWS */}
                         {tab === 1 && (
+                            <>
                             <TableContainer>
                                 <Table size="medium">
                                     <TableHead sx={{ bgcolor: '#f1f5f9' }}>
@@ -291,10 +339,13 @@ export default function WorkflowDashboard() {
                                     </TableBody>
                                 </Table>
                             </TableContainer>
+                            <TabPagination pagination={tabPagination.active_workflows} onPageChange={handleActivePageChange} />
+                            </>
                         )}
 
                         {/* TAB 2: AUDIT HISTORY */}
                         {tab === 2 && (
+                            <>
                             <TableContainer>
                                 <Table size="medium">
                                     <TableHead sx={{ bgcolor: '#f8fafc' }}>
@@ -336,6 +387,8 @@ export default function WorkflowDashboard() {
                                     </TableBody>
                                 </Table>
                             </TableContainer>
+                            <TabPagination pagination={tabPagination.completed_workflows} onPageChange={handleCompletedPageChange} />
+                            </>
                         )}
 
                         <BulkReassignModal

@@ -460,7 +460,12 @@ describe('Admin Migrations components', () => {
 
   it('renders SystemConnectors and supports lifecycle actions', async () => {
     installFetchMock((url, options) => {
-      if (url === '/api/v1/system_connectors') return jsonResponse([systemConnector]);
+      if (url === '/api/v1/system_connectors?page=1') {
+        return jsonResponse({
+          connectors: [ systemConnector ],
+          pagination: { page: 1, per_page: 12, total: 1, total_pages: 1 },
+        });
+      }
       if (url === '/api/v1/system_connectors/1' && options.method === 'PUT') return jsonResponse({ success: true });
       if (url === '/api/v1/system_connectors/test_connection' && options.method === 'POST') {
         return jsonResponse({ success: true, message: 'Connection ok' });
@@ -494,5 +499,34 @@ describe('Admin Migrations components', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /save configuration/i }));
     await waitFor(() => expect(mockNotify).toHaveBeenCalledWith('Connector updated.', 'success'));
+  });
+
+  it('paginates SystemConnectors and fetches the next page', async () => {
+    const connectorPage2 = { ...systemConnector, id: 2, name: 'Bynder Source' };
+    installFetchMock((url) => {
+      if (url === '/api/v1/system_connectors?page=1') {
+        return jsonResponse({
+          connectors: [ systemConnector ],
+          pagination: { page: 1, per_page: 12, total: 13, total_pages: 2 },
+        });
+      }
+      if (url === '/api/v1/system_connectors?page=2') {
+        return jsonResponse({
+          connectors: [ connectorPage2 ],
+          pagination: { page: 2, per_page: 12, total: 13, total_pages: 2 },
+        });
+      }
+    });
+
+    render(<SystemConnectors />);
+
+    expect(await screen.findByText('AEM Source')).toBeInTheDocument();
+    expect(await screen.findByText('Page 1 of 2')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /Next/ }));
+
+    expect(await screen.findByText('Bynder Source')).toBeInTheDocument();
+    expect(screen.getByText('Page 2 of 2')).toBeInTheDocument();
+    expect(global.fetch).toHaveBeenCalledWith('/api/v1/system_connectors?page=2');
   });
 });

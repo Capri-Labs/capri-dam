@@ -73,7 +73,10 @@
     "copyDismiss": "Copy & Dismiss",
     "refresh": "Refresh",
     "actions": "Actions",
-    "back": "Back"
+    "back": "Back",
+    "previous": "Previous",
+    "next": "Next",
+    "pageOf": "Page {{page}} of {{pages}}"
   },
   "header": {
     "myProfile": "My Profile",
@@ -2371,6 +2374,22 @@
       "removeTooltip": "Remove schema from this folder",
       "empty": "No metadata schema assigned to this folder. Assets will use the default schema if one is configured.",
       "emptyHint": "Configure schemas under Tools → Metadata Schemas."
+    }
+  },
+  "smtpSettings": {
+    "testConnection": "Test Connection",
+    "testingConnection": "Testing connection...",
+    "connectionVerified": "Connection verified! Handshake succeeded.",
+    "connectionFailed": "Connection failed",
+    "errorCodes": {
+      "CONNECTION_TIMEOUT": "Connection timed out",
+      "CONNECTION_REFUSED": "Connection refused by host",
+      "HOST_UNREACHABLE": "Host unreachable",
+      "SMTP_AUTHENTICATION_FAILED": "Authentication failed",
+      "SSL_CERTIFICATE_ERROR": "SSL certificate error",
+      "SMTP_SERVER_BUSY": "SMTP server busy, try again later",
+      "SMTP_ERROR": "SMTP error",
+      "INVALID_CONFIGURATION": "Invalid configuration"
     }
   }
 }

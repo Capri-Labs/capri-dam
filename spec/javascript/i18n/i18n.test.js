@@ -631,3 +631,56 @@ describe('i18n — Folders components load across all 10 locales', () => {
 
   afterAll(() => i18n.changeLanguage('en'));
 });
+
+describe('i18n — common pagination keys (previous/next/pageOf) across all 10 locales', () => {
+  LOCALES.forEach(locale => {
+    it(`${locale} has common.previous, common.next, and common.pageOf`, () => {
+      i18n.changeLanguage(locale);
+
+      const previous = i18n.t('common.previous');
+      const next = i18n.t('common.next');
+      const pageOf = i18n.t('common.pageOf', { page: 1, pages: 2 });
+
+      expect(previous).not.toBe('common.previous');
+      expect(next).not.toBe('common.next');
+      expect(pageOf).not.toBe('common.pageOf');
+      expect(pageOf).toContain('1');
+      expect(pageOf).toContain('2');
+    });
+  });
+
+  afterAll(() => i18n.changeLanguage('en'));
+});
+
+describe('i18n — smtpSettings connection-test keys across all 10 locales', () => {
+  const ERROR_CODES = [
+    'CONNECTION_TIMEOUT', 'CONNECTION_REFUSED', 'HOST_UNREACHABLE',
+    'SMTP_AUTHENTICATION_FAILED', 'SSL_CERTIFICATE_ERROR', 'SMTP_SERVER_BUSY',
+    'SMTP_ERROR', 'INVALID_CONFIGURATION',
+  ];
+
+  LOCALES.forEach(locale => {
+    it(`${locale} has smtpSettings.testConnection, testingConnection, connectionVerified, and connectionFailed`, () => {
+      i18n.changeLanguage(locale);
+
+      expect(i18n.t('smtpSettings.testConnection')).not.toBe('smtpSettings.testConnection');
+      expect(i18n.t('smtpSettings.testingConnection')).not.toBe('smtpSettings.testingConnection');
+      expect(i18n.t('smtpSettings.connectionVerified')).not.toBe('smtpSettings.connectionVerified');
+      expect(i18n.t('smtpSettings.connectionFailed')).not.toBe('smtpSettings.connectionFailed');
+    });
+
+    it(`${locale} has a translation for every SmtpConnectionValidator error code`, () => {
+      i18n.changeLanguage(locale);
+
+      ERROR_CODES.forEach(code => {
+        const key = `smtpSettings.errorCodes.${code}`;
+        const val = i18n.t(key);
+        expect(val).not.toBe(key);
+        expect(val.length).toBeGreaterThan(0);
+      });
+    });
+  });
+
+  afterAll(() => i18n.changeLanguage('en'));
+});
+

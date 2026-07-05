@@ -47,6 +47,9 @@ describe('SystemStatus tabs', () => {
       if (url === '/admin/system_status/update_smtp') {
         return Promise.resolve({ ok: true, json: () => Promise.resolve({ success: true, message: 'SMTP saved' }) });
       }
+      if (url === '/admin/system_status/test_connection') {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ success: true }) });
+      }
       if (url === '/admin/system_status/test_email') {
         return Promise.resolve({ ok: true, json: () => Promise.resolve({ success: true, message: 'Test sent' }) });
       }
@@ -89,6 +92,33 @@ describe('SystemStatus tabs', () => {
     expect(screen.getByText('SMTP Infrastructure Setup')).toBeInTheDocument();
     expect(screen.getByDisplayValue('smtp.example.com')).toBeInTheDocument();
     expect(screen.getByDisplayValue('noreply@example.com')).toBeInTheDocument();
+  });
+
+  it('runs a pre-flight SMTP connection test without sending an email', async () => {
+    await act(async () => { render(<SmtpSettingsTab incomingConfigs={{ address: 'smtp.example.com', sender_address: 'noreply@example.com' }} />); });
+
+    fireEvent.click(screen.getByText('smtpSettings.testConnection'));
+
+    await waitFor(() => expect(global.fetch).toHaveBeenCalledWith(
+      '/admin/system_status/test_connection',
+      expect.objectContaining({ method: 'POST' })
+    ));
+    expect(await screen.findByText('smtpSettings.connectionVerified')).toBeInTheDocument();
+  });
+
+  it('surfaces a localized error code when the SMTP connection test fails', async () => {
+    global.fetch = jest.fn((url) => {
+      if (url === '/admin/system_status/test_connection') {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ success: false, error_code: 'CONNECTION_TIMEOUT', error: 'timed out' }) });
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({ success: true }) });
+    });
+
+    await act(async () => { render(<SmtpSettingsTab incomingConfigs={{ address: 'smtp.example.com', sender_address: 'noreply@example.com' }} />); });
+
+    fireEvent.click(screen.getByText('smtpSettings.testConnection'));
+
+    expect(await screen.findByText('smtpSettings.errorCodes.CONNECTION_TIMEOUT')).toBeInTheDocument();
   });
 
   it('renders StorageOperationsTab', async () => {

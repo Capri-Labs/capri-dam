@@ -20,7 +20,7 @@ RSpec.describe AdminMailer, type: :mailer do
 
       mail = described_class.test_connection_email("user@example.com")
 
-      expect(mail.from).to eq([ "noreply@yourdomain.com" ])
+      expect(mail.from).to eq([ "noreply@yourdam.com" ])
     end
   end
 end

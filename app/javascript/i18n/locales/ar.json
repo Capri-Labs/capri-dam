@@ -73,7 +73,10 @@
     "copyDismiss": "Copy & Dismiss",
     "refresh": "Refresh",
     "actions": "Actions",
-    "back": "Back"
+    "back": "Back",
+    "previous": "السابق",
+    "next": "التالي",
+    "pageOf": "صفحة {{page}} من {{pages}}"
   },
   "header": {
     "myProfile": "My Profile",
@@ -2371,6 +2374,22 @@
       "removeTooltip": "إزالة المخطط من هذا المجلد",
       "empty": "لا يوجد مخطط بيانات وصفية معيّن لهذا المجلد. ستستخدم الأصول المخطط الافتراضي إذا كان قد تم تكوينه.",
       "emptyHint": "قم بتكوين المخططات ضمن Tools → Metadata Schemas."
+    }
+  },
+  "smtpSettings": {
+    "testConnection": "اختبار الاتصال",
+    "testingConnection": "جارٍ اختبار الاتصال...",
+    "connectionVerified": "تم التحقق من الاتصال! نجحت المصافحة.",
+    "connectionFailed": "فشل الاتصال",
+    "errorCodes": {
+      "CONNECTION_TIMEOUT": "انتهت مهلة الاتصال",
+      "CONNECTION_REFUSED": "تم رفض الاتصال من قبل المضيف",
+      "HOST_UNREACHABLE": "تعذر الوصول إلى المضيف",
+      "SMTP_AUTHENTICATION_FAILED": "فشلت المصادقة",
+      "SSL_CERTIFICATE_ERROR": "خطأ في شهادة SSL",
+      "SMTP_SERVER_BUSY": "خادم SMTP مشغول، حاول مرة أخرى لاحقًا",
+      "SMTP_ERROR": "خطأ SMTP",
+      "INVALID_CONFIGURATION": "إعدادات غير صالحة"
     }
   }
 }

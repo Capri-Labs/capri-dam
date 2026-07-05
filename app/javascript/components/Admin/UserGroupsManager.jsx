@@ -28,6 +28,12 @@ import { useNotify }     from '../../context/NotificationContext';
 import { apiFetch, isSystemGroup, SYSTEM_SLUGS } from '../../utils/adminUtils';
 import GroupOverlay from './GroupOverlay';
 
+// Root-level groups shown per page in the custom-groups tree. Pagination is
+// applied to root nodes only (not descendants) so a parent and all of its
+// children always render together on the same page — this preserves tree
+// integrity without requiring the backend to paginate the flat group list.
+const ROOT_GROUPS_PER_PAGE = 10;
+
 function groupColor(group) {
   if (group.slug === SYSTEM_SLUGS.SUPER_ADMINS) return 'error';
   if (group.slug === SYSTEM_SLUGS.ADMINS)       return 'warning';
@@ -108,6 +114,7 @@ export default function UserGroupsManager({
   const [selectedGroup, setSelectedGroup] = useState(null);
   const [overlayOpen, setOverlayOpen]     = useState(false);
   const [search, setSearch]     = useState('');
+  const [rootPage, setRootPage] = useState(1);
 
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [createForm, setCreateForm]             = useState({ name: '', description: '', parent_id: null });
@@ -166,12 +173,16 @@ export default function UserGroupsManager({
     : allSystem;
 
   // Recursive tree builder — only used when NOT searching
-  const renderTree = (parentId = null, depth = 0) => {
-    const children = allCustom.filter(g => {
+  const renderTree = (parentId = null, depth = 0, rootIds = null) => {
+    let children = allCustom.filter(g => {
       // null == null and number == number (strict)
       const pid = g.parent_id;
       return parentId === null ? (pid === null || pid === undefined) : pid === parentId;
     });
+    // At the root level, restrict to the current page's root group ids.
+    if (depth === 0 && rootIds) {
+      children = children.filter(g => rootIds.has(g.id));
+    }
     if (children.length === 0) return null;
     return children.map(group => (
       <React.Fragment key={group.id}>
@@ -185,6 +196,18 @@ export default function UserGroupsManager({
       </React.Fragment>
     ));
   };
+
+  // Root-level custom groups (no parent), paginated. Children of a root
+  // group always render alongside it regardless of page, so tree integrity
+  // (parent + all descendants together) is preserved.
+  const rootCustomGroups = allCustom.filter(g => g.parent_id === null || g.parent_id === undefined);
+  const totalRootPages = Math.max(1, Math.ceil(rootCustomGroups.length / ROOT_GROUPS_PER_PAGE));
+  const clampedRootPage = Math.min(rootPage, totalRootPages);
+  const pagedRootIds = new Set(
+    rootCustomGroups
+      .slice((clampedRootPage - 1) * ROOT_GROUPS_PER_PAGE, clampedRootPage * ROOT_GROUPS_PER_PAGE)
+      .map(g => g.id)
+  );
 
   const totalMembers = groups.reduce((s, g) => s + (g.member_count || 0), 0);
 
@@ -221,7 +244,7 @@ export default function UserGroupsManager({
               {/* Search */}
               <Box sx={{ p: 1.5, borderBottom: '1px solid', borderColor: 'divider', bgcolor: '#fafafa' }}>
                 <TextField size="small" fullWidth placeholder="Search groups…"
-                  value={search} onChange={e => setSearch(e.target.value)} slotProps={{input: {
+                  value={search} onChange={e => { setSearch(e.target.value); setRootPage(1); }} slotProps={{input: {
                     startAdornment: <SearchOutlined sx={{ mr: 1, fontSize: 18, color: 'text.secondary' }} />
                   } }}
                 />
@@ -286,9 +309,9 @@ export default function UserGroupsManager({
                       />
                     ))
                   ) : (
-                    // Full recursive tree when not searching
+                    // Full recursive tree when not searching (root nodes paginated)
                     (() => {
-                      const tree = renderTree(null, 0);
+                      const tree = renderTree(null, 0, pagedRootIds);
                       return tree || (
                         <Typography variant="body2" color="text.secondary" sx={{ px: 1, py: 2, textAlign: 'center' }}>
                           No custom groups yet.
@@ -297,6 +320,27 @@ export default function UserGroupsManager({
                     })()
                   )}
                 </List>
+                {!search && !loading && totalRootPages > 1 && (
+                  <Stack direction="row" spacing={1} sx={{ py: 1, justifyContent: 'center' }}>
+                    <Button
+                      size="small"
+                      disabled={clampedRootPage <= 1}
+                      onClick={() => setRootPage(clampedRootPage - 1)}
+                    >
+                      ← Prev
+                    </Button>
+                    <Typography variant="caption" sx={{ alignSelf: 'center', px: 1 }}>
+                      Page {clampedRootPage} of {totalRootPages}
+                    </Typography>
+                    <Button
+                      size="small"
+                      disabled={clampedRootPage >= totalRootPages}
+                      onClick={() => setRootPage(clampedRootPage + 1)}
+                    >
+                      Next →
+                    </Button>
+                  </Stack>
+                )}
               </Box>
             </Grid>
 

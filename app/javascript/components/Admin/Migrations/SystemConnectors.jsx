@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Grid, CircularProgress } from '@mui/material';
+import { Box, Grid, CircularProgress, Stack, Button, Typography } from '@mui/material';
 import { useNotify } from '../../../context/NotificationContext';
 import ConnectorsTopBar from './ConnectorsTopBar';
 import ConnectorCard from './ConnectorCard';
 import ConnectorDialog from './ConnectorDialog';
 
+const DEFAULT_PAGINATION = { page: 1, per_page: 12, total: 0, total_pages: 1 };
+
 export default function SystemConnectors() {
     const notify = useNotify();
     const [connectors, setConnectors] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [pagination, setPagination] = useState(DEFAULT_PAGINATION);
 
     const [openDialog, setOpenDialog] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
@@ -18,14 +21,15 @@ export default function SystemConnectors() {
     const initialFormState = { id: null, provider_type: 'AEM', name: '', endpoint: '', auth_token: '', tdm_sanitation: true, status: 'idle' };
     const [formData, setFormData] = useState(initialFormState);
 
-    useEffect(() => { fetchConnectors(); }, []);
+    useEffect(() => { fetchConnectors(1); }, []);
 
-    const fetchConnectors = async () => {
+    const fetchConnectors = async (page = pagination.page) => {
         setLoading(true);
         try {
-            const res = await fetch('/api/v1/system_connectors');
+            const res = await fetch(`/api/v1/system_connectors?page=${page}`);
             const data = await res.json();
-            setConnectors(data);
+            setConnectors(data.connectors || []);
+            setPagination(data.pagination || DEFAULT_PAGINATION);
         } catch (error) {
             notify("Failed to load connectors.", "error");
         } finally {
@@ -135,12 +139,13 @@ export default function SystemConnectors() {
         <Box sx={{ p: 4, bgcolor: '#f8fafc', minHeight: '100vh' }}>
             <ConnectorsTopBar
                 onAddClick={() => setOpenDialog(true)}
-                onRefresh={fetchConnectors}
+                onRefresh={() => fetchConnectors(pagination.page)}
             />
 
             {loading ? (
                 <CircularProgress sx={{ display: 'block', mx: 'auto', mt: 10 }} />
             ) : (
+                <>
                 <Grid container spacing={4}>
                     {connectors.map((conn) => (
                         <Grid size={{ xs: 12, md: 6, lg: 4 }} key={conn.id}>
@@ -153,6 +158,29 @@ export default function SystemConnectors() {
                         </Grid>
                     ))}
                 </Grid>
+
+                {pagination.total_pages > 1 && (
+                    <Stack direction="row" spacing={1} sx={{ mt: 3, justifyContent: 'center' }}>
+                        <Button
+                            size="small"
+                            disabled={pagination.page <= 1}
+                            onClick={() => fetchConnectors(pagination.page - 1)}
+                        >
+                            ← Prev
+                        </Button>
+                        <Typography variant="caption" sx={{ alignSelf: 'center', px: 1 }}>
+                            Page {pagination.page} of {pagination.total_pages}
+                        </Typography>
+                        <Button
+                            size="small"
+                            disabled={pagination.page >= pagination.total_pages}
+                            onClick={() => fetchConnectors(pagination.page + 1)}
+                        >
+                            Next →
+                        </Button>
+                    </Stack>
+                )}
+                </>
             )}
 
             <ConnectorDialog

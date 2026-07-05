@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Grid, Paper, Typography, Button, TextField, Switch, FormControlLabel, Stack, Alert, MenuItem } from '@mui/material';
-import { CheckCircle, Speed, PriorityHigh } from '@mui/icons-material';
+import { CheckCircle, Speed, PriorityHigh, Wifi } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 import { useNotify } from '../../../context/NotificationContext';
 
 export default function SmtpSettingsTab({ incomingConfigs }) {
+    const { t } = useTranslation();
     const notify = useNotify();
 
     const [smtpConfig, setSmtpConfig] = useState({
@@ -15,6 +17,8 @@ export default function SmtpSettingsTab({ incomingConfigs }) {
     const [testResult, setTestResult] = useState(null);
     const [testLoading, setTestLoading] = useState(false);
     const [saveStatus, setSaveStatus] = useState(null);
+    const [connectionResult, setConnectionResult] = useState(null);
+    const [connectionTesting, setConnectionTesting] = useState(false);
 
     useEffect(() => {
         if (incomingConfigs) {
@@ -41,9 +45,39 @@ export default function SmtpSettingsTab({ incomingConfigs }) {
                     setSaveStatus({ type: 'success', msg: data.message });
                     notify(data.message, "success");
                 } else {
-                    setSaveStatus({ type: 'error', msg: data.errors?.join(', ') || 'Failed to update.' });
-                    notify(data.errors?.join(', '), "error");
+                    const msg = data.errors?.join(', ') || data.error || 'Failed to update.';
+                    setSaveStatus({ type: 'error', msg });
+                    notify(msg, "error");
                 }
+            });
+    };
+
+    const handleTestConnection = () => {
+        setConnectionTesting(true);
+        setConnectionResult(null);
+        const csrfToken = document.querySelector('[name="csrf-token"]').content;
+
+        fetch('/admin/system_status/test_connection', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
+            body: JSON.stringify({ smtp_config: smtpConfig })
+        })
+            .then(res => res.json())
+            .then(data => {
+                setConnectionTesting(false);
+                if (data.success) {
+                    setConnectionResult({ success: true, message: t('smtpSettings.connectionVerified') });
+                    notify(t('smtpSettings.connectionVerified'), "success");
+                } else {
+                    const localizedError = data.error_code ? t(`smtpSettings.errorCodes.${data.error_code}`, data.error) : data.error;
+                    setConnectionResult({ success: false, message: localizedError });
+                    notify(`${t('smtpSettings.connectionFailed')}: ${localizedError}`, "error", 5000);
+                }
+            })
+            .catch(() => {
+                setConnectionTesting(false);
+                setConnectionResult({ success: false, message: t('smtpSettings.connectionFailed') });
+                notify(t('smtpSettings.connectionFailed'), "error");
             });
     };
 
@@ -135,7 +169,21 @@ export default function SmtpSettingsTab({ incomingConfigs }) {
                                 </Grid>
                             </Grid>
 
-                            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
+                            {connectionResult && (
+                                <Alert severity={connectionResult.success ? 'success' : 'error'} sx={{ mb: -1 }}>
+                                    {connectionResult.message}
+                                </Alert>
+                            )}
+
+                            <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 2 }}>
+                                <Button
+                                    variant="outlined"
+                                    startIcon={<Wifi />}
+                                    onClick={handleTestConnection}
+                                    disabled={connectionTesting || !smtpConfig.address}
+                                >
+                                    {connectionTesting ? t('smtpSettings.testingConnection') : t('smtpSettings.testConnection')}
+                                </Button>
                                 <Button variant="contained" sx={{ bgcolor: '#5e35b1' }} onClick={handleSaveSmtp}>
                                     Commit System Credentials
                                 </Button>

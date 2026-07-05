@@ -73,7 +73,10 @@
     "copyDismiss": "Copiar e fechar",
     "refresh": "Atualizar",
     "actions": "Actions",
-    "back": "Voltar"
+    "back": "Voltar",
+    "previous": "Anterior",
+    "next": "Próximo",
+    "pageOf": "Página {{page}} de {{pages}}"
   },
   "header": {
     "myProfile": "Meu perfil",
@@ -2371,6 +2374,22 @@
       "removeTooltip": "Remover o esquema desta pasta",
       "empty": "Nenhum esquema de metadados atribuído a esta pasta. Os ativos usarão o esquema padrão, se houver um configurado.",
       "emptyHint": "Configure esquemas em Tools → Metadata Schemas."
+    }
+  },
+  "smtpSettings": {
+    "testConnection": "Testar conexão",
+    "testingConnection": "Testando conexão...",
+    "connectionVerified": "Conexão verificada! Handshake bem-sucedido.",
+    "connectionFailed": "Falha na conexão",
+    "errorCodes": {
+      "CONNECTION_TIMEOUT": "Tempo de conexão esgotado",
+      "CONNECTION_REFUSED": "Conexão recusada pelo host",
+      "HOST_UNREACHABLE": "Host inacessível",
+      "SMTP_AUTHENTICATION_FAILED": "Falha na autenticação",
+      "SSL_CERTIFICATE_ERROR": "Erro de certificado SSL",
+      "SMTP_SERVER_BUSY": "Servidor SMTP ocupado, tente novamente mais tarde",
+      "SMTP_ERROR": "Erro SMTP",
+      "INVALID_CONFIGURATION": "Configuração inválida"
     }
   }
 }

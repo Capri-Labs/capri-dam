@@ -3,8 +3,27 @@ class Api::V1::SystemConnectorsController < ApplicationController
   before_action :require_admin!, only: %i[create update test_connection pre_flight_analysis start_migration]
 
   def index
-    connectors = SystemConnector.all.order(created_at: :desc)
-    render json: connectors.as_json(methods: [ :provider_label ])
+    page     = [ params[:page].to_i, 1 ].max
+    per_page = 12
+    scope    = SystemConnector.all.order(created_at: :desc)
+
+    # Backward compatible: when no `page` param is given, return the legacy
+    # bare array (existing frontend/tests may rely on the unpaginated shape).
+    if params[:page].present?
+      total = scope.count
+      connectors = scope.limit(per_page).offset((page - 1) * per_page)
+      render json: {
+        connectors: connectors.as_json(methods: [ :provider_label ]),
+        pagination: {
+          page: page,
+          per_page: per_page,
+          total: total,
+          total_pages: [ (total.to_f / per_page).ceil, 1 ].max,
+        },
+      }
+    else
+      render json: scope.as_json(methods: [ :provider_label ])
+    end
   end
 
   def create

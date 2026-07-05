@@ -53,4 +53,20 @@ RSpec.describe EmailDispatcherWorker, type: :worker do
       )
     end.not_to raise_error
   end
+
+  it "marks the delivery permanently failed without retrying on SMTP authentication errors" do
+    message = instance_double(ActionMailer::MessageDelivery)
+    allow(DynamicMailer).to receive(:dispatch_email).and_return(message)
+    allow(message).to receive(:deliver_now).and_raise(Net::SMTPAuthenticationError, "535 bad credentials")
+
+    expect { described_class.new.perform(delivery.id) }.not_to raise_error
+    expect(delivery.reload.status).to eq("failed")
+    expect(delivery.error_log).to include("Permanent SMTP failure")
+  end
+
+  it "computes exponential backoff delays for transient failures" do
+    delays = (0..2).map { |count| described_class.sidekiq_retry_in_block.call(count, StandardError.new("421 busy")) }
+
+    expect(delays).to eq([ 10, 40, 90 ])
+  end
 end

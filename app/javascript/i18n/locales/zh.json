@@ -73,7 +73,10 @@
     "copyDismiss": "复制并关闭",
     "refresh": "刷新",
     "actions": "Actions",
-    "back": "返回"
+    "back": "返回",
+    "previous": "上一页",
+    "next": "下一页",
+    "pageOf": "第 {{page}} 页，共 {{pages}} 页"
   },
   "header": {
     "myProfile": "我的个人资料",
@@ -2371,6 +2374,22 @@
       "removeTooltip": "从此文件夹中移除模式",
       "empty": "此文件夹未分配元数据模式。如果已配置默认模式，资源将使用默认模式。",
       "emptyHint": "请在 Tools → Metadata Schemas 下配置模式。"
+    }
+  },
+  "smtpSettings": {
+    "testConnection": "测试连接",
+    "testingConnection": "正在测试连接...",
+    "connectionVerified": "连接已验证！握手成功。",
+    "connectionFailed": "连接失败",
+    "errorCodes": {
+      "CONNECTION_TIMEOUT": "连接超时",
+      "CONNECTION_REFUSED": "主机拒绝连接",
+      "HOST_UNREACHABLE": "无法访问主机",
+      "SMTP_AUTHENTICATION_FAILED": "身份验证失败",
+      "SSL_CERTIFICATE_ERROR": "SSL 证书错误",
+      "SMTP_SERVER_BUSY": "SMTP 服务器繁忙，请稍后重试",
+      "SMTP_ERROR": "SMTP 错误",
+      "INVALID_CONFIGURATION": "配置无效"
     }
   }
 }
