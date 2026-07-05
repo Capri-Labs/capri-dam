@@ -4,11 +4,11 @@ class SettingsController < ApplicationController
   before_action :authenticate_user!
 
   def show
-    @active_view = "System Ops"
     # 1. Determine the sub-view based on the URL path safely
     if request.path.include?("system")
       if current_user.admin?
         @sub_view = "System"
+        @active_view = "System Ops"
         # Retrieve and mask the actual database SMTP settings before sending to React
         @smtp_config = Setting.get("smtp_settings") || {}
         if @smtp_config["password"].present?
@@ -20,6 +20,7 @@ class SettingsController < ApplicationController
       end
     else
       @sub_view = "General"
+      @active_view = "General"
     end
 
     # 2. Only fetch system accounts if the user is an admin

@@ -10,7 +10,6 @@ import {
     Download,
     InfoOutlined,
     History,
-    AnalyticsOutlined,
     AccountTreeOutlined,
     AutoAwesome,
     LocalOffer,
@@ -26,9 +25,9 @@ import PinToCollectionDialog from './PinToCollectionDialog';
 import { useNotify } from '../../context/NotificationContext';
 
 import AssetVersionsTab from './AssetVersionsTab';
-import AssetStatisticsTab from './AssetStatisticsTab';
 import AssetAuditTab from './AssetAuditTab';
 import AssetMetadataPanel from './AssetMetadataPanel';
+import AssetStatsPopover from './AssetStatsPopover';
 
 const interpolate = (template, values = {}) => template.replace(/\{\{(\w+)\}\}/g, (_, key) => values[key] ?? '');
 
@@ -63,12 +62,34 @@ export default function AssetViewer({ asset: initialAsset, open, onClose, onAsse
         setAsset(initialAsset);
     }, [initialAsset]);
 
+    // Record a "view" the moment the viewer is opened for a given asset. This
+    // runs client-side (not on the read-only GET /show) so opening the same
+    // asset twice counts as two views, matching how most DAM products define it.
+    useEffect(() => {
+        if (open && asset?.id) {
+            trackUsageEvent(asset.id, 'view');
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [open, asset?.id]);
+
     if (!asset) return null;
+
+    // Fire-and-forget usage tracking. See Api::V1::AssetsController#track_event
+    // for why this is called at the moment of user intent rather than derived
+    // from CDN logs (the actual bytes are often served straight from CDN/S3).
+    const trackUsageEvent = (assetId, event) => {
+        fetch(`/api/v1/assets/${assetId}/track_event`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ event }),
+        }).catch(() => { /* stats are non-critical; ignore failures */ });
+    };
 
     const handleTabChange = (event, newValue) => setActiveTab(newValue);
 
     const handleCopyUrl = () => {
         navigator.clipboard.writeText(asset.url);
+        trackUsageEvent(asset.id, 'share');
         notify(translate('assetViewer.notifications.assetUrlCopiedToClipboard', 'Asset URL copied to clipboard!'), "success");
     };
 
@@ -77,10 +98,12 @@ export default function AssetViewer({ asset: initialAsset, open, onClose, onAsse
         notify(translate('assetViewer.notifications.generatingSecureWatermarkedProxy', 'Generating secure watermarked proxy...'), "info");
 
         // Use standard browser navigation to trigger the Rails send_data stream
+        // (the controller itself records this as a confirmed download).
         window.location.href = `/api/v1/assets/${asset.id}/watermarked`;
     };
 
     const handleDownload = async () => {
+        trackUsageEvent(asset.id, 'download');
         try {
             // Fetch the image to trigger a programmatic browser download
             const response = await fetch(asset.url);
@@ -148,6 +171,8 @@ export default function AssetViewer({ asset: initialAsset, open, onClose, onAsse
                 <Toolbar>
                     <IconButton edge="start" color="inherit" onClick={onClose} aria-label={translate('assetViewer.actions.closeAriaLabel', 'close')}><Close /></IconButton>
                     <Typography sx={{ ml: 2, flex: 1 }} variant="h6" component="div" noWrap>{displayName}</Typography>
+
+                    <AssetStatsPopover asset={asset} />
 
                     <Tooltip title={translate('assetViewer.toolbar.pinToCollection', 'Pin to Collection')}>
                         <IconButton color="inherit" onClick={() => setPinOpen(true)}><PushPin fontSize="small" /></IconButton>
@@ -236,7 +261,6 @@ export default function AssetViewer({ asset: initialAsset, open, onClose, onAsse
                             <Tab icon={<InfoOutlined fontSize="small" />} iconPosition="start" label={translate('assetViewer.tabs.info', 'Info')} />
                             <Tab icon={<SchemaOutlined fontSize="small" />} iconPosition="start" label={translate('assetViewer.tabs.metadata', 'Metadata')} />
                             <Tab icon={<History fontSize="small" />} iconPosition="start" label={translate('assetViewer.tabs.versions', 'Versions')} />
-                            <Tab icon={<AnalyticsOutlined fontSize="small" />} iconPosition="start" label={translate('assetViewer.tabs.statistics', 'Statistics')} />
                             <Tab icon={<PolicyOutlined fontSize="small" />} iconPosition="start" label={translate('assetViewer.tabs.audit', 'Audit')} />
                             <Tab icon={<AccountTreeOutlined fontSize="small" />} iconPosition="start" label={translate('assetViewer.tabs.workflows', 'Workflows')} />
                             <Tab icon={<AutoAwesome fontSize="small" />} iconPosition="start" label={translate('assetViewer.tabs.aiEngine', 'AI Engine')} />
@@ -347,16 +371,14 @@ export default function AssetViewer({ asset: initialAsset, open, onClose, onAsse
                         <TabPanel value={activeTab} index={2}>
                             <AssetVersionsTab asset={asset} onAssetUpdated={onAssetUpdated} />
                         </TabPanel>
-                        {/* TAB 3: STATS */}
-                        <TabPanel value={activeTab} index={3}><AssetStatisticsTab asset={asset} /></TabPanel>
-                        {/* TAB 4: AUDIT */}
-                        <TabPanel value={activeTab} index={4}><AssetAuditTab asset={asset} /></TabPanel>
-                        {/* TAB 5: WORKFLOWS */}
-                        <TabPanel value={activeTab} index={5}>
+                        {/* TAB 3: AUDIT */}
+                        <TabPanel value={activeTab} index={3}><AssetAuditTab asset={asset} /></TabPanel>
+                        {/* TAB 4: WORKFLOWS */}
+                        <TabPanel value={activeTab} index={4}>
                             <WorkflowPanel assetId={asset.id} onWorkflowUpdate={() => { if (onAssetUpdated) onAssetUpdated(asset); }} />
                         </TabPanel>
-                        {/* TAB 6: AI */}
-                        <TabPanel value={activeTab} index={6}>
+                        {/* TAB 5: AI */}
+                        <TabPanel value={activeTab} index={5}>
                             <Typography variant="subtitle1" fontWeight="700" sx={{ mb: 2 }}>{translate('assetViewer.ai.semanticAndVisionAnalysis', 'Semantic & Vision Analysis')}</Typography>
                         </TabPanel>
 

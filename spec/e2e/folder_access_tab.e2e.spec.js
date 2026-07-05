@@ -11,7 +11,7 @@
  *  6. Subfolder cascade checkbox is visible and toggleable
  */
 
-import { test, expect } from '@playwright/test';
+const { test, expect } = require('./fixtures');
 
 const BASE = process.env.BASE_URL || 'http://localhost:3000';
 

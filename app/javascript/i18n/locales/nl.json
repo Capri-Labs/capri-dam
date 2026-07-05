@@ -1885,8 +1885,9 @@
   "assetStatisticsTab": {
     "title": "Assetstatistieken",
     "downloads": "Downloads",
-    "cdnViews": "CDN-weergaven",
-    "shares": "Delen"
+    "views": "Weergaven",
+    "shares": "Delen",
+    "disclaimer": "Telt weergaven, downloads en gekopieerde deel-links binnen de app. CDN-hotlinkverkeer wordt niet meegeteld."
   },
   "assetList": {
     "headers": {
@@ -1983,10 +1984,6 @@
     "purgeEdgeCache": "Edge-cache legen",
     "invalidateDeliveryNodesGlobally": "Leveringsknooppunten wereldwijd ongeldig maken",
     "workflow": "Workflow",
-    "globalLocalization": "Wereldwijde lokalisatie",
-    "autoTranslateCopyMetadata": "Tekst en metadata automatisch vertalen",
-    "brandLicenseGuard": "Merk- en licentiebewaking",
-    "validateUsageTermsSignatures": "Gebruiksvoorwaarden en handtekeningen valideren",
     "smartActions": "Slimme acties",
     "autoTagEnrich": "Automatisch taggen en verrijken",
     "extractSemanticMetadata": "Semantische metadata extraheren",
@@ -2006,8 +2003,8 @@
       "smartOrganizeQueued": "AI analyseert vectoren om items in submappen te clusteren.",
       "forceSyncStarted": "Geforceerde synchronisatie van metadata naar Edge KV gestart.",
       "cachePurgeQueued": "Ongeldig maken van Edge-cache in wachtrij geplaatst voor geselecteerde items.",
-      "localizationTriggered": "Lokalisatie-agent gestart.",
-      "brandSafetyInitialized": "Controle op merkveiligheid gestart."
+      "forceSyncError": "Metadata-synchronisatie kon niet worden gestart. Probeer het opnieuw.",
+      "cachePurgeError": "Cache-purge kon niet in de wachtrij worden geplaatst. Probeer het opnieuw."
     }
   },
   "uploadGrid": {
@@ -2104,6 +2101,18 @@
       "applyError": "Schema toepassen mislukt. Probeer het opnieuw."
     }
   },
+  "triggerWorkflowDialog": {
+    "title": "Workflow starten",
+    "description": "Kies een actieve workflow om uit te voeren voor {{count}} geselecteerd(e) item(s). Geselecteerde mappen bevatten alle assets die erin zitten.",
+    "noActiveWorkflows": "Geen actieve workflows beschikbaar. Activeer er eerst een in de Workflow Designer.",
+    "stepCount_one": "{{count}} stap",
+    "stepCount_other": "{{count}} stappen",
+    "loadError": "Workflows laden mislukt.",
+    "triggerError": "Workflow starten mislukt.",
+    "queued": "\"{{name}}\" in wachtrij geplaatst voor {{count}} asset(s).",
+    "cancel": "Annuleren",
+    "trigger": "Starten"
+  },
   "pinToCollectionDialog": {
     "title": "Aan collecties vastmaken",
     "searchPlaceholder": "Collecties zoeken...",
@@ -2164,7 +2173,6 @@
       "info": "Info",
       "metadata": "Metadata",
       "versions": "Versies",
-      "statistics": "Statistieken",
       "audit": "Audit",
       "workflows": "Workflows",
       "aiEngine": "AI-engine"

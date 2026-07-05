@@ -17,6 +17,7 @@ RSpec.describe 'Workflow HTML controller coverage', type: :request do
 
       expect(response).to have_http_status(:ok)
       expect(assigns(:active_view)).to eq('Workflows')
+      expect(response.body).to include('data-active-view="Workflows"')
       workflows_json = JSON.parse(assigns(:workflows_json))
       expect(workflows_json).to contain_exactly(hash_including(
         'id' => workflow.id,
@@ -60,10 +61,12 @@ RSpec.describe 'Workflow HTML controller coverage', type: :request do
   end
 
   describe 'GET /workflows/dashboard' do
-    it 'renders the dashboard page' do
+    it 'renders the dashboard page and highlights "My Tasks" in the sidebar' do
       get '/workflows/dashboard'
 
       expect(response).to have_http_status(:ok)
+      expect(assigns(:active_view)).to eq('My Tasks')
+      expect(response.body).to include('data-active-view="My Tasks"')
     end
   end
 

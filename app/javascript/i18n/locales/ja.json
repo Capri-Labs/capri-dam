@@ -1885,8 +1885,9 @@
   "assetStatisticsTab": {
     "title": "アセット統計",
     "downloads": "ダウンロード数",
-    "cdnViews": "CDNビュー数",
-    "shares": "共有数"
+    "views": "閲覧数",
+    "shares": "共有数",
+    "disclaimer": "アプリ内の閲覧、ダウンロード、コピーされた共有リンクをカウントします。CDNのホットリンクトラフィックは含まれません。"
   },
   "assetList": {
     "headers": {
@@ -1983,10 +1984,6 @@
     "purgeEdgeCache": "Edge キャッシュを削除",
     "invalidateDeliveryNodesGlobally": "配信ノードをグローバルに無効化",
     "workflow": "ワークフロー",
-    "globalLocalization": "グローバルローカリゼーション",
-    "autoTranslateCopyMetadata": "コピーとメタデータを自動翻訳",
-    "brandLicenseGuard": "ブランド・ライセンス保護",
-    "validateUsageTermsSignatures": "利用条件と署名を検証",
     "smartActions": "スマートアクション",
     "autoTagEnrich": "自動タグ付けと拡張",
     "extractSemanticMetadata": "セマンティックメタデータを抽出",
@@ -2006,8 +2003,8 @@
       "smartOrganizeQueued": "AI がベクトルを解析し、項目をサブフォルダーへクラスタリングしています。",
       "forceSyncStarted": "Edge KV へのメタデータ強制同期を開始しました。",
       "cachePurgeQueued": "選択した項目の Edge キャッシュ無効化をキューに追加しました。",
-      "localizationTriggered": "ローカリゼーションエージェントを起動しました。",
-      "brandSafetyInitialized": "ブランドセーフティチェックを開始しました。"
+      "forceSyncError": "メタデータの同期を開始できませんでした。もう一度お試しください。",
+      "cachePurgeError": "キャッシュパージのキューへの追加に失敗しました。もう一度お試しください。"
     }
   },
   "uploadGrid": {
@@ -2104,6 +2101,18 @@
       "applyError": "スキーマの適用に失敗しました。もう一度お試しください。"
     }
   },
+  "triggerWorkflowDialog": {
+    "title": "ワークフローをトリガー",
+    "description": "選択した{{count}}個のアイテムに対して実行するアクティブなワークフローを選んでください。選択したフォルダー内のすべてのアセットが含まれます。",
+    "noActiveWorkflows": "利用可能なアクティブなワークフローがありません。先にワークフローデザイナーで有効化してください。",
+    "stepCount_one": "{{count}}ステップ",
+    "stepCount_other": "{{count}}ステップ",
+    "loadError": "ワークフローの読み込みに失敗しました。",
+    "triggerError": "ワークフローのトリガーに失敗しました。",
+    "queued": "「{{name}}」を{{count}}件のアセットに対してキューに追加しました。",
+    "cancel": "キャンセル",
+    "trigger": "トリガー"
+  },
   "pinToCollectionDialog": {
     "title": "コレクションにピン留め",
     "searchPlaceholder": "コレクションを検索...",
@@ -2164,7 +2173,6 @@
       "info": "情報",
       "metadata": "メタデータ",
       "versions": "バージョン",
-      "statistics": "統計",
       "audit": "監査",
       "workflows": "ワークフロー",
       "aiEngine": "AIエンジン"

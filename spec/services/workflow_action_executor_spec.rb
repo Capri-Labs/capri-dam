@@ -86,11 +86,13 @@ RSpec.describe WorkflowActionExecutor do
       note = Notification.last
       expect(note.user).to eq(user)
       expect(note.message).to include(asset.title)
+      expect(note.action_url).to eq("/assets?id=#{asset.uuid}")
     end
 
     it 'email_notification creates an in-app Notification and does not raise' do
       step = build_step('email_notification', { 'recipient' => 'assignee', 'subject' => 'Review needed', 'body' => 'Hello {{asset.title}}' })
       expect { described_class.new(instance, step).call }.to change(Notification, :count).by(1)
+      expect(Notification.last.action_url).to eq("/assets?id=#{asset.uuid}")
     end
 
     it 'sms delegates to WorkflowSmsWorker when available' do

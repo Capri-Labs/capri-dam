@@ -2,9 +2,10 @@ import React from 'react';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 
 const mockClipboardWriteText = jest.fn();
+const stableT = (key) => key;
 
 jest.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (key) => key }),
+  useTranslation: () => ({ t: stableT }),
   Trans: ({ i18nKey }) => i18nKey,
 }));
 
@@ -43,5 +44,42 @@ describe('SearchScreen behavior', () => {
 
     fireEvent.click(screen.getByText('search.quickSearches.documents'));
     await waitFor(() => expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('mime_group=documents'), expect.any(Object)));
+  });
+
+  describe('navigating to an asset from a result card', () => {
+    let originalLocation;
+
+    beforeEach(() => {
+      originalLocation = window.location;
+      delete window.location;
+      window.location = { href: 'http://localhost/search?q=logo&page=1', search: '?q=logo&page=1', pathname: '/search' };
+    });
+
+    afterEach(() => {
+      window.location = originalLocation;
+    });
+
+    it('navigates to the /assets?id=UUID deep-link (grid view) instead of the non-existent /assets/:uuid route', async () => {
+      render(<SearchScreen />);
+      await waitFor(() => expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('/api/v1/search'), expect.any(Object)));
+      const card = await screen.findByText('Search Asset');
+      fireEvent.click(card);
+
+      expect(window.location.href).toBe('/assets?id=asset-1');
+    });
+
+    it('navigates to the /assets?id=UUID deep-link (list view) instead of the non-existent /assets/:uuid route', async () => {
+      render(<SearchScreen />);
+      await waitFor(() => expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('/api/v1/search'), expect.any(Object)));
+      await screen.findByText('Search Asset');
+
+      const listViewButton = document.querySelector('[data-testid="ViewListIcon"]')?.closest('button');
+      fireEvent.click(listViewButton);
+
+      const card = await screen.findByText('Search Asset');
+      fireEvent.click(card);
+
+      expect(window.location.href).toBe('/assets?id=asset-1');
+    });
   });
 });

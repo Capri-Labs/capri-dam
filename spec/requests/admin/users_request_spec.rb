@@ -21,6 +21,16 @@ RSpec.describe "Admin::Users coverage", type: :request do
       expect(response).to have_http_status(:forbidden)
     end
 
+    it "renders the HTML shell and highlights the Users sidebar item" do
+      sign_in admin
+
+      get "/admin/users"
+
+      expect(response).to have_http_status(:ok)
+      expect(assigns(:active_view)).to eq("Users")
+      expect(response.body).to include('data-active-view="Users"')
+    end
+
     it "returns users filtered by search" do
       sign_in admin
       user

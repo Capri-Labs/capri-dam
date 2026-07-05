@@ -138,6 +138,15 @@ test.describe('Local asset serving (GET /api/v1/assets/local/:uuid)', () => {
         const etag = first.headers()['etag'];
         expect(etag).toBeTruthy();
 
+        // Second request — send back the ETag via If-None-Match.
+        const second = await request.get(`/api/v1/assets/local/${uuid}`, {
+            headers: { ...authHeaders(), 'If-None-Match': etag },
+            failOnStatusCode: false,
+        });
+
+        expect(second.status()).toBe(304);
+    });
+
     test('accepts the ?variant=preview query parameter without error', async ({ request, page }) => {
         await login(page);
         const uuid = await getFirstReadyAssetUuid(request, null);
@@ -178,6 +187,42 @@ test.describe('getAssetUrl() client-side helper', () => {
 
         expect(result).toContain('/api/v1/assets/local/test-uuid-1234');
         expect(result).not.toContain('/serve');
+    });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Search results → AssetViewer navigation
+//
+// Regression coverage: SearchResultCard clicks used to send the user to
+// /assets/<uuid> (no matching route → 404). The correct deep-link route is
+// /assets?id=<uuid>, which the folders shell reads via
+// data-initial-target-asset-id and opens directly in the AssetViewer.
+// ─────────────────────────────────────────────────────────────────────────────
+
+test.describe('Search result navigation (/search → /assets?id=UUID)', () => {
+    test.beforeEach(async ({ page }) => { await login(page); });
+
+    test('clicking a search result navigates to /assets?id=UUID, not the non-existent /assets/UUID route, and does not 404', async ({ page, request }) => {
+        const uuid = await getFirstReadyAssetUuid(request, null);
+        test.skip(!uuid, 'No ready assets in DB — seed the test environment first');
+
+        const errors = [];
+        page.on('pageerror', err => errors.push(err.message));
+
+        await page.goto('/search');
+        await page.waitForLoadState('networkidle');
+
+        const card = page.locator('.MuiCard-root').first();
+        await card.waitFor({ state: 'visible', timeout: 15_000 });
+        await card.click();
+
+        await page.waitForURL(/\/assets\?id=/, { timeout: 15_000 });
+        expect(page.url()).toMatch(/\/assets\?id=[^/]+$/);
+        expect(page.url()).not.toMatch(/\/assets\/[0-9a-f-]+/);
+
+        const response = await page.request.get(page.url());
+        expect(response.status()).not.toBe(404);
+        expect(errors).toHaveLength(0);
     });
 });
 

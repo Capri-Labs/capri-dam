@@ -1885,8 +1885,9 @@
   "assetStatisticsTab": {
     "title": "资产统计",
     "downloads": "下载",
-    "cdnViews": "CDN 浏览量",
-    "shares": "分享"
+    "views": "浏览量",
+    "shares": "分享",
+    "disclaimer": "统计应用内的浏览、下载和已复制的分享链接次数,不包含 CDN 热链流量。"
   },
   "assetList": {
     "headers": {
@@ -1983,10 +1984,6 @@
     "purgeEdgeCache": "清除 Edge 缓存",
     "invalidateDeliveryNodesGlobally": "全局使分发节点失效",
     "workflow": "工作流",
-    "globalLocalization": "全局本地化",
-    "autoTranslateCopyMetadata": "自动翻译文案和元数据",
-    "brandLicenseGuard": "品牌与许可保护",
-    "validateUsageTermsSignatures": "验证使用条款和签名",
     "smartActions": "智能操作",
     "autoTagEnrich": "自动打标并增强",
     "extractSemanticMetadata": "提取语义元数据",
@@ -2006,8 +2003,8 @@
       "smartOrganizeQueued": "AI 正在分析向量，以将项目聚类到子文件夹中。",
       "forceSyncStarted": "已启动将元数据强制同步到 Edge KV。",
       "cachePurgeQueued": "已为所选项目加入 Edge 缓存失效队列。",
-      "localizationTriggered": "已触发本地化代理。",
-      "brandSafetyInitialized": "已初始化品牌安全检查。"
+      "forceSyncError": "无法启动元数据同步。请重试。",
+      "cachePurgeError": "无法将缓存清除加入队列。请重试。"
     }
   },
   "uploadGrid": {
@@ -2104,6 +2101,18 @@
       "applyError": "应用架构失败。请重试。"
     }
   },
+  "triggerWorkflowDialog": {
+    "title": "触发工作流",
+    "description": "选择一个活动工作流以针对已选择的 {{count}} 个项目运行。所选文件夹将包含其中的所有资产。",
+    "noActiveWorkflows": "没有可用的活动工作流。请先在工作流设计器中激活一个。",
+    "stepCount_one": "{{count}} 个步骤",
+    "stepCount_other": "{{count}} 个步骤",
+    "loadError": "加载工作流失败。",
+    "triggerError": "触发工作流失败。",
+    "queued": "已为 {{count}} 个资产将“{{name}}”加入队列。",
+    "cancel": "取消",
+    "trigger": "触发"
+  },
   "pinToCollectionDialog": {
     "title": "固定到集合",
     "searchPlaceholder": "搜索集合...",
@@ -2164,7 +2173,6 @@
       "info": "信息",
       "metadata": "元数据",
       "versions": "版本",
-      "statistics": "统计",
       "audit": "审计",
       "workflows": "工作流",
       "aiEngine": "AI 引擎"

@@ -77,7 +77,7 @@ class WorkflowActionExecutor
         user:       user,
         title:      subject,
         message:    body,
-        action_url: "/dashboard?view=asset_explorer&asset=#{@asset.id}",
+        action_url: "/assets?id=#{@asset.uuid || @asset.id}",
       )
     end
 
@@ -103,7 +103,7 @@ class WorkflowActionExecutor
         user:       user,
         title:      @config[:subject].presence || "Workflow update",
         message:    render_tokens(@config[:message]),
-        action_url: "/dashboard?view=asset_explorer&asset=#{@asset.id}",
+        action_url: "/assets?id=#{@asset.uuid || @asset.id}",
       )
     end
     nil

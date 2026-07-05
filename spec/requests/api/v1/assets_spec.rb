@@ -557,6 +557,92 @@ RSpec.describe 'Api::V1::Assets', type: :request do
   end
 
   # ===========================================================================
+  # USAGE STATISTICS — GET /api/v1/assets/{id}/stats
+  # ===========================================================================
+  path '/api/v1/assets/{id}/stats' do
+    parameter name: :id, in: :path, type: :string, required: true, description: 'Asset ID'
+
+    get 'Usage statistics for an asset (views/downloads/shares)' do
+      tags 'Assets'
+      produces 'application/json'
+      security [ Bearer: [] ]
+      description <<~DESC
+        Returns app-observed usage counters for this asset, backed by the
+        {AssetUsageEvent} table (see `Asset#usage_stats`). These reflect events that
+        flow through this app (viewer opened, download initiated, link
+        copied) — not raw CDN edge hits.
+      DESC
+
+      response '200', 'Usage statistics returned' do
+        schema type: :object,
+               properties: {
+                 views:     { type: :integer, example: 12 },
+                 downloads: { type: :integer, example: 4 },
+                 shares:    { type: :integer, example: 1 },
+               }
+        run_test!
+      end
+
+      response '404', 'Asset not found' do
+        schema type: :object, properties: { error: { type: :string } }
+        run_test!
+      end
+    end
+  end
+
+  # ===========================================================================
+  # TRACK USAGE EVENT — POST /api/v1/assets/{id}/track_event
+  # ===========================================================================
+  path '/api/v1/assets/{id}/track_event' do
+    parameter name: :id, in: :path, type: :string, required: true, description: 'Asset ID'
+
+    post 'Record a view/download/share event for an asset' do
+      tags 'Assets'
+      consumes 'application/json'
+      produces 'application/json'
+      security [ Bearer: [] ]
+      description <<~DESC
+        Records a single usage event (`view`, `download`, or `share`) as an
+        {AssetUsageEvent} row and returns the updated counters. Called by the
+        frontend at the moment the user initiates the action, since the
+        actual bytes are often served straight from the CDN/S3 in production
+        (see `AssetUrlHelper#asset_url_for`).
+      DESC
+
+      parameter name: :payload, in: :body, schema: {
+        type: :object,
+        required: [ 'event' ],
+        properties: {
+          event: { type: :string, enum: %w[view download share], example: 'view' },
+        },
+      }
+
+      response '200', 'Event recorded; updated statistics returned' do
+        schema type: :object,
+               properties: {
+                 views:     { type: :integer, example: 12 },
+                 downloads: { type: :integer, example: 4 },
+                 shares:    { type: :integer, example: 1 },
+               }
+        let(:payload) { { event: 'view' } }
+        run_test!
+      end
+
+      response '422', 'Unsupported event name' do
+        schema type: :object, properties: { error: { type: :string } }
+        let(:payload) { { event: 'bogus' } }
+        run_test!
+      end
+
+      response '404', 'Asset not found' do
+        let(:id) { 'not-a-real-id' }
+        let(:payload) { { event: 'view' } }
+        run_test!
+      end
+    end
+  end
+
+  # ===========================================================================
   # CHECK HASHES — POST /api/v1/assets/check_hashes
   # ===========================================================================
   path '/api/v1/assets/check_hashes' do

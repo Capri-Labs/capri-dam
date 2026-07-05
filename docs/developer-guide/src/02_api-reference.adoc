@@ -152,9 +152,11 @@ AI batch progress, and health callbacks.
 | `GET/POST/PATCH/DELETE` | `/api/v1/video_profiles...` | admin | Video-profile CRUD.
 | `GET/POST/PATCH/DELETE` | `/api/v1/style_presets...` | admin | Style-preset CRUD and gateway sync.
 | `POST` | `/api/v1/style_presets/:id/sync` | admin | Broadcast style preset to gateway.
-| `GET` | `/api/v1/workflow_instances` | user | Runtime workflow instances.
+| `GET` | `/api/v1/workflow_instances` | admin | Runtime workflow instances.
 | `GET/PATCH` | `/api/v1/workflow_tasks/:id` | user | Worklist detail and approval decision.
 | `GET` | `/api/v1/workflow_tasks` | user | Pending task queue.
+| `POST` | `/api/v1/workflows/bulk_trigger` | user | Manually trigger an active workflow for selected assets/folders.
+| `POST` | `/api/v1/workflows/bulk_stop`, `/api/v1/workflows/bulk_reassign` | admin | Bulk-cancel or bulk-reassign running workflow instances.
 | `GET/PATCH` | `/api/v1/notifications`, `/api/v1/notifications/:id/mark_read` | user | In-app notifications.
 | `PATCH` | `/api/v1/notifications/mark_all_read` | user | Clear all unread notifications.
 |===

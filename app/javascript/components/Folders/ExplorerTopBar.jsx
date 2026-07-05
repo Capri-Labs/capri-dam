@@ -7,13 +7,14 @@ import {
 import {
     Home, ContentCopy, DeleteOutlined, CreateNewFolder,
     CloudUpload, AutoAwesome, AccountTree,
-    Psychology, Translate, Security, Difference, Style,
+    Psychology, Difference, Style,
     CloudSync, Publish, DeleteSweep, BuildOutlined, SchemaOutlined, ImageOutlined, VideoFileOutlined
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useNotify } from '../../context/NotificationContext';
 import UploadWorkspace from './UploadWorkspace';
 import ApplySchemaDialog from './ApplySchemaDialog';
+import TriggerWorkflowDialog from './TriggerWorkflowDialog';
 import { ApplyImageProfileDialog } from '../Tools/AssetConfigurations/ImageProfiles';
 import { ApplyVideoProfileDialog } from '../Tools/AssetConfigurations/VideoProfiles';
 
@@ -30,7 +31,6 @@ export default function ExplorerTopBar({
 
     // Dropdown Anchors
     const [smartMenuAnchor,    setSmartMenuAnchor]    = useState(null);
-    const [workflowMenuAnchor, setWorkflowMenuAnchor] = useState(null);
     const [toolsMenuAnchor,    setToolsMenuAnchor]    = useState(null);
     const [edgeMenuAnchor,     setEdgeMenuAnchor]     = useState(null);
 
@@ -45,6 +45,9 @@ export default function ExplorerTopBar({
     // Video Profile dialog
     const [videoProfileDialogOpen, setVideoProfileDialogOpen] = useState(false);
 
+    // Trigger Workflow dialog
+    const [triggerWorkflowOpen, setTriggerWorkflowOpen] = useState(false);
+
     // AI Handlers
     const handleAiMenuClose = () => setSmartMenuAnchor(null);
     const handleAutoEnrich  = () => { handleAiMenuClose(); notify(t('explorerTopBar.notifications.autoEnrichQueued'), "info"); };
@@ -54,33 +57,40 @@ export default function ExplorerTopBar({
     // Edge Operations Handlers
     const handleEdgeMenuClose = () => setEdgeMenuAnchor(null);
 
-    const handleForceSync = () => {
+    const csrfToken = () => document.querySelector('[name="csrf-token"]')?.content;
+
+    const runEdgeOperation = (path, { successKey, successVariant, errorKey }) => {
         handleEdgeMenuClose();
-        fetch('/api/v1/edge_operations/sync', {
+        const folders = selectedItems?.folders ?? [];
+        const assets = selectedItems?.assets ?? [];
+
+        return fetch(`/api/v1/edge_operations/${path}`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                folders: viewData.selectedItems?.folders || [],
-                assets:  viewData.selectedItems?.assets  || []
-            })
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken() },
+            body: JSON.stringify({ folders, assets }),
         })
-            .then(res => res.json())
-            .then(data => { if (data.success) notify(t('explorerTopBar.notifications.forceSyncStarted'), "success"); });
+            .then((res) => res.json().then((data) => ({ ok: res.ok, data })))
+            .then(({ ok, data }) => {
+                if (ok && data.success) {
+                    notify(t(successKey), successVariant);
+                } else {
+                    notify(data?.error || t(errorKey), 'error');
+                }
+            })
+            .catch(() => notify(t(errorKey), 'error'));
     };
 
-    const handleForcePurge = () => {
-        handleEdgeMenuClose();
-        fetch('/api/v1/edge_operations/purge', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                folders: viewData.selectedItems?.folders || [],
-                assets:  viewData.selectedItems?.assets  || []
-            })
-        })
-            .then(res => res.json())
-            .then(data => { if (data.success) notify(t('explorerTopBar.notifications.cachePurgeQueued'), "warning"); });
-    };
+    const handleForceSync = () => runEdgeOperation('sync', {
+        successKey: 'explorerTopBar.notifications.forceSyncStarted',
+        successVariant: 'success',
+        errorKey: 'explorerTopBar.notifications.forceSyncError',
+    });
+
+    const handleForcePurge = () => runEdgeOperation('purge', {
+        successKey: 'explorerTopBar.notifications.cachePurgeQueued',
+        successVariant: 'warning',
+        errorKey: 'explorerTopBar.notifications.cachePurgeError',
+    });
 
     // ── Schema application helpers ──────────────────────────────────────────
     const openSchemaForFolders = () => {
@@ -253,29 +263,21 @@ export default function ExplorerTopBar({
                             </MenuItem>
                         </Menu>
 
-                        {/* Workflow Menu */}
+                        {/* Workflow */}
                         <Button
                             variant="outlined"
-                            onClick={(e) => setWorkflowMenuAnchor(e.currentTarget)}
+                            onClick={() => setTriggerWorkflowOpen(true)}
                             startIcon={<Psychology />}
                             sx={{ textTransform: 'none', borderRadius: '8px', color: '#4f46e5', borderColor: '#c7d2fe' }}
                         >
                             {t('explorerTopBar.workflow')}
                         </Button>
-                        <Menu
-                            anchorEl={workflowMenuAnchor}
-                            open={Boolean(workflowMenuAnchor)}
-                            onClose={() => setWorkflowMenuAnchor(null)} slotProps={{paper: { elevation: 3, sx: { mt: 1, minWidth: 260, borderRadius: 2 } } }}
-                        >
-                            <MenuItem onClick={() => { setWorkflowMenuAnchor(null); notify(t('explorerTopBar.notifications.localizationTriggered'), "info"); }}>
-                                <ListItemIcon><Translate fontSize="small" color="primary" /></ListItemIcon>
-                                <ListItemText primary={t('explorerTopBar.globalLocalization')} secondary={t('explorerTopBar.autoTranslateCopyMetadata')} />
-                            </MenuItem>
-                            <MenuItem onClick={() => { setWorkflowMenuAnchor(null); notify(t('explorerTopBar.notifications.brandSafetyInitialized'), "warning"); }}>
-                                <ListItemIcon><Security fontSize="small" sx={{ color: '#10b981' }} /></ListItemIcon>
-                                <ListItemText primary={t('explorerTopBar.brandLicenseGuard')} secondary={t('explorerTopBar.validateUsageTermsSignatures')} />
-                            </MenuItem>
-                        </Menu>
+
+                        <TriggerWorkflowDialog
+                            open={triggerWorkflowOpen}
+                            selectedItems={selectedItems}
+                            onClose={() => setTriggerWorkflowOpen(false)}
+                        />
 
                         {/* Smart Actions */}
                         <Button

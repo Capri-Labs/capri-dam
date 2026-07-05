@@ -12,6 +12,16 @@ RSpec.describe "Admin::UserGroups coverage", type: :request do
       expect(response).to redirect_to(new_user_session_path(format: :json))
     end
 
+    it "renders the HTML shell and highlights the User Groups sidebar item" do
+      sign_in admin
+
+      get "/admin/user_groups"
+
+      expect(response).to have_http_status(:ok)
+      expect(assigns(:active_view)).to eq("User Groups")
+      expect(response.body).to include('data-active-view="User Groups"')
+    end
+
     it "forbids non-admin users" do
       sign_in user
       get "/admin/user_groups.json", as: :json

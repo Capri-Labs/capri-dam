@@ -230,6 +230,8 @@ RSpec.describe "Admin::Reports coverage additions", type: :request do
     it "renders the HTML shell for admins and redirects non-admins" do
       get "/admin/reports"
       expect(response).to have_http_status(:ok)
+      expect(assigns(:active_view)).to eq("Reports")
+      expect(response.body).to include('data-active-view="Reports"')
 
       sign_out admin
       sign_in user

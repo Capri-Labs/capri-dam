@@ -1885,8 +1885,9 @@
   "assetStatisticsTab": {
     "title": "Statistiques de la ressource",
     "downloads": "Téléchargements",
-    "cdnViews": "Vues CDN",
-    "shares": "Partages"
+    "views": "Vues",
+    "shares": "Partages",
+    "disclaimer": "Comptabilise les vues, téléchargements et liens de partage copiés dans l'application. Le trafic direct via le CDN n'est pas inclus."
   },
   "assetList": {
     "headers": {
@@ -1983,10 +1984,6 @@
     "purgeEdgeCache": "Purger le cache Edge",
     "invalidateDeliveryNodesGlobally": "Invalider les nœuds de diffusion globalement",
     "workflow": "Workflow",
-    "globalLocalization": "Localisation globale",
-    "autoTranslateCopyMetadata": "Traduire automatiquement les textes et métadonnées",
-    "brandLicenseGuard": "Protection marque et licence",
-    "validateUsageTermsSignatures": "Valider les conditions d’utilisation et les signatures",
     "smartActions": "Actions intelligentes",
     "autoTagEnrich": "Auto-tagger et enrichir",
     "extractSemanticMetadata": "Extraire les métadonnées sémantiques",
@@ -2006,8 +2003,8 @@
       "smartOrganizeQueued": "L’IA analyse les vecteurs pour regrouper les éléments dans des sous-dossiers.",
       "forceSyncStarted": "Synchronisation forcée des métadonnées vers Edge KV lancée.",
       "cachePurgeQueued": "Invalidation du cache Edge mise en file d’attente pour les éléments sélectionnés.",
-      "localizationTriggered": "Agent de localisation déclenché.",
-      "brandSafetyInitialized": "Vérification de conformité de marque initialisée."
+      "forceSyncError": "Échec du démarrage de la synchronisation des métadonnées. Veuillez réessayer.",
+      "cachePurgeError": "Échec de la mise en file d'attente de la purge du cache. Veuillez réessayer."
     }
   },
   "uploadGrid": {
@@ -2104,6 +2101,18 @@
       "applyError": "Échec de l’application du schéma. Veuillez réessayer."
     }
   },
+  "triggerWorkflowDialog": {
+    "title": "Déclencher un workflow",
+    "description": "Choisissez un workflow actif à exécuter pour {{count}} élément(s) sélectionné(s). Les dossiers sélectionnés incluront tous les actifs qu'ils contiennent.",
+    "noActiveWorkflows": "Aucun workflow actif disponible. Activez-en un dans le concepteur de workflow d'abord.",
+    "stepCount_one": "{{count}} étape",
+    "stepCount_other": "{{count}} étapes",
+    "loadError": "Échec du chargement des workflows.",
+    "triggerError": "Échec du déclenchement du workflow.",
+    "queued": "« {{name}} » mis en file d'attente pour {{count}} actif(s).",
+    "cancel": "Annuler",
+    "trigger": "Déclencher"
+  },
   "pinToCollectionDialog": {
     "title": "Épingler aux collections",
     "searchPlaceholder": "Rechercher des collections...",
@@ -2164,7 +2173,6 @@
       "info": "Infos",
       "metadata": "Métadonnées",
       "versions": "Versions",
-      "statistics": "Statistiques",
       "audit": "Audit",
       "workflows": "Workflows",
       "aiEngine": "Moteur IA"

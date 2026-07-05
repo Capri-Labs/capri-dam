@@ -3,7 +3,9 @@ module Tools
     before_action :authenticate_hybrid!
 
     def index
-      unless current_user.admin?
+      if current_user.admin?
+        @active_view = "AssetConfigurations"
+      else
         redirect_to authenticated_root_path, alert: "Access denied: Administrator privileges required to manage asset configurations."
       end
     end

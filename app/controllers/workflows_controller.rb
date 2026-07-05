@@ -43,7 +43,7 @@ class WorkflowsController < ApplicationController
 
   # GET /workflows/dashboard
   def dashboard
-    # This intentionally left empty.
+    @active_view = "My Tasks"
     # Rails will automatically render app/views/workflows/dashboard.html.erb
   end
 

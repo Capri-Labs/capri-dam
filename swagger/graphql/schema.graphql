@@ -194,6 +194,13 @@ type Asset {
   url: String
 
   """
+  App-observed usage counters ({ views:, downloads:, shares: }), backed by
+  AssetUsageEvent rows. See Asset#usage_stats for what is (and isn't) captured —
+  CDN-served hot-link traffic is excluded.
+  """
+  usageStats: Json!
+
+  """
   Public UUID used in all external references.
   """
   uuid: String!

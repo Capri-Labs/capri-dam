@@ -2827,6 +2827,115 @@ paths:
                 properties:
                   error:
                     type: string
+  "/api/v1/assets/{id}/stats":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      description: Asset ID
+      schema:
+        type: string
+    get:
+      summary: Usage statistics for an asset (views/downloads/shares)
+      tags:
+      - Assets
+      security:
+      - Bearer: []
+      description: |
+        Returns app-observed usage counters for this asset, backed by the
+        {AssetUsageEvent} table (see `Asset#usage_stats`). These reflect events that
+        flow through this app (viewer opened, download initiated, link
+        copied) — not raw CDN edge hits.
+      responses:
+        '200':
+          description: Usage statistics returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  views:
+                    type: integer
+                    example: 12
+                  downloads:
+                    type: integer
+                    example: 4
+                  shares:
+                    type: integer
+                    example: 1
+        '404':
+          description: Asset not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+  "/api/v1/assets/{id}/track_event":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      description: Asset ID
+      schema:
+        type: string
+    post:
+      summary: Record a view/download/share event for an asset
+      tags:
+      - Assets
+      security:
+      - Bearer: []
+      description: |
+        Records a single usage event (`view`, `download`, or `share`) as an
+        {AssetUsageEvent} row and returns the updated counters. Called by the
+        frontend at the moment the user initiates the action, since the
+        actual bytes are often served straight from the CDN/S3 in production
+        (see `AssetUrlHelper#asset_url_for`).
+      parameters: []
+      responses:
+        '200':
+          description: Event recorded; updated statistics returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  views:
+                    type: integer
+                    example: 12
+                  downloads:
+                    type: integer
+                    example: 4
+                  shares:
+                    type: integer
+                    example: 1
+        '422':
+          description: Unsupported event name
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '404':
+          description: Asset not found
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - event
+              properties:
+                event:
+                  type: string
+                  enum:
+                  - view
+                  - download
+                  - share
+                  example: view
   "/api/v1/assets/check_hashes":
     post:
       summary: Pre-upload duplicate detection via SHA-256 checksums
@@ -7883,6 +7992,49 @@ paths:
                 properties:
                   message:
                     type: string
+  "/api/v1/workflows/bulk_trigger":
+    post:
+      summary: Manually triggers an active workflow for selected assets/folders
+      tags:
+      - Workflows & Tasks
+      security:
+      - Bearer: []
+      parameters: []
+      responses:
+        '202':
+          description: workflow queued for the resolved assets
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  queued:
+                    type: integer
+                  workflow_id:
+                    type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                workflow_id:
+                  type: string
+                  example: 1
+                asset_ids:
+                  type: array
+                  items:
+                    type: string
+                  example:
+                  - 11111111-1111-1111-1111-111111111111
+                folder_ids:
+                  type: array
+                  items:
+                    type: string
+                  example:
+                  - 42
   "/api/v1/workflow_tasks/{id}/submit":
     parameters:
     - name: id

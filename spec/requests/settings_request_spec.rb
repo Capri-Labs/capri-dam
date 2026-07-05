@@ -23,6 +23,8 @@ RSpec.describe "Settings coverage", type: :request do
       get "/settings"
 
       expect(response).to have_http_status(:ok)
+      expect(assigns(:active_view)).to eq("General")
+      expect(response.body).to include('data-active-view="General"')
     end
 
     it "renders system settings for admins and masks secrets" do
@@ -39,6 +41,8 @@ RSpec.describe "Settings coverage", type: :request do
       expect(response).to have_http_status(:ok)
       expect(response.body).to include("********")
       expect(response.body).not_to include("secret_key&quot;:&quot;secret")
+      expect(assigns(:active_view)).to eq("System Ops")
+      expect(response.body).to include('data-active-view="System Ops"')
     end
 
     it "ignores malformed stored provider JSON" do

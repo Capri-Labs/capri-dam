@@ -12,9 +12,10 @@
 # | DELETE | /api/v1/workflow_instances/:id                | destroy       | admin       |
 # | POST   | /api/v1/workflows/bulk_stop                   | bulk_stop     | admin       |
 # | POST   | /api/v1/workflows/bulk_reassign               | bulk_reassign | admin       |
+# | POST   | /api/v1/workflows/bulk_trigger                | bulk_trigger  | user        |
 class Api::V1::WorkflowInstancesController < ApplicationController
   before_action :authenticate_hybrid!
-  before_action :require_admin!
+  before_action :require_admin!, except: %i[bulk_trigger]
   before_action :set_instance, only: %i[show force_cancel destroy]
 
   PAGE_SIZE = 50
@@ -130,7 +131,57 @@ class Api::V1::WorkflowInstancesController < ApplicationController
     render json: { message: "#{count} instance(s) reassigned." }
   end
 
+  # POST /api/v1/workflows/bulk_trigger
+  #
+  # Manual entry point for the AssetGrid "Workflow" toolbar action: lets any
+  # authenticated user kick off an *active* Workflow blueprint for a batch of
+  # selected assets and/or folders (folders are expanded to every active asset
+  # they contain, recursively). Reuses the same {WorkflowInitiatorWorker} that
+  # {WorkflowEvaluatorService} enqueues for automatic, event-driven triggers.
+  def bulk_trigger
+    workflow = Workflow.find_by(id: params[:workflow_id], status: "active")
+    return render json: { error: "Workflow not found or inactive." }, status: :unprocessable_entity unless workflow
+
+    asset_ids  = Array(params[:asset_ids])
+    folder_ids = Array(params[:folder_ids])
+
+    if asset_ids.empty? && folder_ids.empty?
+      return render json: { error: "Select at least one asset or folder." }, status: :unprocessable_entity
+    end
+
+    resolved_ids = (asset_ids + folder_ids.flat_map { |folder_id| asset_ids_in_folder(folder_id) }).uniq
+    assets       = Asset.active.where(id: resolved_ids)
+
+    assets.find_each { |asset| WorkflowInitiatorWorker.perform_async(asset.id, workflow.id) }
+
+    render json: {
+      message:     "Workflow '#{workflow.name}' queued for #{assets.count} asset(s).",
+      queued:      assets.count,
+      workflow_id: workflow.id,
+    }, status: :accepted
+  end
+
   private
+
+  # Recursively collects the ids of every active asset inside +folder_id+ and
+  # any of its descendant folders.
+  def asset_ids_in_folder(folder_id)
+    folder = Folder.find_by(id: folder_id)
+    return [] unless folder
+
+    folder_ids = [ folder.id ]
+    queue      = [ folder ]
+
+    until queue.empty?
+      current = queue.shift
+      current.children.each do |child|
+        folder_ids << child.id
+        queue << child
+      end
+    end
+
+    Asset.active.where(folder_id: folder_ids).pluck(:id)
+  end
 
   def set_instance
     @instance = WorkflowInstance.find(params[:id])

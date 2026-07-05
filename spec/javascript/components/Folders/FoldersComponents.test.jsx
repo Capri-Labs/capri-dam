@@ -8,7 +8,7 @@ import AssetAuditTab from '../../../../app/javascript/components/Folders/AssetAu
 import AssetCard from '../../../../app/javascript/components/Folders/AssetCard';
 import AssetGrid from '../../../../app/javascript/components/Folders/AssetGrid';
 import AssetMetadataPanel from '../../../../app/javascript/components/Folders/AssetMetadataPanel';
-import AssetStatisticsTab from '../../../../app/javascript/components/Folders/AssetStatisticsTab';
+import AssetStatsPopover from '../../../../app/javascript/components/Folders/AssetStatsPopover';
 import AssetTagsEditor from '../../../../app/javascript/components/Folders/AssetTagsEditor';
 import AssetVersionsTab from '../../../../app/javascript/components/Folders/AssetVersionsTab';
 import AssetViewer from '../../../../app/javascript/components/Folders/AssetViewer';
@@ -376,11 +376,24 @@ describe('Folders components', () => {
     expect(screen.getByLabelText('Camera Make')).toHaveValue('Canon');
   });
 
-  it('renders AssetStatisticsTab summary blocks', () => {
-    render(<AssetStatisticsTab asset={{ id: 1 }} />);
-    expect(screen.getByText('Asset Statistics')).toBeInTheDocument();
+  it('renders AssetStatsPopover with real usage counts fetched from the API, in a popover triggered from the toolbar', async () => {
+    global.fetch = mockFetch({
+      'GET /api/v1/assets/1/stats': { views: 12, downloads: 4, shares: 1 },
+    });
+
+    render(<AssetStatsPopover asset={{ id: 1 }} />);
+
+    await waitFor(() => expect(global.fetch).toHaveBeenCalledWith('/api/v1/assets/1/stats'));
+
+    fireEvent.click(screen.getByTestId('asset-stats-toggle'));
+
+    expect(await screen.findByText('Asset Statistics')).toBeInTheDocument();
+    expect(screen.getByText('Views')).toBeInTheDocument();
     expect(screen.getByText('Downloads')).toBeInTheDocument();
-    expect(screen.getByText('1,204')).toBeInTheDocument();
+    expect(screen.getByText('Shares')).toBeInTheDocument();
+    expect(screen.getByText('12')).toBeInTheDocument();
+    expect(screen.getByText('4')).toBeInTheDocument();
+    expect(screen.getByText('1')).toBeInTheDocument();
   });
 
   it('runs AI scan in AssetTagsEditor and saves updated tags', async () => {
@@ -583,6 +596,163 @@ describe('Folders components', () => {
     fireEvent.click(screen.getByRole('button', { name: 'explorerTopBar.smartActions' }));
     fireEvent.click(await screen.findByText('explorerTopBar.autoTagEnrich'));
     expect(mockNotify).toHaveBeenCalledWith('explorerTopBar.notifications.autoEnrichQueued', 'info');
+  });
+
+  it('sends the actual current selection (not a stale/incorrect reference) when forcing an Edge CDN sync', async () => {
+    global.fetch = mockFetch({
+      'POST /api/v1/edge_operations/sync': { success: true, message: 'Metadata sync initiated for 1 folders and 2 assets.' },
+    });
+
+    render(
+      <ExplorerTopBar
+        currentId={12}
+        viewData={{ breadcrumbs: [{ id: 'root', name: 'Home' }, { id: 12, name: 'Catalog' }], folders: [{ id: 13, name: 'Child' }], assets: [{ id: 20, title: 'Asset' }] }}
+        viewMode="active"
+        setViewMode={jest.fn()}
+        handleNavigate={jest.fn()}
+        handleCopyPath={jest.fn()}
+        isAllSelected={false}
+        handleSelectAll={jest.fn()}
+        hasSelection
+        handleDeleteSelected={jest.fn()}
+        handleRestoreSelected={jest.fn()}
+        handlePermanentDelete={jest.fn()}
+        setOpenFolderDialog={jest.fn()}
+        onUploadSuccess={jest.fn()}
+        selectedItems={{ folders: [ 13 ], assets: [ 20, 21 ] }}
+        onSchemaApplied={jest.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'explorerTopBar.edgeCdnOps' }));
+    fireEvent.click(await screen.findByText('explorerTopBar.syncMetadataToCdn'));
+
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith(
+        '/api/v1/edge_operations/sync',
+        expect.objectContaining({
+          method: 'POST',
+          headers: expect.objectContaining({ 'X-CSRF-Token': 'test-csrf-token' }),
+          body: JSON.stringify({ folders: [ 13 ], assets: [ 20, 21 ] }),
+        }),
+      );
+    });
+    expect(mockNotify).toHaveBeenCalledWith('explorerTopBar.notifications.forceSyncStarted', 'success');
+  });
+
+  it('sends the current selection when purging the Edge cache and surfaces a notification on failure', async () => {
+    global.fetch = jest.fn(() => Promise.resolve({ ok: false, status: 422, json: () => Promise.resolve({ success: false, error: 'boom' }) }));
+
+    render(
+      <ExplorerTopBar
+        currentId={12}
+        viewData={{ breadcrumbs: [{ id: 'root', name: 'Home' }, { id: 12, name: 'Catalog' }], folders: [], assets: [{ id: 20, title: 'Asset' }] }}
+        viewMode="active"
+        setViewMode={jest.fn()}
+        handleNavigate={jest.fn()}
+        handleCopyPath={jest.fn()}
+        isAllSelected={false}
+        handleSelectAll={jest.fn()}
+        hasSelection
+        handleDeleteSelected={jest.fn()}
+        handleRestoreSelected={jest.fn()}
+        handlePermanentDelete={jest.fn()}
+        setOpenFolderDialog={jest.fn()}
+        onUploadSuccess={jest.fn()}
+        selectedItems={{ folders: [], assets: [ 20 ] }}
+        onSchemaApplied={jest.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'explorerTopBar.edgeCdnOps' }));
+    fireEvent.click(await screen.findByText('explorerTopBar.purgeEdgeCache'));
+
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith(
+        '/api/v1/edge_operations/purge',
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({ folders: [], assets: [ 20 ] }),
+        }),
+      );
+    });
+    expect(mockNotify).toHaveBeenCalledWith('boom', 'error');
+  });
+
+  it('triggers a workflow for the current selection via the Workflow button', async () => {
+    global.fetch = mockFetch({
+      'GET /workflows.json': [
+        { id: 1, name: 'Brand Review', status: 'active', workflow_steps: [ {}, {} ] },
+        { id: 2, name: 'Draft Workflow', status: 'draft', workflow_steps: [] },
+      ],
+      'POST /api/v1/workflows/bulk_trigger': { message: 'queued', queued: 3, workflow_id: 1 },
+    });
+
+    render(
+      <ExplorerTopBar
+        currentId={12}
+        viewData={{ breadcrumbs: [{ id: 'root', name: 'Home' }, { id: 12, name: 'Catalog' }], folders: [{ id: 13, name: 'Child' }], assets: [{ id: 20, title: 'Asset' }] }}
+        viewMode="active"
+        setViewMode={jest.fn()}
+        handleNavigate={jest.fn()}
+        handleCopyPath={jest.fn()}
+        isAllSelected={false}
+        handleSelectAll={jest.fn()}
+        hasSelection
+        handleDeleteSelected={jest.fn()}
+        handleRestoreSelected={jest.fn()}
+        handlePermanentDelete={jest.fn()}
+        setOpenFolderDialog={jest.fn()}
+        onUploadSuccess={jest.fn()}
+        selectedItems={{ folders: [13], assets: [20] }}
+        onSchemaApplied={jest.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'explorerTopBar.workflow' }));
+
+    // Only the active workflow should be listed
+    expect(await screen.findByText('Brand Review')).toBeInTheDocument();
+    expect(screen.queryByText('Draft Workflow')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Brand Review'));
+    fireEvent.click(screen.getByRole('button', { name: 'triggerWorkflowDialog.trigger' }));
+
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith(
+        '/api/v1/workflows/bulk_trigger',
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({ workflow_id: 1, asset_ids: [ 20 ], folder_ids: [ 13 ] }),
+        }),
+      );
+    });
+    expect(mockNotify).toHaveBeenCalledWith('triggerWorkflowDialog.queued', 'success');
+  });
+
+  it('hides the Workflow button entirely when nothing is selected', () => {
+    render(
+      <ExplorerTopBar
+        currentId={12}
+        viewData={{ breadcrumbs: [{ id: 'root', name: 'Home' }, { id: 12, name: 'Catalog' }], folders: [], assets: [] }}
+        viewMode="active"
+        setViewMode={jest.fn()}
+        handleNavigate={jest.fn()}
+        handleCopyPath={jest.fn()}
+        isAllSelected={false}
+        handleSelectAll={jest.fn()}
+        hasSelection={false}
+        handleDeleteSelected={jest.fn()}
+        handleRestoreSelected={jest.fn()}
+        handlePermanentDelete={jest.fn()}
+        setOpenFolderDialog={jest.fn()}
+        onUploadSuccess={jest.fn()}
+        selectedItems={{ folders: [], assets: [] }}
+        onSchemaApplied={jest.fn()}
+      />,
+    );
+
+    expect(screen.queryByRole('button', { name: 'explorerTopBar.workflow' })).not.toBeInTheDocument();
   });
 
   it('renders FolderAccessTab policies and removes an explicit policy', async () => {

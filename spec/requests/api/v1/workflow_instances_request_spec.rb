@@ -120,6 +120,79 @@ RSpec.describe 'API workflow instance coverage', type: :request do
     end
   end
 
+  describe 'POST /api/v1/workflows/bulk_trigger' do
+    let(:active_workflow) { create(:workflow, name: 'Brand Review', status: 'draft') }
+    let!(:step_for_active) do
+      create(:workflow_step, workflow: active_workflow, title: 'Review', assignee_type: 'user', assignee_id: user.id)
+    end
+
+    before { active_workflow.update!(status: 'active') }
+
+    it 'rejects an unknown or inactive workflow id' do
+      post '/api/v1/workflows/bulk_trigger', params: { workflow_id: workflow.id, asset_ids: [ asset.id ] }
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.parsed_body['error']).to eq('Workflow not found or inactive.')
+    end
+
+    it 'requires at least one asset or folder to be selected' do
+      post '/api/v1/workflows/bulk_trigger', params: { workflow_id: active_workflow.id }
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.parsed_body['error']).to eq('Select at least one asset or folder.')
+    end
+
+    it 'queues the workflow for directly selected assets' do
+      allow(WorkflowInitiatorWorker).to receive(:perform_async)
+
+      post '/api/v1/workflows/bulk_trigger', params: { workflow_id: active_workflow.id, asset_ids: [ asset.id ] }
+
+      expect(response).to have_http_status(:accepted)
+      expect(WorkflowInitiatorWorker).to have_received(:perform_async).with(asset.id, active_workflow.id)
+      expect(response.parsed_body).to include('queued' => 1, 'workflow_id' => active_workflow.id)
+    end
+
+    it 'expands selected folders into every active asset inside them, recursively' do
+      root  = create(:folder, user: user)
+      child = create(:folder, user: user, parent: root)
+      asset_in_root  = create(:asset, folder: root)
+      asset_in_child = create(:asset, folder: child)
+      trashed_asset  = create(:asset, folder: child, deleted_at: Time.current)
+      allow(WorkflowInitiatorWorker).to receive(:perform_async)
+
+      post '/api/v1/workflows/bulk_trigger', params: { workflow_id: active_workflow.id, folder_ids: [ root.id ] }
+
+      expect(response).to have_http_status(:accepted)
+      expect(WorkflowInitiatorWorker).to have_received(:perform_async).with(asset_in_root.id, active_workflow.id)
+      expect(WorkflowInitiatorWorker).to have_received(:perform_async).with(asset_in_child.id, active_workflow.id)
+      expect(WorkflowInitiatorWorker).not_to have_received(:perform_async).with(trashed_asset.id, anything)
+      expect(response.parsed_body['queued']).to eq(2)
+    end
+
+    it 'de-duplicates assets that are selected both directly and via a folder' do
+      folder = create(:folder, user: user)
+      shared_asset = create(:asset, folder: folder)
+      allow(WorkflowInitiatorWorker).to receive(:perform_async)
+
+      post '/api/v1/workflows/bulk_trigger',
+           params: { workflow_id: active_workflow.id, asset_ids: [ shared_asset.id ], folder_ids: [ folder.id ] }
+
+      expect(response).to have_http_status(:accepted)
+      expect(WorkflowInitiatorWorker).to have_received(:perform_async).once.with(shared_asset.id, active_workflow.id)
+      expect(response.parsed_body['queued']).to eq(1)
+    end
+
+    it 'allows non-admin authenticated users to trigger' do
+      sign_out admin
+      sign_in user
+      allow(WorkflowInitiatorWorker).to receive(:perform_async)
+
+      post '/api/v1/workflows/bulk_trigger', params: { workflow_id: active_workflow.id, asset_ids: [ asset.id ] }
+
+      expect(response).to have_http_status(:accepted)
+    end
+  end
+
   describe 'authorization' do
     it 'forbids non-admin users' do
       sign_out admin

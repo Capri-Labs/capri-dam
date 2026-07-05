@@ -1885,8 +1885,9 @@
   "assetStatisticsTab": {
     "title": "Estadísticas del activo",
     "downloads": "Descargas",
-    "cdnViews": "Vistas de CDN",
-    "shares": "Compartidos"
+    "views": "Vistas",
+    "shares": "Compartidos",
+    "disclaimer": "Cuenta las vistas, descargas y enlaces compartidos copiados dentro de la aplicación. El tráfico directo del CDN no está incluido."
   },
   "assetList": {
     "headers": {
@@ -1983,10 +1984,6 @@
     "purgeEdgeCache": "Purgar caché Edge",
     "invalidateDeliveryNodesGlobally": "Invalidar nodos de entrega globalmente",
     "workflow": "Flujo de trabajo",
-    "globalLocalization": "Localización global",
-    "autoTranslateCopyMetadata": "Traducir automáticamente textos y metadatos",
-    "brandLicenseGuard": "Protección de marca y licencia",
-    "validateUsageTermsSignatures": "Validar condiciones de uso y firmas",
     "smartActions": "Acciones inteligentes",
     "autoTagEnrich": "Etiquetar y enriquecer automáticamente",
     "extractSemanticMetadata": "Extraer metadatos semánticos",
@@ -2006,8 +2003,8 @@
       "smartOrganizeQueued": "La IA está analizando vectores para agrupar elementos en subcarpetas.",
       "forceSyncStarted": "Se inició la sincronización forzada de metadatos con Edge KV.",
       "cachePurgeQueued": "Invalidación de caché Edge en cola para los elementos seleccionados.",
-      "localizationTriggered": "Agente de localización activado.",
-      "brandSafetyInitialized": "Comprobación de seguridad de marca iniciada."
+      "forceSyncError": "No se pudo iniciar la sincronización de metadatos. Inténtelo de nuevo.",
+      "cachePurgeError": "No se pudo poner en cola la purga de caché. Inténtelo de nuevo."
     }
   },
   "uploadGrid": {
@@ -2104,6 +2101,18 @@
       "applyError": "No se pudo aplicar el esquema. Inténtalo de nuevo."
     }
   },
+  "triggerWorkflowDialog": {
+    "title": "Activar flujo de trabajo",
+    "description": "Elija un flujo de trabajo activo para ejecutar en {{count}} elemento(s) seleccionado(s). Las carpetas seleccionadas incluirán todos los activos que contienen.",
+    "noActiveWorkflows": "No hay flujos de trabajo activos disponibles. Active uno primero en el Diseñador de flujos de trabajo.",
+    "stepCount_one": "{{count}} paso",
+    "stepCount_other": "{{count}} pasos",
+    "loadError": "Error al cargar los flujos de trabajo.",
+    "triggerError": "Error al activar el flujo de trabajo.",
+    "queued": "\"{{name}}\" en cola para {{count}} activo(s).",
+    "cancel": "Cancelar",
+    "trigger": "Activar"
+  },
   "pinToCollectionDialog": {
     "title": "Anclar a colecciones",
     "searchPlaceholder": "Buscar colecciones...",
@@ -2164,7 +2173,6 @@
       "info": "Información",
       "metadata": "Metadatos",
       "versions": "Versiones",
-      "statistics": "Estadísticas",
       "audit": "Auditoría",
       "workflows": "Flujos de trabajo",
       "aiEngine": "Motor de IA"

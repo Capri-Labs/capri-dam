@@ -1885,8 +1885,9 @@
   "assetStatisticsTab": {
     "title": "إحصاءات الأصل",
     "downloads": "التنزيلات",
-    "cdnViews": "مشاهدات CDN",
-    "shares": "المشاركات"
+    "views": "المشاهدات",
+    "shares": "المشاركات",
+    "disclaimer": "يحتسب المشاهدات والتنزيلات وروابط المشاركة المنسوخة داخل التطبيق. لا تشمل حركة الوصول المباشر عبر CDN."
   },
   "assetList": {
     "headers": {
@@ -1983,10 +1984,6 @@
     "purgeEdgeCache": "مسح ذاكرة Edge المؤقتة",
     "invalidateDeliveryNodesGlobally": "إبطال عقد التسليم عالميًا",
     "workflow": "سير العمل",
-    "globalLocalization": "التوطين العالمي",
-    "autoTranslateCopyMetadata": "ترجمة النصوص والبيانات الوصفية تلقائيًا",
-    "brandLicenseGuard": "حماية العلامة التجارية والترخيص",
-    "validateUsageTermsSignatures": "التحقق من شروط الاستخدام والتوقيعات",
     "smartActions": "إجراءات ذكية",
     "autoTagEnrich": "وضع الوسوم والإثراء تلقائيًا",
     "extractSemanticMetadata": "استخراج البيانات الوصفية الدلالية",
@@ -2006,8 +2003,8 @@
       "smartOrganizeQueued": "يقوم الذكاء الاصطناعي بتحليل المتجهات لتجميع العناصر في مجلدات فرعية.",
       "forceSyncStarted": "تم بدء المزامنة القسرية للبيانات الوصفية إلى Edge KV.",
       "cachePurgeQueued": "تمت إضافة إبطال ذاكرة Edge المؤقتة للعناصر المحددة إلى قائمة الانتظار.",
-      "localizationTriggered": "تم تشغيل وكيل الترجمة المحلية.",
-      "brandSafetyInitialized": "تم تهيئة فحص سلامة العلامة التجارية."
+      "forceSyncError": "فشل بدء مزامنة البيانات الوصفية. يرجى المحاولة مرة أخرى.",
+      "cachePurgeError": "فشل في وضع تفريغ ذاكرة التخزين المؤقت في قائمة الانتظار. يرجى المحاولة مرة أخرى."
     }
   },
   "uploadGrid": {
@@ -2104,6 +2101,18 @@
       "applyError": "فشل تطبيق المخطط. يرجى المحاولة مرة أخرى."
     }
   },
+  "triggerWorkflowDialog": {
+    "title": "تشغيل سير العمل",
+    "description": "اختر سير عمل نشطًا لتشغيله على {{count}} عنصر (عناصر) محدد. ستتضمن المجلدات المحددة جميع الأصول الموجودة بداخلها.",
+    "noActiveWorkflows": "لا توجد سير عمل نشطة متاحة. قم بتفعيل واحد أولاً في مصمم سير العمل.",
+    "stepCount_one": "{{count}} خطوة",
+    "stepCount_other": "{{count}} خطوات",
+    "loadError": "فشل تحميل سير العمل.",
+    "triggerError": "فشل تشغيل سير العمل.",
+    "queued": "تمت إضافة \"{{name}}\" إلى قائمة الانتظار لـ {{count}} أصل (أصول).",
+    "cancel": "إلغاء",
+    "trigger": "تشغيل"
+  },
   "pinToCollectionDialog": {
     "title": "تثبيت في المجموعات",
     "searchPlaceholder": "ابحث في المجموعات...",
@@ -2164,7 +2173,6 @@
       "info": "معلومات",
       "metadata": "البيانات الوصفية",
       "versions": "الإصدارات",
-      "statistics": "الإحصاءات",
       "audit": "التدقيق",
       "workflows": "سير العمل",
       "aiEngine": "محرك الذكاء الاصطناعي"

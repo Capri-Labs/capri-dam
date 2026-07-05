@@ -1,0 +1,13 @@
+<h2>Workflow Task Assigned</h2>
+
+<p>Hi <%= @user.try(:full_name).presence || @user.email %>,</p>
+
+<p>
+  You have been assigned a workflow task
+  (<strong><%= @task.workflow_step.title %></strong>)
+  for the asset <strong><%= @asset.title %></strong>.
+</p>
+
+<p>
+  <a href="<%= @action_url %>">Open the asset in Capri DAM</a>
+</p>

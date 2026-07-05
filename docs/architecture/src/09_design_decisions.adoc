@@ -146,3 +146,60 @@ of an SPA within the stability and simplicity of a Rails application.
 * **Cons:** React components cannot be deployed independently; frontend bundle is
   part of the Rails asset pipeline; less flexibility if a public-facing SPA is needed later.
 
+=== ADR 6: App-Observed Asset Usage Stats vs. CDN Edge Analytics
+**Status:** Accepted
+
+**Background:**
+The AssetViewer displays view/download/share counters for each asset. In production, the
+actual file bytes are frequently served directly from the CDN or a signed S3/GCS/Azure URL
+(see `AssetUrlHelper#asset_url_for`), so Rails never observes the byte-serving request
+itself. A naive "count every request that hits the Rails controller" approach would
+therefore under-count (or simply not know about) the majority of real downloads.
+
+**Assumptions:**
+
+* Exact edge-level bandwidth/hit totals (including hot-linked traffic that never touches
+  the app) are a "nice to have", not a hard requirement for the first iteration.
+* Knowing when a user *opened*, *downloaded*, or *shared* an asset from within the app is
+  valuable on its own and must be accurate and real-time.
+* CDN providers (Akamai, Fastly, Cloudflare — see `app/services/cdn_adapters/`) each expose
+  their own analytics/reporting APIs, but integrating them requires async polling/webhooks,
+  not a synchronous request-response cycle.
+
+**Requirements:**
+
+* Statistics must reflect real, attributable user actions — never fabricated placeholder
+  numbers.
+* The feature must work identically regardless of which storage/CDN backend is active.
+* The data model must not corrupt or misuse existing tables (see the `audit_logs.auditable_id`
+  integer-vs-UUID caveat below).
+
+**Decision:**
+Record usage as explicit, app-observed events via `POST /api/v1/assets/:id/track_event`
+(`view` | `download` | `share`), called by the frontend at the moment the user *initiates*
+the action — opening the AssetViewer, clicking Download, or copying the share link — rather
+than when the CDN actually streams the bytes. The one exception is the watermarked-proxy
+download (`GET /api/v1/assets/:id/watermarked`), which streams bytes through Rails itself, so
+that action logs a confirmed download server-side.
+
+Events are stored in a **dedicated `asset_usage_events` table** (`AssetUsageEvent` model,
+UUID `asset_id` foreign key) rather than reusing the existing `AuditLog` model: `audit_logs.auditable_id`
+is an `integer` column originally sized for `User`'s bigint ids, and would silently
+truncate/corrupt a UUID `Asset` id if reused polymorphically. `Asset#usage_stats` aggregates
+these events into `{ views:, downloads:, shares: }`, exposed via `GET /api/v1/assets/:id/stats`
+and the GraphQL `Asset.usageStats` field, and surfaced in the AssetViewer toolbar (a popover,
+not a tab, so it's visible without switching tabs).
+
+**Consequences:**
+
+* **Pros:** Real-time, user-attributed counts with no external dependency; works the same
+  in every environment (local, CDN-backed staging, production); safe UUID-typed storage.
+* **Cons:** Does not capture anonymous/hot-linked traffic that never touches the app (e.g. an
+  externally shared CDN URL opened directly in a browser); "download" for the original file
+  is counted at *intent* time, not at guaranteed byte-completion time, since the actual
+  transfer usually happens between the browser and the CDN/S3, outside Rails' visibility.
+* **Follow-up:** For edge-level bandwidth/hit totals, reconcile nightly via each CDN adapter's
+  reporting API (Cloudflare GraphQL Analytics, Fastly Real-Time Analytics, Akamai Reporting) and
+  merge into `Asset#usage_stats` as a secondary, clearly-labelled data source.
+
+

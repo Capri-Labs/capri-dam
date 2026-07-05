@@ -72,6 +72,11 @@ class Asset < ApplicationRecord
   #   @return [ActiveRecord::Associations::CollectionProxy<Collection>]
   has_many :collections, through: :collection_assets
 
+  # @!attribute [r] asset_usage_events
+  #   @return [ActiveRecord::Associations::CollectionProxy<AssetUsageEvent>]
+  #     app-observed view/download/share events; see {#usage_stats}
+  has_many :asset_usage_events, dependent: :destroy
+
   # ---------------------------------------------------------------------------
   # Validations
   # ---------------------------------------------------------------------------
@@ -145,6 +150,27 @@ class Asset < ApplicationRecord
   # @return [Integer] max existing version number + 1, or 1 if no versions exist
   def next_version_number
     (asset_versions.maximum(:version_number) || 0) + 1
+  end
+
+  # Realistic usage counters for this asset, backed by the dedicated
+  # {AssetUsageEvent} table rather than a bespoke integration or fabricated
+  # numbers.
+  #
+  # These counts only reflect events that flow through our own app (viewer
+  # opened, download initiated, link copied) — they will *not* capture
+  # anonymous/hot-linked CDN hits that never touch Rails. For edge-level
+  # bandwidth/view metrics, reconcile with the CDN provider's own reporting
+  # API (see +app/services/cdn_adapters/+) in a scheduled job.
+  #
+  # @return [Hash{Symbol => Integer}]
+  def usage_stats
+    counts = asset_usage_events.group(:event_type).count
+
+    {
+      views:     counts["view"] || 0,
+      downloads: counts["download"] || 0,
+      shares:    counts["share"] || 0,
+    }
   end
 
   private

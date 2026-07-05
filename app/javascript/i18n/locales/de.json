@@ -1885,8 +1885,9 @@
   "assetStatisticsTab": {
     "title": "Asset-Statistiken",
     "downloads": "Downloads",
-    "cdnViews": "CDN-Aufrufe",
-    "shares": "Freigaben"
+    "views": "Aufrufe",
+    "shares": "Freigaben",
+    "disclaimer": "Zählt In-App-Aufrufe, Downloads und kopierte Freigabelinks. CDN-Hotlink-Traffic ist nicht enthalten."
   },
   "assetList": {
     "headers": {
@@ -1983,10 +1984,6 @@
     "purgeEdgeCache": "Edge-Cache leeren",
     "invalidateDeliveryNodesGlobally": "Auslieferungsknoten weltweit invalidieren",
     "workflow": "Workflow",
-    "globalLocalization": "Globale Lokalisierung",
-    "autoTranslateCopyMetadata": "Texte & Metadaten automatisch übersetzen",
-    "brandLicenseGuard": "Marken- & Lizenzschutz",
-    "validateUsageTermsSignatures": "Nutzungsbedingungen & Signaturen validieren",
     "smartActions": "Smarte Aktionen",
     "autoTagEnrich": "Automatisch taggen & anreichern",
     "extractSemanticMetadata": "Semantische Metadaten extrahieren",
@@ -2006,8 +2003,8 @@
       "smartOrganizeQueued": "Die KI analysiert Vektoren, um Elemente in Unterordner zu clustern.",
       "forceSyncStarted": "Erzwungene Synchronisierung der Metadaten mit Edge KV gestartet.",
       "cachePurgeQueued": "Invalidierung des Edge-Cache für ausgewählte Elemente in die Warteschlange gestellt.",
-      "localizationTriggered": "Lokalisierungs-Agent ausgelöst.",
-      "brandSafetyInitialized": "Markensicherheitsprüfung initialisiert."
+      "forceSyncError": "Metadaten-Synchronisierung konnte nicht gestartet werden. Bitte versuchen Sie es erneut.",
+      "cachePurgeError": "Cache-Löschung konnte nicht in die Warteschlange gestellt werden. Bitte versuchen Sie es erneut."
     }
   },
   "uploadGrid": {
@@ -2104,6 +2101,18 @@
       "applyError": "Das Schema konnte nicht angewendet werden. Bitte versuchen Sie es erneut."
     }
   },
+  "triggerWorkflowDialog": {
+    "title": "Workflow auslösen",
+    "description": "Wählen Sie einen aktiven Workflow für {{count}} ausgewählte(s) Element(e). Ausgewählte Ordner enthalten alle darin befindlichen Assets.",
+    "noActiveWorkflows": "Keine aktiven Workflows verfügbar. Aktivieren Sie zuerst einen im Workflow-Designer.",
+    "stepCount_one": "{{count}} Schritt",
+    "stepCount_other": "{{count}} Schritte",
+    "loadError": "Workflows konnten nicht geladen werden.",
+    "triggerError": "Workflow konnte nicht ausgelöst werden.",
+    "queued": "\"{{name}}\" wurde für {{count}} Asset(s) eingereiht.",
+    "cancel": "Abbrechen",
+    "trigger": "Auslösen"
+  },
   "pinToCollectionDialog": {
     "title": "An Sammlungen anheften",
     "searchPlaceholder": "Sammlungen durchsuchen...",
@@ -2164,7 +2173,6 @@
       "info": "Info",
       "metadata": "Metadaten",
       "versions": "Versionen",
-      "statistics": "Statistiken",
       "audit": "Audit",
       "workflows": "Workflows",
       "aiEngine": "KI-Engine"

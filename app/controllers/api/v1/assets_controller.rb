@@ -20,6 +20,8 @@
 # | GET    | /api/v1/assets/:id/workflow_history | {#workflow_history} | Workflow task history |
 # | POST   | /api/v1/assets/check_hashes | {#check_hashes} | Duplicate-detection via SHA-256 |
 # | GET    | /api/v1/assets/:id/watermarked | {#watermarked} | Download a watermarked image |
+# | GET    | /api/v1/assets/:id/stats | {#stats} | Usage statistics (views/downloads/shares) |
+# | POST   | /api/v1/assets/:id/track_event | {#track_event} | Record a view/download/share event |
 # | GET    | /api/v1/assets/local/:uuid | {#serve_local} | Serve local-storage file |
 #
 # == Authentication
@@ -59,6 +61,10 @@ module Api
       before_action :authenticate_hybrid!
       before_action :require_write_scope!, only: %i[create update destroy restore permanent_delete update_metadata process_image]
 
+      # Usage events the frontend is allowed to record via {#track_event}.
+      # See {#track_event} docs for why these are app-observed, not CDN edge hits.
+      TRACKABLE_EVENTS = %w[view download share].freeze
+
       # Lists active assets for API consumers that need lightweight inventory data.
       #
       # @return [void] renders +200 OK+ with an array of serialised assets
@@ -77,6 +83,58 @@ module Api
         return if performed?
 
         render json: format_asset(asset), status: :ok
+      rescue ActiveRecord::RecordNotFound
+        render json: { error: "Asset not found" }, status: :not_found
+      end
+
+      # Returns aggregate usage statistics (views / downloads / shares) for a
+      # single asset, shown in the AssetViewer toolbar's Statistics popover.
+      #
+      # These counts are backed by {AssetUsageEvent} rows recorded via
+      # {#track_event} — i.e. real, app-observed events, not fabricated
+      # numbers. See {Asset#usage_stats} for what is (and isn't) captured.
+      #
+      # @return [void] renders +200 OK+ with { views:, downloads:, shares: }
+      def stats
+        asset = find_asset_record(Asset)
+        check_asset_read!(asset)
+        return if performed?
+
+        render json: asset.usage_stats, status: :ok
+      rescue ActiveRecord::RecordNotFound
+        render json: { error: "Asset not found" }, status: :not_found
+      end
+
+      # Records a single usage event (+view+, +download+, or +share+) for an
+      # asset and returns the updated counters.
+      #
+      # == Why app-observed events instead of CDN analytics?
+      #
+      # In production, the actual file bytes are frequently served straight
+      # from the CDN/S3 (see {AssetUrlHelper#asset_url_for}), so Rails never
+      # sees the download request itself. Rather than under-count (or fake)
+      # statistics, the frontend calls this endpoint at the moment the user
+      # *initiates* the action (opens the viewer, clicks Download, copies the
+      # share link) — a pattern used by most DAM/CMS products for the same
+      # reason. For edge-level bandwidth/hit totals (including hot-linked
+      # traffic that never touches our app), reconcile nightly with the CDN
+      # provider's own analytics API via the adapters in
+      # +app/services/cdn_adapters/+.
+      #
+      # @return [void] renders +200 OK+ with the updated { views:, downloads:, shares: }
+      # @return [void] renders +422+ for an unsupported event name
+      def track_event
+        asset = find_asset_record(Asset)
+        check_asset_read!(asset)
+        return if performed?
+
+        event = params[:event].to_s
+        unless TRACKABLE_EVENTS.include?(event)
+          return render json: { error: "Unsupported event: #{event}" }, status: :unprocessable_entity
+        end
+
+        AssetUsageEvent.create!(asset: asset, user: current_user, event_type: event)
+        render json: asset.usage_stats, status: :ok
       rescue ActiveRecord::RecordNotFound
         render json: { error: "Asset not found" }, status: :not_found
       end
@@ -892,6 +950,11 @@ module Api
                     type: content_type || "image/jpeg",
                     disposition: "attachment",
                     filename: "watermarked_v#{active_v&.version_number}_#{@asset.title || @asset.uuid}.jpg"
+
+          # This action streams the bytes itself (unlike the original-file
+          # download, which usually redirects to CDN/S3), so we can safely
+          # count it as a confirmed download rather than an initiated one.
+          AssetUsageEvent.create!(asset: @asset, user: current_user, event_type: "download")
         rescue StandardError => e
           Rails.logger.error "Watermarking failed: #{e.message}"
           render json: { error: "Failed to generate secure proxy." }, status: :internal_server_error

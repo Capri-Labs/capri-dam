@@ -13,21 +13,25 @@ RSpec.describe "Ai::Ui coverage", type: :request do
 
     expect(response).to have_http_status(:ok)
     expect(response.body).to include('data-view="semantic-copilot-screen"')
+    expect(assigns(:active_view)).to eq("Semantic Search")
+    expect(response.body).to include('data-active-view="Semantic Search"')
   end
 
-  it "renders each admin AI shell for admins" do
+  it "renders each admin AI shell for admins and highlights the matching sidebar item" do
     sign_in admin
 
     {
-      "/ai/agents" => "ai-automations-screen",
-      "/ai/tasks" => "ai-batch-processing-screen",
-      "/ai/lab/playground" => "ai-lab-playground-screen",
-      "/ai/governance/provenance" => "ai-provenance-c2pa-screen",
-      "/ai/models/hub" => "ai-style-model-hub-screen",
-    }.each do |path, view|
+      "/ai/agents"                => [ "ai-automations-screen",       "Agent Automations" ],
+      "/ai/tasks"                 => [ "ai-batch-processing-screen",  "Metadata Extraction" ],
+      "/ai/lab/playground"        => [ "ai-lab-playground-screen",    "Prompt Playground" ],
+      "/ai/governance/provenance" => [ "ai-provenance-c2pa-screen",   "Content Authenticity" ],
+      "/ai/models/hub"            => [ "ai-style-model-hub-screen",   "Brand Synthesis" ],
+    }.each do |path, (view, active_view)|
       get path
       expect(response).to have_http_status(:ok)
       expect(response.body).to include(view)
+      expect(assigns(:active_view)).to eq(active_view)
+      expect(response.body).to include(%(data-active-view="#{active_view}"))
     end
   end
 

@@ -15,12 +15,18 @@ RSpec.describe "Admin::Migrations coverage", type: :request do
     expect(response).to have_http_status(:forbidden)
   end
 
-  it "renders all migration shells for admins" do
+  it "renders all migration shells for admins and highlights the matching sidebar item" do
     sign_in admin
 
-    [ "/admin/migrations/ingestion", "/admin/migrations/connectors", "/admin/migrations/health" ].each do |path|
+    {
+      "/admin/migrations/ingestion"  => "Ingestion Engine",
+      "/admin/migrations/connectors" => "Legacy Connectors",
+      "/admin/migrations/health"     => "Data Health",
+    }.each do |path, active_view|
       get path
       expect(response).to have_http_status(:ok)
+      expect(assigns(:active_view)).to eq(active_view)
+      expect(response.body).to include(%(data-active-view="#{active_view}"))
     end
   end
 end

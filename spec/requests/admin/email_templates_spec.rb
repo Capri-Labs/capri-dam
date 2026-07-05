@@ -129,9 +129,11 @@ RSpec.describe "Admin::EmailTemplates coverage additions", type: :request do
   end
 
   describe "GET /admin/email_templates" do
-    it "renders the HTML shell" do
+    it "renders the HTML shell and highlights the Email Engine sidebar item" do
       get "/admin/email_templates"
       expect(response).to have_http_status(:ok)
+      expect(assigns(:active_view)).to eq("Email Engine")
+      expect(response.body).to include('data-active-view="Email Engine"')
     end
 
     it "returns an empty JSON list" do

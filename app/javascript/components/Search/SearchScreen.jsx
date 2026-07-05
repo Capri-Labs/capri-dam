@@ -499,7 +499,7 @@ export default function SearchScreen() {
                         <SearchResultCard
                           asset={asset}
                           viewMode="grid"
-                          onClick={(item) => { window.location.href = `/assets/${item.uuid}`; }}
+                          onClick={(item) => { window.location.href = `/assets?id=${item.uuid}`; }}
                         />
                       </Grid>
                     ))}
@@ -511,7 +511,7 @@ export default function SearchScreen() {
                         key={asset.uuid}
                         asset={asset}
                         viewMode="list"
-                        onClick={(item) => { window.location.href = `/assets/${item.uuid}`; }}
+                        onClick={(item) => { window.location.href = `/assets?id=${item.uuid}`; }}
                       />
                     ))}
                   </Stack>

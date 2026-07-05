@@ -6,8 +6,8 @@ class WorkflowMailer < ApplicationMailer
     @user = @task.user
     @asset = @task.workflow_instance.asset
 
-    # URL to the exact asset in the DAM
-    @action_url = "#{Rails.application.config.action_mailer.default_url_options[:host]}/dashboard?view=asset_explorer&asset=#{@asset.id}"
+    # URL to the exact asset in the DAM (matches the /assets?id=UUID deep-link route)
+    @action_url = "#{Rails.application.config.action_mailer.default_url_options[:host]}/assets?id=#{@asset.uuid || @asset.id}"
 
     mail(
       to: @user.email,

@@ -917,6 +917,62 @@ RSpec.describe "Api::V1::Assets coverage", type: :request do
     end
   end
 
+  describe "GET /api/v1/assets/:id/stats and POST /api/v1/assets/:id/track_event" do
+    it "starts at zero and increments per event type independently" do
+      asset = asset_with_version(title: "Stats Asset")
+
+      get "/api/v1/assets/#{asset.uuid}/stats", as: :json
+      expect(response).to have_http_status(:ok)
+      expect(json).to eq("views" => 0, "downloads" => 0, "shares" => 0)
+
+      post "/api/v1/assets/#{asset.uuid}/track_event", params: { event: "view" }, as: :json
+      expect(response).to have_http_status(:ok)
+      expect(json).to eq("views" => 1, "downloads" => 0, "shares" => 0)
+
+      post "/api/v1/assets/#{asset.uuid}/track_event", params: { event: "view" }, as: :json
+      post "/api/v1/assets/#{asset.uuid}/track_event", params: { event: "download" }, as: :json
+      post "/api/v1/assets/#{asset.uuid}/track_event", params: { event: "share" }, as: :json
+
+      get "/api/v1/assets/#{asset.uuid}/stats", as: :json
+      expect(json).to eq("views" => 2, "downloads" => 1, "shares" => 1)
+
+      expect(
+        AssetUsageEvent.where(asset_id: asset.id, user: user).pluck(:event_type).tally
+      ).to eq("view" => 2, "download" => 1, "share" => 1)
+    end
+
+    it "rejects an unsupported event name" do
+      asset = asset_with_version(title: "Bad Event Asset")
+
+      post "/api/v1/assets/#{asset.uuid}/track_event", params: { event: "print" }, as: :json
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(json["error"]).to eq("Unsupported event: print")
+    end
+
+    it "returns 404 for both endpoints when the asset does not exist" do
+      get "/api/v1/assets/does-not-exist/stats", as: :json
+      expect(response).to have_http_status(:not_found)
+
+      post "/api/v1/assets/does-not-exist/track_event", params: { event: "view" }, as: :json
+      expect(response).to have_http_status(:not_found)
+    end
+
+    it "records a confirmed download event when the watermarked proxy is streamed" do
+      asset = asset_with_version(title: "Watermarked Stats", properties: { "content_type" => "image/jpeg", "storage_path" => "helpers/file.jpg" })
+      allow_any_instance_of(MiniMagick::Image).to receive(:combine_options)
+      allow_any_instance_of(MiniMagick::Image).to receive(:to_blob).and_return("binary-data")
+      allow(MiniMagick::Image).to receive(:open).and_return(instance_double(MiniMagick::Image, combine_options: nil, to_blob: "binary-data"))
+
+      get "/api/v1/assets/#{asset.uuid}/watermarked", as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(
+        AssetUsageEvent.where(asset_id: asset.id, event_type: "download").count
+      ).to eq(1)
+    end
+  end
+
   describe "private helper coverage" do
     let(:controller) { Api::V1::AssetsController.new }
 

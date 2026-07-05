@@ -21,7 +21,7 @@ class Ai::UiController < ApplicationController
   end
 
   def tasks
-    @active_view = "AI Batch Tasks"
+    @active_view = "Metadata Extraction"
   end
 
   def playground
@@ -29,7 +29,7 @@ class Ai::UiController < ApplicationController
   end
 
   def provenance
-    @active_view = "Provenance & C2PA"
+    @active_view = "Content Authenticity"
   end
 
   def style_model_hub

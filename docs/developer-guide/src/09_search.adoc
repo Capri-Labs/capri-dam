@@ -44,6 +44,37 @@ Asset.where("search_vector @@ plainto_tsquery(:q)", q: "product launch")
 `AssetFilterBar` (UI) and the API support multi-select filters on:
 `content_type`, `tags`, `created_at` range, `status`, `folder_id`.
 
+=== Result navigation (asset deep-link convention)
+
+Every screen that lets a user click through to an individual asset (Search
+results, Collections, notification `action_url`, workflow task-assignment
+emails, etc.) **must** navigate to:
+
+[source]
+----
+/assets?id=<uuid-or-id>
+----
+
+`GET /assets` is served by `DashboardController#assets`, which renders the
+same shell as `/folders` and stamps `data-initial-target-asset-id` on the
+root `<div>`. `AssetExplorer.jsx` reads that attribute, resolves the asset
+(first from the already-loaded page, then via `GET /api/v1/assets/:id`, which
+accepts either the numeric `id` or the `uuid`), and opens `AssetViewer`
+automatically.
+
+There is **no** `/assets/:id` route — building a link like
+``/assets/${asset.uuid}`` will 404. This bit `SearchResultCard` navigation
+until it was fixed (grid + list view `onClick` handlers in
+`ExplorerTopBar`'s sibling `SearchScreen.jsx`), and the same mistake had crept
+into `WorkflowActionExecutor#send_email`/`#send_in_app` and
+`WorkflowMailer#task_assigned`, which built dead
+`/dashboard?view=asset_explorer&asset=<id>` links (that route ignores those
+params entirely). All of these now build the `/assets?id=` deep-link instead.
+
+When adding a new place that links to an asset, always use `/assets?id=` (or
+the `navigateTo` helper from `utils/globalutils.js`, which already does this
+correctly for Collections) — never construct a `/assets/:id`-style path.
+
 == Semantic search (pgvector)
 
 === Embedding generation

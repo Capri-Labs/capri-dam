@@ -39,6 +39,33 @@ RSpec.describe 'Api::V1::WorkflowInstances', type: :request do
     end
   end
 
+  path '/api/v1/workflows/bulk_trigger' do
+    post 'Manually triggers an active workflow for selected assets/folders' do
+      tags 'Workflows & Tasks'
+      consumes 'application/json'
+      produces 'application/json'
+      security [ Bearer: [] ]
+
+      parameter name: :payload, in: :body, schema: {
+        type: :object,
+        properties: {
+          workflow_id: { type: :string, example: 1 },
+          asset_ids:   { type: :array, items: { type: :string }, example: [ '11111111-1111-1111-1111-111111111111' ] },
+          folder_ids:  { type: :array, items: { type: :string }, example: [ 42 ] },
+        },
+      }
+
+      response '202', 'workflow queued for the resolved assets' do
+        schema type: :object, properties: {
+          message:     { type: :string },
+          queued:      { type: :integer },
+          workflow_id: { type: :string },
+        }
+        run_test!
+      end
+    end
+  end
+
   # ── Behavioural specs (run in the default suite) ─────────────────────────────
   describe 'admin operations', :aggregate_failures do
     let(:admin)    { create(:user, admin: true) }

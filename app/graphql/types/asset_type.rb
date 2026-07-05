@@ -22,6 +22,10 @@ module Types
     field :properties,     Types::JsonType,                  null: true,
           description: "Raw JSONB custom attributes (Campaign, Region, etc)."
     field :created_at,     GraphQL::Types::ISO8601DateTime,  null: false
+    field :usage_stats,    Types::JsonType,                  null: false,
+          description: "App-observed usage counters ({ views:, downloads:, shares: }), " \
+                       "backed by AssetUsageEvent rows. See Asset#usage_stats for what " \
+                       "is (and isn't) captured — CDN-served hot-link traffic is excluded."
 
     #  Temporarily disabled — re-enable once FolderType circular ref is resolved
     # field :parent_folder, Types::FolderType, null: true, complexity: 5

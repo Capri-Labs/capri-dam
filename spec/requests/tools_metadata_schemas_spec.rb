@@ -12,6 +12,8 @@ RSpec.describe "Tools::MetadataSchemas coverage", type: :request do
 
     expect(response).to have_http_status(:ok)
     expect(response.body).to include('data-view="metadata-schemas-screen"')
+    expect(assigns(:active_view)).to eq("MetadataSchemas")
+    expect(response.body).to include('data-active-view="MetadataSchemas"')
   end
 
   it "returns 401 for unauthenticated HTML users" do

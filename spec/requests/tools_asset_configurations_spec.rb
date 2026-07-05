@@ -13,6 +13,8 @@ RSpec.describe "Tools::AssetConfigurations coverage", type: :request do
 
     expect(response).to have_http_status(:ok)
     expect(response.body).to include('data-view="asset-configurations-screen"')
+    expect(assigns(:active_view)).to eq("AssetConfigurations")
+    expect(response.body).to include('data-active-view="AssetConfigurations"')
   end
 
   it "redirects non-admin users to the root path" do
@@ -22,6 +24,7 @@ RSpec.describe "Tools::AssetConfigurations coverage", type: :request do
 
     expect(response).to redirect_to(authenticated_root_path)
     expect(flash[:alert]).to include("Administrator privileges required")
+    expect(assigns(:active_view)).to be_nil
   end
 
   it "returns 401 for JSON requests when unauthenticated" do

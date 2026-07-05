@@ -1885,8 +1885,9 @@
   "assetStatisticsTab": {
     "title": "에셋 통계",
     "downloads": "다운로드",
-    "cdnViews": "CDN 조회수",
-    "shares": "공유"
+    "views": "조회수",
+    "shares": "공유",
+    "disclaimer": "앱 내 조회수, 다운로드, 복사된 공유 링크를 집계합니다. CDN 핫링크 트래픽은 포함되지 않습니다."
   },
   "assetList": {
     "headers": {
@@ -1983,10 +1984,6 @@
     "purgeEdgeCache": "Edge 캐시 비우기",
     "invalidateDeliveryNodesGlobally": "전 세계 전달 노드 무효화",
     "workflow": "워크플로",
-    "globalLocalization": "전역 현지화",
-    "autoTranslateCopyMetadata": "문구 및 메타데이터 자동 번역",
-    "brandLicenseGuard": "브랜드 및 라이선스 보호",
-    "validateUsageTermsSignatures": "사용 조건 및 서명 검증",
     "smartActions": "스마트 작업",
     "autoTagEnrich": "자동 태그 및 보강",
     "extractSemanticMetadata": "의미론적 메타데이터 추출",
@@ -2006,8 +2003,8 @@
       "smartOrganizeQueued": "AI가 벡터를 분석하여 항목을 하위 폴더로 군집화하고 있습니다.",
       "forceSyncStarted": "메타데이터를 Edge KV로 강제 동기화하기 시작했습니다.",
       "cachePurgeQueued": "선택한 항목에 대한 Edge 캐시 무효화가 대기열에 추가되었습니다.",
-      "localizationTriggered": "현지화 에이전트가 실행되었습니다.",
-      "brandSafetyInitialized": "브랜드 안전 검사가 초기화되었습니다."
+      "forceSyncError": "메타데이터 동기화를 시작하지 못했습니다. 다시 시도하세요.",
+      "cachePurgeError": "캐시 삭제 대기열 추가에 실패했습니다. 다시 시도하세요."
     }
   },
   "uploadGrid": {
@@ -2104,6 +2101,18 @@
       "applyError": "스키마를 적용하지 못했습니다. 다시 시도해 주세요."
     }
   },
+  "triggerWorkflowDialog": {
+    "title": "워크플로 트리거",
+    "description": "선택한 {{count}}개 항목에 대해 실행할 활성 워크플로를 선택하세요. 선택한 폴더에는 포함된 모든 자산이 포함됩니다.",
+    "noActiveWorkflows": "사용 가능한 활성 워크플로가 없습니다. 먼저 워크플로 디자이너에서 활성화하세요.",
+    "stepCount_one": "{{count}}단계",
+    "stepCount_other": "{{count}}단계",
+    "loadError": "워크플로를 불러오지 못했습니다.",
+    "triggerError": "워크플로를 트리거하지 못했습니다.",
+    "queued": "\"{{name}}\"이(가) {{count}}개 자산에 대해 대기열에 추가되었습니다.",
+    "cancel": "취소",
+    "trigger": "트리거"
+  },
   "pinToCollectionDialog": {
     "title": "컬렉션에 고정",
     "searchPlaceholder": "컬렉션 검색...",
@@ -2164,7 +2173,6 @@
       "info": "정보",
       "metadata": "메타데이터",
       "versions": "버전",
-      "statistics": "통계",
       "audit": "감사",
       "workflows": "워크플로",
       "aiEngine": "AI 엔진"

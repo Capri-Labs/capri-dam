@@ -1885,8 +1885,9 @@
   "assetStatisticsTab": {
     "title": "Asset Statistics",
     "downloads": "Downloads",
-    "cdnViews": "CDN Views",
-    "shares": "Shares"
+    "views": "Views",
+    "shares": "Shares",
+    "disclaimer": "Counts in-app views, downloads, and copied share links. CDN hot-link traffic isn't included."
   },
   "assetList": {
     "headers": {
@@ -1983,10 +1984,6 @@
     "purgeEdgeCache": "Purge Edge Cache",
     "invalidateDeliveryNodesGlobally": "Invalidate delivery nodes globally",
     "workflow": "Workflow",
-    "globalLocalization": "Global Localization",
-    "autoTranslateCopyMetadata": "Auto-translate copy & metadata",
-    "brandLicenseGuard": "Brand & License Guard",
-    "validateUsageTermsSignatures": "Validate usage terms & signatures",
     "smartActions": "Smart Actions",
     "autoTagEnrich": "Auto-Tag & Enrich",
     "extractSemanticMetadata": "Extract semantic metadata",
@@ -2006,8 +2003,8 @@
       "smartOrganizeQueued": "AI is analyzing vectors to cluster items into sub-folders.",
       "forceSyncStarted": "Metadata force-sync to Edge KV initiated.",
       "cachePurgeQueued": "Edge cache invalidation queued for selected items.",
-      "localizationTriggered": "Localization agent triggered.",
-      "brandSafetyInitialized": "Brand safety check initialized."
+      "forceSyncError": "Failed to start metadata sync. Please try again.",
+      "cachePurgeError": "Failed to queue cache purge. Please try again."
     }
   },
   "uploadGrid": {
@@ -2104,6 +2101,18 @@
       "applyError": "Failed to apply schema. Please try again."
     }
   },
+  "triggerWorkflowDialog": {
+    "title": "Trigger Workflow",
+    "description": "Choose an active workflow to run for {{count}} selected item(s). Selected folders will include every asset inside them.",
+    "noActiveWorkflows": "No active workflows available. Activate one in Workflow Designer first.",
+    "stepCount_one": "{{count}} step",
+    "stepCount_other": "{{count}} steps",
+    "loadError": "Failed to load workflows.",
+    "triggerError": "Failed to trigger workflow.",
+    "queued": "\"{{name}}\" queued for {{count}} asset(s).",
+    "cancel": "Cancel",
+    "trigger": "Trigger"
+  },
   "pinToCollectionDialog": {
     "title": "Pin to Collections",
     "searchPlaceholder": "Search collections...",
@@ -2164,7 +2173,6 @@
       "info": "Info",
       "metadata": "Metadata",
       "versions": "Versions",
-      "statistics": "Statistics",
       "audit": "Audit",
       "workflows": "Workflows",
       "aiEngine": "AI Engine"

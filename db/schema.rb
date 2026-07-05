@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_03_120000) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_05_170000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -163,6 +163,17 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_03_120000) do
     t.index ["is_ai_modified"], name: "index_asset_provenance_records_on_is_ai_modified"
     t.index ["manifest_status"], name: "index_asset_provenance_records_on_manifest_status"
     t.index ["verified_at"], name: "index_asset_provenance_records_on_verified_at"
+  end
+
+  create_table "asset_usage_events", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "asset_id", null: false
+    t.datetime "created_at", null: false
+    t.string "event_type", default: "view", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["asset_id", "event_type"], name: "index_asset_usage_events_on_asset_id_and_event_type"
+    t.index ["asset_id"], name: "index_asset_usage_events_on_asset_id"
+    t.index ["user_id"], name: "index_asset_usage_events_on_user_id"
   end
 
   create_table "asset_versions", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -972,6 +983,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_03_120000) do
   add_foreign_key "ai_batch_jobs", "users", column: "created_by_id"
   add_foreign_key "asset_embeddings", "assets"
   add_foreign_key "asset_provenance_records", "assets"
+  add_foreign_key "asset_usage_events", "assets"
+  add_foreign_key "asset_usage_events", "users"
   add_foreign_key "asset_versions", "assets"
   add_foreign_key "asset_versions", "users", column: "created_by_id"
   add_foreign_key "assets", "asset_versions", column: "active_version_id"

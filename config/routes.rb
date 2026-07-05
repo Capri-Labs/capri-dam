@@ -259,6 +259,10 @@ Rails.application.routes.draw do
           get :workflow_history
           get :watermarked
 
+          # Usage statistics (views / downloads / shares)
+          get :stats, to: "assets#stats"
+          post :track_event, to: "assets#track_event"
+
           # Versioning Endpoints
           get :versions
           get :audit_trail
@@ -348,6 +352,7 @@ Rails.application.routes.draw do
       get  "workflows/dashboard",   to: "workflow_tasks#dashboard"
       post "workflows/bulk_stop",   to: "workflow_instances#bulk_stop"
       post "workflows/bulk_reassign", to: "workflow_instances#bulk_reassign"
+      post "workflows/bulk_trigger", to: "workflow_instances#bulk_trigger"
 
       resources :workflow_tasks, only: [] do
         post :submit, on: :member
