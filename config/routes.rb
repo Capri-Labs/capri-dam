@@ -150,6 +150,7 @@ Rails.application.routes.draw do
       get "dashboard/overview", to: "dashboard#overview"
       # Global Search & AI
       get "search", to: "search#index"
+      get "search/suggestions", to: "search#suggestions"
       post "copilot/search", to: "copilots#search"
 
       # AI Lab (Prompt Playground) — routes into Api::V1::Ai::LabController
@@ -509,6 +510,9 @@ Rails.application.routes.draw do
     resources :email_templates, except: [ :new, :edit ] do
       collection do
         get :event_triggers
+        get :design_templates
+        get :brand_settings
+        patch :brand_settings, action: :update_brand_settings
       end
       member do
         post :send_test

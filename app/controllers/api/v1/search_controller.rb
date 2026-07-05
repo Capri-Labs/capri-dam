@@ -49,7 +49,58 @@ module Api
       AUDIO_CODECS = %w[libvorbis lame_mp3 aac].freeze
       PUBLISHED_STATUSES = %w[ready approved].freeze
 
+      # Modes that delegate to the pgvector semantic pipeline (AI Gateway embedding
+      # + HNSW nearest-neighbour search) instead of the lexical ILIKE pipeline.
+      SEMANTIC_MODES = %w[visual agentic].freeze
+
+      INDEX_CACHE_TTL       = 30
+      SUGGESTIONS_CACHE_TTL = 15
+      SEMANTIC_POOL_LIMIT   = 100
+      SUGGESTIONS_ASSET_LIMIT  = 5
+      SUGGESTIONS_FOLDER_LIMIT = 3
+
+      # GET /api/v1/search
+      #
+      # Redis-cached (see {SearchCache}) so repeated queries — very common while
+      # a user is refining filters — hit sub-millisecond response times instead
+      # of re-running the full ILIKE/facet pipeline every keystroke.
       def index
+        payload = SearchCache.fetch(cache_key_for("index"), expires_in: INDEX_CACHE_TTL) { build_index_payload }
+        render json: payload
+      end
+
+      # GET /api/v1/search/suggestions
+      #
+      # Lightweight autocomplete used by the global top-bar search box. Returns
+      # a small, mixed list of matching assets + folders so the user can jump
+      # straight to the asset viewer / folder without a full page load.
+      def suggestions
+        query = params[:q].to_s.strip
+        if query.blank?
+          render json: { query: "", results: [] }
+          return
+        end
+
+        payload = SearchCache.fetch(cache_key_for("suggestions"), expires_in: SUGGESTIONS_CACHE_TTL) do
+          build_suggestions_payload(query)
+        end
+        render json: payload
+      end
+
+      private
+
+      # Dispatches to the correct pipeline based on `mode`:
+      # * `folders`           → {#build_folder_payload} (Folder model, not Asset)
+      # * `visual`/`agentic`  → {#build_semantic_payload} (pgvector similarity)
+      # * anything else       → {#build_lexical_payload} (ILIKE + facets, existing behaviour)
+      def build_index_payload
+        return build_folder_payload if params[:mode] == "folders"
+        return build_semantic_payload if SEMANTIC_MODES.include?(params[:mode]) && params[:q].present?
+
+        build_lexical_payload
+      end
+
+      def build_lexical_payload
         scope = Asset.active
         scope = apply_text_search(scope)
         scope = apply_mode_filter(scope)
@@ -67,31 +118,179 @@ module Api
         scope = apply_sort(scope)
 
         total = scope.count
-        page = [ params[:page].to_i, 1 ].max
-        per_page = params[:per_page].present? ? params[:per_page].to_i : 10
-        per_page = [ [ per_page, 1 ].max, 100 ].min
-        offset = (page - 1) * per_page
-        total_pages = (total.to_f / per_page).ceil
+        page, per_page, offset, total_pages = pagination_window(total)
 
         assets = scope.includes(:active_version).offset(offset).limit(per_page)
         facets = build_facets(scope)
-        results = assets.map { |asset| format_asset(asset) }
 
-        render json: {
+        {
           meta: {
             query: params[:q],
             mode: params[:mode] || "all",
+            result_type: "asset",
             total_found: total,
             page: page,
             per_page: per_page,
             total_pages: total_pages,
             facets: facets,
           },
-          results: results,
+          results: assets.map { |asset| format_asset(asset) },
         }
       end
 
-      private
+      # Searches {Folder} records by name (folders have no `properties` JSONB
+      # column / facets, so this pipeline is intentionally simpler).
+      def build_folder_payload
+        scope = Folder.active
+        scope = scope.where("name ILIKE :q", q: "%#{params[:q]}%") if params[:q].present?
+        scope = scope.order(name: :asc)
+
+        total = scope.count
+        page, per_page, offset, total_pages = pagination_window(total)
+        folders = scope.offset(offset).limit(per_page)
+
+        {
+          meta: {
+            query: params[:q],
+            mode: "folders",
+            result_type: "folder",
+            total_found: total,
+            page: page,
+            per_page: per_page,
+            total_pages: total_pages,
+            facets: {},
+          },
+          results: folders.map { |folder| format_folder(folder) },
+        }
+      end
+
+      # Semantic ("Visual Match" / "Ask AI Agent") pipeline: embeds the query via
+      # the AI Gateway then runs a pgvector HNSW nearest-neighbour search. Falls
+      # back to the lexical pipeline (flagged via `semantic_fallback`) whenever
+      # the AI Gateway is unreachable so the search bar never hard-fails.
+      def build_semantic_payload
+        vector = fetch_query_embedding(params[:q])
+        raise "AI Gateway returned no embedding vector" if vector.blank?
+
+        pool = Asset.active.nearest_to_vector(vector).includes(:active_version).limit(SEMANTIC_POOL_LIMIT).to_a
+        page, per_page, offset, total_pages = pagination_window(pool.size)
+        page_assets = pool[offset, per_page] || []
+
+        {
+          meta: {
+            query: params[:q],
+            mode: params[:mode],
+            result_type: "semantic",
+            total_found: pool.size,
+            page: page,
+            per_page: per_page,
+            total_pages: total_pages,
+            facets: {},
+          },
+          results: page_assets.map { |asset| format_asset(asset).merge(similarity_score: semantic_score(asset)) },
+        }
+      rescue StandardError => e
+        Rails.logger.warn("[SearchController] semantic search fallback (#{e.class}): #{e.message}")
+        build_lexical_payload.tap { |payload| payload[:meta][:semantic_fallback] = true }
+      end
+
+      def semantic_score(asset)
+        return nil unless asset.respond_to?(:neighbor_distance) && asset.neighbor_distance
+
+        (1.0 - asset.neighbor_distance).round(4)
+      end
+
+      # Mixed asset + folder suggestions used by the top-bar autocomplete.
+      def build_suggestions_payload(query)
+        assets = Asset.active
+          .where("title ILIKE :q OR properties->>'original_filename' ILIKE :q", q: "#{query}%")
+          .order(updated_at: :desc)
+          .limit(SUGGESTIONS_ASSET_LIMIT)
+
+        folders = Folder.active
+          .where("name ILIKE :q", q: "#{query}%")
+          .order(:name)
+          .limit(SUGGESTIONS_FOLDER_LIMIT)
+
+        {
+          query: query,
+          results: assets.map { |asset| suggestion_for_asset(asset) } +
+                   folders.map { |folder| suggestion_for_folder(folder) },
+        }
+      end
+
+      def suggestion_for_asset(asset)
+        props = asset.properties || {}
+        {
+          type: "asset",
+          id: asset.uuid || asset.id,
+          title: asset.title || "Untitled Asset",
+          subtitle: props["content_type"],
+          thumb_url: asset_preview_url_for(asset),
+          href: "/assets?id=#{asset.uuid || asset.id}",
+        }
+      end
+
+      def suggestion_for_folder(folder)
+        {
+          type: "folder",
+          id: folder.id,
+          title: folder.name,
+          subtitle: "folder",
+          href: "/folders?folder=#{folder.id}",
+        }
+      end
+
+      def format_folder(folder)
+        {
+          id: folder.id,
+          uuid: folder.respond_to?(:uuid) ? folder.uuid : nil,
+          title: folder.name,
+          type: "folder",
+          content_type: "folder",
+          href: "/folders?folder=#{folder.id}",
+          created_at: folder.created_at&.iso8601,
+          updated_at: folder.updated_at&.iso8601,
+        }
+      end
+
+      def pagination_window(total)
+        page = [ params[:page].to_i, 1 ].max
+        per_page = params[:per_page].present? ? params[:per_page].to_i : 10
+        per_page = [ [ per_page, 1 ].max, 100 ].min
+        offset = (page - 1) * per_page
+        total_pages = total.zero? ? 0 : (total.to_f / per_page).ceil
+        [ page, per_page, offset, total_pages ]
+      end
+
+      # Deterministic cache key derived from every incoming query param so
+      # distinct filter/sort/page combinations never collide in Redis.
+      def cache_key_for(action_name)
+        normalized = request.query_parameters.sort.to_h.to_query
+        "#{action_name}:#{Digest::SHA256.hexdigest(normalized)}"
+      end
+
+      def fetch_query_embedding(text)
+        response = gateway_client.post("/api/embed_query", { text: text })
+        raise "AI Gateway Error: #{response.status}" unless response.success?
+
+        response.body["vector"]
+      end
+
+      def gateway_client
+        @gateway_client ||= Faraday.new(url: ai_gateway_url) do |conn|
+          conn.request  :json
+          conn.response :json
+          conn.options.timeout      = 30
+          conn.options.open_timeout = 5
+          conn.adapter Faraday.default_adapter
+        end
+      end
+
+      def ai_gateway_url
+        Rails.application.credentials.dig(:ai_gateway, :url).presence ||
+          ENV.fetch("AI_GATEWAY_URL", "http://localhost:8000")
+      end
 
       def apply_text_search(scope)
         return scope if params[:q].blank?
@@ -469,7 +668,15 @@ module Api
           content_type: props["content_type"] || "Unknown",
           size: props["size_human"] || "0 KB",
           file_size: props["file_size"].to_i,
-          thumb_url: asset_url_for(asset),
+          # `thumb_url`/`preview_url` point at the generated flattened-PNG preview
+          # (falls back to the raw file when no preview exists) so formats a
+          # browser can't decode natively — PSD, TIFF, HEIC, RAW, PDF, AI, EPS —
+          # still render a visual thumbnail instead of a broken <img>. `url`
+          # keeps the raw/original asset URL for download/full-quality use.
+          thumb_url: asset_preview_url_for(asset),
+          preview_url: asset_preview_url_for(asset),
+          url: asset_url_for(asset),
+          web_renderable: web_renderable_image?(props["content_type"]),
           folder_id: asset.folder_id,
           status: normalize_status(asset.read_attribute_before_type_cast(:status)),
           width: props["width"]&.to_i,
@@ -489,6 +696,17 @@ module Api
             tags: props["tags"],
           }.compact,
         }
+      end
+
+      # Whether +content_type+ is a MIME type a browser can decode natively in
+      # an +<img>+ tag. Mirrors Api::V1::AssetsController#web_renderable_image?
+      # so search results/suggestions can flag when +thumb_url+ points at a
+      # generated preview rather than the original file.
+      #
+      # @param content_type [String, nil]
+      # @return [Boolean]
+      def web_renderable_image?(content_type)
+        AssetProcessorWorker::WEB_RENDERABLE_MIME_TYPES.include?(content_type.to_s)
       end
 
       def normalize_status(status)

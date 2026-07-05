@@ -9,8 +9,11 @@ class EmailOrchestrator
       return false
     end
 
-    # Liquid requires strictly stringified keys, so we deeply format the hash
-    liquid_payload = payload.deep_stringify_keys
+    # Liquid requires strictly stringified keys, so we deeply format the hash.
+    # Global branding/date/support tokens (see GlobalTemplateVariables) are
+    # backfilled here so every template has access to them without every
+    # caller needing to pass them explicitly; explicit payload values win.
+    liquid_payload = GlobalTemplateVariables.with_defaults(payload)
 
     # 1. Create the Audit Log / Outbox record immediately
     delivery = EmailDelivery.create!(

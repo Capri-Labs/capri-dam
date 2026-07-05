@@ -1,12 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { Box, InputBase, Select, MenuItem, styled, Divider, Tooltip, Typography } from '@mui/material';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import {
+    Box, InputBase, Select, MenuItem, styled, Divider, Tooltip,
+    Paper, List, ListItemButton, ListItemIcon, ListItemText, Typography,
+    CircularProgress, ClickAwayListener,
+} from '@mui/material';
 import {
     Search as SearchIcon,
     Image as ImageIcon,
     InsertDriveFile as FileIcon,
     Folder as FolderIcon,
-    AutoAwesome as AiIcon
+    AutoAwesome as AiIcon,
 } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 
 // 1. The Animated "Hero" Container
 // Uses a cubic-bezier transition for a very smooth, Apple-like expansion snap
@@ -24,6 +29,7 @@ const SearchContainer = styled(Box, {
         : '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
     transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
     width: '100%',
+    position: 'relative',
     [theme.breakpoints.up('md')]: {
         // The magic width expansion
         width: isFocused ? '720px' : '550px',
@@ -79,10 +85,40 @@ const ShortcutBadge = styled(Box)(({ theme }) => ({
     pointerEvents: 'none',
 }));
 
+// 5. Suggestions dropdown — floats below the search bar
+const SuggestionsPanel = styled(Paper)(() => ({
+    position: 'absolute',
+    top: 'calc(100% + 8px)',
+    left: 0,
+    right: 0,
+    zIndex: 1300,
+    borderRadius: '12px',
+    overflow: 'hidden',
+    maxHeight: '360px',
+    overflowY: 'auto',
+}));
+
+const SUGGESTIONS_DEBOUNCE_MS = 200;
+const MIN_QUERY_LENGTH = 2;
+
+function suggestionIcon(type) {
+    if (type === 'folder') return <FolderIcon fontSize="small" sx={{ color: '#f59e0b' }} />;
+    return <FileIcon fontSize="small" sx={{ color: '#64748b' }} />;
+}
+
 export default function GlobalSearchBar() {
+    const { t } = useTranslation();
     const [searchQuery, setSearchQuery] = useState('');
     const [searchMode, setSearchMode] = useState('images');
     const [isFocused, setIsFocused] = useState(false); // Drives the animation
+    const [suggestions, setSuggestions] = useState([]);
+    const [suggestionsOpen, setSuggestionsOpen] = useState(false);
+    const [suggestionsLoading, setSuggestionsLoading] = useState(false);
+    const [highlightedIndex, setHighlightedIndex] = useState(-1);
+
+    const inputRef = useRef(null);
+    const debounceRef = useRef(null);
+    const abortRef = useRef(null);
 
     // Read initial state from URL
     useEffect(() => {
@@ -91,60 +127,195 @@ export default function GlobalSearchBar() {
         if (params.get('mode')) setSearchMode(params.get('mode'));
     }, []);
 
+    // ⌘K / Ctrl+K focuses the search bar from anywhere in the app
+    useEffect(() => {
+        const handleShortcut = (event) => {
+            if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+                event.preventDefault();
+                inputRef.current?.focus();
+            }
+        };
+        window.addEventListener('keydown', handleShortcut);
+        return () => window.removeEventListener('keydown', handleShortcut);
+    }, []);
+
+    const fetchSuggestions = useCallback((value, mode) => {
+        if (abortRef.current) abortRef.current.abort();
+        const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+        abortRef.current = controller;
+
+        setSuggestionsLoading(true);
+        const qs = new URLSearchParams({ q: value, mode }).toString();
+        fetch(`/api/v1/search/suggestions?${qs}`, {
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            signal: controller?.signal,
+        })
+            .then((response) => response.json())
+            .then((data) => {
+                setSuggestions(data.results || []);
+                setSuggestionsOpen(true);
+                setHighlightedIndex(-1);
+            })
+            .catch(() => {})
+            .finally(() => setSuggestionsLoading(false));
+    }, []);
+
+    useEffect(() => {
+        if (debounceRef.current) clearTimeout(debounceRef.current);
+
+        if (!isFocused || searchQuery.trim().length < MIN_QUERY_LENGTH || searchMode === 'visual') {
+            setSuggestionsOpen(false);
+            return undefined;
+        }
+
+        debounceRef.current = setTimeout(() => {
+            fetchSuggestions(searchQuery.trim(), searchMode);
+        }, SUGGESTIONS_DEBOUNCE_MS);
+
+        return () => clearTimeout(debounceRef.current);
+    }, [searchQuery, searchMode, isFocused, fetchSuggestions]);
+
+    const goToSearchPage = () => {
+        window.location.href = `/search?q=${encodeURIComponent(searchQuery)}&mode=${searchMode}`;
+    };
+
+    const goToSuggestion = (item) => {
+        window.location.href = item.href || `/search?q=${encodeURIComponent(searchQuery)}&mode=${searchMode}`;
+    };
+
     const handleSearchSubmit = (e) => {
+        if (e.key === 'Escape') {
+            setSuggestionsOpen(false);
+            return;
+        }
+        if (e.key === 'ArrowDown' && suggestionsOpen && suggestions.length > 0) {
+            e.preventDefault();
+            setHighlightedIndex((prev) => Math.min(prev + 1, suggestions.length - 1));
+            return;
+        }
+        if (e.key === 'ArrowUp' && suggestionsOpen && suggestions.length > 0) {
+            e.preventDefault();
+            setHighlightedIndex((prev) => Math.max(prev - 1, -1));
+            return;
+        }
         if (e.key === 'Enter' && searchQuery.trim() !== '') {
-            window.location.href = `/search?q=${encodeURIComponent(searchQuery)}&mode=${searchMode}`;
+            if (suggestionsOpen && highlightedIndex >= 0 && suggestions[highlightedIndex]) {
+                goToSuggestion(suggestions[highlightedIndex]);
+            } else {
+                goToSearchPage();
+            }
         }
     };
 
+    const placeholderKey = searchMode === 'visual' ? 'visual' : searchMode === 'agentic' ? 'agentic' : 'default';
+    const tooltipKey = searchMode === 'agentic' ? 'agentic' : 'default';
+
     return (
-        <SearchContainer isFocused={isFocused}>
-            {/* The Context Dropdown */}
-            <ModeSelect
-                variant="standard"
-                value={searchMode}
-                onChange={(e) => setSearchMode(e.target.value)}
-                disableUnderline
-                MenuProps={{ slotProps: { paper: { elevation: 4, sx: { mt: 1, borderRadius: 2 } } } }}
-            >
-                <MenuItem value="images">
-                    <ImageIcon fontSize="small" sx={{ color: '#64748b', mr: 1 }} /> Images
-                </MenuItem>
-                <MenuItem value="visual">
-                    <AiIcon fontSize="small" sx={{ color: '#8b5cf6', mr: 1 }} /> Visual Match
-                </MenuItem>
-                <MenuItem value="files">
-                    <FileIcon fontSize="small" sx={{ color: '#64748b', mr: 1 }} /> Files
-                </MenuItem>
-                <MenuItem value="folders">
-                    <FolderIcon fontSize="small" sx={{ color: '#64748b', mr: 1 }} /> Folders
-                </MenuItem>
-                <Divider sx={{ my: 0.5 }} />
-                <MenuItem value="agentic">
-                    <AiIcon fontSize="small" sx={{ color: '#10b981', mr: 1 }} /> Ask AI Agent
-                </MenuItem>
-            </ModeSelect>
+        <ClickAwayListener onClickAway={() => setSuggestionsOpen(false)}>
+            <SearchContainer isFocused={isFocused}>
+                {/* The Context Dropdown */}
+                <ModeSelect
+                    variant="standard"
+                    value={searchMode}
+                    onChange={(e) => setSearchMode(e.target.value)}
+                    disableUnderline
+                    MenuProps={{ slotProps: { paper: { elevation: 4, sx: { mt: 1, borderRadius: 2 } } } }}
+                >
+                    <MenuItem value="images">
+                        <ImageIcon fontSize="small" sx={{ color: '#64748b', mr: 1 }} /> {t('globalSearchBar.modes.images')}
+                    </MenuItem>
+                    <MenuItem value="visual">
+                        <AiIcon fontSize="small" sx={{ color: '#8b5cf6', mr: 1 }} /> {t('globalSearchBar.modes.visual')}
+                    </MenuItem>
+                    <MenuItem value="files">
+                        <FileIcon fontSize="small" sx={{ color: '#64748b', mr: 1 }} /> {t('globalSearchBar.modes.files')}
+                    </MenuItem>
+                    <MenuItem value="folders">
+                        <FolderIcon fontSize="small" sx={{ color: '#64748b', mr: 1 }} /> {t('globalSearchBar.modes.folders')}
+                    </MenuItem>
+                    <Divider sx={{ my: 0.5 }} />
+                    <MenuItem value="agentic">
+                        <AiIcon fontSize="small" sx={{ color: '#10b981', mr: 1 }} /> {t('globalSearchBar.modes.agentic')}
+                    </MenuItem>
+                </ModeSelect>
 
-            <Divider orientation="vertical" flexItem sx={{ my: 1, borderColor: '#e2e8f0' }} />
+                <Divider orientation="vertical" flexItem sx={{ my: 1, borderColor: '#e2e8f0' }} />
 
-            {/* Dynamic Search Icon (Changes color on focus) */}
-            <Box sx={{ pl: 2, display: 'flex', alignItems: 'center', color: isFocused ? '#8b5cf6' : '#94a3b8', transition: 'color 0.3s ease' }}>
-                <SearchIcon fontSize="small" />
-            </Box>
+                {/* Dynamic Search Icon (Changes color on focus) */}
+                <Box sx={{ pl: 2, display: 'flex', alignItems: 'center', color: isFocused ? '#8b5cf6' : '#94a3b8', transition: 'color 0.3s ease' }}>
+                    <SearchIcon fontSize="small" />
+                </Box>
 
-            {/* Text Input */}
-            <Tooltip title={searchMode === 'agentic' ? "Type a natural language command..." : "Press Enter to search"} placement="bottom-start" arrow disableInteractive>
-                <StyledInputBase placeholder={searchMode === 'visual' ? "Drop an image or paste a URL..." : searchMode === 'agentic' ? "E.g., Find summer photos without logos..." : "Search assets, folders, or tags..."} value={searchQuery} onChange={e => setSearchQuery(e.target.value)} onKeyDown={handleSearchSubmit} onFocus={() => setIsFocused(true)} onBlur={() => setIsFocused(false)} slotProps={{
-  input: {
-    'aria-label': 'global search'
-  }
-}} />
-            </Tooltip>
+                {/* Text Input */}
+                <Tooltip title={t(`globalSearchBar.tooltip.${tooltipKey}`)} placement="bottom-start" arrow disableInteractive>
+                    <StyledInputBase
+                        inputRef={inputRef}
+                        placeholder={t(`globalSearchBar.placeholder.${placeholderKey}`)}
+                        value={searchQuery}
+                        onChange={e => setSearchQuery(e.target.value)}
+                        onKeyDown={handleSearchSubmit}
+                        onFocus={() => setIsFocused(true)}
+                        onBlur={() => setIsFocused(false)}
+                        slotProps={{
+                            input: {
+                                'aria-label': t('globalSearchBar.ariaLabel')
+                            }
+                        }}
+                    />
+                </Tooltip>
 
-            {/* Keyboard Shortcut Hint (Hides on smaller screens) */}
-            <Box sx={{ display: { xs: 'none', md: 'block' } }}>
-                <ShortcutBadge>⌘K</ShortcutBadge>
-            </Box>
-        </SearchContainer>
+                {/* Keyboard Shortcut Hint (Hides on smaller screens) */}
+                <Box sx={{ display: { xs: 'none', md: 'block' } }}>
+                    <ShortcutBadge>{t('globalSearchBar.shortcutHint')}</ShortcutBadge>
+                </Box>
+
+                {suggestionsOpen && (
+                    <SuggestionsPanel elevation={6}>
+                        {suggestionsLoading && (
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, p: 2 }}>
+                                <CircularProgress size={16} />
+                                <Typography variant="body2" color="text.secondary">
+                                    {t('globalSearchBar.suggestions.loading')}
+                                </Typography>
+                            </Box>
+                        )}
+
+                        {!suggestionsLoading && suggestions.length === 0 && (
+                            <Box sx={{ p: 2 }}>
+                                <Typography variant="body2" color="text.secondary">
+                                    {t('globalSearchBar.suggestions.noResults')}
+                                </Typography>
+                            </Box>
+                        )}
+
+                        {!suggestionsLoading && suggestions.length > 0 && (
+                            <List dense disablePadding>
+                                {suggestions.map((item, index) => (
+                                    <ListItemButton
+                                        key={`${item.type}-${item.id}`}
+                                        selected={index === highlightedIndex}
+                                        onMouseDown={() => goToSuggestion(item)}
+                                    >
+                                        <ListItemIcon sx={{ minWidth: 32 }}>{suggestionIcon(item.type)}</ListItemIcon>
+                                        <ListItemText
+                                            primary={item.title}
+                                            secondary={item.type === 'folder' ? t('globalSearchBar.suggestions.folderLabel') : item.subtitle}
+                                        />
+                                    </ListItemButton>
+                                ))}
+                                <Divider />
+                                <ListItemButton onMouseDown={goToSearchPage}>
+                                    <ListItemText
+                                        primary={t('globalSearchBar.suggestions.viewAll', { query: searchQuery })}
+                                        slotProps={{ primary: { color: 'primary', fontWeight: 600 } }}
+                                    />
+                                </ListItemButton>
+                            </List>
+                        )}
+                    </SuggestionsPanel>
+                )}
+            </SearchContainer>
+        </ClickAwayListener>
     );
 }

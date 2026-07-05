@@ -7,6 +7,9 @@ import {
     CardContent,
     Chip,
     CircularProgress,
+    Dialog,
+    DialogContent,
+    DialogTitle,
     Divider,
     Drawer,
     Grid,
@@ -36,23 +39,34 @@ import {
     Replay,
     Send,
     SettingsEthernet,
+    Brush,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useNotify } from '../../context/NotificationContext';
+import RichTextEditor from '../Shared/RichTextEditor';
 
 const SYSTEM_EVENTS = [
-    { id: 'user_created', label: 'User Provisioned (Welcome)', category: 'transactional', variables: ['user.first_name', 'user.email', 'user.temp_password'] },
-    { id: 'user_suspended', label: 'Account Suspended', category: 'transactional', variables: ['user.first_name', 'user.email'] },
-    { id: 'workflow_requested', label: 'Workflow: Approval Requested', category: 'notification', variables: ['user.first_name', 'asset.name', 'folder.name', 'workflow.url'] },
-    { id: 'workflow_approved', label: 'Workflow: Asset Approved', category: 'notification', variables: ['user.first_name', 'asset.name', 'reviewer.name', 'asset.url'] },
-    { id: 'workflow_rejected', label: 'Workflow: Asset Rejected', category: 'notification', variables: ['user.first_name', 'asset.name', 'reviewer.notes', 'asset.url'] },
-    { id: 'user_mentioned', label: 'User @Mentioned', category: 'mention', variables: ['recipient.first_name', 'sender.name', 'mention.text', 'context.url'] },
-    { id: 'asset_published', label: 'Asset Published', category: 'notification', variables: ['asset.name', 'asset.url', 'published_by.name'] },
-    { id: 'asset_uploaded', label: 'Asset Uploaded to Folder', category: 'notification', variables: ['asset.name', 'folder.name', 'uploaded_by.name'] },
-    { id: 'collection_shared', label: 'Collection Shared With You', category: 'announcement', variables: ['collection.name', 'shared_by.name', 'collection.url'] },
-    { id: 'report_ready', label: 'Report Generation Complete', category: 'system', variables: ['report.name', 'report.download_url', 'generated_at'] },
-    { id: 'storage_warning', label: 'Storage Quota Warning', category: 'system', variables: ['used_gb', 'quota_gb', 'percent_used'] },
-    { id: 'system_maintenance', label: 'Scheduled Maintenance', category: 'announcement', variables: ['maintenance_start', 'maintenance_end', 'message'] },
+    { id: 'user_created', label: 'User Provisioned (Welcome)', category: 'transactional', variables: ['user.first_name', 'user.last_name', 'user.email', 'user.temp_password', 'user.role', 'login_url'] },
+    { id: 'user_suspended', label: 'Account Suspended', category: 'transactional', variables: ['user.first_name', 'user.email', 'suspended_by.name', 'suspension_reason'] },
+    { id: 'workflow_requested', label: 'Workflow: Approval Requested', category: 'notification', variables: ['user.first_name', 'asset.name', 'folder.name', 'workflow.name', 'workflow.due_date', 'workflow.url', 'requester.name'] },
+    { id: 'workflow_approved', label: 'Workflow: Asset Approved', category: 'notification', variables: ['user.first_name', 'asset.name', 'reviewer.name', 'reviewer.notes', 'asset.url'] },
+    { id: 'workflow_rejected', label: 'Workflow: Asset Rejected', category: 'notification', variables: ['user.first_name', 'asset.name', 'reviewer.name', 'reviewer.notes', 'asset.url'] },
+    { id: 'user_mentioned', label: 'User @Mentioned', category: 'mention', variables: ['recipient.first_name', 'sender.name', 'mention.text', 'context.name', 'context.url'] },
+    { id: 'asset_published', label: 'Asset Published', category: 'notification', variables: ['asset.name', 'asset.url', 'asset.thumbnail_url', 'published_by.name'] },
+    { id: 'asset_uploaded', label: 'Asset Uploaded to Folder', category: 'notification', variables: ['asset.name', 'asset.url', 'folder.name', 'folder.url', 'uploaded_by.name'] },
+    { id: 'collection_shared', label: 'Collection Shared With You', category: 'announcement', variables: ['collection.name', 'collection.url', 'collection.item_count', 'shared_by.name'] },
+    { id: 'report_ready', label: 'Report Generation Complete', category: 'system', variables: ['report.name', 'report.download_url', 'report.format', 'generated_at'] },
+    { id: 'storage_warning', label: 'Storage Quota Warning', category: 'system', variables: ['used_gb', 'quota_gb', 'percent_used', 'upgrade_url'] },
+    { id: 'system_maintenance', label: 'Scheduled Maintenance', category: 'announcement', variables: ['maintenance_start', 'maintenance_end', 'message', 'status_page_url'] },
+];
+
+// Always-available tokens (company/app branding, dates, support contact) --
+// mirrors GlobalTemplateVariables::NAMES on the backend. Shown in the
+// Template Variables picker regardless of the selected event trigger.
+const GLOBAL_VARIABLES = [
+    'company.name', 'company.support_email', 'company.address',
+    'app.name', 'app.url', 'recipient.email',
+    'current_year', 'current_date', 'unsubscribe_url',
 ];
 
 const DEFAULT_FORM = {
@@ -92,7 +106,13 @@ export default function EmailEngineManager() {
     const [filters, setFilters] = useState({ status: '', search: '', date_from: '', date_to: '', page: 1, per_page: 25 });
     const [deliveryPagination, setDeliveryPagination] = useState({ page: 1, total_pages: 1, total: 0 });
     const [eventMappings, setEventMappings] = useState(SYSTEM_EVENTS);
+    const [globalVariables, setGlobalVariables] = useState(GLOBAL_VARIABLES);
     const [templatesPage, setTemplatesPage] = useState(1);
+    const [designGalleryOpen, setDesignGalleryOpen] = useState(false);
+    const [designTemplates, setDesignTemplates] = useState([]);
+    const [pendingEventTrigger, setPendingEventTrigger] = useState('');
+    const [brandSettings, setBrandSettings] = useState({ custom_css: '', primary_color: '#1a56db', font_family: 'Arial, Helvetica, sans-serif', preview_style_block: '' });
+    const [brandSettingsSaving, setBrandSettingsSaving] = useState(false);
     const TEMPLATES_PER_PAGE = 10;
 
     const csrfToken = document.querySelector('[name="csrf-token"]')?.content;
@@ -103,8 +123,24 @@ export default function EmailEngineManager() {
 
     const fetchMappings = () => fetch('/admin/email_templates/event_triggers.json')
         .then(response => response.json())
-        .then(data => setEventMappings(data.events || SYSTEM_EVENTS))
-        .catch(() => setEventMappings(SYSTEM_EVENTS));
+        .then(data => {
+            setEventMappings(data.events || SYSTEM_EVENTS);
+            setGlobalVariables(data.global_variables || GLOBAL_VARIABLES);
+        })
+        .catch(() => {
+            setEventMappings(SYSTEM_EVENTS);
+            setGlobalVariables(GLOBAL_VARIABLES);
+        });
+
+    const fetchDesignTemplates = () => fetch('/admin/email_templates/design_templates.json')
+        .then(response => response.json())
+        .then(data => setDesignTemplates(data.designs || []))
+        .catch(() => setDesignTemplates([]));
+
+    const fetchBrandSettings = () => fetch('/admin/email_templates/brand_settings.json')
+        .then(response => response.json())
+        .then(data => setBrandSettings(prev => ({ ...prev, ...(data.brand_settings || {}) })))
+        .catch(() => {});
 
     const fetchDeliveries = () => {
         const params = new URLSearchParams();
@@ -130,7 +166,7 @@ export default function EmailEngineManager() {
         .catch(() => setSuggestions([]));
 
     useEffect(() => {
-        Promise.all([fetchTemplates(), fetchMappings(), fetchDeliveries(), fetchStats(), fetchSuggestions()])
+        Promise.all([fetchTemplates(), fetchMappings(), fetchDeliveries(), fetchStats(), fetchSuggestions(), fetchDesignTemplates(), fetchBrandSettings()])
             .finally(() => setLoading(false));
     }, []);
 
@@ -140,10 +176,14 @@ export default function EmailEngineManager() {
 
     const availableVariables = useMemo(() => {
         const event = eventMappings.find(item => item.id === editForm.event_trigger);
-        return event?.variables || [];
-    }, [editForm.event_trigger, eventMappings]);
+        const eventVariables = event?.variables || [];
+        return [...new Set([...globalVariables, ...eventVariables])];
+    }, [editForm.event_trigger, eventMappings, globalVariables]);
 
-    const previewHtml = useMemo(() => renderTemplate(editForm.html_body || '', editForm.preview_data || {}), [editForm.html_body, editForm.preview_data]);
+    const previewHtml = useMemo(
+        () => `${brandSettings.preview_style_block || ''}${renderTemplate(editForm.html_body || '', editForm.preview_data || {})}`,
+        [editForm.html_body, editForm.preview_data, brandSettings.preview_style_block]
+    );
 
     // Client-side pagination for the Templates tab. `templates` itself stays
     // as the full list because Event Mapping (tab index 1) needs to look up
@@ -155,7 +195,7 @@ export default function EmailEngineManager() {
         clampedTemplatesPage * TEMPLATES_PER_PAGE
     );
 
-    const openEditor = (template = null, prefillEvent = '') => {
+    const openEditor = (template = null, prefillEvent = '', design = null) => {
         if (template) {
             setEditForm({ ...DEFAULT_FORM, ...template });
         } else {
@@ -163,13 +203,33 @@ export default function EmailEngineManager() {
             setEditForm({
                 ...DEFAULT_FORM,
                 event_trigger: prefillEvent,
-                category: event?.category || 'transactional',
+                category: design?.category || event?.category || 'transactional',
+                subject: design?.subject || '',
+                html_body: design?.html_body || '',
+                text_body: design?.text_body || '',
                 variables: Object.fromEntries((event?.variables || []).map(variable => [variable, ''])),
                 preview_data: Object.fromEntries((event?.variables || []).map(variable => [variable, variable.split('.').pop()])),
             });
         }
         setPreviewTab(0);
         setDrawerOpen(true);
+    };
+
+    // "New Template" opens a gallery of predefined designs first; "Start
+    // from Blank" (or picking a design) proceeds into the normal editor.
+    const openNewTemplateFlow = (prefillEvent = '') => {
+        setPendingEventTrigger(prefillEvent);
+        setDesignGalleryOpen(true);
+    };
+
+    const chooseDesign = design => {
+        setDesignGalleryOpen(false);
+        openEditor(null, pendingEventTrigger, design);
+    };
+
+    const startBlankTemplate = () => {
+        setDesignGalleryOpen(false);
+        openEditor(null, pendingEventTrigger);
     };
 
     const saveTemplate = () => {
@@ -265,6 +325,34 @@ export default function EmailEngineManager() {
         setEditForm(prev => ({ ...prev, html_body: `${prev.html_body || ''}${token}`, text_body: `${prev.text_body || ''}${token}` }));
     };
 
+    // "Communication Engine" tab -- saves the org-wide CSS injected into
+    // every outbound email by EmailDispatcherWorker (see EmailBrandSettings).
+    const saveBrandSettings = () => {
+        setBrandSettingsSaving(true);
+        fetch('/admin/email_templates/brand_settings.json', {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': csrfToken,
+            },
+            body: JSON.stringify({
+                brand_settings: {
+                    custom_css: brandSettings.custom_css,
+                    primary_color: brandSettings.primary_color,
+                    font_family: brandSettings.font_family,
+                },
+            }),
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.success) throw new Error((data.errors || []).join(', ') || 'save_failed');
+                setBrandSettings(prev => ({ ...prev, ...data.brand_settings }));
+                notify(data.message, 'success');
+            })
+            .catch(error => notify(`Error: ${error.message}`, 'error'))
+            .finally(() => setBrandSettingsSaving(false));
+    };
+
     const failureRate = stats.total ? `${Math.round((stats.failed / stats.total) * 100)}%` : '0%';
 
     if (loading) {
@@ -288,7 +376,7 @@ export default function EmailEngineManager() {
                         </Typography>
                     </Box>
                     {currentTab === 0 && (
-                        <Button variant="contained" startIcon={<AddCircleOutlined />} onClick={() => openEditor()}>
+                        <Button variant="contained" startIcon={<AddCircleOutlined />} onClick={() => openNewTemplateFlow()}>
                             {t('emailEngine.newTemplate', { defaultValue: 'New Template' })}
                         </Button>
                     )}
@@ -300,6 +388,7 @@ export default function EmailEngineManager() {
                         <Tab icon={<SettingsEthernet fontSize="small" />} iconPosition="start" label={t('emailEngine.eventMapping', { defaultValue: 'Event Mapping' })} />
                         <Tab icon={<History fontSize="small" />} iconPosition="start" label={t('emailEngine.outbox', { defaultValue: 'Outbox' })} />
                         <Tab icon={<AutoAwesome fontSize="small" />} iconPosition="start" label={t('emailEngine.aiSuggestions', { defaultValue: 'AI Suggestions' })} />
+                        <Tab icon={<Brush fontSize="small" />} iconPosition="start" label={t('emailEngine.communicationEngine.tab', { defaultValue: 'Global CSS for Emails' })} />
                     </Tabs>
 
                     <Box sx={{ p: 3 }}>
@@ -387,7 +476,7 @@ export default function EmailEngineManager() {
                                                                 <Button size="small" onClick={() => openEditor(mappedTemplate)}>Edit</Button>
                                                             </Stack>
                                                         ) : (
-                                                            <Button size="small" variant="outlined" onClick={() => openEditor(null, event.id)}>Create</Button>
+                                                            <Button size="small" variant="outlined" onClick={() => openNewTemplateFlow(event.id)}>Create</Button>
                                                         )}
                                                     </Stack>
                                                 </Paper>
@@ -486,6 +575,56 @@ export default function EmailEngineManager() {
                                 {suggestions.length === 0 && <Alert severity="info">No AI suggestions available.</Alert>}
                             </Stack>
                         )}
+
+                        {currentTab === 4 && (
+                            <Stack spacing={3} sx={{ maxWidth: 720 }}>
+                                <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                                    {t('emailEngine.communicationEngine.pageTitle', { defaultValue: 'Global CSS for Emails' })}
+                                </Typography>
+                                <Alert severity="info">
+                                    {t('emailEngine.communicationEngine.explainer', {
+                                        defaultValue:
+                                            'This CSS is applied to every outgoing email across the whole system (Templates, Event Mapping notifications, and one-off test sends) -- not just the template you\'re currently editing. Use it for brand-wide colors, fonts, and link styling. Note: many webmail clients (Gmail, Outlook.com) strip <style> blocks entirely and only honor inline styles, so this CSS is best-effort theming for clients that do support it (Apple Mail, Outlook desktop, most modern mail apps) -- it is not a substitute for well-designed, inline-styled templates.',
+                                    })}
+                                </Alert>
+
+                                <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+                                    <TextField
+                                        label={t('emailEngine.communicationEngine.primaryColor', { defaultValue: 'Primary Brand Color' })}
+                                        type="color"
+                                        value={brandSettings.primary_color}
+                                        onChange={event => setBrandSettings(prev => ({ ...prev, primary_color: event.target.value }))}
+                                        sx={{ width: 160 }}
+                                    />
+                                    <TextField
+                                        label={t('emailEngine.communicationEngine.fontFamily', { defaultValue: 'Font Family' })}
+                                        value={brandSettings.font_family}
+                                        onChange={event => setBrandSettings(prev => ({ ...prev, font_family: event.target.value }))}
+                                        fullWidth
+                                    />
+                                </Stack>
+
+                                <TextField
+                                    label={t('emailEngine.communicationEngine.customCss', { defaultValue: 'Global Email CSS' })}
+                                    value={brandSettings.custom_css}
+                                    onChange={event => setBrandSettings(prev => ({ ...prev, custom_css: event.target.value }))}
+                                    placeholder="a { color: #1a56db; }\nh1, h2 { font-family: Georgia, serif; }"
+                                    fullWidth
+                                    multiline
+                                    minRows={10}
+                                />
+
+                                <Button
+                                    variant="contained"
+                                    startIcon={<Brush />}
+                                    onClick={saveBrandSettings}
+                                    disabled={brandSettingsSaving}
+                                    sx={{ alignSelf: 'flex-start' }}
+                                >
+                                    {t('emailEngine.communicationEngine.save', { defaultValue: 'Save Global CSS' })}
+                                </Button>
+                            </Stack>
+                        )}
                     </Box>
                 </Paper>
 
@@ -539,17 +678,65 @@ export default function EmailEngineManager() {
 
                             {previewTab === 0 ? (
                                 <Stack spacing={2}>
-                                    <TextField label={t('emailEngine.htmlBody', { defaultValue: 'HTML Body' })} value={editForm.html_body} onChange={event => setEditForm(prev => ({ ...prev, html_body: event.target.value }))} fullWidth multiline minRows={10} />
+                                    <Typography variant="subtitle2">{t('emailEngine.htmlBody', { defaultValue: 'HTML Body' })}</Typography>
+                                    <RichTextEditor
+                                        value={editForm.html_body}
+                                        onChange={html => setEditForm(prev => ({ ...prev, html_body: html }))}
+                                    />
                                     <TextField label={t('emailEngine.textBody', { defaultValue: 'Plain Text' })} value={editForm.text_body} onChange={event => setEditForm(prev => ({ ...prev, text_body: event.target.value }))} fullWidth multiline minRows={6} />
                                 </Stack>
                             ) : (
-                                <Paper variant="outlined" sx={{ p: 3, minHeight: 240 }}>
-                                    <Box dangerouslySetInnerHTML={{ __html: previewHtml || '<p>No preview content.</p>' }} />
+                                <Paper variant="outlined" sx={{ p: 0, minHeight: 240, overflow: 'hidden' }}>
+                                    {/* Rendered in a sandboxed iframe (not dangerouslySetInnerHTML) so the
+                                        template's own <style> block and inline styles apply exactly as
+                                        they will in a real inbox, isolated from the admin UI's own CSS. */}
+                                    <iframe
+                                        title={t('emailEngine.preview', { defaultValue: 'Preview' })}
+                                        srcDoc={previewHtml || '<p>No preview content.</p>'}
+                                        sandbox=""
+                                        style={{ width: '100%', minHeight: 400, border: 'none', display: 'block' }}
+                                    />
                                 </Paper>
                             )}
                         </Stack>
                     </Box>
                 </Drawer>
+
+                <Dialog open={designGalleryOpen} onClose={() => setDesignGalleryOpen(false)} maxWidth="md" fullWidth>
+                    <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        {t('emailEngine.chooseDesign.title', { defaultValue: 'Choose a Template Design' })}
+                        <Button size="small" onClick={startBlankTemplate}>
+                            {t('emailEngine.chooseDesign.startBlank', { defaultValue: 'Start from Blank' })}
+                        </Button>
+                    </DialogTitle>
+                    <DialogContent>
+                        {designTemplates.length === 0 ? (
+                            <Alert severity="info">
+                                {t('emailEngine.chooseDesign.empty', { defaultValue: 'No predefined designs available. Start from blank instead.' })}
+                            </Alert>
+                        ) : (
+                            <Grid container spacing={2} sx={{ pb: 2 }}>
+                                {designTemplates.map(design => (
+                                    <Grid xs={12} sm={6} md={4} key={design.id}>
+                                        <Paper
+                                            variant="outlined"
+                                            role="button"
+                                            aria-label={design.name}
+                                            onClick={() => chooseDesign(design)}
+                                            sx={{ p: 2, borderRadius: 2, height: '100%', cursor: 'pointer', '&:hover': { borderColor: 'primary.main' } }}
+                                        >
+                                            <Stack spacing={1}>
+                                                <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>{design.name}</Typography>
+                                                <Chip size="small" label={t(`emailEngine.category.${design.category}`, { defaultValue: design.category })} sx={{ alignSelf: 'flex-start' }} />
+                                                <Typography variant="body2" color="text.secondary">{design.description}</Typography>
+                                            </Stack>
+                                        </Paper>
+                                    </Grid>
+                                ))}
+                            </Grid>
+                        )}
+                    </DialogContent>
+                </Dialog>
             </Box>
         </Box>
     );

@@ -25,6 +25,142 @@ info:
     name: MIT License
     url: https://opensource.org/licenses/MIT
 paths:
+  "/admin/email_templates/brand_settings":
+    get:
+      summary: Retrieves the current global email brand CSS configuration
+      tags:
+      - Admin - Email Templates
+      security:
+      - Bearer: []
+      responses:
+        '200':
+          description: brand settings retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  brand_settings:
+                    type: object
+                    properties:
+                      custom_css:
+                        type: string
+                      primary_color:
+                        type: string
+                      font_family:
+                        type: string
+                      preview_style_block:
+                        type: string
+        '403':
+          description: forbidden for non-admin users
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+    patch:
+      summary: Updates the global email brand CSS configuration
+      tags:
+      - Admin - Email Templates
+      security:
+      - Bearer: []
+      parameters: []
+      responses:
+        '200':
+          description: validation errors are returned for invalid CSS
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  brand_settings:
+                    type: object
+                    properties:
+                      custom_css:
+                        type: string
+                      primary_color:
+                        type: string
+                      font_family:
+                        type: string
+                      preview_style_block:
+                        type: string
+                  errors:
+                    type: array
+                    items:
+                      type: string
+        '403':
+          description: forbidden for non-admin users
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                brand_settings:
+                  type: object
+                  properties:
+                    custom_css:
+                      type: string
+                    primary_color:
+                      type: string
+                    font_family:
+                      type: string
+  "/admin/email_templates/design_templates":
+    get:
+      summary: Lists the predefined email design gallery
+      tags:
+      - Admin - Email Templates
+      security:
+      - Bearer: []
+      responses:
+        '200':
+          description: design gallery retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  designs:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        name:
+                          type: string
+                        category:
+                          type: string
+                        description:
+                          type: string
+                        subject:
+                          type: string
+                        html_body:
+                          type: string
+                        text_body:
+                          type: string
+        '403':
+          description: forbidden for non-admin users
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
   "/admin/user_groups":
     get:
       summary: Retrieves all user groups with hierarchy metadata
@@ -2054,7 +2190,21 @@ paths:
       - name: mode
         in: query
         required: false
-        description: 'Filter by type: `images` (default), `files`, or omit for all'
+        enum:
+        - images
+        - files
+        - videos
+        - documents
+        - folders
+        - visual
+        - agentic
+        description: "`images` (default), `files`, `videos`, `documents` filter by
+          content type (lexical pipeline).\n`folders` searches Folder records by name
+          instead of Asset records.\n`visual` and `agentic` delegate to the pgvector
+          semantic pipeline (AI Gateway embedding +\nHNSW nearest-neighbour search),
+          falling back to the lexical pipeline if the AI Gateway is\nunreachable (see
+          `meta.semantic_fallback`).\n:\n * `images` \n * `files` \n * `videos` \n
+          * `documents` \n * `folders` \n * `visual` \n * `agentic` \n "
         schema:
           type: string
       responses:
@@ -2075,9 +2225,18 @@ paths:
                       mode:
                         type: string
                         example: images
+                      result_type:
+                        type: string
+                        example: asset
+                        description: "`asset` (default), `folder`, or `semantic`."
                       total_found:
                         type: integer
                         example: 47
+                      semantic_fallback:
+                        type: boolean
+                        nullable: true
+                        description: true when a visual/agentic query fell back to
+                          lexical search
                       facets:
                         type: object
                         properties:
@@ -2094,28 +2253,121 @@ paths:
                       type: object
                       properties:
                         id:
-                          type: integer
+                          oneOf:
+                          - type: integer
+                          - type: string
                           example: 1
                         uuid:
                           type: string
                           format: uuid
+                          nullable: true
                         title:
                           type: string
                           example: Brand Logo Final
                         type:
                           type: string
                           example: image/png
+                          description: "`content_type` for assets, or literal `folder`
+                            for folder results"
+                        content_type:
+                          type: string
+                          nullable: true
+                          example: image/png
                         size:
                           type: string
+                          nullable: true
                           example: 2.4 MB
                         thumb_url:
                           type: string
                           nullable: true
+                          description: Display thumbnail — points at the generated
+                            preview variant for formats a browser cannot decode natively
+                            (PSD, TIFF, HEIC, RAW, PDF, AI, EPS, …), otherwise the
+                            original file.
                         preview_url:
                           type: string
                           nullable: true
                           description: Web-renderable preview URL (falls back to the
                             asset URL)
+                        url:
+                          type: string
+                          nullable: true
+                          description: Original/raw asset file URL (not the flattened
+                            preview)
+                        web_renderable:
+                          type: boolean
+                          nullable: true
+                          description: true when content_type can be decoded natively
+                            by a browser <img> tag (i.e. thumb_url/preview_url point
+                            at the original file, not a generated preview)
+                        href:
+                          type: string
+                          nullable: true
+                          description: Direct navigation URL (folder results only)
+                        similarity_score:
+                          type: string
+                          nullable: true
+                          description: 1 - cosine_distance; present only for semantic
+                            (visual/agentic) results
+  "/api/v1/search/suggestions":
+    get:
+      summary: Autocomplete suggestions (mixed assets + folders)
+      tags:
+      - Assets
+      security:
+      - Bearer: []
+      description: |
+        Returns a small, fast, Redis-cached list of matching assets and folders for the
+        top-bar search-as-you-type dropdown. Designed to be called on every keystroke
+        (debounced client-side), so results are capped at 5 assets + 3 folders.
+      parameters:
+      - name: q
+        in: query
+        required: false
+        description: Prefix term matched against asset titles/filenames and folder
+          names
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Suggestions returned (may be empty array)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  query:
+                    type: string
+                    example: brand
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        type:
+                          type: string
+                          enum:
+                          - asset
+                          - folder
+                          example: asset
+                        id:
+                          oneOf:
+                          - type: integer
+                          - type: string
+                          example: a1b2c3d4-...
+                        title:
+                          type: string
+                          example: Brand Kit
+                        subtitle:
+                          type: string
+                          nullable: true
+                          example: image/png
+                        thumb_url:
+                          type: string
+                          nullable: true
+                        href:
+                          type: string
+                          example: "/assets?id=a1b2c3d4-..."
   "/api/v1/assets":
     post:
       summary: Upload a new asset (multipart)

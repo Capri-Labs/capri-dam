@@ -1,18 +1,55 @@
 import React, { useEffect, useCallback } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
+import { Extension } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
 import TextAlign from '@tiptap/extension-text-align';
 import Link from '@tiptap/extension-link';
 import Image from '@tiptap/extension-image';
+import { Table } from '@tiptap/extension-table';
+import TableRow from '@tiptap/extension-table-row';
+import TableHeader from '@tiptap/extension-table-header';
+import TableCell from '@tiptap/extension-table-cell';
 
 import { Box, ToggleButton, ToggleButtonGroup, Divider, IconButton, Tooltip } from '@mui/material';
 import {
     FormatBold, FormatItalic, FormatUnderlined, FormatStrikethrough, Code,
     FormatAlignLeft, FormatAlignCenter, FormatAlignRight, FormatAlignJustify,
     FormatListBulleted, FormatListNumbered, FormatQuote, HorizontalRule,
-    Link as LinkIcon, LinkOff, Image as ImageIcon, Undo, Redo, Title
+    Link as LinkIcon, LinkOff, Image as ImageIcon, Undo, Redo, Title,
+    TableChart, BorderAll
 } from '@mui/icons-material';
+
+// Node types that appear throughout the DAM's pre-built email design
+// library (see EmailTemplateDesignLibrary), all of which rely on inline
+// `style="..."` attributes (colors, padding, backgrounds, button styling)
+// for cross-client rendering. Tiptap's node specs do not preserve arbitrary
+// attributes by default, so without this extension every inline style is
+// silently stripped the moment a design is loaded into the editor -- the
+// layout survives (thanks to the Table extensions above) but renders
+// unstyled/black-and-white, which is what "preview was broken" reports.
+const STYLE_PRESERVING_TYPES = [
+    'paragraph', 'heading', 'table', 'tableRow', 'tableCell', 'tableHeader',
+    'listItem', 'bulletList', 'orderedList', 'blockquote', 'image', 'link',
+];
+
+const PreserveInlineStyle = Extension.create({
+    name: 'preserveInlineStyle',
+    addGlobalAttributes() {
+        return [
+            {
+                types: STYLE_PRESERVING_TYPES,
+                attributes: {
+                    style: {
+                        default: null,
+                        parseHTML: element => element.getAttribute('style'),
+                        renderHTML: attributes => (attributes.style ? { style: attributes.style } : {}),
+                    },
+                },
+            },
+        ];
+    },
+});
 
 const MenuBar = ({ editor }) => {
     if (!editor) return null;
@@ -91,6 +128,12 @@ const MenuBar = ({ editor }) => {
                 <Tooltip title="Horizontal Line">
                     <IconButton size="small" onClick={() => editor.chain().focus().setHorizontalRule().run()}><HorizontalRule fontSize="small" /></IconButton>
                 </Tooltip>
+                <Tooltip title="Insert Table">
+                    <IconButton size="small" onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}><TableChart fontSize="small" /></IconButton>
+                </Tooltip>
+                <Tooltip title="Delete Table">
+                    <IconButton size="small" onClick={() => editor.chain().focus().deleteTable().run()} disabled={!editor.isActive('table')}><BorderAll fontSize="small" /></IconButton>
+                </Tooltip>
             </Box>
         </Box>
     );
@@ -110,7 +153,17 @@ export default function RichTextEditor({ value, onChange }) {
             }),
             TextAlign.configure({
                 types: ['heading', 'paragraph'], // Allows aligning text and headers
-            })
+            }),
+            // Email designs are table-based layouts (the only markup that
+            // renders consistently across email clients). Without these
+            // nodes, ProseMirror's schema has no rule for <table>/<tr>/<td>
+            // and silently flattens them into plain paragraphs, corrupting
+            // the layout the moment a template design is loaded or edited.
+            Table.configure({ resizable: true }),
+            TableRow,
+            TableHeader,
+            TableCell,
+            PreserveInlineStyle,
         ],
         content: value,
         onUpdate: ({ editor }) => {
@@ -151,7 +204,12 @@ export default function RichTextEditor({ value, onChange }) {
                 '& a': { color: 'primary.main', textDecoration: 'underline', cursor: 'pointer' },
                 '& blockquote': { borderLeft: '4px solid #e3e8ef', pl: 2, ml: 0, color: 'text.secondary', fontStyle: 'italic' },
                 '& img': { maxWidth: '100%', height: 'auto', borderRadius: 1 },
-                '& hr': { border: 'none', borderTop: '1px solid #e3e8ef', my: 2 }
+                '& hr': { border: 'none', borderTop: '1px solid #e3e8ef', my: 2 },
+                // Keeps the DAM-provided design library's table layouts
+                // (buttons, header bands, columns) visible while editing
+                // instead of collapsing to unstyled borderless grids.
+                '& table': { borderCollapse: 'collapse', width: '100%', my: 1 },
+                '& td, & th': { border: '1px dashed #c4c4c4', p: 1, verticalAlign: 'top' },
             }
         }}>
             <MenuBar editor={editor} />

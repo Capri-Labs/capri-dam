@@ -34,7 +34,7 @@ describe('EmailEngineManager', () => {
 
   it('renders without crashing', async () => {
     await act(async () => { render(<EmailEngineManager />); });
-    expect(await screen.findByText('Communication Engine')).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Communication Engine' })).toBeInTheDocument();
     expect(await screen.findByText('Welcome')).toBeInTheDocument();
   });
 
@@ -78,5 +78,114 @@ describe('EmailEngineManager', () => {
     // Event Mapping tab must still see the full (unpaginated) template list.
     fireEvent.click(screen.getByText('Event Mapping'));
     expect(screen.getByText('User Provisioned (Welcome)')).toBeInTheDocument();
+  });
+
+  it('shows the design gallery when creating a new template, applies a chosen design, and merges global variables', async () => {
+    global.fetch = jest.fn((url) => {
+      if (url === '/admin/email_templates.json') {
+        return Promise.resolve({ json: () => Promise.resolve({ email_templates: [] }) });
+      }
+      if (url === '/admin/email_templates/event_triggers.json') {
+        return Promise.resolve({ json: () => Promise.resolve({
+          events: [{ id: 'user_created', label: 'User Provisioned (Welcome)', category: 'transactional', variables: ['user.first_name'] }],
+          global_variables: ['company.name', 'current_year'],
+        }) });
+      }
+      if (url === '/admin/email_templates/design_templates.json') {
+        return Promise.resolve({ json: () => Promise.resolve({
+          designs: [{ id: 'welcome_onboarding', name: 'Welcome Onboarding', category: 'transactional', description: 'Warm welcome message.', subject: 'Welcome {{user.first_name}}', html_body: '<p>Hi</p>', text_body: 'Hi' }],
+        }) });
+      }
+      if (url.startsWith('/admin/email_deliveries.json')) {
+        return Promise.resolve({ json: () => Promise.resolve({ email_deliveries: [] }) });
+      }
+      return Promise.resolve({ json: () => Promise.resolve({ success: true, message: 'ok' }) });
+    });
+
+    await act(async () => { render(<EmailEngineManager />); });
+    await screen.findByRole('heading', { name: 'Communication Engine' });
+
+    fireEvent.click(screen.getByText('New Template'));
+
+    expect(await screen.findByText('Choose a Template Design')).toBeInTheDocument();
+    expect(screen.getByText('Welcome Onboarding')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Welcome Onboarding'));
+
+    expect(await screen.findByText('New Template', { selector: 'h5' })).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Welcome {{user.first_name}}')).toBeInTheDocument();
+    expect(screen.getByLabelText('Rich Text Editor')).toHaveValue('<p>Hi</p>');
+
+    // Global variables (always available regardless of event trigger) show up.
+    expect(screen.getByText('{{company.name}}')).toBeInTheDocument();
+    expect(screen.getByText('{{current_year}}')).toBeInTheDocument();
+  });
+
+  it('opens a blank editor when choosing "Start from Blank"', async () => {
+    global.fetch = jest.fn((url) => {
+      if (url === '/admin/email_templates.json') {
+        return Promise.resolve({ json: () => Promise.resolve({ email_templates: [] }) });
+      }
+      if (url === '/admin/email_templates/design_templates.json') {
+        return Promise.resolve({ json: () => Promise.resolve({ designs: [] }) });
+      }
+      if (url.startsWith('/admin/email_deliveries.json')) {
+        return Promise.resolve({ json: () => Promise.resolve({ email_deliveries: [] }) });
+      }
+      return Promise.resolve({ json: () => Promise.resolve({ success: true, message: 'ok' }) });
+    });
+
+    await act(async () => { render(<EmailEngineManager />); });
+    await screen.findByRole('heading', { name: 'Communication Engine' });
+
+    fireEvent.click(screen.getByText('New Template'));
+    expect(await screen.findByText('No predefined designs available. Start from blank instead.')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Start from Blank'));
+
+    expect(await screen.findByText('New Template', { selector: 'h5' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Rich Text Editor')).toHaveValue('');
+  });
+
+  it('loads and saves the "Global CSS for Emails" tab without clashing with the page heading', async () => {
+    global.fetch = jest.fn((url, options) => {
+      if (url === '/admin/email_templates.json') {
+        return Promise.resolve({ json: () => Promise.resolve({ email_templates: [] }) });
+      }
+      if (url.startsWith('/admin/email_deliveries.json')) {
+        return Promise.resolve({ json: () => Promise.resolve({ email_deliveries: [] }) });
+      }
+      if (url === '/admin/email_templates/brand_settings.json' && !options) {
+        return Promise.resolve({ json: () => Promise.resolve({
+          brand_settings: { custom_css: '', primary_color: '#1a56db', font_family: 'Arial, sans-serif' },
+        }) });
+      }
+      if (url === '/admin/email_templates/brand_settings.json' && options?.method === 'PATCH') {
+        const body = JSON.parse(options.body);
+        return Promise.resolve({ json: () => Promise.resolve({
+          success: true,
+          message: 'Global CSS saved.',
+          brand_settings: body.brand_settings,
+        }) });
+      }
+      return Promise.resolve({ json: () => Promise.resolve({ success: true, message: 'ok' }) });
+    });
+
+    await act(async () => { render(<EmailEngineManager />); });
+    await screen.findByRole('heading', { name: 'Communication Engine' });
+
+    // The page heading and the tab must not collide on the same text.
+    fireEvent.click(screen.getByRole('tab', { name: 'Global CSS for Emails' }));
+
+    expect(await screen.findByRole('heading', { name: 'Global CSS for Emails' })).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Arial, sans-serif')).toBeInTheDocument();
+
+    const cssField = screen.getByLabelText('Global Email CSS');
+    fireEvent.change(cssField, { target: { value: 'a { color: red; }' } });
+    expect(cssField).toHaveValue('a { color: red; }');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save Global CSS' }));
+
+    await waitFor(() => expect(mockNotify).toHaveBeenCalledWith('Global CSS saved.', 'success'));
   });
 });

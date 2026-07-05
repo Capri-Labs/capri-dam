@@ -75,7 +75,86 @@ When adding a new place that links to an asset, always use `/assets?id=` (or
 the `navigateTo` helper from `utils/globalutils.js`, which already does this
 correctly for Collections) — never construct a `/assets/:id`-style path.
 
-== Semantic search (pgvector)
+=== Thumbnail/preview resolution for special file extensions
+
+`SearchController#format_asset`/`#suggestion_for_asset` populate `thumb_url`
+and `preview_url` via `AssetUrlHelper#asset_preview_url_for`, **not**
+`#asset_url_for`. This matters for formats a browser cannot decode natively in
+an `<img>` tag — PSD, TIFF, HEIC, RAW, PDF, AI, EPS, InDesign, and any other
+MIME type outside `AssetProcessorWorker::WEB_RENDERABLE_MIME_TYPES` — which
+`AssetProcessorWorker` flattens into a first-page/composited PNG stored at
+`preview_storage_path` on ingest. `asset_preview_url_for` resolves to
+`.../assets/local/:uuid?variant=preview` (or the CDN equivalent) when a
+preview exists, and transparently falls back to the raw `asset_url_for` URL
+otherwise, so the field is always safe to render unconditionally.
+
+Each search result also carries:
+
+* `url` — the original/raw file URL (for download or full-quality use), and
+* `web_renderable` — `true` when `content_type` is browser-native
+  (`AssetProcessorWorker::WEB_RENDERABLE_MIME_TYPES`), i.e. `thumb_url` points
+  at the original file rather than a generated preview.
+
+Before this, `format_asset` used `asset_url_for` for `thumb_url`, so any
+non-web-native "special extension" (PSD/TIFF/HEIC/RAW/etc.) rendered a broken
+`<img>` in `SearchResultCard`/`AssetCard`-style thumbnails on the `/search`
+screen even though a perfectly good flattened preview existed and was already
+used correctly on `/folders` and `/assets` (`Api::V1::AssetsController#format_asset`
+already used `asset_preview_url_for`). `SearchResultCard.jsx` no longer gates
+rendering on `content_type.startsWith('image/')` either — it renders whatever
+URL the backend provides and falls back to the file-type icon only if the
+`<img>` actually fails to load (`onError`), so a slow/failed preview
+generation degrades gracefully instead of leaving a broken image forever.
+
+== Global search bar (top-bar) & `/search` screen
+
+The top-bar `GlobalSearchBar` component and the `/search` screen share the same
+`GET /api/v1/search` endpoint (`Api::V1::SearchController`). The `mode` query
+param selects one of five pipelines:
+
+[cols="1,3", options="header"]
+|===
+| `mode`             | Pipeline
+| `images` (default) | Lexical ILIKE search restricted to `image/*` content types
+| `files`            | Lexical ILIKE search restricted to non-image content types
+| `folders`          | Searches `Folder` records by `name` (not `Asset`) — see `build_folder_payload`
+| `visual`           | Semantic pgvector search: embeds `q` via the AI Gateway, then `Asset.nearest_to_vector`
+| `agentic`          | Same semantic pipeline as `visual` — surfaced as "Ask AI Agent" in the UI
+|===
+
+`visual`/`agentic` gracefully **fall back** to the lexical pipeline
+(`meta.semantic_fallback: true`) whenever the AI Gateway is unreachable or
+returns no embedding, so the search bar never hard-fails — see
+`SearchController#build_semantic_payload`.
+
+=== Autocomplete suggestions
+
+`GET /api/v1/search/suggestions?q=...&mode=...` powers the debounced dropdown
+in `GlobalSearchBar.jsx` (200ms debounce, 2-character minimum). It returns up
+to 5 matching assets + 3 matching folders, each with a direct `href` — asset
+suggestions link straight to `/assets?id=<uuid>` (see the deep-link convention
+above) and folder suggestions link to `/folders?folder=<id>`. Users can also
+navigate the dropdown with `↑`/`↓`/`Enter`, or jump to it from anywhere via the
+`⌘K` / `Ctrl+K` shortcut.
+
+=== Redis-backed caching (`SearchCache`)
+
+Both `index` and `suggestions` responses are cached in Redis
+(`app/services/search_cache.rb`) keyed by a SHA-256 hash of the sorted query
+params, under the `dam:search:*` namespace:
+
+* `index` responses — 30s TTL
+* `suggestions` responses — 15s TTL
+
+`SearchCache.fetch` is deliberately defensive: any `Redis::BaseError` (or
+`SystemCallError`, e.g. connection refused) is caught and logged, and the
+block runs uncached instead of raising — search must never go down because
+Redis is unavailable. Caching is skipped entirely in the test environment
+(mirrors `config.cache_store = :null_store`) since specs mutate fixtures
+per-example. Call `SearchCache.flush_all` after a bulk import if you need to
+force-bust every cached search result immediately.
+
+
 
 === Embedding generation
 

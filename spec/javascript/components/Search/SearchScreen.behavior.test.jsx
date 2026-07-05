@@ -46,6 +46,24 @@ describe('SearchScreen behavior', () => {
     await waitFor(() => expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('mime_group=documents'), expect.any(Object)));
   });
 
+  it('forwards the mode query param from the URL to the backend request', async () => {
+    setUrl('/search?q=sunset&mode=visual&page=1');
+    render(<SearchScreen />);
+    await waitFor(() => expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('mode=visual'), expect.any(Object)));
+  });
+
+  it('shows a semantic match chip and fallback notice based on response meta', async () => {
+    global.fetch = jest.fn(() => jsonResponse({
+      ...searchResponse,
+      meta: { ...searchResponse.meta, mode: 'visual', result_type: 'semantic', semantic_fallback: true },
+    }));
+    setUrl('/search?q=sunset&mode=visual&page=1');
+    render(<SearchScreen />);
+
+    expect(await screen.findByText('search.mode.semantic')).toBeInTheDocument();
+    expect(screen.getByText('search.semanticFallback')).toBeInTheDocument();
+  });
+
   describe('navigating to an asset from a result card', () => {
     let originalLocation;
 

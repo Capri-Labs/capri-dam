@@ -4,75 +4,81 @@ class Admin::EmailTemplatesController < ApplicationController
       id: "user_created",
       label: "User Provisioned (Welcome)",
       category: "transactional",
-      variables: %w[user.first_name user.email user.temp_password],
+      variables: %w[user.first_name user.last_name user.email user.temp_password user.role login_url],
     },
     {
       id: "user_suspended",
       label: "Account Suspended",
       category: "transactional",
-      variables: %w[user.first_name user.email],
+      variables: %w[user.first_name user.email suspended_by.name suspension_reason],
     },
     {
       id: "workflow_requested",
       label: "Workflow: Approval Requested",
       category: "notification",
-      variables: %w[user.first_name asset.name folder.name workflow.url],
+      variables: %w[user.first_name asset.name folder.name workflow.name workflow.due_date workflow.url requester.name],
     },
     {
       id: "workflow_approved",
       label: "Workflow: Asset Approved",
       category: "notification",
-      variables: %w[user.first_name asset.name reviewer.name asset.url],
+      variables: %w[user.first_name asset.name reviewer.name reviewer.notes asset.url],
     },
     {
       id: "workflow_rejected",
       label: "Workflow: Asset Rejected",
       category: "notification",
-      variables: %w[user.first_name asset.name reviewer.notes asset.url],
+      variables: %w[user.first_name asset.name reviewer.name reviewer.notes asset.url],
     },
     {
       id: "user_mentioned",
       label: "User @Mentioned",
       category: "mention",
-      variables: %w[recipient.first_name sender.name mention.text context.url],
+      variables: %w[recipient.first_name sender.name mention.text context.name context.url],
     },
     {
       id: "asset_published",
       label: "Asset Published",
       category: "notification",
-      variables: %w[asset.name asset.url published_by.name],
+      variables: %w[asset.name asset.url asset.thumbnail_url published_by.name],
     },
     {
       id: "asset_uploaded",
       label: "Asset Uploaded to Folder",
       category: "notification",
-      variables: %w[asset.name folder.name uploaded_by.name],
+      variables: %w[asset.name asset.url folder.name folder.url uploaded_by.name],
     },
     {
       id: "collection_shared",
       label: "Collection Shared With You",
       category: "announcement",
-      variables: %w[collection.name shared_by.name collection.url],
+      variables: %w[collection.name collection.url collection.item_count shared_by.name],
     },
     {
       id: "report_ready",
       label: "Report Generation Complete",
       category: "system",
-      variables: %w[report.name report.download_url generated_at],
+      variables: %w[report.name report.download_url report.format generated_at],
     },
     {
       id: "storage_warning",
       label: "Storage Quota Warning",
       category: "system",
-      variables: %w[used_gb quota_gb percent_used],
+      variables: %w[used_gb quota_gb percent_used upgrade_url],
     },
     {
       id: "system_maintenance",
       label: "Scheduled Maintenance",
       category: "announcement",
-      variables: %w[maintenance_start maintenance_end message],
+      variables: %w[maintenance_start maintenance_end message status_page_url],
     },
   ].freeze
+
+  # Variables that are always available regardless of the selected event
+  # trigger (see GlobalTemplateVariables). Surfaced separately in the
+  # Template Variables picker so template authors always have access to
+  # branding/date/support tokens without needing to remember them.
+  GLOBAL_VARIABLES = GlobalTemplateVariables::NAMES
 
   before_action :authenticate_user!
   before_action :ensure_admin!
@@ -121,7 +127,30 @@ class Admin::EmailTemplatesController < ApplicationController
   end
 
   def event_triggers
-    render json: { events: SYSTEM_EVENTS }
+    render json: { events: SYSTEM_EVENTS, global_variables: GLOBAL_VARIABLES }
+  end
+
+  def design_templates
+    render json: { designs: EmailTemplateDesignLibrary::DESIGNS }
+  end
+
+  # GET /admin/email_templates/brand_settings.json
+  # Powers the "Communication Engine" tab: the custom CSS configured here is
+  # injected into every outbound email (see EmailDispatcherWorker), so this
+  # endpoint is intentionally decoupled from any single EmailTemplate.
+  def brand_settings
+    render json: { brand_settings: serialize_brand_settings(EmailBrandSettings.current) }
+  end
+
+  # PATCH /admin/email_templates/brand_settings.json
+  def update_brand_settings
+    settings = EmailBrandSettings.new(brand_settings_params)
+
+    if settings.persist!
+      render json: { success: true, message: "Brand CSS saved. It will apply to every outgoing email.", brand_settings: serialize_brand_settings(settings) }
+    else
+      render json: { success: false, errors: settings.errors.full_messages }
+    end
   end
 
   def send_test
@@ -130,7 +159,7 @@ class Admin::EmailTemplatesController < ApplicationController
     delivery = EmailDelivery.create!(
       email_template: @template,
       recipient_email: recipient_email,
-      payload: payload.deep_stringify_keys,
+      payload: GlobalTemplateVariables.with_defaults(payload),
       status: "pending"
     )
     EmailDispatcherWorker.perform_async(delivery.id)
@@ -142,6 +171,19 @@ class Admin::EmailTemplatesController < ApplicationController
 
   def set_template
     @template = EmailTemplate.find(params[:id])
+  end
+
+  def serialize_brand_settings(settings)
+    {
+      custom_css: settings.custom_css,
+      primary_color: settings.primary_color,
+      font_family: settings.font_family,
+      preview_style_block: settings.style_block,
+    }
+  end
+
+  def brand_settings_params
+    params.require(:brand_settings).permit(:custom_css, :primary_color, :font_family)
   end
 
   def template_params

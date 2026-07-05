@@ -24,6 +24,62 @@ EmailOrchestrator.deliver(...)
   -> DynamicMailer.dispatch_email(...)
 ----
 
+=== Template authoring (Email Engine UI)
+
+`/admin/email_templates` (React: `EmailEngineManager.jsx`) lets admins author,
+preview, and test Liquid templates without touching code.
+
+* *Template Variables* -- The variable picker in the New/Edit Template drawer
+  combines two sources: the event-specific tokens returned by
+  `GET /admin/email_templates/event_triggers` (`events[].variables`, e.g.
+  `asset.name` for `asset_published`) and the **global** tokens returned in
+  the same response's `global_variables` array (`company.name`, `app.url`,
+  `current_year`, `unsubscribe_url`, etc. -- see `GlobalTemplateVariables::NAMES`).
+  Global tokens are always available, regardless of which event is selected,
+  and are automatically backfilled into every delivery's payload by
+  `GlobalTemplateVariables.with_defaults` (used by both
+  `EmailOrchestrator.trigger` and `Admin::EmailTemplatesController#send_test`)
+  so templates render sensible values even when the triggering code doesn't
+  pass them explicitly. Explicit payload values always win over the defaults.
+* *Rich HTML editor* -- The HTML Body field uses the shared
+  `RichTextEditor.jsx` (TipTap) WYSIWYG component instead of a raw textarea,
+  so non-technical admins can format copy, insert images/links, and see
+  formatting live; the underlying value is still plain HTML persisted to
+  `email_templates.html_body` and rendered through Liquid at send time.
+* *Predefined designs* -- Clicking "New Template" opens a design gallery
+  (`GET /admin/email_templates/design_templates`, backed by
+  `EmailTemplateDesignLibrary::DESIGNS`) with 10 ready-made, email-client-safe
+  layouts (Welcome Onboarding, Password Reset, Workflow Approval Request,
+  Asset Published Announcement, Newsletter Digest, Event Invitation, Product
+  Update, Maintenance Notice, Team Invitation, Thank You/Confirmation).
+  Selecting one prefills subject/html_body/text_body in the editor; "Start
+  from Blank" skips the gallery for a blank template, matching prior behavior.
+* *Rich text preview fidelity* -- `RichTextEditor.jsx` registers
+  `@tiptap/extension-table` (+ row/header/cell) and a custom
+  `PreserveInlineStyle` extension (`addGlobalAttributes`) so that inline
+  `style="..."` attributes on paragraphs, headings, tables, list items,
+  images, etc. survive TipTap's parse/serialize round-trip instead of being
+  silently stripped -- this is what previously caused a design's colors and
+  layout to disappear the moment its text was edited. The Preview sub-tab
+  renders the resulting HTML inside a sandboxed `<iframe srcDoc=...>` rather
+  than `dangerouslySetInnerHTML`, so a template's own `<style>` block (used by
+  every design in `EmailTemplateDesignLibrary`) is honored exactly as it will
+  render in an inbox, isolated from the admin UI's own CSS.
+* *Global CSS for Emails* -- A dedicated "Global CSS for Emails" tab (backed
+  by `EmailBrandSettings`, a singleton row wrapping `Setting`) lets admins set
+  a primary brand color, font family, and free-form custom CSS that is
+  injected into **every** outgoing email across the whole system -- not just
+  the template being edited. `EmailDispatcherWorker#perform` prepends
+  `EmailBrandSettings.current.style_block` (a `<style type="text/css">` block,
+  or `""` when no CSS is configured, preserving prior behavior) to
+  `html_body` immediately before calling `DynamicMailer.dispatch_email`, so
+  the effect applies uniformly regardless of which template or trigger sent
+  the message. The UI explicitly warns that many webmail clients (Gmail,
+  Outlook.com) strip `<style>` blocks and only honor inline styles, so this
+  is best-effort theming for clients that do support it (Apple Mail, Outlook
+  desktop, most modern mail apps) and not a substitute for well-designed,
+  inline-styled templates.
+
 == Workflow task notifications
 
 `TaskNotificationWorker` is the bridge between workflow tasks and user-facing
@@ -39,5 +95,9 @@ notifications. It creates a `Notification` row and then calls
 | `PATCH` | `/api/v1/notifications/:id/mark_read` | Mark one notification read.
 | `PATCH` | `/api/v1/notifications/mark_all_read` | Clear unread set.
 | `GET` | `/admin/email_templates` | Email template admin shell.
+| `GET` | `/admin/email_templates/event_triggers` | System events + global template variables for the picker.
+| `GET` | `/admin/email_templates/design_templates` | Predefined design gallery (10 layouts) for the New Template flow.
+| `GET` | `/admin/email_templates/brand_settings` | Current global CSS/brand settings for the "Global CSS for Emails" tab.
+| `PATCH` | `/admin/email_templates/brand_settings` | Update global CSS/brand settings (applied to every outgoing email).
 | `GET` | `/admin/email_deliveries` | Delivery/outbox admin shell.
 |===

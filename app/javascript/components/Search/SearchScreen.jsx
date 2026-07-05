@@ -39,11 +39,12 @@ const STATIC_FILTER_KEYS = new Set([
 ]);
 
 // URL params that are NOT filter keys (reserved for pagination / sorting / search)
-const RESERVED_URL_PARAMS = new Set(['q', 'page', 'per_page', 'sort_by', 'sort_dir']);
+const RESERVED_URL_PARAMS = new Set(['q', 'mode', 'page', 'per_page', 'sort_by', 'sort_dir']);
 
-function buildQueryString(query, filters, page, perPage, sortBy, sortDir) {
+function buildQueryString(query, filters, page, perPage, sortBy, sortDir, mode) {
   const params = new URLSearchParams();
   if (query) params.set('q', query);
+  if (mode && mode !== 'all') params.set('mode', mode);
 
   // 1. Write known static filters
   STATIC_FILTER_KEYS.forEach((key) => {
@@ -97,6 +98,7 @@ export default function SearchScreen() {
   const initialPage = parseInt(urlParams.get('page') || '1', 10);
   const initialSortBy = urlParams.get('sort_by') || 'relevance';
   const initialSortDir = urlParams.get('sort_dir') || 'desc';
+  const initialMode = urlParams.get('mode') || 'all';
 
   const [query, setQuery] = useState(initialQuery);
   const [inputVal, setInputVal] = useState(initialQuery);
@@ -104,10 +106,11 @@ export default function SearchScreen() {
   const [page, setPage] = useState(initialPage);
   const [sortBy, setSortBy] = useState(initialSortBy);
   const [sortDir, setSortDir] = useState(initialSortDir);
+  const [resultMode, setResultMode] = useState(initialMode);
   const [viewMode,  setViewMode]  = useState('grid');
   const [gridSize,  setGridSize]  = useState('medium');
   const [assets, setAssets] = useState([]);
-  const [meta, setMeta] = useState({ total_found: 0, total_pages: 1, facets: {} });
+  const [meta, setMeta] = useState({ total_found: 0, total_pages: 1, facets: {}, mode: initialMode, result_type: 'asset' });
   const [loading, setLoading] = useState(true);
   const [hasSearched, setHasSearched] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, msg: '', severity: 'success' });
@@ -115,9 +118,9 @@ export default function SearchScreen() {
   const hasInitializedRef = useRef(false);
   const perPage = 10;
 
-  const fetchResults = useCallback((currentQuery, currentFilters, currentPage, currentSortBy, currentSortDir) => {
+  const fetchResults = useCallback((currentQuery, currentFilters, currentPage, currentSortBy, currentSortDir, currentMode) => {
     setLoading(true);
-    const qs = buildQueryString(currentQuery, currentFilters, currentPage, perPage, currentSortBy, currentSortDir);
+    const qs = buildQueryString(currentQuery, currentFilters, currentPage, perPage, currentSortBy, currentSortDir, currentMode);
     const newUrl = `/search${qs ? `?${qs}` : ''}`;
     window.history.replaceState({}, '', newUrl);
 
@@ -135,6 +138,9 @@ export default function SearchScreen() {
           total_found: data.meta?.total_found || 0,
           total_pages: data.meta?.total_pages || 1,
           facets: data.meta?.facets || {},
+          mode: data.meta?.mode || 'all',
+          result_type: data.meta?.result_type || 'asset',
+          semantic_fallback: data.meta?.semantic_fallback || false,
         });
         setHasSearched(true);
       })
@@ -143,9 +149,10 @@ export default function SearchScreen() {
   }, [perPage, t]);
 
   useEffect(() => {
-    fetchResults(initialQuery, initialFilters, initialPage, initialSortBy, initialSortDir);
+    fetchResults(initialQuery, initialFilters, initialPage, initialSortBy, initialSortDir, initialMode);
     hasInitializedRef.current = true;
-  }, [fetchResults, initialFilters, initialPage, initialQuery, initialSortBy, initialSortDir]);
+  }, [fetchResults, initialFilters, initialPage, initialQuery, initialSortBy, initialSortDir, initialMode]);
+
 
   useEffect(() => {
     if (!hasInitializedRef.current) return undefined;
@@ -155,21 +162,21 @@ export default function SearchScreen() {
     debounceRef.current = setTimeout(() => {
       setQuery(inputVal);
       setPage(1);
-      fetchResults(inputVal, filters, 1, sortBy, sortDir);
+      fetchResults(inputVal, filters, 1, sortBy, sortDir, resultMode);
     }, 350);
 
     return () => clearTimeout(debounceRef.current);
-  }, [fetchResults, filters, inputVal, query, sortBy, sortDir]);
+  }, [fetchResults, filters, inputVal, query, sortBy, sortDir, resultMode]);
 
   const handleFilterChange = useCallback((newFilters) => {
     setFilters(newFilters);
     setPage(1);
-    fetchResults(query, newFilters, 1, sortBy, sortDir);
-  }, [fetchResults, query, sortBy, sortDir]);
+    fetchResults(query, newFilters, 1, sortBy, sortDir, resultMode);
+  }, [fetchResults, query, sortBy, sortDir, resultMode]);
 
   const handlePageChange = (_, newPage) => {
     setPage(newPage);
-    fetchResults(query, filters, newPage, sortBy, sortDir);
+    fetchResults(query, filters, newPage, sortBy, sortDir, resultMode);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -182,14 +189,14 @@ export default function SearchScreen() {
     setSortBy(nextSortBy);
     setSortDir(nextSortDir);
     setPage(1);
-    fetchResults(query, filters, 1, nextSortBy, nextSortDir);
+    fetchResults(query, filters, 1, nextSortBy, nextSortDir, resultMode);
   };
 
   const handleResetFilters = () => {
     const emptyFilters = parseFiltersFromURL(new URLSearchParams());
     setFilters(emptyFilters);
     setPage(1);
-    fetchResults(query, emptyFilters, 1, sortBy, sortDir);
+    fetchResults(query, emptyFilters, 1, sortBy, sortDir, resultMode);
   };
 
   const handleShare = () => {
@@ -212,7 +219,8 @@ export default function SearchScreen() {
     setQuery(preset.q);
     setFilters(preset.f);
     setPage(1);
-    fetchResults(preset.q, preset.f, 1, sortBy, sortDir);
+    setResultMode('all');
+    fetchResults(preset.q, preset.f, 1, sortBy, sortDir, 'all');
   };
 
   const activeFilterCount = countActiveFilters(filters);
@@ -350,6 +358,32 @@ export default function SearchScreen() {
             />
           )}
 
+          {meta.result_type === 'semantic' && (
+            <Chip
+              icon={<AutoAwesome sx={{ fontSize: 14 }} />}
+              label={t('search.mode.semantic')}
+              size="small"
+              sx={{ bgcolor: '#ede9fe', color: '#7c3aed', fontWeight: 600 }}
+            />
+          )}
+
+          {meta.result_type === 'folder' && (
+            <Chip
+              label={t('search.mode.folders')}
+              size="small"
+              sx={{ bgcolor: '#fef3c7', color: '#b45309', fontWeight: 600 }}
+            />
+          )}
+
+          {meta.semantic_fallback && (
+            <Chip
+              label={t('search.semanticFallback')}
+              size="small"
+              color="warning"
+              variant="outlined"
+            />
+          )}
+
           {activeFilterCount > 0 && (
             <Chip
               icon={<TuneOutlined fontSize="small" />}
@@ -387,7 +421,7 @@ export default function SearchScreen() {
               onChange={(_, dir) => {
                 if (!dir || dir === sortDir) return;
                 setSortDir(dir);
-                fetchResults(query, filters, 1, sortBy, dir);
+                fetchResults(query, filters, 1, sortBy, dir, resultMode);
               }}
               size="small"
             >

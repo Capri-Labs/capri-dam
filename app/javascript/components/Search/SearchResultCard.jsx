@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Box, Card, CardContent, Typography,
   Chip, Tooltip, Skeleton,
@@ -54,7 +54,15 @@ function StatusChip({ status, t }) {
 
 export default function SearchResultCard({ asset, viewMode = 'grid', onClick }) {
   const { t } = useTranslation();
-  const isImage = asset.content_type?.startsWith('image/');
+  const [previewFailed, setPreviewFailed] = useState(false);
+  // `preview_url` is a generated flattened-PNG preview for formats a browser
+  // can't decode natively (PSD, TIFF, HEIC, RAW, PDF, AI, EPS, ...); it falls
+  // back to `thumb_url`/`url` for plain web-renderable images. Any content
+  // type can have a usable preview, so we no longer gate rendering on
+  // `content_type` starting with "image/" — we just try the URL and fall back
+  // to the file-type icon if it fails to load (e.g. preview not yet generated).
+  const previewSrc = asset.preview_url || asset.thumb_url || asset.url;
+  const showPreview = Boolean(previewSrc) && !previewFailed;
   const updatedAt = asset.updated_at ? new Date(asset.updated_at).toLocaleDateString() : null;
 
   if (viewMode === 'list') {
@@ -84,8 +92,13 @@ export default function SearchResultCard({ asset, viewMode = 'grid', onClick }) 
               justifyContent: 'center',
             }}
           >
-            {isImage && asset.thumb_url ? (
-              <img src={asset.thumb_url} alt={asset.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            {showPreview ? (
+              <img
+                src={previewSrc}
+                alt={asset.title}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                onError={() => setPreviewFailed(true)}
+              />
             ) : (
               typeIcon(asset.content_type)
             )}
@@ -140,12 +153,13 @@ export default function SearchResultCard({ asset, viewMode = 'grid', onClick }) 
           overflow: 'hidden',
         }}
       >
-        {isImage && asset.thumb_url ? (
+        {showPreview ? (
           <img
-            src={asset.thumb_url}
+            src={previewSrc}
             alt={asset.title}
             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
             loading="lazy"
+            onError={() => setPreviewFailed(true)}
           />
         ) : (
           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>

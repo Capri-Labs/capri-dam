@@ -39,6 +39,13 @@ class EmailDispatcherWorker
     html_body = Liquid::Template.parse(template.html_body.to_s).render(payload)
     text_body = Liquid::Template.parse(template.text_body.to_s).render(payload)
 
+    # 1b. Prepend the admin-configured global brand CSS (see the
+    # "Communication Engine" tab / EmailBrandSettings) so every outbound
+    # email -- regardless of template -- reflects the org's brand colors.
+    # This is the single injection point shared by both live event triggers
+    # and "Send test" so the two paths never drift.
+    html_body = "#{EmailBrandSettings.current.style_block}#{html_body}"
+
     begin
       # 2. Attempt SMTP delivery through the single centralized dispatcher,
       #    which guarantees the validated database SMTP configuration is

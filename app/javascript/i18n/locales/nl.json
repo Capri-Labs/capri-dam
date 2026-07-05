@@ -1485,7 +1485,12 @@
     },
     "error": {
       "fetchFailed": "Zoeken mislukt. Probeer het opnieuw."
-    }
+    },
+    "mode": {
+      "semantic": "Semantische match",
+      "folders": "Mapresultaten"
+    },
+    "semanticFallback": "AI Gateway niet beschikbaar — lexicale resultaten getoond"
   },
   "dashboard": {
     "title": "Commandocentrum",
@@ -1869,6 +1874,20 @@
       "sentThisWeek": "Deze week verzonden",
       "failureRate": "Foutenpercentage",
       "pending": "In behandeling"
+    },
+    "chooseDesign": {
+      "title": "Kies een sjabloonontwerp",
+      "startBlank": "Begin leeg",
+      "empty": "Geen vooraf gedefinieerde ontwerpen beschikbaar. Begin leeg."
+    },
+    "communicationEngine": {
+      "tab": "Globale CSS voor E-mails",
+      "pageTitle": "Globale CSS voor E-mails",
+      "explainer": "Deze CSS wordt toegepast op alle uitgaande e-mails in het hele systeem (Sjablonen, gebeurtenis-mapping-meldingen en eenmalige testverzendingen) -- niet alleen op het sjabloon dat u momenteel bewerkt. Gebruik het voor merkbrede kleuren, lettertypen en linkstijlen. Let op: veel webmailclients (Gmail, Outlook.com) verwijderen <style>-blokken volledig en respecteren alleen inline stijlen, dus deze CSS is best-effort theming voor clients die dit wel ondersteunen (Apple Mail, Outlook desktop, de meeste moderne mail-apps) -- het is geen vervanging voor goed ontworpen, inline gestylde sjablonen.",
+      "primaryColor": "Primaire Merkkleur",
+      "fontFamily": "Lettertype",
+      "customCss": "Globale E-mail CSS",
+      "save": "Globale CSS Opslaan"
     }
   },
   "assetCard": {
@@ -2390,6 +2409,32 @@
       "SMTP_SERVER_BUSY": "SMTP-server bezet, probeer het later opnieuw",
       "SMTP_ERROR": "SMTP-fout",
       "INVALID_CONFIGURATION": "Ongeldige configuratie"
+    }
+  },
+  "globalSearchBar": {
+    "modes": {
+      "images": "Afbeeldingen",
+      "visual": "Visuele match",
+      "files": "Bestanden",
+      "folders": "Mappen",
+      "agentic": "AI-agent vragen"
+    },
+    "placeholder": {
+      "default": "Zoek assets, mappen of tags...",
+      "visual": "Sleep een afbeelding of plak een URL...",
+      "agentic": "Bijv., Zoek zomerfoto's zonder logo's..."
+    },
+    "tooltip": {
+      "default": "Druk op Enter om te zoeken",
+      "agentic": "Typ een opdracht in natuurlijke taal..."
+    },
+    "ariaLabel": "algemeen zoeken",
+    "shortcutHint": "⌘K",
+    "suggestions": {
+      "loading": "Zoeken...",
+      "noResults": "Geen resultaten gevonden",
+      "viewAll": "Bekijk alle resultaten voor \"{{query}}\"",
+      "folderLabel": "Map"
     }
   }
 }

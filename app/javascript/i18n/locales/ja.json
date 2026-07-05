@@ -1485,7 +1485,12 @@
     },
     "error": {
       "fetchFailed": "検索に失敗しました。もう一度お試しください。"
-    }
+    },
+    "mode": {
+      "semantic": "セマンティックマッチ",
+      "folders": "フォルダ結果"
+    },
+    "semanticFallback": "AIゲートウェイに接続できません — 字句検索結果を表示しています"
   },
   "dashboard": {
     "title": "コマンドセンター",
@@ -1869,6 +1874,20 @@
       "sentThisWeek": "今週送信",
       "failureRate": "失敗率",
       "pending": "保留中"
+    },
+    "chooseDesign": {
+      "title": "テンプレートデザインを選択",
+      "startBlank": "空白から開始",
+      "empty": "定義済みのデザインはありません。空白から開始してください。"
+    },
+    "communicationEngine": {
+      "tab": "メール用グローバルCSS",
+      "pageTitle": "メール用グローバルCSS",
+      "explainer": "このCSSは、システム全体から送信されるすべてのメール(テンプレート、イベントマッピング通知、単発のテスト送信)に適用されます -- 現在編集中のテンプレートだけではありません。ブランド全体の色、フォント、リンクスタイルに使用してください。注意: 多くのウェブメールクライアント(Gmail、Outlook.com)は<style>ブロックを完全に削除し、インラインスタイルのみを尊重するため、このCSSはそれをサポートするクライアント(Apple Mail、Outlookデスクトップ、ほとんどの最新メールアプリ)向けのベストエフォート型のテーマ設定です -- インラインスタイルで適切に設計されたテンプレートの代替にはなりません。",
+      "primaryColor": "プライマリブランドカラー",
+      "fontFamily": "フォントファミリー",
+      "customCss": "メール用グローバルCSS",
+      "save": "グローバルCSSを保存"
     }
   },
   "assetCard": {
@@ -2390,6 +2409,32 @@
       "SMTP_SERVER_BUSY": "SMTPサーバーがビジー状態です。後でもう一度お試しください",
       "SMTP_ERROR": "SMTPエラー",
       "INVALID_CONFIGURATION": "無効な構成です"
+    }
+  },
+  "globalSearchBar": {
+    "modes": {
+      "images": "画像",
+      "visual": "ビジュアルマッチ",
+      "files": "ファイル",
+      "folders": "フォルダ",
+      "agentic": "AIエージェントに質問"
+    },
+    "placeholder": {
+      "default": "アセット、フォルダ、タグを検索...",
+      "visual": "画像をドロップするかURLを貼り付け...",
+      "agentic": "例：ロゴなしの夏の写真を探す..."
+    },
+    "tooltip": {
+      "default": "Enterキーで検索",
+      "agentic": "自然言語でコマンドを入力..."
+    },
+    "ariaLabel": "グローバル検索",
+    "shortcutHint": "⌘K",
+    "suggestions": {
+      "loading": "検索中...",
+      "noResults": "一致する結果がありません",
+      "viewAll": "「{{query}}」のすべての結果を表示",
+      "folderLabel": "フォルダ"
     }
   }
 }

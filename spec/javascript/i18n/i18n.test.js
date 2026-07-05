@@ -684,3 +684,78 @@ describe('i18n — smtpSettings connection-test keys across all 10 locales', () 
   afterAll(() => i18n.changeLanguage('en'));
 });
 
+describe('i18n — globalSearchBar (top-bar search) keys across all 10 locales', () => {
+  const MODE_KEYS = ['images', 'visual', 'files', 'folders', 'agentic'];
+
+  LOCALES.forEach(locale => {
+    it(`${locale} has translations for every search mode label`, () => {
+      i18n.changeLanguage(locale);
+
+      MODE_KEYS.forEach(mode => {
+        const key = `globalSearchBar.modes.${mode}`;
+        const val = i18n.t(key);
+        expect(val).not.toBe(key);
+        expect(val.length).toBeGreaterThan(0);
+      });
+    });
+
+    it(`${locale} has placeholder, tooltip, ariaLabel, and suggestions strings`, () => {
+      i18n.changeLanguage(locale);
+
+      expect(i18n.t('globalSearchBar.placeholder.default')).not.toBe('globalSearchBar.placeholder.default');
+      expect(i18n.t('globalSearchBar.placeholder.visual')).not.toBe('globalSearchBar.placeholder.visual');
+      expect(i18n.t('globalSearchBar.placeholder.agentic')).not.toBe('globalSearchBar.placeholder.agentic');
+      expect(i18n.t('globalSearchBar.tooltip.default')).not.toBe('globalSearchBar.tooltip.default');
+      expect(i18n.t('globalSearchBar.tooltip.agentic')).not.toBe('globalSearchBar.tooltip.agentic');
+      expect(i18n.t('globalSearchBar.ariaLabel')).not.toBe('globalSearchBar.ariaLabel');
+      expect(i18n.t('globalSearchBar.suggestions.loading')).not.toBe('globalSearchBar.suggestions.loading');
+      expect(i18n.t('globalSearchBar.suggestions.noResults')).not.toBe('globalSearchBar.suggestions.noResults');
+      expect(i18n.t('globalSearchBar.suggestions.folderLabel')).not.toBe('globalSearchBar.suggestions.folderLabel');
+    });
+
+    it(`${locale} interpolates the query into globalSearchBar.suggestions.viewAll`, () => {
+      i18n.changeLanguage(locale);
+
+      const val = i18n.t('globalSearchBar.suggestions.viewAll', { query: 'brand logo' });
+      expect(val).not.toBe('globalSearchBar.suggestions.viewAll');
+      expect(val).toContain('brand logo');
+    });
+  });
+
+  afterAll(() => i18n.changeLanguage('en'));
+});
+
+describe('i18n — search.mode and semanticFallback keys across all 10 locales', () => {
+  LOCALES.forEach(locale => {
+    it(`${locale} has search.mode.semantic, search.mode.folders, and search.semanticFallback`, () => {
+      i18n.changeLanguage(locale);
+
+      expect(i18n.t('search.mode.semantic')).not.toBe('search.mode.semantic');
+      expect(i18n.t('search.mode.folders')).not.toBe('search.mode.folders');
+      expect(i18n.t('search.semanticFallback')).not.toBe('search.semanticFallback');
+    });
+  });
+
+  afterAll(() => i18n.changeLanguage('en'));
+});
+
+describe('i18n — globalSearchBar English strings (regression guard)', () => {
+  beforeEach(() => i18n.changeLanguage('en'));
+
+  it('globalSearchBar.modes.images', () => {
+    expect(i18n.t('globalSearchBar.modes.images')).toBe('Images');
+  });
+
+  it('globalSearchBar.modes.visual', () => {
+    expect(i18n.t('globalSearchBar.modes.visual')).toBe('Visual Match');
+  });
+
+  it('globalSearchBar.modes.agentic', () => {
+    expect(i18n.t('globalSearchBar.modes.agentic')).toBe('Ask AI Agent');
+  });
+
+  it('globalSearchBar.ariaLabel', () => {
+    expect(i18n.t('globalSearchBar.ariaLabel')).toBe('global search');
+  });
+});
+

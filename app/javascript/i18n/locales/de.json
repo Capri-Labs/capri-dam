@@ -1485,7 +1485,12 @@
     },
     "error": {
       "fetchFailed": "Suche fehlgeschlagen. Bitte erneut versuchen."
-    }
+    },
+    "mode": {
+      "semantic": "Semantische Übereinstimmung",
+      "folders": "Ordnerergebnisse"
+    },
+    "semanticFallback": "KI-Gateway nicht erreichbar – zeige lexikalische Ergebnisse"
   },
   "dashboard": {
     "title": "Kommandozentrale",
@@ -1869,6 +1874,20 @@
       "sentThisWeek": "Diese Woche gesendet",
       "failureRate": "Fehlerrate",
       "pending": "Ausstehend"
+    },
+    "chooseDesign": {
+      "title": "Vorlagendesign auswählen",
+      "startBlank": "Leer beginnen",
+      "empty": "Keine vordefinierten Designs verfügbar. Beginnen Sie leer."
+    },
+    "communicationEngine": {
+      "tab": "Globales CSS für E-Mails",
+      "pageTitle": "Globales CSS für E-Mails",
+      "explainer": "Dieses CSS wird auf alle ausgehenden E-Mails im gesamten System angewendet (Vorlagen, Event-Mapping-Benachrichtigungen und einmalige Testsendungen) -- nicht nur auf die Vorlage, die Sie gerade bearbeiten. Verwenden Sie es für markenweite Farben, Schriftarten und Link-Stile. Hinweis: Viele Webmail-Clients (Gmail, Outlook.com) entfernen <style>-Blöcke vollständig und beachten nur Inline-Stile. Dieses CSS ist daher bestmögliches Theming für Clients, die es unterstützen (Apple Mail, Outlook Desktop, die meisten modernen Mail-Apps) -- es ersetzt keine gut gestalteten, inline gestylten Vorlagen.",
+      "primaryColor": "Primäre Markenfarbe",
+      "fontFamily": "Schriftart",
+      "customCss": "Globales E-Mail-CSS",
+      "save": "Globales CSS speichern"
     }
   },
   "assetCard": {
@@ -2390,6 +2409,32 @@
       "SMTP_SERVER_BUSY": "SMTP-Server ausgelastet, bitte später erneut versuchen",
       "SMTP_ERROR": "SMTP-Fehler",
       "INVALID_CONFIGURATION": "Ungültige Konfiguration"
+    }
+  },
+  "globalSearchBar": {
+    "modes": {
+      "images": "Bilder",
+      "visual": "Visueller Abgleich",
+      "files": "Dateien",
+      "folders": "Ordner",
+      "agentic": "KI-Agent fragen"
+    },
+    "placeholder": {
+      "default": "Assets, Ordner oder Tags durchsuchen...",
+      "visual": "Bild ablegen oder URL einfügen...",
+      "agentic": "Z. B. Sommerfotos ohne Logos finden..."
+    },
+    "tooltip": {
+      "default": "Drücken Sie Enter, um zu suchen",
+      "agentic": "Geben Sie einen natürlichsprachlichen Befehl ein..."
+    },
+    "ariaLabel": "globale Suche",
+    "shortcutHint": "⌘K",
+    "suggestions": {
+      "loading": "Suche läuft...",
+      "noResults": "Keine Treffer gefunden",
+      "viewAll": "Alle Ergebnisse für \"{{query}}\" anzeigen",
+      "folderLabel": "Ordner"
     }
   }
 }

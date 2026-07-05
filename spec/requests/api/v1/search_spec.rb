@@ -54,6 +54,43 @@ RSpec.describe 'Api::V1::Search', type: :request do
         expect(json['results'].pluck('content_type')).to all(start_with('image/'))
       end
 
+      it 'exposes a generated preview_url for special formats a browser cannot render natively' do
+        psd = create_search_asset(
+          title: 'Layered Artwork',
+          content_type: 'image/vnd.adobe.photoshop',
+          file_size: 5.megabytes,
+          extra_properties: {
+            'storage_path' => 'search_spec/artwork.psd',
+            'preview_storage_path' => 'previews/artwork.png',
+            'preview_content_type' => 'image/png',
+          }
+        )
+
+        get '/api/v1/search', params: { q: 'Layered' }, as: :json
+
+        expect(response).to have_http_status(:ok)
+        result = json['results'].find { |r| r['uuid'] == psd.uuid }
+        expect(result['thumb_url']).to include('variant=preview')
+        expect(result['preview_url']).to include('variant=preview')
+        expect(result['url']).not_to include('variant=preview')
+        expect(result['web_renderable']).to be(false)
+      end
+
+      it 'marks natively web-renderable images as such and points thumb_url at the original file' do
+        jpeg = create_search_asset(
+          title: 'Plain Photo',
+          content_type: 'image/jpeg',
+          file_size: 400_000,
+          extra_properties: { 'storage_path' => 'search_spec/photo.jpg' }
+        )
+
+        get '/api/v1/search', params: { q: 'Plain Photo' }, as: :json
+
+        result = json['results'].find { |r| r['uuid'] == jpeg.uuid }
+        expect(result['web_renderable']).to be(true)
+        expect(result['thumb_url']).not_to include('variant=preview')
+      end
+
       it 'filters by modified_within=week' do
         recent_asset = create_search_asset(
           title: 'Recent Asset',
@@ -493,5 +530,134 @@ RSpec.describe "Api::V1::Search coverage", type: :request do
 
     expect(response).to have_http_status(:ok)
     expect(json["results"]).to contain_exactly(hash_including("uuid" => asset.uuid, "created_at" => nil, "updated_at" => nil))
+  end
+end
+
+RSpec.describe "Api::V1::Search — folders, semantic modes, suggestions, and caching", type: :request do
+  let(:user) { create(:user) }
+  let(:gateway_url) { "http://localhost:8000" }
+
+  def json
+    response.parsed_body
+  end
+
+  before { sign_in user }
+
+  describe "GET /api/v1/search?mode=folders" do
+    it "searches Folder records by name instead of Asset records" do
+      matching = create(:folder, name: "Marketing Assets", user: user)
+      create(:folder, name: "Legal Archive", user: user)
+
+      get "/api/v1/search", params: { mode: "folders", q: "Marketing" }, as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(json.dig("meta", "result_type")).to eq("folder")
+      expect(json["results"]).to contain_exactly(
+        hash_including("id" => matching.id, "title" => "Marketing Assets", "type" => "folder",
+                        "href" => "/folders?folder=#{matching.id}")
+      )
+    end
+
+    it "excludes soft-deleted folders" do
+      create(:folder, :trashed, name: "Old Campaign", user: user)
+
+      get "/api/v1/search", params: { mode: "folders", q: "Old" }, as: :json
+
+      expect(json["results"]).to be_empty
+    end
+  end
+
+  describe "GET /api/v1/search?mode=visual|agentic (semantic pipeline)" do
+    %w[visual agentic].each do |mode|
+      it "embeds the query and returns pgvector nearest-neighbour results for mode=#{mode}" do
+        asset = create(:asset, user: user, title: "Hero Shot", properties: { "content_type" => "image/jpeg" })
+
+        stub_request(:post, "#{gateway_url}/api/embed_query")
+          .with(body: { text: "sunset over mountains" }.to_json)
+          .to_return(status: 200, body: { vector: Array.new(1536, 0.02) }.to_json,
+                     headers: { "Content-Type" => "application/json" })
+
+        relation = Asset.where(id: asset.id).select("assets.*, 0.2 AS neighbor_distance")
+        allow(Asset).to receive(:nearest_to_vector).and_return(relation)
+
+        get "/api/v1/search", params: { mode: mode, q: "sunset over mountains" }, as: :json
+
+        expect(response).to have_http_status(:ok)
+        expect(json.dig("meta", "result_type")).to eq("semantic")
+        expect(json["results"].first).to include("uuid" => asset.uuid, "similarity_score" => "0.8")
+      end
+    end
+
+    it "falls back to lexical search when the AI Gateway is unreachable" do
+      matching = create(:asset, user: user, title: "Sunset Beach", properties: { "content_type" => "image/jpeg" })
+
+      stub_request(:post, "#{gateway_url}/api/embed_query").to_timeout
+
+      get "/api/v1/search", params: { mode: "visual", q: "Sunset" }, as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(json.dig("meta", "semantic_fallback")).to be true
+      expect(json["results"].map { |r| r["uuid"] }).to include(matching.uuid)
+    end
+  end
+
+  describe "GET /api/v1/search/suggestions" do
+    it "returns an empty result set for a blank query" do
+      get "/api/v1/search/suggestions", params: { q: "  " }, as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(json["results"]).to eq([])
+    end
+
+    it "returns a mixed list of matching assets and folders" do
+      asset = create(:asset, user: user, title: "Brand Kit", properties: { "content_type" => "image/png" })
+      folder = create(:folder, name: "Brand Guidelines", user: user)
+      allow_any_instance_of(Api::V1::SearchController).to receive(:asset_url_for).and_return("/api/v1/assets/local/#{asset.uuid}") # rubocop:disable RSpec/AnyInstance
+
+      get "/api/v1/search/suggestions", params: { q: "Brand" }, as: :json
+
+      expect(response).to have_http_status(:ok)
+      types = json["results"].map { |r| r["type"] }
+      expect(types).to contain_exactly("asset", "folder")
+      expect(json["results"]).to include(
+        hash_including("type" => "asset", "title" => "Brand Kit", "href" => "/assets?id=#{asset.uuid}"),
+        hash_including("type" => "folder", "title" => "Brand Guidelines", "href" => "/folders?folder=#{folder.id}")
+      )
+    end
+  end
+
+  describe "Redis-backed response caching" do
+    it "serves the second identical request from SearchCache without re-querying" do
+      create(:asset, user: user, title: "Cached Hit", properties: { "content_type" => "image/png" })
+      allow(Rails.env).to receive(:test?).and_return(false)
+      fake_store = {}
+      fake_redis = instance_double(Redis)
+      allow(fake_redis).to receive(:get) { |key| fake_store[key] }
+      allow(fake_redis).to receive(:setex) { |key, _ttl, value| fake_store[key] = value }
+      allow(SearchCache).to receive(:redis).and_return(fake_redis)
+
+      get "/api/v1/search", params: { q: "Cached Hit" }, as: :json
+      expect(json["results"].size).to eq(1)
+
+      # Mutate the DB after the first (now cached) request — a second identical
+      # request should still return the stale cached payload, proving caching works.
+      Asset.update_all(deleted_at: Time.current)
+
+      get "/api/v1/search", params: { q: "Cached Hit" }, as: :json
+      expect(json["results"].size).to eq(1)
+      expect(fake_store.keys.first).to start_with("dam:search:index:")
+    end
+
+    it "falls back to an uncached response when Redis is unreachable" do
+      allow(Rails.env).to receive(:test?).and_return(false)
+      allow(SearchCache.redis).to receive(:get).and_raise(Redis::CannotConnectError)
+
+      create(:asset, user: user, title: "Resilient Asset", properties: { "content_type" => "image/png" })
+
+      get "/api/v1/search", params: { q: "Resilient" }, as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(json["results"].map { |r| r["title"] }).to include("Resilient Asset")
+    end
   end
 end

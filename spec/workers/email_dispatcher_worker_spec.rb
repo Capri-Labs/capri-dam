@@ -69,4 +69,25 @@ RSpec.describe EmailDispatcherWorker, type: :worker do
 
     expect(delays).to eq([ 10, 40, 90 ])
   end
+
+  it "prepends the global brand CSS (Communication Engine) to every outbound email" do
+    EmailBrandSettings.new(custom_css: "body { color: #1a56db; }").persist!
+    message = instance_double(ActionMailer::MessageDelivery, deliver_now: true)
+    allow(DynamicMailer).to receive(:dispatch_email).and_return(message)
+
+    described_class.new.perform(delivery.id)
+
+    expect(DynamicMailer).to have_received(:dispatch_email).with(
+      hash_including(html_body: a_string_matching(/<style type="text\/css">\s*body \{ color: #1a56db; \}\s*<\/style>\s*<p>Ada<\/p>/))
+    )
+  end
+
+  it "does not alter the html body when no brand CSS is configured" do
+    message = instance_double(ActionMailer::MessageDelivery, deliver_now: true)
+    allow(DynamicMailer).to receive(:dispatch_email).and_return(message)
+
+    described_class.new.perform(delivery.id)
+
+    expect(DynamicMailer).to have_received(:dispatch_email).with(hash_including(html_body: "<p>Ada</p>"))
+  end
 end

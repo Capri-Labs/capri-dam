@@ -79,6 +79,27 @@ describe('Search components', () => {
       expect(onClick).toHaveBeenCalled();
     });
 
+    it('renders generated preview_url for special formats like PSD/TIFF/PDF', () => {
+      const psdAsset = {
+        ...asset,
+        content_type: 'image/vnd.adobe.photoshop',
+        thumb_url: null,
+        preview_url: 'http://example.com/hero-preview.png',
+      };
+      render(<SearchResultCard asset={psdAsset} onClick={jest.fn()} />);
+
+      expect(screen.getByAltText('Hero Image')).toHaveAttribute('src', 'http://example.com/hero-preview.png');
+    });
+
+    it('falls back to the file-type icon when the preview image fails to load', () => {
+      render(<SearchResultCard asset={asset} onClick={jest.fn()} />);
+
+      const img = screen.getByAltText('Hero Image');
+      fireEvent.error(img);
+
+      expect(screen.queryByAltText('Hero Image')).not.toBeInTheDocument();
+    });
+
     it('renders skeleton variants', () => {
       const { rerender } = render(<SearchResultCardSkeleton />);
       expect(document.querySelectorAll('.MuiSkeleton-root').length).toBeGreaterThan(0);

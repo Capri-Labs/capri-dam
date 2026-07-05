@@ -16,11 +16,12 @@ const STATIC_FILTER_KEYS = new Set([
   'audio_codec', 'audio_bitrate_min', 'audio_bitrate_max',
 ]);
 
-const RESERVED_URL_PARAMS = new Set(['q', 'page', 'per_page', 'sort_by', 'sort_dir']);
+const RESERVED_URL_PARAMS = new Set(['q', 'mode', 'page', 'per_page', 'sort_by', 'sort_dir']);
 
-function buildQueryString(query, filters, page, perPage, sortBy, sortDir) {
+function buildQueryString(query, filters, page, perPage, sortBy, sortDir, mode) {
   const params = new URLSearchParams();
   if (query) params.set('q', query);
+  if (mode && mode !== 'all') params.set('mode', mode);
   STATIC_FILTER_KEYS.forEach((key) => {
     if (filters[key]) params.set(key, filters[key]);
   });
@@ -111,6 +112,18 @@ describe('buildQueryString', () => {
     expect(p.get('page')).toBe('3');
     expect(p.get('per_page')).toBe('20');
   });
+
+  it('includes mode when set to a non-default value', () => {
+    const qs = buildQueryString('sunset', emptyFilters(), 1, 10, 'relevance', 'desc', 'visual');
+    expect(new URLSearchParams(qs).get('mode')).toBe('visual');
+  });
+
+  it('omits mode when "all" or unset', () => {
+    const qsAll = buildQueryString('logo', emptyFilters(), 1, 10, 'relevance', 'desc', 'all');
+    const qsUnset = buildQueryString('logo', emptyFilters(), 1, 10, 'relevance', 'desc');
+    expect(new URLSearchParams(qsAll).has('mode')).toBe(false);
+    expect(new URLSearchParams(qsUnset).has('mode')).toBe(false);
+  });
 });
 
 // ─── parseFiltersFromURL ─────────────────────────────────────────────────────
@@ -141,10 +154,11 @@ describe('parseFiltersFromURL', () => {
   });
 
   it('does not include reserved params as filter keys', () => {
-    const filters = parseFiltersFromURL(new URLSearchParams('q=logo&page=2&sort_by=name'));
+    const filters = parseFiltersFromURL(new URLSearchParams('q=logo&page=2&sort_by=name&mode=visual'));
     expect(filters.q).toBeUndefined();
     expect(filters.page).toBeUndefined();
     expect(filters.sort_by).toBeUndefined();
+    expect(filters.mode).toBeUndefined();
   });
 
   // Round-trip: build → parse → rebuild should produce same result

@@ -1485,7 +1485,12 @@
     },
     "error": {
       "fetchFailed": "A pesquisa falhou. Por favor, tente novamente."
-    }
+    },
+    "mode": {
+      "semantic": "Correspondência semântica",
+      "folders": "Resultados de pastas"
+    },
+    "semanticFallback": "Gateway de IA indisponível — exibindo resultados léxicos"
   },
   "dashboard": {
     "title": "Centro de Comando",
@@ -1869,6 +1874,20 @@
       "sentThisWeek": "Enviados esta semana",
       "failureRate": "Taxa de falha",
       "pending": "Pendente"
+    },
+    "chooseDesign": {
+      "title": "Escolha um design de modelo",
+      "startBlank": "Começar em branco",
+      "empty": "Nenhum design predefinido disponível. Comece em branco."
+    },
+    "communicationEngine": {
+      "tab": "CSS Global para E-mails",
+      "pageTitle": "CSS Global para E-mails",
+      "explainer": "Este CSS é aplicado a todos os e-mails enviados em todo o sistema (Modelos, notificações de mapeamento de eventos e envios de teste avulsos) -- não apenas ao modelo que você está editando no momento. Use-o para cores, fontes e estilos de link em toda a marca. Nota: muitos clientes de webmail (Gmail, Outlook.com) removem completamente os blocos <style> e só respeitam estilos inline, portanto este CSS é uma tematização de melhor esforço para clientes que o suportam (Apple Mail, Outlook desktop, a maioria dos apps de e-mail modernos) -- não substitui modelos bem projetados com estilos inline.",
+      "primaryColor": "Cor Principal da Marca",
+      "fontFamily": "Família da Fonte",
+      "customCss": "CSS Global de E-mail",
+      "save": "Salvar CSS Global"
     }
   },
   "assetCard": {
@@ -2390,6 +2409,32 @@
       "SMTP_SERVER_BUSY": "Servidor SMTP ocupado, tente novamente mais tarde",
       "SMTP_ERROR": "Erro SMTP",
       "INVALID_CONFIGURATION": "Configuração inválida"
+    }
+  },
+  "globalSearchBar": {
+    "modes": {
+      "images": "Imagens",
+      "visual": "Correspondência visual",
+      "files": "Arquivos",
+      "folders": "Pastas",
+      "agentic": "Perguntar ao agente de IA"
+    },
+    "placeholder": {
+      "default": "Pesquisar ativos, pastas ou tags...",
+      "visual": "Solte uma imagem ou cole uma URL...",
+      "agentic": "Ex., Encontrar fotos de verão sem logotipos..."
+    },
+    "tooltip": {
+      "default": "Pressione Enter para pesquisar",
+      "agentic": "Digite um comando em linguagem natural..."
+    },
+    "ariaLabel": "pesquisa global",
+    "shortcutHint": "⌘K",
+    "suggestions": {
+      "loading": "Pesquisando...",
+      "noResults": "Nenhum resultado encontrado",
+      "viewAll": "Ver todos os resultados de \"{{query}}\"",
+      "folderLabel": "Pasta"
     }
   }
 }

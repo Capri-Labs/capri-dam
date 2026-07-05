@@ -1485,7 +1485,12 @@
     },
     "error": {
       "fetchFailed": "La búsqueda falló. Por favor, inténtelo de nuevo."
-    }
+    },
+    "mode": {
+      "semantic": "Coincidencia semántica",
+      "folders": "Resultados de carpetas"
+    },
+    "semanticFallback": "IA Gateway no disponible: mostrando resultados léxicos"
   },
   "dashboard": {
     "title": "Centro de Mando",
@@ -1869,6 +1874,20 @@
       "sentThisWeek": "Enviados esta semana",
       "failureRate": "Tasa de fallos",
       "pending": "Pendiente"
+    },
+    "chooseDesign": {
+      "title": "Elige un diseño de plantilla",
+      "startBlank": "Empezar en blanco",
+      "empty": "No hay diseños predefinidos disponibles. Empieza en blanco."
+    },
+    "communicationEngine": {
+      "tab": "CSS Global para Correos",
+      "pageTitle": "CSS Global para Correos",
+      "explainer": "Este CSS se aplica a todos los correos salientes en todo el sistema (Plantillas, notificaciones de mapeo de eventos y envíos de prueba puntuales) -- no solo a la plantilla que estás editando actualmente. Úsalo para colores, fuentes y estilos de enlace de toda la marca. Nota: muchos clientes de webmail (Gmail, Outlook.com) eliminan por completo los bloques <style> y solo respetan los estilos en línea, por lo que este CSS es una personalización de mejor esfuerzo para los clientes que sí lo admiten (Apple Mail, Outlook de escritorio, la mayoría de las apps de correo modernas) -- no sustituye a plantillas bien diseñadas con estilos en línea.",
+      "primaryColor": "Color de Marca Principal",
+      "fontFamily": "Tipo de Letra",
+      "customCss": "CSS Global de Correo",
+      "save": "Guardar CSS Global"
     }
   },
   "assetCard": {
@@ -2390,6 +2409,32 @@
       "SMTP_SERVER_BUSY": "Servidor SMTP ocupado, inténtelo más tarde",
       "SMTP_ERROR": "Error SMTP",
       "INVALID_CONFIGURATION": "Configuración inválida"
+    }
+  },
+  "globalSearchBar": {
+    "modes": {
+      "images": "Imágenes",
+      "visual": "Coincidencia visual",
+      "files": "Archivos",
+      "folders": "Carpetas",
+      "agentic": "Preguntar al agente IA"
+    },
+    "placeholder": {
+      "default": "Buscar activos, carpetas o etiquetas...",
+      "visual": "Suelta una imagen o pega una URL...",
+      "agentic": "Ej., Buscar fotos de verano sin logotipos..."
+    },
+    "tooltip": {
+      "default": "Presiona Enter para buscar",
+      "agentic": "Escribe un comando en lenguaje natural..."
+    },
+    "ariaLabel": "búsqueda global",
+    "shortcutHint": "⌘K",
+    "suggestions": {
+      "loading": "Buscando...",
+      "noResults": "No se encontraron coincidencias",
+      "viewAll": "Ver todos los resultados de \"{{query}}\"",
+      "folderLabel": "Carpeta"
     }
   }
 }

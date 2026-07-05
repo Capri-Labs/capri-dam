@@ -144,10 +144,31 @@ RSpec.describe "Admin::EmailTemplates coverage additions", type: :request do
   end
 
   describe "event triggers" do
-    it "returns all supported system events" do
+    it "returns all supported system events and global template variables" do
       get "/admin/email_templates/event_triggers", as: :json
       expect(response).to have_http_status(:ok)
       expect(response.parsed_body["events"].map { |event| event["id"] }).to include("user_created", "report_ready")
+      expect(response.parsed_body["global_variables"]).to include("company.name", "current_year", "unsubscribe_url")
+    end
+  end
+
+  describe "design templates" do
+    it "returns the predefined design gallery for admins" do
+      get "/admin/email_templates/design_templates", as: :json
+      expect(response).to have_http_status(:ok)
+      designs = response.parsed_body["designs"]
+      expect(designs.size).to eq(10)
+      expect(designs.map { |design| design["id"] }).to include("welcome_onboarding", "password_reset")
+      expect(designs.first).to include("name", "category", "description", "subject", "html_body", "text_body")
+    end
+
+    it "returns forbidden for non-admin users" do
+      sign_out admin
+      sign_in create(:user)
+
+      get "/admin/email_templates/design_templates", as: :json
+
+      expect(response).to have_http_status(:forbidden)
     end
   end
 
@@ -212,6 +233,17 @@ RSpec.describe "Admin::EmailTemplates coverage additions", type: :request do
       delivery = EmailDelivery.last
       expect(delivery.recipient_email).to eq(admin.email)
       expect(delivery.payload).to include("asset" => { "name" => "Hero" })
+    end
+
+    it "backfills global template variables (company/app/date tokens) into the delivery payload" do
+      template = create(:email_template, event_trigger: "global_vars_payload")
+
+      post "/admin/email_templates/#{template.id}/send_test", params: {
+        recipient_email: "qa@example.com", payload: { user: { first_name: "QA" } }
+      }, as: :json
+
+      delivery = EmailDelivery.last
+      expect(delivery.payload).to include("company", "app", "current_year", "current_date", "unsubscribe_url")
     end
   end
 

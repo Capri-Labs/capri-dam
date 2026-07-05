@@ -1485,7 +1485,12 @@
     },
     "error": {
       "fetchFailed": "搜索失败，请重试。"
-    }
+    },
+    "mode": {
+      "semantic": "语义匹配",
+      "folders": "文件夹结果"
+    },
+    "semanticFallback": "AI 网关不可用 — 显示词法搜索结果"
   },
   "dashboard": {
     "title": "指挥中心",
@@ -1869,6 +1874,20 @@
       "sentThisWeek": "本周已发送",
       "failureRate": "失败率",
       "pending": "待处理"
+    },
+    "chooseDesign": {
+      "title": "选择模板设计",
+      "startBlank": "从空白开始",
+      "empty": "没有可用的预定义设计。请从空白开始。"
+    },
+    "communicationEngine": {
+      "tab": "邮件全局 CSS",
+      "pageTitle": "邮件全局 CSS",
+      "explainer": "此 CSS 将应用于整个系统发出的所有邮件(模板、事件映射通知和一次性测试发送)-- 而不仅仅是您当前正在编辑的模板。可用于品牌统一的颜色、字体和链接样式。注意:许多网页邮件客户端(Gmail、Outlook.com)会完全剥离 <style> 块,只识别内联样式,因此此 CSS 仅对支持它的客户端(Apple Mail、Outlook 桌面版、大多数现代邮件应用)提供尽力而为的主题设置 -- 它不能替代设计良好、内联样式的模板。",
+      "primaryColor": "主品牌颜色",
+      "fontFamily": "字体系列",
+      "customCss": "全局邮件 CSS",
+      "save": "保存全局 CSS"
     }
   },
   "assetCard": {
@@ -2390,6 +2409,32 @@
       "SMTP_SERVER_BUSY": "SMTP 服务器繁忙，请稍后重试",
       "SMTP_ERROR": "SMTP 错误",
       "INVALID_CONFIGURATION": "配置无效"
+    }
+  },
+  "globalSearchBar": {
+    "modes": {
+      "images": "图片",
+      "visual": "视觉匹配",
+      "files": "文件",
+      "folders": "文件夹",
+      "agentic": "询问AI代理"
+    },
+    "placeholder": {
+      "default": "搜索资产、文件夹或标签...",
+      "visual": "拖放图片或粘贴URL...",
+      "agentic": "例如，查找没有徽标的夏季照片..."
+    },
+    "tooltip": {
+      "default": "按 Enter 搜索",
+      "agentic": "输入自然语言命令..."
+    },
+    "ariaLabel": "全局搜索",
+    "shortcutHint": "⌘K",
+    "suggestions": {
+      "loading": "搜索中...",
+      "noResults": "未找到匹配项",
+      "viewAll": "查看“{{query}}”的所有结果",
+      "folderLabel": "文件夹"
     }
   }
 }

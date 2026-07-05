@@ -1485,7 +1485,12 @@
     },
     "error": {
       "fetchFailed": "La recherche a échoué. Veuillez réessayer."
-    }
+    },
+    "mode": {
+      "semantic": "Correspondance sémantique",
+      "folders": "Résultats de dossiers"
+    },
+    "semanticFallback": "Passerelle IA indisponible : résultats lexicaux affichés"
   },
   "dashboard": {
     "title": "Centre de Commande",
@@ -1869,6 +1874,20 @@
       "sentThisWeek": "Envoyés cette semaine",
       "failureRate": "Taux d’échec",
       "pending": "En attente"
+    },
+    "chooseDesign": {
+      "title": "Choisir un modèle de conception",
+      "startBlank": "Partir de zéro",
+      "empty": "Aucun modèle prédéfini disponible. Commencez à partir de zéro."
+    },
+    "communicationEngine": {
+      "tab": "CSS Global pour les E-mails",
+      "pageTitle": "CSS Global pour les E-mails",
+      "explainer": "Ce CSS est appliqué à tous les e-mails sortants de l'ensemble du système (Modèles, notifications de mappage d'événements et envois de test ponctuels) -- pas seulement au modèle que vous éditez actuellement. Utilisez-le pour les couleurs, polices et styles de liens à l'échelle de la marque. Remarque : de nombreux clients de messagerie web (Gmail, Outlook.com) suppriment entièrement les blocs <style> et ne respectent que les styles en ligne. Ce CSS est donc un thème au mieux pour les clients qui le prennent en charge (Apple Mail, Outlook de bureau, la plupart des applications de messagerie modernes) -- il ne remplace pas des modèles bien conçus avec des styles en ligne.",
+      "primaryColor": "Couleur de Marque Principale",
+      "fontFamily": "Police de Caractères",
+      "customCss": "CSS Global des E-mails",
+      "save": "Enregistrer le CSS Global"
     }
   },
   "assetCard": {
@@ -2390,6 +2409,32 @@
       "SMTP_SERVER_BUSY": "Serveur SMTP occupé, réessayez plus tard",
       "SMTP_ERROR": "Erreur SMTP",
       "INVALID_CONFIGURATION": "Configuration invalide"
+    }
+  },
+  "globalSearchBar": {
+    "modes": {
+      "images": "Images",
+      "visual": "Correspondance visuelle",
+      "files": "Fichiers",
+      "folders": "Dossiers",
+      "agentic": "Demander à l'agent IA"
+    },
+    "placeholder": {
+      "default": "Rechercher des ressources, dossiers ou tags...",
+      "visual": "Déposez une image ou collez une URL...",
+      "agentic": "Ex., Trouver des photos d'été sans logos..."
+    },
+    "tooltip": {
+      "default": "Appuyez sur Entrée pour rechercher",
+      "agentic": "Tapez une commande en langage naturel..."
+    },
+    "ariaLabel": "recherche globale",
+    "shortcutHint": "⌘K",
+    "suggestions": {
+      "loading": "Recherche en cours...",
+      "noResults": "Aucun résultat trouvé",
+      "viewAll": "Voir tous les résultats pour \"{{query}}\"",
+      "folderLabel": "Dossier"
     }
   }
 }

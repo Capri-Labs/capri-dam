@@ -1485,7 +1485,12 @@
     },
     "error": {
       "fetchFailed": "Search failed. Please try again."
-    }
+    },
+    "mode": {
+      "semantic": "Semantic Match",
+      "folders": "Folder Results"
+    },
+    "semanticFallback": "AI Gateway unavailable — showing lexical results instead"
   },
   "dashboard": {
     "title": "Command Center",
@@ -1869,6 +1874,20 @@
       "sentThisWeek": "Sent This Week",
       "failureRate": "Failure Rate",
       "pending": "Pending"
+    },
+    "chooseDesign": {
+      "title": "Choose a Template Design",
+      "startBlank": "Start from Blank",
+      "empty": "No predefined designs available. Start from blank instead."
+    },
+    "communicationEngine": {
+      "tab": "Global CSS for Emails",
+      "pageTitle": "Global CSS for Emails",
+      "explainer": "This CSS is applied to every outgoing email across the whole system (Templates, Event Mapping notifications, and one-off test sends) -- not just the template you're currently editing. Use it for brand-wide colors, fonts, and link styling. Note: many webmail clients (Gmail, Outlook.com) strip <style> blocks entirely and only honor inline styles, so this CSS is best-effort theming for clients that do support it (Apple Mail, Outlook desktop, most modern mail apps) -- it is not a substitute for well-designed, inline-styled templates.",
+      "primaryColor": "Primary Brand Color",
+      "fontFamily": "Font Family",
+      "customCss": "Global Email CSS",
+      "save": "Save Global CSS"
     }
   },
   "assetCard": {
@@ -2390,6 +2409,32 @@
       "SMTP_SERVER_BUSY": "SMTP server busy, try again later",
       "SMTP_ERROR": "SMTP error",
       "INVALID_CONFIGURATION": "Invalid configuration"
+    }
+  },
+  "globalSearchBar": {
+    "modes": {
+      "images": "Images",
+      "visual": "Visual Match",
+      "files": "Files",
+      "folders": "Folders",
+      "agentic": "Ask AI Agent"
+    },
+    "placeholder": {
+      "default": "Search assets, folders, or tags...",
+      "visual": "Drop an image or paste a URL...",
+      "agentic": "E.g., Find summer photos without logos..."
+    },
+    "tooltip": {
+      "default": "Press Enter to search",
+      "agentic": "Type a natural language command..."
+    },
+    "ariaLabel": "global search",
+    "shortcutHint": "⌘K",
+    "suggestions": {
+      "loading": "Searching...",
+      "noResults": "No matches found",
+      "viewAll": "View all results for \"{{query}}\"",
+      "folderLabel": "Folder"
     }
   }
 }

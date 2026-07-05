@@ -21,7 +21,14 @@ RSpec.describe 'Api::V1::Assets', type: :request do
       parameter name: :q,    in: :query, type: :string, required: false,
                 description: 'Full-text term matched against title and original_filename'
       parameter name: :mode, in: :query, type: :string, required: false,
-                description: 'Filter by type: `images` (default), `files`, or omit for all'
+                enum: %w[images files videos documents folders visual agentic],
+                description: <<~DESC
+                  `images` (default), `files`, `videos`, `documents` filter by content type (lexical pipeline).
+                  `folders` searches Folder records by name instead of Asset records.
+                  `visual` and `agentic` delegate to the pgvector semantic pipeline (AI Gateway embedding +
+                  HNSW nearest-neighbour search), falling back to the lexical pipeline if the AI Gateway is
+                  unreachable (see `meta.semantic_fallback`).
+                DESC
 
       response '200', 'Search results with facets returned' do
         schema type: :object,
@@ -31,7 +38,11 @@ RSpec.describe 'Api::V1::Assets', type: :request do
                    properties: {
                      query:       { type: :string, nullable: true, example: 'brand logo' },
                      mode:        { type: :string, example: 'images' },
+                     result_type: { type: :string, example: 'asset',
+                                    description: '`asset` (default), `folder`, or `semantic`.' },
                      total_found: { type: :integer, example: 47 },
+                     semantic_fallback: { type: :boolean, nullable: true,
+                                          description: 'true when a visual/agentic query fell back to lexical search' },
                      facets: {
                        type: :object,
                        properties: {
@@ -48,13 +59,64 @@ RSpec.describe 'Api::V1::Assets', type: :request do
                    items: {
                      type: :object,
                      properties: {
-                       id:        { type: :integer, example: 1 },
-                       uuid:      { type: :string, format: :uuid },
+                       id:        { oneOf: [ { type: :integer }, { type: :string } ], example: 1 },
+                       uuid:      { type: :string, format: :uuid, nullable: true },
                        title:     { type: :string, example: 'Brand Logo Final' },
-                       type:      { type: :string, example: 'image/png' },
-                       size:      { type: :string, example: '2.4 MB' },
-                       thumb_url: { type: :string, nullable: true },
+                       type:      { type: :string, example: 'image/png',
+                                    description: '`content_type` for assets, or literal `folder` for folder results' },
+                       content_type: { type: :string, nullable: true, example: 'image/png' },
+                       size:      { type: :string, nullable: true, example: '2.4 MB' },
+                       thumb_url: { type: :string, nullable: true,
+                                    description: 'Display thumbnail — points at the generated preview variant for formats a browser cannot decode natively (PSD, TIFF, HEIC, RAW, PDF, AI, EPS, …), otherwise the original file.' },
                        preview_url: { type: :string, nullable: true, description: 'Web-renderable preview URL (falls back to the asset URL)' },
+                       url:       { type: :string, nullable: true, description: 'Original/raw asset file URL (not the flattened preview)' },
+                       web_renderable: { type: :boolean, nullable: true,
+                                         description: 'true when content_type can be decoded natively by a browser <img> tag (i.e. thumb_url/preview_url point at the original file, not a generated preview)' },
+                       href:      { type: :string, nullable: true, description: 'Direct navigation URL (folder results only)' },
+                       similarity_score: { type: :string, nullable: true,
+                                           description: '1 - cosine_distance; present only for semantic (visual/agentic) results' },
+                     },
+                   },
+                 },
+               }
+        run_test!
+      end
+    end
+  end
+
+  # ===========================================================================
+  # SEARCH SUGGESTIONS — GET /api/v1/search/suggestions
+  # Lightweight autocomplete for the global top-bar search box (Redis-cached)
+  # ===========================================================================
+  path '/api/v1/search/suggestions' do
+    get 'Autocomplete suggestions (mixed assets + folders)' do
+      tags 'Assets'
+      produces 'application/json'
+      security [ Bearer: [] ]
+      description <<~DESC
+        Returns a small, fast, Redis-cached list of matching assets and folders for the
+        top-bar search-as-you-type dropdown. Designed to be called on every keystroke
+        (debounced client-side), so results are capped at 5 assets + 3 folders.
+      DESC
+
+      parameter name: :q, in: :query, type: :string, required: false,
+                description: 'Prefix term matched against asset titles/filenames and folder names'
+
+      response '200', 'Suggestions returned (may be empty array)' do
+        schema type: :object,
+               properties: {
+                 query: { type: :string, example: 'brand' },
+                 results: {
+                   type: :array,
+                   items: {
+                     type: :object,
+                     properties: {
+                       type:      { type: :string, enum: %w[asset folder], example: 'asset' },
+                       id:        { oneOf: [ { type: :integer }, { type: :string } ], example: 'a1b2c3d4-...' },
+                       title:     { type: :string, example: 'Brand Kit' },
+                       subtitle:  { type: :string, nullable: true, example: 'image/png' },
+                       thumb_url: { type: :string, nullable: true },
+                       href:      { type: :string, example: '/assets?id=a1b2c3d4-...' },
                      },
                    },
                  },
