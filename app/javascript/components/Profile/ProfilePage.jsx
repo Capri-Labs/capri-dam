@@ -46,7 +46,7 @@ const SUPPORTED_THEMES = [
 
 
 function TabPanel({ children, value, index }) {
-  return value === index ? <Box sx={{ pt: 3 }}>{children}</Box> : null;
+  return value === index ? <Box role="tabpanel" sx={{ pt: 3 }}>{children}</Box> : null;
 }
 
 function ActivityIcon({ action }) {

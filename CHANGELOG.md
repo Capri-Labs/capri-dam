@@ -132,6 +132,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `.node-version` bumped to `22.16.0`.
 
 ### Fixed
+- **Admins could accidentally suspend their own account** — the
+  `POST /admin/users/:id/toggle_status` endpoint had no self-protection check
+  (unlike `DELETE /admin/users/:id`), so clicking "Suspend Access" on your own
+  user row would lock you out with "Account is deactivated." on next login.
+  This was the root cause of the Playwright `users_and_groups.e2e.spec.js`
+  "suspend / restore user via drawer" test deactivating `admin@admin.com` in
+  CI/local runs (it targeted the first DataGrid row, which is the signed-in
+  admin). Fixed by:
+  - `Admin::UsersController#toggle_status` now returns `403 Forbidden`
+    (`"You cannot suspend your own account."`) when suspending your own,
+    still-active account; reactivating (if already inactive) remains allowed.
+  - `UserDrawer` disables the "Suspend Access" button (with tooltip) when the
+    drawer's target user matches the signed-in `currentUserId`.
+  - The e2e test now creates a disposable local user for the suspend/restore
+    flow instead of touching the first (admin) grid row, and restores it back
+    to active before finishing; a new test asserts the button is disabled for
+    the logged-in admin's own row.
 - **Keycloak SSO callback was unreachable** — missing controller and route
   meant every SSO login attempt resulted in
   `AbstractController::ActionNotFound`. Now fixed.

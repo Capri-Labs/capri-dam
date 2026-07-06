@@ -18,19 +18,68 @@ async function loginAsAdmin(page) {
   // The test suite uses the seeded admin credentials.
   // Login is handled by the React SPA — use autocomplete selectors.
   await page.waitForSelector('input[autocomplete="email"]', { timeout: 15_000 });
-  await page.fill('input[autocomplete="email"]', process.env.ADMIN_EMAIL || 'admin@example.com');
-  await page.fill('input[autocomplete="current-password"]', process.env.ADMIN_PASSWORD || 'password');
-  await page.click('button[type="submit"]');
-  await page.waitForFunction(
-    () => !document.querySelector('input[autocomplete="email"]'),
-    { timeout: 15_000 },
-  );
+  await page.fill('input[autocomplete="email"]', process.env.ADMIN_EMAIL || 'admin@admin.com');
+  await page.fill('input[autocomplete="current-password"]', process.env.ADMIN_PASSWORD || 'AdminUser');
+
+  const [response] = await Promise.all([
+    page.waitForResponse((res) => res.url().includes('/users/sign_in.json'), { timeout: 15_000 }),
+    page.click('button[type="submit"]'),
+  ]);
+  if (!response.ok()) throw new Error(`login failed with status ${response.status()}`);
+
+  // The app performs a full-page redirect (window.location.href = '/') after
+  // a successful AJAX sign-in; wait for it and then double-check the session
+  // actually took effect (guards against a rare Set-Cookie/navigation race).
+  await page.waitForURL(/^https?:\/\/[^/]+\/?(\?.*)?$/, { timeout: 15_000 });
   await page.waitForLoadState('networkidle');
+
+  const signedIn = await page.locator('#header-root').getAttribute('data-signed-in');
+  if (signedIn !== 'true') {
+    await page.reload();
+    await page.waitForLoadState('networkidle');
+  }
 }
 
 async function openWorkflowDesigner(page) {
-  await page.goto(`${BASE}/workflows/new`);
+  // There is no dedicated /workflows/new route — WorkflowContainer.jsx renders
+  // the designer via client-side state when the "Create New Workflow" button
+  // is clicked on the /workflows list page (see WorkflowContainer.jsx).
+  await page.goto(`${BASE}/workflows`);
+  await page.waitForLoadState('networkidle');
+  await page.getByRole('button', { name: /create new workflow/i }).click();
   await page.waitForSelector('[data-testid="workflow-canvas"], .react-flow', { timeout: 15_000 });
+}
+
+// NodePalette.jsx implements native HTML5 drag-and-drop (draggable + onDragStart
+// with dataTransfer.setData('application/reactflow', nodeType)), and
+// WorkflowCanvas.jsx's onDrop reads it back via dataTransfer.getData(). Playwright's
+// locator.dragTo() only simulates mouse events, which Chromium's native DnD does
+// NOT reliably translate into dragstart/dragover/drop with populated dataTransfer
+// for items that require scrolling within the palette's overflow container — this
+// caused a real, pre-existing bug where the wrong node (or none) got dropped.
+// The Playwright-recommended fix for HTML5 DnD is to dispatch the drag events
+// directly with a real DataTransfer object, bypassing mouse-position simulation
+// entirely (see https://playwright.dev/docs/input#drag-and-drop-with-html5).
+async function dragPaletteItemToCanvas(page, itemText) {
+  // Use an exact match so a substring match doesn't accidentally grab a
+  // category header instead of the tool item (e.g. "Approval" is also a
+  // substring of the "Approval & Review" category label, which sits earlier
+  // in the DOM and would otherwise be picked up by .first()).
+  const source = page.getByText(itemText, { exact: true }).first();
+  await source.scrollIntoViewIfNeeded();
+  const canvas = page.locator('.react-flow__pane');
+  const box = await canvas.boundingBox();
+  // Drop roughly in the middle of the canvas — WorkflowCanvas.jsx's onDrop
+  // uses event.clientX/clientY (via screenToFlowPosition) to place the new
+  // node, and dispatchEvent doesn't set them by default (defaulting to
+  // 0,0), which placed nodes off-screen/behind other UI and made later
+  // interactions (e.g. clicking its fields) flaky.
+  const clientX = box ? box.x + box.width / 2 : 400;
+  const clientY = box ? box.y + box.height / 2 : 300;
+  const dataTransfer = await page.evaluateHandle(() => new DataTransfer());
+  await source.dispatchEvent('dragstart', { dataTransfer });
+  await canvas.dispatchEvent('dragover', { dataTransfer, clientX, clientY });
+  await canvas.dispatchEvent('drop', { dataTransfer, clientX, clientY });
 }
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
@@ -63,26 +112,14 @@ test.describe('Workflow Designer — canvas drag-and-drop', () => {
   });
 
   test('drops an Email node onto the canvas', async ({ page }) => {
-    const emailItem = page.locator('text=Send Email').first();
-    const canvas    = page.locator('.react-flow__pane');
-
-    await emailItem.dragTo(canvas, {
-      sourcePosition: { x: 5, y: 5 },
-      targetPosition: { x: 400, y: 300 },
-    });
+    await dragPaletteItemToCanvas(page, 'Send Email');
 
     // The dropped node header should appear
     await expect(page.locator('text=Send Email').nth(1)).toBeVisible({ timeout: 5_000 });
   });
 
   test('drops a Condition node and shows TRUE/FALSE branch labels', async ({ page }) => {
-    const condItem = page.locator('text=Condition Branch').first();
-    const canvas   = page.locator('.react-flow__pane');
-
-    await condItem.dragTo(canvas, {
-      sourcePosition: { x: 5, y: 5 },
-      targetPosition: { x: 400, y: 300 },
-    });
+    await dragPaletteItemToCanvas(page, 'Condition Branch');
 
     await expect(page.locator('text=TRUE')).toBeVisible({ timeout: 5_000 });
     await expect(page.locator('text=FALSE')).toBeVisible({ timeout: 5_000 });
@@ -108,7 +145,14 @@ test.describe('Workflow Designer — blueprint save', () => {
   });
 
   test('fills in blueprint name and publishes successfully', async ({ page }) => {
-    await page.fill('[label="Blueprint Name"]', 'E2E Test Workflow');
+    // "Active workflows must have at least one approval step" — drop an
+    // Approval node and assign it (users/groups are preloaded via props on
+    // the node, so the Autocomplete options are available immediately).
+    await dragPaletteItemToCanvas(page, 'Approval');
+    await page.getByLabel('Search user…').click();
+    await page.getByRole('option').first().click();
+
+    await page.getByLabel('Blueprint Name').fill('E2E Test Workflow');
 
     // Accept the published notification (the notify hook fires a snackbar)
     page.once('dialog', (d) => d.accept());
@@ -122,14 +166,9 @@ test.describe('Workflow Designer — blueprint save', () => {
 
   test('shows validation error when approval step has no assignee', async ({ page }) => {
     // Drop an approval node
-    const approvalItem = page.locator('text=Approval').first();
-    const canvas       = page.locator('.react-flow__pane');
-    await approvalItem.dragTo(canvas, {
-      sourcePosition: { x: 5, y: 5 },
-      targetPosition: { x: 400, y: 300 },
-    });
+    await dragPaletteItemToCanvas(page, 'Approval');
 
-    await page.fill('[label="Blueprint Name"]', 'Invalid Workflow');
+    await page.getByLabel('Blueprint Name').fill('Invalid Workflow');
     await page.click('button:has-text("Publish Blueprint")');
 
     await expect(
@@ -145,12 +184,7 @@ test.describe('Workflow Designer — node configuration', () => {
   });
 
   test('configures a Delay node', async ({ page }) => {
-    const delayItem = page.locator('text=Delay / Wait').first();
-    const canvas    = page.locator('.react-flow__pane');
-    await delayItem.dragTo(canvas, {
-      sourcePosition: { x: 5, y: 5 },
-      targetPosition: { x: 400, y: 300 },
-    });
+    await dragPaletteItemToCanvas(page, 'Delay / Wait');
 
     // The delay info hint should be visible
     await expect(
@@ -159,14 +193,11 @@ test.describe('Workflow Designer — node configuration', () => {
   });
 
   test('configures a Webhook node URL', async ({ page }) => {
-    const webhookItem = page.locator('text=Webhook').first();
-    const canvas      = page.locator('.react-flow__pane');
-    await webhookItem.dragTo(canvas, {
-      sourcePosition: { x: 5, y: 5 },
-      targetPosition: { x: 400, y: 350 },
-    });
+    await dragPaletteItemToCanvas(page, 'Webhook');
 
-    const urlInput = page.locator('[label="nodes.webhook.url"]').first();
+    // "Endpoint URL" is the rendered label for t('nodes.webhook.url') (see
+    // WebhookNode.jsx / en.json), not the raw translation key.
+    const urlInput = page.getByLabel('Endpoint URL').first();
     await urlInput.fill('https://hooks.example.com/test');
     await expect(urlInput).toHaveValue('https://hooks.example.com/test');
   });

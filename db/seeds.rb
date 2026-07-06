@@ -57,6 +57,46 @@ puts "✅ Admin: #{admin.email}"
 end
 
 # ---------------------------------------------------------------------------
+# 2b. E2E / Playwright fixture users
+# ---------------------------------------------------------------------------
+# A handful of e2e specs (impersonation, header impersonate/groups switcher,
+# style/model hub folder access) need distinct roles beyond the single
+# super-admin account above: a second super-admin (to test "super-admin
+# cannot impersonate another super-admin"), a plain non-admin target user,
+# and a non-admin "member" user. These are dev/test-only fixtures — never
+# used in production flows — so they're safe to seed idempotently.
+
+superadmin = User.find_or_create_by!(email: 'superadmin@example.com') do |user|
+  user.username              = 'e2e_superadmin'
+  user.name                  = 'E2E Super Admin'
+  user.password              = 'Password123!'
+  user.password_confirmation = 'Password123!'
+  user.admin                 = true
+end
+[ admins_group, super_admins_group, everyone_group ].each do |group|
+  superadmin.user_groups << group unless superadmin.user_groups.include?(group)
+end
+puts "✅ E2E fixture: #{superadmin.email}"
+
+target_user = User.find_or_create_by!(email: 'user@example.com') do |user|
+  user.username              = 'e2e_target_user'
+  user.name                  = 'E2E Target User'
+  user.password              = 'Password123!'
+  user.password_confirmation = 'Password123!'
+  user.admin                 = false
+end
+puts "✅ E2E fixture: #{target_user.email}"
+
+member_user = User.find_or_create_by!(email: 'member@example.com') do |user|
+  user.username              = 'e2e_member_user'
+  user.name                  = 'E2E Member User'
+  user.password              = 'password'
+  user.password_confirmation = 'password'
+  user.admin                 = false
+end
+puts "✅ E2E fixture: #{member_user.email}"
+
+# ---------------------------------------------------------------------------
 # 3. System API User
 # ---------------------------------------------------------------------------
 

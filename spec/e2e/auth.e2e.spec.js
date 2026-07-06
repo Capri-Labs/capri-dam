@@ -7,16 +7,21 @@ const INVALID_PASSWORD = process.env.E2E_INVALID_PASSWORD || 'wrong-password';
 const SSO_PATH = process.env.E2E_SSO_PATH || '/users/auth/keycloak_openid';
 
 async function signOut(page) {
-  const csrfToken = await page.locator('meta[name="csrf-token"]').getAttribute('content');
-  await page.evaluate(async ({ token }) => {
+  // Read the CSRF token from inside the page context via a non-blocking
+  // querySelector. A Playwright locator would hang until its timeout because
+  // the meta tag is never rendered when forgery protection is disabled
+  // (test/integration environments set `allow_forgery_protection = false`),
+  // so `content` is simply undefined/omitted in that case instead of blocking.
+  await page.evaluate(async () => {
+    const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
     await fetch('/users/sign_out', {
       method: 'DELETE',
       headers: {
-        'X-CSRF-Token': token,
+        ...(token ? { 'X-CSRF-Token': token } : {}),
         'Content-Type': 'application/json'
       }
     });
-  }, { token: csrfToken });
+  });
 }
 
 test.describe('Authentication flows', () => {

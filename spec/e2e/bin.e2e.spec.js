@@ -7,16 +7,32 @@
 
 const { test, expect } = require('./fixtures');
 
-const EMAIL    = process.env.E2E_EMAIL    || 'admin@example.com';
-const PASSWORD = process.env.E2E_PASSWORD || 'password123';
+const EMAIL    = process.env.E2E_EMAIL    || 'admin@admin.com';
+const PASSWORD = process.env.E2E_PASSWORD || 'AdminUser';
 
 async function login(page) {
     await page.goto('/users/sign_in');
     await page.waitForSelector('input[autocomplete="email"]', { timeout: 15_000 });
     await page.fill('input[autocomplete="email"]', EMAIL);
     await page.fill('input[autocomplete="current-password"]', PASSWORD);
-    await page.click('button[type="submit"], input[type="submit"]');
+
+    const [response] = await Promise.all([
+        page.waitForResponse((res) => res.url().includes('/users/sign_in.json'), { timeout: 15_000 }),
+        page.click('button[type="submit"], input[type="submit"]'),
+    ]);
+    if (!response.ok()) throw new Error(`login failed with status ${response.status()}`);
+
+    // The app performs a full-page redirect (window.location.href = '/') after
+    // a successful AJAX sign-in; wait for it and then double-check the session
+    // actually took effect (guards against a rare Set-Cookie/navigation race).
+    await page.waitForURL(/^https?:\/\/[^/]+\/?(\?.*)?$/, { timeout: 15_000 });
     await page.waitForLoadState('networkidle');
+
+    const signedIn = await page.locator('#header-root').getAttribute('data-signed-in');
+    if (signedIn !== 'true') {
+        await page.reload();
+        await page.waitForLoadState('networkidle');
+    }
 }
 
 test.describe('Recycle Bin E2E', () => {
@@ -54,12 +70,15 @@ test.describe('Recycle Bin E2E', () => {
         await page.goto('/bin');
         await page.waitForLoadState('networkidle');
 
-        await expect(page.getByRole('button', { name: /all items/i })).toBeVisible();
-        await expect(page.getByRole('button', { name: /^assets$/i })).toBeVisible();
-        await expect(page.getByRole('button', { name: /^folders$/i })).toBeVisible();
-        await expect(page.getByRole('button', { name: /images/i })).toBeVisible();
-        await expect(page.getByRole('button', { name: /videos/i })).toBeVisible();
-        await expect(page.getByRole('button', { name: /documents/i })).toBeVisible();
+        // Scope to the main content root to avoid matching the sidebar's
+        // "Assets" nav item, which shares the same accessible name.
+        const main = page.locator('#root');
+        await expect(main.getByRole('button', { name: /all items/i })).toBeVisible();
+        await expect(main.getByRole('button', { name: /^assets$/i })).toBeVisible();
+        await expect(main.getByRole('button', { name: /^folders$/i })).toBeVisible();
+        await expect(main.getByRole('button', { name: /images/i })).toBeVisible();
+        await expect(main.getByRole('button', { name: /videos/i })).toBeVisible();
+        await expect(main.getByRole('button', { name: /documents/i })).toBeVisible();
     });
 
     test('renders view-layout toggle (grid/list)', async ({ page }) => {
@@ -133,7 +152,7 @@ test.describe('Recycle Bin E2E', () => {
         await page.getByRole('button', { name: /deleted/i }).first().click();
 
         await expect(page.getByRole('menuitem', { name: /name \(a/i })).toBeVisible();
-        await expect(page.getByRole('menuitem', { name: /size/i })).toBeVisible();
+        await expect(page.getByRole('menuitem', { name: /size \(largest/i })).toBeVisible();
 
         // Dismiss
         await page.keyboard.press('Escape');

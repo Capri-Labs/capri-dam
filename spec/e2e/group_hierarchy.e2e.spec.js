@@ -21,8 +21,24 @@ async function login(page) {
   await page.waitForSelector('input[autocomplete="email"]', { timeout: 15_000 });
   await page.fill('input[autocomplete="email"]', ADMIN_EMAIL);
   await page.fill('input[autocomplete="current-password"]', ADMIN_PASSWORD);
-  await page.click('button[type="submit"], input[type="submit"]');
+
+  const [response] = await Promise.all([
+    page.waitForResponse((res) => res.url().includes('/users/sign_in.json'), { timeout: 15_000 }),
+    page.click('button[type="submit"], input[type="submit"]'),
+  ]);
+  if (!response.ok()) throw new Error(`login failed with status ${response.status()}`);
+
+  // The app performs a full-page redirect (window.location.href = '/') after
+  // a successful AJAX sign-in; wait for it and then double-check the session
+  // actually took effect (guards against a rare Set-Cookie/navigation race).
+  await page.waitForURL(/^https?:\/\/[^/]+\/?(\?.*)?$/, { timeout: 15_000 });
   await page.waitForLoadState('networkidle');
+
+  const signedIn = await page.locator('#header-root').getAttribute('data-signed-in');
+  if (signedIn !== 'true') {
+    await page.reload();
+    await page.waitForLoadState('networkidle');
+  }
 }
 
 /**
@@ -31,6 +47,13 @@ async function login(page) {
 async function openGroupOverlay(page, groupName) {
   await page.goto('/admin/user_groups');
   await page.waitForLoadState('networkidle');
+  // Filter the tree first so the target group is guaranteed to be rendered
+  // even if it's nested under a parent that isn't expanded by default, or
+  // the list is long/virtualized.
+  const searchBox = page.getByPlaceholder(/search groups/i);
+  if (await searchBox.isVisible({ timeout: 2000 }).catch(() => false)) {
+    await searchBox.fill(groupName);
+  }
   const groupItem = page.getByText(groupName, { exact: false }).first();
   await groupItem.click();
   // Wait for the overlay drawer to open
@@ -56,8 +79,8 @@ test.describe('Group overlay — Groups tab structure', () => {
     await page.getByRole('tab', { name: /groups/i }).click();
     await page.waitForLoadState('networkidle');
 
-    await expect(page.getByText(/child groups/i)).toBeVisible({ timeout: 6000 });
-    await expect(page.getByText(/parent group/i)).toBeVisible({ timeout: 6000 });
+    await expect(page.getByRole('heading', { name: /^child groups$/i })).toBeVisible({ timeout: 6000 });
+    await expect(page.getByRole('heading', { name: /^parent group$/i })).toBeVisible({ timeout: 6000 });
   });
 
   test('root-level group shows "no parent" alert in Parent Group section', async ({ page }) => {
@@ -107,7 +130,7 @@ test.describe('Group overlay — Groups tab structure', () => {
     await openGroupOverlay(page, childName);
     await page.getByRole('tab', { name: /groups/i }).click();
 
-    await expect(page.getByText(parentName)).toBeVisible({ timeout: 6000 });
+    await expect(page.getByText(parentName).first()).toBeVisible({ timeout: 6000 });
 
     // Lock icon (read-only) should be visible — no remove button for parent
     await expect(page.getByText(/parent cannot be removed from the child/i)).not.toBeVisible();
@@ -282,7 +305,7 @@ test.describe('Group overlay — removing child groups', () => {
     await page.waitForLoadState('networkidle');
 
     // Child should be listed
-    await expect(page.getByText(childName)).toBeVisible({ timeout: 6000 });
+    await expect(page.getByText(childName).first()).toBeVisible({ timeout: 6000 });
 
     // Click the remove (delete) button next to the child
     const childRow = page.locator('li').filter({ hasText: childName });
@@ -332,7 +355,7 @@ test.describe('Group overlay — removing child groups', () => {
     await page.waitForLoadState('networkidle');
 
     // Parent group name should be visible under "Parent Group" section
-    await expect(page.getByText(parentName)).toBeVisible({ timeout: 6000 });
+    await expect(page.getByText(parentName).first()).toBeVisible({ timeout: 6000 });
 
     // The parent list item should NOT have a clickable delete/remove button
     const parentListItem = page.locator('li').filter({ hasText: parentName });

@@ -167,6 +167,11 @@ RSpec.describe 'Admin::Users', type: :request do
                }
         run_test!
       end
+
+      response '403', 'cannot suspend your own account' do
+        schema type: :object, properties: { error: { type: :string } }
+        run_test!
+      end
     end
   end
 

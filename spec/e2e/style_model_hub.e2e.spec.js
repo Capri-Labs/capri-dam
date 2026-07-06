@@ -9,14 +9,26 @@ test.describe('Style & Model Hub — /ai/models/hub', () => {
     // Log in as admin before each test
     await page.goto('/users/sign_in');
     await page.waitForSelector('input[autocomplete="email"]', { timeout: 15_000 });
-    await page.fill('input[autocomplete="email"]', process.env.ADMIN_EMAIL || 'admin@example.com');
-    await page.fill('input[autocomplete="current-password"]', process.env.ADMIN_PASSWORD || 'password');
-    await page.click('[type="submit"]');
-    await page.waitForFunction(
-    () => !document.querySelector('input[autocomplete="email"]'),
-    { timeout: 15_000 },
-  );
+    await page.fill('input[autocomplete="email"]', process.env.ADMIN_EMAIL || 'admin@admin.com');
+    await page.fill('input[autocomplete="current-password"]', process.env.ADMIN_PASSWORD || 'AdminUser');
+
+    const [response] = await Promise.all([
+      page.waitForResponse((res) => res.url().includes('/users/sign_in.json'), { timeout: 15_000 }),
+      page.click('[type="submit"]'),
+    ]);
+    if (!response.ok()) throw new Error(`login failed with status ${response.status()}`);
+
+    // The app performs a full-page redirect (window.location.href = '/') after
+    // a successful AJAX sign-in; wait for it and then double-check the session
+    // actually took effect (guards against a rare Set-Cookie/navigation race).
+    await page.waitForURL(/^https?:\/\/[^/]+\/?(\?.*)?$/, { timeout: 15_000 });
     await page.waitForLoadState('networkidle');
+
+    const signedIn = await page.locator('#header-root').getAttribute('data-signed-in');
+    if (signedIn !== 'true') {
+      await page.reload();
+      await page.waitForLoadState('networkidle');
+    }
   });
 
   test('page loads at canonical URL', async ({ page }) => {
@@ -71,7 +83,9 @@ test.describe('Style & Model Hub — /ai/models/hub', () => {
   test('unauthenticated user is redirected to login', async ({ page, context }) => {
     await context.clearCookies();
     await page.goto(STYLE_HUB_URL);
-    await expect(page).toHaveURL(/sign_in/);
+    // The app's Sessions#new redirects to root ("/"), where the unauthenticated
+    // React shell renders the Login SPA — see auth.e2e.spec.js for the same pattern.
+    await expect(page).toHaveURL(/\/$/);
   });
 });
 

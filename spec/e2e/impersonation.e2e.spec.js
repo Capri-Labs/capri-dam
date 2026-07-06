@@ -15,8 +15,8 @@
 const { test, expect } = require('./fixtures');
 
 const BASE_URL    = process.env.BASE_URL    || 'http://localhost:3000';
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@example.com';
-const ADMIN_PASS  = process.env.ADMIN_PASS  || 'Password123!';
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@admin.com';
+const ADMIN_PASS  = process.env.ADMIN_PASS  || 'AdminUser';
 
 const SUPER_EMAIL = process.env.SUPER_EMAIL || 'superadmin@example.com';
 const SUPER_PASS  = process.env.SUPER_PASS  || 'Password123!';
@@ -30,12 +30,40 @@ async function login(page, email, password) {
   await page.waitForSelector('input[autocomplete="email"]', { timeout: 15_000 });
   await page.fill('input[autocomplete="email"]',    email);
   await page.fill('input[autocomplete="current-password"]', password);
-  await page.click('button[type="submit"]');
-  await page.waitForFunction(
-    () => !document.querySelector('input[autocomplete="email"]'),
-    { timeout: 15_000 },
-  );
+
+  const [response] = await Promise.all([
+    page.waitForResponse((res) => res.url().includes('/users/sign_in.json'), { timeout: 15_000 }),
+    page.click('button[type="submit"]'),
+  ]);
+  if (!response.ok()) throw new Error(`login failed with status ${response.status()}`);
+
+  // The app performs a full-page redirect (window.location.href = '/') after
+  // a successful AJAX sign-in; wait for it and then double-check the session
+  // actually took effect (guards against a rare Set-Cookie/navigation race).
+  await page.waitForURL(/^https?:\/\/[^/]+\/?(\?.*)?$/, { timeout: 15_000 });
   await page.waitForLoadState('networkidle');
+
+  const signedIn = await page.locator('#header-root').getAttribute('data-signed-in');
+  if (signedIn !== 'true') {
+    await page.reload();
+    await page.waitForLoadState('networkidle');
+  }
+}
+
+// The Admin Users DataGrid virtualizes rows (MUI DataGrid only renders rows
+// currently scrolled into the viewport), so with 19+ seeded users, rows near
+// the bottom (alphabetically-late emails like "user@example.com") are not in
+// the DOM at all until scrolled into view — filter({hasText}) alone times out.
+// Scroll the grid's virtual scroller incrementally until the row appears.
+async function findGridRow(page, text) {
+  const scroller = page.locator('.MuiDataGrid-virtualScroller');
+  for (let i = 0; i < 20; i++) {
+    const row = page.locator('.MuiDataGrid-row').filter({ hasText: text });
+    if (await row.count() > 0) return row.first();
+    await scroller.evaluate((el) => el.scrollBy(0, 300));
+    await page.waitForTimeout(150);
+  }
+  throw new Error(`Row containing "${text}" not found in the Admin Users grid after scrolling`);
 }
 
 async function openUserDrawer(page, email) {
@@ -43,7 +71,7 @@ async function openUserDrawer(page, email) {
   // Wait for the DataGrid to appear
   await page.waitForSelector('[data-testid="users-grid"], .MuiDataGrid-root', { timeout: 10_000 });
   // Click the row matching the target user's email
-  const row = page.locator('.MuiDataGrid-row').filter({ hasText: email }).first();
+  const row = await findGridRow(page, email);
   await row.click();
   // The drawer should open
   await page.waitForSelector('[role="presentation"] .MuiDrawer-paper', { timeout: 5_000 });
@@ -128,8 +156,9 @@ test.describe('Impersonation Engine', () => {
 
     // Navigate to folders — banner must still be visible
     await page.goto(`${BASE_URL}/folders`);
+    await page.waitForLoadState('networkidle');
     await expect(page.locator('[role="alert"]').filter({ hasText: 'IMPERSONATION ACTIVE' }))
-      .toBeVisible({ timeout: 5_000 });
+      .toBeVisible({ timeout: 10_000 });
   });
 
   test('End Impersonation button clears the session and removes the banner', async ({ page }) => {

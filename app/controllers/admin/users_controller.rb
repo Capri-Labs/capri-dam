@@ -117,6 +117,10 @@ class Admin::UsersController < ApplicationController
 
   # POST /admin/users/:id/toggle_status
   def toggle_status
+    if @target_user == current_user && @target_user.active?
+      return render json: { error: "You cannot suspend your own account." }, status: :forbidden
+    end
+
     if @target_user.active?
       @target_user.deactivate!
       msg = "User access suspended."
@@ -386,6 +390,7 @@ class Admin::UsersController < ApplicationController
       avatar_url:   user.avatar_url,
       sso_managed:  user.sso_managed?,
       admin:        user.admin,
+      super_admin:  user.super_admin?,
       provider:     user.provider,
       active:       user.active,
       created_at:   user.created_at.strftime("%Y-%m-%d"),

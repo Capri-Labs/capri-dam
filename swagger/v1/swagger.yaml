@@ -861,6 +861,15 @@ paths:
                     type: string
                   active:
                     type: boolean
+        '403':
+          description: cannot suspend your own account
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
   "/admin/users/{id}/change_password":
     parameters:
     - name: id

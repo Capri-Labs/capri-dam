@@ -3,16 +3,32 @@
 
 const { test, expect } = require('./fixtures');
 
-const EMAIL    = process.env.E2E_EMAIL    || 'admin@example.com';
-const PASSWORD = process.env.E2E_PASSWORD || 'password123';
+const EMAIL    = process.env.E2E_EMAIL    || 'admin@admin.com';
+const PASSWORD = process.env.E2E_PASSWORD || 'AdminUser';
 
 async function login(page) {
     await page.goto('/users/sign_in');
     await page.waitForSelector('input[autocomplete="email"]', { timeout: 15_000 });
     await page.fill('input[autocomplete="email"]', EMAIL);
     await page.fill('input[autocomplete="current-password"]', PASSWORD);
-    await page.click('button[type="submit"], input[type="submit"]');
+
+    const [response] = await Promise.all([
+        page.waitForResponse((res) => res.url().includes('/users/sign_in.json'), { timeout: 15_000 }),
+        page.click('button[type="submit"], input[type="submit"]'),
+    ]);
+    if (!response.ok()) throw new Error(`login failed with status ${response.status()}`);
+
+    // The app performs a full-page redirect (window.location.href = '/') after
+    // a successful AJAX sign-in; wait for it and then double-check the session
+    // actually took effect (guards against a rare Set-Cookie/navigation race).
+    await page.waitForURL(/^https?:\/\/[^/]+\/?(\?.*)?$/, { timeout: 15_000 });
     await page.waitForLoadState('networkidle');
+
+    const signedIn = await page.locator('#header-root').getAttribute('data-signed-in');
+    if (signedIn !== 'true') {
+        await page.reload();
+        await page.waitForLoadState('networkidle');
+    }
 }
 
 // Shared mock for the overview API — returns an empty-state scenario
@@ -49,7 +65,7 @@ test.describe('TDM & Storage Health Dashboard E2E', () => {
         await page.goto('/admin/migrations/health');
         await page.waitForLoadState('networkidle');
 
-        await expect(page.getByText(/tdm & storage health/i)).toBeVisible();
+        await expect(page.getByRole('heading', { name: /tdm & storage health/i })).toBeVisible();
     });
 
     // ── Breadcrumb ───────────────────────────────────────────────────────────
@@ -73,7 +89,7 @@ test.describe('TDM & Storage Health Dashboard E2E', () => {
 
         await expect(page.getByText(/pending duplicates/i)).toBeVisible();
         await expect(page.getByText(/storage saved/i)).toBeVisible();
-        await expect(page.getByText(/monthly savings/i)).toBeVisible();
+        await expect(page.getByText('Monthly Savings', { exact: true })).toBeVisible();
         await expect(page.getByText(/active connectors/i)).toBeVisible();
         await expect(page.getByText(/batches completed/i)).toBeVisible();
         await expect(page.getByText(/last repo scan/i)).toBeVisible();

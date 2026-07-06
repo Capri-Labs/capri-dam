@@ -14,20 +14,32 @@
 const { test, expect } = require('./fixtures');
 
 const BASE_URL    = process.env.BASE_URL    || 'http://localhost:3000';
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@example.com';
-const ADMIN_PASS  = process.env.ADMIN_PASS  || 'Password123!';
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@admin.com';
+const ADMIN_PASS  = process.env.ADMIN_PASS  || 'AdminUser';
 
 async function login(page) {
   await page.goto(`${BASE_URL}/users/sign_in`);
   await page.waitForSelector('input[autocomplete="email"]', { timeout: 15_000 });
   await page.fill('input[autocomplete="email"]',    ADMIN_EMAIL);
   await page.fill('input[autocomplete="current-password"]', ADMIN_PASS);
-  await page.click('button[type="submit"]');
-  await page.waitForFunction(
-    () => !document.querySelector('input[autocomplete="email"]'),
-    { timeout: 15_000 },
-  );
+
+  const [response] = await Promise.all([
+    page.waitForResponse((res) => res.url().includes('/users/sign_in.json'), { timeout: 15_000 }),
+    page.click('button[type="submit"]'),
+  ]);
+  if (!response.ok()) throw new Error(`login failed with status ${response.status()}`);
+
+  // The app performs a full-page redirect (window.location.href = '/') after
+  // a successful AJAX sign-in; wait for it and then double-check the session
+  // actually took effect (guards against a rare Set-Cookie/navigation race).
+  await page.waitForURL(/^https?:\/\/[^/]+\/?(\?.*)?$/, { timeout: 15_000 });
   await page.waitForLoadState('networkidle');
+
+  const signedIn = await page.locator('#header-root').getAttribute('data-signed-in');
+  if (signedIn !== 'true') {
+    await page.reload();
+    await page.waitForLoadState('networkidle');
+  }
 }
 
 async function resetToEnglish(page) {
@@ -35,12 +47,10 @@ async function resetToEnglish(page) {
   await page.locator('[role="tab"]').filter({ hasText: /Localiz|Lokalis/i }).click();
   await page.waitForTimeout(300);
 
-  // Click the language dropdown
-  const langSelect = page.locator('[role="combobox"]').filter({ has: page.locator('[aria-label*="Language"], [aria-label*="Sprache"]') }).first();
-  // Try to find the select via its label
+  // The Localization tabpanel contains two comboboxes: Theme (index 0) then
+  // Language (index 1). Must target the Language one, not Theme.
   const localizationPanel = page.locator('[role="tabpanel"]').first();
-  // Find all selects in the panel
-  await localizationPanel.locator('[role="combobox"]').first().click();
+  await localizationPanel.locator('[role="combobox"]').nth(1).click();
   await page.locator('[role="listbox"] [role="option"]').filter({ hasText: 'English' }).click();
   await page.locator('button').filter({ hasText: /Save Preferences|Einstellungen speichern|Enregistrer/i }).click();
   await page.waitForTimeout(500);
@@ -135,7 +145,7 @@ test.describe('Language Switching — Profile Localization Tab', () => {
     expect(htmlLang).toBe('de');
 
     // Sidebar still shows German
-    await expect(page.locator('text=Übersicht')).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByRole('button', { name: 'Übersicht' })).toBeVisible({ timeout: 5_000 });
   });
 
   test('Switching back to English restores all English sidebar labels', async ({ page }) => {

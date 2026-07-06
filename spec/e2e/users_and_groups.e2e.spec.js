@@ -15,13 +15,45 @@ const { test, expect } = require('./fixtures');
 const ADMIN_EMAIL    = process.env.E2E_EMAIL    || 'admin@admin.com';
 const ADMIN_PASSWORD = process.env.E2E_PASSWORD || 'AdminUser';
 
+// Scrolls the (virtualized) MUI DataGrid until a row containing `text`
+// renders in the DOM. MUI DataGrid only mounts rows within the current
+// scroll viewport, so newly-created rows (or rows alphabetically late) may
+// not exist in the DOM at all until scrolled into view.
+async function findGridRow(page, text) {
+  const scroller = page.locator('.MuiDataGrid-virtualScroller').first();
+  let row = page.locator('.MuiDataGrid-row').filter({ hasText: text }).first();
+  for (let i = 0; i < 20; i++) {
+    if (await row.count() > 0) return row;
+    await scroller.evaluate((el) => el.scrollBy(0, 300));
+    await page.waitForTimeout(150);
+    row = page.locator('.MuiDataGrid-row').filter({ hasText: text }).first();
+  }
+  return row;
+}
+
 async function login(page) {
   await page.goto('/users/sign_in');
   await page.waitForSelector('input[autocomplete="email"]', { timeout: 15_000 });
   await page.fill('input[autocomplete="email"]', ADMIN_EMAIL);
   await page.fill('input[autocomplete="current-password"]', ADMIN_PASSWORD);
-  await page.click('button[type="submit"], input[type="submit"]');
+
+  const [response] = await Promise.all([
+    page.waitForResponse((res) => res.url().includes('/users/sign_in.json'), { timeout: 15_000 }),
+    page.click('button[type="submit"], input[type="submit"]'),
+  ]);
+  if (!response.ok()) throw new Error(`login failed with status ${response.status()}`);
+
+  // The app performs a full-page redirect (window.location.href = '/') after
+  // a successful AJAX sign-in; wait for it and then double-check the session
+  // actually took effect (guards against a rare Set-Cookie/navigation race).
+  await page.waitForURL(/^https?:\/\/[^/]+\/?(\?.*)?$/, { timeout: 15_000 });
   await page.waitForLoadState('networkidle');
+
+  const signedIn = await page.locator('#header-root').getAttribute('data-signed-in');
+  if (signedIn !== 'true') {
+    await page.reload();
+    await page.waitForLoadState('networkidle');
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -51,14 +83,15 @@ test.describe('Admin — Users', () => {
     await page.getByRole('button', { name: /invite local user/i }).click();
 
     const email = `e2e_${Date.now()}@example.com`;
-    await page.getByLabel(/first name/i).fill('E2E');
-    await page.getByLabel(/last name/i).fill('User');
-    await page.getByLabel(/email address/i).fill(email);
-    await page.getByLabel(/department/i).fill('QA');
+    const drawer = page.locator('.MuiDrawer-paper');
+    await drawer.getByLabel(/first name/i).fill('E2E');
+    await drawer.getByLabel(/last name/i).fill('User');
+    await drawer.getByLabel(/email address/i).fill(email);
+    await drawer.getByLabel(/department/i).fill('QA');
     await page.getByRole('button', { name: /provision local account/i }).click();
 
     await page.waitForLoadState('networkidle');
-    await expect(page.getByText(email)).toBeVisible();
+    await expect(await findGridRow(page, email)).toBeVisible();
   });
 
   test('clicking a user row opens tabbed drawer', async ({ page }) => {
@@ -88,13 +121,48 @@ test.describe('Admin — Users', () => {
   });
 
   test('suspend / restore user via drawer', async ({ page }) => {
-    await page.locator('.MuiDataGrid-row').first().click();
-    const suspendBtn = page.getByRole('button', { name: /suspend access|restore access/i });
-    await expect(suspendBtn).toBeVisible();
-    await suspendBtn.click();
+    // IMPORTANT: never target the first grid row directly — it is typically
+    // the signed-in admin account (lowest id / first seeded user), and the
+    // "Suspend Access" button is blocked for the current user anyway. Create
+    // a disposable local user instead so we never risk suspending the
+    // account the E2E suite itself (or a human operator) is logged in as.
+    const email = `e2e_suspend_${Date.now()}@example.com`;
+    await page.getByRole('button', { name: /invite local user/i }).click();
+    const inviteDrawer = page.locator('.MuiDrawer-paper');
+    await inviteDrawer.getByLabel(/first name/i).fill('Suspend');
+    await inviteDrawer.getByLabel(/last name/i).fill('Target');
+    await inviteDrawer.getByLabel(/email address/i).fill(email);
+    await inviteDrawer.getByLabel(/department/i).fill('QA');
+    await page.getByRole('button', { name: /provision local account/i }).click();
     await page.waitForLoadState('networkidle');
-    // Drawer should close after toggle
+    const userRow = await findGridRow(page, email);
+    await expect(userRow).toBeVisible();
+    await userRow.click();
+
+    // Suspend
+    let toggleBtn = page.getByRole('button', { name: /suspend access|restore access/i });
+    await expect(toggleBtn).toBeVisible();
+    await expect(toggleBtn).toHaveText(/suspend access/i);
+    await toggleBtn.click();
+    await page.waitForLoadState('networkidle');
     await expect(page.getByText('System Users')).toBeVisible();
+    await expect((await findGridRow(page, email))).toContainText(/suspended/i);
+
+    // Restore, leaving the test user in its original (active) state.
+    await (await findGridRow(page, email)).click();
+    toggleBtn = page.getByRole('button', { name: /suspend access|restore access/i });
+    await expect(toggleBtn).toHaveText(/restore access/i);
+    await toggleBtn.click();
+    await page.waitForLoadState('networkidle');
+    await expect((await findGridRow(page, email))).toContainText(/active/i);
+  });
+
+  test('cannot suspend own (currently logged-in) account', async ({ page }) => {
+    const adminRow = page.locator('.MuiDataGrid-row').filter({ hasText: ADMIN_EMAIL });
+    await adminRow.click();
+    const suspendBtn = page.getByRole('button', { name: /suspend access/i });
+    // The button is disabled for the signed-in user's own row.
+    await expect(suspendBtn).toBeDisabled();
   });
 
   test('status chip shows Active/Suspended in grid', async ({ page }) => {
@@ -119,7 +187,7 @@ test.describe('Admin — Users', () => {
     const groupBtn = page.locator('[data-testid="GroupAddIcon"]').first();
     if (await groupBtn.isVisible({ timeout: 3000 })) {
       await groupBtn.click();
-      await expect(page.getByText(/group hierarchy/i)).toBeVisible();
+      await expect(page.getByRole('heading', { name: /group hierarchy/i })).toBeVisible();
     }
   });
 
@@ -128,8 +196,8 @@ test.describe('Admin — Users', () => {
     const changePassBtn = page.getByRole('button', { name: /change password/i });
     if (await changePassBtn.isVisible({ timeout: 3000 })) {
       await changePassBtn.click();
-      await expect(page.getByText('Change Password')).toBeVisible();
-      await expect(page.getByLabel(/new password/i)).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Change Password' })).toBeVisible();
+      await expect(page.getByLabel('New Password', { exact: true })).toBeVisible();
     }
   });
 });
@@ -145,14 +213,30 @@ test.describe('Admin — User Groups', () => {
     await page.waitForLoadState('networkidle');
   });
 
+  // Clean up any custom groups this suite created so repeated runs don't
+  // accumulate stale groups that push newly-created ones out of a
+  // virtualized/long tree view.
+  test.afterEach(async ({ page }) => {
+    const res = await page.request.get('/admin/user_groups.json');
+    if (!res.ok()) return;
+    const body = await res.json();
+    const groups = Array.isArray(body) ? body : (body.groups || body.user_groups || []);
+    const stale = groups.filter(g =>
+      typeof g.name === 'string' && /^(E2E Group|Members Test|Delete Me)\s/.test(g.name)
+    );
+    for (const g of stale) {
+      await page.request.delete(`/admin/user_groups/${g.id}.json`);
+    }
+  });
+
   test('groups page loads with hierarchy tree', async ({ page }) => {
-    await expect(page.getByText('User Groups')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'User Groups' })).toBeVisible();
   });
 
   test('system groups are visible in tree', async ({ page }) => {
     await expect(page.getByText('everyone')).toBeVisible();
-    await expect(page.getByText('administrators')).toBeVisible();
-    await expect(page.getByText('super-administrators')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'administrators sys 2', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: /super-administrators sys/i })).toBeVisible();
   });
 
   test('system groups show "sys" badge', async ({ page }) => {
@@ -176,9 +260,9 @@ test.describe('Admin — User Groups', () => {
     await page.getByText('everyone').click();
     await page.waitForLoadState('networkidle');
 
-    // Should show immutability warning
+    // Should show immutability warning (scoped to the alert, not the sidebar section label)
     await expect(
-      page.getByText(/system group|cannot be modified|automatic members/i)
+      page.getByRole('alert').filter({ hasText: /cannot be modified|automatic members|system group/i })
     ).toBeVisible();
   });
 
@@ -206,7 +290,10 @@ test.describe('Admin — User Groups', () => {
     await page.getByRole('button', { name: /create group/i }).click();
     await page.waitForLoadState('networkidle');
 
-    await expect(page.getByText(groupName)).toBeVisible();
+    // Filter the tree so the new group is guaranteed to be rendered even if
+    // the list is long/virtualized.
+    await page.getByPlaceholder(/search groups/i).fill(groupName);
+    await expect(page.getByText(groupName)).toBeVisible({ timeout: 10000 });
   });
 
   test('can open Members tab on a custom group', async ({ page }) => {
@@ -217,13 +304,15 @@ test.describe('Admin — User Groups', () => {
     await page.getByRole('button', { name: /create group/i }).click();
     await page.waitForLoadState('networkidle');
 
-    // Click it
+    // Filter the tree so the new group is guaranteed to be rendered, then click it
+    await page.getByPlaceholder(/search groups/i).fill(groupName);
+    await expect(page.getByText(groupName)).toBeVisible({ timeout: 10000 });
     await page.getByText(groupName).click();
     await page.waitForLoadState('networkidle');
 
     // Navigate to Members tab
     await page.getByRole('tab', { name: /members/i }).click();
-    await expect(page.getByPlaceholder(/enter user email/i)).toBeVisible();
+    await expect(page.getByPlaceholder(/search by name or email to add/i)).toBeVisible();
   });
 
   test('can open Permissions tab and see ACL matrix', async ({ page }) => {
@@ -248,6 +337,10 @@ test.describe('Admin — User Groups', () => {
     await page.getByRole('button', { name: /create group/i }).click();
     await page.waitForLoadState('networkidle');
 
+    // Filter the tree so the new group is guaranteed to be rendered even if
+    // the list is long/virtualized, then click it.
+    await page.getByPlaceholder(/search groups/i).fill(groupName);
+    await expect(page.getByText(groupName)).toBeVisible({ timeout: 10000 });
     await page.getByText(groupName).click();
     await page.waitForLoadState('networkidle');
 
@@ -264,8 +357,8 @@ test.describe('Admin — User Groups', () => {
 
   test('can search/filter groups in tree', async ({ page }) => {
     await page.getByPlaceholder(/search groups/i).fill('admin');
-    await expect(page.getByText('administrators')).toBeVisible();
-    await expect(page.getByText('super-administrators')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'administrators sys 2', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: /super-administrators sys/i })).toBeVisible();
 
     // "everyone" should not be visible after filter
     await expect(page.getByText('everyone')).toHaveCount(0);
@@ -283,39 +376,37 @@ test.describe('Access Control — Group Assignment', () => {
     await page.waitForLoadState('networkidle');
   });
 
-  test('group assignment modal shows info alert about restricted groups', async ({ page }) => {
+  // NOTE: the e2e admin account (ADMIN_EMAIL) is a super-admin, so the modal
+  // renders the "unrestricted" experience for it: no info alert and no locked
+  // groups — every group (including administrators/super-administrators) is
+  // assignable via checkbox. The "regular admin sees locked groups" behavior
+  // is covered by GroupAssignmentModal's own restriction logic and is a good
+  // candidate for a future Jest unit test with a mocked isSuperAdmin=false prop.
+  test('group assignment modal has no restriction alert for a super-admin', async ({ page }) => {
     const groupBtn = page.locator('[data-testid="GroupAddIcon"]').first();
     if (await groupBtn.isVisible({ timeout: 3000 })) {
       await groupBtn.click();
+      await expect(page.getByRole('heading', { name: /group hierarchy/i })).toBeVisible();
 
-      // Should show info alert about administrators/super-administrators restriction
-      await expect(
-        page.getByText(/administrators.*super-administrators.*super-admins/i)
-          .or(page.getByRole('alert').filter({ hasText: /administrators/i }))
-      ).toBeVisible({ timeout: 5000 });
+      // Super-admins are not shown the restriction alert, and no groups are locked.
+      await expect(page.getByRole('alert').filter({ hasText: /can only be assigned by super-admins/i })).toHaveCount(0);
+      await expect(page.locator('[data-testid="LockOutlinedIcon"]')).toHaveCount(0);
     }
   });
 
-  test('administrators group in assignment modal shows locked icon for non-super-admin', async ({ page }) => {
+  test('administrators and super-administrators groups are assignable via checkbox for a super-admin', async ({ page }) => {
     const groupBtn = page.locator('[data-testid="GroupAddIcon"]').first();
     if (await groupBtn.isVisible({ timeout: 3000 })) {
       await groupBtn.click();
+      await expect(page.getByRole('heading', { name: /group hierarchy/i })).toBeVisible();
 
-      // The administrators group should have a lock icon (not a checkbox)
-      const lockIcon = page.locator('[data-testid="LockOutlinedIcon"]');
-      await expect(lockIcon.first()).toBeVisible({ timeout: 5000 });
-    }
-  });
-
-  test('super-administrators group in assignment modal shows locked icon', async ({ page }) => {
-    const groupBtn = page.locator('[data-testid="GroupAddIcon"]').first();
-    if (await groupBtn.isVisible({ timeout: 3000 })) {
-      await groupBtn.click();
-
-      // super-administrators should have lock icon
-      const lockIcons = page.locator('[data-testid="LockOutlinedIcon"]');
-      const count = await lockIcons.count();
-      expect(count).toBeGreaterThanOrEqual(1);
+      // As a super-admin, both system groups render an (enabled) checkbox rather than a lock icon.
+      const dialog = page.getByRole('dialog');
+      const adminGroupRows = dialog.getByText(/administrators/i);
+      await expect(adminGroupRows).toHaveCount(2); // "administrators" + "super-administrators"
+      await expect(adminGroupRows.first()).toBeVisible();
+      await expect(adminGroupRows.last()).toBeVisible();
+      await expect(dialog.getByRole('checkbox')).not.toHaveCount(0);
     }
   });
 });
@@ -356,185 +447,4 @@ test.describe('Folder Permissions ACL', () => {
   });
 });
 
-
-// ---------------------------------------------------------------------------
-// Users
-// ---------------------------------------------------------------------------
-
-test.describe('Admin — User Management', () => {
-  test.beforeEach(async ({ page }) => {
-    await login(page);
-  });
-
-  test('Users list page loads', async ({ page }) => {
-    await page.goto('/admin/users');
-    await expect(page.getByText('Users')).toBeVisible();
-  });
-
-  test('Can open the create-user overlay', async ({ page }) => {
-    await page.goto('/admin/users');
-    const createBtn = page.getByRole('button', { name: /create user|new user/i });
-    await expect(createBtn).toBeVisible();
-    await createBtn.click();
-    await expect(page.getByRole('dialog')).toBeVisible();
-  });
-
-  test('Can create a new local user', async ({ page }) => {
-    await page.goto('/admin/users');
-    const createBtn = page.getByRole('button', { name: /create user|new user/i });
-    await createBtn.click();
-
-    const uniqueEmail = `e2e_user_${Date.now()}@example.com`;
-    await page.fill('input[name*="email"]', uniqueEmail);
-    await page.fill('input[name*="first_name"]', 'E2E');
-    await page.fill('input[name*="last_name"]', 'TestUser');
-    await page.click('button[type="submit"]');
-    await page.waitForLoadState('networkidle');
-
-    // User should now appear in the list
-    await expect(page.getByText(uniqueEmail)).toBeVisible();
-  });
-
-  test('Can suspend and re-activate a user', async ({ page }) => {
-    await page.goto('/admin/users');
-    // Find the first non-admin user's toggle button
-    const toggleBtn = page.getByRole('button', { name: /suspend|activate/i }).first();
-    if (await toggleBtn.isVisible()) {
-      await toggleBtn.click();
-      await page.waitForLoadState('networkidle');
-      // Button label should flip
-      await expect(
-        page.getByRole('button', { name: /suspend|activate/i }).first()
-      ).toBeVisible();
-    }
-  });
-
-  test('Can open user detail overlay with tabs', async ({ page }) => {
-    await page.goto('/admin/users');
-    const firstRow = page.getByRole('row').nth(1);
-    await firstRow.click();
-
-    // Overlay / drawer should appear with tabs
-    await expect(page.getByRole('tab', { name: /properties/i })).toBeVisible();
-    await expect(page.getByRole('tab', { name: /groups/i })).toBeVisible();
-    await expect(page.getByRole('tab', { name: /impersonators/i })).toBeVisible();
-    await expect(page.getByRole('tab', { name: /preferences/i })).toBeVisible();
-  });
-
-  test('Can navigate to Preferences tab and change language', async ({ page }) => {
-    await page.goto('/admin/users');
-    const firstRow = page.getByRole('row').nth(1);
-    await firstRow.click();
-
-    await page.getByRole('tab', { name: /preferences/i }).click();
-    await expect(page.getByLabel(/language/i)).toBeVisible();
-  });
-});
-
-// ---------------------------------------------------------------------------
-// User Groups
-// ---------------------------------------------------------------------------
-
-test.describe('Admin — User Groups Management', () => {
-  test.beforeEach(async ({ page }) => {
-    await login(page);
-  });
-
-  test('User Groups list page loads with built-in groups', async ({ page }) => {
-    await page.goto('/admin/user_groups');
-    await expect(page.getByText('everyone')).toBeVisible();
-    await expect(page.getByText('administrators')).toBeVisible();
-    await expect(page.getByText('super-administrators')).toBeVisible();
-  });
-
-  test('Built-in groups do NOT show a delete button', async ({ page }) => {
-    await page.goto('/admin/user_groups');
-
-    // Find the "everyone" row and verify no delete button
-    const everyoneRow = page.locator('tr, [data-group-slug="everyone"]').filter({ hasText: 'everyone' }).first();
-    await expect(everyoneRow.getByRole('button', { name: /delete/i })).toHaveCount(0);
-  });
-
-  test('Can create a new user group', async ({ page }) => {
-    await page.goto('/admin/user_groups');
-    await page.getByRole('button', { name: /create group|new group/i }).click();
-
-    await page.fill('input[name*="name"]', `E2E Group ${Date.now()}`);
-    await page.fill('textarea[name*="description"], input[name*="description"]', 'Created by E2E tests');
-    await page.click('button[type="submit"]');
-    await page.waitForLoadState('networkidle');
-
-    await expect(page.getByText('E2E Group')).toBeVisible();
-  });
-
-  test('Can open a group overlay and see Members tab', async ({ page }) => {
-    await page.goto('/admin/user_groups');
-
-    // Click on the administrators group to open overlay
-    await page.getByText('administrators').first().click();
-    await expect(page.getByRole('tab', { name: /members/i })).toBeVisible();
-    await expect(page.getByRole('tab', { name: /properties/i })).toBeVisible();
-    await expect(page.getByRole('tab', { name: /permissions/i })).toBeVisible();
-  });
-
-  test('Can open Permissions tab and see ACL matrix', async ({ page }) => {
-    await page.goto('/admin/user_groups');
-
-    // Open a group overlay
-    await page.getByText('administrators').first().click();
-    await page.getByRole('tab', { name: /permissions/i }).click();
-
-    // Should show Read, Modify, Create, Delete, Replicate columns
-    await expect(page.getByText(/read/i)).toBeVisible();
-    await expect(page.getByText(/modify/i)).toBeVisible();
-    await expect(page.getByText(/create/i)).toBeVisible();
-    await expect(page.getByText(/delete/i)).toBeVisible();
-    await expect(page.getByText(/replicate/i)).toBeVisible();
-  });
-
-  test('Can delete a non-system group', async ({ page }) => {
-    // First create one via API so we have something to delete
-    await page.goto('/admin/user_groups');
-    await page.getByRole('button', { name: /create group|new group/i }).click();
-
-    const groupName = `Deletable ${Date.now()}`;
-    await page.fill('input[name*="name"]', groupName);
-    await page.click('button[type="submit"]');
-    await page.waitForLoadState('networkidle');
-
-    // Find and click delete
-    const row = page.locator('tr').filter({ hasText: groupName });
-    await row.getByRole('button', { name: /delete/i }).click();
-
-    // Confirm if a dialog appears
-    const confirmBtn = page.getByRole('button', { name: /confirm|yes/i });
-    if (await confirmBtn.isVisible({ timeout: 2000 })) {
-      await confirmBtn.click();
-    }
-    await page.waitForLoadState('networkidle');
-    await expect(page.getByText(groupName)).toHaveCount(0);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// Folder Permissions (ACL matrix)
-// ---------------------------------------------------------------------------
-
-test.describe('Admin — Folder Permissions ACL', () => {
-  test.beforeEach(async ({ page }) => {
-    await login(page);
-  });
-
-  test('Folder permissions panel loads with new ACL columns', async ({ page }) => {
-    // Navigate to a folder's permission panel if it exists in the UI
-    await page.goto('/admin/user_groups');
-    await page.getByText('administrators').first().click();
-    await page.getByRole('tab', { name: /permissions/i }).click();
-
-    // The matrix should have our renamed columns
-    await expect(page.getByRole('columnheader', { name: /read/i }).or(
-      page.getByText('Read')
-    )).toBeVisible({ timeout: 5000 });
-  });
-});
 

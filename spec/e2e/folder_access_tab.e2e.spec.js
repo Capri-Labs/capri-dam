@@ -19,29 +19,40 @@ const BASE = process.env.BASE_URL || 'http://localhost:3000';
 async function signInAsAdmin(page) {
   await page.goto(`${BASE}/users/sign_in`);
   await page.waitForSelector('input[autocomplete="email"]', { timeout: 15_000 });
-  await page.fill('input[autocomplete="email"]', process.env.ADMIN_EMAIL ?? 'admin@example.com');
-  await page.fill('input[autocomplete="current-password"]', process.env.ADMIN_PASSWORD ?? 'password');
-  await page.getByRole('button', { name: /sign in/i }).click();
-  await page.waitForFunction(
-    () => !document.querySelector('input[autocomplete="email"]'),
-    { timeout: 15_000 },
-  );
+  await page.fill('input[autocomplete="email"]', process.env.ADMIN_EMAIL ?? 'admin@admin.com');
+  await page.fill('input[autocomplete="current-password"]', process.env.ADMIN_PASSWORD ?? 'AdminUser');
+
+  const [response] = await Promise.all([
+    page.waitForResponse((res) => res.url().includes('/users/sign_in.json'), { timeout: 15_000 }),
+    page.getByRole('button', { name: 'Sign In', exact: true }).click(),
+  ]);
+  if (!response.ok()) throw new Error(`login failed with status ${response.status()}`);
+
+  // The app performs a full-page redirect (window.location.href = '/') after
+  // a successful AJAX sign-in; wait for it and then double-check the session
+  // actually took effect (guards against a rare Set-Cookie/navigation race).
+  await page.waitForURL(/^https?:\/\/[^/]+\/?(\?.*)?$/, { timeout: 15_000 });
   await page.waitForLoadState('networkidle');
+
+  const signedIn = await page.locator('#header-root').getAttribute('data-signed-in');
+  if (signedIn !== 'true') {
+    await page.reload();
+    await page.waitForLoadState('networkidle');
+  }
 }
 
 // Opens the folder info panel for the first visible folder.
 async function openFolderInfoPanel(page) {
   await page.goto(`${BASE}/assets`);
-  // Right-click or info-button on the first folder row
-  const infoBtn = page.locator('[data-testid="folder-info-btn"]').first();
-  if (await infoBtn.isVisible()) {
-    await infoBtn.click();
-  } else {
-    // Fallback: hover the first folder chip and click the ⓘ icon
-    const folderRow = page.locator('[data-testid="folder-row"]').first();
-    await folderRow.hover();
-    await folderRow.locator('[aria-label="Folder info"]').click();
-  }
+  await page.waitForLoadState('networkidle');
+  // FolderGrid.jsx renders the info button as an IconButton with
+  // className="folder-info-btn" (no data-testid/aria-label), hidden via
+  // opacity:0 until the containing folder card is hovered. Hovering the
+  // button itself also satisfies the parent Paper's CSS :hover selector
+  // since the pointer position is physically within the parent's box.
+  const infoBtn = page.locator('.folder-info-btn').first();
+  await infoBtn.hover();
+  await infoBtn.click({ force: true });
   // Wait for the drawer
   await expect(page.locator('[role="presentation"]').filter({ hasText: 'Folder properties' })).toBeVisible();
 }
@@ -57,7 +68,7 @@ test.describe('Folder Info Panel – Access Tab', () => {
   });
 
   test('Access tab renders without errors', async ({ page }) => {
-    await expect(page.getByText(/access policies/i)).toBeVisible();
+    await expect(page.getByRole('heading', { name: /access policies/i })).toBeVisible();
   });
 
   test('Add Group button opens the inline form', async ({ page }) => {
@@ -75,13 +86,16 @@ test.describe('Folder Info Panel – Access Tab', () => {
     await page.getByText('everyone', { exact: false }).first().click();
     // Chip appears
     await expect(page.getByText('everyone')).toBeVisible();
-    // Input cleared
-    await expect(searchInput).toHaveValue('');
+    // The search box unmounts and is replaced by a Chip once a group is selected
+    // (see FolderAccessTab.jsx AddPolicyForm — GroupSearch is only rendered
+    // when no group is selected yet), so it's no longer present in the DOM.
+    await expect(searchInput).toHaveCount(0);
   });
 
   test('Cascade toggle shows subfolder warning banner', async ({ page }) => {
     await page.getByRole('button', { name: /add group/i }).click();
-    const cascadeToggle = page.getByRole('checkbox', { name: /apply to all subfolders/i });
+    // Rendered as a MUI <Switch>, whose input carries role="switch" (not "checkbox").
+    const cascadeToggle = page.getByRole('switch', { name: /apply to all subfolders/i });
     if (!(await cascadeToggle.isChecked())) {
       await cascadeToggle.click();
     }

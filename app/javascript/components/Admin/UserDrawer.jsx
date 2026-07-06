@@ -41,10 +41,12 @@ function TabPanel({ children, value, index }) {
 export default function UserDrawer({
   open, user, editForm, setEditForm,
   onClose, onSave, onToggleStatus,
-  allGroups, isAdmin, isSuperAdmin,
+  allGroups, isAdmin, isSuperAdmin, currentUserId,
 }) {
   const notify = useNotify();
   const [tab, setTab] = useState(0);
+  // eslint-disable-next-line eqeqeq -- currentUserId arrives as a string dataset attr; user.id may be numeric.
+  const isSelf = user && currentUserId != null && String(user.id) === String(currentUserId);
 
   const [impersonators, setImpersonators]               = useState([]);
   const [impersonatorsLoading, setImpersonatorsLoading] = useState(false);
@@ -623,8 +625,9 @@ export default function UserDrawer({
             prefsLoading ? <CircularProgress size={24} sx={{ display: 'block', mx: 'auto', mt: 4 }} /> : (
               <Stack spacing={3}>
                 <FormControl fullWidth size="small">
-                  <InputLabel>Interface Language</InputLabel>
-                  <Select value={prefs.language || 'en'} label="Interface Language"
+                  <InputLabel id="user-prefs-interface-language-label">Interface Language</InputLabel>
+                  <Select labelId="user-prefs-interface-language-label" id="user-prefs-interface-language"
+                    value={prefs.language || 'en'} label="Interface Language"
                     onChange={e => setPrefs({ ...prefs, language: e.target.value })}>
                     {SUPPORTED_LANGS.map(l => <MenuItem key={l.value} value={l.value}>{l.label}</MenuItem>)}
                   </Select>
@@ -659,11 +662,16 @@ export default function UserDrawer({
             </Button>
           ) : tab === 0 ? (
             <Stack direction="row" sx={{ justifyContent: 'space-between' }}>
-              <Button color={user.active ? 'error' : 'success'} size="small"
-                startIcon={user.active ? <Block /> : <CheckCircleOutlined />}
-                onClick={async () => { await onToggleStatus(); onClose(); }}>
-                {user.active ? 'Suspend Access' : 'Restore Access'}
-              </Button>
+              <Tooltip title={isSelf ? 'You cannot suspend your own account.' : ''}>
+                <span>
+                  <Button color={user.active ? 'error' : 'success'} size="small"
+                    disabled={isSelf && user.active}
+                    startIcon={user.active ? <Block /> : <CheckCircleOutlined />}
+                    onClick={async () => { await onToggleStatus(); onClose(); }}>
+                    {user.active ? 'Suspend Access' : 'Restore Access'}
+                  </Button>
+                </span>
+              </Tooltip>
               <Button variant="contained" onClick={onSave} disableElevation>Save Changes</Button>
             </Stack>
           ) : null}

@@ -109,4 +109,46 @@ describe('UserDrawer', () => {
     fireEvent.click(screen.getAllByRole('button')[0]);
     expect(onClose).toHaveBeenCalled();
   });
+
+  it('disables Suspend Access when the target user is the signed-in operator', () => {
+    render(
+      <UserDrawer
+        open
+        user={user}
+        editForm={editForm}
+        setEditForm={jest.fn()}
+        onClose={jest.fn()}
+        onSave={jest.fn()}
+        onToggleStatus={jest.fn()}
+        allGroups={[]}
+        isAdmin
+        isSuperAdmin
+        currentUserId={user.id}
+      />
+    );
+
+    const suspendBtn = screen.getByRole('button', { name: /suspend access/i });
+    expect(suspendBtn).toBeDisabled();
+  });
+
+  it('keeps Suspend Access enabled for other users', () => {
+    render(
+      <UserDrawer
+        open
+        user={user}
+        editForm={editForm}
+        setEditForm={jest.fn()}
+        onClose={jest.fn()}
+        onSave={jest.fn()}
+        onToggleStatus={jest.fn()}
+        allGroups={[]}
+        isAdmin
+        isSuperAdmin
+        currentUserId={999}
+      />
+    );
+
+    const suspendBtn = screen.getByRole('button', { name: /suspend access/i });
+    expect(suspendBtn).toBeEnabled();
+  });
 });

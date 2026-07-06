@@ -14,8 +14,8 @@
 const { test, expect } = require('./fixtures');
 
 const BASE_URL    = process.env.BASE_URL    || 'http://localhost:3000';
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@example.com';
-const ADMIN_PASS  = process.env.ADMIN_PASS  || 'Password123!';
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@admin.com';
+const ADMIN_PASS  = process.env.ADMIN_PASS  || 'AdminUser';
 const SUPER_EMAIL = process.env.SUPER_EMAIL || 'superadmin@example.com';
 const SUPER_PASS  = process.env.SUPER_PASS  || 'Password123!';
 const TARGET_EMAIL = process.env.TARGET_EMAIL || 'user@example.com';
@@ -25,18 +25,47 @@ async function login(page, email, password) {
   await page.waitForSelector('input[autocomplete="email"]', { timeout: 15_000 });
   await page.fill('input[autocomplete="email"]',    email);
   await page.fill('input[autocomplete="current-password"]', password);
-  await page.click('button[type="submit"]');
-  await page.waitForFunction(
-    () => !document.querySelector('input[autocomplete="email"]'),
-    { timeout: 15_000 },
-  );
+
+  const [response] = await Promise.all([
+    page.waitForResponse((res) => res.url().includes('/users/sign_in.json'), { timeout: 15_000 }),
+    page.click('button[type="submit"]'),
+  ]);
+  if (!response.ok()) throw new Error(`login failed with status ${response.status()}`);
+
+  // The app performs a full-page redirect (window.location.href = '/') after
+  // a successful AJAX sign-in; wait for it and then double-check the session
+  // actually took effect (guards against a rare Set-Cookie/navigation race).
+  await page.waitForURL(/^https?:\/\/[^/]+\/?(\?.*)?$/, { timeout: 15_000 });
   await page.waitForLoadState('networkidle');
+
+  const signedIn = await page.locator('#header-root').getAttribute('data-signed-in');
+  if (signedIn !== 'true') {
+    await page.reload();
+    await page.waitForLoadState('networkidle');
+  }
+}
+
+// The Admin Users DataGrid virtualizes rows (MUI DataGrid only renders rows
+// currently scrolled into the viewport), so with 19+ seeded users, rows near
+// the bottom (alphabetically-late emails like "user@example.com") are not in
+// the DOM at all until scrolled into view — filter({hasText}) alone times out.
+// Scroll the grid's virtual scroller incrementally until the row appears.
+async function findGridRow(page, text) {
+  const scroller = page.locator('.MuiDataGrid-virtualScroller');
+  for (let i = 0; i < 20; i++) {
+    const row = page.locator('.MuiDataGrid-row').filter({ hasText: text });
+    if (await row.count() > 0) return row.first();
+    await scroller.evaluate((el) => el.scrollBy(0, 300));
+    await page.waitForTimeout(150);
+  }
+  throw new Error(`Row containing "${text}" not found in the Admin Users grid after scrolling`);
 }
 
 async function openUserDrawer(page, email) {
   await page.goto(`${BASE_URL}/admin/users`);
   await page.waitForSelector('.MuiDataGrid-root', { timeout: 10_000 });
-  await page.locator('.MuiDataGrid-row').filter({ hasText: email }).first().click();
+  const row = await findGridRow(page, email);
+  await row.click();
   await page.waitForSelector('[role="presentation"] .MuiDrawer-paper', { timeout: 5_000 });
 }
 
@@ -55,9 +84,10 @@ test.describe('Impersonate User — Header menu', () => {
   });
 
   test('Regular user does NOT see "Impersonate User" in the header dropdown', async ({ page }) => {
-    // Login as a non-admin user
-    const regularEmail = process.env.REGULAR_EMAIL || 'regular@example.com';
-    const regularPass  = process.env.REGULAR_PASS  || 'Password123!';
+    // Login as a non-admin user (the "regular@example.com" fixture never
+    // existed in the seed data — use the seeded plain member@example.com user).
+    const regularEmail = process.env.REGULAR_EMAIL || 'member@example.com';
+    const regularPass  = process.env.REGULAR_PASS  || 'password';
     await login(page, regularEmail, regularPass);
 
     await page.locator('#header-root .MuiAvatar-root').first().click();
@@ -112,8 +142,9 @@ test.describe('Impersonate User — Header menu', () => {
 
     // Now the button should be enabled
     await expect(startBtn).toBeEnabled();
-    // A user preview card should appear
-    await expect(page.locator('[role="dialog"]').locator('.MuiAvatar-root').nth(1))
+    // A user preview card should appear (only one Avatar renders in the dialog
+    // once the autocomplete listbox closes after selection).
+    await expect(page.locator('[role="dialog"]').locator('.MuiAvatar-root').first())
       .toBeVisible();
   });
 
@@ -144,7 +175,8 @@ test.describe('Impersonate User — Header menu', () => {
     await login(page, ADMIN_EMAIL, ADMIN_PASS);
     await page.goto(`${BASE_URL}/admin/users`);
     await page.waitForSelector('.MuiDataGrid-row');
-    await page.locator('.MuiDataGrid-row').filter({ hasText: TARGET_EMAIL }).first().click();
+    const targetRow = await findGridRow(page, TARGET_EMAIL);
+    await targetRow.click();
     await page.locator('[role="tablist"] [role="tab"]').nth(3).click();
     await page.locator('button').filter({ hasText: /Impersonate/ }).last().click();
     await page.waitForFunction(
@@ -196,7 +228,9 @@ test.describe('Groups Tab — Enhanced (UserDrawer)', () => {
     await openUserDrawer(page, TARGET_EMAIL);
     await page.locator('[role="tablist"] [role="tab"]').nth(1).click();
 
-    await page.fill('[placeholder="Search groups to assign…"]', 'Design');
+    // "Design" isn't a seeded group name — search a substring guaranteed to
+    // match one of the seeded groups (everyone/administrators/super-administrators).
+    await page.fill('[placeholder="Search groups to assign…"]', 'admin');
     await expect(
       page.locator('[role="listbox"] [role="option"]').first()
     ).toBeVisible({ timeout: 5_000 });
@@ -229,8 +263,10 @@ test.describe('Groups Tab — Enhanced (UserDrawer)', () => {
     // Wait for groups to load
     await page.waitForTimeout(1000);
 
-    // If the user has at least one group besides 'everyone', check for member count text
-    const groupItem = page.locator('.MuiBox-root').filter({ hasText: /member/ }).first();
+    // If the user has at least one group besides 'everyone', check for member count text.
+    // Scope to the drawer, since the admin/users DataGrid behind it also contains
+    // the literal substring "member" (e.g. "member@example.com").
+    const groupItem = page.locator('.MuiDrawer-paper .MuiBox-root').filter({ hasText: /member/ }).first();
     const exists = await groupItem.count();
     if (exists > 0) {
       await expect(groupItem).toContainText(/\d+ member/);

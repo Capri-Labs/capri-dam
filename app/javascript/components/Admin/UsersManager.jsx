@@ -47,7 +47,7 @@ function CustomToolbar() {
   );
 }
 
-export default function UsersManager({ isAdmin = false, isSuperAdmin = false }) {
+export default function UsersManager({ isAdmin = false, isSuperAdmin = false, currentUserId = null }) {
   const notify = useNotify();
 
   const isAdminBool     = isAdmin === true || isAdmin === 'true';
@@ -94,7 +94,7 @@ export default function UsersManager({ isAdmin = false, isSuperAdmin = false }) 
       notify(data.message, selectedUser.active ? 'warning' : 'success');
       fetchUsers();
     } else {
-      notify('Failed to change user status.', 'error');
+      notify(data.error || 'Failed to change user status.', 'error');
     }
   };
 
@@ -276,6 +276,7 @@ export default function UsersManager({ isAdmin = false, isSuperAdmin = false }) 
         allGroups={allGroups}
         isAdmin={isAdminBool}
         isSuperAdmin={isSuperAdminBool}
+        currentUserId={currentUserId}
       />
 
       {/* Group assignment modal with access control */}

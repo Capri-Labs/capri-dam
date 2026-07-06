@@ -69,6 +69,19 @@ RSpec.describe "Admin::Users coverage", type: :request do
       expect(response.parsed_body.dig("user", "preferences")).to include("language")
     end
 
+    it "includes a super_admin flag distinct from admin so clients can hide " \
+       "impersonation/config controls for super-admin targets" do
+      super_admin_user = create(:user, :super_admin)
+
+      get "/admin/users/#{super_admin_user.id}.json", as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body.dig("user", "super_admin")).to be(true)
+
+      get "/admin/users/#{user.id}.json", as: :json
+      expect(response.parsed_body.dig("user", "super_admin")).to be(false)
+    end
+
     it "returns 404 for missing users" do
       get "/admin/users/0.json", as: :json
       expect(response).to have_http_status(:not_found)
@@ -162,6 +175,13 @@ RSpec.describe "Admin::Users coverage", type: :request do
       expect(response.parsed_body["active"]).to be(false)
       post "/admin/users/#{user.id}/toggle_status.json", as: :json
       expect(response.parsed_body["active"]).to be(true)
+    end
+
+    it "forbids suspending your own (currently signed-in) account" do
+      post "/admin/users/#{admin.id}/toggle_status.json", as: :json
+      expect(response).to have_http_status(:forbidden)
+      expect(response.parsed_body["error"]).to eq("You cannot suspend your own account.")
+      expect(admin.reload.active).to be(true)
     end
 
     it "changes passwords for local users" do

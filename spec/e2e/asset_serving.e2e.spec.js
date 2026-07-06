@@ -12,16 +12,32 @@
 
 const { test, expect } = require('./fixtures');
 
-const EMAIL    = process.env.E2E_EMAIL    || 'admin@example.com';
-const PASSWORD = process.env.E2E_PASSWORD || 'password123';
+const EMAIL    = process.env.E2E_EMAIL    || 'admin@admin.com';
+const PASSWORD = process.env.E2E_PASSWORD || 'AdminUser';
 
 async function login(page) {
     await page.goto('/users/sign_in');
     await page.waitForSelector('input[autocomplete="email"]', { timeout: 15_000 });
     await page.fill('input[autocomplete="email"]',     EMAIL);
     await page.fill('input[autocomplete="current-password"]',  PASSWORD);
-    await page.click('button[type="submit"], input[type="submit"]');
+
+    const [response] = await Promise.all([
+        page.waitForResponse((res) => res.url().includes('/users/sign_in.json'), { timeout: 15_000 }),
+        page.click('button[type="submit"], input[type="submit"]'),
+    ]);
+    if (!response.ok()) throw new Error(`login failed with status ${response.status()}`);
+
+    // The app performs a full-page redirect (window.location.href = '/') after
+    // a successful AJAX sign-in; wait for it and then double-check the session
+    // actually took effect (guards against a rare Set-Cookie/navigation race).
+    await page.waitForURL(/^https?:\/\/[^/]+\/?(\?.*)?$/, { timeout: 15_000 });
     await page.waitForLoadState('networkidle');
+
+    const signedIn = await page.locator('#header-root').getAttribute('data-signed-in');
+    if (signedIn !== 'true') {
+        await page.reload();
+        await page.waitForLoadState('networkidle');
+    }
 }
 
 /**
@@ -41,7 +57,7 @@ async function getFirstReadyAssetUuid(request, authToken) {
 async function getSessionCookie(page) {
     await login(page);
     const cookies = await page.context().cookies();
-    return cookies.find(c => c.name.startsWith('_session') || c.name === '_capri_dam_session');
+    return cookies.find(c => c.name.startsWith('_session') || c.name.endsWith('_session'));
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

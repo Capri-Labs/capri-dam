@@ -375,8 +375,9 @@ export default function BinPurgeSettings() {
                                 />
 
                                 <FormControl size="small" sx={{ minWidth: 240 }}>
-                                    <InputLabel>{t('bin.purge.policy.workflowBehavior')}</InputLabel>
+                                    <InputLabel id="bin-purge-workflow-behavior-label">{t('bin.purge.policy.workflowBehavior')}</InputLabel>
                                     <Select
+                                        labelId="bin-purge-workflow-behavior-label"
                                         variant="outlined"
                                         value={policy.workflow_behavior}
                                         label={t('bin.purge.policy.workflowBehavior')}

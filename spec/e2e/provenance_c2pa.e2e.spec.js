@@ -5,16 +5,49 @@
 
 const { test, expect } = require('./fixtures');
 
-const EMAIL    = process.env.E2E_EMAIL    || 'admin@example.com';
-const PASSWORD = process.env.E2E_PASSWORD || 'password123';
+const EMAIL    = process.env.E2E_EMAIL    || 'admin@admin.com';
+const PASSWORD = process.env.E2E_PASSWORD || 'AdminUser';
 
 async function login(page) {
   await page.goto('/users/sign_in');
   await page.waitForSelector('input[autocomplete="email"]', { timeout: 15_000 });
   await page.fill('input[autocomplete="email"]', EMAIL);
   await page.fill('input[autocomplete="current-password"]', PASSWORD);
-  await page.click('button[type="submit"], input[type="submit"]');
+
+  const [response] = await Promise.all([
+    page.waitForResponse((res) => res.url().includes('/users/sign_in.json'), { timeout: 15_000 }),
+    page.click('button[type="submit"], input[type="submit"]'),
+  ]);
+  if (!response.ok()) throw new Error(`login failed with status ${response.status()}`);
+
+  // The app performs a full-page redirect (window.location.href = '/') after
+  // a successful AJAX sign-in; wait for it and then double-check the session
+  // actually took effect (guards against a rare Set-Cookie/navigation race).
+  await page.waitForURL(/^https?:\/\/[^/]+\/?(\?.*)?$/, { timeout: 15_000 });
   await page.waitForLoadState('networkidle');
+
+  const signedIn = await page.locator('#header-root').getAttribute('data-signed-in');
+  if (signedIn !== 'true') {
+    await page.reload();
+    await page.waitForLoadState('networkidle');
+  }
+}
+
+async function signOut(page) {
+  // Devise's sign_out route only accepts DELETE (config.sign_out_via = :delete),
+  // so a plain page.goto('/users/sign_out') (GET) never actually logs the user
+  // out — it 404s/405s silently and the session cookie remains valid. Issue a
+  // real DELETE request (with CSRF token) from inside the page context instead.
+  await page.evaluate(async () => {
+    const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+    await fetch('/users/sign_out', {
+      method: 'DELETE',
+      headers: {
+        ...(token ? { 'X-CSRF-Token': token } : {}),
+        'Content-Type': 'application/json',
+      },
+    });
+  });
 }
 
 test.describe('Provenance & C2PA screen', () => {
@@ -25,7 +58,7 @@ test.describe('Provenance & C2PA screen', () => {
   test('page loads at canonical URL with correct title', async ({ page }) => {
     await page.goto('/ai/governance/provenance');
     await expect(page).toHaveTitle(/Capri/);
-    await expect(page.getByText(/Provenance/i)).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Provenance & C2PA' })).toBeVisible();
   });
 
   test('/ai/governance redirects to /ai/governance/provenance', async ({ page }) => {
@@ -41,29 +74,29 @@ test.describe('Provenance & C2PA screen', () => {
 
   test('three tabs are visible: Provenance Records, Policy Settings, Batch Actions', async ({ page }) => {
     await page.goto('/ai/governance/provenance');
-    await expect(page.getByText(/Provenance Records/i)).toBeVisible();
-    await expect(page.getByText(/Policy Settings/i)).toBeVisible();
-    await expect(page.getByText(/Batch Actions/i)).toBeVisible();
+    await expect(page.getByRole('button', { name: /^Provenance Records$/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /^Policy Settings$/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /^Batch Actions$/i })).toBeVisible();
   });
 
   test('Policy Settings tab shows the save button', async ({ page }) => {
     await page.goto('/ai/governance/provenance');
-    await page.getByText(/Policy Settings/i).click();
+    await page.getByRole('button', { name: /^Policy Settings$/i }).click();
     await expect(page.getByRole('button', { name: /save policy/i })).toBeVisible();
   });
 
   test('Batch Actions tab shows the launch button', async ({ page }) => {
     await page.goto('/ai/governance/provenance');
-    await page.getByText(/Batch Actions/i).click();
+    await page.getByRole('button', { name: /^Batch Actions$/i }).click();
     await expect(page.getByRole('button', { name: /launch batch task/i })).toBeVisible();
   });
 
   test('non-admin is redirected away from the provenance screen', async ({ page }) => {
     // Sign out first
-    await page.goto('/users/sign_out');
+    await signOut(page);
     // Sign in as a regular user
     const regularEmail    = process.env.E2E_USER_EMAIL    || 'user@example.com';
-    const regularPassword = process.env.E2E_USER_PASSWORD || 'password123';
+    const regularPassword = process.env.E2E_USER_PASSWORD || 'Password123!';
     await page.goto('/users/sign_in');
     await page.waitForSelector('input[autocomplete="email"]', { timeout: 15_000 });
     await page.fill('input[autocomplete="email"]', regularEmail);
@@ -77,10 +110,12 @@ test.describe('Provenance & C2PA screen', () => {
   });
 
   test('unauthenticated user is redirected to sign-in', async ({ page }) => {
-    // Clear session by going to sign-out
-    await page.goto('/users/sign_out');
+    // Clear session by signing out
+    await signOut(page);
     await page.goto('/ai/governance/provenance');
-    await expect(page).toHaveURL(/sign_in/);
+    // The app's Sessions#new redirects to root ("/"), where the unauthenticated
+    // React shell renders the Login SPA — see auth.e2e.spec.js for the same pattern.
+    await expect(page).toHaveURL(/\/$/);
   });
 });
 
