@@ -2222,7 +2222,9 @@
       "embeddedMetadataFields": "嵌入式元数据字段",
       "dominantPalette": "主色板",
       "embeddedMetadataSection": "EXIF / IPTC / XMP 数据",
-      "noExifDataExtractedYet": "尚未提取 EXIF 数据。"
+      "noExifDataExtractedYet": "尚未提取 EXIF 数据。",
+      "collapseExifData": "折叠 EXIF / IPTC / XMP 数据",
+      "expandExifData": "展开 EXIF / IPTC / XMP 数据"
     },
     "ai": {
       "semanticAndVisionAnalysis": "语义与视觉分析"
@@ -2509,5 +2511,29 @@
       "viewAll": "查看“{{query}}”的所有结果",
       "folderLabel": "文件夹"
     }
+  },
+  "footer": {
+    "tagline": "面向数字创意生命周期的智能操作系统——自动化合规、语义发现与无限可扩展性。",
+    "product": {
+      "title": "产品",
+      "dashboard": "仪表盘",
+      "search": "语义搜索",
+      "workflows": "工作流",
+      "duplicateManager": "重复项管理器"
+    },
+    "resources": {
+      "title": "资源",
+      "apiDocs": "API 文档",
+      "graphqlApi": "GraphQL API",
+      "apiReference": "OpenAPI 参考"
+    },
+    "legal": {
+      "title": "法律与安全",
+      "privacyPolicy": "隐私政策",
+      "termsOfService": "服务条款",
+      "gdprCompliance": "GDPR 合规"
+    },
+    "copyright": "© {{year}} Capri DAM。保留所有权利。",
+    "systemOperational": "所有系统运行正常"
   }
 }

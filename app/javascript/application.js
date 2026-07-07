@@ -21,6 +21,28 @@ const withContext = (Component, props) => (
 );
 
 document.addEventListener('turbo:load', () => {
+    // --- 0. DEFENSIVE CLEANUP: orphaned MUI modal/backdrop portals ---
+    // MUI Dialogs/Modals render their Backdrop via a React Portal appended
+    // directly to `document.body` (outside the `#root` container Turbo
+    // manages below). If the user navigates away (via Turbo.visit /
+    // navigateTo) while a Dialog is still open, the old React root is
+    // abandoned via `innerHTML = ''` rather than `root.unmount()`, so no
+    // React unmount/cleanup effect ever runs — the Backdrop portal node (and
+    // any `document.body` scroll-lock styles MUI applied) are left behind,
+    // covering the whole viewport and silently blocking every click on
+    // whatever page loads next. This happened concretely with the Duplicate
+    // Manager's "Go to Folder"/"Go to asset" links (only closing the modal
+    // *before* navigating avoids creating a new orphan — see
+    // DuplicateResolutionModal.jsx), but as a safety net for any other modal
+    // that might get left open across a Turbo navigation, sweep and remove
+    // any stray top-level MUI portal nodes and reset the body lock styles on
+    // every page load (including Turbo's cached "Back" restores).
+    document.querySelectorAll('body > .MuiModal-root, body > .MuiBackdrop-root, body > .MuiPopover-root')
+        .forEach((node) => node.remove());
+    document.body.style.removeProperty('overflow');
+    document.body.style.removeProperty('padding-right');
+    document.body.removeAttribute('aria-hidden');
+
     // --- 1. MOUNT THE HEADER ---
     const headerContainer = document.getElementById('header-root');
     if (headerContainer) {

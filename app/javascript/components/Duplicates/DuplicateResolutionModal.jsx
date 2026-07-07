@@ -172,10 +172,22 @@ export default function DuplicateResolutionModal({
     };
 
     const handleNavigateToAsset = (asset) => {
+        // Close the modal *before* navigating. `navigateTo` uses Turbo.visit,
+        // which swaps the page body in place rather than doing a full reload —
+        // if the MUI Dialog is still "open" when that swap happens, its
+        // scroll-lock/backdrop cleanup effect never gets to run, leaving a
+        // stray full-screen backdrop (and `document.body` scroll-lock styles)
+        // behind. That backdrop then blocks all clicks on whatever page the
+        // user lands on next, including after using the browser Back button
+        // to return to this screen (only a full reload — not "Back" — cleared
+        // it). Closing first lets MUI's own unmount cleanup run normally.
+        onClose();
         navigateTo(`/assets?id=${asset.asset_id}`);
     };
 
     const handleGoToFolder = (asset) => {
+        // See handleNavigateToAsset above for why the modal must close first.
+        onClose();
         if (asset.folder_id) {
             // AssetExplorer reads the target folder from `?folder=`, not `?id=`
             // (see readUrlFilters() in AssetExplorer.jsx) — `?id=` is reserved

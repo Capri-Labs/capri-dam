@@ -2222,7 +2222,9 @@
       "embeddedMetadataFields": "Eingebettete Metadatenfelder",
       "dominantPalette": "Dominante Palette",
       "embeddedMetadataSection": "EXIF / IPTC / XMP-Daten",
-      "noExifDataExtractedYet": "Noch keine EXIF-Daten extrahiert."
+      "noExifDataExtractedYet": "Noch keine EXIF-Daten extrahiert.",
+      "collapseExifData": "EXIF-/IPTC-/XMP-Daten einklappen",
+      "expandExifData": "EXIF-/IPTC-/XMP-Daten erweitern"
     },
     "ai": {
       "semanticAndVisionAnalysis": "Semantik- und Bildanalyse"
@@ -2509,5 +2511,29 @@
       "viewAll": "Alle Ergebnisse für \"{{query}}\" anzeigen",
       "folderLabel": "Ordner"
     }
+  },
+  "footer": {
+    "tagline": "Das intelligente Betriebssystem für Ihren digitalen Kreativ-Lebenszyklus — automatisierte Compliance, semantische Suche und unbegrenzte Skalierbarkeit.",
+    "product": {
+      "title": "Produkt",
+      "dashboard": "Dashboard",
+      "search": "Semantische Suche",
+      "workflows": "Workflows",
+      "duplicateManager": "Duplikat-Manager"
+    },
+    "resources": {
+      "title": "Ressourcen",
+      "apiDocs": "API-Dokumentation",
+      "graphqlApi": "GraphQL-API",
+      "apiReference": "OpenAPI-Referenz"
+    },
+    "legal": {
+      "title": "Recht & Sicherheit",
+      "privacyPolicy": "Datenschutzrichtlinie",
+      "termsOfService": "Nutzungsbedingungen",
+      "gdprCompliance": "DSGVO-Konformität"
+    },
+    "copyright": "© {{year}} Capri DAM. Alle Rechte vorbehalten.",
+    "systemOperational": "Alle Systeme betriebsbereit"
   }
 }

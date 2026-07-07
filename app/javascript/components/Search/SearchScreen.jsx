@@ -49,6 +49,17 @@ const STATIC_FILTER_KEYS = new Set([
 // URL params that are NOT filter keys (reserved for pagination / sorting / search)
 const RESERVED_URL_PARAMS = new Set(['q', 'mode', 'page', 'per_page', 'sort_by', 'sort_dir', 'include_bin']);
 
+// Result navigation: prefer `/folders?folder=<id>&id=<id>` (opens the asset
+// inside its actual folder context, e.g. so "Copy Folder Link"/breadcrumbs
+// make sense) when the result carries a `folder_id`; otherwise fall back to
+// the plain `/assets?id=<id>` deep-link (kept as-is/unchanged elsewhere —
+// e.g. the Duplicate Manager still uses it directly for assets with no
+// resolvable folder).
+function buildAssetDeepLink(item) {
+  if (item?.folder_id) return `/folders?folder=${item.folder_id}&id=${item.uuid}`;
+  return `/assets?id=${item.uuid}`;
+}
+
 function buildQueryString(query, filters, page, perPage, sortBy, sortDir, mode, includeBin) {
   const params = new URLSearchParams();
   if (query) params.set('q', query);
@@ -593,7 +604,7 @@ export default function SearchScreen() {
                         <SearchResultCard
                           asset={asset}
                           viewMode="grid"
-                          onClick={(item) => { window.location.href = `/assets?id=${item.uuid}`; }}
+                          onClick={(item) => { window.open(buildAssetDeepLink(item), '_blank', 'noopener'); }}
                         />
                       </Grid>
                     ))}
@@ -605,7 +616,7 @@ export default function SearchScreen() {
                         key={asset.uuid}
                         asset={asset}
                         viewMode="list"
-                        onClick={(item) => { window.location.href = `/assets?id=${item.uuid}`; }}
+                        onClick={(item) => { window.open(buildAssetDeepLink(item), '_blank', 'noopener'); }}
                       />
                     ))}
                   </Stack>

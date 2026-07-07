@@ -2222,7 +2222,9 @@
       "embeddedMetadataFields": "Ingesloten metadata-velden",
       "dominantPalette": "Dominant palet",
       "embeddedMetadataSection": "EXIF / IPTC / XMP-gegevens",
-      "noExifDataExtractedYet": "Nog geen EXIF-gegevens geëxtraheerd."
+      "noExifDataExtractedYet": "Nog geen EXIF-gegevens geëxtraheerd.",
+      "collapseExifData": "EXIF-/IPTC-/XMP-gegevens samenvouwen",
+      "expandExifData": "EXIF-/IPTC-/XMP-gegevens uitvouwen"
     },
     "ai": {
       "semanticAndVisionAnalysis": "Semantische en visuele analyse"
@@ -2509,5 +2511,29 @@
       "viewAll": "Bekijk alle resultaten voor \"{{query}}\"",
       "folderLabel": "Map"
     }
+  },
+  "footer": {
+    "tagline": "Het intelligente besturingssysteem voor uw digitale creatieve levenscyclus — geautomatiseerde compliance, semantisch zoeken en oneindige schaalbaarheid.",
+    "product": {
+      "title": "Product",
+      "dashboard": "Dashboard",
+      "search": "Semantisch zoeken",
+      "workflows": "Workflows",
+      "duplicateManager": "Duplicaatbeheer"
+    },
+    "resources": {
+      "title": "Bronnen",
+      "apiDocs": "API-documentatie",
+      "graphqlApi": "GraphQL-API",
+      "apiReference": "OpenAPI-referentie"
+    },
+    "legal": {
+      "title": "Juridisch & beveiliging",
+      "privacyPolicy": "Privacybeleid",
+      "termsOfService": "Servicevoorwaarden",
+      "gdprCompliance": "AVG-naleving"
+    },
+    "copyright": "© {{year}} Capri DAM. Alle rechten voorbehouden.",
+    "systemOperational": "Alle systemen operationeel"
   }
 }

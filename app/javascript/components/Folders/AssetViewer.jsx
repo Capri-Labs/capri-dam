@@ -2,7 +2,7 @@ import React, {useEffect, useState} from 'react';
 import {
     Dialog, AppBar, Toolbar, IconButton, Typography, Box, Grid,
     Button, Divider, Chip, Tabs, Tab, Paper, List, ListItem,
-    ListItemText, Tooltip, Menu, MenuItem
+    ListItemText, Tooltip, Menu, MenuItem, Collapse
 } from '@mui/material';
 import {
     Close,
@@ -14,6 +14,7 @@ import {
     AutoAwesome,
     LocalOffer,
     ChevronRight,
+    ExpandMore,
     ContentCopy, PushPin, Share, PolicyOutlined, SchemaOutlined
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
@@ -34,7 +35,7 @@ const interpolate = (template, values = {}) => template.replace(/\{\{(\w+)\}\}/g
 function TabPanel(props) {
     const { children, value, index, ...other } = props;
     return (
-        <div role="tabpanel" hidden={value !== index} style={{ height: '100%', overflowY: 'auto' }} {...other}>
+        <div role="tabpanel" hidden={value !== index} style={{ height: '100%', overflowY: 'auto', overflowX: 'auto' }} {...other}>
             {value === index && <Box sx={{ pt: 3 }}>{children}</Box>}
         </div>
     );
@@ -56,6 +57,9 @@ export default function AssetViewer({ asset: initialAsset, open, onClose, onAsse
     const [pinOpen, setPinOpen] = useState(false);
     const [activeTab, setActiveTab] = useState(0);
     const [downloadMenuAnchor, setDownloadMenuAnchor] = useState(null);
+    // EXIF/IPTC/XMP raw metadata block in the Info tab — collapsed by default
+    // since it's a large, rarely-needed JSON dump.
+    const [exifExpanded, setExifExpanded] = useState(false);
 
     // Keep it synced if the parent explicitly passes a new asset
     useEffect(() => {
@@ -234,9 +238,13 @@ export default function AssetViewer({ asset: initialAsset, open, onClose, onAsse
                 </Toolbar>
             </AppBar>
 
-            <Grid container sx={{ height: 'calc(100vh - 64px)' }}>
-                {/* LEFT PANE: 60% Image Preview */}
-                <Grid  sx={{ width: '65%', bgcolor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', p: 4, borderRight: '1px solid #cbd5e1' }}>
+            <Grid container wrap="nowrap" sx={{ height: 'calc(100vh - 64px)', overflow: 'hidden' }}>
+                {/* LEFT PANE: 65% Image Preview — fixed width/position; must
+                    never reflow or resize when the right-hand tab content
+                    changes (e.g. switching to a tab with a wide table/JSON
+                    dump). `flexShrink: 0` pins its size; `overflow: hidden`
+                    stops it from ever needing to scroll itself. */}
+                <Grid sx={{ width: '65%', flexShrink: 0, bgcolor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', p: 4, borderRight: '1px solid #cbd5e1', overflow: 'hidden' }}>
                     {canPreview && previewSrc ? (
                         <Box component="img"
                              src={previewSrc}
@@ -254,8 +262,12 @@ export default function AssetViewer({ asset: initialAsset, open, onClose, onAsse
                     )}
                 </Grid>
 
-                {/* RIGHT PANE: 40% Tabbed Inspector */}
-                <Grid  sx={{ width: '35%', bgcolor: '#ffffff', display: 'flex', flexDirection: 'column' }}>
+                {/* RIGHT PANE: 35% Tabbed Inspector — `minWidth: 0` is required
+                    so this flex item can never be forced wider than its 35%
+                    allocation by tab content (tables, JSON, long text); any
+                    overflow scrolls *within* this pane instead of pushing the
+                    image pane around. */}
+                <Grid sx={{ width: '35%', minWidth: 0, flexShrink: 1, bgcolor: '#ffffff', display: 'flex', flexDirection: 'column' }}>
                     <Box sx={{ borderBottom: 1, borderColor: 'divider', px: 2, pt: 1 }}>
                         <Tabs value={activeTab} onChange={handleTabChange} variant="scrollable" scrollButtons="auto" sx={{ '& .MuiTab-root': { textTransform: 'none', minWidth: 'auto', px: 2 } }}>
                             <Tab icon={<InfoOutlined fontSize="small" />} iconPosition="start" label={translate('assetViewer.tabs.info', 'Info')} />
@@ -267,7 +279,7 @@ export default function AssetViewer({ asset: initialAsset, open, onClose, onAsse
                         </Tabs>
                     </Box>
 
-                    <Box sx={{ flexGrow: 1, overflow: 'hidden', px: 3 }}>
+                    <Box sx={{ flexGrow: 1, minWidth: 0, minHeight: 0, overflow: 'hidden', px: 3 }}>
 
                         {/* TAB 0: INFO */}
                         <TabPanel value={activeTab} index={0}>
@@ -344,16 +356,35 @@ export default function AssetViewer({ asset: initialAsset, open, onClose, onAsse
 
                             <Divider sx={{ mb: 3 }} />
 
-                            <Typography variant="subtitle2" fontWeight="700" sx={{ mb: 2 }}>{translate('assetViewer.info.embeddedMetadataSection', 'EXIF / IPTC / XMP Data')}</Typography>
-                            <Paper elevation={0} sx={{ p: 2, bgcolor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 2, maxHeight: 360, overflowY: 'auto' }}>
-                                <Typography component="pre" variant="caption" color="textSecondary" sx={{ fontFamily: 'monospace', whiteSpace: 'pre-wrap', m: 0 }}>
-                                    {asset.properties?.embedded_metadata
-                                        ? JSON.stringify(asset.properties.embedded_metadata, null, 2)
-                                        : asset.properties?.exif_data
-                                            ? JSON.stringify(asset.properties.exif_data, null, 2)
-                                            : translate('assetViewer.info.noExifDataExtractedYet', 'No EXIF data extracted yet.')}
-                                </Typography>
-                            </Paper>
+                            <Box
+                                onClick={() => setExifExpanded((prev) => !prev)}
+                                sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', mb: exifExpanded ? 2 : 0 }}
+                            >
+                                <Typography variant="subtitle2" fontWeight="700">{translate('assetViewer.info.embeddedMetadataSection', 'EXIF / IPTC / XMP Data')}</Typography>
+                                <IconButton
+                                    size="small"
+                                    aria-label={exifExpanded
+                                        ? translate('assetViewer.info.collapseExifData', 'Collapse EXIF / IPTC / XMP data')
+                                        : translate('assetViewer.info.expandExifData', 'Expand EXIF / IPTC / XMP data')}
+                                    sx={{
+                                        transform: exifExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                                        transition: 'transform 0.2s',
+                                    }}
+                                >
+                                    <ExpandMore fontSize="small" />
+                                </IconButton>
+                            </Box>
+                            <Collapse in={exifExpanded} unmountOnExit>
+                                <Paper elevation={0} sx={{ p: 2, bgcolor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 2, maxHeight: 360, overflowY: 'auto' }}>
+                                    <Typography component="pre" variant="caption" color="textSecondary" sx={{ fontFamily: 'monospace', whiteSpace: 'pre-wrap', m: 0 }}>
+                                        {asset.properties?.embedded_metadata
+                                            ? JSON.stringify(asset.properties.embedded_metadata, null, 2)
+                                            : asset.properties?.exif_data
+                                                ? JSON.stringify(asset.properties.exif_data, null, 2)
+                                                : translate('assetViewer.info.noExifDataExtractedYet', 'No EXIF data extracted yet.')}
+                                    </Typography>
+                                </Paper>
+                            </Collapse>
                         </TabPanel>
 
                         {/* TAB 1: METADATA SCHEMA */}

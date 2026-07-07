@@ -2222,7 +2222,9 @@
       "embeddedMetadataFields": "Campos de metadados incorporados",
       "dominantPalette": "Paleta dominante",
       "embeddedMetadataSection": "Dados EXIF / IPTC / XMP",
-      "noExifDataExtractedYet": "Nenhum dado EXIF extraído ainda."
+      "noExifDataExtractedYet": "Nenhum dado EXIF extraído ainda.",
+      "collapseExifData": "Recolher dados EXIF/IPTC/XMP",
+      "expandExifData": "Expandir dados EXIF/IPTC/XMP"
     },
     "ai": {
       "semanticAndVisionAnalysis": "Análise semântica e visual"
@@ -2509,5 +2511,29 @@
       "viewAll": "Ver todos os resultados de \"{{query}}\"",
       "folderLabel": "Pasta"
     }
+  },
+  "footer": {
+    "tagline": "O sistema operacional inteligente para o seu ciclo de vida criativo digital — conformidade automatizada, descoberta semântica e escalabilidade infinita.",
+    "product": {
+      "title": "Produto",
+      "dashboard": "Painel",
+      "search": "Busca semântica",
+      "workflows": "Fluxos de trabalho",
+      "duplicateManager": "Gerenciador de duplicatas"
+    },
+    "resources": {
+      "title": "Recursos",
+      "apiDocs": "Documentação da API",
+      "graphqlApi": "API GraphQL",
+      "apiReference": "Referência OpenAPI"
+    },
+    "legal": {
+      "title": "Jurídico e segurança",
+      "privacyPolicy": "Política de privacidade",
+      "termsOfService": "Termos de serviço",
+      "gdprCompliance": "Conformidade com o GDPR"
+    },
+    "copyright": "© {{year}} Capri DAM. Todos os direitos reservados.",
+    "systemOperational": "Todos os sistemas operacionais"
   }
 }

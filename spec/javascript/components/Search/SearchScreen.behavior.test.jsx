@@ -65,28 +65,23 @@ describe('SearchScreen behavior', () => {
   });
 
   describe('navigating to an asset from a result card', () => {
-    let originalLocation;
+    let mockOpen;
 
     beforeEach(() => {
-      originalLocation = window.location;
-      delete window.location;
-      window.location = { href: 'http://localhost/search?q=logo&page=1', search: '?q=logo&page=1', pathname: '/search' };
+      mockOpen = jest.fn();
+      window.open = mockOpen;
     });
 
-    afterEach(() => {
-      window.location = originalLocation;
-    });
-
-    it('navigates to the /assets?id=UUID deep-link (grid view) instead of the non-existent /assets/:uuid route', async () => {
+    it('opens the /assets?id=UUID deep-link in a new tab (grid view) when the result has no folder_id', async () => {
       render(<SearchScreen />);
       await waitFor(() => expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('/api/v1/search'), expect.any(Object)));
       const card = await screen.findByText('Search Asset');
       fireEvent.click(card);
 
-      expect(window.location.href).toBe('/assets?id=asset-1');
+      expect(mockOpen).toHaveBeenCalledWith('/assets?id=asset-1', '_blank', 'noopener');
     });
 
-    it('navigates to the /assets?id=UUID deep-link (list view) instead of the non-existent /assets/:uuid route', async () => {
+    it('opens the /assets?id=UUID deep-link in a new tab (list view) when the result has no folder_id', async () => {
       render(<SearchScreen />);
       await waitFor(() => expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('/api/v1/search'), expect.any(Object)));
       await screen.findByText('Search Asset');
@@ -97,7 +92,23 @@ describe('SearchScreen behavior', () => {
       const card = await screen.findByText('Search Asset');
       fireEvent.click(card);
 
-      expect(window.location.href).toBe('/assets?id=asset-1');
+      expect(mockOpen).toHaveBeenCalledWith('/assets?id=asset-1', '_blank', 'noopener');
+    });
+
+    it('opens /folders?folder=<id>&id=<id> in a new tab when the result carries a folder_id, so the search results tab is left untouched', async () => {
+      global.fetch = jest.fn((url) => String(url).includes('/api/v1/search')
+        ? jsonResponse({
+          ...searchResponse,
+          results: [ { ...searchResponse.results[0], folder_id: 'folder-9' } ],
+        })
+        : jsonResponse({}));
+
+      render(<SearchScreen />);
+      await waitFor(() => expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('/api/v1/search'), expect.any(Object)));
+      const card = await screen.findByText('Search Asset');
+      fireEvent.click(card);
+
+      expect(mockOpen).toHaveBeenCalledWith('/folders?folder=folder-9&id=asset-1', '_blank', 'noopener');
     });
   });
 });

@@ -2222,7 +2222,9 @@
       "embeddedMetadataFields": "حقول البيانات الوصفية المضمّنة",
       "dominantPalette": "لوحة الألوان السائدة",
       "embeddedMetadataSection": "بيانات EXIF / IPTC / XMP",
-      "noExifDataExtractedYet": "لم يتم استخراج بيانات EXIF بعد."
+      "noExifDataExtractedYet": "لم يتم استخراج بيانات EXIF بعد.",
+      "collapseExifData": "طي بيانات EXIF / IPTC / XMP",
+      "expandExifData": "توسيع بيانات EXIF / IPTC / XMP"
     },
     "ai": {
       "semanticAndVisionAnalysis": "التحليل الدلالي والبصري"
@@ -2509,5 +2511,29 @@
       "viewAll": "عرض كل النتائج لـ \"{{query}}\"",
       "folderLabel": "مجلد"
     }
+  },
+  "footer": {
+    "tagline": "نظام التشغيل الذكي لدورة حياة الأصول الرقمية الإبداعية — امتثال آلي، اكتشاف دلالي، وقابلية توسع لا محدودة.",
+    "product": {
+      "title": "المنتج",
+      "dashboard": "لوحة التحكم",
+      "search": "البحث الدلالي",
+      "workflows": "سير العمل",
+      "duplicateManager": "مدير التكرارات"
+    },
+    "resources": {
+      "title": "الموارد",
+      "apiDocs": "وثائق API",
+      "graphqlApi": "واجهة GraphQL",
+      "apiReference": "مرجع OpenAPI"
+    },
+    "legal": {
+      "title": "القانونية والأمان",
+      "privacyPolicy": "سياسة الخصوصية",
+      "termsOfService": "شروط الخدمة",
+      "gdprCompliance": "الامتثال لـ GDPR"
+    },
+    "copyright": "© {{year}} Capri DAM. جميع الحقوق محفوظة.",
+    "systemOperational": "جميع الأنظمة تعمل بشكل طبيعي"
   }
 }

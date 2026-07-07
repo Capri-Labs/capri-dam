@@ -64,9 +64,33 @@ describe('Layout components', () => {
 
   it('renders Footer content', () => {
     render(<Footer />);
-    expect(screen.getByText('Intelligent Asset Engine')).toBeInTheDocument();
+    expect(screen.getByAltText('Capri DAM')).toBeInTheDocument();
+    expect(screen.getByText(/intelligent operating system/i)).toBeInTheDocument();
     expect(screen.getByText('API Documentation')).toBeInTheDocument();
     expect(screen.getByText(/Capri DAM/)).toBeInTheDocument();
+  });
+
+  it('renders Footer Product, Resources, and Legal columns with working links', () => {
+    render(<Footer />);
+
+    expect(screen.getByText('Product')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Dashboard' })).toHaveAttribute('href', '/dashboard');
+    expect(screen.getByRole('link', { name: 'Semantic Search' })).toHaveAttribute('href', '/search');
+    expect(screen.getByRole('link', { name: 'Workflows' })).toHaveAttribute('href', '/workflows');
+    expect(screen.getByRole('link', { name: 'Duplicate Manager' })).toHaveAttribute('href', '/duplicates');
+
+    expect(screen.getByText('Resources')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'API Documentation' })).toHaveAttribute('href', '/api/rest');
+    expect(screen.getByRole('link', { name: 'GraphQL API' })).toHaveAttribute('href', '/api/graphql');
+    expect(screen.getByRole('link', { name: 'OpenAPI Reference' })).toHaveAttribute('href', '/api-docs');
+
+    expect(screen.getByText('Legal & Security')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Privacy Policy' })).toHaveAttribute('href', '/privacy');
+    expect(screen.getByRole('link', { name: 'Terms of Service' })).toHaveAttribute('href', '/terms');
+    expect(screen.getByRole('link', { name: 'GDPR Compliance' })).toHaveAttribute('href', '/compliance');
+
+    expect(screen.getByText('All systems operational')).toBeInTheDocument();
+    expect(screen.getByText(/v1\.0\.0-alpha/)).toBeInTheDocument();
   });
 
   it('renders ImpersonateUserDialog and starts impersonation after selecting a user', async () => {

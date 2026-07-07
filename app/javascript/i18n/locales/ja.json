@@ -2222,7 +2222,9 @@
       "embeddedMetadataFields": "埋め込みメタデータ項目",
       "dominantPalette": "主要パレット",
       "embeddedMetadataSection": "EXIF / IPTC / XMP データ",
-      "noExifDataExtractedYet": "EXIFデータはまだ抽出されていません。"
+      "noExifDataExtractedYet": "EXIFデータはまだ抽出されていません。",
+      "collapseExifData": "EXIF / IPTC / XMP データを折りたたむ",
+      "expandExifData": "EXIF / IPTC / XMP データを展開する"
     },
     "ai": {
       "semanticAndVisionAnalysis": "セマンティック & ビジョン分析"
@@ -2509,5 +2511,29 @@
       "viewAll": "「{{query}}」のすべての結果を表示",
       "folderLabel": "フォルダ"
     }
+  },
+  "footer": {
+    "tagline": "デジタルクリエイティブライフサイクルのためのインテリジェントなオペレーティングシステム — 自動コンプライアンス、セマンティック検索、無限のスケーラビリティ。",
+    "product": {
+      "title": "製品",
+      "dashboard": "ダッシュボード",
+      "search": "セマンティック検索",
+      "workflows": "ワークフロー",
+      "duplicateManager": "重複マネージャー"
+    },
+    "resources": {
+      "title": "リソース",
+      "apiDocs": "APIドキュメント",
+      "graphqlApi": "GraphQL API",
+      "apiReference": "OpenAPIリファレンス"
+    },
+    "legal": {
+      "title": "法務とセキュリティ",
+      "privacyPolicy": "プライバシーポリシー",
+      "termsOfService": "利用規約",
+      "gdprCompliance": "GDPR準拠"
+    },
+    "copyright": "© {{year}} Capri DAM. 全著作権所有。",
+    "systemOperational": "すべてのシステムは正常に稼働しています"
   }
 }

@@ -180,8 +180,8 @@ test.describe('Search screen fixes', () => {
         await expect(page.locator('.MuiChip-root', { hasText: 'Bin' }).first()).toBeVisible();
     });
 
-    test('clicking a search result navigates to /assets?id=<uuid> and keeps the AssetViewer open', async ({ page }) => {
-        const asset = searchResult({ id: 'deep-link-1', uuid: 'deep-link-1', title: 'Deep Link Asset.png' });
+    test('clicking a search result opens /folders?folder=<id>&id=<uuid> in a NEW TAB, leaving the search results page untouched', async ({ page }) => {
+        const asset = searchResult({ id: 'deep-link-1', uuid: 'deep-link-1', title: 'Deep Link Asset.png', folder_id: 'folder-9' });
         await mockSearch(page, { results: [asset] });
         await mockEmptyFolderContents(page);
         await page.route('**/api/v1/assets/deep-link-1', (route) => {
@@ -190,8 +190,9 @@ test.describe('Search screen fixes', () => {
                 contentType: 'application/json',
                 body: JSON.stringify({
                     id: 'deep-link-1', uuid: 'deep-link-1', title: 'Deep Link Asset.png',
-                    status: 'ready', properties: { content_type: 'image/png', size: 512_000 },
-                    folder_id: 'root',
+                    status: 'ready',
+                    properties: { content_type: 'image/png', file_size: 512_000 },
+                    folder_id: 'folder-9',
                 }),
             });
         });
@@ -199,15 +200,23 @@ test.describe('Search screen fixes', () => {
         await page.goto('/search?q=deep');
         await page.waitForLoadState('networkidle');
 
-        await page.getByText('Deep Link Asset.png').click();
+        // The click opens a brand-new tab/page rather than navigating away
+        // from search results (so the results list stays intact for the user).
+        const [popup] = await Promise.all([
+            page.context().waitForEvent('page'),
+            page.getByText('Deep Link Asset.png').click(),
+        ]);
+        await popup.waitForLoadState('networkidle');
 
-        // The click performs a full navigation to /assets?id=deep-link-1
-        await page.waitForURL(/\/assets\?id=deep-link-1/, { timeout: 15_000 });
-        await page.waitForLoadState('networkidle');
+        // New tab must be the /folders?folder=<id>&id=<id> deep-link (not the
+        // plain /assets?id= form) since this result carries a folder_id.
+        expect(popup.url()).toContain('folder=folder-9');
+        expect(popup.url()).toContain('id=deep-link-1');
+        await popup.close();
 
-        // The URL must retain `?id=` — it must NOT get stripped by the
-        // folder-explorer's URL-sync effect on mount.
-        expect(page.url()).toContain('id=deep-link-1');
+        // The original search results tab must be completely unaffected.
+        expect(page.url()).toContain('/search?q=deep');
+        await expect(page.getByText('Deep Link Asset.png').first()).toBeVisible();
     });
 });
 
@@ -339,5 +348,61 @@ test.describe('Duplicate Manager — navigation fixes', () => {
 
         await page.waitForURL(/\/folders\?folder=folder-9/, { timeout: 15_000 });
         expect(page.url()).toContain('folder=folder-9');
+    });
+
+    // Regression test: previously, navigating away from an open "Potential
+    // Match" resolution modal (via "Go to Folder"/"Go to asset") left behind
+    // an orphaned MUI Backdrop/scroll-lock (the modal's cleanup effect never
+    // ran because Turbo swaps the page body in place rather than doing a
+    // full reload — see the `turbo:load` defensive cleanup and
+    // `DuplicateResolutionModal`'s `onClose()`-before-navigate in
+    // application.js / DuplicateResolutionModal.jsx). That orphaned overlay
+    // silently blocked every click once the user came back via the browser's
+    // Back button, freezing the whole screen.
+    test('using the browser Back button after "Go to Folder" does not freeze the Duplicate Manager screen', async ({ page }) => {
+        const group = {
+            id: 'group-1',
+            status: 'pending',
+            total_count: 2,
+            assets: [
+                { asset_id: 'asset-a', title: 'Copy A.png', is_original: true, folder_id: 'folder-9', folder_name: 'Marketing', url: '/api/v1/assets/local/asset-a' },
+                { asset_id: 'asset-b', title: 'Copy B.png', is_original: false, folder_id: 'folder-9', folder_name: 'Marketing', url: '/api/v1/assets/local/asset-b' },
+            ],
+        };
+
+        await page.route('**/api/v1/duplicate_groups/stats', (route) => {
+            route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ total_groups: 1, pending: 1, resolved: 0, wasted_bytes: 0 }) });
+        });
+        await page.route('**/api/v1/duplicate_groups?status=**', (route) => {
+            route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ groups: [group] }) });
+        });
+        await page.route('**/api/v1/duplicate_groups/group-1', (route) => {
+            route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ group }) });
+        });
+        await mockEmptyFolderContents(page);
+
+        await page.goto('/duplicates');
+        await page.waitForLoadState('networkidle');
+
+        await page.getByText(/potential match/i).first().click();
+        await expect(page.getByText('Copy A.png')).toBeVisible();
+
+        await page.getByLabel(/go to folder/i).first().click();
+        await page.waitForURL(/\/folders\?folder=folder-9/, { timeout: 15_000 });
+        await page.waitForLoadState('networkidle');
+
+        await page.goBack();
+        await page.waitForURL(/\/duplicates/, { timeout: 15_000 });
+        await page.waitForLoadState('networkidle');
+
+        // The screen must be fully interactive again — no leftover backdrop
+        // intercepting clicks. Re-opening the modal proves clicks reach the
+        // underlying page rather than being swallowed by an orphaned overlay.
+        await page.getByText(/potential match/i).first().click({ timeout: 5_000 });
+        await expect(page.getByText('Copy A.png')).toBeVisible({ timeout: 5_000 });
+
+        // And there must be no leftover full-viewport backdrop node in the DOM.
+        const orphanedBackdrops = await page.locator('body > .MuiBackdrop-root, body > .MuiModal-root').count();
+        expect(orphanedBackdrops).toBeLessThanOrEqual(1); // at most the currently-open modal's own backdrop
     });
 });

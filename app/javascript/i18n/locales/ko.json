@@ -2222,7 +2222,9 @@
       "embeddedMetadataFields": "임베드된 메타데이터 필드",
       "dominantPalette": "주요 팔레트",
       "embeddedMetadataSection": "EXIF / IPTC / XMP 데이터",
-      "noExifDataExtractedYet": "아직 EXIF 데이터가 추출되지 않았습니다."
+      "noExifDataExtractedYet": "아직 EXIF 데이터가 추출되지 않았습니다.",
+      "collapseExifData": "EXIF/IPTC/XMP 데이터 접기",
+      "expandExifData": "EXIF/IPTC/XMP 데이터 펼치기"
     },
     "ai": {
       "semanticAndVisionAnalysis": "시맨틱 및 비전 분석"
@@ -2509,5 +2511,29 @@
       "viewAll": "\"{{query}}\"의 모든 결과 보기",
       "folderLabel": "폴더"
     }
+  },
+  "footer": {
+    "tagline": "디지털 창작 라이프사이클을 위한 지능형 운영 체제 — 자동화된 규정 준수, 시맨틱 검색, 무한한 확장성.",
+    "product": {
+      "title": "제품",
+      "dashboard": "대시보드",
+      "search": "시맨틱 검색",
+      "workflows": "워크플로우",
+      "duplicateManager": "중복 관리자"
+    },
+    "resources": {
+      "title": "리소스",
+      "apiDocs": "API 문서",
+      "graphqlApi": "GraphQL API",
+      "apiReference": "OpenAPI 참조"
+    },
+    "legal": {
+      "title": "법률 및 보안",
+      "privacyPolicy": "개인정보 처리방침",
+      "termsOfService": "서비스 약관",
+      "gdprCompliance": "GDPR 준수"
+    },
+    "copyright": "© {{year}} Capri DAM. 모든 권리 보유.",
+    "systemOperational": "모든 시스템 정상 작동 중"
   }
 }

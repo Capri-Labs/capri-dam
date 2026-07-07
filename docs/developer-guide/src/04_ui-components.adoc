@@ -60,6 +60,16 @@ Rails shell and typically fetch JSON from `/api/v1/...`.
 | `Folders/ImageEditorDialog.jsx` | Multi-tab image editor: Suggestions, Adjust, AI Studio, LUT filters, geometry, and custom CLI.
 |===
 
+== Global layout (Header & Footer)
+
+[cols="1,3", options="header"]
+|===
+| Component | Notes
+| `Layout/Header.jsx` | Fixed top `AppBar` — product logo (`/images/logo.png`), global search bar, quick-create menu, notification bell, and the profile/impersonation menu.
+| `Layout/Footer.jsx` | Global site footer, redesigned to match the product logo/brand gradient (indigo `#4f46e5` \-> violet `#7c3aed`, shown as a thin accent stripe across the top of the footer). Renders the product logo (scaled down), a tagline, and three link columns: *Product* (`/dashboard`, `/search`, `/workflows`, `/duplicates`), *Resources* (`/api/rest`, `/api/graphql`, `/api-docs`), and *Legal & Security* (`/privacy`, `/terms`, `/compliance`). The bottom bar shows copyright, an "All systems operational" status dot, and the build version. Fully i18n'd via the `footer.*` translation namespace in `app/javascript/i18n/locales/*.json` — no literal English strings are hard-coded in JSX.
+| `Layout/ImpersonationBanner.jsx` | Warning banner rendered above the `AppBar` while an admin is impersonating another user.
+|===
+
 NOTE: New module-specific details are documented in <<section-admin-module>>,
 <<section-collections-module>>, <<section-bin-module>>, <<section-duplicate-detection>>,
 <<section-intelligence-module>>, <<section-ingestion-migration>>, and

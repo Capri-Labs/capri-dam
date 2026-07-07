@@ -500,6 +500,30 @@ describe('Folders components', () => {
     expect(mockNotify).toHaveBeenCalledWith('Asset URL copied to clipboard!', 'success');
   });
 
+  it('collapses the EXIF / IPTC / XMP Data section by default and expands it on click', () => {
+    const asset = {
+      id: 11,
+      title: 'Viewer Asset',
+      url: '/viewer.jpg',
+      created_at: '2024-01-01T10:00:00Z',
+      status: 'approved',
+      properties: {
+        content_type: 'image/jpeg',
+        embedded_metadata: { XMP: { Creator: ['Andy Thoma'] }, EXIF: { Make: 'NIKON CORPORATION' } },
+      },
+    };
+
+    render(<AssetViewer asset={asset} open onClose={jest.fn()} onAssetUpdated={jest.fn()} />);
+
+    expect(screen.getByText('EXIF / IPTC / XMP Data')).toBeInTheDocument();
+    // Collapsed by default: the raw JSON dump isn't rendered/visible yet.
+    expect(screen.queryByText(/NIKON CORPORATION/)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('EXIF / IPTC / XMP Data'));
+
+    expect(screen.getByText(/NIKON CORPORATION/)).toBeInTheDocument();
+  });
+
   it('enables Edit Image for web-renderable formats and disables it for PSD (relies on the backend `editable` flag)', () => {
     const jpegAsset = {
       id: 12,

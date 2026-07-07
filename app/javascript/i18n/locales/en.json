@@ -2222,7 +2222,9 @@
       "embeddedMetadataFields": "Embedded Metadata Fields",
       "dominantPalette": "Dominant Palette",
       "embeddedMetadataSection": "EXIF / IPTC / XMP Data",
-      "noExifDataExtractedYet": "No EXIF data extracted yet."
+      "noExifDataExtractedYet": "No EXIF data extracted yet.",
+      "collapseExifData": "Collapse EXIF / IPTC / XMP data",
+      "expandExifData": "Expand EXIF / IPTC / XMP data"
     },
     "ai": {
       "semanticAndVisionAnalysis": "Semantic & Vision Analysis"
@@ -2509,5 +2511,29 @@
       "viewAll": "View all results for \"{{query}}\"",
       "folderLabel": "Folder"
     }
+  },
+  "footer": {
+    "tagline": "The intelligent operating system for your digital creative life-cycle — automated compliance, semantic discovery, and infinite scalability.",
+    "product": {
+      "title": "Product",
+      "dashboard": "Dashboard",
+      "search": "Semantic Search",
+      "workflows": "Workflows",
+      "duplicateManager": "Duplicate Manager"
+    },
+    "resources": {
+      "title": "Resources",
+      "apiDocs": "API Documentation",
+      "graphqlApi": "GraphQL API",
+      "apiReference": "OpenAPI Reference"
+    },
+    "legal": {
+      "title": "Legal & Security",
+      "privacyPolicy": "Privacy Policy",
+      "termsOfService": "Terms of Service",
+      "gdprCompliance": "GDPR Compliance"
+    },
+    "copyright": "© {{year}} Capri DAM. All rights reserved.",
+    "systemOperational": "All systems operational"
   }
 }
