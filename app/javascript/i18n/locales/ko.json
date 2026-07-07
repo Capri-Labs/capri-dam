@@ -1396,6 +1396,9 @@
     "activeFilters": "{{count}}개 필터 활성",
     "activeFilters_plural": "{{count}}개 필터 활성",
     "share": "결과 공유",
+    "includeBin": "휴지통 포함",
+    "perPage": "페이지",
+    "binBadge": "휴지통",
     "fileLabel": "파일",
     "sort": {
       "relevance": "관련성",

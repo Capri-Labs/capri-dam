@@ -1396,6 +1396,9 @@
     "activeFilters": "{{count}} filter actief",
     "activeFilters_plural": "{{count}} filters actief",
     "share": "Resultaten delen",
+    "includeBin": "Prullenbak opnemen",
+    "perPage": "pagina",
+    "binBadge": "Prullenbak",
     "fileLabel": "BESTAND",
     "sort": {
       "relevance": "Relevantie",

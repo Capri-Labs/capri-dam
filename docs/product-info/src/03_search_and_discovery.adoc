@@ -22,7 +22,9 @@ image::search-results.png[Search results page, title="Search Results page — qu
 | Semantic search | pgvector cosine-similarity search using AI-generated embeddings; supports OpenAI, Cohere, Ollama, and Azure OpenAI as embedding providers.
 | Semantic cluster map | Interactive force-directed graph (`@xyflow/react`-style canvas) of semantically similar assets, for visual/exploratory discovery.
 | Suggestions panel | Live-typing suggestions with a "View all results" link that carries the query into `/search`.
-| URL-addressable results | `/search?q=...&mode=...` — shareable, bookmarkable, back/forward-button friendly.
+| URL-addressable results | `/search?q=...&mode=...&page=...&per_page=...` — shareable, bookmarkable, back/forward-button friendly.
+| Results-per-page control | Dropdown for 25 / 50 / 100 results per page (default 25), matching the folder/asset grid's page-size control.
+| Include Recycle Bin toggle | Off by default; when enabled, soft-deleted assets are included in results and flagged with a "Bin" badge so they're clearly distinguishable from active assets.
 |===
 
 === Powerful / notable capabilities
@@ -48,7 +50,8 @@ image::search-results.png[Search results page, title="Search Results page — qu
 
 === Test coverage status
 
-[.status-covered]#Covered by E2E# (`spec/e2e/global_search_bar.e2e.spec.js`)
+[.status-covered]#Covered by E2E# (`spec/e2e/global_search_bar.e2e.spec.js`,
+`spec/e2e/search_and_duplicates_fixes.e2e.spec.js`)
 
 * Search bar visible with default placeholder; mode dropdown includes Visual Match
   and Ask AI Agent.
@@ -59,6 +62,12 @@ image::search-results.png[Search results page, title="Search Results page — qu
   with the query preserved.
 * `/search` results page loads with pagination params and renders a results grid;
   accepts query + mode from the URL directly.
+* Results-per-page dropdown defaults to 25 and re-fetches with the selected value.
+* Result size renders as a human-readable string (never a hard-coded "0 KB").
+* "Include Recycle Bin" toggle is off by default; enabling it re-queries with
+  `include_bin=true` and flags bin results with a "Bin" chip.
+* Clicking a result navigates to `/assets?id=<uuid>` and keeps that param in
+  the URL (previously stripped by the folder explorer's URL-sync effect).
 
 [.status-pending]#Pending / not yet covered#
 

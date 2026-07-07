@@ -1396,6 +1396,9 @@
     "activeFilters": "{{count}} filtro ativo",
     "activeFilters_plural": "{{count}} filtros ativos",
     "share": "Partilhar resultados",
+    "includeBin": "Incluir Reciclagem",
+    "perPage": "página",
+    "binBadge": "Lixeira",
     "fileLabel": "FICHEIRO",
     "sort": {
       "relevance": "Relevância",

@@ -41,6 +41,7 @@ RSpec.describe "Dashboard HTML coverage", type: :request do
     get "/folders"
     expect(response).to have_http_status(:ok)
     expect(assigns(:active_view)).to eq("All Assets")
+    expect(assigns(:asset_id)).to be_nil
 
     get "/assets", params: { id: "asset-uuid" }
     expect(response).to have_http_status(:ok)
@@ -57,6 +58,15 @@ RSpec.describe "Dashboard HTML coverage", type: :request do
     get "/inbox"
     expect(response).to have_http_status(:ok)
     expect(assigns(:active_view)).to eq("Inbox")
+  end
+
+  it "opens the AssetViewer by default when /folders is loaded with ?folder= and ?id= (e.g. links from the Duplicate Manager)" do
+    get "/folders", params: { folder: "folder-uuid", id: "asset-uuid" }
+
+    expect(response).to have_http_status(:ok)
+    expect(assigns(:active_view)).to eq("All Assets")
+    expect(assigns(:asset_id)).to eq("asset-uuid")
+    expect(response.body).to include('data-initial-target-asset-id="asset-uuid"')
   end
 
   it "redirects unauthenticated users" do

@@ -227,6 +227,52 @@ RSpec.describe 'Api::V1::Search', type: :request do
         expect(json['results'].length).to eq(10)
       end
 
+      it 'defaults per_page to 25 when the param is omitted' do
+        create_search_asset(title: 'Default Page Size', content_type: 'image/png', file_size: 100_000)
+
+        get '/api/v1/search', as: :json
+
+        expect(response).to have_http_status(:ok)
+        expect(json['meta']).to include('per_page' => 25)
+      end
+
+      it 'formats size as a human-readable string derived from the raw byte count' do
+        asset = create_search_asset(title: 'Sized Asset', content_type: 'image/png', file_size: 512_000)
+
+        get '/api/v1/search', params: { q: 'Sized Asset' }, as: :json
+
+        result = json['results'].find { |r| r['uuid'] == asset.uuid }
+        expect(result['size']).to eq(ActiveSupport::NumberHelper.number_to_human_size(512_000))
+        expect(result['file_size']).to eq(512_000)
+      end
+
+      it 'excludes trashed (soft-deleted) assets by default' do
+        active_asset = create_search_asset(title: 'Bin Toggle Active', content_type: 'image/png', file_size: 100_000)
+        trashed_asset = create_search_asset(title: 'Bin Toggle Trashed', content_type: 'image/png', file_size: 100_000)
+        trashed_asset.update_column(:deleted_at, Time.current)
+
+        get '/api/v1/search', params: { q: 'Bin Toggle' }, as: :json
+
+        uuids = json['results'].map { |r| r['uuid'] }
+        expect(uuids).to include(active_asset.uuid)
+        expect(uuids).not_to include(trashed_asset.uuid)
+        expect(json['meta']['include_bin']).to eq(false)
+      end
+
+      it 'includes trashed (soft-deleted) assets, flagged via in_bin, when include_bin=true' do
+        active_asset = create_search_asset(title: 'Bin Flag Active', content_type: 'image/png', file_size: 100_000)
+        trashed_asset = create_search_asset(title: 'Bin Flag Trashed', content_type: 'image/png', file_size: 100_000)
+        trashed_asset.update_column(:deleted_at, Time.current)
+
+        get '/api/v1/search', params: { q: 'Bin Flag', include_bin: 'true' }, as: :json
+
+        results_by_uuid = json['results'].index_by { |r| r['uuid'] }
+        expect(results_by_uuid.keys).to contain_exactly(active_asset.uuid, trashed_asset.uuid)
+        expect(results_by_uuid[active_asset.uuid]['in_bin']).to eq(false)
+        expect(results_by_uuid[trashed_asset.uuid]['in_bin']).to eq(true)
+        expect(json['meta']['include_bin']).to eq(true)
+      end
+
       it 'filters by mode=videos' do
         video_asset = create_search_asset(title: 'Demo Reel', content_type: 'video/mp4', file_size: 1.megabyte)
         create_search_asset(title: 'Still', content_type: 'image/png', file_size: 1.megabyte)

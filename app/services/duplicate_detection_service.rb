@@ -1,25 +1,36 @@
-# Service object responsible for detecting duplicate assets by SHA-256
-# checksum and maintaining the +duplicate_groups+ / +duplicate_group_assets+
-# tables.
+# Service object responsible for detecting duplicate assets and maintaining
+# the +duplicate_groups+ / +duplicate_group_assets+ tables.
 #
 # == Detection algorithm
 #
-# 1. Check whether duplicate detection is enabled (Setting key
-#    +duplicate_manager_enabled+).  Returns immediately when disabled.
+# Two independent strategies are tried, in order — the first one that finds a
+# match wins (an asset is never double-grouped by both strategies):
 #
-# 2. Look up all {AssetVersion} records whose +properties->>'checksum_sha256'+
-#    matches +checksum+, excluding the version that was just uploaded.
+# 1. **Exact match** — {AssetVersion} records whose
+#    +properties->>'checksum_sha256'+ is byte-for-byte identical to the
+#    newly-uploaded file's checksum. This catches true duplicate uploads
+#    (same file, same bytes).
 #
-# 3. If no existing matches are found → no duplicate, return +nil+.
+# 2. **Perceptual match** — {AssetVersion} records whose +perceptual_hash+
+#    (a 64-bit dHash computed by {AssetProcessorWorker#extract_perceptual_hash}
+#    for every image) is within {PERCEPTUAL_HAMMING_THRESHOLD} bits of the
+#    newly-uploaded image's hash. This catches the same photo saved in a
+#    *different format or compression level* (e.g. the same picture exported
+#    as both +.png+ and +.jpg+), where the SHA-256 checksums will always
+#    differ even though the visual content is identical — something a plain
+#    checksum comparison can never detect.
 #
-# 4. If matches are found:
-#    a. Find or create a {DuplicateGroup} for this checksum.
-#    b. Register all matched assets (including the newly-uploaded one) as
-#       {DuplicateGroupAsset} members.
-#    c. Mark the earliest asset as +is_original: true+.
-#    d. Update +total_count+ on the group.
-#    e. Fire an Inbox {Notification} to the uploading user if inbox
-#       notifications are enabled.
+# Whichever strategy matches:
+#   a. Find or create a {DuplicateGroup} for the checksum/hash key.
+#   b. Register all matched assets (including the newly-uploaded one) as
+#      {DuplicateGroupAsset} members.
+#   c. Mark the earliest asset as +is_original: true+.
+#   d. Update +total_count+ on the group.
+#   e. Fire an Inbox {Notification} to the uploading user if inbox
+#      notifications are enabled.
+#
+# Detection only runs when the Setting key +duplicate_manager_enabled+ is
+# truthy.
 #
 # == Usage
 #
@@ -33,7 +44,14 @@
 #
 # @see DuplicateGroup
 # @see DuplicateDetectionWorker
+# @see AssetProcessorWorker#extract_perceptual_hash
 class DuplicateDetectionService
+  # Maximum Hamming distance (out of 64 bits) between two perceptual hashes
+  # for them to be considered the same underlying image. Empirically, the
+  # same photo re-encoded to a different format/quality typically differs by
+  # 0-10 bits, while visually distinct images differ by ~32 bits (50%).
+  PERCEPTUAL_HAMMING_THRESHOLD = 10
+
   # Lightweight value object returned from {.call}.
   Result = Struct.new(:duplicate_group, :new_duplicates, :enabled, keyword_init: true) do
     def duplicate_detected?
@@ -72,48 +90,19 @@ class DuplicateDetectionService
       return Result.new(duplicate_group: nil, new_duplicates: 0, enabled: false)
     end
 
-    # Find all asset versions that carry the same checksum, excluding the
-    # version that belongs to the current asset.
-    matching_versions = AssetVersion
-      .includes(:asset)
-      .where("asset_versions.properties->>'checksum_sha256' = ?", @checksum)
-      .where.not(asset_id: @asset.id)
-      .joins(:asset)
-      .merge(Asset.where(deleted_at: nil)) # exclude soft-deleted
+    # 1. Exact match: same SHA-256 checksum (byte-identical files).
+    result = detect_exact_duplicates
+    return result if result
 
-    if matching_versions.empty?
-      return Result.new(duplicate_group: nil, new_duplicates: 0, enabled: true)
-    end
+    # 2. Perceptual match: same visual content saved in a different format or
+    #    at a different quality/compression level (e.g. .png vs .jpg), where
+    #    the SHA-256 checksums will always differ even though a human would
+    #    consider the files duplicates. See {#extract_perceptual_hash} in
+    #    {AssetProcessorWorker} for how the hash is computed.
+    result = detect_perceptual_duplicates
+    return result if result
 
-    existing_asset_ids = matching_versions.map(&:asset_id).uniq
-    new_duplicates     = 0
-
-    group = ActiveRecord::Base.transaction do
-      # Find or create the group for this checksum.
-      # If a previous pending group exists, reopen it; otherwise create fresh.
-      dup_group = DuplicateGroup.find_or_initialize_by(checksum: @checksum, status: "pending")
-      dup_group.save! if dup_group.new_record?
-
-      # Register the newly uploaded asset.
-      register_member(dup_group, @asset.id)
-
-      # Register all existing matching assets.
-      existing_asset_ids.each do |aid|
-        added = register_member(dup_group, aid)
-        new_duplicates += 1 if added
-      end
-
-      # Mark the original (oldest created_at).
-      mark_original(dup_group)
-
-      # Keep total_count in sync.
-      dup_group.update!(total_count: dup_group.duplicate_group_assets.count)
-      dup_group
-    end
-
-    send_inbox_notification(group) if inbox_notifications_enabled?
-
-    Result.new(duplicate_group: group, new_duplicates: new_duplicates, enabled: true)
+    Result.new(duplicate_group: nil, new_duplicates: 0, enabled: true)
   rescue StandardError => e
     Rails.logger.error(
       "[DuplicateDetectionService] Error for asset #{@asset&.id}: #{e.class}: #{e.message}"
@@ -122,6 +111,107 @@ class DuplicateDetectionService
   end
 
   private
+
+  # ---------------------------------------------------------------------------
+  # Detection strategies
+  # ---------------------------------------------------------------------------
+
+  # Groups assets whose {AssetVersion#properties}' +checksum_sha256+ is
+  # byte-for-byte identical to the newly-uploaded asset's.
+  #
+  # @return [Result, nil] +nil+ when no exact match was found (so the caller
+  #   can fall through to perceptual matching)
+  def detect_exact_duplicates
+    matching_versions = AssetVersion
+      .includes(:asset)
+      .where("asset_versions.properties->>'checksum_sha256' = ?", @checksum)
+      .where.not(asset_id: @asset.id)
+      .joins(:asset)
+      .merge(Asset.where(deleted_at: nil)) # exclude soft-deleted
+
+    return nil if matching_versions.empty?
+
+    existing_asset_ids = matching_versions.map(&:asset_id).uniq
+    build_group(checksum: @checksum, existing_asset_ids: existing_asset_ids)
+  end
+
+  # Groups assets whose perceptual hash is within {PERCEPTUAL_HAMMING_THRESHOLD}
+  # bits of the newly-uploaded asset's — i.e. visually near-identical images
+  # that were saved in a different format/encoding and therefore have
+  # different SHA-256 checksums.
+  #
+  # @return [Result, nil] +nil+ when perceptual hashing isn't applicable
+  #   (non-image asset, hash missing) or no near-duplicate was found
+  def detect_perceptual_duplicates
+    own_hash = perceptual_hash_for(@asset)
+    return nil if own_hash.blank?
+
+    candidates = AssetVersion
+      .includes(:asset)
+      .where("asset_versions.properties->>'perceptual_hash' IS NOT NULL")
+      .where.not(asset_id: @asset.id)
+      .joins(:asset)
+      .merge(Asset.where(deleted_at: nil))
+
+    matching_asset_ids = candidates.select do |version|
+      candidate_hash = version.properties["perceptual_hash"]
+      candidate_hash.present? &&
+        hamming_distance(own_hash, candidate_hash) <= PERCEPTUAL_HAMMING_THRESHOLD
+    end.map(&:asset_id).uniq
+
+    return nil if matching_asset_ids.empty?
+
+    # Use the perceptual hash as the group's checksum key (prefixed so it's
+    # never mistaken for — or collide with — a real SHA-256 exact-match group).
+    build_group(checksum: "phash:#{own_hash}", existing_asset_ids: matching_asset_ids)
+  end
+
+  # Hamming distance (number of differing bits) between two hex-encoded
+  # perceptual hashes.
+  #
+  # @param hash_a [String] hex string
+  # @param hash_b [String] hex string
+  # @return [Integer]
+  def hamming_distance(hash_a, hash_b)
+    (hash_a.to_i(16) ^ hash_b.to_i(16)).to_s(2).count("1")
+  end
+
+  # @param asset [Asset]
+  # @return [String, nil]
+  def perceptual_hash_for(asset)
+    asset.active_version&.properties&.dig("perceptual_hash") ||
+      asset.properties["perceptual_hash"]
+  end
+
+  # Shared find-or-create-group + member-registration logic used by both
+  # detection strategies.
+  #
+  # @param checksum           [String] the group's checksum/key column value
+  # @param existing_asset_ids [Array<String>] UUIDs of assets already matched
+  # @return [Result]
+  def build_group(checksum:, existing_asset_ids:)
+    new_duplicates = 0
+
+    group = ActiveRecord::Base.transaction do
+      dup_group = DuplicateGroup.find_or_initialize_by(checksum: checksum, status: "pending")
+      dup_group.save! if dup_group.new_record?
+
+      register_member(dup_group, @asset.id)
+
+      existing_asset_ids.each do |aid|
+        added = register_member(dup_group, aid)
+        new_duplicates += 1 if added
+      end
+
+      mark_original(dup_group)
+      dup_group.update!(total_count: dup_group.duplicate_group_assets.count)
+      dup_group
+    end
+
+    send_inbox_notification(group) if inbox_notifications_enabled?
+
+    Result.new(duplicate_group: group, new_duplicates: new_duplicates, enabled: true)
+  end
 
   # ---------------------------------------------------------------------------
   # Helpers

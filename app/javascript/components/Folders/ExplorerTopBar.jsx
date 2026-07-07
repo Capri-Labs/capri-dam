@@ -158,12 +158,19 @@ export default function ExplorerTopBar({
                 )}
 
                 <Button
-                    variant={viewMode === 'bin' ? 'contained' : 'outlined'}
-                    color={viewMode === 'bin' ? 'warning' : 'inherit'}
-                    onClick={() => { setViewMode(viewMode === 'active' ? 'bin' : 'active'); handleNavigate('root'); }}
-                    sx={{ textTransform: 'none', borderRadius: '8px', bgcolor: viewMode === 'active' ? 'white' : '' }}
+                    variant="outlined"
+                    color="inherit"
+                    // The Recycle Bin has its own dedicated page (`/bin`, see
+                    // BinManager.jsx) with the correct restore/permanently-delete
+                    // UI. Toggling an in-explorer "bin" viewMode used to render
+                    // a blank grid here because `/api/v1/bin` returns a
+                    // `{ items }` payload, not the `{ folders, assets }` shape
+                    // this explorer expects — so we navigate to the real page
+                    // instead of trying to render bin contents inline.
+                    onClick={() => { window.location.href = '/bin'; }}
+                    sx={{ textTransform: 'none', borderRadius: '8px', bgcolor: 'white' }}
                 >
-                    {viewMode === 'active' ? t('explorerTopBar.viewTrashBin') : t('explorerTopBar.backToActiveFiles')}
+                    {t('explorerTopBar.viewTrashBin')}
                 </Button>
 
                 {hasSelection && viewMode === 'active' && (

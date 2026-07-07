@@ -1396,6 +1396,9 @@
     "activeFilters": "{{count}} filtre actif",
     "activeFilters_plural": "{{count}} filtres actifs",
     "share": "Partager les résultats",
+    "includeBin": "Inclure la corbeille",
+    "perPage": "page",
+    "binBadge": "Corbeille",
     "fileLabel": "FICHIER",
     "sort": {
       "relevance": "Pertinence",

@@ -3,15 +3,23 @@ import {
   Box, Typography, Grid, Chip, CircularProgress, Stack, Button, Snackbar, Alert,
   TextField, InputAdornment, ToggleButton, ToggleButtonGroup, Pagination,
   Select, MenuItem, FormControl, IconButton, Tooltip, Fade,
+  FormControlLabel, Switch,
 } from '@mui/material';
 import {
   Search as SearchIcon, IosShare, ViewModule, ViewList, AutoAwesome,
   TuneOutlined, SearchOff, Bolt, Image, VideoFile, Description,
-  TrendingUp, ArrowUpward, ArrowDownward, SwapVert,
+  TrendingUp, ArrowUpward, ArrowDownward, SwapVert, DeleteOutlineOutlined,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import SearchFilterSidebar from './SearchFilterSidebar';
 import SearchResultCard, { SearchResultCardSkeleton } from './SearchResultCard';
+
+// Mirrors AssetFilterBar's PER_PAGE_OPTIONS so Search and the folder/asset
+// grid behave consistently. Default is 25 (see DEFAULT_PER_PAGE in
+// Api::V1::SearchController).
+const PER_PAGE_OPTIONS = [ 25, 50, 100 ];
+const DEFAULT_PER_PAGE = 25;
+
 
 const SORT_OPTIONS = [
   { key: 'relevance', dir: 'desc' },
@@ -39,9 +47,9 @@ const STATIC_FILTER_KEYS = new Set([
 ]);
 
 // URL params that are NOT filter keys (reserved for pagination / sorting / search)
-const RESERVED_URL_PARAMS = new Set(['q', 'mode', 'page', 'per_page', 'sort_by', 'sort_dir']);
+const RESERVED_URL_PARAMS = new Set(['q', 'mode', 'page', 'per_page', 'sort_by', 'sort_dir', 'include_bin']);
 
-function buildQueryString(query, filters, page, perPage, sortBy, sortDir, mode) {
+function buildQueryString(query, filters, page, perPage, sortBy, sortDir, mode, includeBin) {
   const params = new URLSearchParams();
   if (query) params.set('q', query);
   if (mode && mode !== 'all') params.set('mode', mode);
@@ -60,6 +68,7 @@ function buildQueryString(query, filters, page, perPage, sortBy, sortDir, mode) 
   params.set('per_page', perPage);
   if (sortBy !== 'relevance') params.set('sort_by', sortBy);
   if (sortDir !== 'desc') params.set('sort_dir', sortDir);
+  if (includeBin) params.set('include_bin', 'true');
   return params.toString();
 }
 
@@ -96,17 +105,21 @@ export default function SearchScreen() {
   const initialQuery = urlParams.get('q') || '';
   const initialFilters = useMemo(() => parseFiltersFromURL(urlParams), [urlParams]);
   const initialPage = parseInt(urlParams.get('page') || '1', 10);
+  const initialPerPage = parseInt(urlParams.get('per_page') || '', 10) || DEFAULT_PER_PAGE;
   const initialSortBy = urlParams.get('sort_by') || 'relevance';
   const initialSortDir = urlParams.get('sort_dir') || 'desc';
   const initialMode = urlParams.get('mode') || 'all';
+  const initialIncludeBin = urlParams.get('include_bin') === 'true';
 
   const [query, setQuery] = useState(initialQuery);
   const [inputVal, setInputVal] = useState(initialQuery);
   const [filters, setFilters] = useState(initialFilters);
   const [page, setPage] = useState(initialPage);
+  const [perPage, setPerPage] = useState(initialPerPage);
   const [sortBy, setSortBy] = useState(initialSortBy);
   const [sortDir, setSortDir] = useState(initialSortDir);
   const [resultMode, setResultMode] = useState(initialMode);
+  const [includeBin, setIncludeBin] = useState(initialIncludeBin);
   const [viewMode,  setViewMode]  = useState('grid');
   const [gridSize,  setGridSize]  = useState('medium');
   const [assets, setAssets] = useState([]);
@@ -116,11 +129,10 @@ export default function SearchScreen() {
   const [snackbar, setSnackbar] = useState({ open: false, msg: '', severity: 'success' });
   const debounceRef = useRef(null);
   const hasInitializedRef = useRef(false);
-  const perPage = 10;
 
-  const fetchResults = useCallback((currentQuery, currentFilters, currentPage, currentSortBy, currentSortDir, currentMode) => {
+  const fetchResults = useCallback((currentQuery, currentFilters, currentPage, currentSortBy, currentSortDir, currentMode, currentPerPage, currentIncludeBin) => {
     setLoading(true);
-    const qs = buildQueryString(currentQuery, currentFilters, currentPage, perPage, currentSortBy, currentSortDir, currentMode);
+    const qs = buildQueryString(currentQuery, currentFilters, currentPage, currentPerPage, currentSortBy, currentSortDir, currentMode, currentIncludeBin);
     const newUrl = `/search${qs ? `?${qs}` : ''}`;
     window.history.replaceState({}, '', newUrl);
 
@@ -146,12 +158,12 @@ export default function SearchScreen() {
       })
       .catch(() => setSnackbar({ open: true, msg: t('search.error.fetchFailed'), severity: 'error' }))
       .finally(() => setLoading(false));
-  }, [perPage, t]);
+  }, [t]);
 
   useEffect(() => {
-    fetchResults(initialQuery, initialFilters, initialPage, initialSortBy, initialSortDir, initialMode);
+    fetchResults(initialQuery, initialFilters, initialPage, initialSortBy, initialSortDir, initialMode, initialPerPage, initialIncludeBin);
     hasInitializedRef.current = true;
-  }, [fetchResults, initialFilters, initialPage, initialQuery, initialSortBy, initialSortDir, initialMode]);
+  }, [fetchResults, initialFilters, initialPage, initialQuery, initialSortBy, initialSortDir, initialMode, initialPerPage, initialIncludeBin]);
 
 
   useEffect(() => {
@@ -162,22 +174,34 @@ export default function SearchScreen() {
     debounceRef.current = setTimeout(() => {
       setQuery(inputVal);
       setPage(1);
-      fetchResults(inputVal, filters, 1, sortBy, sortDir, resultMode);
+      fetchResults(inputVal, filters, 1, sortBy, sortDir, resultMode, perPage, includeBin);
     }, 350);
 
     return () => clearTimeout(debounceRef.current);
-  }, [fetchResults, filters, inputVal, query, sortBy, sortDir, resultMode]);
+  }, [fetchResults, filters, inputVal, query, sortBy, sortDir, resultMode, perPage, includeBin]);
 
   const handleFilterChange = useCallback((newFilters) => {
     setFilters(newFilters);
     setPage(1);
-    fetchResults(query, newFilters, 1, sortBy, sortDir, resultMode);
-  }, [fetchResults, query, sortBy, sortDir, resultMode]);
+    fetchResults(query, newFilters, 1, sortBy, sortDir, resultMode, perPage, includeBin);
+  }, [fetchResults, query, sortBy, sortDir, resultMode, perPage, includeBin]);
 
   const handlePageChange = (_, newPage) => {
     setPage(newPage);
-    fetchResults(query, filters, newPage, sortBy, sortDir, resultMode);
+    fetchResults(query, filters, newPage, sortBy, sortDir, resultMode, perPage, includeBin);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handlePerPageChange = (newPerPage) => {
+    setPerPage(newPerPage);
+    setPage(1);
+    fetchResults(query, filters, 1, sortBy, sortDir, resultMode, newPerPage, includeBin);
+  };
+
+  const handleIncludeBinChange = (checked) => {
+    setIncludeBin(checked);
+    setPage(1);
+    fetchResults(query, filters, 1, sortBy, sortDir, resultMode, perPage, checked);
   };
 
   const handleSortChange = (newSortBy) => {
@@ -189,14 +213,14 @@ export default function SearchScreen() {
     setSortBy(nextSortBy);
     setSortDir(nextSortDir);
     setPage(1);
-    fetchResults(query, filters, 1, nextSortBy, nextSortDir, resultMode);
+    fetchResults(query, filters, 1, nextSortBy, nextSortDir, resultMode, perPage, includeBin);
   };
 
   const handleResetFilters = () => {
     const emptyFilters = parseFiltersFromURL(new URLSearchParams());
     setFilters(emptyFilters);
     setPage(1);
-    fetchResults(query, emptyFilters, 1, sortBy, sortDir, resultMode);
+    fetchResults(query, emptyFilters, 1, sortBy, sortDir, resultMode, perPage, includeBin);
   };
 
   const handleShare = () => {
@@ -220,7 +244,7 @@ export default function SearchScreen() {
     setFilters(preset.f);
     setPage(1);
     setResultMode('all');
-    fetchResults(preset.q, preset.f, 1, sortBy, sortDir, 'all');
+    fetchResults(preset.q, preset.f, 1, sortBy, sortDir, 'all', perPage, includeBin);
   };
 
   const activeFilterCount = countActiveFilters(filters);
@@ -395,6 +419,26 @@ export default function SearchScreen() {
             />
           )}
 
+          {/* Off by default — when enabled, soft-deleted (Recycle Bin) assets
+              are included in results and flagged via the "Bin" chip on
+              SearchResultCard so they're clearly distinguishable. */}
+          <FormControlLabel
+            control={(
+              <Switch
+                size="small"
+                checked={includeBin}
+                onChange={(event) => handleIncludeBinChange(event.target.checked)}
+              />
+            )}
+            label={(
+              <Typography variant="body2" sx={{ fontWeight: 600, color: '#475569', display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <DeleteOutlineOutlined sx={{ fontSize: 16 }} />
+                {t('search.includeBin')}
+              </Typography>
+            )}
+            sx={{ ml: 0 }}
+          />
+
           <Box sx={{ flexGrow: 1 }} />
 
           <FormControl size="small" sx={{ minWidth: 148 }}>
@@ -491,18 +535,34 @@ export default function SearchScreen() {
           </ToggleButtonGroup>
         </Box>
 
-        {meta.total_pages > 1 && (
-          <Box sx={{ px: 3, py: 1.5, bgcolor: '#fff', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'flex-end', flexShrink: 0 }}>
-            <Pagination
-              count={meta.total_pages}
-              page={page}
-              onChange={handlePageChange}
-              size="small"
-              color="primary"
-              shape="rounded"
-              showFirstButton
-              showLastButton
-            />
+        {(meta.total_pages > 1 || meta.total_found > 0) && (
+          <Box sx={{ px: 3, py: 1.5, bgcolor: '#fff', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 2, flexShrink: 0 }}>
+            <FormControl size="small" sx={{ minWidth: 110 }}>
+              <Select
+                value={perPage}
+                onChange={(event) => handlePerPageChange(Number(event.target.value))}
+                sx={{ borderRadius: 2, fontSize: '0.8rem', color: '#475569' }}
+              >
+                {PER_PAGE_OPTIONS.map((n) => (
+                  <MenuItem key={n} value={n} dense>
+                    <Typography variant="body2">{n} / {t('search.perPage')}</Typography>
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            {meta.total_pages > 1 && (
+              <Pagination
+                count={meta.total_pages}
+                page={page}
+                onChange={handlePageChange}
+                size="small"
+                color="primary"
+                shape="rounded"
+                showFirstButton
+                showLastButton
+              />
+            )}
           </Box>
         )}
 

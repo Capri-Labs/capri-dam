@@ -185,6 +185,89 @@ RSpec.describe DuplicateDetectionService, type: :service do
     end
   end
 
+  # ---------------------------------------------------------------------------
+  # Perceptual (cross-format) duplicate detection
+  # ---------------------------------------------------------------------------
+  context "when no exact checksum match exists but a visually-identical image was uploaded in a different format" do
+    let(:own_hash) { "ec3f0f882e03a160" }
+    # Hamming distance from own_hash is 7 bits — within PERCEPTUAL_HAMMING_THRESHOLD (10).
+    let(:near_duplicate_hash) { "fc7f1f8b0e03e160" }
+    # Hamming distance from own_hash is 32 bits — a visually distinct image.
+    let(:unrelated_hash) { "13c0f0779c1f5e9f" }
+
+    let!(:png_asset)   { create(:asset, user: user) }
+    let!(:png_version) do
+      create(:asset_version, asset: png_asset,
+             properties: { "checksum_sha256" => "different-checksum-entirely", "perceptual_hash" => near_duplicate_hash })
+    end
+    let!(:unrelated_asset)   { create(:asset, user: user) }
+    let!(:unrelated_version) do
+      create(:asset_version, asset: unrelated_asset,
+             properties: { "checksum_sha256" => "yet-another-checksum", "perceptual_hash" => unrelated_hash })
+    end
+
+    before do
+      asset.update!(properties: asset.properties.merge("perceptual_hash" => own_hash))
+    end
+
+    it "creates a duplicate group keyed by the perceptual hash" do
+      expect {
+        described_class.call(asset: asset, checksum: checksum, user: user)
+      }.to change(DuplicateGroup, :count).by(1)
+
+      group = DuplicateGroup.last
+      expect(group.checksum).to eq("phash:#{own_hash}")
+    end
+
+    it "registers only the near-duplicate asset, not the unrelated one" do
+      described_class.call(asset: asset, checksum: checksum, user: user)
+      group = DuplicateGroup.last
+      expect(group.duplicate_group_assets.map(&:asset_id)).to contain_exactly(asset.id, png_asset.id)
+    end
+
+    it "returns a result reporting the duplicate was detected" do
+      result = described_class.call(asset: asset, checksum: checksum, user: user)
+      expect(result.duplicate_detected?).to be true
+    end
+  end
+
+  context "when the asset has no perceptual_hash and no checksum match" do
+    it "does not create a duplicate group" do
+      expect {
+        described_class.call(asset: asset, checksum: checksum, user: user)
+      }.not_to change(DuplicateGroup, :count)
+    end
+  end
+
+  context "when both an exact checksum match and a perceptual match are possible" do
+    let!(:exact_match_asset)   { create(:asset, user: user) }
+    let!(:exact_match_version) do
+      create(:asset_version, asset: exact_match_asset, properties: { "checksum_sha256" => checksum })
+    end
+
+    before do
+      asset.update!(properties: asset.properties.merge("perceptual_hash" => "ec3f0f882e03a160"))
+    end
+
+    it "prefers the exact-match strategy and keys the group by the SHA-256 checksum" do
+      described_class.call(asset: asset, checksum: checksum, user: user)
+      group = DuplicateGroup.last
+      expect(group.checksum).to eq(checksum)
+    end
+  end
+
+  describe "#hamming_distance" do
+    let(:service) { described_class.new(asset: asset, checksum: checksum, user: user) }
+
+    it "returns 0 for identical hashes" do
+      expect(service.send(:hamming_distance, "ec3f0f882e03a160", "ec3f0f882e03a160")).to eq(0)
+    end
+
+    it "counts differing bits between two hashes" do
+      expect(service.send(:hamming_distance, "ec3f0f882e03a160", "fc7f1f8b0e03e160")).to eq(7)
+    end
+  end
+
   describe "private helper branches" do
     let(:service) { described_class.new(asset: asset, checksum: checksum, user: user) }
 

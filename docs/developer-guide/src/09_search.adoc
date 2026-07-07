@@ -44,6 +44,36 @@ Asset.where("search_vector @@ plainto_tsquery(:q)", q: "product launch")
 `AssetFilterBar` (UI) and the API support multi-select filters on:
 `content_type`, `tags`, `created_at` range, `status`, `folder_id`.
 
+=== Pagination
+
+`page`/`per_page` are supported on all three payload builders (lexical,
+semantic, and folder search). `per_page` defaults to
+`Api::V1::SearchController::DEFAULT_PER_PAGE` (25, matching the folder/asset
+grid's `AssetFilterBar` default) and is clamped to `[1, 100]`. The `/search`
+screen's results-per-page dropdown offers `25`/`50`/`100` (see
+`SearchScreen.jsx`'s `PER_PAGE_OPTIONS`), defaulting to 25.
+
+=== Result size formatting
+
+`SearchController#format_asset` derives the human-readable `size` field from
+the raw byte count stored by `AssetProcessorWorker` (`properties["size"]`,
+falling back to the legacy `properties["file_size"]` key), via
+`ActiveSupport::NumberHelper.number_to_human_size`. The raw byte count is also
+returned separately as `file_size` for any consumer that needs it unformatted.
+Earlier, `format_asset` read `properties["size_human"]`/`properties["file_size"]`
+keys that `AssetProcessorWorker` never actually wrote, so every search result
+always showed a hard-coded `"0 KB"`.
+
+=== Including Recycle Bin assets
+
+By default, `GET /api/v1/search` only returns active (non-trashed) assets
+(`Asset.active`). Passing `?include_bin=true` switches the base scope to
+`Asset.all` (see `SearchController#include_bin?`), so soft-deleted assets are
+included alongside active ones. Every result carries an `in_bin` boolean so
+the UI can flag which results are bin items — `SearchResultCard.jsx` renders
+a "Bin" chip when `in_bin` is true. The `/search` screen exposes this as an
+"Include Recycle Bin" toggle switch, off by default.
+
 === Result navigation (asset deep-link convention)
 
 Every screen that lets a user click through to an individual asset (Search
@@ -74,6 +104,35 @@ params entirely). All of these now build the `/assets?id=` deep-link instead.
 When adding a new place that links to an asset, always use `/assets?id=` (or
 the `navigateTo` helper from `utils/globalutils.js`, which already does this
 correctly for Collections) — never construct a `/assets/:id`-style path.
+
+Note: `/folders?folder=<id>&id=<id>` is also a supported deep-link form (used
+by e.g. the Duplicate Manager's "Go to asset" action) — `DashboardController
+#folders` reads `params[:id]` the same way `#assets` does, and stamps the same
+`data-initial-target-asset-id` attribute.
+
+=== Asset payload shape for the deep-link fetch (`properties`, not just `metadata`)
+
+`AssetExplorer.jsx`'s deep-link effect calls `GET /api/v1/assets/:id`
+(`Api::V1::AssetsController#show`) and feeds the raw JSON straight into
+`<AssetViewer asset={...} />`. `AssetViewer.jsx` (and the rest of the asset UI)
+reads `asset.properties.content_type`, `asset.properties.file_size`, etc. —
+the same shape `FoldersController#format_asset_payload` returns for assets
+loaded via the normal folder listing.
+
+`AssetsController#format_asset` previously only returned a `metadata:` key
+(no `properties:`), so `asset.properties` was `undefined` for anything opened
+via a deep link — `AssetViewer`'s `isImage` check silently evaluated to
+`false` and the viewer fell back to a generic file icon instead of loading the
+image, even though the dialog itself opened correctly. Fixed by adding
+`properties: metadata` to the response (kept `metadata:` as a legacy alias for
+any other existing consumers). When adding new fields to asset JSON payloads,
+prefer `properties` as the canonical metadata key for parity with the folder
+listing endpoint.
+
+While the deep-link fetch is in flight, `AssetExplorer.jsx` shows a
+full-screen `Backdrop`/`CircularProgress` spinner (`data-testid=
+"deep-link-loading-backdrop"`) instead of leaving the user staring at an
+unchanged folder grid.
 
 === Thumbnail/preview resolution for special file extensions
 

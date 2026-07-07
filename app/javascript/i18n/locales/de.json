@@ -1396,6 +1396,9 @@
     "activeFilters": "{{count}} Filter aktiv",
     "activeFilters_plural": "{{count}} Filter aktiv",
     "share": "Ergebnisse teilen",
+    "includeBin": "Papierkorb einbeziehen",
+    "perPage": "Seite",
+    "binBadge": "Papierkorb",
     "fileLabel": "DATEI",
     "sort": {
       "relevance": "Relevanz",

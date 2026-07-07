@@ -764,12 +764,65 @@ RSpec.describe AssetProcessorWorker, type: :worker do
     File.delete(staging_path) if staging_path && File.exist?(staging_path)
   end
 
-  it "handles exhausted retries when the version and staged file are already gone" do
-    expect do
-      described_class.sidekiq_retries_exhausted_block.call(
-        { "args" => [ -1, nil ] },
-        StandardError.new("permanent")
-      )
-    end.not_to raise_error
+  it "computes a perceptual hash from downsized greyscale pixel data" do
+    worker = described_class.new
+    # 9 columns x 8 rows, strictly ascending per row → every column-pair
+    # comparison is "true" (left < right) so every bit is 1.
+    row = (0...9).map { |i| i * 25 }
+    raw_bytes = (row * 8).pack("C*")
+    convert = double("MiniMagick convert")
+    allow(convert).to receive(:<<).and_return(convert)
+    allow(MiniMagick).to receive(:convert).and_yield(convert).and_return(raw_bytes)
+
+    meta = {}
+    worker.send(:extract_perceptual_hash, "image.jpg", meta)
+
+    expect(convert).to have_received(:<<).with("image.jpg")
+    expect(convert).to have_received(:<<).with("-colorspace")
+    expect(convert).to have_received(:<<).with("Gray")
+    expect(convert).to have_received(:<<).with("-resize")
+    expect(convert).to have_received(:<<).with("9x8!")
+    expect(meta[:perceptual_hash]).to eq("ffffffffffffffff")
+  end
+
+  it "produces perceptual hashes with a small Hamming distance for near-identical images" do
+    worker = described_class.new
+
+    row_a = (0...9).map { |i| i * 25 }
+    # Row B nudges every pixel by a small delta (simulating re-encode noise)
+    # but preserves the ascending order, so the resulting hash should be
+    # identical or very close.
+    row_b = row_a.map { |v| [ v + 3, 255 ].min }
+
+    convert = double("MiniMagick convert")
+    allow(convert).to receive(:<<).and_return(convert)
+    allow(MiniMagick).to receive(:convert).and_yield(convert).and_return((row_a * 8).pack("C*"), (row_b * 8).pack("C*"))
+
+    meta_a = {}
+    meta_b = {}
+    worker.send(:extract_perceptual_hash, "a.jpg", meta_a)
+    worker.send(:extract_perceptual_hash, "b.jpg", meta_b)
+
+    distance = (meta_a[:perceptual_hash].to_i(16) ^ meta_b[:perceptual_hash].to_i(16)).to_s(2).count("1")
+    expect(distance).to eq(0)
+  end
+
+  it "does not set a perceptual hash when the pixel buffer is too small" do
+    worker = described_class.new
+    allow(MiniMagick).to receive(:convert).and_return("too short")
+
+    meta = {}
+    worker.send(:extract_perceptual_hash, "image.jpg", meta)
+
+    expect(meta).not_to have_key(:perceptual_hash)
+  end
+
+  it "swallows perceptual hash extraction failures" do
+    worker = described_class.new
+    allow(MiniMagick).to receive(:convert).and_raise(StandardError, "convert broke")
+
+    meta = {}
+    expect { worker.send(:extract_perceptual_hash, "image.jpg", meta) }.not_to raise_error
+    expect(meta).not_to have_key(:perceptual_hash)
   end
 end

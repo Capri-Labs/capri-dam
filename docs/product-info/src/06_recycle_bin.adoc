@@ -56,6 +56,10 @@ image::recycle-bin.png[Recycle Bin, title="Recycle Bin — stat bar, type filter
 * Empty-state message when the bin is empty with no filters applied.
 * "Empty Bin" button opens its confirmation dialog.
 * Sidebar "Recycle Bin" link navigates to `/bin`.
+* "View Trash Bin" button in the folder explorer (All Assets screen) also
+  navigates to `/bin` (`spec/e2e/search_and_duplicates_fixes.e2e.spec.js`) —
+  it previously tried to render bin contents inline via an incompatible
+  in-explorer view and always came up blank.
 * Retention-policy editor is reachable from Asset Configurations and shows
   retention fields.
 * AI gateway teaser is shown; `purge_status` and `ai/smart_suggestions` API

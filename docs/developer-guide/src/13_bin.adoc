@@ -56,6 +56,16 @@ storage metrics before the hard delete is finalized.
 * bulk restore and bulk permanent delete
 * active purge banner while a job is running
 
+The "View Trash Bin" button in the folder explorer's top bar
+(`ExplorerTopBar.jsx`) navigates to the dedicated `/bin` page (full
+navigation, `window.location.href = '/bin'`), which renders `BinManager.jsx`.
+It previously toggled an in-explorer `viewMode = 'bin'` state that tried to
+render `GET /api/v1/bin`'s `{ items, pagination }` payload through
+`AssetExplorer.jsx`'s `{ folders, assets, breadcrumbs }`-shaped rendering
+pipeline — an incompatible shape that always produced a blank grid. Navigating
+to the real `/bin` page avoids maintaining two separate bin-rendering
+implementations.
+
 WARNING: Permanent delete is intentionally separated from the initial trash
 operation; workflow-protected assets may remain unpurgeable until instances are
 completed or cancelled.

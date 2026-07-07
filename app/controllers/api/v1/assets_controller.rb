@@ -1204,9 +1204,20 @@ module Api
       # parent +properties+ with the active-version properties so the React
       # frontend always sees a flat metadata map.
       #
+      # NOTE: `properties:` (not just the legacy `metadata:` alias) is
+      # required here — `AssetViewer.jsx`/`AssetExplorer.jsx`'s deep-link flow
+      # (`/folders?id=` and `/assets?id=`) fetches this endpoint directly and
+      # feeds the raw JSON straight into `<AssetViewer asset={...} />`, which
+      # reads `asset.properties.content_type`/`asset.properties.file_size`
+      # (the same shape `FoldersController#format_asset_payload` returns for
+      # assets loaded via the normal folder listing). Without `properties:`,
+      # `asset.properties` is `undefined`, `isImage` evaluates to `false`, and
+      # the viewer silently falls back to the generic file icon instead of
+      # loading the image.
+      #
       # @param asset [Asset]
       # @return [Hash] with keys +:id+, +:uuid+, +:title+, +:version+,
-      #   +:metadata+, +:url+
+      #   +:metadata+, +:properties+, +:url+
       def format_asset(asset)
         active_v = asset.active_version
         metadata = asset.properties.merge(active_v&.properties || {})
@@ -1216,9 +1227,13 @@ module Api
           title: asset.title,
           status: normalised_asset_status(asset),
           version: active_v&.version_number || 1,
-          # Merge parent properties with active version properties so React sees everything
+          # Merge parent properties with active version properties so React sees everything.
+          # `properties:` is the canonical key consumed by AssetViewer/AssetExplorer;
+          # `metadata:` is kept as a legacy alias for any other existing consumers.
+          properties: metadata,
           metadata: metadata,
           content_type: metadata["content_type"],
+          size: metadata["size"] || metadata["file_size"] || 0,
           thumb_url: asset_preview_url_for(asset),
           folder_id: asset.folder_id,
           trashed: asset.trashed?,

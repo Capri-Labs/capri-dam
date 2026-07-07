@@ -1,7 +1,12 @@
 <%# /assets?id=UUID deep-link shell.
   # The React FoldersManager component reads `data-initial-target-asset-id`
-  # and passes it to AssetExplorer, which fetches the asset and opens AssetViewer. %>
-<div id="root"
-     data-view="folders"
-     <%= "data-initial-target-asset-id=\"#{html_escape(@asset_id)}\"" if @asset_id.present? %>></div>
+  # and passes it to AssetExplorer, which fetches the asset and opens AssetViewer.
+  #
+  # NOTE: use the `tag` builder (not manual string interpolation) so the
+  # attribute value is escaped/quoted correctly. A prior manual
+  # `"data-initial-target-asset-id=\"#{...}\""` string got double-escaped by
+  # Rails' automatic output escaping, embedding literal `"` characters in the
+  # dataset value client-side (e.g. `"abc"` instead of `abc`) which silently
+  # broke the `/api/v1/assets/:id` deep-link fetch. %>
+<%= tag.div id: "root", data: { view: "folders", initial_target_asset_id: @asset_id.presence } %>
 

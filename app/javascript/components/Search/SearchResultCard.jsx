@@ -6,7 +6,7 @@ import {
 import {
   InsertDriveFile, Image as ImageIcon, VideoFile, AudioFile,
   Description, FolderZip, CheckCircle, Cancel, RadioButtonUnchecked,
-  AccessTime,
+  AccessTime, DeleteOutlineOutlined,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 
@@ -47,6 +47,28 @@ function StatusChip({ status, t }) {
         bgcolor: config.bg,
         border: 'none',
         '& .MuiChip-icon': { color: config.color, ml: '4px' },
+      }}
+    />
+  );
+}
+
+// Only rendered when the result is a soft-deleted (Recycle Bin) asset —
+// i.e. the caller opted in via the Search screen's "Include Recycle Bin"
+// toggle (`?include_bin=true`); regular results never show this.
+function BinChip({ t }) {
+  return (
+    <Chip
+      icon={<DeleteOutlineOutlined sx={{ fontSize: 12 }} />}
+      label={t('search.binBadge')}
+      size="small"
+      sx={{
+        height: 20,
+        fontSize: '0.65rem',
+        fontWeight: 600,
+        color: '#b91c1c',
+        bgcolor: '#fee2e2',
+        border: 'none',
+        '& .MuiChip-icon': { color: '#b91c1c', ml: '4px' },
       }}
     />
   );
@@ -109,6 +131,7 @@ export default function SearchResultCard({ asset, viewMode = 'grid', onClick }) 
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
             <StatusChip status={asset.status} t={t} />
+            {asset.in_bin && <BinChip t={t} />}
             <Typography variant="caption" color="textSecondary">{asset.size}</Typography>
             {updatedAt && (
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
@@ -169,7 +192,8 @@ export default function SearchResultCard({ asset, viewMode = 'grid', onClick }) 
             </Typography>
           </Box>
         )}
-        <Box sx={{ position: 'absolute', top: 8, right: 8 }}>
+        <Box sx={{ position: 'absolute', top: 8, right: 8, display: 'flex', gap: 0.5 }}>
+          {asset.in_bin && <BinChip t={t} />}
           <StatusChip status={asset.status} t={t} />
         </Box>
       </Box>

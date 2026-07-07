@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Box, Divider, Typography, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Pagination } from '@mui/material';
+import { Box, Divider, Typography, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Pagination, Backdrop, CircularProgress } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useNotify } from '../../context/NotificationContext';
 import AssetViewer from './AssetViewer';
@@ -30,10 +30,11 @@ function readUrlFilters() {
     },
     perPage: Number(p.get('per_page')) || PER_PAGE_OPTIONS[0],
     page:    Number(p.get('page')) || 1,
+    assetId: p.get('id') || null,
   };
 }
 
-function buildFilterUrl(folderId, { query, typeFilters, statusFilters, sort, perPage, page }) {
+function buildFilterUrl(folderId, { query, typeFilters, statusFilters, sort, perPage, page, assetId }) {
   const p = new URLSearchParams();
   if (folderId && folderId !== 'root') p.set('folder', folderId);
   if (query) p.set('q', query);
@@ -43,6 +44,12 @@ function buildFilterUrl(folderId, { query, typeFilters, statusFilters, sort, per
   if (sort.direction !== 'asc') p.set('sort_dir', sort.direction);
   if (perPage !== PER_PAGE_OPTIONS[0]) p.set('per_page', perPage);
   if (page > 1) p.set('page', page);
+  // Preserve the open asset (AssetViewer) as `?id=` so deep-links such as
+  // /assets?id=UUID (used by search results, the Duplicate Manager, and the
+  // global search bar) survive the filter-sync effect below instead of being
+  // silently stripped, and so "Copy Link"/"Share" always reflect the
+  // currently-open asset.
+  if (assetId) p.set('id', assetId);
   const qs = p.toString();
   return `${window.location.pathname}${qs ? `?${qs}` : ''}`;
 }
@@ -80,6 +87,11 @@ export default function AssetExplorer({ initialTargetAssetId }) {
   const [infoPanelOpen, setInfoPanelOpen] = useState(false);
 
   const deepLinkProcessed = useRef(false);
+  // Shows a full-screen loading spinner while a deep-linked asset
+  // (`/folders?id=` or `/assets?id=`) is being fetched, so the user gets
+  // immediate feedback instead of staring at the folder grid for the
+  // duration of the request.
+  const [deepLinkLoading, setDeepLinkLoading] = useState(Boolean(initialTargetAssetId));
 
   const handleFolderInfo = (folder) => {
     setInfoFolder(folder);
@@ -110,12 +122,21 @@ export default function AssetExplorer({ initialTargetAssetId }) {
     window.history.pushState({ folderId }, '', url);
   };
 
-  // Keep URL in sync when filters change (replace, not push, to avoid polluting history)
+  // Keep URL in sync when filters change (replace, not push, to avoid polluting history).
+  // Preserves the open asset's id in `?id=` so deep-links (from search, the
+  // Duplicate Manager, or the global search bar) aren't wiped out by this
+  // effect the moment the shell mounts.
   useEffect(() => {
     if (viewMode !== 'active') return;
-    const url = buildFilterUrl(currentId, { query, typeFilters, statusFilters, sort, perPage, page });
-    window.history.replaceState({ folderId: currentId }, '', url);
-  }, [currentId, query, typeFilters, statusFilters, sort, perPage, page, viewMode]);
+    // Don't touch the URL until the initial deep-link (e.g. /assets?id=UUID
+    // from search or the Duplicate Manager) has had a chance to resolve —
+    // otherwise this effect fires on mount (before the async asset fetch
+    // below completes) and strips `?id=` before it's ever used.
+    if (initialTargetAssetId && !deepLinkProcessed.current) return;
+    const assetId = selectedAsset?.uuid || selectedAsset?.id || null;
+    const url = buildFilterUrl(currentId, { query, typeFilters, statusFilters, sort, perPage, page, assetId });
+    window.history.replaceState({ folderId: currentId, assetId }, '', url);
+  }, [currentId, query, typeFilters, statusFilters, sort, perPage, page, viewMode, selectedAsset, initialTargetAssetId]);
 
   useEffect(() => {
     const handlePopState = () => {
@@ -127,6 +148,10 @@ export default function AssetExplorer({ initialTargetAssetId }) {
       setSort(f.sort);
       setPerPage(f.perPage);
       setPage(f.page);
+      // Close the AssetViewer when the back/forward navigation lands on a URL
+      // with no `?id=` param; re-opening a specific asset via back/forward is
+      // handled by the initial-deep-link effect re-running when needed.
+      if (!f.assetId) setSelectedAsset(null);
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
@@ -157,6 +182,7 @@ export default function AssetExplorer({ initialTargetAssetId }) {
     if (inView) {
       setSelectedAsset(inView);
       deepLinkProcessed.current = true;
+      setDeepLinkLoading(false);
       return;
     }
 
@@ -172,7 +198,8 @@ export default function AssetExplorer({ initialTargetAssetId }) {
       .catch((error) => {
         notify(t('folders.explorer.couldNotOpenAsset', { message: error.message }), 'error');
         deepLinkProcessed.current = true;
-      });
+      })
+      .finally(() => setDeepLinkLoading(false));
   }, [initialTargetAssetId, notify, t, viewData.assets]);
 
   const handleCopyPath = () => {
@@ -460,6 +487,14 @@ export default function AssetExplorer({ initialTargetAssetId }) {
           <Button onClick={handleCreateFolder} variant="contained" disabled={!newFolderName.trim()}>{t('common.create')}</Button>
         </DialogActions>
       </Dialog>
+
+      <Backdrop
+        open={deepLinkLoading}
+        sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }}
+        data-testid="deep-link-loading-backdrop"
+      >
+        <CircularProgress color="inherit" />
+      </Backdrop>
 
       <AssetViewer
         asset={selectedAsset}

@@ -10,8 +10,13 @@ module Api
                            publish_status approved_status orientation style
                            video_height_min video_height_max video_width_min video_width_max
                            video_format video_codec video_bitrate_min video_bitrate_max
-                           audio_codec audio_bitrate_min audio_bitrate_max
+                           audio_codec audio_bitrate_min audio_bitrate_max include_bin
                            page per_page sort_by sort_dir controller action format].freeze
+
+      # Matches the default used by the folder/asset grid (see
+      # AssetFilterBar's `PER_PAGE_OPTIONS`) so the Search results page and
+      # the folder browser behave consistently out of the box.
+      DEFAULT_PER_PAGE = 25
 
       # Field types whose values are suitable for chip/filter UI (bounded option sets)
       FILTERABLE_FIELD_TYPES = %w[select radio tag checkbox].freeze
@@ -101,7 +106,7 @@ module Api
       end
 
       def build_lexical_payload
-        scope = Asset.active
+        scope = include_bin? ? Asset.all : Asset.active
         scope = apply_text_search(scope)
         scope = apply_mode_filter(scope)
         scope = apply_schema_filter(scope)
@@ -133,9 +138,22 @@ module Api
             per_page: per_page,
             total_pages: total_pages,
             facets: facets,
+            include_bin: include_bin?,
           },
           results: assets.map { |asset| format_asset(asset) },
         }
+      end
+
+      # Whether trashed (soft-deleted) assets should be included in the
+      # lexical search results. Off by default — the caller must explicitly
+      # opt in via +?include_bin=true+ (surfaced as a toggle on the Search
+      # screen). Matching bin assets are still returned in the same result
+      # list but flagged via +in_bin: true+ (see {#format_asset}) so the UI
+      # can render a distinguishing "Bin" chip.
+      #
+      # @return [Boolean]
+      def include_bin?
+        ActiveModel::Type::Boolean.new.cast(params[:include_bin]) || false
       end
 
       # Searches {Folder} records by name (folders have no `properties` JSONB
@@ -172,7 +190,7 @@ module Api
         vector = fetch_query_embedding(params[:q])
         raise "AI Gateway returned no embedding vector" if vector.blank?
 
-        pool = Asset.active.nearest_to_vector(vector).includes(:active_version).limit(SEMANTIC_POOL_LIMIT).to_a
+        pool = (include_bin? ? Asset.all : Asset.active).nearest_to_vector(vector).includes(:active_version).limit(SEMANTIC_POOL_LIMIT).to_a
         page, per_page, offset, total_pages = pagination_window(pool.size)
         page_assets = pool[offset, per_page] || []
 
@@ -186,6 +204,7 @@ module Api
             per_page: per_page,
             total_pages: total_pages,
             facets: {},
+            include_bin: include_bin?,
           },
           results: page_assets.map { |asset| format_asset(asset).merge(similarity_score: semantic_score(asset)) },
         }
@@ -256,7 +275,7 @@ module Api
 
       def pagination_window(total)
         page = [ params[:page].to_i, 1 ].max
-        per_page = params[:per_page].present? ? params[:per_page].to_i : 10
+        per_page = params[:per_page].present? ? params[:per_page].to_i : DEFAULT_PER_PAGE
         per_page = [ [ per_page, 1 ].max, 100 ].min
         offset = (page - 1) * per_page
         total_pages = total.zero? ? 0 : (total.to_f / per_page).ceil
@@ -661,13 +680,14 @@ module Api
 
       def format_asset(asset)
         props = asset.properties || {}
+        size_bytes = (props["size"] || props["file_size"] || 0).to_i
         {
           id: asset.uuid || asset.id,
           uuid: asset.uuid,
           title: asset.title || "Untitled Asset",
           content_type: props["content_type"] || "Unknown",
-          size: props["size_human"] || "0 KB",
-          file_size: props["file_size"].to_i,
+          size: ActiveSupport::NumberHelper.number_to_human_size(size_bytes),
+          file_size: size_bytes,
           # `thumb_url`/`preview_url` point at the generated flattened-PNG preview
           # (falls back to the raw file when no preview exists) so formats a
           # browser can't decode natively — PSD, TIFF, HEIC, RAW, PDF, AI, EPS —
@@ -679,6 +699,11 @@ module Api
           web_renderable: web_renderable_image?(props["content_type"]),
           folder_id: asset.folder_id,
           status: normalize_status(asset.read_attribute_before_type_cast(:status)),
+          # Whether this result is a soft-deleted (Recycle Bin) asset — only
+          # ever true when the caller opted in via `?include_bin=true`
+          # (see {#include_bin?}); used by the Search UI to render a "Bin"
+          # badge distinguishing these from normal active results.
+          in_bin: asset.deleted_at.present?,
           width: props["width"]&.to_i,
           height: props["height"]&.to_i,
           created_at: asset.created_at&.iso8601,

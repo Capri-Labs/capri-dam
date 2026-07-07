@@ -1,1 +1,5 @@
-<div id="root" data-view="folders"></div>
+<%# ?id=UUID on /folders opens the AssetViewer for that asset by default,
+  # same behaviour as the /assets?id=UUID deep-link shell.
+  # (See assets.html.erb for why `tag.div` is used instead of manual string
+  # interpolation for the `data-initial-target-asset-id` attribute.) %>
+<%= tag.div id: "root", data: { view: "folders", initial_target_asset_id: @asset_id.presence } %>

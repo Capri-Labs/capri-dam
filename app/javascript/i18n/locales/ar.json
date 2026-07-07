@@ -1396,6 +1396,9 @@
     "activeFilters": "{{count}} filter active",
     "activeFilters_plural": "{{count}} filters active",
     "share": "Share Results",
+    "includeBin": "Include Recycle Bin",
+    "perPage": "page",
+    "binBadge": "Bin",
     "fileLabel": "FILE",
     "sort": {
       "relevance": "Relevance",

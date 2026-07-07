@@ -119,6 +119,7 @@ function AssetCard({ asset, isSelected, onToggle, onNavigate, onGoToFolder }) {
                 <Tooltip title={t('duplicateManager.resolution.navigateTo')}>
                     <IconButton
                         size="small"
+                        aria-label={t('duplicateManager.resolution.navigateTo')}
                         onClick={e => { e.stopPropagation(); onNavigate(asset); }}
                         sx={{ color: '#3b82f6', '&:hover': { bgcolor: '#eff6ff' } }}
                     >
@@ -128,6 +129,7 @@ function AssetCard({ asset, isSelected, onToggle, onNavigate, onGoToFolder }) {
                 <Tooltip title={t('duplicateManager.resolution.goToFolder')}>
                     <IconButton
                         size="small"
+                        aria-label={t('duplicateManager.resolution.goToFolder')}
                         onClick={e => { e.stopPropagation(); onGoToFolder(asset); }}
                         sx={{ color: '#64748b', '&:hover': { bgcolor: '#f1f5f9' } }}
                     >
@@ -175,7 +177,10 @@ export default function DuplicateResolutionModal({
 
     const handleGoToFolder = (asset) => {
         if (asset.folder_id) {
-            navigateTo(`/folders?id=${asset.folder_id}`);
+            // AssetExplorer reads the target folder from `?folder=`, not `?id=`
+            // (see readUrlFilters() in AssetExplorer.jsx) — `?id=` is reserved
+            // for deep-linking directly to an asset.
+            navigateTo(`/folders?folder=${asset.folder_id}`);
         } else {
             navigateTo('/folders');
         }

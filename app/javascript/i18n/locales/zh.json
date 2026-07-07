@@ -1396,6 +1396,9 @@
     "activeFilters": "已启用{{count}}个筛选器",
     "activeFilters_plural": "已启用{{count}}个筛选器",
     "share": "分享结果",
+    "includeBin": "包括回收站",
+    "perPage": "页",
+    "binBadge": "回收站",
     "fileLabel": "文件",
     "sort": {
       "relevance": "相关性",

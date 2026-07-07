@@ -355,9 +355,54 @@ class AssetProcessorWorker
 
     extract_extended_image_properties(image, meta)
     extract_embedded_metadata(path, meta)
+    extract_perceptual_hash(path, meta)
   rescue StandardError => e
     Rails.logger.error "Minor error: Image metadata extraction failed: #{e.message}"
     meta[:image_analysis_status] = "failed"
+  end
+
+  # Computes a 64-bit perceptual hash (dHash — "difference hash") of the image
+  # and stores it as a 16-character hex string in +meta[:perceptual_hash]+.
+  #
+  # Unlike the SHA-256 checksum (which only matches byte-identical files),
+  # this hash is designed to match the same *visual* content even when it has
+  # been re-saved in a different format or at a different quality/compression
+  # level (e.g. the same photo exported as both .png and .jpg) — this is what
+  # powers the "similar image" duplicate detection in
+  # {DuplicateDetectionService} for assets whose SHA-256 checksums differ.
+  #
+  # Algorithm: downsize to 9x8 greyscale pixels, then for each of the 8 rows
+  # compare each of the 9 pixels to its right-hand neighbour — 8 comparisons
+  # per row × 8 rows = 64 bits. Two images depicting the same scene produce
+  # hashes with a small Hamming distance (see
+  # {DuplicateDetectionService#hamming_distance}), even across format/quality
+  # changes, while visually distinct images differ in roughly half their bits.
+  #
+  # @param path [String] absolute path to the image file
+  # @param meta [Hash]   mutable metadata hash; populates +:perceptual_hash+
+  # @return [void]
+  def extract_perceptual_hash(path, meta)
+    raw = MiniMagick.convert do |convert|
+      convert << path
+      convert << "-colorspace" << "Gray"
+      convert << "-resize" << "9x8!"
+      convert << "-depth" << "8"
+      convert << "gray:-"
+    end.to_s
+
+    pixels = raw.bytes
+    return unless pixels.size >= 72
+
+    bits = []
+    8.times do |row|
+      9.times.each_cons(2) do |col, next_col|
+        bits << (pixels[(row * 9) + col] < pixels[(row * 9) + next_col] ? 1 : 0)
+      end
+    end
+
+    meta[:perceptual_hash] = bits.join.to_i(2).to_s(16).rjust(16, "0")
+  rescue StandardError => e
+    Rails.logger.error "Perceptual hash extraction failed: #{e.message}"
   end
 
   # Strips whitespace from EXIF values and drops blank entries so the stored

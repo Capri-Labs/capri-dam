@@ -37,6 +37,10 @@ class DashboardController < ApplicationController
 
   def folders
     @active_view = "All Assets"
+    # `?id=UUID` opens the AssetViewer for that asset by default, same as the
+    # /assets?id=UUID deep-link (e.g. links from the Duplicate Manager that
+    # include both `?folder=` and `?id=`).
+    @asset_id    = params[:id].presence
     # Renders app/views/dashboard/folders.html.erb
   end
 

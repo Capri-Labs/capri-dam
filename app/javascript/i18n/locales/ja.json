@@ -1396,6 +1396,9 @@
     "activeFilters": "{{count}}件のフィルター適用中",
     "activeFilters_plural": "{{count}}件のフィルター適用中",
     "share": "結果を共有",
+    "includeBin": "ごみ箱を含める",
+    "perPage": "ページ",
+    "binBadge": "ごみ箱",
     "fileLabel": "ファイル",
     "sort": {
       "relevance": "関連性",

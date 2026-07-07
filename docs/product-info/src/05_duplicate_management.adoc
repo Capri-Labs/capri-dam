@@ -3,11 +3,13 @@
 
 === Overview
 
-Capri DAM automatically detects when two or more assets share an identical SHA-256
-checksum (a true byte-for-byte duplicate) and groups them for review, so storage
-isn't silently wasted on redundant copies.
+Capri DAM automatically detects duplicate assets using two complementary
+strategies: an exact SHA-256 checksum match (true byte-for-byte duplicates)
+and a perceptual (visual) hash match that catches the same photo saved in a
+different file format — so storage isn't silently wasted on redundant copies,
+however they were re-saved.
 
-image::duplicates.png[Duplicate Manager, title="Duplicate Manager — grouped by checksum, with resolution actions"]
+image::duplicates.png[Duplicate Manager, title="Duplicate Manager — grouped by checksum or perceptual similarity, with resolution actions"]
 
 === Key features
 
@@ -15,8 +17,9 @@ image::duplicates.png[Duplicate Manager, title="Duplicate Manager — grouped by
 |===
 | Feature | Detail
 
-| Automatic detection | `DuplicateGroup` model groups assets sharing an identical SHA-256 checksum; created automatically whenever a newly processed asset matches an existing checksum.
-| Side-by-side resolution UI | `DuplicateResolutionModal` lets a reviewer compare duplicate members and choose which to keep / archive / delete.
+| Automatic detection | `DuplicateGroup` model groups assets sharing an identical SHA-256 checksum, or a near-identical perceptual hash (dHash, computed from a downsampled grayscale rendering — Hamming distance within a configurable threshold); created automatically whenever a newly processed asset matches an existing group.
+| Cross-format detection | The perceptual hash strategy catches the same image saved as, e.g., both `.png` and `.jpg` — these have different bytes/checksums but are visually identical, and are now grouped together.
+| Side-by-side resolution UI | `DuplicateResolutionModal` lets a reviewer compare duplicate members and choose which to keep / archive / delete, and jump straight to an asset (`/assets?id=`) or its containing folder (`/folders?folder=`).
 | Status tracking | Each group tracks its resolution status (e.g. pending, resolved, dismissed), visible in the Data Health dashboard's stat cards (see <<module-system-operations>>).
 | Storage-savings estimate | Storage-health tooling estimates the dollar/GB savings unlocked by resolving pending duplicate groups.
 |===
@@ -25,9 +28,12 @@ image::duplicates.png[Duplicate Manager, title="Duplicate Manager — grouped by
 
 [.feature-highlight]
 ====
-* **Checksum-exact, zero false positives** — grouping is based on a cryptographic
-  hash of file bytes, not fuzzy visual similarity, so there is no ambiguity about
-  whether two assets are truly identical.
+* **Checksum-exact, zero false positives** — exact-match grouping is based on a
+  cryptographic hash of file bytes, so there is no ambiguity about whether two
+  assets sharing a checksum match are truly identical.
+* **Cross-format duplicate detection** — a second, perceptual-hash-based
+  strategy also catches the same photo re-saved in a different format (e.g.
+  `.png` vs `.jpg`), which exact-checksum matching alone would miss entirely.
 * **Storage cost visibility** — pending duplicate groups are translated directly
   into an estimated monthly storage-cost saving, giving admins a concrete incentive
   to clean up.
@@ -35,20 +41,24 @@ image::duplicates.png[Duplicate Manager, title="Duplicate Manager — grouped by
 
 === Notes & known limitations
 
-* Detection is exact-checksum only; **near-duplicates** (same image re-compressed,
-  resized, or watermarked) are not detected — that would require perceptual
-  hashing, which is not yet implemented.
+* Perceptual matching currently covers re-saves/format conversions of the
+  *same* source image; it is not tuned for heavier transformations like
+  cropping, rotation, or watermarking, which may fall outside the default
+  Hamming-distance threshold.
 * Resolution actions are manual; there is no auto-resolve policy (e.g. "always
   keep the oldest / largest") yet.
 
 === Test coverage status
 
-[.status-pending]#Pending / not yet covered# — Duplicate Manager has **no
-dedicated E2E spec today**. Its stat cards are incidentally captured as part of
+[.status-progress]#Partial# — `spec/e2e/search_and_duplicates_fixes.e2e.spec.js`
+covers the "Go to Folder" / "Go to asset" navigation actions from the
+resolution modal. The rest of the Duplicate Manager screen still has **no
+dedicated E2E spec**. Its stat cards are incidentally captured as part of
 the TDM & Storage Health dashboard tests (`spec/e2e/data_health.e2e.spec.js`), but
-no test exercises the Duplicate Manager screen itself. Planned coverage:
+no test exercises the full Duplicate Manager screen itself. Planned coverage:
 
 * Duplicate Manager page loads and lists existing duplicate groups.
 * Side-by-side resolution modal opens and shows both duplicate members.
 * Resolving a duplicate group (keep/archive/delete) updates its status.
 * Dismissing a duplicate group excludes it from future prompts.
+* A perceptual-hash (cross-format) duplicate group renders correctly.

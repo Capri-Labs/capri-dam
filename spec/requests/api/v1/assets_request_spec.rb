@@ -208,6 +208,14 @@ RSpec.describe "Api::V1::Assets coverage", type: :request do
       get "/api/v1/assets/#{asset.uuid}", as: :json
       expect(response).to have_http_status(:ok)
       expect(json["title"]).to eq("Show Me")
+      # `properties` is the canonical shape AssetViewer/AssetExplorer expect
+      # for the /folders?id= and /assets?id= deep-link flows — without it,
+      # the AssetViewer can't tell the asset is an image and silently falls
+      # back to the generic file icon instead of rendering the preview.
+      expect(json["properties"]).to include("content_type" => "image/jpeg", "file_size" => 2048)
+      expect(json["properties"]).to eq(json["metadata"])
+      expect(json["content_type"]).to eq("image/jpeg")
+      expect(json["size"]).to eq(2048)
 
       get "/api/v1/assets/not-a-real-uuid", as: :json
       expect(response).to have_http_status(:not_found)
