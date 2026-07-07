@@ -816,6 +816,11 @@ module Api
             version: version.version_number,
             url: asset_url_for(asset),
             folderName: asset.folder ? asset.folder.name : "/Root/Uncategorized",
+            # Surfaces whether the matched asset currently lives in the
+            # Recycle Bin (soft-deleted), so the upload-time duplicate
+            # comparison overlay can flag it — mirrors the "Bin" badge shown
+            # on Search results (see Api::V1::SearchController#include_bin?).
+            in_bin: asset.deleted_at.present?,
           }
         end
 

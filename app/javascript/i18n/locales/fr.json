@@ -1970,6 +1970,7 @@
       "typeAndPressEnter": "Saisissez puis appuyez sur Entrée"
     },
     "schemaHelp": "Ce schéma est appliqué par défaut à tous les fichiers en attente. Une substitution par fichier est disponible dans chaque carte.",
+    "tagsHelp": "Appliqué à chaque fichier en préparation, en plus des tags IA générés par fichier.",
     "filenamePatternPrefix": "Pour les images produit : modèle de nom de fichier pris en charge :",
     "filenamePatternExample": "ex. 012993112028-en-FR01.jpg",
     "aiTagsOnUpload": "Générer des étiquettes IA lors du téléversement",

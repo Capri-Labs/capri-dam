@@ -585,6 +585,30 @@ describe('Folders components', () => {
     expect(onResolve).toHaveBeenCalledWith('file-1', 'skip');
   });
 
+  it('flags a legacy duplicate match that lives in the Recycle Bin with a Bin chip, matching Search results', () => {
+    render(
+      <DuplicateResolverDialog
+        open
+        onClose={jest.fn()}
+        fileData={{
+          id: 'file-2',
+          preview: '/new.jpg',
+          meta: { title: 'Upload.jpg' },
+          duplicateData: [
+            { id: 5, title: 'Binned Existing', url: '/existing.jpg', folderName: 'Root', in_bin: true },
+            { id: 6, title: 'Binned Existing', url: '/existing2.jpg', folderName: 'Archive', in_bin: false },
+          ],
+        }}
+        onResolve={jest.fn()}
+      />,
+    );
+
+    // One Bin chip for the primary asset's image badge, one for the binned
+    // location chip — the active (non-bin) location must NOT get a chip.
+    // (Jest's i18n test bundle is empty, so the raw translation key renders.)
+    expect(screen.getAllByText('search.binBadge')).toHaveLength(2);
+  });
+
   it('loads duplicate assets and can ignore them in DuplicateResolverDialog asset mode', async () => {
     global.fetch = mockFetch({
       'GET /api/v1/assets/4/duplicates': {
@@ -1026,5 +1050,43 @@ describe('Folders components', () => {
     await waitFor(() => expect(global.fetch).toHaveBeenCalledWith('/api/v1/assets', expect.objectContaining({ method: 'POST' })));
     expect(onUploadComplete).toHaveBeenCalled();
     expect(mockNotify).toHaveBeenCalledWith('Upload sequence complete.', 'success');
+  });
+
+  it('merges sidebar manual tags with the per-file AI tags into the uploaded asset metadata (de-duplicated)', async () => {
+    global.fetch = mockFetch({
+      'GET /api/v1/metadata_schemas': [{ id: 7, name: 'Product Images', slug: 'product-images', level: 'root' }],
+      'GET /api/v1/upload_restrictions': { allowed_mime_types: ['image/*'] },
+      'GET /api/v1/collections': [],
+      'POST /api/v1/assets/check_hashes': { duplicates: {} },
+      'POST /api/v1/assets': {},
+    });
+
+    render(<UploadWorkspace folderId={15} onClose={jest.fn()} onUploadComplete={jest.fn()} />);
+
+    await waitFor(() => expect(dropzoneOnDrop).toBeInstanceOf(Function));
+    await act(async () => {
+      await dropzoneOnDrop([new File(['file'], 'hero.jpg', { type: 'image/jpeg' })]);
+    });
+    expect(await screen.findByDisplayValue('hero.jpg')).toBeInTheDocument();
+
+    // Enter a custom manual tag in the sidebar's Tags Autocomplete.
+    const tagsInput = screen.getByPlaceholderText('Type and press enter');
+    fireEvent.change(tagsInput, { target: { value: 'Campaign' } });
+    fireEvent.keyDown(tagsInput, { key: 'Enter', code: 'Enter' });
+
+    // Run the per-file AI enhance, which sets meta.aiTags = ['Enhanced', 'Web-Ready'].
+    fireEvent.click(screen.getByRole('button', { name: /run ai enhance on this file/i }));
+    expect(await screen.findByText('Enhanced')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Upload (1)' }));
+
+    await waitFor(() => expect(global.fetch).toHaveBeenCalledWith('/api/v1/assets', expect.objectContaining({ method: 'POST' })));
+
+    const [, options] = global.fetch.mock.calls.find(([url, opts]) => String(url) === '/api/v1/assets' && opts.method === 'POST');
+    const metadataRaw = options.body.get('metadata');
+    const metadata = JSON.parse(metadataRaw);
+
+    expect(metadata.tags).toEqual(expect.arrayContaining(['Campaign', 'Enhanced', 'Web-Ready']));
+    expect(metadata.tags).toHaveLength(3); // de-duplicated, no repeats
   });
 });

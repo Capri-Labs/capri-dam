@@ -1970,6 +1970,7 @@
       "typeAndPressEnter": "入力して Enter を押してください"
     },
     "schemaHelp": "このスキーマは既定でステージ済みのすべてのファイルに適用されます。ファイルごとの上書きは各カードで利用できます。",
+    "tagsHelp": "各ファイルに生成されるAIタグに加えて、ステージング中のすべてのファイルに適用されます。",
     "filenamePatternPrefix": "商品画像の場合: サポートされるファイル名パターン:",
     "filenamePatternExample": "例: 012993112028-en-FR01.jpg",
     "aiTagsOnUpload": "アップロード時にAIタグを生成",

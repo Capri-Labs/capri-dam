@@ -408,6 +408,19 @@ RSpec.describe "Api::V1::Assets coverage", type: :request do
       expect(json["duplicates"].map { |item| item["uuid"] }).to include(exact.uuid, name.uuid)
     end
 
+    it "flags matched duplicates that currently live in the Recycle Bin via in_bin" do
+      active_match  = asset_with_version(title: "Active Copy", properties: { "checksum_sha256" => "bin-dupe" })
+      binned_match  = asset_with_version(title: "Binned Copy", properties: { "checksum_sha256" => "bin-dupe" })
+      binned_match.soft_delete
+
+      post "/api/v1/assets/check_hashes", params: { hashes: [ "bin-dupe" ] }, as: :json
+      expect(response).to have_http_status(:ok)
+
+      matches = json["duplicates"]["bin-dupe"].index_by { |item| item["title"] }
+      expect(matches["Active Copy"]["in_bin"]).to eq(false)
+      expect(matches["Binned Copy"]["in_bin"]).to eq(true)
+    end
+
     it "returns no duplicates when checksum and filename metadata are absent" do
       asset = asset_with_version(title: "Unique", properties: { "checksum_sha256" => nil, "original_filename" => nil })
 

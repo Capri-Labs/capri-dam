@@ -1970,6 +1970,7 @@
       "typeAndPressEnter": "Type and press enter"
     },
     "schemaHelp": "This schema is applied to all staged files by default. Per-file override is available in each card.",
+    "tagsHelp": "Applied to every staged file, alongside any AI tags generated per-file.",
     "filenamePatternPrefix": "For Product Images: filename pattern supported:",
     "filenamePatternExample": "e.g. 012993112028-en-FR01.jpg",
     "aiTagsOnUpload": "Generate AI Tags on Upload",

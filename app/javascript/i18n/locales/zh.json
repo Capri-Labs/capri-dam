@@ -1970,6 +1970,7 @@
       "typeAndPressEnter": "输入后按回车"
     },
     "schemaHelp": "默认情况下，此架构会应用于所有已暂存文件。每张卡片都可按文件覆盖。",
+    "tagsHelp": "应用于每个暂存文件，并附带每个文件生成的AI标签。",
     "filenamePatternPrefix": "对于产品图片：支持的文件名模式：",
     "filenamePatternExample": "例如 012993112028-en-FR01.jpg",
     "aiTagsOnUpload": "上传时生成 AI 标签",

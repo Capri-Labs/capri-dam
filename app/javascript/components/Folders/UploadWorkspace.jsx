@@ -317,12 +317,22 @@ export default function UploadWorkspace({ folderId, onClose, onUploadComplete })
             const schemaIdToUse = fData.meta.schemaId || globalMeta.schemaId;
             if (schemaIdToUse) formData.append('schema_id', String(schemaIdToUse));
 
-            // Upload-time metadata payload
+            // Upload-time metadata payload — merges the sidebar's global
+            // manual tags with this file's own AI-generated tags (from
+            // "Smart Describe Selected" / per-card AI enhance) into a single
+            // de-duplicated `tags` array. Previously only `globalMeta.manualTags`
+            // was sent, so AI tags shown in the staging grid silently never
+            // reached the asset's metadata (and therefore never appeared in
+            // the AssetViewer / AssetTagsEditor afterwards).
+            const combinedTags = [...new Set([
+                ...(globalMeta.manualTags || []),
+                ...(fData.meta.aiTags || []),
+            ])];
             const metadataPayload = {
                 'dam:product_id': fData.meta.productId || undefined,
                 'dam:language_code': fData.meta.languageCode || undefined,
                 'dam:asset_type': fData.meta.assetTypeCode || undefined,
-                'tags': globalMeta.manualTags || undefined
+                'tags': combinedTags.length > 0 ? combinedTags : undefined
             };
             formData.append('metadata', JSON.stringify(metadataPayload));
 

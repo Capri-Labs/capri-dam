@@ -53,6 +53,15 @@ GraphQL also exposes `duplicateGroups`, `duplicateManagerStats`,
 `duplicateManagerScanStatus`, `resolveDuplicateGroup`, and
 `triggerDuplicateScan`.
 
+`POST /api/v1/assets/check_hashes` is a separate, upload-time check (distinct
+from the `DuplicateGroup` repository scan above): it takes a batch of
+client-computed file hashes and returns any matching existing `AssetVersion`
+records per hash, keyed for `Folders/UploadWorkspace.jsx`'s duplicate-overlay
+flow. Each matched entry includes `in_bin: asset.deleted_at.present?` so the
+upload-time comparison UI (`DuplicateResolverDialog.jsx`) can flag a match
+that is currently in the Recycle Bin with the same `BinChip` badge Search
+results use — see <<section-ui-components>>.
+
 == UI
 
 `DuplicateManager.jsx` provides filter chips, stats cards, detail fetching, and

@@ -1970,6 +1970,7 @@
       "typeAndPressEnter": "Digite e pressione Enter"
     },
     "schemaHelp": "Este esquema é aplicado a todos os arquivos preparados por padrão. A substituição por arquivo está disponível em cada cartão.",
+    "tagsHelp": "Aplicado a cada arquivo em preparação, junto com quaisquer tags de IA geradas por arquivo.",
     "filenamePatternPrefix": "Para imagens de produto: padrão de nome de arquivo compatível:",
     "filenamePatternExample": "ex. 012993112028-en-FR01.jpg",
     "aiTagsOnUpload": "Gerar etiquetas de IA no carregamento",

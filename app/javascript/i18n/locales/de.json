@@ -1970,6 +1970,7 @@
       "typeAndPressEnter": "Eingeben und Enter drücken"
     },
     "schemaHelp": "Dieses Schema wird standardmäßig auf alle bereitgestellten Dateien angewendet. Eine dateispezifische Überschreibung ist in jeder Karte verfügbar.",
+    "tagsHelp": "Wird auf jede zwischengespeicherte Datei angewendet, zusätzlich zu allen pro Datei generierten KI-Tags.",
     "filenamePatternPrefix": "Für Produktbilder: Unterstütztes Dateinamenmuster:",
     "filenamePatternExample": "z. B. 012993112028-en-FR01.jpg",
     "aiTagsOnUpload": "KI-Tags beim Hochladen generieren",

@@ -748,6 +748,7 @@ RSpec.describe 'Api::V1::Assets', type: :request do
                          version:    { type: :integer },
                          url:        { type: :string, nullable: true },
                          folderName: { type: :string, example: '/Marketing/Campaigns' },
+                         in_bin:     { type: :boolean, description: 'True when the matched asset currently lives in the Recycle Bin (soft-deleted) — lets the upload UI flag it, mirroring the Search results "Bin" badge.' },
                        },
                      },
                    },

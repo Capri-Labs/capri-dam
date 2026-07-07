@@ -70,6 +70,21 @@ Rails shell and typically fetch JSON from `/api/v1/...`.
 | `Layout/ImpersonationBanner.jsx` | Warning banner rendered above the `AppBar` while an admin is impersonating another user.
 |===
 
+== Upload & Enrich overlay
+
+`Folders/UploadWorkspace.jsx` is the full-screen upload dialog launched from the
+"Upload Asset" button in `ExplorerTopBar.jsx`. It composes `UploadSidebar.jsx`
+(global assignment/tags/AI actions) and `UploadGrid.jsx` (the per-file staging
+grid), and drives duplicate detection via `DuplicateResolverDialog.jsx`.
+
+[cols="1,3", options="header"]
+|===
+| Behaviour | Notes
+| Tag merging on upload | `handleUploadAll()` sends a single de-duplicated `tags` metadata array that merges the sidebar's global `manualTags` (typed into the Tags `Autocomplete`, `data-testid="upload-manual-tags"`) with each file's own `meta.aiTags` (set per-file by the "Run AI enhance on this file" button in `UploadGrid.jsx`). Both sources previously landed in different, disconnected pieces of state — only the sidebar's manual tags were actually sent to `POST /api/v1/assets`, so AI tags shown in the staging grid never made it into `Asset#properties.tags` and never appeared in `AssetTagsEditor.jsx`/`AssetViewer.jsx` afterward. `data-testid="upload-global-asset-type"` marks the "Select Global asset type" `Select` for e2e targeting.
+| Duplicate detection at upload time | Dropped files are hashed client-side (`calculateFileHash`) and checked in a single batch via `POST /api/v1/assets/check_hashes`. A match sets `isDuplicate: true` on that file and shows an amber "Duplicate Found" chip in `UploadGrid.jsx`, opening `DuplicateResolverDialog.jsx`'s `LegacyDuplicateResolverDialog` for side-by-side comparison and resolution (Skip / Upload anyway / AI merge for identical bytes).
+| Bin-aware duplicate matches | `check_hashes` returns `in_bin: asset.deleted_at.present?` per matched duplicate (see <<section-duplicate-detection>>). `LegacyDuplicateResolverDialog` renders the same `BinChip` pattern used by Search results (`SearchResultCard.jsx`) as an overlay badge on the primary comparison image, and next to any per-location chip, whenever the matched existing asset currently lives in the Recycle Bin — so a user can't be confused into thinking a soft-deleted asset is still active in the library.
+|===
+
 NOTE: New module-specific details are documented in <<section-admin-module>>,
 <<section-collections-module>>, <<section-bin-module>>, <<section-duplicate-detection>>,
 <<section-intelligence-module>>, <<section-ingestion-migration>>, and

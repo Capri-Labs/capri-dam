@@ -1970,6 +1970,7 @@
       "typeAndPressEnter": "입력 후 Enter 키를 누르세요"
     },
     "schemaHelp": "이 스키마는 기본적으로 모든 대기 파일에 적용됩니다. 파일별 재정의는 각 카드에서 사용할 수 있습니다.",
+    "tagsHelp": "파일별로 생성된 AI 태그와 함께 준비 중인 모든 파일에 적용됩니다.",
     "filenamePatternPrefix": "제품 이미지의 경우: 지원되는 파일명 패턴:",
     "filenamePatternExample": "예: 012993112028-en-FR01.jpg",
     "aiTagsOnUpload": "업로드 시 AI 태그 생성",

@@ -1970,6 +1970,7 @@
       "typeAndPressEnter": "Typ en druk op Enter"
     },
     "schemaHelp": "Dit schema wordt standaard toegepast op alle klaargezette bestanden. Overschrijven per bestand is beschikbaar op elke kaart.",
+    "tagsHelp": "Wordt toegepast op elk klaargezet bestand, samen met alle per bestand gegenereerde AI-tags.",
     "filenamePatternPrefix": "Voor productafbeeldingen: ondersteund bestandsnaampatroon:",
     "filenamePatternExample": "bijv. 012993112028-en-FR01.jpg",
     "aiTagsOnUpload": "AI-tags genereren bij uploaden",

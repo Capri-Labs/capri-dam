@@ -21,7 +21,7 @@ import {
   Stack,
   Typography
 } from '@mui/material';
-import { Close, AutoFixHigh, MergeType, SkipNext, FileCopy, FolderSpecial, DeleteOutlined, VisibilityOffOutlined } from '@mui/icons-material';
+import { Close, AutoFixHigh, MergeType, SkipNext, FileCopy, FolderSpecial, DeleteOutlined, VisibilityOffOutlined, DeleteOutlineOutlined } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useNotify } from '../../context/NotificationContext';
 
@@ -46,6 +46,29 @@ const formatBytes = (size) => {
   const value = size / (1024 ** index);
   return `${value >= 10 || index === 0 ? Math.round(value) : value.toFixed(1)} ${units[index]}`;
 };
+
+// Same visual treatment as the "Bin" badge on Search results
+// (see SearchResultCard.jsx's BinChip) — flags an existing/matched asset
+// that currently lives in the Recycle Bin (soft-deleted), so the user isn't
+// misled into thinking an active duplicate exists when it's actually trashed.
+function BinChip({ t }) {
+  return (
+    <Chip
+      icon={<DeleteOutlineOutlined sx={{ fontSize: 12 }} />}
+      label={t('search.binBadge')}
+      size="small"
+      sx={{
+        height: 20,
+        fontSize: '0.65rem',
+        fontWeight: 600,
+        color: '#b91c1c',
+        bgcolor: '#fee2e2',
+        border: 'none',
+        '& .MuiChip-icon': { color: '#b91c1c', ml: '4px' },
+      }}
+    />
+  );
+}
 
 function LegacyDuplicateResolverDialog({ open, onClose, fileData, onResolve }) {
   const { t } = useTranslation();
@@ -81,7 +104,12 @@ function LegacyDuplicateResolverDialog({ open, onClose, fileData, onResolve }) {
               {translate('folders.duplicates.legacy.currentlyInDam', 'Currently in DAM ({{count}} found)', { count: existingAssets.length })}
             </Typography>
             <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, bgcolor: '#f1f5f9' }}>
-              <Box sx={{ height: 140, display: 'flex', justifyContent: 'center', mb: 2 }}>
+              <Box sx={{ height: 140, position: 'relative', display: 'flex', justifyContent: 'center', mb: 2 }}>
+                {primaryAsset.in_bin && (
+                  <Box sx={{ position: 'absolute', top: 0, left: 0, zIndex: 1 }}>
+                    <BinChip t={t} />
+                  </Box>
+                )}
                 <img src={primaryAsset.url} alt={translate('folders.duplicates.legacy.alt.existing', 'existing')} style={{ maxHeight: '100%', objectFit: 'contain' }} />
               </Box>
               <Typography variant="body2" fontWeight="700" noWrap>{translate('folders.duplicates.legacy.primaryTitle', 'Title: {{title}}', { title: primaryAsset.title })}</Typography>
@@ -89,13 +117,15 @@ function LegacyDuplicateResolverDialog({ open, onClose, fileData, onResolve }) {
               <Box sx={{ mt: 1.5 }}>
                 <Typography variant="caption" color="textSecondary" display="block" sx={{ mb: 0.5 }}>{translate('folders.duplicates.legacy.locations', 'Locations:')}</Typography>
                 {existingAssets.map((existingAsset, index) => (
-                  <Chip
-                    key={index}
-                    icon={<FolderSpecial fontSize="small" />}
-                    label={existingAsset.folderName}
-                    size="small"
-                    sx={{ mr: 0.5, mb: 0.5, bgcolor: '#e2e8f0' }}
-                  />
+                  <Box key={index} sx={{ display: 'inline-flex', gap: 0.5, mr: 0.5, mb: 0.5 }}>
+                    <Chip
+                      icon={<FolderSpecial fontSize="small" />}
+                      label={existingAsset.folderName}
+                      size="small"
+                      sx={{ bgcolor: '#e2e8f0' }}
+                    />
+                    {existingAsset.in_bin && <BinChip t={t} />}
+                  </Box>
                 ))}
               </Box>
             </Paper>

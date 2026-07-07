@@ -1970,6 +1970,7 @@
       "typeAndPressEnter": "Escribe y pulsa Intro"
     },
     "schemaHelp": "Este esquema se aplica a todos los archivos preparados de forma predeterminada. La anulación por archivo está disponible en cada tarjeta.",
+    "tagsHelp": "Se aplica a cada archivo preparado, junto con las etiquetas de IA generadas por archivo.",
     "filenamePatternPrefix": "Para imágenes de producto: patrón de nombre de archivo compatible:",
     "filenamePatternExample": "p. ej. 012993112028-en-FR01.jpg",
     "aiTagsOnUpload": "Generar etiquetas de IA al cargar",
