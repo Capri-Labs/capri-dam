@@ -4,10 +4,12 @@ import {
     FormControl, InputLabel, Alert, CircularProgress, Stack, Chip
 } from '@mui/material';
 import { BugReport, Timer, Save, WarningAmber } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 import { useNotify } from '../../../context/NotificationContext';
 
 export default function OperationalLoggingTab() {
     const notify = useNotify();
+    const { t } = useTranslation();
 
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
@@ -42,7 +44,7 @@ export default function OperationalLoggingTab() {
             .catch(err => {
                 console.error("Failed to load logging config", err);
                 setLoading(false);
-                notify("Failed to retrieve logging configuration.", "error");
+                notify(t('operationalLogging.fetchError'), "error");
             });
     };
 
@@ -68,16 +70,16 @@ export default function OperationalLoggingTab() {
                 setSubmitting(false);
                 if (data.success) {
                     setStatusMessage({ type: 'success', text: data.message });
-                    notify(`Log level successfully changed to ${selectedLevel}`, "success");
+                    notify(t('operationalLogging.updateSuccess', { level: selectedLevel }), "success");
                     fetchLoggingStatus(); // Refresh active state
                 } else {
-                    setStatusMessage({ type: 'error', text: data.error || 'Failed to update logging level.' });
-                    notify(data.error || "Update failed.", "error");
+                    setStatusMessage({ type: 'error', text: data.error || t('operationalLogging.updateFailed') });
+                    notify(data.error || t('operationalLogging.updateFailedGeneric'), "error");
                 }
             })
             .catch(err => {
                 setSubmitting(false);
-                setStatusMessage({ type: 'error', text: 'Network error while updating configuration.' });
+                setStatusMessage({ type: 'error', text: t('operationalLogging.networkError') });
             });
     };
 
@@ -101,7 +103,7 @@ export default function OperationalLoggingTab() {
                 <Grid size={{ xs: 12, md: 5 }}>
                     <Paper variant="outlined" sx={{ p: 3, borderRadius: 3, height: '100%', bgcolor: '#ffffff' }}>
                         <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <BugReport color="primary" /> Current Pipeline Status
+                            <BugReport color="primary" /> {t('operationalLogging.pipelineStatus')}
                         </Typography>
 
                         {loading ? (
@@ -110,7 +112,7 @@ export default function OperationalLoggingTab() {
                             <Stack spacing={3}>
                                 <Box>
                                     <Typography variant="body2" color="textSecondary" gutterBottom>
-                                        Active Log Level
+                                        {t('operationalLogging.activeLogLevel')}
                                     </Typography>
                                     <Chip
                                         label={activeConfig.current_level}
@@ -121,12 +123,12 @@ export default function OperationalLoggingTab() {
 
                                 {activeConfig.ttl_active && (
                                     <Alert severity="warning" icon={<Timer fontSize="inherit" />}>
-                                        Temporary elevation active. Reverting to standard level in <strong>{activeConfig.minutes_remaining} minutes</strong>.
+                                        {t('operationalLogging.temporaryElevation', { minutes: activeConfig.minutes_remaining })}
                                     </Alert>
                                 )}
 
                                 <Typography variant="caption" color="textSecondary">
-                                    Changes made here are instantly broadcasted to all active Puma worker nodes via Redis Pub/Sub, requiring zero downtime.
+                                    {t('operationalLogging.broadcastNotice')}
                                 </Typography>
                             </Stack>
                         )}
@@ -137,10 +139,10 @@ export default function OperationalLoggingTab() {
                 <Grid size={{ xs: 12, md: 7 }}>
                     <Paper variant="outlined" sx={{ p: 3, borderRadius: 3, height: '100%' }}>
                         <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
-                            Adjust Log Verbosity
+                            {t('operationalLogging.adjustVerbosity')}
                         </Typography>
                         <Typography variant="body2" color="textSecondary" sx={{ mb: 3 }}>
-                            Elevate logging output to capture detailed execution traces. High verbosity levels (DEBUG, TRACE) should be used with a Time-to-Live to prevent log ingestion bloat.
+                            {t('operationalLogging.adjustVerbosityDescription')}
                         </Typography>
 
                         {statusMessage && (
@@ -151,36 +153,36 @@ export default function OperationalLoggingTab() {
                             <Grid container spacing={2}>
                                 <Grid size={{ xs: 12, sm: 6 }}>
                                     <FormControl fullWidth>
-                                        <InputLabel id="log-level-label">Target Log Level</InputLabel>
+                                        <InputLabel id="log-level-label">{t('operationalLogging.targetLogLevel')}</InputLabel>
                                         <Select
                                             labelId="log-level-label"
                                             value={selectedLevel}
-                                            label="Target Log Level"
+                                            label={t('operationalLogging.targetLogLevel')}
                                             onChange={(e) => setSelectedLevel(e.target.value)}
                                         >
-                                            <MenuItem value="FATAL">FATAL (Critical Crashes Only)</MenuItem>
-                                            <MenuItem value="ERROR">ERROR (Exceptions & Crashes)</MenuItem>
-                                            <MenuItem value="WARN">WARN (Deprecations & Warnings)</MenuItem>
-                                            <MenuItem value="INFO">INFO (Standard Operations)</MenuItem>
-                                            <MenuItem value="DEBUG">DEBUG (Detailed Variables)</MenuItem>
-                                            <MenuItem value="TRACE">TRACE (Maximum Verbosity)</MenuItem>
+                                            <MenuItem value="FATAL">{t('operationalLogging.levels.FATAL')}</MenuItem>
+                                            <MenuItem value="ERROR">{t('operationalLogging.levels.ERROR')}</MenuItem>
+                                            <MenuItem value="WARN">{t('operationalLogging.levels.WARN')}</MenuItem>
+                                            <MenuItem value="INFO">{t('operationalLogging.levels.INFO')}</MenuItem>
+                                            <MenuItem value="DEBUG">{t('operationalLogging.levels.DEBUG')}</MenuItem>
+                                            <MenuItem value="TRACE">{t('operationalLogging.levels.TRACE')}</MenuItem>
                                         </Select>
                                     </FormControl>
                                 </Grid>
 
                                 <Grid size={{ xs: 12, sm: 6 }}>
                                     <FormControl fullWidth>
-                                        <InputLabel id="ttl-label">Time-To-Live (Auto-Revert)</InputLabel>
+                                        <InputLabel id="ttl-label">{t('operationalLogging.ttl')}</InputLabel>
                                         <Select
                                             labelId="ttl-label"
                                             value={selectedTtl}
-                                            label="Time-To-Live (Auto-Revert)"
+                                            label={t('operationalLogging.ttl')}
                                             onChange={(e) => setSelectedTtl(e.target.value)}
                                         >
-                                            <MenuItem value={0}>Permanent (No Auto-Revert)</MenuItem>
-                                            <MenuItem value={15}>15 Minutes</MenuItem>
-                                            <MenuItem value={60}>1 Hour</MenuItem>
-                                            <MenuItem value={240}>4 Hours</MenuItem>
+                                            <MenuItem value={0}>{t('operationalLogging.ttlOptions.permanent')}</MenuItem>
+                                            <MenuItem value={15}>{t('operationalLogging.ttlOptions.15m')}</MenuItem>
+                                            <MenuItem value={60}>{t('operationalLogging.ttlOptions.1h')}</MenuItem>
+                                            <MenuItem value={240}>{t('operationalLogging.ttlOptions.4h')}</MenuItem>
                                         </Select>
                                     </FormControl>
                                 </Grid>
@@ -188,7 +190,7 @@ export default function OperationalLoggingTab() {
 
                             {(selectedLevel === 'DEBUG' || selectedLevel === 'TRACE') && selectedTtl === 0 && (
                                 <Alert severity="error" icon={<WarningAmber fontSize="inherit" />}>
-                                    Warning: Leaving high-verbosity logs on permanently can severely impact application performance and incur massive storage costs.
+                                    {t('operationalLogging.highVerbosityWarning')}
                                 </Alert>
                             )}
 
@@ -201,7 +203,7 @@ export default function OperationalLoggingTab() {
                                     disabled={submitting || loading}
                                     sx={{ bgcolor: '#5e35b1', px: 4 }}
                                 >
-                                    {submitting ? 'Broadcasting...' : 'Apply Configuration'}
+                                    {submitting ? t('operationalLogging.broadcasting') : t('operationalLogging.applyConfiguration')}
                                 </Button>
                             </Box>
                         </Stack>

@@ -1810,7 +1810,9 @@
     "grid": {
       "unknown_file": "Fichier inconnu",
       "pin_to_collection": "Épingler à la collection",
-      "view_details": "Voir les détails"
+      "view_details": "Voir les détails",
+      "processing": "Traitement en cours…",
+      "previewUnavailable": "Aperçu indisponible"
     }
   },
   "inbox": {
@@ -1902,7 +1904,9 @@
       "viewDetails": "Voir les détails",
       "addToCollection": "Ajouter à la collection",
       "moveToTrash": "Déplacer vers la corbeille"
-    }
+    },
+    "processing": "Traitement en cours…",
+    "previewUnavailable": "Aperçu indisponible"
   },
   "assetStatisticsTab": {
     "title": "Statistiques de la ressource",
@@ -2409,6 +2413,72 @@
       "SMTP_SERVER_BUSY": "Serveur SMTP occupé, réessayez plus tard",
       "SMTP_ERROR": "Erreur SMTP",
       "INVALID_CONFIGURATION": "Configuration invalide"
+    }
+  },
+  "operationalLogging": {
+    "pipelineStatus": "État actuel du pipeline",
+    "activeLogLevel": "Niveau de journalisation actif",
+    "temporaryElevation": "Élévation temporaire active. Retour au niveau standard dans {{minutes}} minutes.",
+    "broadcastNotice": "Les modifications apportées ici sont instantanément diffusées à tous les nœuds de travail Puma actifs via Redis Pub/Sub, sans temps d'arrêt.",
+    "adjustVerbosity": "Ajuster le niveau de verbosité des journaux",
+    "adjustVerbosityDescription": "Augmentez la sortie de journalisation pour capturer des traces d'exécution détaillées. Les niveaux de verbosité élevés (DEBUG, TRACE) doivent être utilisés avec une durée de vie (TTL) pour éviter la surcharge d'ingestion des journaux.",
+    "targetLogLevel": "Niveau de journalisation cible",
+    "levels": {
+      "FATAL": "FATAL (plantages critiques uniquement)",
+      "ERROR": "ERROR (exceptions et plantages)",
+      "WARN": "WARN (obsolescences et avertissements)",
+      "INFO": "INFO (opérations standard)",
+      "DEBUG": "DEBUG (variables détaillées)",
+      "TRACE": "TRACE (verbosité maximale)"
+    },
+    "ttl": "Durée de vie (retour automatique)",
+    "ttlOptions": {
+      "permanent": "Permanent (pas de retour automatique)",
+      "15m": "15 minutes",
+      "1h": "1 heure",
+      "4h": "4 heures"
+    },
+    "highVerbosityWarning": "Avertissement : laisser les journaux à haute verbosité activés en permanence peut nuire gravement aux performances de l'application et entraîner des coûts de stockage considérables.",
+    "applyConfiguration": "Appliquer la configuration",
+    "broadcasting": "Diffusion en cours...",
+    "fetchError": "Échec de la récupération de la configuration de journalisation.",
+    "updateSuccess": "Niveau de journalisation modifié avec succès en {{level}}",
+    "updateFailedGeneric": "Échec de la mise à jour.",
+    "updateFailed": "Échec de la mise à jour du niveau de journalisation.",
+    "networkError": "Erreur réseau lors de la mise à jour de la configuration."
+  },
+  "auditLog": {
+    "title": "Journal d'audit",
+    "description": "Parcourez et recherchez dans le registre immuable de chaque action de création, mise à jour et suppression, ainsi que des actions administratives comme l'usurpation d'identité.",
+    "filters": {
+      "user": "E-mail de l'acteur",
+      "action": "Action",
+      "resourceType": "Type de ressource",
+      "impersonatedOnly": "Actions usurpées uniquement",
+      "dateFrom": "Du",
+      "dateTo": "Au",
+      "search": "Rechercher un acteur, une action ou une ressource...",
+      "allActions": "Toutes les actions",
+      "allResourceTypes": "Tous les types de ressource",
+      "apply": "Appliquer les filtres",
+      "clear": "Effacer les filtres"
+    },
+    "table": {
+      "timestamp": "Horodatage",
+      "actor": "Acteur",
+      "action": "Action",
+      "resource": "Ressource",
+      "impersonated": "Usurpé",
+      "ipAddress": "Adresse IP",
+      "details": "Détails"
+    },
+    "empty": "Aucune entrée du journal d'audit ne correspond aux filtres actuels.",
+    "loadError": "Échec du chargement des entrées du journal d'audit.",
+    "impersonatedBy": "en tant que {{actor}} (acteur réel : {{trueActor}})",
+    "pagination": {
+      "showing": "Affichage de {{from}}-{{to}} sur {{total}}",
+      "previous": "Précédent",
+      "next": "Suivant"
     }
   },
   "globalSearchBar": {

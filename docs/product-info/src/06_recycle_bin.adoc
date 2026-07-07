@@ -1,0 +1,71 @@
+[[module-recycle-bin]]
+== Recycle Bin & Purge Policies
+
+=== Overview
+
+Deleting an asset or folder never destroys it immediately. Capri DAM soft-deletes
+into a Recycle Bin with a configurable retention window, bulk restore, and a
+workflow-aware purge guard that protects assets still under active review.
+
+image::recycle-bin.png[Recycle Bin, title="Recycle Bin — stat bar, type filters, and grid/list view toggle"]
+
+=== Key features
+
+[cols="2,3", options="header"]
+|===
+| Feature | Detail
+
+| Soft-delete | 30-day (configurable) retention window before permanent purge.
+| Stats bar | 4 stat cards summarising bin contents (e.g. total items, assets, folders, storage reclaimable).
+| Type filter chips | All Items / Assets / Folders.
+| Grid ↔ list view toggle | Switch bin item density/layout on demand.
+| Search & sort | Free-text search plus a sort-order dropdown.
+| Bulk restore & Empty Bin | Restore items back to their original folder, or permanently empty the whole bin (with confirmation dialog).
+| Workflow-protected purge | Assets with an active workflow instance are blocked from permanent deletion until the workflow resolves.
+| Retention policy editor | Configure the retention window from Asset Configurations.
+| AI smart suggestions & cleanup report | AI-gateway-backed teaser surfacing suggested bin cleanup actions.
+|===
+
+=== Powerful / notable capabilities
+
+[.feature-highlight]
+====
+* **Workflow-protected purge is a real safety net** — an asset can't be permanently
+  destroyed while it's still mid-approval, preventing an entire class of
+  "deleted-the-thing-under-review" incidents.
+* **Configurable, not hardcoded, retention** — the 30-day default is a policy, not a
+  constant; admins can tune it per their compliance needs.
+====
+
+=== Notes & known limitations
+
+* Restore currently restores an item to its *original* folder only; there is no
+  "restore to a different folder" option yet.
+* The AI smart-suggestions/cleanup-report features are a "teaser" surface today —
+  full automated cleanup execution is not yet wired up.
+
+=== Test coverage status
+
+[.status-covered]#Covered by E2E# (`spec/e2e/bin.e2e.spec.js`) — this is the
+**most thoroughly covered module** in the product today:
+
+* Page title, 4-card stats bar, filter bar with search input.
+* Type-filter chips (All / Assets / Folders) and the folder-only filter behaviour.
+* Grid ↔ list view toggle and actually switching between them.
+* Search filtering the bin list; sort dropdown opens and lists options.
+* Empty-state message when the bin is empty with no filters applied.
+* "Empty Bin" button opens its confirmation dialog.
+* Sidebar "Recycle Bin" link navigates to `/bin`.
+* Retention-policy editor is reachable from Asset Configurations and shows
+  retention fields.
+* AI gateway teaser is shown; `purge_status` and `ai/smart_suggestions` API
+  endpoints respond correctly.
+
+[.status-pending]#Pending / not yet covered#
+
+* Actually restoring an item from the bin back to its folder.
+* Actually permanently purging via "Empty Bin" (only the confirmation dialog
+  opening is covered, not the destructive action itself).
+* Workflow-protected purge guard (attempting to purge an asset with an active
+  workflow instance and confirming it's blocked).
+* Retention policy *save* (only the editor opening is covered).

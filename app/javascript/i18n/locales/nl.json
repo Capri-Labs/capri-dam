@@ -1810,7 +1810,9 @@
     "grid": {
       "unknown_file": "Onbekend bestand",
       "pin_to_collection": "Aan collectie vastmaken",
-      "view_details": "Details bekijken"
+      "view_details": "Details bekijken",
+      "processing": "Bezig met verwerken…",
+      "previewUnavailable": "Voorbeeld niet beschikbaar"
     }
   },
   "inbox": {
@@ -1902,7 +1904,9 @@
       "viewDetails": "Details bekijken",
       "addToCollection": "Aan collectie toevoegen",
       "moveToTrash": "Naar prullenbak verplaatsen"
-    }
+    },
+    "processing": "Bezig met verwerken…",
+    "previewUnavailable": "Voorbeeld niet beschikbaar"
   },
   "assetStatisticsTab": {
     "title": "Assetstatistieken",
@@ -2409,6 +2413,72 @@
       "SMTP_SERVER_BUSY": "SMTP-server bezet, probeer het later opnieuw",
       "SMTP_ERROR": "SMTP-fout",
       "INVALID_CONFIGURATION": "Ongeldige configuratie"
+    }
+  },
+  "operationalLogging": {
+    "pipelineStatus": "Huidige pipelinestatus",
+    "activeLogLevel": "Actief logniveau",
+    "temporaryElevation": "Tijdelijke verhoging actief. Keert terug naar standaardniveau over {{minutes}} minuten.",
+    "broadcastNotice": "Wijzigingen die hier worden aangebracht, worden direct via Redis Pub/Sub uitgezonden naar alle actieve Puma-workernodes, zonder downtime.",
+    "adjustVerbosity": "Logdetailniveau aanpassen",
+    "adjustVerbosityDescription": "Verhoog de loguitvoer om gedetailleerde uitvoeringssporen vast te leggen. Hoge detailniveaus (DEBUG, TRACE) moeten worden gebruikt met een levensduur (TTL) om overbelasting van loginname te voorkomen.",
+    "targetLogLevel": "Doel-logniveau",
+    "levels": {
+      "FATAL": "FATAL (alleen kritieke crashes)",
+      "ERROR": "ERROR (uitzonderingen en crashes)",
+      "WARN": "WARN (verouderingen en waarschuwingen)",
+      "INFO": "INFO (standaardbewerkingen)",
+      "DEBUG": "DEBUG (gedetailleerde variabelen)",
+      "TRACE": "TRACE (maximale detail)"
+    },
+    "ttl": "Levensduur (automatisch terugzetten)",
+    "ttlOptions": {
+      "permanent": "Permanent (geen automatisch terugzetten)",
+      "15m": "15 minuten",
+      "1h": "1 uur",
+      "4h": "4 uur"
+    },
+    "highVerbosityWarning": "Waarschuwing: het permanent ingeschakeld laten van logs met hoge detailniveaus kan de applicatieprestaties ernstig beïnvloeden en enorme opslagkosten veroorzaken.",
+    "applyConfiguration": "Configuratie toepassen",
+    "broadcasting": "Bezig met uitzenden...",
+    "fetchError": "Kan logconfiguratie niet ophalen.",
+    "updateSuccess": "Logniveau succesvol gewijzigd naar {{level}}",
+    "updateFailedGeneric": "Bijwerken mislukt.",
+    "updateFailed": "Kan logniveau niet bijwerken.",
+    "networkError": "Netwerkfout bij het bijwerken van de configuratie."
+  },
+  "auditLog": {
+    "title": "Auditlogboek",
+    "description": "Blader door en doorzoek het onveranderlijke logboek van elke aanmaak-, update- en verwijderactie, plus administratieve acties zoals imitatie.",
+    "filters": {
+      "user": "E-mailadres van de actor",
+      "action": "Actie",
+      "resourceType": "Resourcetype",
+      "impersonatedOnly": "Alleen geïmiteerde acties",
+      "dateFrom": "Van",
+      "dateTo": "Tot",
+      "search": "Zoek actor, actie of resource...",
+      "allActions": "Alle acties",
+      "allResourceTypes": "Alle resourcetypen",
+      "apply": "Filters toepassen",
+      "clear": "Filters wissen"
+    },
+    "table": {
+      "timestamp": "Tijdstempel",
+      "actor": "Actor",
+      "action": "Actie",
+      "resource": "Resource",
+      "impersonated": "Geïmiteerd",
+      "ipAddress": "IP-adres",
+      "details": "Details"
+    },
+    "empty": "Geen auditlogitems komen overeen met de huidige filters.",
+    "loadError": "Kan auditlogitems niet laden.",
+    "impersonatedBy": "als {{actor}} (werkelijke actor: {{trueActor}})",
+    "pagination": {
+      "showing": "{{from}}-{{to}} van {{total}} weergeven",
+      "previous": "Vorige",
+      "next": "Volgende"
     }
   },
   "globalSearchBar": {

@@ -1,0 +1,85 @@
+[[module-access-control]]
+== Access Control & Security
+
+=== Overview
+
+Group-based role hierarchy, a 7-column per-folder ACL, Keycloak SSO, OAuth2, long-lived
+Personal Access Tokens, and fully-audited admin impersonation — this is the module
+that satisfies enterprise information-governance requirements.
+
+image::admin-users.png[System Users, title="System Users — role, department, auth method, group membership, and status per user"]
+
+image::admin-user-groups.png[User Groups, title="User Groups hierarchy tree — system groups, custom groups, and nested child groups"]
+
+=== Key features
+
+[cols="2,3", options="header"]
+|===
+| Feature | Detail
+
+| Role hierarchy | `viewer` → `contributor` → `manager` → `admin` → `super_admin`.
+| Group-based RBAC | Closure-table group hierarchy; users inherit parent-group permissions; child groups can be nested arbitrarily deep.
+| 7-column folder ACL | Per group × folder: Read, Upload, Create, Modify, Delete, Replicate, Deny All.
+| Keycloak SSO | Enterprise SSO via OmniAuth/OIDC; users auto-provisioned on first login; SSO-managed users are visually flagged in the Users grid.
+| OAuth2 server | Doorkeeper-based token issuance for external applications.
+| Personal Access Tokens | Long-lived, hashed tokens for CI/scripts, managed from the user's own Profile.
+| Impersonation | Any admin can impersonate a non-admin for support purposes; a persistent on-screen banner marks the session; fully audited (see <<module-system-operations>>); an admin **cannot** impersonate a super-admin.
+| Suspend / restore | Suspend a user account without deleting it; a user cannot suspend their own account.
+|===
+
+=== Powerful / notable capabilities
+
+[.feature-highlight]
+====
+* **7-column ACL is genuinely fine-grained** — Read, Upload, Create, Modify, Delete,
+  and Replicate are independent permissions per group per folder, plus an explicit
+  Deny-All override — not just a single "can edit" toggle.
+* **Impersonation with real guardrails** — a persistent banner prevents "silent"
+  impersonation, super-admins are un-impersonatable by design, and every
+  impersonation start/end is written to the immutable Audit Trail
+  (see <<module-system-operations>>).
+* **Closure-table group hierarchy** — child groups can be added/removed from a
+  parent's Groups tab with real-time UI feedback (disabled state for
+  already-added candidates), not just a flat group list.
+====
+
+=== Notes & known limitations
+
+* There is currently no time-boxed / auto-expiring impersonation session — an admin
+  must explicitly click "End Impersonation".
+* Group membership changes are immediate; there is no approval step for adding a
+  user to a sensitive group (e.g. Administrators) beyond the permission check
+  itself.
+
+=== Test coverage status
+
+[.status-covered]#Covered by E2E# — this is the **best-covered area of the product**,
+spread across five spec files:
+
+* **Users** (`users_and_groups.e2e.spec.js`): grid loads, invite/create local user,
+  tabbed user drawer (Properties, Preferences w/ language selector, Groups,
+  Impersonators), suspend/restore (and the "can't suspend yourself" guard),
+  status/SSO/admin badges, group-assignment modal, change-password dialog.
+* **Groups** (`users_and_groups.e2e.spec.js`, `group_hierarchy.e2e.spec.js`):
+  hierarchy tree, system-group badges and delete-button protection, create/delete
+  custom group, search/filter groups, Members tab, Permissions tab + ACL matrix
+  (all 5 permission columns + Deny All), parent/child relationship management
+  (add, remove, "already added" disabled state, lock icon on system parents).
+* **Impersonation** (`impersonation.e2e.spec.js`, `header_impersonate_groups.e2e.spec.js`):
+  autocomplete search (not a broken plain email field), start/persist/end banner
+  lifecycle, super-admin protection, header-menu visibility rules, Personal
+  Access Token creation.
+* **Authentication** (`auth.e2e.spec.js`): unauthenticated redirects, invalid
+  credentials, disabled self-registration, post-login redirect target, sign-out,
+  Keycloak SSO button POST target.
+* **Folder ACL editing UI** (`folder_access_tab.e2e.spec.js`) — see
+  <<module-asset-management>>.
+
+[.status-pending]#Pending / not yet covered#
+
+* OAuth2 (Doorkeeper) external-application token issuance flow end-to-end.
+* Actual enforcement testing of the 7-column ACL against real API/UI actions
+  (today's tests confirm the *matrix UI* renders all columns, not that each
+  permission is enforced server-side per action).
+* Keycloak SSO full round-trip (only the redirect POST target is covered; there is
+  no live IdP in the E2E environment to complete the OIDC handshake).

@@ -1,0 +1,73 @@
+[[module-delivery-cdn]]
+== Delivery & CDN
+
+=== Overview
+
+Assets are delivered through Fastly's edge network with real-time image
+transforms, focal-point-aware smart cropping, HMAC-signed URLs, instant
+surrogate-key cache purging, and configurable video-encoding profiles — all
+computed on the fly instead of pre-generating every rendition ahead of time.
+
+NOTE: This module is primarily an API/backend capability with no single
+dedicated screen of its own — its configuration surfaces are spread across
+folder-level Image & Video Profile settings and the Storage & Edge tab of
+System Status (see <<module-system-operations>>). No standalone screenshot is
+captured for this module; see the folder configuration screens referenced in
+<<module-asset-management>> for the profile-assignment UI.
+
+=== Key features
+
+[cols="2,3", options="header"]
+|===
+| Feature | Detail
+
+| Real-time image transforms | Width, height, crop mode, and output format (WebP/AVIF/JPEG/PNG) computed on the fly at the Fastly edge via Fastly Image Optimizer.
+| Smart crop | Focal-point-aware cropping keeps the subject centred/visible across every device breakpoint, rather than a naive centre-crop.
+| HMAC-signed URLs | Transform parameters are cryptographically signed, preventing unapproved parameter tampering and denial-of-wallet abuse (someone requesting unbounded transform variations to run up compute cost).
+| Surrogate-key cache purge | Instant per-asset or bulk cache invalidation via the API or Admin UI, using Fastly surrogate keys rather than full-cache flushes.
+| Video encoding | Configurable FFmpeg encoding presets, with output stored in ActiveStorage.
+| Image & video profiles | Named preset bundles (e.g. "product-thumbnail", "hero-banner") assigned to folder paths, automatically applied whenever a delivery URL is generated under that folder.
+|===
+
+=== Powerful / notable capabilities
+
+[.feature-highlight]
+====
+* **~90% rendition-storage cost reduction** — because transforms are computed at
+  the edge in real time rather than pre-generated and stored for every possible
+  size/format/crop combination, storage costs drop dramatically compared to a
+  traditional "generate every rendition up front" DAM.
+* **HMAC-signed transform URLs close a real cost-abuse vector** — without
+  signing, an attacker could request unlimited arbitrary transform permutations
+  of a single asset to drive up edge-compute billing; signing prevents this by
+  construction.
+* **Folder-scoped profiles remove per-asset configuration toil** — assign an
+  image/video profile once to a folder path, and every asset uploaded under it
+  automatically inherits the right delivery behaviour.
+====
+
+=== Notes & known limitations
+
+* AVIF output format support is **in progress**, not yet shipped (see the
+  <<module-roadmap,Roadmap>>) — WebP/JPEG/PNG are available today.
+* There is no dedicated admin UI screen purely for this module today; profile
+  assignment happens inside folder settings, and cache-purge/CDN config lives
+  inside the System Status → Storage & Edge tab.
+
+=== Test coverage status
+
+[.status-pending]#Pending / not yet covered# — **this module currently has zero
+dedicated E2E coverage**:
+
+* Real-time image transform correctness (requesting a specific width/height/crop/
+  format and validating the returned asset).
+* Smart-crop focal-point behaviour.
+* HMAC URL-signing validation (rejecting a tampered/unsigned transform request).
+* Surrogate-key cache purge (triggering a purge and confirming the CDN serves a
+  fresh copy).
+* Video-encoding preset execution end-to-end.
+* Image/video profile assignment to a folder path and confirming delivery URLs
+  reflect it.
+
+This is one of the highest-priority gaps for future E2E test-writing — see the
+<<module-roadmap,consolidated Test Coverage Roadmap>> at the end of this guide.

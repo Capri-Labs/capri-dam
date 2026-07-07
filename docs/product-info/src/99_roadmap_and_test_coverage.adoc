@@ -1,0 +1,64 @@
+[[module-roadmap]]
+== Roadmap & Test Coverage Roadmap
+
+=== Product roadmap
+
+[cols="1,2,3", options="header"]
+|===
+| Status | Item | Description
+
+| ✅ Done | MUI v9 migration | All components use `slotProps`; deprecated prop aliases removed.
+| ✅ Done | Keycloak SSO | OmniAuth-based enterprise SSO.
+| ✅ Done | Duplicate Manager | Checksum-based detection with resolution UI.
+| ✅ Done | Recycle Bin | Soft-delete with configurable retention and workflow guard.
+| ✅ Done | Workflow Designer | `@xyflow/react` DAG canvas with approval and automation steps.
+| ✅ Done | AI Copilot | Natural-language asset discovery via chat.
+| ✅ Done | pgvector semantic search | Cosine similarity + semantic cluster map.
+| ✅ Done | Audit log refactor | Immutable, DB-trigger-protected audit trail; structured operational logging.
+| ✅ Done | Rebranding | "Capri DAM" logo/icon refresh.
+| 🚧 In progress | AVIF delivery | Add AVIF to Fastly IO format options.
+| 🚧 In progress | Kamal 2 deployment | Production deployment playbook via Kamal.
+| 📋 Planned | Multi-site isolation | Tenant-scoped storage and RBAC for agency use cases.
+| 📋 Planned | DAM-to-DAM federation | Cross-instance asset sharing via signed GraphQL federation.
+| 📋 Planned | AI auto-tagging | Automatic tag suggestions from a computer-vision model at upload time.
+|===
+
+[[test-coverage-roadmap]]
+=== Consolidated test-coverage roadmap
+
+This guide's screenshots and feature descriptions are accurate as of today, but
+**E2E test coverage across the product is uneven** — some modules (Recycle Bin,
+Access Control) are exercised extremely thoroughly, while others (Delivery & CDN,
+System Operations sub-tabs, several AI features) have little to none. The table
+below consolidates every `[.status-pending]` item called out per-module into a
+single backlog, to help prioritise future E2E test-writing.
+
+[cols="2,4", options="header"]
+|===
+| Module | Pending E2E scenarios
+
+| Dashboard | (see <<module-dashboard>>) — widget-level interaction/drill-down behaviour.
+| Asset Management | (see <<module-asset-management>>) — version history diff view, bulk metadata CSV import/export, quarantine review flow.
+| Search & Discovery | (see <<module-search>>) — semantic search relevance validation, semantic cluster map interactions.
+| Collections | (see <<module-collections>>) — creating/editing a collection, adding/removing assets.
+| Duplicate Management | (see <<module-duplicates>>) — resolution actions (merge/keep-both/delete).
+| Recycle Bin | Restoring an item; permanently purging via Empty Bin; workflow-protected purge guard; retention-policy save.
+| Workflow Automation | Parallel/Sequential Review and Slack/In-App Alert nodes; full workflow execution (trigger → task → resolution); Workflow Dashboard screen; editing a published blueprint.
+| Access Control & Security | OAuth2 (Doorkeeper) token issuance; server-side enforcement of the 7-column ACL; full Keycloak OIDC round-trip.
+| AI Intelligence Suite | AI Copilot chat interaction; Agent Automations; Batch Processing; Prompt Playground; creating a model endpoint/style preset; C2PA record signing.
+| Email / Communication Engine | Real email send/receive round-trip; event-mapping creation; AI Suggestions generation; Outbox filtering.
+| Ingestion & Migration | Completing the migration wizard against a real connector; Legacy Connectors screen; batch execution monitoring; per-source-platform behaviour.
+| System Operations & Admin | Observability tab; Operational Logging save flow; AI Gateway controls; Feature Flags toggling; Storage & Edge save flow; Reports screen (zero coverage today).
+| Localization / i18n | E2E coverage for the remaining 7 non-German locales; RTL layout verification for Arabic.
+| Delivery & CDN | **Zero E2E coverage today** — transform correctness, smart-crop, HMAC signing, cache purge, video encoding, profile assignment.
+|===
+
+[.feature-highlight]
+====
+**Suggested priority order** for closing these gaps: (1) Delivery & CDN — zero
+coverage on a customer-facing, revenue-relevant capability; (2) System
+Operations Reports screen — zero coverage; (3) Workflow execution end-to-end —
+high business criticality, currently only the *designer* is tested, not
+*execution*; (4) AI Copilot interaction — flagship feature, currently untested
+beyond page load.
+====

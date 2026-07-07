@@ -463,6 +463,8 @@ Rails.application.routes.draw do
     get "system_configurations/logging", to: "system_configurations#logging_status"
     post "system_configurations/logging", to: "system_configurations#update_logging"
 
+    resources :audit_logs, only: [ :index ]
+
     # Migrations
     get "migrations/ingestion", to: "migrations#ingestion"
     get "migrations/connectors", to: "migrations#connectors"

@@ -1,0 +1,72 @@
+[[module-ingestion]]
+== Ingestion & Migration
+
+=== Overview
+
+A migration control-centre for bulk-importing assets from 14 external DAM/storage
+platforms, with a guided wizard, connector management, batch monitoring, and
+health-status reporting.
+
+image::admin-ingestion-pipeline.png[Ingestion Dashboard, title="Legacy Ingestion & Migration dashboard — metric cards, migration-phase banner, and batch list"]
+
+=== Key features
+
+[cols="2,3", options="header"]
+|===
+| Feature | Detail
+
+| Migration dashboard | 6 metric stat cards, a migration-phases info banner, and a batch list with status chips and per-row actions.
+| Migration wizard | Guided "Start Migration" dialog: choose a connector/source, then select a destination folder via search.
+| Legacy connectors | Dedicated "Connectors" screen for configuring external source-system credentials.
+| Batch status filtering & refresh | Filter the batch list by status; manual refresh action.
+| Supported external sources | AWS S3, Google Cloud Storage, Nuxeo, Brandfolder, Cloudinary, SharePoint, Bynder, Aprimo, Widen Collective, Adobe Experience Manager, FTP/SFTP, MediaValet, Extensis Portfolio, Canto.
+| Data health integration | Migration health surfaces into the Data Health dashboard (see <<module-system-operations>>).
+|===
+
+=== Powerful / notable capabilities
+
+[.feature-highlight]
+====
+* **14 pre-built external-DAM connectors** — a broad out-of-the-box catalogue
+  covering most major DAM/CMS/cloud-storage platforms teams migrate away from,
+  rather than a bespoke one-off import script per customer.
+* **Guided, wizard-driven migration** — non-technical admins can kick off a
+  migration batch (choose source → choose destination folder) without needing an
+  engineer to run a script.
+* **Migration-phase awareness baked into the UI** — the dashboard's info banner
+  actively communicates what phase a migration effort is in, reducing the "is it
+  still running?" support burden.
+====
+
+=== Notes & known limitations
+
+* The wizard currently supports selecting a destination folder but does not yet
+  expose granular field-mapping/transformation rules inside the UI itself.
+* Batch actions (retry, cancel, view detail) are visible as row actions, but the
+  underlying execution of a full migration batch is not yet exercised by
+  automated tests (see below) — treat production migrations with the same
+  operational care as any bulk data-movement operation.
+
+=== Test coverage status
+
+[.status-covered]#Covered by E2E# (`spec/e2e/ingestion_pipeline.e2e.spec.js`)
+
+* Dashboard loads and renders the page header; all six metric stat cards render;
+  migration-phases info banner is shown.
+* Breadcrumb "Legacy Connectors" link and the "Connectors" button both navigate
+  correctly.
+* Empty state with CTA buttons is shown when there are no batches.
+* "Start Migration" opens the wizard dialog; wizard can be cancelled; wizard
+  advances to the Select Destination step with a folder search box.
+* Batch rows render with status chips and actions; status filter dropdown is
+  visible/selectable; "Refresh" button is present and clickable.
+
+[.status-pending]#Pending / not yet covered#
+
+* Actually completing the migration wizard (selecting a real external connector,
+  authenticating against it, and starting a real batch).
+* Legacy Connectors screen itself — configuring/saving connector credentials.
+* Batch execution monitoring — a batch progressing through phases, retry/cancel
+  actions actually functioning, and completed-batch detail view.
+* Per-source connector behaviour for each of the 14 supported platforms
+  individually.

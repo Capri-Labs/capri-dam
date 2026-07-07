@@ -1,0 +1,52 @@
+[[module-collections]]
+== Collections
+
+=== Overview
+
+Collections let users curate cross-folder sets of assets — manually, by rule, or by
+time window — and share them externally without granting access to the underlying
+folder structure.
+
+image::collections.png[Collections screen, title="Collections — curated, rule-based, and time-windowed asset groupings"]
+
+=== Key features
+
+[cols="2,3", options="header"]
+|===
+| Feature | Detail
+
+| Manual collections | Curated sets; assets added by drag-drop or via the API.
+| Smart collections | Rule-based, auto-populated collections kept in sync by `SmartCollectionRouterWorker` (a background job) as matching assets are created/updated.
+| Temporal collections | Time-windowed collections, e.g. "assets uploaded this week", refreshed automatically as time passes.
+| Share collections | Generate a signed, expiry-configurable public URL for an entire collection — no login required for the recipient.
+| Slug-based routing | Collections are addressable at `/collections/*path`, supporting nested workspace-style organisation.
+|===
+
+=== Powerful / notable capabilities
+
+[.feature-highlight]
+====
+* **Smart collections stay current with zero manual upkeep** — once a rule is
+  defined, new matching assets flow in automatically via a background worker.
+* **External sharing without folder access** — a signed collection URL exposes only
+  the curated set, never the source folder's full contents or permissions.
+====
+
+=== Notes & known limitations
+
+* Smart collection rules currently support a fixed set of predicates (content type,
+  tag, folder scope, date range); there is no arbitrary boolean rule builder yet.
+* Shared collection links do not currently support password protection — only
+  expiry-based access control.
+
+=== Test coverage status
+
+[.status-pending]#Pending / not yet covered# — Collections has **no dedicated E2E
+spec today**. Planned coverage:
+
+* Collections index page loads and lists existing collections.
+* Creating a manual collection and adding assets to it (drag-drop and via picker).
+* Creating a smart collection rule and confirming a newly-created matching asset
+  is auto-added by the background worker.
+* Generating and visiting a signed share URL as an unauthenticated visitor.
+* Collection slug-based nested routing (`/collections/*path`).

@@ -1,6 +1,6 @@
-= Capri DAM — Product Information
+= Capri DAM — Product Guide
 Ashok Pelluru <apelluru@apache.org>
-v2.0.0, 2026-06-26
+v3.0.0, 2026-07-07
 :doctype: book
 :toc: left
 :toclevels: 3
@@ -8,11 +8,14 @@ v2.0.0, 2026-06-26
 :sectanchors:
 :sectlinks:
 :icons: font
+:experimental:
 :source-highlighter: rouge
 :rouge-style: github
+:imagesdir: images
 :lang: en
-:description: Product overview, feature catalogue, use cases, and roadmap for Capri DAM.
-:keywords: DAM, digital asset management, features, product, headless, open source
+:description: Customer-facing product guide for Capri DAM — module-by-module tour of every \
+  feature, screenshots, notable capabilities, known limitations, and test-coverage status.
+:keywords: DAM, digital asset management, product guide, features, user guide, screenshots
 :stylesdir: ../theme
 :stylesheet: capri.css
 :docinfodir: ..
@@ -20,205 +23,87 @@ v2.0.0, 2026-06-26
 
 ifdef::backend-html5[]
 [.text-right]
-link:../[← Documentation Hub] · link:../developer-guide/[Developer Guide]
+link:../[← Documentation Hub] · link:../architecture/[Architecture] · link:../developer-guide/[Developer Guide]
 endif::backend-html5[]
 
-[[section-overview]]
-== What is Capri DAM?
+[[section-welcome]]
+== Welcome
 
-**Capri DAM** is a modern, open-source, **headless Digital Asset Management** platform
-designed for teams that need enterprise-grade dynamic media capabilities without
-enterprise-grade licensing costs.
+This guide is a module-by-module tour of **Capri DAM** for customers, evaluators, and
+new team members. Every module chapter follows the same structure so you can jump
+straight to what you need:
 
-It is built on **Ruby on Rails 8.1** + **React 19** and exposes every feature through
-both a **REST API** and a **GraphQL API**, making it suitable as the media backbone for
-any frontend — web, mobile, IoT, or digital signage.
+[.feature-highlight]
+====
+**How to read each module**
 
-.Key differentiators
-* **Bring Your Own Storage** — connect AWS S3, Google Cloud Storage, Azure Blob,
-  Cloudflare R2, Wasabi, DigitalOcean Spaces, or Backblaze B2.
-* **Edge-first delivery** — real-time image transforms (crop, resize, WebP, focal-point
-  smart-crop) via Fastly Image Optimizer; ~90 % reduction in rendition storage costs.
-* **Headless by design** — no lock-in to a specific frontend; consume assets via
-  REST, GraphQL, or signed CDN URLs.
-* **Apache 2.0 licensed** — host it yourself; no per-seat or per-GB fees.
+* **Overview** — what the module does and why it matters.
+* **Screenshot** — a real capture of the running application (see
+  <<section-screenshots,how these are produced>>).
+* **Key features** — the concrete capabilities, in a scannable table.
+* **Powerful / notable capabilities** — the handful of things that set this module apart.
+* **Notes & known limitations** — honest, current caveats — not marketing copy.
+* **Test coverage status** — which user flows already have automated End-to-End (E2E)
+  coverage today, and which are still on the backlog (see
+  <<section-coverage,Test Coverage Roadmap>>).
+====
 
-[[section-features]]
-== Feature catalogue
+[[section-screenshots]]
+=== About the screenshots
 
-=== Asset management
+Every screenshot in this guide is a **real capture of the running application**,
+taken with a small Playwright driver script —
+`docs/product-info/scripts/capture_screenshots.js` — the same automation technology
+used by the project's E2E test suite (`spec/e2e/`). It logs in as a seeded admin user
+and navigates to each screen, so what you see here is what the product actually looks
+like, not a mock-up.
 
-[cols="2,3", options="header"]
-|===
-| Feature | Detail
+[TIP]
+====
+To refresh every screenshot after a UI change:
 
-| Upload & ingest | Drag-and-drop browser upload, direct-to-storage presigned PUTs, and bulk ingestion from 14 external sources.
-| Folder hierarchy | N-ary tree with materialised paths; per-folder RBAC policies, metadata schemas, and image/video profiles.
-| Version history | Immutable version snapshots on every asset replacement; diff view in the UI.
-| Soft-delete / Recycle Bin | 30-day (configurable) retention; bulk restore; workflow-protected purge guard.
-| Metadata | Technical (EXIF/IPTC/XMP) auto-extracted; custom schema-driven fields per folder; bulk CSV import/export.
-| Duplicate detection | Checksum-based automatic detection; side-by-side resolution UI.
-| Quarantine | Security anomaly detection flags suspicious assets and prevents delivery until reviewed.
-|===
+[source,bash]
+----
+bin/rails s -p 3000 &                                  # 1. start the app
+node docs/product-info/scripts/capture_screenshots.js   # 2. re-capture all screens
+----
+====
 
-=== Search & discovery
+[[section-modules]]
+== Modules
 
-[cols="2,3", options="header"]
-|===
-| Feature | Detail
+include::src/00_introduction.adoc[]
 
-| Full-text search | PostgreSQL `tsvector` across title, description, tags, and metadata.
-| Faceted filtering | Content type, date range, tags, folder scope, status.
-| Semantic search | pgvector cosine similarity using AI-generated embeddings; supports OpenAI, Cohere, Ollama, Azure OpenAI.
-| Semantic cluster map | Interactive force-directed graph of semantically similar assets for visual discovery.
-| AI Copilot | Natural-language chat interface that translates queries into structured search filters.
-|===
+include::src/01_dashboard.adoc[]
 
-=== Delivery & CDN
+include::src/02_asset_management.adoc[]
 
-[cols="2,3", options="header"]
-|===
-| Feature | Detail
+include::src/03_search_and_discovery.adoc[]
 
-| Real-time image transforms | Width, height, crop mode, format (WebP/AVIF/JPEG/PNG), quality — computed at Fastly edge.
-| Smart crop | Focal-point–aware crop preserves the subject across all device breakpoints.
-| HMAC-signed URLs | Prevents unapproved transform parameters and denial-of-wallet attacks.
-| Surrogate-key cache purge | Instant per-asset or bulk Fastly cache invalidation via the API or Admin UI.
-| Video encoding | Configurable FFmpeg encoding presets with folder-path assignment; output stored in ActiveStorage.
-| Image & video profiles | Named preset bundles assigned to folder paths; automatically applied on delivery URL generation.
-|===
+include::src/04_collections.adoc[]
 
-=== Workflows & approvals
+include::src/05_duplicate_management.adoc[]
 
-[cols="2,3", options="header"]
-|===
-| Feature | Detail
+include::src/06_recycle_bin.adoc[]
 
-| Visual workflow designer | DAG-based canvas (`@xyflow/react`) for building approval and automation flows.
-| Step types | Start, Approval (human task), Notification, Auto-archive, Auto-publish, Condition branch, End.
-| Trigger rules | Metadata-based predicates: folder path prefix, content type, custom field value.
-| Task assignment | Assign tasks to users or groups; email + in-app notification; due date and escalation.
-| Workflow-protected purge | Assets with active workflow instances are blocked from permanent deletion.
-|===
+include::src/07_workflow_automation.adoc[]
 
-=== Access control
+include::src/08_access_control_and_security.adoc[]
 
-[cols="2,3", options="header"]
-|===
-| Feature | Detail
+include::src/09_ai_intelligence_suite.adoc[]
 
-| Role hierarchy | `viewer` → `contributor` → `manager` → `admin` → `super_admin`.
-| Group-based RBAC | Closure-table group hierarchy; users inherit parent group permissions.
-| 7-column folder ACL | Per group × folder: read, upload, edit metadata, download, delete, manage, share.
-| Keycloak SSO | Enterprise SSO via OmniAuth/OIDC; users provisioned on first login.
-| OAuth2 server | Doorkeeper for external application token issuance.
-| Personal Access Tokens | Long-lived hashed tokens for CI/scripts.
-| Impersonation | Admin can impersonate any non-admin for support; fully audited.
-|===
+include::src/10_email_communication_engine.adoc[]
 
-=== Collections
+include::src/11_ingestion_and_migration.adoc[]
 
-[cols="2,3", options="header"]
-|===
-| Feature | Detail
+include::src/12_system_operations_and_admin.adoc[]
 
-| Manual collections | Curated sets; assets added by drag-drop or API.
-| Smart collections | Rule-based auto-populated collections updated by `SmartCollectionRouterWorker`.
-| Temporal collections | Time-windowed collections (e.g. "assets uploaded this week").
-| Share collections | Generate a signed public URL for a collection (configurable expiry).
-|===
+include::src/13_localization_i18n.adoc[]
 
-=== Administration
+include::src/14_delivery_and_cdn.adoc[]
 
-[cols="2,3", options="header"]
-|===
-| Feature | Detail
-
-| User & group management | Full CRUD in the Admin UI; group hierarchy editor.
-| Email templates | Handlebars-based transactional templates editable in the browser.
-| Storage backend management | Configure and switch storage providers without downtime.
-| System status dashboard | Queue depths, storage usage, error counts, health indicators.
-| Reports | Configurable report definitions; generate CSV/XLSX/PDF on demand or on schedule.
-| Data migration | Migrate between storage providers with progress tracking and audit report.
-| Metrics | Daily aggregated statistics (`DailyMetric`) for content, storage, and usage trends.
-|===
-
-=== Integrations (bulk ingestion sources)
-
-AWS S3 · Google Cloud Storage · Nuxeo · Brandfolder · Cloudinary · SharePoint ·
-Bynder · Aprimo · Widen Collective · Adobe Experience Manager · FTP/SFTP ·
-MediaValet · Extensis Portfolio · Canto
-
-[[section-use-cases]]
-== Use cases
-
-=== Creative agencies
-
-Upload, organise, and share brand assets with clients via self-expiring signed URLs.
-Smart collections automatically group assets by campaign tag.
-Approval workflows route new assets through a creative-director sign-off before publication.
-
-=== E-commerce / retail
-
-Manage tens of thousands of product images. Fastly IO delivers perfectly sized,
-format-optimised images to every device in <100 ms without pre-generating renditions.
-Focal-point smart-crop keeps products centred on all breakpoints.
-
-=== Media & publishing
-
-Ingest from existing Adobe Experience Manager or Bynder libraries via built-in
-ingestion adapters. Full EXIF/IPTC metadata extraction. Semantic search finds related
-images by meaning, not just keywords.
-
-=== Enterprise / regulated industries
-
-Keycloak SSO, group-based RBAC, immutable audit logs, and workflow-guarded purge
-satisfy strict information-governance requirements.
-
-[[section-tech-requirements]]
-== Technical requirements
-
-[cols="1,3", options="header"]
-|===
-| Requirement | Minimum / Recommended
-
-| Ruby | 4.0.3 (`.ruby-version`)
-| Node | 22.16.0 (`.node-version`); engines `>=20`
-| PostgreSQL | 14 + `pgvector` extension
-| Redis | 6+
-| Storage | At least one configured adapter (local for development)
-| CDN | Optional (required for Fastly IO features)
-|===
-
-[[section-licence]]
-== Licence
-
-Capri DAM is released under the **Apache License 2.0**.
-See `LICENSE` in the repository root.
-
-You are free to use, modify, and distribute it — including for commercial purposes —
-provided you retain the licence notice and attribution.
-
-[[section-roadmap]]
-== Roadmap highlights
-
-[cols="1,2,3", options="header"]
-|===
-| Status | Item | Description
-
-| ✅ Done | MUI v9 migration | All components use `slotProps`; deprecated aliases removed.
-| ✅ Done | Keycloak SSO | OmniAuth-based enterprise SSO.
-| ✅ Done | Duplicate Manager | Checksum-based detection with resolution UI.
-| ✅ Done | Recycle Bin | Soft-delete with configurable retention and workflow guard.
-| ✅ Done | Workflow Designer | `@xyflow/react` DAG canvas with approval and auto-steps.
-| ✅ Done | AI Copilot | Natural-language asset discovery via chat.
-| ✅ Done | pgvector semantic search | Cosine similarity + semantic cluster map.
-| 🚧 In progress | AVIF delivery | Add AVIF to Fastly IO format options.
-| 🚧 In progress | Kamal 2 deployment | Production deployment playbook via Kamal.
-| 📋 Planned | Multi-site isolation | Tenant-scoped storage and RBAC for agency use cases.
-| 📋 Planned | DAM-to-DAM federation | Cross-instance asset sharing via signed GraphQL federation.
-| 📋 Planned | AI auto-tagging | Automatic tag suggestions from computer-vision model at upload.
-|===
+[[section-coverage]]
+include::src/99_roadmap_and_test_coverage.adoc[]
 
 ifdef::backend-html5[]
 ++++
@@ -230,4 +115,3 @@ ifdef::backend-html5[]
 </script>
 ++++
 endif::backend-html5[]
-

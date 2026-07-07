@@ -5,7 +5,7 @@ import {
 } from '@mui/material';
 import {
     PushPinOutlined, InfoOutlined, MoreVert,
-    CloudDownload, DeleteOutlined
+    CloudDownload, DeleteOutlined, HourglassTopOutlined, BrokenImageOutlined
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 
@@ -16,6 +16,7 @@ export default function AssetCard({ asset, onPin, onViewMore }) {
         return value === key ? defaultValue : value;
     };
     const [anchorEl, setAnchorEl] = useState(null);
+    const [imgError, setImgError] = useState(false);
 
     const handleMenuOpen = (e) => {
         e.stopPropagation();
@@ -30,6 +31,12 @@ export default function AssetCard({ asset, onPin, onViewMore }) {
     // Fallback for missing data
     const filename = asset.original_filename || asset.title || tr('assetCard.unknownAsset', 'Unknown Asset');
     const fileSize = asset.file_size || asset.size || tr('assetCard.unknownSize', 'Unknown Size');
+    // The background worker (AssetProcessorWorker) hasn't finished yet — any
+    // preview/download URL is guaranteed to 404 until it does, so we show a
+    // "Processing…" placeholder instead of attempting to load a broken image.
+    const isProcessing = asset.status === 'pending' || asset.status === 'processing';
+    const previewSrc = asset.preview_url || asset.url;
+    const showImage = Boolean(previewSrc) && !isProcessing && !imgError;
 
     return (
         <Card
@@ -51,16 +58,25 @@ export default function AssetCard({ asset, onPin, onViewMore }) {
         >
             {/* Image / Thumbnail Area */}
             <Box sx={{ position: 'relative', height: 160, bgcolor: '#f1f5f9', borderBottom: '1px solid #e2e8f0' }}>
-                {asset.preview_url || asset.url ? (
+                {isProcessing ? (
+                    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}>
+                        <HourglassTopOutlined sx={{ fontSize: 32, color: '#94a3b8' }} />
+                        <Typography variant="caption" color="textSecondary">{tr('assetCard.processing', 'Processing…')}</Typography>
+                    </Box>
+                ) : showImage ? (
                     <CardMedia
                         component="img"
-                        image={asset.preview_url || asset.url}
+                        image={previewSrc}
                         alt={filename}
+                        onError={() => setImgError(true)}
                         sx={{ height: '100%', objectFit: 'cover' }}
                     />
                 ) : (
-                    <Box sx={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <Typography variant="caption" color="textSecondary">{tr('assetCard.noPreview', 'No Preview')}</Typography>
+                    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}>
+                        {imgError && <BrokenImageOutlined sx={{ fontSize: 28, color: '#94a3b8' }} />}
+                        <Typography variant="caption" color="textSecondary">
+                            {imgError ? tr('assetCard.previewUnavailable', 'Preview unavailable') : tr('assetCard.noPreview', 'No Preview')}
+                        </Typography>
                     </Box>
                 )}
 

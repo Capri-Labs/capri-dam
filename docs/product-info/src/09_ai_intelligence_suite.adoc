@@ -1,0 +1,78 @@
+[[module-ai-suite]]
+== AI Intelligence Suite
+
+=== Overview
+
+A family of AI-powered modules spanning natural-language discovery, generative
+style/model governance, agent automation, and cryptographic content-provenance
+(C2PA) compliance — all under one "Intelligence" / "AI Lab & Governance" sidebar
+section.
+
+image::ai-copilot.png[AI Copilot, title="Semantic Copilot — natural-language chat interface for asset discovery"]
+
+image::style-model-hub.png[Style & Model Hub, title="Style & Model Hub — registered AI model endpoints, style presets, and batch tasks"]
+
+image::provenance-c2pa.png[Provenance & C2PA, title="Provenance & C2PA governance screen"]
+
+=== Key features
+
+[cols="2,3", options="header"]
+|===
+| Feature | Detail
+
+| AI Copilot (Semantic Copilot) | Natural-language chat interface that translates free-text queries into structured search filters over the asset library.
+| Agent Automations | Configurable agent workflows (`AgentWorkflow`) for automating multi-step AI-assisted tasks.
+| Batch Processing | Launch AI batch jobs (`AiBatchJob`) across many assets at once (e.g. bulk tagging or transformation).
+| Prompt Playground | Sandbox for testing prompts against configured AI model endpoints before deploying them into a workflow.
+| Style & Model Hub | Central registry of AI model endpoints (with health/capability metadata), brand style presets, and a batch-task launcher — 3 tabs: Models, Style Presets, Batch Tasks.
+| Provenance & C2PA | Governance screen for Content Credentials (C2PA) — asset provenance records, disclosure policy configuration, and batch signing actions — 3 tabs: Provenance Records, Policy Settings, Batch Actions.
+|===
+
+=== Powerful / notable capabilities
+
+[.feature-highlight]
+====
+* **Governance-first AI adoption** — the Style & Model Hub and Provenance/C2PA
+  screens exist specifically so organisations can register, health-check, and
+  govern which AI models and content-authenticity policies are active, rather than
+  having AI features be an ungoverned black box.
+* **C2PA compliance built in** — Content Credentials (the emerging industry
+  standard for content provenance / AI-disclosure) are a first-class, admin-only
+  governance surface, not a bolt-on.
+* **Multi-provider embedding support** — semantic features are not locked to a
+  single AI vendor (OpenAI, Cohere, Ollama, and Azure OpenAI are all supported
+  provider options).
+====
+
+=== Notes & known limitations
+
+* Both the Style & Model Hub and Provenance & C2PA screens are **admin-only** —
+  there is currently no delegated/read-only view for non-admin stakeholders who
+  might want visibility without edit rights.
+* The AI Copilot's natural-language-to-filter translation is a single-turn
+  interaction today; there is no multi-turn conversational refinement
+  ("no, only from last month") yet.
+
+=== Test coverage status
+
+[.status-covered]#Covered by E2E#
+
+* **Style & Model Hub** (`spec/e2e/style_model_hub.e2e.spec.js`): canonical URL and
+  the `/ai/models` → `/ai/models/hub` redirect, all three tabs visible, Models tab
+  table + add-model button, Style Presets grid, Batch Tasks launch button,
+  non-admin/unauthenticated access is correctly blocked.
+* **Provenance & C2PA** (`spec/e2e/provenance_c2pa.e2e.spec.js`): canonical URL +
+  title, `/ai/governance` redirect, stat cards render, all three tabs visible,
+  Policy Settings save button, Batch Actions launch button, non-admin/
+  unauthenticated access is correctly blocked.
+
+[.status-pending]#Pending / not yet covered#
+
+* AI Copilot chat interaction itself (sending a natural-language query and
+  confirming it resolves to the expected structured filters/results).
+* Agent Automations (`AgentWorkflow`) configuration and execution.
+* Batch Processing job submission and progress/result tracking.
+* Prompt Playground — sending a prompt and inspecting the model's response.
+* Actually registering a new AI model endpoint or style preset (only the empty
+  list + "add" button are covered today, not the create flow).
+* Actually signing/generating a C2PA provenance record for an asset.

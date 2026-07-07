@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Box, Typography, Tab, Tabs, CssBaseline } from '@mui/material';
-import {Dns, Email, BugReport, ToggleOn, SmartToy, CloudQueue} from '@mui/icons-material';
+import {Dns, Email, BugReport, ToggleOn, SmartToy, CloudQueue, History} from '@mui/icons-material';
 
 // Import our new sub-components
 import ObservabilityTab from './ObservabilityTab';
@@ -9,6 +9,7 @@ import OperationalLoggingTab from './OperationalLoggingTab';
 import AiGatewayTab from './AiGatewayTab';
 import FeatureFlagsTab from './FeatureFlagsTab';
 import StorageOperationsTab from './StorageOperationsTab';
+import AuditLogTab from './AuditLogTab';
 
 export default function SystemStatus({ incomingConfigs }) {
     const [currentTab, setCurrentTab] = useState(0);
@@ -31,6 +32,7 @@ export default function SystemStatus({ incomingConfigs }) {
                     <Tab label="AI Gateway Controls" icon={<SmartToy />} iconPosition="start" />
                     <Tab label="Feature Flags" icon={<ToggleOn />} iconPosition="start" />
                     <Tab label="Storage & Edge" icon={<CloudQueue />} iconPosition="start" />
+                    <Tab label="Audit Trail" icon={<History />} iconPosition="start" />
                 </Tabs>
 
                 {/* Render only the active tab component */}
@@ -40,6 +42,7 @@ export default function SystemStatus({ incomingConfigs }) {
                 {currentTab === 3 && <AiGatewayTab />}
                 {currentTab === 4 && <FeatureFlagsTab />}
                 {currentTab === 5 && <StorageOperationsTab />}
+                {currentTab === 6 && <AuditLogTab />}
             </Box>
         </Box>
     );

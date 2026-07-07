@@ -22,6 +22,18 @@ module HeadlessDam
     # Initialize configuration defaults for originally generated Rails version.
     config.load_defaults 8.1
 
+    # Dump the schema as SQL (db/structure.sql) instead of Ruby (db/schema.rb).
+    #
+    # Some migrations define raw SQL objects (e.g. the `protect_audit_logs`
+    # trigger/function added in 20260527142102_add_immutability_to_audit_logs)
+    # that db/schema.rb cannot represent. With the Ruby schema format, any
+    # database rebuilt via `db:schema:load` / `db:prepare` / `db:test:prepare`
+    # (fresh dev setups, CI, `make dev`) would silently be missing that
+    # trigger even though the migration is recorded as applied — defeating
+    # the audit log's immutability guarantee. `:sql` captures the full
+    # structure, including triggers and functions, so it round-trips exactly.
+    config.active_record.schema_format = :sql
+
     # Please, add to the `ignore` list any other `lib` subdirectories that do
     # not contain `.rb` files, or that should not be reloaded or eager loaded.
     # Common ones are `templates`, `generators`, or `middleware`, for example.

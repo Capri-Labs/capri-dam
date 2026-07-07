@@ -432,6 +432,11 @@ jobs:
             -D _site/product-info -o index.html \
             docs/product-info/index.adoc
 
+      - name: Copy product info screenshots
+        run: |
+          mkdir -p _site/product-info/images
+          cp -r docs/product-info/images/. _site/product-info/images/
+
       # ── No-Jekyll (serve plain HTML) ──────────────────────────────────────
       - name: Add .nojekyll
         run: touch _site/.nojekyll

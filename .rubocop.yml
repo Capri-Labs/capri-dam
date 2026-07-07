@@ -27,7 +27,7 @@ AllCops:
   # Exclude generated/vendor code and test fixtures
   Exclude:
     - "bin/**/*"
-    - "db/schema.rb"
+    - "db/structure.sql"
     - "db/migrate/**/*"
     - "node_modules/**/*"
     - "vendor/**/*"

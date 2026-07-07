@@ -1810,7 +1810,9 @@
     "grid": {
       "unknown_file": "Unbekannte Datei",
       "pin_to_collection": "An Sammlung anheften",
-      "view_details": "Details anzeigen"
+      "view_details": "Details anzeigen",
+      "processing": "Verarbeitung…",
+      "previewUnavailable": "Vorschau nicht verfügbar"
     }
   },
   "inbox": {
@@ -1902,7 +1904,9 @@
       "viewDetails": "Details anzeigen",
       "addToCollection": "Zur Sammlung hinzufügen",
       "moveToTrash": "In den Papierkorb verschieben"
-    }
+    },
+    "processing": "Verarbeitung…",
+    "previewUnavailable": "Vorschau nicht verfügbar"
   },
   "assetStatisticsTab": {
     "title": "Asset-Statistiken",
@@ -2409,6 +2413,72 @@
       "SMTP_SERVER_BUSY": "SMTP-Server ausgelastet, bitte später erneut versuchen",
       "SMTP_ERROR": "SMTP-Fehler",
       "INVALID_CONFIGURATION": "Ungültige Konfiguration"
+    }
+  },
+  "operationalLogging": {
+    "pipelineStatus": "Aktueller Pipeline-Status",
+    "activeLogLevel": "Aktive Protokollstufe",
+    "temporaryElevation": "Temporäre Anhebung aktiv. Rückkehr zur Standardstufe in {{minutes}} Minuten.",
+    "broadcastNotice": "Änderungen werden hier sofort über Redis Pub/Sub an alle aktiven Puma-Worker-Knoten übertragen – ohne Ausfallzeit.",
+    "adjustVerbosity": "Protokollierungsdetailgrad anpassen",
+    "adjustVerbosityDescription": "Erhöhen Sie die Protokollausgabe, um detaillierte Ausführungsspuren zu erfassen. Hohe Detailstufen (DEBUG, TRACE) sollten mit einer Time-to-Live verwendet werden, um eine Überlastung der Protokollaufnahme zu vermeiden.",
+    "targetLogLevel": "Ziel-Protokollstufe",
+    "levels": {
+      "FATAL": "FATAL (nur kritische Abstürze)",
+      "ERROR": "ERROR (Ausnahmen & Abstürze)",
+      "WARN": "WARN (Veraltungen & Warnungen)",
+      "INFO": "INFO (Standardbetrieb)",
+      "DEBUG": "DEBUG (detaillierte Variablen)",
+      "TRACE": "TRACE (maximale Ausführlichkeit)"
+    },
+    "ttl": "Time-to-Live (automatische Rückkehr)",
+    "ttlOptions": {
+      "permanent": "Dauerhaft (keine automatische Rückkehr)",
+      "15m": "15 Minuten",
+      "1h": "1 Stunde",
+      "4h": "4 Stunden"
+    },
+    "highVerbosityWarning": "Warnung: Wenn hochdetaillierte Protokolle dauerhaft aktiviert bleiben, kann dies die Anwendungsleistung erheblich beeinträchtigen und immense Speicherkosten verursachen.",
+    "applyConfiguration": "Konfiguration anwenden",
+    "broadcasting": "Wird übertragen...",
+    "fetchError": "Protokollierungskonfiguration konnte nicht abgerufen werden.",
+    "updateSuccess": "Protokollstufe erfolgreich auf {{level}} geändert",
+    "updateFailedGeneric": "Aktualisierung fehlgeschlagen.",
+    "updateFailed": "Protokollstufe konnte nicht aktualisiert werden.",
+    "networkError": "Netzwerkfehler beim Aktualisieren der Konfiguration."
+  },
+  "auditLog": {
+    "title": "Prüfprotokoll",
+    "description": "Durchsuchen Sie das unveränderliche Protokoll jeder Erstellungs-, Aktualisierungs- und Löschaktion sowie administrativer Aktionen wie der Identitätsübernahme.",
+    "filters": {
+      "user": "E-Mail des Akteurs",
+      "action": "Aktion",
+      "resourceType": "Ressourcentyp",
+      "impersonatedOnly": "Nur Aktionen mit Identitätsübernahme",
+      "dateFrom": "Von",
+      "dateTo": "Bis",
+      "search": "Akteur, Aktion oder Ressource suchen...",
+      "allActions": "Alle Aktionen",
+      "allResourceTypes": "Alle Ressourcentypen",
+      "apply": "Filter anwenden",
+      "clear": "Filter zurücksetzen"
+    },
+    "table": {
+      "timestamp": "Zeitstempel",
+      "actor": "Akteur",
+      "action": "Aktion",
+      "resource": "Ressource",
+      "impersonated": "Identitätsübernahme",
+      "ipAddress": "IP-Adresse",
+      "details": "Details"
+    },
+    "empty": "Keine Prüfprotokolleinträge entsprechen den aktuellen Filtern.",
+    "loadError": "Prüfprotokolleinträge konnten nicht geladen werden.",
+    "impersonatedBy": "als {{actor}} (tatsächlicher Akteur: {{trueActor}})",
+    "pagination": {
+      "showing": "Zeige {{from}}-{{to}} von {{total}}",
+      "previous": "Zurück",
+      "next": "Weiter"
     }
   },
   "globalSearchBar": {

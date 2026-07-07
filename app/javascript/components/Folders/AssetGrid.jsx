@@ -22,7 +22,9 @@ import {
   ImageSearchOutlined,
   AutoAwesomeOutlined,
   Publish,
-  AudiotrackOutlined
+  AudiotrackOutlined,
+  HourglassTopOutlined,
+  BrokenImageOutlined
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 
@@ -52,10 +54,68 @@ const getStatusConfig = (status, t) => {
       return { tone: '#991b1b', background: '#fee2e2', icon: <ErrorOutlined fontSize="small" />, label: t('folders.filter.rejected') };
     case 'draft':
       return { tone: '#475569', background: '#e2e8f0', icon: <EditNote fontSize="small" />, label: t('folders.filter.draft') };
+    case 'pending':
+    case 'processing':
+      return { tone: '#92400e', background: '#fef3c7', icon: <HourglassTopOutlined fontSize="small" />, label: t('folders.grid.processing', { defaultValue: 'Processing…' }) };
     default:
       return null;
   }
 };
+
+// Renders a single grid-cell thumbnail with three mutually-exclusive states:
+//   1. Processing  — the asset's background worker (AssetProcessorWorker) has
+//      not finished yet (`status` is "pending"/"processing"); we deliberately
+//      avoid attempting to load an image at all, since the preview endpoint
+//      is guaranteed to 404 until processing completes.
+//   2. Loaded image — the normal case; falls back to state 3 via `onError` if
+//      the URL 404s or the file is missing on disk (e.g. storage drift).
+//   3. Fallback icon — no source available, or the image failed to load.
+function AssetThumbnail({ imageSrc, displayName, isPdf, isVideo, isAudio, isProcessing, t }) {
+  const [imgError, setImgError] = React.useState(false);
+
+  if (isProcessing) {
+    return (
+      <Box sx={{ height: '100%', width: '100%', bgcolor: '#f8fafc', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}>
+        <HourglassTopOutlined sx={{ fontSize: 40, color: '#94a3b8' }} />
+        <Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 600 }}>
+          {t('folders.grid.processing', { defaultValue: 'Processing…' })}
+        </Typography>
+      </Box>
+    );
+  }
+
+  if (imageSrc && !imgError) {
+    return (
+      <img
+        src={imageSrc}
+        alt={displayName}
+        loading="lazy"
+        onError={() => setImgError(true)}
+        style={{ height: '100%', width: '100%', objectFit: 'cover' }}
+      />
+    );
+  }
+
+  return (
+    <Box sx={{ height: '100%', width: '100%', bgcolor: '#f8fafc', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}>
+      {imgError ? (
+        <>
+          <BrokenImageOutlined sx={{ fontSize: 48, color: '#94a3b8' }} />
+          <Typography variant="caption" sx={{ color: '#94a3b8' }}>
+            {t('folders.grid.previewUnavailable', { defaultValue: 'Preview unavailable' })}
+          </Typography>
+        </>
+      ) : (
+        <>
+          {isPdf && <PictureAsPdf sx={{ fontSize: 64, color: '#ef4444' }} />}
+          {isVideo && <VideoFile sx={{ fontSize: 64, color: '#3b82f6' }} />}
+          {isAudio && <AudiotrackOutlined sx={{ fontSize: 64, color: '#8b5cf6' }} />}
+          {!isPdf && !isVideo && !isAudio && <InsertDriveFile sx={{ fontSize: 64, color: '#64748b' }} />}
+        </>
+      )}
+    </Box>
+  );
+}
 
 export default function AssetGrid({
   assets,
@@ -105,6 +165,10 @@ export default function AssetGrid({
         const imageSrc = displaySrc
           ? `${displaySrc}${displaySrc.includes('?') ? '&' : '?'}w=640&fit=crop&auto=format`
           : null;
+        // The background worker (AssetProcessorWorker) hasn't finished yet —
+        // any preview/download URL is guaranteed to 404 until it does, so we
+        // show a "Processing…" placeholder instead of attempting to load one.
+        const isProcessing = asset.status === 'pending' || asset.status === 'processing';
 
         return (
           <ImageListItem
@@ -164,12 +228,16 @@ export default function AssetGrid({
               }}
               sx={{ position: 'relative', width: '100%', height: cardConfig.height, cursor: 'pointer' }}
             >
-              {(isImage || hasGeneratedPreview) && imageSrc ? (
-                <img
-                  src={imageSrc}
-                  alt={displayName}
-                  loading="lazy"
-                  style={{ height: '100%', width: '100%', objectFit: 'cover' }}
+              {isProcessing ? (
+                <AssetThumbnail isProcessing t={t} />
+              ) : (isImage || hasGeneratedPreview) && imageSrc ? (
+                <AssetThumbnail
+                  imageSrc={imageSrc}
+                  displayName={displayName}
+                  isPdf={isPdf}
+                  isVideo={isVideo}
+                  isAudio={isAudio}
+                  t={t}
                 />
               ) : (
                 <Box sx={{ height: '100%', width: '100%', bgcolor: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

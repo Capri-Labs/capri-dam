@@ -1810,7 +1810,9 @@
     "grid": {
       "unknown_file": "알 수 없는 파일",
       "pin_to_collection": "컬렉션에 고정",
-      "view_details": "세부 정보 보기"
+      "view_details": "세부 정보 보기",
+      "processing": "처리 중…",
+      "previewUnavailable": "미리보기를 사용할 수 없습니다"
     }
   },
   "inbox": {
@@ -1902,7 +1904,9 @@
       "viewDetails": "자세히 보기",
       "addToCollection": "컬렉션에 추가",
       "moveToTrash": "휴지통으로 이동"
-    }
+    },
+    "processing": "처리 중…",
+    "previewUnavailable": "미리보기를 사용할 수 없습니다"
   },
   "assetStatisticsTab": {
     "title": "에셋 통계",
@@ -2409,6 +2413,72 @@
       "SMTP_SERVER_BUSY": "SMTP 서버가 사용 중입니다. 나중에 다시 시도하세요",
       "SMTP_ERROR": "SMTP 오류",
       "INVALID_CONFIGURATION": "잘못된 구성입니다"
+    }
+  },
+  "operationalLogging": {
+    "pipelineStatus": "현재 파이프라인 상태",
+    "activeLogLevel": "활성 로그 레벨",
+    "temporaryElevation": "임시 상향 조정이 활성화되어 있습니다. {{minutes}}분 후 표준 레벨로 되돌아갑니다.",
+    "broadcastNotice": "여기서 변경된 사항은 Redis Pub/Sub를 통해 모든 활성 Puma 워커 노드에 즉시 전파되며, 다운타임이 발생하지 않습니다.",
+    "adjustVerbosity": "로그 상세 수준 조정",
+    "adjustVerbosityDescription": "자세한 실행 추적을 캡처하려면 로그 출력을 상향 조정하세요. 높은 상세 수준(DEBUG, TRACE)은 로그 수집 과부하를 방지하기 위해 TTL(유효 기간)과 함께 사용해야 합니다.",
+    "targetLogLevel": "목표 로그 레벨",
+    "levels": {
+      "FATAL": "FATAL(치명적 오류만)",
+      "ERROR": "ERROR(예외 및 오류)",
+      "WARN": "WARN(사용 중단 및 경고)",
+      "INFO": "INFO(표준 작업)",
+      "DEBUG": "DEBUG(상세 변수)",
+      "TRACE": "TRACE(최대 상세도)"
+    },
+    "ttl": "TTL(자동 복귀)",
+    "ttlOptions": {
+      "permanent": "영구(자동 복귀 없음)",
+      "15m": "15분",
+      "1h": "1시간",
+      "4h": "4시간"
+    },
+    "highVerbosityWarning": "경고: 상세 로그를 영구적으로 활성화하면 애플리케이션 성능에 심각한 영향을 미치고 막대한 저장 비용이 발생할 수 있습니다.",
+    "applyConfiguration": "설정 적용",
+    "broadcasting": "전파 중...",
+    "fetchError": "로그 설정을 가져오지 못했습니다.",
+    "updateSuccess": "로그 레벨이 {{level}}(으)로 성공적으로 변경되었습니다",
+    "updateFailedGeneric": "업데이트에 실패했습니다.",
+    "updateFailed": "로그 레벨을 업데이트하지 못했습니다.",
+    "networkError": "설정을 업데이트하는 동안 네트워크 오류가 발생했습니다."
+  },
+  "auditLog": {
+    "title": "감사 로그",
+    "description": "모든 생성, 업데이트, 삭제 작업과 사칭과 같은 관리 작업의 변경 불가능한 기록을 찾아보고 검색하세요.",
+    "filters": {
+      "user": "행위자 이메일",
+      "action": "작업",
+      "resourceType": "리소스 유형",
+      "impersonatedOnly": "사칭된 작업만",
+      "dateFrom": "시작일",
+      "dateTo": "종료일",
+      "search": "행위자, 작업 또는 리소스 검색...",
+      "allActions": "모든 작업",
+      "allResourceTypes": "모든 리소스 유형",
+      "apply": "필터 적용",
+      "clear": "필터 지우기"
+    },
+    "table": {
+      "timestamp": "타임스탬프",
+      "actor": "행위자",
+      "action": "작업",
+      "resource": "리소스",
+      "impersonated": "사칭 여부",
+      "ipAddress": "IP 주소",
+      "details": "세부 정보"
+    },
+    "empty": "현재 필터와 일치하는 감사 로그 항목이 없습니다.",
+    "loadError": "감사 로그 항목을 불러오지 못했습니다.",
+    "impersonatedBy": "{{actor}}(으)로서 (실제 행위자: {{trueActor}})",
+    "pagination": {
+      "showing": "{{total}}개 중 {{from}}-{{to}}개 표시",
+      "previous": "이전",
+      "next": "다음"
     }
   },
   "globalSearchBar": {

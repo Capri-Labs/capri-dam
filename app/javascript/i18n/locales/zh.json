@@ -1810,7 +1810,9 @@
     "grid": {
       "unknown_file": "未知文件",
       "pin_to_collection": "固定到集合",
-      "view_details": "查看详情"
+      "view_details": "查看详情",
+      "processing": "处理中…",
+      "previewUnavailable": "预览不可用"
     }
   },
   "inbox": {
@@ -1902,7 +1904,9 @@
       "viewDetails": "查看详情",
       "addToCollection": "添加到集合",
       "moveToTrash": "移至回收站"
-    }
+    },
+    "processing": "处理中…",
+    "previewUnavailable": "预览不可用"
   },
   "assetStatisticsTab": {
     "title": "资产统计",
@@ -2409,6 +2413,72 @@
       "SMTP_SERVER_BUSY": "SMTP 服务器繁忙，请稍后重试",
       "SMTP_ERROR": "SMTP 错误",
       "INVALID_CONFIGURATION": "配置无效"
+    }
+  },
+  "operationalLogging": {
+    "pipelineStatus": "当前管道状态",
+    "activeLogLevel": "当前日志级别",
+    "temporaryElevation": "临时提升已激活。将在 {{minutes}} 分钟后恢复到标准级别。",
+    "broadcastNotice": "此处所做的更改会通过 Redis Pub/Sub 立即广播到所有活动的 Puma 工作节点，无需停机。",
+    "adjustVerbosity": "调整日志详细程度",
+    "adjustVerbosityDescription": "提高日志输出级别以捕获详细的执行跟踪。高详细级别（DEBUG、TRACE）应设置存活时间（TTL），以防止日志摄取量激增。",
+    "targetLogLevel": "目标日志级别",
+    "levels": {
+      "FATAL": "FATAL（仅严重崩溃）",
+      "ERROR": "ERROR（异常和崩溃）",
+      "WARN": "WARN（弃用和警告）",
+      "INFO": "INFO（标准操作）",
+      "DEBUG": "DEBUG（详细变量）",
+      "TRACE": "TRACE（最大详细程度）"
+    },
+    "ttl": "存活时间（自动恢复）",
+    "ttlOptions": {
+      "permanent": "永久（不自动恢复）",
+      "15m": "15 分钟",
+      "1h": "1 小时",
+      "4h": "4 小时"
+    },
+    "highVerbosityWarning": "警告：永久启用高详细程度日志可能会严重影响应用程序性能并产生巨大的存储成本。",
+    "applyConfiguration": "应用配置",
+    "broadcasting": "正在广播...",
+    "fetchError": "无法获取日志配置。",
+    "updateSuccess": "日志级别已成功更改为 {{level}}",
+    "updateFailedGeneric": "更新失败。",
+    "updateFailed": "无法更新日志级别。",
+    "networkError": "更新配置时发生网络错误。"
+  },
+  "auditLog": {
+    "title": "审计日志",
+    "description": "浏览和搜索每个创建、更新和删除操作的不可变记录，以及模拟登录等管理操作。",
+    "filters": {
+      "user": "操作者邮箱",
+      "action": "操作",
+      "resourceType": "资源类型",
+      "impersonatedOnly": "仅模拟登录操作",
+      "dateFrom": "起始日期",
+      "dateTo": "结束日期",
+      "search": "搜索操作者、操作或资源...",
+      "allActions": "所有操作",
+      "allResourceTypes": "所有资源类型",
+      "apply": "应用筛选",
+      "clear": "清除筛选"
+    },
+    "table": {
+      "timestamp": "时间戳",
+      "actor": "操作者",
+      "action": "操作",
+      "resource": "资源",
+      "impersonated": "模拟登录",
+      "ipAddress": "IP 地址",
+      "details": "详情"
+    },
+    "empty": "没有符合当前筛选条件的审计日志条目。",
+    "loadError": "加载审计日志条目失败。",
+    "impersonatedBy": "以 {{actor}} 身份（真实操作者：{{trueActor}}）",
+    "pagination": {
+      "showing": "显示第 {{from}}-{{to}} 条，共 {{total}} 条",
+      "previous": "上一页",
+      "next": "下一页"
     }
   },
   "globalSearchBar": {

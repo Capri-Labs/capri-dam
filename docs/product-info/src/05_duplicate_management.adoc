@@ -1,0 +1,54 @@
+[[module-duplicates]]
+== Duplicate Manager
+
+=== Overview
+
+Capri DAM automatically detects when two or more assets share an identical SHA-256
+checksum (a true byte-for-byte duplicate) and groups them for review, so storage
+isn't silently wasted on redundant copies.
+
+image::duplicates.png[Duplicate Manager, title="Duplicate Manager — grouped by checksum, with resolution actions"]
+
+=== Key features
+
+[cols="2,3", options="header"]
+|===
+| Feature | Detail
+
+| Automatic detection | `DuplicateGroup` model groups assets sharing an identical SHA-256 checksum; created automatically whenever a newly processed asset matches an existing checksum.
+| Side-by-side resolution UI | `DuplicateResolutionModal` lets a reviewer compare duplicate members and choose which to keep / archive / delete.
+| Status tracking | Each group tracks its resolution status (e.g. pending, resolved, dismissed), visible in the Data Health dashboard's stat cards (see <<module-system-operations>>).
+| Storage-savings estimate | Storage-health tooling estimates the dollar/GB savings unlocked by resolving pending duplicate groups.
+|===
+
+=== Powerful / notable capabilities
+
+[.feature-highlight]
+====
+* **Checksum-exact, zero false positives** — grouping is based on a cryptographic
+  hash of file bytes, not fuzzy visual similarity, so there is no ambiguity about
+  whether two assets are truly identical.
+* **Storage cost visibility** — pending duplicate groups are translated directly
+  into an estimated monthly storage-cost saving, giving admins a concrete incentive
+  to clean up.
+====
+
+=== Notes & known limitations
+
+* Detection is exact-checksum only; **near-duplicates** (same image re-compressed,
+  resized, or watermarked) are not detected — that would require perceptual
+  hashing, which is not yet implemented.
+* Resolution actions are manual; there is no auto-resolve policy (e.g. "always
+  keep the oldest / largest") yet.
+
+=== Test coverage status
+
+[.status-pending]#Pending / not yet covered# — Duplicate Manager has **no
+dedicated E2E spec today**. Its stat cards are incidentally captured as part of
+the TDM & Storage Health dashboard tests (`spec/e2e/data_health.e2e.spec.js`), but
+no test exercises the Duplicate Manager screen itself. Planned coverage:
+
+* Duplicate Manager page loads and lists existing duplicate groups.
+* Side-by-side resolution modal opens and shows both duplicate members.
+* Resolving a duplicate group (keep/archive/delete) updates its status.
+* Dismissing a duplicate group excludes it from future prompts.

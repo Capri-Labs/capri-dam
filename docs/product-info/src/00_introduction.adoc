@@ -1,0 +1,69 @@
+[[module-introduction]]
+== What is Capri DAM?
+
+**Capri DAM** is a modern, open-source, **headless Digital Asset Management** platform
+built for teams that need enterprise-grade dynamic media capabilities without
+enterprise-grade licensing costs.
+
+It is built on **Ruby on Rails 8.1** + **React 19**, and exposes every feature through
+both a **REST API** and a **GraphQL API** — making it suitable as the media backbone
+for any front end: web, mobile, IoT, or digital signage.
+
+.Key differentiators
+* **Bring Your Own Storage** — connect AWS S3, Google Cloud Storage, Azure Blob,
+  Cloudflare R2, Wasabi, DigitalOcean Spaces, or Backblaze B2.
+* **Edge-first delivery** — real-time image transforms (crop, resize, WebP, focal-point
+  smart-crop) via Fastly Image Optimizer; ~90% reduction in rendition storage costs.
+* **Headless by design** — no lock-in to a specific front end; consume assets via
+  REST, GraphQL, or signed CDN URLs.
+* **Apache 2.0 licensed** — host it yourself; no per-seat or per-GB fees.
+
+=== Who this guide is for
+
+This guide documents the product **as it exists today**, module by module — what each
+screen does, what makes it worth using, what its rough edges are, and how much of it
+is currently protected by automated End-to-End (E2E) tests. It is written for:
+
+* Prospective customers and evaluators comparing DAM platforms.
+* New team members who need a fast, visual orientation.
+* Product/QA stakeholders who want a single place tracking **test-coverage gaps**
+  (see the <<section-coverage,Test Coverage Roadmap>> at the end of this guide).
+
+=== Use cases
+
+Creative agencies:: Upload, organise, and share brand assets with clients via
+self-expiring signed URLs. Smart collections automatically group assets by campaign
+tag. Approval workflows route new assets through a creative-director sign-off before
+publication.
+
+E-commerce / retail:: Manage tens of thousands of product images. Fastly IO delivers
+perfectly sized, format-optimised images to every device in under 100ms without
+pre-generating renditions. Focal-point smart-crop keeps products centred on all
+breakpoints.
+
+Media & publishing:: Ingest from existing Adobe Experience Manager or Bynder
+libraries via built-in ingestion adapters. Full EXIF/IPTC metadata extraction.
+Semantic search finds related images by meaning, not just keywords.
+
+Enterprise / regulated industries:: Keycloak SSO, group-based RBAC, immutable audit
+logs, and workflow-guarded purge satisfy strict information-governance requirements.
+
+=== Technical requirements
+
+[cols="1,3", options="header"]
+|===
+| Requirement | Minimum / Recommended
+
+| Ruby | 4.0.3 (`.ruby-version`)
+| Node | 22.16.0 (`.node-version`); engines `>=20`
+| PostgreSQL | 14 + `pgvector` extension
+| Redis | 6+
+| Storage | At least one configured adapter (local for development)
+| CDN | Optional (required for Fastly IO image-optimization features)
+|===
+
+=== Licence
+
+Capri DAM is released under the **Apache License 2.0** (see `LICENSE` in the
+repository root). You are free to use, modify, and distribute it — including for
+commercial purposes — provided you retain the licence notice and attribution.

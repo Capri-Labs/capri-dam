@@ -1810,7 +1810,9 @@
     "grid": {
       "unknown_file": "ملف غير معروف",
       "pin_to_collection": "تثبيت في المجموعة",
-      "view_details": "عرض التفاصيل"
+      "view_details": "عرض التفاصيل",
+      "processing": "قيد المعالجة…",
+      "previewUnavailable": "المعاينة غير متاحة"
     }
   },
   "inbox": {
@@ -1902,7 +1904,9 @@
       "viewDetails": "عرض التفاصيل",
       "addToCollection": "إضافة إلى المجموعة",
       "moveToTrash": "نقل إلى سلة المهملات"
-    }
+    },
+    "processing": "قيد المعالجة…",
+    "previewUnavailable": "المعاينة غير متاحة"
   },
   "assetStatisticsTab": {
     "title": "إحصاءات الأصل",
@@ -2409,6 +2413,72 @@
       "SMTP_SERVER_BUSY": "خادم SMTP مشغول، حاول مرة أخرى لاحقًا",
       "SMTP_ERROR": "خطأ SMTP",
       "INVALID_CONFIGURATION": "إعدادات غير صالحة"
+    }
+  },
+  "operationalLogging": {
+    "pipelineStatus": "حالة خط الأنابيب الحالية",
+    "activeLogLevel": "مستوى السجل النشط",
+    "temporaryElevation": "التصعيد المؤقت نشط. سيعود إلى المستوى القياسي خلال {{minutes}} دقيقة.",
+    "broadcastNotice": "يتم بث التغييرات التي تتم هنا فورًا إلى جميع عُقد عمّال Puma النشطة عبر Redis Pub/Sub، دون توقف عن العمل.",
+    "adjustVerbosity": "ضبط مستوى تفصيل السجل",
+    "adjustVerbosityDescription": "قم برفع مستوى إخراج السجل لالتقاط آثار تنفيذ مفصلة. يجب استخدام مستويات التفصيل العالية (DEBUG، TRACE) مع مدة صلاحية لمنع تضخم استيعاب السجلات.",
+    "targetLogLevel": "مستوى السجل المستهدف",
+    "levels": {
+      "FATAL": "FATAL (الأعطال الحرجة فقط)",
+      "ERROR": "ERROR (الاستثناءات والأعطال)",
+      "WARN": "WARN (الإهمالات والتحذيرات)",
+      "INFO": "INFO (العمليات القياسية)",
+      "DEBUG": "DEBUG (متغيرات مفصلة)",
+      "TRACE": "TRACE (أقصى درجة تفصيل)"
+    },
+    "ttl": "مدة الصلاحية (العودة التلقائية)",
+    "ttlOptions": {
+      "permanent": "دائم (بدون عودة تلقائية)",
+      "15m": "15 دقيقة",
+      "1h": "ساعة واحدة",
+      "4h": "4 ساعات"
+    },
+    "highVerbosityWarning": "تحذير: ترك سجلات التفصيل العالي مفعّلة بشكل دائم قد يؤثر بشدة على أداء التطبيق ويتسبب في تكاليف تخزين هائلة.",
+    "applyConfiguration": "تطبيق الإعدادات",
+    "broadcasting": "جارٍ البث...",
+    "fetchError": "فشل في استرداد إعدادات السجل.",
+    "updateSuccess": "تم تغيير مستوى السجل بنجاح إلى {{level}}",
+    "updateFailedGeneric": "فشل التحديث.",
+    "updateFailed": "فشل في تحديث مستوى السجل.",
+    "networkError": "خطأ في الشبكة أثناء تحديث الإعدادات."
+  },
+  "auditLog": {
+    "title": "سجل التدقيق",
+    "description": "تصفح وابحث في السجل غير القابل للتغيير لكل عملية إنشاء وتحديث وحذف، بالإضافة إلى الإجراءات الإدارية مثل انتحال الهوية.",
+    "filters": {
+      "user": "بريد الفاعل الإلكتروني",
+      "action": "الإجراء",
+      "resourceType": "نوع المورد",
+      "impersonatedOnly": "الإجراءات المنتحلة فقط",
+      "dateFrom": "من",
+      "dateTo": "إلى",
+      "search": "البحث عن فاعل أو إجراء أو مورد...",
+      "allActions": "كل الإجراءات",
+      "allResourceTypes": "كل أنواع الموارد",
+      "apply": "تطبيق الفلاتر",
+      "clear": "مسح الفلاتر"
+    },
+    "table": {
+      "timestamp": "الطابع الزمني",
+      "actor": "الفاعل",
+      "action": "الإجراء",
+      "resource": "المورد",
+      "impersonated": "منتحل الهوية",
+      "ipAddress": "عنوان IP",
+      "details": "التفاصيل"
+    },
+    "empty": "لا توجد إدخالات في سجل التدقيق تطابق الفلاتر الحالية.",
+    "loadError": "فشل تحميل إدخالات سجل التدقيق.",
+    "impersonatedBy": "بصفته {{actor}} (الفاعل الحقيقي: {{trueActor}})",
+    "pagination": {
+      "showing": "عرض {{from}}-{{to}} من {{total}}",
+      "previous": "السابق",
+      "next": "التالي"
     }
   },
   "globalSearchBar": {

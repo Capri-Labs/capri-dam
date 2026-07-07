@@ -1,0 +1,82 @@
+[[module-system-operations]]
+== System Operations & Admin
+
+=== Overview
+
+The operational control-plane for running Capri DAM in production: live system
+observability, SMTP configuration, structured operational logging with an
+immutable audit trail, AI gateway controls, feature flags, storage/CDN settings,
+and a data-health dashboard for the migration pipeline.
+
+image::admin-system-status.png[System Status, title="System Status — Observability / SMTP / Operational Logging / AI Gateway / Feature Flags / Storage & Edge / Audit Trail tabs"]
+
+image::operational-logging.png[Operational Logging, title="Operational Logging tab — log level, retention, and sink configuration"]
+
+image::audit-trail.png[Audit Trail, title="Audit Trail — immutable, filterable log of every sensitive admin action"]
+
+image::data-health.png[Data Health, title="Data Health dashboard — storage composition, connector health, and technical-debt remediation"]
+
+image::admin-reports.png[Reports, title="Reports — system-wide reporting dashboard"]
+
+=== Key features
+
+[cols="2,3", options="header"]
+|===
+| Feature | Detail
+
+| System Status hub | Single screen (`/settings/system`) with 7 tabs: Observability, SMTP, Operational Logging, AI Gateway, Feature Flags, Storage & Edge, Audit Trail.
+| Operational logging | Configurable application log level and retention, independent from the immutable audit log.
+| Audit Trail | Append-only, DB-trigger-protected log of every sensitive admin action (user/group changes, impersonation start/end, credential changes, etc.) with filters.
+| AI Gateway controls | Central switches/limits governing which AI providers and features are active system-wide.
+| Feature flags | Toggle experimental/opt-in features without a deploy.
+| Storage & Edge | Storage backend (local/S3/GCS/Azure) and CDN/edge delivery configuration.
+| Reports | System-wide reporting dashboard (`/reports`).
+| Data Health | Storage composition, per-connector ingestion health, and technical-debt remediation flags, tied to the migration pipeline (see <<module-ingestion>>).
+| SMTP settings | See <<module-email-engine>> — same System Status hub, SMTP tab.
+|===
+
+=== Powerful / notable capabilities
+
+[.feature-highlight]
+====
+* **Immutable audit trail, enforced at the database layer** — audit log rows are
+  protected by a DB trigger that blocks `UPDATE`/`DELETE` outside of the sanctioned
+  pruning job, so even a compromised application-layer credential can't quietly
+  rewrite history.
+* **One-stop operational hub** — observability, SMTP, logging, AI governance,
+  feature flags, and storage/CDN configuration all live in a single, tabbed
+  `/settings/system` screen rather than being scattered across disconnected admin
+  pages.
+* **Data Health ties migration to production storage** — the Debt Remediation tab
+  surfaces concrete technical-debt flags derived from the ingestion pipeline,
+  turning "we migrated stuff a while ago" into an actionable backlog.
+====
+
+=== Notes & known limitations
+
+* Feature flags and AI Gateway controls currently apply system-wide only; there is
+  no per-tenant/per-site override yet.
+* Reports (`/reports`) exists as a dedicated screen but is not yet covered by any
+  E2E test (see below) — verify manually after any reporting-pipeline change.
+
+=== Test coverage status
+
+[.status-covered]#Covered by E2E#
+
+* **Audit Trail** (`spec/e2e/audit_log.e2e.spec.js`): tab renders with filters and
+  results (empty or populated); filters can be applied and cleared without error.
+* **Data Health** (`spec/e2e/data_health.e2e.spec.js`): dashboard loads with page
+  title, 6 metric cards render, all three tabs (Storage Overview, Connector
+  Health, Debt Remediation) render their expected content including empty states,
+  scan-status banner visibility logic, and the "Connectors"/"Migration Pipeline"/
+  "Refresh" navigation buttons.
+* **SMTP Settings** — see <<module-email-engine>> (`spec/e2e/smtp_settings.e2e.spec.js`).
+
+[.status-pending]#Pending / not yet covered#
+
+* Observability tab itself (no dedicated spec file exists yet).
+* Operational Logging tab UI (log level / retention configuration save flow).
+* AI Gateway controls tab (provider toggles / limits).
+* Feature Flags tab (toggling a flag and confirming its effect).
+* Storage & Edge tab (storage backend / CDN configuration save flow).
+* Reports screen (`/reports`) — no E2E coverage exists yet at all.

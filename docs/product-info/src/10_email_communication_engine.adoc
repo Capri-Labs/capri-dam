@@ -1,0 +1,82 @@
+[[module-email-engine]]
+== Email / Communication Engine
+
+=== Overview
+
+A full templated-email subsystem: a visual template designer, brand/CSS theming,
+event-driven trigger mapping, an outbox with delivery tracking, and per-site SMTP
+credential management with a live connection test.
+
+image::admin-email-engine.png[Communication Engine, title="Communication Engine — Templates, Event Mapping, Outbox, Branding, and AI Suggestions tabs"]
+
+image::inbox.png[Inbox, title="Inbox — inbound message view"]
+
+=== Key features
+
+[cols="2,3", options="header"]
+|===
+| Feature | Detail
+
+| Template designer | Design-gallery of predefined templates or "Start from Blank"; rich-text HTML body editor with a template-variables picker; sandboxed iframe preview.
+| Event mapping | Map system events (e.g. asset shared, workflow task assigned) to specific email templates.
+| Outbox | Paginated delivery log of every email the system has sent, with status.
+| Branding | Custom brand fields (logo, colors) and hand-editable custom CSS applied to outgoing emails.
+| AI Suggestions | AI-assisted content suggestions surfaced inside the template editor.
+| SMTP settings | Per-environment SMTP credential form with a live "Test Connection" check and a "Send SMTP Echo Check" test-send action.
+| Inbox | Inbound message view, reachable from the sidebar.
+|===
+
+=== Powerful / notable capabilities
+
+[.feature-highlight]
+====
+* **Live SMTP connection testing before commit** — admins can validate a host
+  actually connects (and see a structured error message if it doesn't) *before*
+  committing it as the system's live credentials, avoiding a broken-outbound-mail
+  incident.
+* **Full visual template authoring** — non-technical admins can start from a design
+  gallery, use a rich-text editor with dynamic template variables, and preview in
+  a sandboxed iframe, without hand-writing HTML/Liquid.
+* **Custom CSS branding** — email templates can be styled to match brand identity
+  beyond just a logo, via editable custom CSS.
+====
+
+=== Notes & known limitations
+
+* The "Send SMTP Echo Check" test-send requires a recipient address to be
+  provided; there's no default "send to me" shortcut yet.
+* AI Suggestions in the template editor are currently a fixed tab surface — the
+  actual suggestion-generation flow is not yet covered by tests (see below), so its
+  real-world reliability should be validated before heavy reliance.
+
+=== Test coverage status
+
+[.status-covered]#Covered by E2E# (`spec/e2e/email_engine.e2e.spec.js`,
+`spec/e2e/inbox.e2e.spec.js`, `spec/e2e/smtp_settings.e2e.spec.js`)
+
+* Communication Engine page loads with all tabs; New Template opens the design
+  gallery; "Start from Blank" opens the editor drawer.
+* Editor shows the Template Variables picker and rich-text HTML body editor;
+  Preview tab renders a sandboxed iframe; choosing a predefined design pre-fills
+  the editor.
+* Event Mapping, Outbox (with pagination controls), and AI Suggestions tabs are
+  all navigable.
+* Branding tab shows explainer text, brand fields, and a save action; custom CSS
+  can be edited and saved.
+* Inbox is reachable from the sidebar and renders without errors; the email
+  templates page loads and its new-template flow offers a design gallery.
+* SMTP & Email Settings: credentials form is shown; "Test Connection" is disabled
+  until a host is provided, surfaces a structured error for an invalid host;
+  "Commit System Credentials" persists the configuration; "Send SMTP Echo Check"
+  requires a recipient address.
+
+[.status-pending]#Pending / not yet covered#
+
+* Actually sending and receiving a real email end-to-end (delivery + inbox
+  ingestion) in the E2E environment.
+* Event-mapping *creation* — mapping a specific system event to a specific
+  template and confirming it fires.
+* AI Suggestions — actually generating and applying a suggestion inside the
+  editor.
+* Outbox delivery-status filtering/searching beyond pagination controls being
+  present.

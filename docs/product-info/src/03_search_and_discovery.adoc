@@ -1,0 +1,70 @@
+[[module-search]]
+== Search & Discovery
+
+=== Overview
+
+Beyond simple keyword lookup, Capri DAM combines full-text search, faceted
+filtering, AI-powered semantic (meaning-based) search, and a natural-language
+Copilot chat interface, all from a single global search bar available on every
+screen.
+
+image::search-results.png[Search results page, title="Search Results page — query and mode carried in the URL, results rendered in a responsive grid"]
+
+=== Key features
+
+[cols="2,3", options="header"]
+|===
+| Feature | Detail
+
+| Global search bar | Present in the header on every page; mode dropdown (Keyword, Visual Match, Ask AI Agent); keyboard shortcut (⌘K); ArrowDown/Enter keyboard navigation of suggestions.
+| Full-text search | PostgreSQL `tsvector` across title, description, tags, and metadata.
+| Faceted filtering | Content type, date range, tags, folder scope, status.
+| Semantic search | pgvector cosine-similarity search using AI-generated embeddings; supports OpenAI, Cohere, Ollama, and Azure OpenAI as embedding providers.
+| Semantic cluster map | Interactive force-directed graph (`@xyflow/react`-style canvas) of semantically similar assets, for visual/exploratory discovery.
+| Suggestions panel | Live-typing suggestions with a "View all results" link that carries the query into `/search`.
+| URL-addressable results | `/search?q=...&mode=...` — shareable, bookmarkable, back/forward-button friendly.
+|===
+
+=== Powerful / notable capabilities
+
+[.feature-highlight]
+====
+* **Meaning, not just keywords** — semantic search finds visually or conceptually
+  related assets even when they share no common tags or filenames.
+* **One search bar, three search paradigms** — keyword, visual similarity, and
+  natural-language agentic search are all one dropdown away, without needing
+  separate screens.
+* **Cluster map for serendipitous discovery** — surfaces relationships between
+  assets that faceted filters alone would never reveal.
+====
+
+=== Notes & known limitations
+
+* Semantic search quality depends entirely on the configured embedding provider;
+  there is currently no built-in provider fallback/failover if the primary
+  embedding API is unreachable.
+* The semantic cluster map is best-suited to small-to-medium result sets; very
+  large clusters (1000+ nodes) are not yet paginated or virtualised.
+
+=== Test coverage status
+
+[.status-covered]#Covered by E2E# (`spec/e2e/global_search_bar.e2e.spec.js`)
+
+* Search bar visible with default placeholder; mode dropdown includes Visual Match
+  and Ask AI Agent.
+* Selecting Visual Match / Ask AI Agent changes the placeholder text.
+* Typing a query shows a suggestions panel; ArrowDown highlights the first
+  suggestion without navigating away.
+* Pressing Enter, and clicking "View all results", both navigate to `/search`
+  with the query preserved.
+* `/search` results page loads with pagination params and renders a results grid;
+  accepts query + mode from the URL directly.
+
+[.status-pending]#Pending / not yet covered#
+
+* Semantic search relevance/ranking correctness (would require a fixture with
+  known embeddings).
+* Semantic cluster map rendering and node interaction.
+* Faceted filter combinations (content type + date range + tags together).
+* AI Copilot natural-language → structured-filter translation accuracy
+  (see also <<module-ai-suite>>).

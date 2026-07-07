@@ -1810,7 +1810,9 @@
     "grid": {
       "unknown_file": "Arquivo desconhecido",
       "pin_to_collection": "Fixar na coleção",
-      "view_details": "Ver detalhes"
+      "view_details": "Ver detalhes",
+      "processing": "Processando…",
+      "previewUnavailable": "Pré-visualização indisponível"
     }
   },
   "inbox": {
@@ -1902,7 +1904,9 @@
       "viewDetails": "Ver detalhes",
       "addToCollection": "Adicionar à coleção",
       "moveToTrash": "Mover para o lixo"
-    }
+    },
+    "processing": "Processando…",
+    "previewUnavailable": "Pré-visualização indisponível"
   },
   "assetStatisticsTab": {
     "title": "Estatísticas do ativo",
@@ -2409,6 +2413,72 @@
       "SMTP_SERVER_BUSY": "Servidor SMTP ocupado, tente novamente mais tarde",
       "SMTP_ERROR": "Erro SMTP",
       "INVALID_CONFIGURATION": "Configuração inválida"
+    }
+  },
+  "operationalLogging": {
+    "pipelineStatus": "Status atual do pipeline",
+    "activeLogLevel": "Nível de log ativo",
+    "temporaryElevation": "Elevação temporária ativa. Retornará ao nível padrão em {{minutes}} minutos.",
+    "broadcastNotice": "As alterações feitas aqui são transmitidas instantaneamente para todos os nós de trabalho Puma ativos via Redis Pub/Sub, sem tempo de inatividade.",
+    "adjustVerbosity": "Ajustar o nível de detalhe do log",
+    "adjustVerbosityDescription": "Aumente a saída de log para capturar rastreamentos de execução detalhados. Níveis de alta verbosidade (DEBUG, TRACE) devem ser usados com um tempo de vida (TTL) para evitar sobrecarga na ingestão de logs.",
+    "targetLogLevel": "Nível de log de destino",
+    "levels": {
+      "FATAL": "FATAL (apenas falhas críticas)",
+      "ERROR": "ERROR (exceções e falhas)",
+      "WARN": "WARN (obsolescências e avisos)",
+      "INFO": "INFO (operações padrão)",
+      "DEBUG": "DEBUG (variáveis detalhadas)",
+      "TRACE": "TRACE (verbosidade máxima)"
+    },
+    "ttl": "Tempo de vida (reversão automática)",
+    "ttlOptions": {
+      "permanent": "Permanente (sem reversão automática)",
+      "15m": "15 minutos",
+      "1h": "1 hora",
+      "4h": "4 horas"
+    },
+    "highVerbosityWarning": "Aviso: deixar os logs de alta verbosidade ativados permanentemente pode afetar seriamente o desempenho do aplicativo e gerar custos de armazenamento imensos.",
+    "applyConfiguration": "Aplicar configuração",
+    "broadcasting": "Transmitindo...",
+    "fetchError": "Falha ao obter a configuração de log.",
+    "updateSuccess": "Nível de log alterado com sucesso para {{level}}",
+    "updateFailedGeneric": "Falha na atualização.",
+    "updateFailed": "Falha ao atualizar o nível de log.",
+    "networkError": "Erro de rede ao atualizar a configuração."
+  },
+  "auditLog": {
+    "title": "Registro de auditoria",
+    "description": "Navegue e pesquise o registro imutável de cada ação de criação, atualização e exclusão, além de ações administrativas como personificação.",
+    "filters": {
+      "user": "E-mail do agente",
+      "action": "Ação",
+      "resourceType": "Tipo de recurso",
+      "impersonatedOnly": "Apenas ações de personificação",
+      "dateFrom": "De",
+      "dateTo": "Até",
+      "search": "Pesquisar agente, ação ou recurso...",
+      "allActions": "Todas as ações",
+      "allResourceTypes": "Todos os tipos de recurso",
+      "apply": "Aplicar filtros",
+      "clear": "Limpar filtros"
+    },
+    "table": {
+      "timestamp": "Data/hora",
+      "actor": "Agente",
+      "action": "Ação",
+      "resource": "Recurso",
+      "impersonated": "Personificado",
+      "ipAddress": "Endereço IP",
+      "details": "Detalhes"
+    },
+    "empty": "Nenhuma entrada de registro de auditoria corresponde aos filtros atuais.",
+    "loadError": "Falha ao carregar as entradas do registro de auditoria.",
+    "impersonatedBy": "como {{actor}} (agente real: {{trueActor}})",
+    "pagination": {
+      "showing": "Mostrando {{from}}-{{to}} de {{total}}",
+      "previous": "Anterior",
+      "next": "Próximo"
     }
   },
   "globalSearchBar": {

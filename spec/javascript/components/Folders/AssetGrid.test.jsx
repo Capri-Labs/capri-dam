@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import i18n from 'i18next';
 import AssetGrid from '../../../../app/javascript/components/Folders/AssetGrid';
 
@@ -80,5 +80,46 @@ describe('AssetGrid preview rendering', () => {
     }];
     render(<AssetGrid assets={assets} {...baseProps} />);
     expect(screen.queryByRole('img', { name: 'Report.pdf' })).toBeNull();
+  });
+
+  it('shows a Processing placeholder for a pending asset instead of attempting to load a broken image', () => {
+    const assets = [{
+      id: '5',
+      title: 'Uploading.jpg',
+      content_type: 'image/jpeg',
+      url: '/api/v1/assets/local/uuid-pending',
+      status: 'pending',
+    }];
+    render(<AssetGrid assets={assets} {...baseProps} />);
+    // No <img> should be attempted while the worker hasn't finished processing.
+    expect(screen.queryByRole('img', { name: 'Uploading.jpg' })).toBeNull();
+    expect(screen.getAllByText(/processing/i).length).toBeGreaterThan(0);
+  });
+
+  it('shows a Processing placeholder for an asset whose status is "processing"', () => {
+    const assets = [{
+      id: '6',
+      title: 'Encoding.mp4',
+      content_type: 'video/mp4',
+      url: '/api/v1/assets/local/uuid-processing',
+      status: 'processing',
+    }];
+    render(<AssetGrid assets={assets} {...baseProps} />);
+    expect(screen.getAllByText(/processing/i).length).toBeGreaterThan(0);
+  });
+
+  it('falls back to a broken-image placeholder when the preview URL fails to load', () => {
+    const assets = [{
+      id: '7',
+      title: 'Missing.jpg',
+      content_type: 'image/jpeg',
+      url: '/api/v1/assets/local/uuid-missing',
+      status: 'ready',
+    }];
+    render(<AssetGrid assets={assets} {...baseProps} />);
+    const img = screen.getByRole('img', { name: 'Missing.jpg' });
+    fireEvent.error(img);
+    expect(screen.queryByRole('img', { name: 'Missing.jpg' })).toBeNull();
+    expect(screen.getByText(/preview.*unavailable|previewUnavailable/i)).toBeInTheDocument();
   });
 });

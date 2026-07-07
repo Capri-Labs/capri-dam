@@ -1810,7 +1810,9 @@
     "grid": {
       "unknown_file": "Archivo desconocido",
       "pin_to_collection": "Anclar a la colección",
-      "view_details": "Ver detalles"
+      "view_details": "Ver detalles",
+      "processing": "Procesando…",
+      "previewUnavailable": "Vista previa no disponible"
     }
   },
   "inbox": {
@@ -1902,7 +1904,9 @@
       "viewDetails": "Ver detalles",
       "addToCollection": "Añadir a la colección",
       "moveToTrash": "Mover a la papelera"
-    }
+    },
+    "processing": "Procesando…",
+    "previewUnavailable": "Vista previa no disponible"
   },
   "assetStatisticsTab": {
     "title": "Estadísticas del activo",
@@ -2409,6 +2413,72 @@
       "SMTP_SERVER_BUSY": "Servidor SMTP ocupado, inténtelo más tarde",
       "SMTP_ERROR": "Error SMTP",
       "INVALID_CONFIGURATION": "Configuración inválida"
+    }
+  },
+  "operationalLogging": {
+    "pipelineStatus": "Estado actual del pipeline",
+    "activeLogLevel": "Nivel de registro activo",
+    "temporaryElevation": "Elevación temporal activa. Volverá al nivel estándar en {{minutes}} minutos.",
+    "broadcastNotice": "Los cambios realizados aquí se difunden instantáneamente a todos los nodos de trabajo Puma activos mediante Redis Pub/Sub, sin tiempo de inactividad.",
+    "adjustVerbosity": "Ajustar el nivel de detalle del registro",
+    "adjustVerbosityDescription": "Aumente la salida de registro para capturar trazas de ejecución detalladas. Los niveles de alta verbosidad (DEBUG, TRACE) deben usarse con un tiempo de vida (TTL) para evitar la sobrecarga de la ingesta de registros.",
+    "targetLogLevel": "Nivel de registro objetivo",
+    "levels": {
+      "FATAL": "FATAL (solo fallos críticos)",
+      "ERROR": "ERROR (excepciones y fallos)",
+      "WARN": "WARN (obsolescencias y advertencias)",
+      "INFO": "INFO (operaciones estándar)",
+      "DEBUG": "DEBUG (variables detalladas)",
+      "TRACE": "TRACE (máxima verbosidad)"
+    },
+    "ttl": "Tiempo de vida (reversión automática)",
+    "ttlOptions": {
+      "permanent": "Permanente (sin reversión automática)",
+      "15m": "15 minutos",
+      "1h": "1 hora",
+      "4h": "4 horas"
+    },
+    "highVerbosityWarning": "Advertencia: dejar los registros de alta verbosidad activados permanentemente puede afectar gravemente el rendimiento de la aplicación y generar costos de almacenamiento enormes.",
+    "applyConfiguration": "Aplicar configuración",
+    "broadcasting": "Difundiendo...",
+    "fetchError": "No se pudo obtener la configuración de registro.",
+    "updateSuccess": "Nivel de registro cambiado correctamente a {{level}}",
+    "updateFailedGeneric": "Error al actualizar.",
+    "updateFailed": "No se pudo actualizar el nivel de registro.",
+    "networkError": "Error de red al actualizar la configuración."
+  },
+  "auditLog": {
+    "title": "Registro de auditoría",
+    "description": "Explore y busque en el registro inmutable de cada acción de creación, actualización y eliminación, además de acciones administrativas como la suplantación.",
+    "filters": {
+      "user": "Correo del actor",
+      "action": "Acción",
+      "resourceType": "Tipo de recurso",
+      "impersonatedOnly": "Solo acciones suplantadas",
+      "dateFrom": "Desde",
+      "dateTo": "Hasta",
+      "search": "Buscar actor, acción o recurso...",
+      "allActions": "Todas las acciones",
+      "allResourceTypes": "Todos los tipos de recurso",
+      "apply": "Aplicar filtros",
+      "clear": "Borrar filtros"
+    },
+    "table": {
+      "timestamp": "Marca de tiempo",
+      "actor": "Actor",
+      "action": "Acción",
+      "resource": "Recurso",
+      "impersonated": "Suplantado",
+      "ipAddress": "Dirección IP",
+      "details": "Detalles"
+    },
+    "empty": "Ninguna entrada del registro de auditoría coincide con los filtros actuales.",
+    "loadError": "No se pudieron cargar las entradas del registro de auditoría.",
+    "impersonatedBy": "como {{actor}} (actor real: {{trueActor}})",
+    "pagination": {
+      "showing": "Mostrando {{from}}-{{to}} de {{total}}",
+      "previous": "Anterior",
+      "next": "Siguiente"
     }
   },
   "globalSearchBar": {

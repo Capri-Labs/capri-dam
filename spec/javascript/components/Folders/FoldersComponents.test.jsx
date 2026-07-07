@@ -248,6 +248,20 @@ describe('Folders components', () => {
     expect(onPin).toHaveBeenCalledWith(expect.objectContaining({ id: 1 }));
   });
 
+  it('shows a Processing placeholder for an AssetCard whose worker has not finished yet', () => {
+    render(<AssetCard asset={{ id: 2, title: 'Uploading.jpg', status: 'pending', url: '/api/v1/assets/local/uuid-pending' }} onPin={jest.fn()} onViewMore={jest.fn()} />);
+    expect(screen.getByText('Processing…')).toBeInTheDocument();
+    expect(screen.queryByRole('img', { name: 'Uploading.jpg' })).toBeNull();
+  });
+
+  it('shows a broken-image placeholder for an AssetCard whose preview fails to load', () => {
+    render(<AssetCard asset={{ id: 3, title: 'Missing.jpg', status: 'ready', url: '/api/v1/assets/local/uuid-missing' }} onPin={jest.fn()} onViewMore={jest.fn()} />);
+    const img = screen.getByRole('img', { name: 'Missing.jpg' });
+    fireEvent.error(img);
+    expect(screen.queryByRole('img', { name: 'Missing.jpg' })).toBeNull();
+    expect(screen.getByText('Preview unavailable')).toBeInTheDocument();
+  });
+
   it('renders AssetGrid and calls selection and AI actions', () => {
     const toggleSelection = jest.fn();
     const onAiAnalysis = jest.fn();

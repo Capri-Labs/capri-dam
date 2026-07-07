@@ -1810,7 +1810,9 @@
     "grid": {
       "unknown_file": "不明なファイル",
       "pin_to_collection": "コレクションに固定",
-      "view_details": "詳細を表示"
+      "view_details": "詳細を表示",
+      "processing": "処理中…",
+      "previewUnavailable": "プレビューは利用できません"
     }
   },
   "inbox": {
@@ -1902,7 +1904,9 @@
       "viewDetails": "詳細を表示",
       "addToCollection": "コレクションに追加",
       "moveToTrash": "ゴミ箱に移動"
-    }
+    },
+    "processing": "処理中…",
+    "previewUnavailable": "プレビューは利用できません"
   },
   "assetStatisticsTab": {
     "title": "アセット統計",
@@ -2409,6 +2413,72 @@
       "SMTP_SERVER_BUSY": "SMTPサーバーがビジー状態です。後でもう一度お試しください",
       "SMTP_ERROR": "SMTPエラー",
       "INVALID_CONFIGURATION": "無効な構成です"
+    }
+  },
+  "operationalLogging": {
+    "pipelineStatus": "現在のパイプラインステータス",
+    "activeLogLevel": "現在のログレベル",
+    "temporaryElevation": "一時的な引き上げが有効です。{{minutes}}分後に標準レベルに戻ります。",
+    "broadcastNotice": "ここで行った変更は、Redis Pub/Sub を介してすべてのアクティブな Puma ワーカーノードに即座に配信され、ダウンタイムは発生しません。",
+    "adjustVerbosity": "ログの詳細度を調整",
+    "adjustVerbosityDescription": "詳細な実行トレースを取得するにはログ出力を引き上げてください。高い詳細度（DEBUG、TRACE）を使用する場合は、ログ取り込みの肥大化を防ぐために有効期限（TTL）を設定してください。",
+    "targetLogLevel": "目標ログレベル",
+    "levels": {
+      "FATAL": "FATAL（重大なクラッシュのみ）",
+      "ERROR": "ERROR（例外とクラッシュ）",
+      "WARN": "WARN（非推奨と警告）",
+      "INFO": "INFO（標準操作）",
+      "DEBUG": "DEBUG（詳細な変数）",
+      "TRACE": "TRACE（最大詳細度）"
+    },
+    "ttl": "有効期限（自動復帰）",
+    "ttlOptions": {
+      "permanent": "永続（自動復帰なし）",
+      "15m": "15分",
+      "1h": "1時間",
+      "4h": "4時間"
+    },
+    "highVerbosityWarning": "警告：高詳細度のログを永続的に有効にしておくと、アプリケーションのパフォーマンスに深刻な影響を与え、多大なストレージコストが発生する可能性があります。",
+    "applyConfiguration": "設定を適用",
+    "broadcasting": "配信中...",
+    "fetchError": "ログ設定の取得に失敗しました。",
+    "updateSuccess": "ログレベルが {{level}} に正常に変更されました",
+    "updateFailedGeneric": "更新に失敗しました。",
+    "updateFailed": "ログレベルの更新に失敗しました。",
+    "networkError": "設定の更新中にネットワークエラーが発生しました。"
+  },
+  "auditLog": {
+    "title": "監査ログ",
+    "description": "すべての作成・更新・削除アクション、およびなりすましなどの管理アクションの不変の記録を閲覧・検索します。",
+    "filters": {
+      "user": "実行者のメールアドレス",
+      "action": "アクション",
+      "resourceType": "リソースタイプ",
+      "impersonatedOnly": "なりすましアクションのみ",
+      "dateFrom": "開始日",
+      "dateTo": "終了日",
+      "search": "実行者、アクション、リソースを検索...",
+      "allActions": "すべてのアクション",
+      "allResourceTypes": "すべてのリソースタイプ",
+      "apply": "フィルターを適用",
+      "clear": "フィルターをクリア"
+    },
+    "table": {
+      "timestamp": "タイムスタンプ",
+      "actor": "実行者",
+      "action": "アクション",
+      "resource": "リソース",
+      "impersonated": "なりすまし",
+      "ipAddress": "IPアドレス",
+      "details": "詳細"
+    },
+    "empty": "現在のフィルターに一致する監査ログエントリはありません。",
+    "loadError": "監査ログエントリの読み込みに失敗しました。",
+    "impersonatedBy": "{{actor}} として（実際の実行者：{{trueActor}}）",
+    "pagination": {
+      "showing": "{{total}}件中 {{from}}-{{to}}件を表示",
+      "previous": "前へ",
+      "next": "次へ"
     }
   },
   "globalSearchBar": {

@@ -1810,7 +1810,9 @@
     "grid": {
       "unknown_file": "Unknown File",
       "pin_to_collection": "Pin to Collection",
-      "view_details": "View Details"
+      "view_details": "View Details",
+      "processing": "Processing…",
+      "previewUnavailable": "Preview unavailable"
     }
   },
   "inbox": {
@@ -1894,6 +1896,8 @@
     "unknownAsset": "Unknown Asset",
     "unknownSize": "Unknown Size",
     "noPreview": "No Preview",
+    "processing": "Processing…",
+    "previewUnavailable": "Preview unavailable",
     "tooltips": {
       "pinToCollection": "Pin to Collection",
       "viewDetails": "View Details"
@@ -2409,6 +2413,72 @@
       "SMTP_SERVER_BUSY": "SMTP server busy, try again later",
       "SMTP_ERROR": "SMTP error",
       "INVALID_CONFIGURATION": "Invalid configuration"
+    }
+  },
+  "operationalLogging": {
+    "pipelineStatus": "Current Pipeline Status",
+    "activeLogLevel": "Active Log Level",
+    "temporaryElevation": "Temporary elevation active. Reverting to standard level in {{minutes}} minutes.",
+    "broadcastNotice": "Changes made here are instantly broadcasted to all active Puma worker nodes via Redis Pub/Sub, requiring zero downtime.",
+    "adjustVerbosity": "Adjust Log Verbosity",
+    "adjustVerbosityDescription": "Elevate logging output to capture detailed execution traces. High verbosity levels (DEBUG, TRACE) should be used with a Time-to-Live to prevent log ingestion bloat.",
+    "targetLogLevel": "Target Log Level",
+    "levels": {
+      "FATAL": "FATAL (Critical Crashes Only)",
+      "ERROR": "ERROR (Exceptions & Crashes)",
+      "WARN": "WARN (Deprecations & Warnings)",
+      "INFO": "INFO (Standard Operations)",
+      "DEBUG": "DEBUG (Detailed Variables)",
+      "TRACE": "TRACE (Maximum Verbosity)"
+    },
+    "ttl": "Time-To-Live (Auto-Revert)",
+    "ttlOptions": {
+      "permanent": "Permanent (No Auto-Revert)",
+      "15m": "15 Minutes",
+      "1h": "1 Hour",
+      "4h": "4 Hours"
+    },
+    "highVerbosityWarning": "Warning: Leaving high-verbosity logs on permanently can severely impact application performance and incur massive storage costs.",
+    "applyConfiguration": "Apply Configuration",
+    "broadcasting": "Broadcasting...",
+    "fetchError": "Failed to retrieve logging configuration.",
+    "updateSuccess": "Log level successfully changed to {{level}}",
+    "updateFailedGeneric": "Update failed.",
+    "updateFailed": "Failed to update logging level.",
+    "networkError": "Network error while updating configuration."
+  },
+  "auditLog": {
+    "title": "Audit Trail",
+    "description": "Browse and search the immutable record of every create, update, and destroy action, plus administrative actions like impersonation.",
+    "filters": {
+      "user": "Actor Email",
+      "action": "Action",
+      "resourceType": "Resource Type",
+      "impersonatedOnly": "Impersonated actions only",
+      "dateFrom": "From",
+      "dateTo": "To",
+      "search": "Search actor, action, or resource...",
+      "allActions": "All Actions",
+      "allResourceTypes": "All Resource Types",
+      "apply": "Apply Filters",
+      "clear": "Clear Filters"
+    },
+    "table": {
+      "timestamp": "Timestamp",
+      "actor": "Actor",
+      "action": "Action",
+      "resource": "Resource",
+      "impersonated": "Impersonated",
+      "ipAddress": "IP Address",
+      "details": "Details"
+    },
+    "empty": "No audit log entries match the current filters.",
+    "loadError": "Failed to load audit log entries.",
+    "impersonatedBy": "as {{actor}} (true actor: {{trueActor}})",
+    "pagination": {
+      "showing": "Showing {{from}}-{{to}} of {{total}}",
+      "previous": "Previous",
+      "next": "Next"
     }
   },
   "globalSearchBar": {

@@ -19,6 +19,7 @@ import ObservabilityTab from '../../../../app/javascript/components/Admin/System
 import OperationalLoggingTab from '../../../../app/javascript/components/Admin/SystemStatus/OperationalLoggingTab';
 import SmtpSettingsTab from '../../../../app/javascript/components/Admin/SystemStatus/SmtpSettingsTab';
 import StorageOperationsTab from '../../../../app/javascript/components/Admin/SystemStatus/StorageOperationsTab';
+import AuditLogTab from '../../../../app/javascript/components/Admin/SystemStatus/AuditLogTab';
 import SystemStatus from '../../../../app/javascript/components/Admin/SystemStatus';
 
 describe('SystemStatus tabs', () => {
@@ -53,6 +54,26 @@ describe('SystemStatus tabs', () => {
       if (url === '/admin/system_status/test_email') {
         return Promise.resolve({ ok: true, json: () => Promise.resolve({ success: true, message: 'Test sent' }) });
       }
+      if (url.startsWith('/admin/audit_logs')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({
+          audit_logs: [
+            {
+              id: 1,
+              action: 'update',
+              auditable_type: 'Folder',
+              auditable_id: 7,
+              changes_data: { name: [ 'old', 'new' ] },
+              impersonated: false,
+              ip_address: '127.0.0.1',
+              created_at: '2026-01-15T10:00:00Z',
+              user: { id: 1, email: 'admin@example.com', name: 'Admin' },
+              true_user: null,
+            },
+          ],
+          pagination: { page: 1, per_page: 25, total: 1, total_pages: 1 },
+          filter_options: { actions: [ 'create', 'update' ], auditable_types: [ 'Folder', 'Asset' ] },
+        }) });
+      }
       return Promise.resolve({ ok: true, json: () => Promise.resolve({ success: true }) });
     });
   });
@@ -79,8 +100,8 @@ describe('SystemStatus tabs', () => {
 
   it('renders OperationalLoggingTab and applies config', async () => {
     await act(async () => { render(<OperationalLoggingTab />); });
-    expect(await screen.findByText('Adjust Log Verbosity')).toBeInTheDocument();
-    fireEvent.click(screen.getByText('Apply Configuration'));
+    expect(await screen.findByText('operationalLogging.adjustVerbosity')).toBeInTheDocument();
+    fireEvent.click(screen.getByText('operationalLogging.applyConfiguration'));
     await waitFor(() => expect(global.fetch).toHaveBeenCalledWith(
       '/admin/system_configurations/logging',
       expect.objectContaining({ method: 'POST' })
@@ -128,11 +149,56 @@ describe('SystemStatus tabs', () => {
     expect(screen.getByText('Save CDN Settings')).toBeInTheDocument();
   });
 
+  it('renders AuditLogTab with fetched entries', async () => {
+    await act(async () => { render(<AuditLogTab />); });
+
+    expect(await screen.findByText('auditLog.title')).toBeInTheDocument();
+    expect(screen.getByText('Folder#7')).toBeInTheDocument();
+    expect(screen.getByText('admin@example.com')).toBeInTheDocument();
+    expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('/admin/audit_logs?'));
+  });
+
+  it('applies audit log filters and re-fetches', async () => {
+    await act(async () => { render(<AuditLogTab />); });
+    await screen.findByText('auditLog.title');
+
+    fireEvent.click(screen.getByText('auditLog.filters.apply'));
+
+    await waitFor(() => {
+      const calls = global.fetch.mock.calls.filter(([ url ]) => url.startsWith('/admin/audit_logs'));
+      expect(calls.length).toBeGreaterThan(1);
+    });
+  });
+
+  it('clears audit log filters', async () => {
+    await act(async () => { render(<AuditLogTab />); });
+    await screen.findByText('auditLog.title');
+
+    fireEvent.click(screen.getByText('auditLog.filters.clear'));
+
+    await waitFor(() => {
+      const calls = global.fetch.mock.calls.filter(([ url ]) => url.startsWith('/admin/audit_logs'));
+      expect(calls.length).toBeGreaterThan(1);
+    });
+  });
+
+  it('shows an empty state message when no audit logs match', async () => {
+    global.fetch = jest.fn(() => Promise.resolve({ ok: true, json: () => Promise.resolve({
+      audit_logs: [], pagination: { page: 1, per_page: 25, total: 0, total_pages: 0 }, filter_options: { actions: [], auditable_types: [] },
+    }) }));
+
+    await act(async () => { render(<AuditLogTab />); });
+
+    expect(await screen.findByText('auditLog.empty')).toBeInTheDocument();
+  });
+
   it('renders SystemStatus main and switches tabs', async () => {
     await act(async () => { render(<SystemStatus incomingConfigs={{ address: 'smtp.example.com' }} />); });
     expect(screen.getByText('System Operations')).toBeInTheDocument();
     expect(await screen.findByText('Puma Rack')).toBeInTheDocument();
     fireEvent.click(screen.getByText('SMTP & Email Settings'));
     expect(await screen.findByText('SMTP Infrastructure Setup')).toBeInTheDocument();
+    fireEvent.click(screen.getByText('Audit Trail'));
+    expect(await screen.findByText('auditLog.title')).toBeInTheDocument();
   });
 });

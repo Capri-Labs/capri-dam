@@ -1,0 +1,56 @@
+[[module-dashboard]]
+== Dashboard ("Command Center")
+
+=== Overview
+
+The Dashboard is the first screen every user sees after signing in. It gives a
+real-time, at-a-glance summary of the whole asset library: totals, growth trends,
+content-type distribution, workflow activity, and AI-generated insights — without
+needing to open any other screen.
+
+image::dashboard.png[Capri DAM Dashboard, title="The Dashboard ('Command Center') showing library stats, asset growth trend, and workflow summary"]
+
+=== Key features
+
+[cols="2,3", options="header"]
+|===
+| Feature | Detail
+
+| Summary stat cards | Total assets, folders, users, assets added this week, active workflow tasks, and total storage used.
+| Asset growth chart | Line chart of assets added over the trailing 6 months (`recharts`).
+| Assets-by-type donut | Distribution of the library across content types (images, video, documents, etc).
+| Workflow summary | Live counts of approved / rejected / cancelled / total workflow tasks.
+| AI insights banner | System-health / anomaly summary surfaced from backend heuristics (e.g. "All systems healthy").
+| Manual refresh | "Last updated" timestamp with a one-click refresh control.
+|===
+
+=== Powerful / notable capabilities
+
+[.feature-highlight]
+====
+* **Zero-navigation situational awareness** — admins and contributors can judge the
+  health of the whole library (growth, storage, pending approvals) without opening a
+  single folder.
+* **Role-aware rendering** — card set and AI insights adapt based on the signed-in
+  user's role and permissions.
+====
+
+=== Notes & known limitations
+
+* The "Asset Growth" chart currently buckets by calendar month only; there is no
+  custom date-range picker yet.
+* "AI Insights" is presently a simple rule-based health check, not a generative
+  summary — the more sophisticated AI Copilot lives in its own module (see
+  <<module-ai-suite>>).
+
+=== Test coverage status
+
+[.status-covered]#Covered# — none of the current E2E specs target `/dashboard`
+directly; existing coverage is incidental (post-login landing-page assertions in
+`spec/e2e/auth.e2e.spec.js`).
+
+[.status-pending]#Pending / not yet covered#
+
+* Dashboard stat cards reflect real data changes (create an asset → total increments).
+* Asset Growth chart renders correctly with more than one data point.
+* Workflow summary counts update after a task is approved/rejected.
