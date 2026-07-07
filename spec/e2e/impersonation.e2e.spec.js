@@ -154,11 +154,18 @@ test.describe('Impersonation Engine', () => {
   );
   await page.waitForLoadState('networkidle');
 
+    // Confirm the impersonation session has actually taken effect (banner
+    // visible on the landing page) before navigating away — this guards
+    // against a race where the session cookie hasn't fully committed yet,
+    // which would otherwise make the /folders assertion below flaky.
+    await expect(page.locator('[role="alert"]').filter({ hasText: 'IMPERSONATION ACTIVE' }))
+      .toBeVisible({ timeout: 10_000 });
+
     // Navigate to folders — banner must still be visible
     await page.goto(`${BASE_URL}/folders`);
     await page.waitForLoadState('networkidle');
     await expect(page.locator('[role="alert"]').filter({ hasText: 'IMPERSONATION ACTIVE' }))
-      .toBeVisible({ timeout: 10_000 });
+      .toBeVisible({ timeout: 15_000 });
   });
 
   test('End Impersonation button clears the session and removes the banner', async ({ page }) => {

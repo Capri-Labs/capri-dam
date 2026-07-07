@@ -201,8 +201,10 @@ test.describe('Group overlay — adding child groups', () => {
     await page.getByRole('option', { name: new RegExp(childName, 'i') }).click();
     await page.waitForLoadState('networkidle');
 
-    // Child should now appear in the Child Groups list
-    await expect(page.getByText(childName)).toBeVisible({ timeout: 6000 });
+    // Child should now appear in the Child Groups list. Match the exact
+    // group name (not the success toast, which also contains this text but
+    // as a longer sentence — e.g. "<name> added as a sub-group of …").
+    await expect(page.getByText(childName, { exact: true })).toBeVisible({ timeout: 6000 });
 
     // Cleanup
     await page.request.delete(`/admin/user_groups/${childId}`, {

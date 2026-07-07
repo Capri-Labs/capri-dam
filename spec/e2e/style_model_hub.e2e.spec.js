@@ -67,17 +67,32 @@ test.describe('Style & Model Hub — /ai/models/hub', () => {
     await expect(page.getByRole('button', { name: /launch task/i })).toBeVisible();
   });
 
-  test('non-admin is redirected away', async ({ page, context }) => {
+  test('non-admin is forbidden from the admin-only hub', async ({ page, context }) => {
     // Clear admin session and sign in as regular user
     await context.clearCookies();
     await page.goto('/users/sign_in');
     await page.waitForSelector('input[autocomplete="email"]', { timeout: 15_000 });
     await page.fill('input[autocomplete="email"]', process.env.MEMBER_EMAIL || 'member@example.com');
     await page.fill('input[autocomplete="current-password"]', process.env.MEMBER_PASSWORD || 'password');
-    await page.click('[type="submit"]');
-    await page.goto(STYLE_HUB_URL);
-    // Expect redirect away from admin screen (dashboard or root)
-    await expect(page).not.toHaveURL(new RegExp(STYLE_HUB_URL));
+
+    // Wait for the login AJAX call and the subsequent full-page redirect to
+    // settle before navigating away — otherwise the session cookie may not
+    // be committed yet, racing with the goto() below.
+    const [response] = await Promise.all([
+      page.waitForResponse((res) => res.url().includes('/users/sign_in.json'), { timeout: 15_000 }),
+      page.click('[type="submit"]'),
+    ]);
+    if (!response.ok()) throw new Error(`login failed with status ${response.status()}`);
+    await page.waitForURL(/^https?:\/\/[^/]+\/?(\?.*)?$/, { timeout: 15_000 });
+    await page.waitForLoadState('networkidle');
+
+    // Ai::UiController#require_admin! renders a 403 JSON body for admin-only
+    // shells regardless of request format (see spec/requests/ai_ui_spec.rb) —
+    // the browser stays on the same URL, it just gets a forbidden response
+    // instead of the page markup.
+    const hubResponse = await page.goto(STYLE_HUB_URL);
+    expect(hubResponse.status()).toBe(403);
+    expect(await hubResponse.json()).toEqual({ error: 'Administrator privileges required.' });
   });
 
   test('unauthenticated user is redirected to login', async ({ page, context }) => {

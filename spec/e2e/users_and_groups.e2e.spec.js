@@ -17,15 +17,18 @@ const ADMIN_PASSWORD = process.env.E2E_PASSWORD || 'AdminUser';
 
 // Scrolls the (virtualized) MUI DataGrid until a row containing `text`
 // renders in the DOM. MUI DataGrid only mounts rows within the current
-// scroll viewport, so newly-created rows (or rows alphabetically late) may
-// not exist in the DOM at all until scrolled into view.
+// scroll viewport (plus a small overscan buffer), so newly-created rows (or
+// rows alphabetically late) may not exist in the DOM at all until scrolled
+// into view. Use small scroll increments with a generous settle delay —
+// large jumps (e.g. 300px) can skip clean over a row's render window before
+// React/the virtualizer has a chance to mount it, causing false negatives.
 async function findGridRow(page, text) {
   const scroller = page.locator('.MuiDataGrid-virtualScroller').first();
   let row = page.locator('.MuiDataGrid-row').filter({ hasText: text }).first();
-  for (let i = 0; i < 20; i++) {
+  for (let i = 0; i < 40; i++) {
     if (await row.count() > 0) return row;
-    await scroller.evaluate((el) => el.scrollBy(0, 300));
-    await page.waitForTimeout(150);
+    await scroller.evaluate((el) => el.scrollBy(0, 120));
+    await page.waitForTimeout(250);
     row = page.locator('.MuiDataGrid-row').filter({ hasText: text }).first();
   }
   return row;

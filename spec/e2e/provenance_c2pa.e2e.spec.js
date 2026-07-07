@@ -91,7 +91,7 @@ test.describe('Provenance & C2PA screen', () => {
     await expect(page.getByRole('button', { name: /launch batch task/i })).toBeVisible();
   });
 
-  test('non-admin is redirected away from the provenance screen', async ({ page }) => {
+  test('non-admin is forbidden from the provenance screen', async ({ page }) => {
     // Sign out first
     await signOut(page);
     // Sign in as a regular user
@@ -101,12 +101,25 @@ test.describe('Provenance & C2PA screen', () => {
     await page.waitForSelector('input[autocomplete="email"]', { timeout: 15_000 });
     await page.fill('input[autocomplete="email"]', regularEmail);
     await page.fill('input[autocomplete="current-password"]', regularPassword);
-    await page.click('button[type="submit"], input[type="submit"]');
+
+    // Wait for the login AJAX call and subsequent full-page redirect to
+    // settle before navigating to the protected page — otherwise the
+    // session cookie may not be committed yet, racing with the goto() below.
+    const [response] = await Promise.all([
+      page.waitForResponse((res) => res.url().includes('/users/sign_in.json'), { timeout: 15_000 }),
+      page.click('button[type="submit"], input[type="submit"]'),
+    ]);
+    if (!response.ok()) throw new Error(`login failed with status ${response.status()}`);
+    await page.waitForURL(/^https?:\/\/[^/]+\/?(\?.*)?$/, { timeout: 15_000 });
     await page.waitForLoadState('networkidle');
 
-    await page.goto('/ai/governance/provenance');
-    // Should be redirected — not on the provenance page
-    await expect(page).not.toHaveURL(/\/ai\/governance\/provenance/);
+    // Ai::UiController#require_admin! renders a 403 JSON body for admin-only
+    // shells regardless of request format (see spec/requests/ai_ui_spec.rb) —
+    // the browser stays on the same URL, it just gets a forbidden response
+    // instead of the page markup.
+    const provenanceResponse = await page.goto('/ai/governance/provenance');
+    expect(provenanceResponse.status()).toBe(403);
+    expect(await provenanceResponse.json()).toEqual({ error: 'Administrator privileges required.' });
   });
 
   test('unauthenticated user is redirected to sign-in', async ({ page }) => {
