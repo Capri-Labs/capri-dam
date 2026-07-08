@@ -249,7 +249,8 @@
       "folders": "Carpetas",
       "images": "Imágenes",
       "videos": "Videos",
-      "documents": "Documentos"
+      "documents": "Documentos",
+      "others": "Otros"
     },
     "sort": {
       "deletedNewest": "Eliminado (Más reciente)",
@@ -361,7 +362,8 @@
       "feature1": "Sugerencias inteligentes de assets eliminables según uso, antigüedad y duplicación.",
       "feature2": "Puntuación de riesgo para marcar assets que aún podrían necesitarse.",
       "feature3": "Informes de limpieza en lenguaje natural."
-    }
+    },
+    "perPage": "por página"
   },
   "duplicateManager": {
     "title": "Gestor de duplicados",

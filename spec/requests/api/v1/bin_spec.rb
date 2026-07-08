@@ -19,7 +19,7 @@ RSpec.describe "Bin API", type: :request do
       description "Returns all trashed assets and folders with filtering, sorting, and pagination."
 
       parameter name: :q,         in: :query, type: :string,  required: false, description: "Name/title search"
-      parameter name: :type,      in: :query, type: :string,  required: false, description: "all | asset | folder | image | video | document"
+      parameter name: :type,      in: :query, type: :string,  required: false, description: "all | asset | folder | image | video | document | other"
       parameter name: :sort,      in: :query, type: :string,  required: false, description: "deleted_at | name | size"
       parameter name: :direction, in: :query, type: :string,  required: false, description: "asc | desc"
       parameter name: :page,      in: :query, type: :integer, required: false
@@ -78,6 +78,17 @@ RSpec.describe "Bin API", type: :request do
       data = JSON.parse(response.body)
       expect(data["items"].map { |i| i["name"] }).to include("Old Campaign Banner")
       expect(data["items"].map { |i| i["name"] }).not_to include("Quarterly Report PDF")
+    end
+
+    it "filters by type=other" do
+      audio_asset = create(:asset, :trashed, title: "Voiceover Track", properties: { "content_type" => "audio/mpeg", "size" => 2_048 })
+      get "/api/v1/bin", params: { type: "other" }
+      data  = JSON.parse(response.body)
+      names = data["items"].map { |i| i["name"] }
+      expect(names).to include(audio_asset.title)
+      expect(names).not_to include("Old Campaign Banner", "Quarterly Report PDF")
+      # Folders never belong to the "other" media-type bucket.
+      expect(data["items"].map { |i| i["item_type"] }.uniq).to eq([ "asset" ])
     end
 
     it "paginates results" do

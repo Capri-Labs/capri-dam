@@ -249,7 +249,8 @@
       "folders": "Mappen",
       "images": "Afbeeldingen",
       "videos": "Video's",
-      "documents": "Documenten"
+      "documents": "Documenten",
+      "others": "Overig"
     },
     "sort": {
       "deletedNewest": "Verwijderd (Nieuwste eerst)",
@@ -361,7 +362,8 @@
       "feature1": "Slimme suggesties voor veilig te verwijderen assets op basis van gebruik, leeftijd & duplicatie.",
       "feature2": "Risicoscores om assets te markeren die mogelijk nog nodig zijn.",
       "feature3": "Opschoningsrapporten in natuurlijke taal."
-    }
+    },
+    "perPage": "per pagina"
   },
   "duplicateManager": {
     "title": "Dubbelbeheer",

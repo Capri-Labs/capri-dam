@@ -249,7 +249,8 @@
       "folders": "文件夹",
       "images": "图片",
       "videos": "视频",
-      "documents": "文档"
+      "documents": "文档",
+      "others": "其他"
     },
     "sort": {
       "deletedNewest": "删除时间（最新）",
@@ -361,7 +362,8 @@
       "feature1": "基于使用情况、时长和重复性的安全删除资源智能建议。",
       "feature2": "风险评分以标记可能仍需要的资源。",
       "feature3": "总结已删除内容和回收存储的自然语言清理报告。"
-    }
+    },
+    "perPage": "每页"
   },
   "duplicateManager": {
     "title": "重复管理器",

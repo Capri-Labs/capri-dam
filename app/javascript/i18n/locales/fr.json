@@ -249,7 +249,8 @@
       "folders": "Dossiers",
       "images": "Images",
       "videos": "Vidéos",
-      "documents": "Documents"
+      "documents": "Documents",
+      "others": "Autres"
     },
     "sort": {
       "deletedNewest": "Supprimé (Plus récent)",
@@ -361,7 +362,8 @@
       "feature1": "Suggestions intelligentes d'assets supprimables selon usage, âge et duplication.",
       "feature2": "Score de risque pour signaler les assets potentiellement encore nécessaires.",
       "feature3": "Rapports de nettoyage en langage naturel."
-    }
+    },
+    "perPage": "par page"
   },
   "duplicateManager": {
     "title": "Gestionnaire de doublons",

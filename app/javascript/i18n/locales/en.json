@@ -249,7 +249,8 @@
       "folders": "Folders",
       "images": "Images",
       "videos": "Videos",
-      "documents": "Documents"
+      "documents": "Documents",
+      "others": "Other"
     },
     "sort": {
       "deletedNewest": "Deleted (Newest first)",
@@ -361,7 +362,8 @@
       "feature1": "Smart suggestions for safe-to-delete assets based on usage, age & duplication.",
       "feature2": "Risk scoring to flag assets that may still be needed before purging.",
       "feature3": "Natural-language cleanup reports summarising what was removed and storage reclaimed."
-    }
+    },
+    "perPage": "per page"
   },
   "duplicateManager": {
     "title": "Duplicate Manager",

@@ -39,7 +39,7 @@ module Api
       #
       # Supports the following query parameters:
       # * +q+         — case-insensitive name/title search
-      # * +type+      — +asset+, +folder+, +image+, +video+, +document+, or +all+ (default)
+      # * +type+      — +asset+, +folder+, +image+, +video+, +document+, +other+, or +all+ (default)
       # * +sort+      — +deleted_at+ (default), +name+, +size+
       # * +direction+ — +desc+ (default), +asc+
       # * +page+      — 1-based page number (default 1)
@@ -424,7 +424,7 @@ module Api
       # Collects and serialises all trashed items applying search/type/sort.
       def collect_bin_items(q:, type:, sort:, direction:)
         include_assets  = !%w[folder].include?(type)
-        include_folders = !%w[asset image video document].include?(type)
+        include_folders = !%w[asset image video document other].include?(type)
 
         items = []
 
@@ -444,16 +444,26 @@ module Api
         sort_items(items, sort: sort, direction: direction)
       end
 
+      DOCUMENT_CONTENT_TYPES = %w[
+        application/pdf application/msword
+        application/vnd.openxmlformats-officedocument.wordprocessingml.document
+        application/vnd.ms-excel
+        application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+      ].freeze
+
       def filter_by_media_type(scope, type)
         case type
         when "image"    then scope.where("properties->>'content_type' LIKE ?", "image/%")
         when "video"    then scope.where("properties->>'content_type' LIKE ?", "video/%")
-        when "document" then scope.where("properties->>'content_type' IN (?)", [
-                               "application/pdf", "application/msword",
-                               "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                               "application/vnd.ms-excel",
-                               "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                             ])
+        when "document" then scope.where("properties->>'content_type' IN (?)", DOCUMENT_CONTENT_TYPES)
+        when "other"
+          # Anything that isn't an image, a video, or a recognised document
+          # type falls into the catch-all "Other" bucket (e.g. audio, zip
+          # archives, raw/uncommon formats, or assets with no content type).
+          scope.where.not(
+            "COALESCE(properties->>'content_type', '') LIKE ? OR COALESCE(properties->>'content_type', '') LIKE ?",
+            "image/%", "video/%",
+          ).where.not("COALESCE(properties->>'content_type', '') IN (?)", DOCUMENT_CONTENT_TYPES)
         else scope
         end
       end

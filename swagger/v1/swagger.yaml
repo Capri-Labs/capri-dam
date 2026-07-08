@@ -3479,7 +3479,7 @@ paths:
       - name: type
         in: query
         required: false
-        description: all | asset | folder | image | video | document
+        description: all | asset | folder | image | video | document | other
         schema:
           type: string
       - name: sort

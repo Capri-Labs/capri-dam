@@ -36,7 +36,7 @@ storage metrics before the hard delete is finalized.
 [cols="1,2,3", options="header"]
 |===
 | Method | Path | Description
-| `GET` | `/api/v1/bin` | List trashed assets/folders with filters.
+| `GET` | `/api/v1/bin` | List trashed assets/folders (search, `type` filter incl. `other`, sort, pagination).
 | `GET` | `/api/v1/bin/stats` | Totals, storage used, retention days.
 | `POST` | `/api/v1/bin/bulk_restore` | Restore mixed selections.
 | `DELETE` | `/api/v1/bin/bulk_destroy` | Permanently delete selected rows.
@@ -55,6 +55,21 @@ storage metrics before the hard delete is finalized.
 * mixed asset/folder selection
 * bulk restore and bulk permanent delete
 * active purge banner while a job is running
+
+`BinFilterBar.jsx` mirrors the single-row filter/toolbar pattern used by the
+Folders explorer (`AssetFilterBar.jsx`): search, a type-filter dropdown (All
+Items / Assets / Folders / Images / Videos / Documents / Other), a sort
+dropdown, a result count, a per-page selector (25 / 50 / 100 — passed through
+to `GET /api/v1/bin`'s `per_page` param), an S/M/L grid-size toggle (grid view
+only), and the grid/list view toggle — all kept on one scrollable row so the
+page keeps more vertical space for content. Pagination itself uses MUI's
+`Pagination` component (numbered pages + first/last buttons) driven by the
+`{ page, pages }` values in the `/api/v1/bin` response.
+
+The "Other" type filter (`type=other` on `GET /api/v1/bin`) is a catch-all
+bucket for trashed assets whose content type is not an image, a video, or a
+recognised document (e.g. audio files, archives, or assets with a missing/
+unrecognised content type) — see `Api::V1::BinController#filter_by_media_type`.
 
 The "View Trash Bin" button in the folder explorer's top bar
 (`ExplorerTopBar.jsx`) navigates to the dedicated `/bin` page (full

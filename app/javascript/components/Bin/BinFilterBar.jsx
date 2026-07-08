@@ -1,12 +1,13 @@
 import React from 'react';
 import {
-    Box, Typography, InputAdornment, TextField, Chip, Stack, Divider,
-    Button, Menu, MenuItem, ToggleButton, ToggleButtonGroup, Checkbox
+    Box, Typography, InputAdornment, TextField, Divider,
+    Button, Menu, MenuItem, ToggleButton, ToggleButtonGroup, Checkbox,
+    Select, FormControl,
 } from '@mui/material';
 import {
-    SearchOutlined, Sort, ViewModule, ViewList,
+    SearchOutlined, Sort, ViewModule, ViewList, KeyboardArrowDown,
     FolderOutlined, InsertDriveFileOutlined, ImageOutlined,
-    VideocamOutlined, DescriptionOutlined
+    VideocamOutlined, DescriptionOutlined, CategoryOutlined,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
@@ -22,11 +23,12 @@ const SORT_OPTIONS = [
 
 const TYPE_FILTERS = [
     { key: 'all',      labelKey: 'bin.filters.all',       icon: null },
-    { key: 'asset',    labelKey: 'bin.filters.assets',    icon: <InsertDriveFileOutlined fontSize="small" /> },
-    { key: 'folder',   labelKey: 'bin.filters.folders',   icon: <FolderOutlined fontSize="small" /> },
-    { key: 'image',    labelKey: 'bin.filters.images',    icon: <ImageOutlined fontSize="small" /> },
-    { key: 'video',    labelKey: 'bin.filters.videos',    icon: <VideocamOutlined fontSize="small" /> },
-    { key: 'document', labelKey: 'bin.filters.documents', icon: <DescriptionOutlined fontSize="small" /> },
+    { key: 'asset',    labelKey: 'bin.filters.assets',    icon: <InsertDriveFileOutlined fontSize="small" sx={{ mr: 1 }} /> },
+    { key: 'folder',   labelKey: 'bin.filters.folders',   icon: <FolderOutlined fontSize="small" sx={{ mr: 1 }} /> },
+    { key: 'image',    labelKey: 'bin.filters.images',    icon: <ImageOutlined fontSize="small" sx={{ mr: 1 }} /> },
+    { key: 'video',    labelKey: 'bin.filters.videos',    icon: <VideocamOutlined fontSize="small" sx={{ mr: 1 }} /> },
+    { key: 'document', labelKey: 'bin.filters.documents', icon: <DescriptionOutlined fontSize="small" sx={{ mr: 1 }} /> },
+    { key: 'other',    labelKey: 'bin.filters.others',    icon: <CategoryOutlined fontSize="small" sx={{ mr: 1 }} /> },
 ];
 
 const GRID_SIZES = [
@@ -35,6 +37,8 @@ const GRID_SIZES = [
     { key: 'large',   label: 'L' },
 ];
 
+export const PER_PAGE_OPTIONS = [ 25, 50, 100 ];
+
 export default function BinFilterBar({
     query, onQueryChange,
     typeFilter, onTypeFilterChange,
@@ -42,33 +46,42 @@ export default function BinFilterBar({
     viewLayout, onViewLayoutChange,
     gridSize, onGridSizeChange,
     resultCount,
+    perPage, onPerPageChange,
     allSelected, hasSelection, onSelectAll, onDeselectAll,
 }) {
     const { t } = useTranslation();
     const [sortAnchor, setSortAnchor] = useState(null);
+    const [typeAnchor, setTypeAnchor] = useState(null);
 
     const activeSort = SORT_OPTIONS.find(
         o => o.field === sort?.field && o.direction === sort?.direction
     ) || SORT_OPTIONS[0];
 
+    const activeType = TYPE_FILTERS.find(o => o.key === typeFilter) || TYPE_FILTERS[0];
+
     return (
         <Box sx={{
             bgcolor: '#fff',
             borderBottom: '1px solid #e2e8f0',
-            px: 4, py: 1.5,
+            px: 4, py: 1.25,
         }}>
-            {/* ROW 1: Search + Type chips */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap', mb: 1.5 }}>
-
+            {/* Single row: select-all, search, type filter, sort, results,
+                per-page, grid size, view toggle — kept on one line so the
+                page saves vertical space. */}
+            <Box sx={{
+                display: 'flex', alignItems: 'center', gap: 1,
+                flexWrap: 'nowrap', overflowX: 'auto',
+                '&::-webkit-scrollbar': { height: 4 },
+                '&::-webkit-scrollbar-thumb': { bgcolor: '#e2e8f0', borderRadius: 2 },
+            }}>
                 {/* Select-all checkbox */}
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                    <Checkbox
-                        size="small"
-                        checked={allSelected}
-                        indeterminate={hasSelection && !allSelected}
-                        onChange={allSelected ? onDeselectAll : onSelectAll}
-                    />
-                </Box>
+                <Checkbox
+                    size="small"
+                    checked={allSelected}
+                    indeterminate={hasSelection && !allSelected}
+                    onChange={allSelected ? onDeselectAll : onSelectAll}
+                    sx={{ flexShrink: 0 }}
+                />
 
                 {/* Search input */}
                 <TextField
@@ -76,7 +89,7 @@ export default function BinFilterBar({
                     onChange={(e) => onQueryChange(e.target.value)}
                     placeholder={t('bin.search')}
                     size="small"
-                    sx={{ width: 280, '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+                    sx={{ width: 220, flexShrink: 0, '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
                     slotProps={{
                         input: {
                             startAdornment: (
@@ -88,39 +101,38 @@ export default function BinFilterBar({
                     }}
                 />
 
-                <Divider orientation="vertical" flexItem />
+                <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
 
-                {/* Type filter chips */}
-                <Stack direction="row" spacing={0.75} sx={{
-  flexWrap: "wrap"
-}}>
+                {/* Type filter dropdown */}
+                <Button
+                    size="small"
+                    onClick={(e) => setTypeAnchor(e.currentTarget)}
+                    endIcon={<KeyboardArrowDown sx={{ fontSize: 16, color: '#94a3b8' }} />}
+                    sx={{
+                        textTransform: 'none',
+                        fontWeight: typeFilter !== 'all' ? 700 : 500,
+                        color: typeFilter !== 'all' ? '#4f46e5' : '#475569',
+                        border: '1px solid',
+                        borderColor: typeFilter !== 'all' ? '#4f46e5' : '#cbd5e1',
+                        borderRadius: 2, px: 1.5, py: 0.4, flexShrink: 0,
+                        bgcolor: typeFilter !== 'all' ? '#eef2ff' : 'transparent',
+                        '&:hover': { bgcolor: typeFilter !== 'all' ? '#e0e7ff' : '#f8fafc' },
+                        whiteSpace: 'nowrap',
+                    }}
+                >
+                    {activeType.icon}
+                    {t(activeType.labelKey)}
+                </Button>
+                <Menu anchorEl={typeAnchor} open={Boolean(typeAnchor)} onClose={() => setTypeAnchor(null)}
+                    slotProps={{ paper: { elevation: 3, sx: { mt: 0.5, minWidth: 200, borderRadius: 2 } } }}>
                     {TYPE_FILTERS.map(({ key, labelKey, icon }) => (
-                        <Chip
-                            key={key}
-                            label={t(labelKey)}
-                            icon={icon}
-                            size="small"
-                            onClick={() => onTypeFilterChange(key)}
-                            variant={typeFilter === key ? 'filled' : 'outlined'}
-                            color={typeFilter === key ? 'primary' : 'default'}
-                            sx={{
-                                fontWeight: typeFilter === key ? 600 : 400,
-                                cursor: 'pointer',
-                                '& .MuiChip-icon': { color: typeFilter === key ? 'inherit' : '#64748b' }
-                            }}
-                        />
+                        <MenuItem key={key} dense selected={typeFilter === key}
+                            onClick={() => { setTypeAnchor(null); onTypeFilterChange(key); }}>
+                            {icon}
+                            {t(labelKey)}
+                        </MenuItem>
                     ))}
-                </Stack>
-            </Box>
-
-            {/* ROW 2: Result count + Sort + View toggles */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
-                {/* Result count */}
-                <Box sx={{ border: '1px solid #cbd5e1', borderRadius: 1, px: 1.5, py: 0.4, display: 'flex', alignItems: 'center' }}>
-                    <Typography variant="body2" sx={{ fontWeight: 600, color: '#475569' }}>
-                        {resultCount} <Box component="span" sx={{ fontWeight: 400 }}>{t('bin.results')}</Box>
-                    </Typography>
-                </Box>
+                </Menu>
 
                 {/* Sort dropdown */}
                 <Button
@@ -130,10 +142,13 @@ export default function BinFilterBar({
                     size="small"
                     sx={{
                         textTransform: 'none', color: '#475569', borderColor: '#cbd5e1',
+                        borderRadius: 2, px: 1.5, flexShrink: 0,
                         '&:hover': { bgcolor: '#f1f5f9' }
                     }}
                 >
-                    {t(activeSort.labelKey)}
+                    <Box component="span" sx={{ fontWeight: 600, maxWidth: 130, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {t(activeSort.labelKey)}
+                    </Box>
                 </Button>
                 <Menu anchorEl={sortAnchor} open={Boolean(sortAnchor)} onClose={() => setSortAnchor(null)}
                     slotProps={{ paper: { elevation: 3, sx: { mt: 1, minWidth: 220, borderRadius: 2 } } }}>
@@ -142,7 +157,7 @@ export default function BinFilterBar({
                         const showDiv  = i > 0 && SORT_OPTIONS[i - 1].field !== opt.field;
                         return [
                             showDiv && <Divider key={`d${i}`} sx={{ my: 0.5 }} />,
-                            <MenuItem key={opt.labelKey} selected={isActive}
+                            <MenuItem key={opt.labelKey} selected={isActive} dense
                                 onClick={() => { setSortAnchor(null); onSortChange({ field: opt.field, direction: opt.direction }); }}>
                                 {t(opt.labelKey)}
                             </MenuItem>
@@ -151,11 +166,38 @@ export default function BinFilterBar({
                 </Menu>
 
                 {/* Spacer */}
-                <Box sx={{ flexGrow: 1 }} />
+                <Box sx={{ flexGrow: 1, flexShrink: 1, minWidth: 8 }} />
+
+                {/* Result count */}
+                <Box sx={{ border: '1px solid #cbd5e1', borderRadius: 1.5, px: 1.25, py: 0.4, flexShrink: 0 }}>
+                    <Typography variant="body2" sx={{ fontWeight: 600, color: '#475569', whiteSpace: 'nowrap' }}>
+                        {resultCount} <Box component="span" sx={{ fontWeight: 400 }}>{t('bin.results')}</Box>
+                    </Typography>
+                </Box>
+
+                {/* Per-page selector */}
+                <FormControl size="small" sx={{ flexShrink: 0, minWidth: 90 }}>
+                    <Select
+                        value={perPage}
+                        onChange={(e) => onPerPageChange(Number(e.target.value))}
+                        sx={{
+                            borderRadius: 2, fontSize: '0.8rem', color: '#475569',
+                            '& .MuiOutlinedInput-notchedOutline': { borderColor: '#cbd5e1' },
+                        }}
+                    >
+                        {PER_PAGE_OPTIONS.map((n) => (
+                            <MenuItem key={n} value={n} dense>
+                                <Typography variant="body2">{n} / {t('bin.perPage')}</Typography>
+                            </MenuItem>
+                        ))}
+                    </Select>
+                </FormControl>
+
+                <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
 
                 {/* Grid size (only when grid view) */}
                 {viewLayout === 'grid' && (
-                    <ToggleButtonGroup value={gridSize} exclusive onChange={(_, v) => v && onGridSizeChange(v)} size="small">
+                    <ToggleButtonGroup value={gridSize} exclusive onChange={(_, v) => v && onGridSizeChange(v)} size="small" sx={{ flexShrink: 0 }}>
                         {GRID_SIZES.map(({ key, label }) => (
                             <ToggleButton key={key} value={key}
                                 sx={{
@@ -170,7 +212,7 @@ export default function BinFilterBar({
                 )}
 
                 {/* View layout toggle */}
-                <ToggleButtonGroup value={viewLayout} exclusive onChange={(_, v) => v && onViewLayoutChange(v)} size="small">
+                <ToggleButtonGroup value={viewLayout} exclusive onChange={(_, v) => v && onViewLayoutChange(v)} size="small" sx={{ flexShrink: 0 }}>
                     <ToggleButton value="grid"
                         sx={{ border: '1px solid #cbd5e1', color: '#64748b', '&.Mui-selected': { bgcolor: '#334155 !important', color: '#fff !important' } }}>
                         <ViewModule fontSize="small" />
@@ -184,4 +226,3 @@ export default function BinFilterBar({
         </Box>
     );
 }
-

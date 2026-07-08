@@ -149,6 +149,8 @@ describe('Bin components', () => {
       gridSize: 'medium',
       onGridSizeChange: jest.fn(),
       resultCount: 5,
+      perPage: 25,
+      onPerPageChange: jest.fn(),
       allSelected: false,
       hasSelection: false,
       onSelectAll: jest.fn(),
@@ -158,13 +160,56 @@ describe('Bin components', () => {
     render(<BinFilterBar {...props} />);
 
     fireEvent.change(screen.getByPlaceholderText('bin.search'), { target: { value: 'hero' } });
-    fireEvent.click(screen.getByText('bin.filters.images'));
+
+    // Type filter is a single dropdown (All Items, Assets, Folders, Images,
+    // Videos, Documents, Other) — open it, then pick "Images".
+    fireEvent.click(screen.getByRole('button', { name: 'bin.filters.all' }));
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'bin.filters.images' }));
+
     fireEvent.click(screen.getByRole('button', { name: 'bin.sort.deletedNewest' }));
     fireEvent.click(await screen.findByRole('menuitem', { name: 'bin.sort.nameAZ' }));
 
     expect(props.onQueryChange).toHaveBeenCalledWith('hero');
     expect(props.onTypeFilterChange).toHaveBeenCalledWith('image');
     expect(props.onSortChange).toHaveBeenCalledWith({ field: 'name', direction: 'asc' });
+  });
+
+  it('offers an "Other" type filter option and a 25/50/100 per-page selector', async () => {
+    const props = {
+      query: '',
+      onQueryChange: jest.fn(),
+      typeFilter: 'all',
+      onTypeFilterChange: jest.fn(),
+      sort: { field: 'deleted_at', direction: 'desc' },
+      onSortChange: jest.fn(),
+      viewLayout: 'list',
+      onViewLayoutChange: jest.fn(),
+      gridSize: 'medium',
+      onGridSizeChange: jest.fn(),
+      resultCount: 5,
+      perPage: 25,
+      onPerPageChange: jest.fn(),
+      allSelected: false,
+      hasSelection: false,
+      onSelectAll: jest.fn(),
+      onDeselectAll: jest.fn(),
+    };
+
+    render(<BinFilterBar {...props} />);
+
+    // "Other" bucket (audio, archives, uncommon formats, etc.) is selectable.
+    fireEvent.click(screen.getByRole('button', { name: 'bin.filters.all' }));
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'bin.filters.others' }));
+    expect(props.onTypeFilterChange).toHaveBeenCalledWith('other');
+
+    // Per-page selector exposes 25 / 50 / 100.
+    fireEvent.mouseDown(screen.getByRole('combobox'));
+    const options = await screen.findAllByRole('option');
+    expect(options.map((o) => o.textContent)).toEqual([
+      '25 / bin.perPage', '50 / bin.perPage', '100 / bin.perPage',
+    ]);
+    fireEvent.click(screen.getByRole('option', { name: '50 / bin.perPage' }));
+    expect(props.onPerPageChange).toHaveBeenCalledWith(50);
   });
 
   it('renders BinGrid items and invokes actions', () => {

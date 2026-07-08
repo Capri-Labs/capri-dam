@@ -249,7 +249,8 @@
       "folders": "Ordner",
       "images": "Bilder",
       "videos": "Videos",
-      "documents": "Dokumente"
+      "documents": "Dokumente",
+      "others": "Sonstige"
     },
     "sort": {
       "deletedNewest": "Gelöscht (Neueste zuerst)",
@@ -361,7 +362,8 @@
       "feature1": "Intelligente Vorschläge für sicher löschbare Assets basierend auf Nutzung, Alter & Duplikaten.",
       "feature2": "Risikobewertung zur Kennzeichnung möglicherweise noch benötigter Assets.",
       "feature3": "Bereinigungsberichte in natürlicher Sprache."
-    }
+    },
+    "perPage": "pro Seite"
   },
   "duplicateManager": {
     "title": "Duplikat-Manager",

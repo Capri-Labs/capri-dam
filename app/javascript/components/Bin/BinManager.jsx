@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
     Box, CssBaseline, Typography, Button, IconButton, Tooltip, Chip,
-    LinearProgress, Stack
+    LinearProgress, Stack, Pagination
 } from '@mui/material';
 import {
     DeleteForeverOutlined, RestoreFromTrashOutlined, WarningAmberOutlined,
@@ -38,6 +38,7 @@ export default function BinManager() {
     const [viewLayout, setViewLayout]     = useState('list');
     const [gridSize, setGridSize]         = useState('medium');
     const [currentPage, setCurrentPage]   = useState(1);
+    const [perPage, setPerPage]           = useState(25);
 
     // ── Selection ─────────────────────────────────────────────────────────────
     const [selected, setSelected] = useState(new Set());
@@ -68,18 +69,23 @@ export default function BinManager() {
             sort:      sort.field,
             direction: sort.direction,
             page,
-            per_page:  pagination.per_page,
+            per_page:  perPage,
         });
         fetch(`/api/v1/bin?${params}`)
             .then(r => r.json())
             .then(data => {
                 setItems(data.items || []);
-                setPagination(data.pagination || { total: 0, page: 1, per_page: 25, pages: 1 });
+                setPagination(data.pagination || { total: 0, page: 1, per_page: perPage, pages: 1 });
                 setSelected(new Set());
             })
             .catch(() => notify(t('bin.notifications.loadError'), 'error'))
             .finally(() => setLoading(false));
-    }, [query, typeFilter, sort, pagination.per_page]);
+    }, [query, typeFilter, sort, perPage]);
+
+    const handlePerPageChange = (value) => {
+        setPerPage(value);
+        setCurrentPage(1);
+    };
 
     useEffect(() => { fetchStats(); }, []);
 
@@ -90,7 +96,7 @@ export default function BinManager() {
             fetchItems(1);
         }, query ? 300 : 0);
         return () => clearTimeout(searchTimer.current);
-    }, [query, typeFilter, sort]);
+    }, [query, typeFilter, sort, perPage]);
 
     useEffect(() => { fetchItems(currentPage); }, [currentPage]);
 
@@ -228,6 +234,7 @@ export default function BinManager() {
                     viewLayout={viewLayout} onViewLayoutChange={setViewLayout}
                     gridSize={gridSize} onGridSizeChange={setGridSize}
                     resultCount={pagination.total}
+                    perPage={perPage} onPerPageChange={handlePerPageChange}
                     allSelected={allSelected} hasSelection={hasSelection}
                     onSelectAll={selectAll} onDeselectAll={deselectAll}
                 />
@@ -252,18 +259,16 @@ export default function BinManager() {
                     )}
 
                     {pagination.pages > 1 && (
-                        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 1, mt: 3 }}>
-                            <Button size="small" disabled={currentPage <= 1}
-                                onClick={() => setCurrentPage(p => p - 1)} sx={{ textTransform: 'none' }}>
-                                ← {t('bin.pagination.prev')}
-                            </Button>
-                            <Typography variant="body2" color="text.secondary">
-                                {t('bin.pagination.info', { page: currentPage, pages: pagination.pages })}
-                            </Typography>
-                            <Button size="small" disabled={currentPage >= pagination.pages}
-                                onClick={() => setCurrentPage(p => p + 1)} sx={{ textTransform: 'none' }}>
-                                {t('bin.pagination.next')} →
-                            </Button>
+                        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4, mb: 1 }}>
+                            <Pagination
+                                count={pagination.pages}
+                                page={currentPage}
+                                onChange={(_, page) => setCurrentPage(page)}
+                                color="primary"
+                                shape="rounded"
+                                showFirstButton
+                                showLastButton
+                            />
                         </Box>
                     )}
                 </Box>

@@ -249,7 +249,8 @@
       "folders": "Pastas",
       "images": "Imagens",
       "videos": "Vídeos",
-      "documents": "Documentos"
+      "documents": "Documentos",
+      "others": "Outros"
     },
     "sort": {
       "deletedNewest": "Excluído (Mais recente)",
@@ -361,7 +362,8 @@
       "feature1": "Sugestões inteligentes de assets removíveis com base em uso, idade e duplicação.",
       "feature2": "Pontuação de risco para sinalizar assets que ainda podem ser necessários.",
       "feature3": "Relatórios de limpeza em linguagem natural."
-    }
+    },
+    "perPage": "por página"
   },
   "duplicateManager": {
     "title": "Gerenciador de duplicatas",

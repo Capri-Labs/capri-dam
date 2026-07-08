@@ -1,9 +1,10 @@
 // E2E tests for the Recycle Bin page (/bin).
 // Runs against a live Rails server (set E2E_BASE_URL, E2E_EMAIL, E2E_PASSWORD).
 //
-// Coverage: page render, stats bar, filter bar, grid/list toggle,
-// search, type filter chips, bulk selection, restore flow,
-// empty-bin warning, pagination, empty-state.
+// Coverage: page render, stats bar, single-row filter bar (search, type
+// filter dropdown incl. "Other", sort, results/per-page, grid size, grid/list
+// toggle), bulk selection, restore flow, empty-bin warning, pagination,
+// empty-state.
 
 const { test, expect } = require('./fixtures');
 
@@ -66,19 +67,22 @@ test.describe('Recycle Bin E2E', () => {
         await expect(page.getByPlaceholder(/search recycle bin/i)).toBeVisible();
     });
 
-    test('renders type-filter chips (All Items, Assets, Folders)', async ({ page }) => {
+    test('renders a type-filter dropdown (All Items, Assets, Folders, Images, Videos, Documents, Other)', async ({ page }) => {
         await page.goto('/bin');
         await page.waitForLoadState('networkidle');
 
-        // Scope to the main content root to avoid matching the sidebar's
-        // "Assets" nav item, which shares the same accessible name.
+        // Type filter is a single dropdown button — open it and check every
+        // option is present in the menu.
         const main = page.locator('#root');
-        await expect(main.getByRole('button', { name: /all items/i })).toBeVisible();
-        await expect(main.getByRole('button', { name: /^assets$/i })).toBeVisible();
-        await expect(main.getByRole('button', { name: /^folders$/i })).toBeVisible();
-        await expect(main.getByRole('button', { name: /images/i })).toBeVisible();
-        await expect(main.getByRole('button', { name: /videos/i })).toBeVisible();
-        await expect(main.getByRole('button', { name: /documents/i })).toBeVisible();
+        await main.getByRole('button', { name: /all items/i }).click();
+
+        const menu = page.getByRole('menu');
+        await expect(menu.getByRole('menuitem', { name: /^assets$/i })).toBeVisible();
+        await expect(menu.getByRole('menuitem', { name: /^folders$/i })).toBeVisible();
+        await expect(menu.getByRole('menuitem', { name: /images/i })).toBeVisible();
+        await expect(menu.getByRole('menuitem', { name: /videos/i })).toBeVisible();
+        await expect(menu.getByRole('menuitem', { name: /documents/i })).toBeVisible();
+        await expect(menu.getByRole('menuitem', { name: /other/i })).toBeVisible();
     });
 
     test('renders view-layout toggle (grid/list)', async ({ page }) => {
@@ -127,17 +131,34 @@ test.describe('Recycle Bin E2E', () => {
         await expect(body).toBeVisible();
     });
 
-    test('type chip filter restricts items to folders only', async ({ page }) => {
+    test('type filter dropdown restricts items to folders only', async ({ page }) => {
         await page.goto('/bin');
         await page.waitForLoadState('networkidle');
 
-        await page.getByRole('button', { name: /^folders$/i }).click();
+        const main = page.locator('#root');
+        await main.getByRole('button', { name: /all items/i }).click();
+        await page.getByRole('menuitem', { name: /^folders$/i }).click();
         await page.waitForLoadState('networkidle');
         await page.waitForTimeout(400);
 
-        // Folder chip should now be active (filled color)
-        const foldersChip = page.locator('.MuiChip-filled', { hasText: /^folders$/i });
-        await expect(foldersChip).toBeVisible();
+        // The dropdown button's label should now read "Folders".
+        await expect(main.getByRole('button', { name: /^folders$/i })).toBeVisible();
+    });
+
+    test('per-page selector offers 25 / 50 / 100 results per page', async ({ page }) => {
+        await page.goto('/bin');
+        await page.waitForLoadState('networkidle');
+
+        const perPageSelect = page.getByRole('combobox').last();
+        await perPageSelect.click();
+
+        const listbox = page.getByRole('listbox');
+        await expect(listbox.getByRole('option', { name: /^25/ })).toBeVisible();
+        await expect(listbox.getByRole('option', { name: /^50/ })).toBeVisible();
+        await expect(listbox.getByRole('option', { name: /^100/ })).toBeVisible();
+
+        await listbox.getByRole('option', { name: /^50/ }).click();
+        await page.waitForLoadState('networkidle');
     });
 
     // ─────────────────────────────────────────────────────────────────────────

@@ -249,7 +249,8 @@
       "folders": "폴더",
       "images": "이미지",
       "videos": "비디오",
-      "documents": "문서"
+      "documents": "문서",
+      "others": "기타"
     },
     "sort": {
       "deletedNewest": "삭제일 (여다 순)",
@@ -361,7 +362,8 @@
       "feature1": "사용량, 기간, 중복을 기반으로 안전하게 삭제 가능한 에셋 스마트 제안.",
       "feature2": "아직 필요할 수 있는 에셋을 표시하는 위험 점수.",
       "feature3": "제거된 항목과 회수된 스토리지를 요약하는 자연어 정리 보고서."
-    }
+    },
+    "perPage": "페이지당"
   },
   "duplicateManager": {
     "title": "중복 관리자",
