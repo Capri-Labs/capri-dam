@@ -75,3 +75,33 @@ launches `DuplicateResolutionModal` for destructive review decisions.
 params `AssetExplorer.jsx`'s `readUrlFilters()` expects (folder navigation
 uses `?folder=`, asset deep-linking uses `?id=`; they are intentionally
 different params).
+
+The resolution modal's "Dismiss" icon button carries an explicit
+`aria-label` (in addition to its `Tooltip` title) so it has an accessible
+name for screen readers and can be targeted directly in tests, matching the
+pattern already used by the "Go to asset"/"Go to Folder" icon buttons in the
+same file.
+
+== Testing
+
+* `spec/javascript/components/Duplicates/Duplicates.test.jsx` — Jest coverage
+  for `DuplicateManager` and `DuplicateResolutionModal`, including group
+  listing, opening group detail, resolving via "keep all" / "delete
+  selected", and dismissing a group.
+* `spec/e2e/duplicate_manager_workspace.e2e.spec.js` — dedicated Playwright
+  coverage for the Duplicate Manager screen (previously only incidentally
+  touched by `spec/e2e/data_health.e2e.spec.js`'s stat-card assertions and
+  `spec/e2e/search_and_duplicates_fixes.e2e.spec.js`'s two navigation
+  regressions):
+** Duplicate Manager page loads and lists existing duplicate groups
+   (including the empty-state message when there are none).
+** The side-by-side resolution modal opens and shows both duplicate members.
+** Resolving a group — either "Keep All" or deleting a selected copy — closes
+   the modal, removes the group from the pending queue, and moves it to the
+   "Resolved" filter.
+** Dismissing a group excludes it from future pending prompts.
+
+[source,bash]
+----
+npx playwright test spec/e2e/duplicate_manager_workspace.e2e.spec.js --reporter=list
+----

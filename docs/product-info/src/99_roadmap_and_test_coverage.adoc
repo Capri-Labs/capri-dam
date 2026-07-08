@@ -40,8 +40,6 @@ single backlog, to help prioritise future E2E test-writing.
 | Dashboard | (see <<module-dashboard>>) — widget-level interaction/drill-down behaviour.
 | Asset Management | (see <<module-asset-management>>) — version history diff view, bulk metadata CSV import/export, quarantine review flow.
 | Search & Discovery | (see <<module-search>>) — semantic search relevance validation, semantic cluster map interactions.
-| Collections | (see <<module-collections>>) — creating/editing a collection, adding/removing assets.
-| Duplicate Management | (see <<module-duplicates>>) — resolution actions (merge/keep-both/delete).
 | Recycle Bin | Restoring an item; permanently purging via Empty Bin; workflow-protected purge guard; retention-policy save.
 | Workflow Automation | Parallel/Sequential Review and Slack/In-App Alert nodes; full workflow execution (trigger → task → resolution); Workflow Dashboard screen; editing a published blueprint.
 | Access Control & Security | OAuth2 (Doorkeeper) token issuance; server-side enforcement of the 7-column ACL; full Keycloak OIDC round-trip.

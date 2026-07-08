@@ -10,13 +10,18 @@ class CdnManager
       # FALLBACK PRECEDENCE: The YAML/ENV config (Local Dev & CI/CD)
       Rails.logger.info "ℹ️ No active CDN in database. Falling back to cdn_settings.yml"
 
-      yaml_config = Rails.application.config_for(:cdn_settings)
+      # `config_for` returns nil when the current Rails env has no matching
+      # top-level key (e.g. `cdn_settings.yml` only ships a `production:`
+      # section, so `development`/`test` resolve to nil rather than {}).
+      yaml_config = Rails.application.config_for(:cdn_settings) || {}
       provider = yaml_config[:active_provider]
       credentials = yaml_config[provider.to_sym] if provider
-
-      # 3. 🚀 FAIL-SAFE: Stop the worker if absolutely nothing is configured
-      raise "FATAL: No CDN configured in Database or YAML." unless provider && credentials
     end
+
+    # FAIL-SAFE: Rather than crashing background workers (upload processing,
+    # CDN invalidation, edge sync, ...) whenever no CDN is configured — the
+    # normal case for local development/CI — fall back to a no-op adapter.
+    return CdnAdapters::NullAdapter.new unless provider && credentials
 
     # Route to the correct adapter
     case provider

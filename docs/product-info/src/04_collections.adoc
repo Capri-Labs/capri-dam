@@ -9,6 +9,8 @@ folder structure.
 
 image::collections.png[Collections screen, title="Collections — curated, rule-based, and time-windowed asset groupings"]
 
+image::collection-detail.png[Collection Detail workspace, title="Collection Detail — action toolbar, governance banner (collapsible), and curated assets grid"]
+
 === Key features
 
 [cols="2,3", options="header"]
@@ -41,12 +43,16 @@ image::collections.png[Collections screen, title="Collections — curated, rule-
 
 === Test coverage status
 
-[.status-pending]#Pending / not yet covered# — Collections has **no dedicated E2E
-spec today**. Planned coverage:
+[.status-covered]#Covered by E2E# — `spec/e2e/collections_workspace.e2e.spec.js` provides
+dedicated E2E coverage:
 
 * Collections index page loads and lists existing collections.
-* Creating a manual collection and adding assets to it (drag-drop and via picker).
-* Creating a smart collection rule and confirming a newly-created matching asset
-  is auto-added by the background worker.
-* Generating and visiting a signed share URL as an unauthenticated visitor.
+* Creating a manual collection and adding assets to it, both via the Search
+  Library picker and via drag-drop upload in `AddAssetsToCollectionDialog`.
+* Creating a smart collection rule and confirming a newly-created matching
+  asset is auto-added by the background worker (`SmartCollectionRouterWorker`).
+* Generating and visiting a signed share URL as an unauthenticated visitor,
+  including a 410 response for an invalid/garbage token.
 * Collection slug-based nested routing (`/collections/*path`).
+* The per-asset action menu no longer offers a redundant Pin/Unpin action
+  (superseded by "Remove from Collection").

@@ -3,12 +3,12 @@ import {
     Box, Typography, Button, Grid, Card, CardContent,
     IconButton, Chip, Stack, CircularProgress, Menu, MenuItem, Paper,
     Dialog, DialogTitle, DialogContent, DialogActions, TextField, Slider, Divider, ImageListItemBar, ImageListItem,
-    ImageList, Tooltip
+    ImageList, Tooltip, Collapse
 } from '@mui/material';
 import {
     ArrowBack, Share, MoreVert, SettingsSuggest,
     AutoAwesome, Image as ImageIcon, CloudDownload, DeleteOutlined, PushPin, Analytics, PlayArrow,
-    Shield, WarningAmber, AutoFixHigh, LaunchOutlined, AddPhotoAlternate
+    Shield, WarningAmber, AutoFixHigh, LaunchOutlined, AddPhotoAlternate, ExpandMore, ExpandLess
 } from '@mui/icons-material';
 import { useNotify } from '../../context/NotificationContext';
 import { useCollections } from './CollectionContext';
@@ -21,7 +21,7 @@ import { useTranslation } from 'react-i18next';
 export default function CollectionDetail({ slug, onBack }) {
     const notify = useNotify();
     const { t } = useTranslation();
-    const { updateSmartRule, toggleAssetPin, simulateSmartRule, temporalDate } = useCollections();
+    const { updateSmartRule, simulateSmartRule, temporalDate } = useCollections();
     const [collection, setCollection] = useState(null);
     const [loading, setLoading] = useState(true);
 
@@ -45,6 +45,10 @@ export default function CollectionDetail({ slug, onBack }) {
     const [analyzing, setAnalyzing] = useState(false);
 
     const [mapDialogOpen, setMapDialogOpen] = useState(false);
+
+    // Governance & Usage Violations banner starts collapsed to save vertical
+    // space; users expand it on demand to see the full violation list.
+    const [violationsExpanded, setViolationsExpanded] = useState(false);
 
     const fetchCollectionDetail = useCallback(async () => {
         setLoading(true);
@@ -117,19 +121,6 @@ export default function CollectionDetail({ slug, onBack }) {
         }
     };
 
-    const handleTogglePin = async () => {
-        if (!selectedAsset) return;
-        handleMenuClose();
-
-        // Optimistic UI update
-        setCollection(prev => ({
-            ...prev,
-            assets: prev.assets.map(a => a.id === selectedAsset.id ? { ...a, pinned: !a.pinned } : a)
-        }));
-
-        await toggleAssetPin(slug, selectedAsset.id);
-    };
-
     const handleSaveRule = async () => {
         const updatedCollection = await updateSmartRule(slug, ruleForm);
         if (updatedCollection) {
@@ -186,38 +177,12 @@ export default function CollectionDetail({ slug, onBack }) {
     return (
         <Box>
             <Paper elevation={0} sx={{ p: 3, mb: 4, borderRadius: 3, border: '1px solid #e3e8ef', bgcolor: '#fff' }}>
-                <Button startIcon={<ArrowBack />} onClick={onBack} sx={{ color: '#64748b', mb: 2, textTransform: 'none' }}>
-                    Back to Workspace Board
-                </Button>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1 }}>
+                    <Button startIcon={<ArrowBack />} onClick={onBack} sx={{ color: '#64748b', textTransform: 'none' }}>
+                        Back to Workspace Board
+                    </Button>
 
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <Box>
-                        <Stack direction="row" spacing={2} sx={{
-  mb: 1,
-  alignItems: "center"
-}}>
-                            <Typography variant="h4" sx={{ fontWeight: 700, color: '#121926' }}>
-                                {collection.name}
-                            </Typography>
-                            {isSmart && (
-                                <Chip icon={<AutoAwesome fontSize="small" />} label="AI Smart Collection" size="small" sx={{ bgcolor: '#f3e5f5', color: '#8e24aa', fontWeight: 600 }} />
-                            )}
-                        </Stack>
-                        <Typography variant="body1" color="textSecondary" sx={{ maxWidth: 800 }}>
-                            {collection.description}
-                        </Typography>
-
-                        {isSmart && collection.collection_rule && (
-                            <Box sx={{ mt: 2, p: 1.5, bgcolor: '#f8fafc', borderRadius: 2, border: '1px dashed #cbd5e1', display: 'inline-block' }}>
-                                <Typography variant="caption" sx={{ fontWeight: 700, color: '#475569', display: 'block' }}>Active Routing Rule:</Typography>
-                                <Typography variant="body2" sx={{ color: '#0f172a', fontStyle: 'italic' }}>
-                                    "{collection.collection_rule.semantic_prompt}" (Threshold: {collection.collection_rule.similarity_threshold})
-                                </Typography>
-                            </Box>
-                        )}
-                    </Box>
-
-                    <Stack direction="row" spacing={2}>
+                    <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
                         {/* Add Assets to this workspace */}
                         <Button
                             variant="outlined"
@@ -239,7 +204,7 @@ export default function CollectionDetail({ slug, onBack }) {
                             {t('collectionDetail.share')}
                         </Button>
                         {/*  Trigger AI Map */}
-                        <Button variant="outlined" startIcon={<AutoFixHigh />} onClick={() => setMapDialogOpen(true)} sx={{ borderColor: '#e3e8ef', color: '#0ea5e9' }}>
+                        <Button variant="outlined" startIcon={<AutoFixHigh />} onClick={() => setMapDialogOpen(true)} sx={{ borderColor: '#e3e8ef', color: '#5e35b1' }}>
                             View AI Map
                         </Button>
                         {/* Smart Rule / Upgrade Button */}
@@ -253,26 +218,71 @@ export default function CollectionDetail({ slug, onBack }) {
                         </Button>
                     </Stack>
                 </Box>
+
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 2 }}>
+                    <Box>
+                        <Stack direction="row" spacing={2} sx={{
+  mb: 1,
+  alignItems: "center"
+}}>
+                            <Typography variant="h4" sx={{ fontWeight: 700, color: '#121926' }}>
+                                {collection.name}
+                            </Typography>
+                        </Stack>
+                        <Typography variant="body1" color="textSecondary" sx={{ maxWidth: 800 }}>
+                            {collection.description}
+                        </Typography>
+                    </Box>
+
+                    <Box sx={{ textAlign: 'right' }}>
+                        {isSmart && (
+                            <Chip icon={<AutoAwesome fontSize="small" />} label="AI Smart Collection" size="small" sx={{ bgcolor: '#f3e5f5', color: '#8e24aa', fontWeight: 600, mb: isSmart && collection.collection_rule ? 1 : 0 }} />
+                        )}
+                        {isSmart && collection.collection_rule && (
+                            <Box sx={{ p: 1.5, bgcolor: '#f8fafc', borderRadius: 2, border: '1px dashed #cbd5e1', display: 'inline-block', textAlign: 'left' }}>
+                                <Typography variant="caption" sx={{ fontWeight: 700, color: '#475569', display: 'block' }}>Active Routing Rule:</Typography>
+                                <Typography variant="body2" sx={{ color: '#0f172a', fontStyle: 'italic' }}>
+                                    "{collection.collection_rule.semantic_prompt}" (Threshold: {collection.collection_rule.similarity_threshold})
+                                </Typography>
+                            </Box>
+                        )}
+                    </Box>
+                </Box>
             </Paper>
 
             {/*  Automated TDM Compliance Sweep Display */}
             {collection.compliance_violations && collection.compliance_violations.length > 0 && (
-                <Paper elevation={0} sx={{ p: 2, mb: 4, borderRadius: 2, bgcolor: '#fef2f2', border: '1px solid #fca5a5', display: 'flex', alignItems: 'flex-start' }}>
-                    <Shield sx={{ color: '#ef4444', mr: 2, mt: 0.5 }} />
-                    <Box>
-                        <Typography variant="subtitle2" sx={{ color: '#b91c1c', fontWeight: 700, mb: 0.5 }}>
-                            Governance & Usage Violations Detected ({collection.compliance_violations.length})
-                        </Typography>
-                        <Typography variant="body2" sx={{ color: '#991b1b', mb: 1 }}>
-                            The following assets conflict with this workspace's legal or temporal boundaries. Resolve these before exporting to downstream CMS systems.
-                        </Typography>
-                        <ul style={{ margin: 0, paddingLeft: '20px', color: '#991b1b', fontSize: '0.875rem' }}>
-                            {collection.compliance_violations.map((violation, idx) => (
-                                <li key={idx} style={{ marginBottom: '4px' }}>
-                                    <strong>{violation.title}:</strong> {violation.reason}
-                                </li>
-                            ))}
-                        </ul>
+                <Paper elevation={0} sx={{ p: 2, mb: 4, borderRadius: 2, bgcolor: '#fef2f2', border: '1px solid #fca5a5' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
+                        <Shield sx={{ color: '#ef4444', mr: 2, mt: 0.5 }} />
+                        <Box sx={{ flex: 1 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <Typography variant="subtitle2" sx={{ color: '#b91c1c', fontWeight: 700 }}>
+                                    Governance & Usage Violations Detected ({collection.compliance_violations.length})
+                                </Typography>
+                                <IconButton
+                                    size="small"
+                                    onClick={() => setViolationsExpanded((prev) => !prev)}
+                                    data-testid="collection-violations-toggle"
+                                    aria-label={violationsExpanded ? 'Collapse violations' : 'Expand violations'}
+                                    sx={{ color: '#b91c1c' }}
+                                >
+                                    {violationsExpanded ? <ExpandLess /> : <ExpandMore />}
+                                </IconButton>
+                            </Box>
+                            <Collapse in={violationsExpanded} unmountOnExit>
+                                <Typography variant="body2" sx={{ color: '#991b1b', mb: 1, mt: 0.5 }}>
+                                    The following assets conflict with this workspace's legal or temporal boundaries. Resolve these before exporting to downstream CMS systems.
+                                </Typography>
+                                <ul style={{ margin: 0, paddingLeft: '20px', color: '#991b1b', fontSize: '0.875rem' }}>
+                                    {collection.compliance_violations.map((violation, idx) => (
+                                        <li key={idx} style={{ marginBottom: '4px' }}>
+                                            <strong>{violation.title}:</strong> {violation.reason}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </Collapse>
+                        </Box>
                     </Box>
                 </Paper>
             )}
@@ -374,12 +384,6 @@ export default function CollectionDetail({ slug, onBack }) {
                 <MenuItem onClick={handleMenuClose}>
                     <CloudDownload fontSize="small" sx={{ mr: 1.5, color: '#64748b' }} /> Download
                 </MenuItem>
-                {isSmart && selectedAsset && (
-                    <MenuItem onClick={handleTogglePin}>
-                        <PushPin fontSize="small" sx={{ mr: 1.5, color: '#5e35b1' }} />
-                        {selectedAsset.pinned ? 'Unpin Asset' : 'Pin to Collection'}
-                    </MenuItem>
-                )}
                 <Divider />
                 <MenuItem onClick={handleRemoveAsset} sx={{ color: '#d32f2f' }}>
                     <DeleteOutlined fontSize="small" sx={{ mr: 1.5 }} /> Remove from Collection

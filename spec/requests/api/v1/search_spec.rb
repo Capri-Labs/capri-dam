@@ -670,6 +670,28 @@ RSpec.describe "Api::V1::Search — folders, semantic modes, suggestions, and ca
         hash_including("type" => "folder", "title" => "Brand Guidelines", "href" => "/folders?folder=#{folder.id}")
       )
     end
+
+    it "matches a fragment anywhere within the filename, not just as a prefix" do
+      asset = create(:asset, user: user, title: "Brand_Guidelines_dup1.jpg",
+                      properties: { "content_type" => "image/jpeg", "original_filename" => "Brand_Guidelines_dup1.jpg" })
+      allow_any_instance_of(Api::V1::SearchController).to receive(:asset_url_for).and_return("/api/v1/assets/local/#{asset.uuid}") # rubocop:disable RSpec/AnyInstance
+
+      get "/api/v1/search/suggestions", params: { q: "dup1" }, as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(json["results"]).to include(hash_including("type" => "asset", "id" => asset.uuid))
+    end
+
+    it "matches fragments found only within embedded metadata (keywords/description)" do
+      asset = create(:asset, user: user, title: "Untitled",
+                      properties: { "content_type" => "image/jpeg", "keywords" => "sunset, mountains, dusk" })
+      allow_any_instance_of(Api::V1::SearchController).to receive(:asset_url_for).and_return("/api/v1/assets/local/#{asset.uuid}") # rubocop:disable RSpec/AnyInstance
+
+      get "/api/v1/search/suggestions", params: { q: "mountains" }, as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(json["results"]).to include(hash_including("type" => "asset", "id" => asset.uuid))
+    end
   end
 
   describe "Redis-backed response caching" do

@@ -202,6 +202,68 @@ test.describe('Recycle Bin E2E', () => {
         }
     });
 
+    // Regression test for a PG::ForeignKeyViolation 500 that used to abort
+    // "Empty Bin" whenever a trashed asset's active_version_id was still
+    // referenced elsewhere (see Api::V1::BinController#empty). Confirms the
+    // real end-to-end flow — trash a fresh asset, empty the bin from the UI —
+    // completes successfully with no error toast and no 500.
+    test('Empty Bin actually empties the bin end-to-end without a 500 error', async ({ page }) => {
+        const csrfToken = await page.evaluate(() => document.querySelector('meta[name="csrf-token"]')?.content);
+
+        const buffer = Buffer.from(
+            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+            'base64',
+        );
+
+        const createRes = await page.request.post('/api/v1/assets', {
+            multipart: {
+                file: { name: `empty-bin-e2e-${Date.now()}.png`, mimeType: 'image/png', buffer },
+                title: `Empty Bin E2E ${Date.now()}`,
+            },
+            headers: { 'X-CSRF-Token': csrfToken },
+        });
+        expect(createRes.ok()).toBe(true);
+        const created = await createRes.json();
+        const assetId = created.id || created.uuid;
+
+        const trashRes = await page.request.delete(`/api/v1/assets/${assetId}`, {
+            headers: { 'X-CSRF-Token': csrfToken },
+        });
+        expect(trashRes.ok()).toBe(true);
+
+        await page.goto('/bin');
+        await page.waitForLoadState('networkidle');
+
+        const emptyBtn = page.getByRole('button', { name: /empty bin/i });
+        await expect(emptyBtn).toBeVisible();
+        await emptyBtn.click();
+
+        await expect(page.getByRole('dialog')).toBeVisible();
+
+        const [emptyResponse] = await Promise.all([
+            page.waitForResponse((res) => res.url().includes('/api/v1/bin/empty'), { timeout: 15_000 }),
+            page.getByRole('dialog').getByRole('button', { name: /confirm/i }).click(),
+        ]);
+
+        expect(emptyResponse.status()).toBe(200);
+        const body = await emptyResponse.json();
+
+        // The endpoint must always return 200 and gracefully report any
+        // per-item failures instead of crashing the whole request — items
+        // that fail for unrelated reasons (e.g. still referenced by a
+        // duplicate group) are reported in `errors`, but our freshly-created
+        // test asset must always succeed.
+        const ownAssetError = (body.errors ?? []).find((e) => e.includes(assetId));
+        expect(ownAssetError).toBeUndefined();
+
+        await expect(page.getByRole('dialog')).not.toBeVisible();
+
+        // Bin list should no longer contain our test asset regardless of
+        // whether unrelated pre-existing items failed to delete.
+        await page.waitForLoadState('networkidle');
+        await expect(page.getByText(created.title || `Empty Bin E2E`, { exact: false })).toHaveCount(0);
+    });
+
     // ─────────────────────────────────────────────────────────────────────────
     // Sidebar navigation
     // ─────────────────────────────────────────────────────────────────────────

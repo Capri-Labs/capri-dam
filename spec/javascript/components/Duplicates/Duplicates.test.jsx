@@ -106,4 +106,57 @@ describe('Duplicates components', () => {
     fireEvent.click(screen.getByRole('button', { name: /duplicateManager.resolution.accept/i }));
     expect(onResolve).toHaveBeenCalledWith(12, 'accept', []);
   });
+
+  it('dismisses a duplicate group from the resolution modal', () => {
+    const onDismiss = jest.fn();
+
+    render(
+      <DuplicateResolutionModal
+        open
+        duplicateGroup={group}
+        loading={false}
+        onClose={jest.fn()}
+        onResolve={jest.fn()}
+        onDismiss={onDismiss}
+      />,
+    );
+
+    // Regression check: the dismiss icon button must expose an accessible
+    // name (aria-label), not just a Tooltip title, so it can be targeted by
+    // assistive tech and by getByRole/getByLabel queries in tests.
+    fireEvent.click(screen.getByRole('button', { name: 'duplicateManager.resolution.dismiss' }));
+    expect(onDismiss).toHaveBeenCalledWith(12);
+  });
+
+  it('removes a dismissed group from the pending list in DuplicateManager', async () => {
+    const dismissedGroup = { ...group, id: 99 };
+    let isDismissed = false;
+    global.fetch = mockFetch({
+      'GET /api/v1/duplicate_groups/stats': { pending: 1, resolved: 0, total: 1 },
+      'GET /api/v1/duplicate_groups?status=pending': () => Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ groups: isDismissed ? [] : [ dismissedGroup ] }),
+      }),
+      'GET /api/v1/duplicate_groups/99': { group: dismissedGroup },
+      'PATCH /api/v1/duplicate_groups/99/dismiss': () => {
+        isDismissed = true;
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ group: { ...dismissedGroup, status: 'dismissed' }, message: 'Group dismissed.' }),
+        });
+      },
+    });
+
+    render(<DuplicateManager />);
+
+    const cardLabel = await screen.findByText('duplicateManager.group.potentialMatch');
+    fireEvent.click(cardLabel);
+    expect(await screen.findByText('duplicateManager.resolution.title')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'duplicateManager.resolution.dismiss' }));
+
+    await waitFor(() => expect(screen.queryByText('duplicateManager.resolution.title')).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByText('duplicateManager.group.potentialMatch')).not.toBeInTheDocument());
+    expect(await screen.findByText('duplicateManager.emptyState')).toBeInTheDocument();
+  });
 });

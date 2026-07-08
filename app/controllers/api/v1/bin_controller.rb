@@ -130,15 +130,34 @@ module Api
         deleted = 0
         errors  = []
 
+        asset_ids = items.select { |i| i[:type].to_s != "folder" }.map { |i| i[:id] }
+        assets_by_id = Asset.trashed.includes(:asset_versions).where(id: asset_ids).index_by { |a| a.id.to_s }
+
+        # See the comment in {#empty} — cross-referenced active_version_id
+        # pointers must be cleared for the *whole batch* up front, otherwise
+        # deleting one asset can raise ActiveRecord::InvalidForeignKey because
+        # another asset in the same batch still points at its version.
+        version_ids = assets_by_id.values.flat_map { |a| a.asset_versions.map(&:id) }
+        if version_ids.any?
+          Asset.where(active_version_id: version_ids).update_all(active_version_id: nil) # rubocop:disable Rails/SkipsModelValidations
+        end
+
         items.each do |item|
           id   = item[:id]
           type = item[:type].to_s
 
           begin
             if type == "folder"
-              Folder.trashed.find(id).destroy
+              folder = Folder.trashed.find(id)
+              # See the comment in {#empty} — reparent any live (non-trashed)
+              # assets out of the folder first so the has_many dependent:
+              # :destroy cascade never permanently deletes an asset that was
+              # never actually in the bin.
+              folder.assets.active.update_all(folder_id: nil) # rubocop:disable Rails/SkipsModelValidations
+              folder.destroy
             else
-              permanent_delete_asset(Asset.trashed.includes(:asset_versions).find(id))
+              asset = assets_by_id[id.to_s] || raise(ActiveRecord::RecordNotFound)
+              permanent_delete_asset(asset)
             end
             deleted += 1
           rescue ActiveRecord::RecordNotFound
@@ -153,28 +172,62 @@ module Api
 
       # Permanently destroys every item currently in the bin.
       #
-      # @return [void] renders +200 OK+ with +{ deleted }+
+      # @return [void] renders +200 OK+ with +{ deleted, errors }+
       def empty
         deleted = 0
-
-        Folder.trashed.find_each { |f| f.destroy && (deleted += 1) }
+        errors  = []
 
         backend = ::StorageBackend.find_by(active: true)
         storage = ::StorageManager.adapter_for(backend) if backend
 
-        Asset.trashed.includes(:asset_versions).find_each do |asset|
+        trashed_assets = Asset.trashed.includes(:asset_versions).to_a
+        version_ids = trashed_assets.flat_map { |a| a.asset_versions.map(&:id) }
+
+        # Break every active_version_id FK that points at a version we're
+        # about to delete — not just each asset's own pointer. Two assets can
+        # end up cross-referencing the same version row (e.g. via a
+        # "copy"/"save as" image-edit flow), and Postgres refuses to
+        # cascade-delete an asset_versions row that's still referenced by
+        # *any* row in assets.active_version_id, even one outside the current
+        # batch. Nulling all of them up front avoids a mid-batch
+        # ActiveRecord::InvalidForeignKey crash that would otherwise abort
+        # the whole "Empty Bin" request after only partially completing.
+        if version_ids.any?
+          Asset.where(active_version_id: version_ids).update_all(active_version_id: nil) # rubocop:disable Rails/SkipsModelValidations
+        end
+
+        trashed_assets.each do |asset|
           asset.asset_versions.each do |version|
             storage_path = version.properties["storage_path"]
             storage&.delete(storage_path) if storage_path
             version.file.purge if version.respond_to?(:file) && version.file.attached?
           end
-          # Break active_version_id FK before cascading version deletion
-          asset.update_column(:active_version_id, nil) if asset.active_version_id # rubocop:disable Rails/SkipsModelValidations
           asset.destroy
           deleted += 1
+        rescue StandardError => e
+          errors << "Failed to delete asset ##{asset.id}: #{e.message}"
         end
 
-        render json: { deleted: deleted, message: "Recycle bin emptied." }, status: :ok
+        # Trashing a folder only stamps deleted_at on the folder itself — it
+        # does NOT cascade to its contents (see SoftDeletable). That means a
+        # trashed folder can still legitimately contain live, non-trashed
+        # assets. `Folder has_many :assets, dependent: :destroy`, so calling
+        # `folder.destroy` would otherwise permanently wipe out those live
+        # assets too (and could crash with ActiveRecord::InvalidForeignKey if
+        # one of them still has active_version_id set). Reparent any
+        # surviving live assets to the root before hard-deleting the folder
+        # so we only ever destroy what was actually in the bin, and process
+        # folders last since their own trashed assets were already destroyed
+        # above (leaving nothing else for the cascade to touch).
+        Folder.trashed.find_each do |folder|
+          folder.assets.active.update_all(folder_id: nil) # rubocop:disable Rails/SkipsModelValidations
+          folder.destroy
+          deleted += 1
+        rescue StandardError => e
+          errors << "Failed to delete folder ##{folder.id}: #{e.message}"
+        end
+
+        render json: { deleted: deleted, errors: errors, message: "Recycle bin emptied." }, status: :ok
       end
 
       # Returns the current automatic purge retention policy.

@@ -30,6 +30,7 @@ const SHOTS = [
   { name: 'folders-browser', url: '/folders', wait: 'text=/Folders|Assets/i' },
   { name: 'search-results', url: '/search?q=logo', wait: '#header-root' },
   { name: 'collections', url: '/collections', wait: '#header-root' },
+  { name: 'collection-detail', url: '/collections/ai-lifestyle-outdoor-imagery', wait: 'text=/Curated Assets/i' },
   { name: 'recycle-bin', url: '/bin', wait: 'text=/Recycle Bin/i' },
   { name: 'duplicates', url: '/duplicates', wait: '#header-root' },
   { name: 'inbox', url: '/inbox', wait: '#header-root' },

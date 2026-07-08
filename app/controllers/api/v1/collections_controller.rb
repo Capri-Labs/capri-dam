@@ -1,4 +1,6 @@
 class Api::V1::CollectionsController < ApplicationController
+  include AssetUrlHelper
+
   # Ensure your API controllers skip CSRF if they are using token auth
   skip_before_action :verify_authenticity_token, if: -> { request.format.json? }
 
@@ -82,7 +84,7 @@ class Api::V1::CollectionsController < ApplicationController
     #  Temporal Time-Travel Filter for nested assets
     as_of_date = params[:as_of].present? ? Time.zone.parse(params[:as_of]).end_of_day : Time.current
 
-    render json: @collection.as_json(
+    json = @collection.as_json(
       methods: [ :compliance_violations ],
       include: {
         collection_rule: {
@@ -92,12 +94,27 @@ class Api::V1::CollectionsController < ApplicationController
           # Only show assets that were in the collection as of this date
           conditions: -> { where("collection_assets.created_at <= ?", as_of_date) },
           include: {
-            asset: { only: [ :id, :title, :properties, :url, :created_at ] },
+            asset: { only: [ :id, :title, :properties, :created_at ] },
           },
           methods: [ :pinned ],
         },
       }
-    ), status: :ok
+    )
+
+    # `Asset#url`/`#thumbnail_url` aren't real attributes — the actual public
+    # URL depends on the active storage backend (ActiveStorage / S3 / GCS /
+    # CDN), which `as_json`/`only:` can't resolve. Inject them here via
+    # {AssetUrlHelper} so collection asset cards (and share pages) can render
+    # a real image instead of a broken/missing thumbnail.
+    json["collection_assets"]&.each do |ca_json|
+      asset = @collection.collection_assets.find { |ca| ca.id == ca_json["id"] }&.asset
+      next unless asset
+
+      ca_json["asset"]["url"] = asset_url_for(asset)
+      ca_json["asset"]["thumbnail_url"] = asset_preview_url_for(asset)
+    end
+
+    render json: json, status: :ok
   end
 
   # GET /api/v1/collections/:slug/cluster_map
@@ -134,7 +151,7 @@ class Api::V1::CollectionsController < ApplicationController
 
   # POST /api/v1/collections/:slug/assets
   def add_asset
-    asset = Asset.find_by(id: params[:asset_id])
+    asset = resolve_asset(params[:asset_id])
     return render json: { error: "Asset not found" }, status: :not_found unless asset
 
     join_record = CollectionAsset.new(collection: @collection, asset: asset)
@@ -148,7 +165,8 @@ class Api::V1::CollectionsController < ApplicationController
 
   # DELETE /api/v1/collections/:slug/assets/:asset_id
   def remove_asset
-    join_record = CollectionAsset.find_by(collection: @collection, asset_id: params[:asset_id])
+    asset = resolve_asset(params[:asset_id])
+    join_record = asset && CollectionAsset.find_by(collection: @collection, asset_id: asset.id)
 
     if join_record
       join_record.destroy
@@ -183,7 +201,8 @@ class Api::V1::CollectionsController < ApplicationController
 
   # PATCH /api/v1/collections/:slug/assets/:asset_id/pin
   def toggle_pin
-    join_record = CollectionAsset.find_by(collection: @collection, asset_id: params[:asset_id])
+    asset = resolve_asset(params[:asset_id])
+    join_record = asset && CollectionAsset.find_by(collection: @collection, asset_id: asset.id)
 
     return render json: { error: "Asset not in collection" }, status: :not_found unless join_record
 
@@ -285,6 +304,15 @@ class Api::V1::CollectionsController < ApplicationController
     end
   rescue ActiveRecord::RecordNotFound
     render json: { error: "Collection not found" }, status: :not_found
+  end
+
+  # Assets are addressable by either their primary key (+id+) or their public
+  # +uuid+ column (the value returned by search/suggestion endpoints), so any
+  # asset_id param coming from the client may be either.
+  def resolve_asset(asset_id)
+    return nil if asset_id.blank?
+
+    Asset.find_by(id: asset_id) || Asset.find_by(uuid: asset_id)
   end
 
   def collection_params

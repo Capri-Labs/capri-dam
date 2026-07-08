@@ -224,6 +224,53 @@ describe('Collections components', () => {
     expect(await screen.findByText('Semantic Summary')).toBeInTheDocument();
   });
 
+  it('renders the Governance & Usage Violations banner collapsed by default and expands on click', async () => {
+    jest.spyOn(CollectionContextModule, 'useCollections').mockReturnValue({
+      updateSmartRule: jest.fn(),
+      simulateSmartRule: jest.fn(),
+      temporalDate: '',
+    });
+    global.fetch = mockFetch({
+      'GET /api/v1/collections/spring-launch': collection,
+    });
+
+    render(<CollectionDetail slug="spring-launch" onBack={jest.fn()} />);
+
+    expect(await screen.findByText('Governance & Usage Violations Detected (1)')).toBeInTheDocument();
+
+    // Collapsed by default — the detailed violation list/explanation is hidden.
+    expect(screen.queryByText('Missing rights', { exact: false })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('collection-violations-toggle'));
+    expect(await screen.findByText(/Missing rights/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('collection-violations-toggle'));
+    await waitFor(() => expect(screen.queryByText(/Missing rights/)).not.toBeInTheDocument());
+  });
+
+  it('does not offer a Pin/Unpin action in the asset menu — Remove from Collection already covers detaching an asset', async () => {
+    jest.spyOn(CollectionContextModule, 'useCollections').mockReturnValue({
+      updateSmartRule: jest.fn(),
+      simulateSmartRule: jest.fn(),
+      temporalDate: '',
+    });
+    global.fetch = mockFetch({
+      'GET /api/v1/collections/spring-launch': collection,
+    });
+
+    render(<CollectionDetail slug="spring-launch" onBack={jest.fn()} />);
+
+    expect(await screen.findByText('Spring Launch')).toBeInTheDocument();
+
+    // Open the per-asset "more" menu.
+    fireEvent.click(screen.getByRole('button', { name: '' }));
+    expect(await screen.findByText('Remove from Collection')).toBeInTheDocument();
+
+    expect(screen.queryByText('Pin to Collection')).not.toBeInTheDocument();
+    expect(screen.queryByText('Unpin Asset')).not.toBeInTheDocument();
+  });
+
+
   it('renders SemanticClusterMap, fetches nodes, and closes', async () => {
     global.fetch = mockFetch({
       'GET /api/v1/collections/spring-launch/cluster_map': { nodes: [{ id: 1, x: 20, y: 30, title: 'Node 1' }] },

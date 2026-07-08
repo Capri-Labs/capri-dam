@@ -276,6 +276,7 @@ export default function DuplicateResolutionModal({
                     <Tooltip title={t('duplicateManager.resolution.dismiss', 'Dismiss without action')}>
                         <IconButton
                             size="small"
+                            aria-label={t('duplicateManager.resolution.dismiss', 'Dismiss without action')}
                             onClick={handleDismiss}
                             disabled={loading}
                             sx={{ color: '#94a3b8', '&:hover': { color: '#475569' } }}
@@ -284,7 +285,7 @@ export default function DuplicateResolutionModal({
                         </IconButton>
                     </Tooltip>
 
-                    <IconButton size="small" onClick={onClose} sx={{ color: '#94a3b8' }}>
+                    <IconButton size="small" aria-label={t('common.close', 'Close')} onClick={onClose} sx={{ color: '#94a3b8' }}>
                         <CloseOutlined fontSize="small" />
                     </IconButton>
                 </Box>

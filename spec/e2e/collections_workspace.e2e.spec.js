@@ -234,6 +234,36 @@ test.describe('Collections workspace E2E', () => {
         await expect(page.getByText('snowy-hero.jpg')).toBeVisible();
     });
 
+    // Regression coverage: Pin/Unpin was removed from the per-asset menu since
+    // "Remove from Collection" already covers detaching an asset from any
+    // collection type (manual or AI Smart Collection) — having both was
+    // redundant.
+    test('does not offer a Pin/Unpin action in the asset menu', async ({ page }) => {
+        const smartCollection = {
+            ...baseCollection,
+            slug: 'asset-pin-toggle-e2e',
+            name: 'Pin Toggle E2E',
+            collection_type: 'smart',
+            collection_rule: { semantic_prompt: 'studio product shots', similarity_threshold: 0.8 },
+            collection_assets: [
+                { id: 21, asset_id: 9010, pinned: false, asset: { id: 9010, title: 'Studio Shot', original_filename: 'studio-shot.jpg' } },
+            ],
+        };
+
+        await page.route(`**/api/v1/collections/${smartCollection.slug}*`, (route) => {
+            if (route.request().method() !== 'GET') return route.continue();
+            route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(smartCollection) });
+        });
+
+        await page.goto(`/collections/${smartCollection.slug}`);
+        await expect(page.getByText('Studio Shot').or(page.getByText('studio-shot.jpg'))).toBeVisible();
+
+        await page.getByTestId('MoreVertIcon').click();
+        await expect(page.getByText('Remove from Collection')).toBeVisible();
+        await expect(page.getByText('Pin to Collection')).not.toBeVisible();
+        await expect(page.getByText('Unpin Asset')).not.toBeVisible();
+    });
+
     // ------------------------------------------------------------------
     // 4. Generating a real signed share link and visiting it as a truly
     //    unauthenticated visitor.

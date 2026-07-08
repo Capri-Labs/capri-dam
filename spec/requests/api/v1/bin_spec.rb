@@ -239,6 +239,29 @@ RSpec.describe "Bin API", type: :request do
       delete "/api/v1/bin/bulk_destroy", params: { items: [] }, as: :json
       expect(response).to have_http_status(:unauthorized)
     end
+
+    # Regression test mirroring the /empty cross-reference fix above: deleting
+    # a batch that contains both the version owner and the asset dangling a
+    # reference to it must not raise ActiveRecord::InvalidForeignKey.
+    it "deletes a batch even when one asset's active_version_id cross-references another asset's version" do
+      owner = trashed_asset
+      other = trashed_asset2
+      shared_version = create(:asset_version, asset: owner)
+      other.update_column(:active_version_id, shared_version.id) # rubocop:disable Rails/SkipsModelValidations
+
+      expect {
+        delete "/api/v1/bin/bulk_destroy", params: {
+          items: [
+            { id: owner.id, type: "asset" },
+            { id: other.id, type: "asset" },
+          ],
+        }, as: :json
+      }.not_to raise_error
+
+      data = JSON.parse(response.body)
+      expect(data["errors"]).to be_empty
+      expect(data["deleted"]).to eq(2)
+    end
   end
 
   # ===========================================================================
@@ -254,6 +277,7 @@ RSpec.describe "Bin API", type: :request do
         schema type: :object,
                properties: {
                  deleted: { type: :integer },
+                 errors:  { type: :array, items: { type: :string } },
                  message: { type: :string },
                }
 
@@ -262,6 +286,7 @@ RSpec.describe "Bin API", type: :request do
         run_test! do |response|
           data = JSON.parse(response.body)
           expect(data["deleted"]).to be >= 2
+          expect(data["errors"]).to be_empty
           expect(Asset.trashed.count).to  eq(0)
           expect(Folder.trashed.count).to eq(0)
         end
@@ -289,6 +314,57 @@ RSpec.describe "Bin API", type: :request do
       sign_out admin
       delete "/api/v1/bin/empty"
       expect(response).to have_http_status(:unauthorized)
+    end
+
+    # Regression test for a PG::ForeignKeyViolation crash: when one asset's
+    # `active_version_id` points at an `asset_versions` row owned by a
+    # *different* asset (e.g. left over from a "copy"/"save as" edit flow),
+    # destroying the owning asset used to cascade-delete that version while
+    # the other asset's FK still referenced it, raising
+    # ActiveRecord::InvalidForeignKey and aborting the whole request.
+    it "empties the bin even when another asset's active_version_id cross-references a version being destroyed" do
+      owner  = trashed_asset
+      other  = trashed_asset2
+      shared_version = create(:asset_version, asset: owner)
+
+      # Simulate the dangling cross-reference: `other` points at a version
+      # it does not own via asset_versions.asset_id.
+      other.update_column(:active_version_id, shared_version.id) # rubocop:disable Rails/SkipsModelValidations
+
+      expect {
+        delete "/api/v1/bin/empty"
+      }.not_to raise_error
+
+      expect(response).to have_http_status(:ok)
+      data = JSON.parse(response.body)
+      expect(data["errors"]).to be_empty
+      expect(Asset.trashed.count).to eq(0)
+      expect(Folder.trashed.count).to eq(0)
+    end
+
+    # Regression test for the actual reported crash: trashing a folder only
+    # stamps deleted_at on the folder — it does not cascade to the folder's
+    # contents (see SoftDeletable) — so a trashed folder can still contain a
+    # live, non-trashed asset. `Folder has_many :assets, dependent: :destroy`
+    # meant `folder.destroy` used to permanently wipe out that live asset too,
+    # crashing with ActiveRecord::InvalidForeignKey whenever the live asset
+    # still had `active_version_id` set. The fix reparents live assets out of
+    # the folder (instead of destroying them) before the folder is removed.
+    it "reparents (not destroys) a live asset still parented under a trashed folder" do
+      live_asset = create(:asset, title: "Live Asset In Trashed Folder", folder: trashed_folder)
+      create(:asset_version, asset: live_asset)
+      live_asset.update_column(:active_version_id, live_asset.asset_versions.first.id) # rubocop:disable Rails/SkipsModelValidations
+
+      delete "/api/v1/bin/empty"
+
+      expect(response).to have_http_status(:ok)
+      data = JSON.parse(response.body)
+      expect(data["errors"]).to be_empty
+      expect(Folder.trashed.count).to eq(0)
+
+      # The live asset must survive, just detached from the destroyed folder.
+      expect(live_asset.reload.deleted_at).to be_nil
+      expect(live_asset.folder_id).to be_nil
     end
   end
 

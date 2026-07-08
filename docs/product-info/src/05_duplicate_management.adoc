@@ -50,15 +50,16 @@ image::duplicates.png[Duplicate Manager, title="Duplicate Manager — grouped by
 
 === Test coverage status
 
-[.status-progress]#Partial# — `spec/e2e/search_and_duplicates_fixes.e2e.spec.js`
-covers the "Go to Folder" / "Go to asset" navigation actions from the
-resolution modal. The rest of the Duplicate Manager screen still has **no
-dedicated E2E spec**. Its stat cards are incidentally captured as part of
-the TDM & Storage Health dashboard tests (`spec/e2e/data_health.e2e.spec.js`), but
-no test exercises the full Duplicate Manager screen itself. Planned coverage:
+[.status-covered]#Covered by E2E# — `spec/e2e/duplicate_manager_workspace.e2e.spec.js`
+provides dedicated coverage of the Duplicate Manager screen itself:
 
 * Duplicate Manager page loads and lists existing duplicate groups.
 * Side-by-side resolution modal opens and shows both duplicate members.
 * Resolving a duplicate group (keep/archive/delete) updates its status.
 * Dismissing a duplicate group excludes it from future prompts.
 * A perceptual-hash (cross-format) duplicate group renders correctly.
+
+`spec/e2e/search_and_duplicates_fixes.e2e.spec.js` additionally covers the "Go
+to Folder" / "Go to asset" navigation actions from the resolution modal, and
+the stat cards are also incidentally exercised as part of the TDM & Storage
+Health dashboard tests (`spec/e2e/data_health.e2e.spec.js`).

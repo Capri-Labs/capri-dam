@@ -135,6 +135,25 @@ RSpec.describe "Api::V1::Collections coverage", type: :request do
     expect(json).to eq("error" => "Asset not in collection")
   end
 
+  it "resolves asset_id by the public uuid column (as returned by search suggestions), not just the primary key" do
+    collection = create(:collection, user: user)
+    asset = create(:asset, user: user)
+
+    # Search suggestions/other client-facing endpoints hand back `asset.uuid`
+    # (not the DB primary key `id`), so add/pin/remove must accept either.
+    post "/api/v1/collections/#{collection.slug}/assets/#{asset.uuid}", as: :json
+    expect(response).to have_http_status(:ok)
+    expect(collection.assets.reload).to include(asset)
+
+    patch "/api/v1/collections/#{collection.slug}/assets/#{asset.uuid}/pin", as: :json
+    expect(response).to have_http_status(:ok)
+    expect(json["pinned"]).to be(true)
+
+    delete "/api/v1/collections/#{collection.slug}/assets/#{asset.uuid}", as: :json
+    expect(response).to have_http_status(:ok)
+    expect(collection.assets.reload).not_to include(asset)
+  end
+
   it "configures smart rules, cluster maps, purges CDN and simulates rules" do
     collection = create(:collection, user: user)
     asset = create(:asset, user: user, title: "Published", status: :ready)

@@ -35,11 +35,18 @@ RSpec.describe CdnManager do
       expect(described_class.adapter).to eq(adapter)
     end
 
-    it "raises when no configuration exists" do
+    it "falls back to a no-op adapter when no configuration exists (e.g. dev/CI)" do
       allow(CdnConfiguration).to receive(:find_by).with(is_active: true).and_return(nil)
       allow(Rails.application).to receive(:config_for).with(:cdn_settings).and_return({})
 
-      expect { described_class.adapter }.to raise_error("FATAL: No CDN configured in Database or YAML.")
+      expect(described_class.adapter).to be_a(CdnAdapters::NullAdapter)
+    end
+
+    it "falls back to a no-op adapter when cdn_settings.yml has no section for the current environment" do
+      allow(CdnConfiguration).to receive(:find_by).with(is_active: true).and_return(nil)
+      allow(Rails.application).to receive(:config_for).with(:cdn_settings).and_return(nil)
+
+      expect(described_class.adapter).to be_a(CdnAdapters::NullAdapter)
     end
 
     it "raises for unknown providers" do

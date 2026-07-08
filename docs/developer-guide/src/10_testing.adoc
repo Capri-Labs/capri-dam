@@ -269,6 +269,28 @@ which previously had no dedicated e2e coverage:
 npx playwright test spec/e2e/collections_workspace.e2e.spec.js --reporter=list
 ----
 
+=== Duplicate Manager workspace coverage
+
+`spec/e2e/duplicate_manager_workspace.e2e.spec.js` covers
+`app/javascript/components/Duplicates/**` (the `/duplicates` screen), which
+previously had no dedicated e2e spec — its stat cards were only incidentally
+captured by `spec/e2e/data_health.e2e.spec.js`'s TDM & Storage Health
+dashboard assertions, and `spec/e2e/search_and_duplicates_fixes.e2e.spec.js`
+only exercises two "Go to Folder"/"Go to asset" navigation regressions:
+
+* Duplicate Manager page loads and lists existing duplicate groups (and
+  shows the empty-state message when there are none).
+* The side-by-side resolution modal opens and shows both duplicate members.
+* Resolving a duplicate group — "Keep All" or deleting a selected copy —
+  updates its status, closes the modal, and moves it out of the pending
+  queue into the "Resolved" filter.
+* Dismissing a duplicate group excludes it from future pending prompts.
+
+[source,bash]
+----
+npx playwright test spec/e2e/duplicate_manager_workspace.e2e.spec.js --reporter=list
+----
+
 == Continuous integration
 
 All test suites run in `.github/workflows/main.yml`.

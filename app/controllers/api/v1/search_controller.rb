@@ -220,14 +220,26 @@ module Api
       end
 
       # Mixed asset + folder suggestions used by the top-bar autocomplete.
+      #
+      # Matches anywhere in the filename/title, or anywhere within the asset's
+      # full metadata blob (keywords, description, embedded EXIF/XMP/IPTC,
+      # etc.), so partial fragments like "dup1" correctly surface
+      # `Brand_Guidelines_dup1.jpg`. The payload itself is Redis-cached (see
+      # `SearchCache.fetch` in `#suggestions`) so repeated keystrokes for the
+      # same query don't re-hit Postgres.
       def build_suggestions_payload(query)
+        like_term = "%#{query}%"
+
         assets = Asset.active
-          .where("title ILIKE :q OR properties->>'original_filename' ILIKE :q", q: "#{query}%")
+          .where(
+            "title ILIKE :q OR properties->>'original_filename' ILIKE :q OR properties::text ILIKE :q",
+            q: like_term
+          )
           .order(updated_at: :desc)
           .limit(SUGGESTIONS_ASSET_LIMIT)
 
         folders = Folder.active
-          .where("name ILIKE :q", q: "#{query}%")
+          .where("name ILIKE :q", q: like_term)
           .order(:name)
           .limit(SUGGESTIONS_FOLDER_LIMIT)
 
