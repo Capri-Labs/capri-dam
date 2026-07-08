@@ -2,13 +2,16 @@
 #
 # == Built-in (system) groups
 #
-# Three groups are seeded automatically and are **immutable**:
+# Four groups are seeded automatically and are **immutable** (slug/is_system
+# cannot change, cannot be deleted) — membership, however, is fully editable
+# by admins/super-admins like any other group:
 #
 # | Slug                    | Purpose |
 # |-------------------------|---------|
 # | +everyone+              | Every user is implicitly a member.  Cannot be deleted or modified. |
 # | +administrators+        | Full access to all assets/folders.  Only a super-admin can edit membership. |
 # | +super-administrators+  | Reserved for strictest system operations.  Cannot be deleted. |
+# | +metadata_users+        | Members can create/duplicate/edit/delete custom Metadata Schemas. Non-members get read-only access. Admins/super-admins can add or remove members freely. See {User#metadata_schema_manager?}. |
 #
 # @see UserGroupClosure
 # @see FolderPolicy
@@ -18,7 +21,7 @@ class UserGroup < ApplicationRecord
   # Built-in group slugs
   # ---------------------------------------------------------------------------
 
-  SYSTEM_SLUGS = %w[everyone administrators super-administrators].freeze
+  SYSTEM_SLUGS = %w[everyone administrators super-administrators metadata_users].freeze
 
   # ---------------------------------------------------------------------------
   # Guards
@@ -80,6 +83,7 @@ class UserGroup < ApplicationRecord
   def everyone?        = slug == "everyone"
   def administrators?  = slug == "administrators"
   def super_administrators? = slug == "super-administrators"
+  def metadata_users?  = slug == "metadata_users"
   def member_count     = users.count
 
   # Establishes a parent-child relationship, sets parent_id, and updates all closure paths.

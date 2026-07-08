@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     Dialog, DialogTitle, DialogContent, DialogActions,
     Box, Typography, Button, TextField,
@@ -154,7 +155,8 @@ function FieldEditor({ field, onChange }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // SchemaEditorDialog
 // ─────────────────────────────────────────────────────────────────────────────
-export default function SchemaEditorDialog({ schema, onClose, onSave }) {
+export default function SchemaEditorDialog({ schema, onClose, onSave, rootSchemas = [], canManage = true }) {
+    const { t } = useTranslation();
     // Clone own tabs (non-inherited) for editing
     const ownTabs = (schema.resolved_tabs ?? schema.tabs ?? []).filter(t => !t.inherited);
     const inheritedTabs = (schema.resolved_tabs ?? []).filter(t => t.inherited);
@@ -168,6 +170,22 @@ export default function SchemaEditorDialog({ schema, onClose, onSave }) {
     const [saving,        setSaving]       = useState(false);
     const [newTabName,    setNewTabName]   = useState('');
     const [addingTab,     setAddingTab]    = useState(false);
+
+    // Editable title + "Inherit From" (root-level schemas only)
+    const [name,          setName]         = useState(schema.name);
+    const [inheritsFromId, setInheritsFromId] = useState(schema.inherits_from_id ?? '');
+    const [nameError,     setNameError]    = useState('');
+
+    const isRootLevel = schema.level === 'root';
+    // Built-in root schemas (Default, Collection, Product Images, etc.) are
+    // fixed OOTB starting points and must never inherit from each other —
+    // only custom (non-builtin) root schemas may set Inherit From.
+    const allowInherit = isRootLevel && !schema.is_builtin;
+    // Valid inherit-from targets: other root schemas, excluding self and any
+    // schema that already inherits from this one (would create a cycle).
+    const inheritFromOptions = allowInherit
+        ? rootSchemas.filter(s => s.id !== schema.id && s.inherits_from_id !== schema.id)
+        : [];
 
     const activeTab = tabs[activeTabIdx];
 
@@ -231,13 +249,17 @@ export default function SchemaEditorDialog({ schema, onClose, onSave }) {
 
     // ── Save ─────────────────────────────────────────────────────────────────
     const handleSave = async () => {
+        if (!name.trim()) { setNameError('Name is required.'); return; }
+        setNameError('');
         setSaving(true);
         const normalizedTabs = tabs.map((tab, ti) => ({
             ...tab,
             position: ti,
             fields: (tab.fields ?? []).map((f, fi) => ({ ...f, position: fi }))
         }));
-        await onSave(schema.id, { tabs: normalizedTabs });
+        const payload = { name: name.trim(), tabs: normalizedTabs };
+        if (allowInherit) payload.inherits_from_id = inheritsFromId || null;
+        await onSave(schema.id, payload);
         setSaving(false);
     };
 
@@ -245,110 +267,157 @@ export default function SchemaEditorDialog({ schema, onClose, onSave }) {
         <Dialog open fullWidth maxWidth="xl" onClose={onClose}
                 slotProps={{ paper: { sx: { height: '90vh', borderRadius: 3 } } }}>
             {/* Title bar */}
-            <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1.5, pb: 1,
+            <DialogTitle sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5, pb: 1.5,
                                borderBottom: '1px solid #f1f5f9', bgcolor: '#faf5ff' }}>
-                <EditOutlined sx={{ color: '#5e35b1' }} />
-                <Box sx={{ flex: 1 }}>
-                    <Typography fontWeight={700} sx={{ color: '#1e293b' }}>
-                        Edit Schema — {schema.name}
-                    </Typography>
-                    <Typography variant="caption" sx={{ color: '#94a3b8' }}>
-                        Level: {schema.level}
-                        {schema.mime_segment ? ` · MIME: ${schema.mime_segment}` : ''}
-                    </Typography>
+                <EditOutlined sx={{ color: '#5e35b1', mt: 1 }} />
+                <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 1 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+                        <TextField
+                            size="small"
+                            value={name}
+                            onChange={e => { setName(e.target.value); setNameError(''); }}
+                            disabled={!canManage}
+                            error={!!nameError}
+                            helperText={nameError || t('metadataSchemas.name.helper')}
+                            data-testid="schema-editor-name"
+                            label={t('metadataSchemas.name.label')}
+                            sx={{ maxWidth: 420, bgcolor: '#fff' }}
+                        />
+                        <Typography variant="caption" data-testid="schema-editor-level" sx={{ color: '#94a3b8', whiteSpace: 'nowrap' }}>
+                            Level: {schema.level}
+                            {schema.mime_segment ? ` · MIME: ${schema.mime_segment}` : ''}
+                        </Typography>
+                        {allowInherit && (
+                            <FormControl size="small" sx={{ minWidth: 220, maxWidth: 300 }}>
+                                <InputLabel id="inherit-from-label">{t('metadataSchemas.inheritFrom.label')}</InputLabel>
+                                <Select
+                                    labelId="inherit-from-label"
+                                    label={t('metadataSchemas.inheritFrom.label')}
+                                    value={inheritsFromId}
+                                    disabled={!canManage}
+                                    data-testid="schema-editor-inherit-from"
+                                    onChange={e => setInheritsFromId(e.target.value)}
+                                    displayEmpty
+                                >
+                                    <MenuItem value="">
+                                        <em>{t('metadataSchemas.inheritFrom.none')}</em>
+                                    </MenuItem>
+                                    {inheritFromOptions.map(s => (
+                                        <MenuItem key={s.id} value={s.id}>{s.name}</MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        )}
+                    </Box>
+                    {isRootLevel && schema.is_builtin && (
+                        <Typography variant="caption" data-testid="builtin-no-inherit-note" sx={{ color: '#94a3b8', fontStyle: 'italic' }}>
+                            {t('metadataSchemas.inheritFrom.builtinUnavailable')}
+                        </Typography>
+                    )}
                 </Box>
                 <IconButton onClick={onClose} size="small">
                     <CloseOutlined fontSize="small" />
                 </IconButton>
             </DialogTitle>
 
-            <DialogContent sx={{ p: 0, display: 'flex', overflow: 'hidden' }}>
-                {/* ── Left: tabs + fields list ── */}
-                <Box sx={{ width: 380, flexShrink: 0, display: 'flex', flexDirection: 'column',
-                           borderRight: '1px solid #e2e8f0' }}>
-                    {/* Tab bar */}
-                    <Box sx={{ borderBottom: '1px solid #e2e8f0', bgcolor: '#f8fafc', px: 1, pt: 1 }}>
-                        {/* Inherited tabs (read-only labels) */}
-                        {inheritedTabs.length > 0 && (
-                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 0.5 }}>
-                                {inheritedTabs.map(t => (
-                                    <Chip key={t.id}
-                                          icon={<LockOutlined sx={{ fontSize: '12px !important' }} />}
-                                          label={t.name}
-                                          size="small"
-                                          sx={{ bgcolor: '#f1f5f9', color: '#64748b', fontSize: '0.72rem' }} />
-                                ))}
-                            </Box>
-                        )}
-                        {/* Own tabs */}
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap' }}>
-                            {tabs.map((tab, i) => (
-                                <Box key={tab.id} sx={{ display: 'flex', alignItems: 'center' }}>
-                                    <Chip
-                                        label={tab.name}
-                                        size="small"
-                                        onClick={() => { setActiveTabIdx(i); setSelectedField(null); }}
-                                        onDelete={() => deleteTab(i)}
-                                        deleteIcon={<CloseOutlined sx={{ fontSize: '12px !important' }} />}
-                                        sx={{
-                                            cursor: 'pointer',
-                                            bgcolor: activeTabIdx === i ? '#5e35b1' : '#e0e7ff',
-                                            color:   activeTabIdx === i ? '#fff' : '#3730a3',
-                                            fontWeight: activeTabIdx === i ? 700 : 400,
-                                            fontSize: '0.75rem',
-                                            '& .MuiChip-deleteIcon': {
-                                                color: activeTabIdx === i ? '#c4b5fd' : '#6366f1'
-                                            }
-                                        }}
-                                    />
-                                </Box>
+            <DialogContent sx={{ p: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                {/* ── Tab bar (full width) ── */}
+                <Box sx={{ borderBottom: '1px solid #e2e8f0', bgcolor: '#f8fafc', px: 1, pt: 1, flexShrink: 0 }}>
+                    {/* Inherited tabs (read-only labels) */}
+                    {inheritedTabs.length > 0 && (
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 0.5 }}>
+                            {inheritedTabs.map(t => (
+                                <Chip key={t.id}
+                                      icon={<LockOutlined sx={{ fontSize: '12px !important' }} />}
+                                      label={t.name}
+                                      size="small"
+                                      sx={{ bgcolor: '#f1f5f9', color: '#64748b', fontSize: '0.72rem' }} />
                             ))}
-                            {addingTab ? (
-                                <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
-                                    <TextField size="small" placeholder="Tab name" autoFocus
-                                               value={newTabName} onChange={e => setNewTabName(e.target.value)}
-                                               onKeyDown={e => { if (e.key === 'Enter') addTab(); if (e.key === 'Escape') setAddingTab(false); }}
-                                               sx={{ width: 110, '& input': { fontSize: '0.8rem', py: '4px' } }} />
-                                    <Button size="small" variant="contained" onClick={addTab}
-                                            sx={{ minWidth: 0, px: 1, py: 0.25, fontSize: '0.75rem', bgcolor: '#5e35b1' }}>
-                                        Add
-                                    </Button>
-                                </Box>
-                            ) : (
-                                <Tooltip title="Add tab">
-                                    <IconButton size="small" onClick={() => setAddingTab(true)}
-                                                sx={{ bgcolor: '#f0f4ff', width: 24, height: 24 }}>
-                                        <AddOutlined sx={{ fontSize: 14 }} />
-                                    </IconButton>
-                                </Tooltip>
-                            )}
                         </Box>
+                    )}
+                    {/* Own tabs */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap' }}>
+                        {tabs.map((tab, i) => (
+                            <Box key={tab.id} sx={{ display: 'flex', alignItems: 'center' }}>
+                                <Chip
+                                    label={tab.name}
+                                    size="small"
+                                    onClick={() => { setActiveTabIdx(i); setSelectedField(null); }}
+                                    onDelete={() => deleteTab(i)}
+                                    deleteIcon={<CloseOutlined sx={{ fontSize: '12px !important' }} />}
+                                    sx={{
+                                        cursor: 'pointer',
+                                        bgcolor: activeTabIdx === i ? '#5e35b1' : '#e0e7ff',
+                                        color:   activeTabIdx === i ? '#fff' : '#3730a3',
+                                        fontWeight: activeTabIdx === i ? 700 : 400,
+                                        fontSize: '0.75rem',
+                                        '& .MuiChip-deleteIcon': {
+                                            color: activeTabIdx === i ? '#c4b5fd' : '#6366f1'
+                                        }
+                                    }}
+                                />
+                            </Box>
+                        ))}
+                        {addingTab ? (
+                            <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
+                                <TextField size="small" placeholder="Tab name" autoFocus
+                                           value={newTabName} onChange={e => setNewTabName(e.target.value)}
+                                           onKeyDown={e => { if (e.key === 'Enter') addTab(); if (e.key === 'Escape') setAddingTab(false); }}
+                                           sx={{ width: 110, '& input': { fontSize: '0.8rem', py: '4px' } }} />
+                                <Button size="small" variant="contained" onClick={addTab}
+                                        sx={{ minWidth: 0, px: 1, py: 0.25, fontSize: '0.75rem', bgcolor: '#5e35b1' }}>
+                                    Add
+                                </Button>
+                            </Box>
+                        ) : (
+                            <Tooltip title="Add tab">
+                                <IconButton size="small" onClick={() => setAddingTab(true)}
+                                            sx={{ bgcolor: '#f0f4ff', width: 24, height: 24 }}>
+                                    <AddOutlined sx={{ fontSize: 14 }} />
+                                </IconButton>
+                            </Tooltip>
+                        )}
+                    </Box>
+                </Box>
+
+                {/* ── 3-column layout: Inherited Fields | Custom Fields | Field Settings ── */}
+                <Box sx={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+                    {/* ── Column 1: Inherited Fields (read-only, not selectable) ── */}
+                    <Box data-testid="inherited-fields-column"
+                         sx={{ width: 260, flexShrink: 0, overflow: 'auto', borderRight: '1px solid #e2e8f0', bgcolor: '#f8fafc' }}>
+                        <Box sx={{ px: 1.5, pt: 1.5, pb: 0.5 }}>
+                            <Typography variant="caption" sx={{ color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.5, fontWeight: 700 }}>
+                                Inherited Fields
+                            </Typography>
+                        </Box>
+                        {inheritedTabs.flatMap(t => (t.fields ?? []).filter(f => f.inherited)).length === 0 ? (
+                            <Box sx={{ px: 2, py: 2, color: '#94a3b8', textAlign: 'center' }}>
+                                <Typography variant="caption">No inherited fields.</Typography>
+                            </Box>
+                        ) : (
+                            inheritedTabs.flatMap(t =>
+                                (t.fields ?? []).filter(f => f.inherited).map(f => (
+                                    <Box key={f.id}
+                                         sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 0.75,
+                                               px: 1.5, color: '#94a3b8', cursor: 'default' }}>
+                                        <LockOutlined sx={{ fontSize: 14, flexShrink: 0 }} />
+                                        <Box sx={{ flex: 1, minWidth: 0 }}>
+                                            <Typography variant="body2" noWrap sx={{ fontSize: '0.82rem' }}>{f.label}</Typography>
+                                            <Typography variant="caption" noWrap sx={{ fontSize: '0.68rem', color: '#b0b9c6' }}>
+                                                {f.map_to_property || 'no property mapped'}
+                                            </Typography>
+                                        </Box>
+                                        <Chip label={f.field_type} size="small"
+                                              sx={{ fontSize: '0.65rem', bgcolor: '#f1f5f9', color: '#94a3b8' }} />
+                                    </Box>
+                                ))
+                            )
+                        )}
                     </Box>
 
-                    {/* Fields list for active tab */}
-                    <Box sx={{ flex: 1, overflow: 'auto' }}>
-                        {/* Inherited fields from ancestor tabs */}
-                        {inheritedTabs.flatMap(t => (t.fields ?? []).filter(f => f.inherited)).length > 0 && (
-                            <Box sx={{ px: 1.5, py: 1, bgcolor: '#f8fafc', borderBottom: '1px solid #f1f5f9' }}>
-                                <Typography variant="caption" sx={{ color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.5, fontWeight: 700 }}>
-                                    Inherited Fields
-                                </Typography>
-                                {inheritedTabs.flatMap(t =>
-                                    (t.fields ?? []).filter(f => f.inherited).map(f => (
-                                        <Box key={f.id}
-                                             sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 0.75,
-                                                   borderRadius: 1, px: 1, color: '#94a3b8' }}>
-                                            <LockOutlined sx={{ fontSize: 14 }} />
-                                            <Typography variant="body2" sx={{ flex: 1, fontSize: '0.82rem' }}>{f.label}</Typography>
-                                            <Chip label={f.field_type} size="small"
-                                                  sx={{ fontSize: '0.65rem', bgcolor: '#f1f5f9', color: '#94a3b8' }} />
-                                        </Box>
-                                    ))
-                                )}
-                            </Box>
-                        )}
-
-                        {/* Own fields */}
+                    {/* ── Column 2: Custom Fields for the active tab (selectable/editable) ── */}
+                    <Box data-testid="custom-fields-column"
+                         sx={{ width: 320, flexShrink: 0, overflow: 'auto', borderRight: '1px solid #e2e8f0' }}>
                         {!activeTab ? (
                             <Box sx={{ p: 2, color: '#94a3b8', textAlign: 'center' }}>
                                 <Typography variant="body2">Add a tab first</Typography>
@@ -357,7 +426,7 @@ export default function SchemaEditorDialog({ schema, onClose, onSave }) {
                             <>
                                 <Box sx={{ px: 1.5, pt: 1.5, pb: 0.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                     <Typography variant="caption" sx={{ color: '#64748b', textTransform: 'uppercase', letterSpacing: 0.5, fontWeight: 700 }}>
-                                        {activeTab.name} Fields
+                                        Custom Fields
                                     </Typography>
                                     <Button size="small" startIcon={<AddOutlined />}
                                             onClick={addField}
@@ -420,14 +489,14 @@ export default function SchemaEditorDialog({ schema, onClose, onSave }) {
                             </>
                         )}
                     </Box>
-                </Box>
 
-                {/* ── Right: field settings ── */}
-                <Box sx={{ flex: 1, overflow: 'auto' }}>
-                    <FieldEditor
-                        field={selectedField}
-                        onChange={updateField}
-                    />
+                    {/* ── Column 3: Field settings ── */}
+                    <Box data-testid="field-editor-column" sx={{ flex: 1, overflow: 'auto' }}>
+                        <FieldEditor
+                            field={selectedField}
+                            onChange={updateField}
+                        />
+                    </Box>
                 </Box>
             </DialogContent>
 
@@ -435,7 +504,7 @@ export default function SchemaEditorDialog({ schema, onClose, onSave }) {
                 <Button onClick={onClose} sx={{ textTransform: 'none', color: '#64748b' }}>
                     Cancel
                 </Button>
-                <Button variant="contained" onClick={handleSave} disabled={saving}
+                <Button variant="contained" onClick={handleSave} disabled={saving || !canManage}
                         startIcon={<SaveOutlined />}
                         sx={{ textTransform: 'none', bgcolor: '#5e35b1', '&:hover': { bgcolor: '#4527a0' } }}>
                     {saving ? 'Saving…' : 'Save Schema'}

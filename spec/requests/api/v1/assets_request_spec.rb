@@ -421,6 +421,21 @@ RSpec.describe "Api::V1::Assets coverage", type: :request do
       expect(matches["Binned Copy"]["in_bin"]).to eq(true)
     end
 
+    it "flags a matched duplicate as in_bin when its containing folder (not the asset itself) is trashed" do
+      trashed_folder = create(:folder, user: user, name: "Test")
+      folder_match = asset_with_version(title: "Folder Binned Copy", properties: { "checksum_sha256" => "folder-bin-dupe" })
+      folder_match.update!(folder: trashed_folder)
+      trashed_folder.soft_delete
+
+      post "/api/v1/assets/check_hashes", params: { hashes: [ "folder-bin-dupe" ] }, as: :json
+      expect(response).to have_http_status(:ok)
+
+      match = json["duplicates"]["folder-bin-dupe"].first
+      expect(match["title"]).to eq("Folder Binned Copy")
+      expect(folder_match.reload.deleted_at).to be_nil # the asset itself was never soft-deleted
+      expect(match["in_bin"]).to eq(true)
+    end
+
     it "returns no duplicates when checksum and filename metadata are absent" do
       asset = asset_with_version(title: "Unique", properties: { "checksum_sha256" => nil, "original_filename" => nil })
 

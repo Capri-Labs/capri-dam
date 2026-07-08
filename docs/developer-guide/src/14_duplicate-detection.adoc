@@ -57,10 +57,14 @@ GraphQL also exposes `duplicateGroups`, `duplicateManagerStats`,
 from the `DuplicateGroup` repository scan above): it takes a batch of
 client-computed file hashes and returns any matching existing `AssetVersion`
 records per hash, keyed for `Folders/UploadWorkspace.jsx`'s duplicate-overlay
-flow. Each matched entry includes `in_bin: asset.deleted_at.present?` so the
-upload-time comparison UI (`DuplicateResolverDialog.jsx`) can flag a match
-that is currently in the Recycle Bin with the same `BinChip` badge Search
-results use — see <<section-ui-components>>.
+flow. Each matched entry includes
+`in_bin: asset.deleted_at.present? || asset.folder&.deleted_at.present?` —
+true when either the asset itself was soft-deleted *or* its containing folder
+was (an asset whose folder is trashed is only reachable via the Bin, so it
+must be flagged the same way) — so the upload-time comparison UI
+(`DuplicateResolverDialog.jsx`) can flag a match that is currently in the
+Recycle Bin with the same `BinChip` badge Search results use — see
+<<section-ui-components>>.
 
 == UI
 

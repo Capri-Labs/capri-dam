@@ -2,6 +2,12 @@ class Api::V1::MetadataSchemasController < ApplicationController
   skip_before_action :verify_authenticity_token, if: -> { request.format.json? }
   before_action :authenticate_hybrid!
   before_action :set_schema, only: %i[show update destroy duplicate apply_to_folder remove_from_folder folders]
+  # Write actions are gated behind metadata_schema_manager? (admins,
+  # super-admins, or members of the built-in `metadata_users` group).
+  # `index`/`show`/`folders` remain readable by any authenticated user, so
+  # non-managers still see the full schema tree — just without the ability
+  # to mutate it.
+  before_action :ensure_schema_manager!, only: %i[create update destroy duplicate apply_to_folder remove_from_folder]
 
   # GET /api/v1/metadata_schemas
   # Returns all root schemas with their full child tree and folder counts.
@@ -94,9 +100,17 @@ class Api::V1::MetadataSchemasController < ApplicationController
     render json: { error: "Metadata schema not found" }, status: :not_found
   end
 
+  def ensure_schema_manager!
+    return if current_user.metadata_schema_manager?
+
+    render json: { error: "You do not have permission to manage metadata schemas. " \
+                           "Ask an administrator to add you to the metadata_users group." },
+           status: :forbidden
+  end
+
   def schema_params
     params.require(:metadata_schema).permit(
-      :name, :description, :level, :parent_id, :mime_segment,
+      :name, :description, :level, :parent_id, :mime_segment, :inherits_from_id,
       tabs: {}
     )
   end
@@ -113,6 +127,8 @@ class Api::V1::MetadataSchemasController < ApplicationController
       parent_id:     schema.parent_id,
       mime_segment:  schema.mime_segment,
       is_builtin:    schema.is_builtin,
+      inherits_from_id:   schema.inherits_from_id,
+      inherits_from_name: schema.inherits_from&.name,
       tabs:          schema.tabs || [],
       folder_count:  schema.folder_assignments.size,
       child_count:   schema.children.active.count,
@@ -132,6 +148,14 @@ class Api::V1::MetadataSchemasController < ApplicationController
   end
 
   # ── Deep Duplicate Helper ──────────────────────────────────────────────────
+  # For a root-level schema, the copy is linked back to the original via
+  # `inherits_from_id` instead of deep-copying its tabs — so "Copy of X"
+  # starts with X's tabs shown read-only (inherited, kept in sync with any
+  # future edits to X) plus zero tabs of its own, and the admin/metadata_users
+  # member can add their own custom tabs on top, or change/clear the
+  # inheritance link later via the schema editor's "Inherit From" dropdown.
+  # Type/subtype children are still fully deep-copied (tabs included), since
+  # `inherits_from` only applies between root schemas.
   def deep_duplicate(schema, parent:, name_prefix: "")
     copy = schema.dup
     copy.name       = "#{name_prefix}#{schema.name}"
@@ -140,6 +164,12 @@ class Api::V1::MetadataSchemasController < ApplicationController
     copy.is_builtin = false
     copy.parent     = parent
     copy.deleted_at = nil
+
+    if name_prefix.present? && schema.level == "root"
+      copy.inherits_from = schema
+      copy.tabs = []
+    end
+
     copy.save!
 
     schema.children.active.each do |child|

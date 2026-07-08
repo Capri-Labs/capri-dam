@@ -3,7 +3,7 @@ class Api::V1::CollectionsController < ApplicationController
   skip_before_action :verify_authenticity_token, if: -> { request.format.json? }
 
   before_action :authenticate_hybrid!
-  before_action :require_write_scope!, only: %i[create update destroy bulk_delete bulk_update add_asset remove_asset toggle_pin configure_rule]
+  before_action :require_write_scope!, only: %i[create update destroy bulk_delete bulk_update add_asset remove_asset toggle_pin configure_rule create_share_link]
   before_action :set_collection, only: [
     :show,
     :update,
@@ -14,6 +14,7 @@ class Api::V1::CollectionsController < ApplicationController
     :configure_rule,
     :cluster_map,
     :purge_cdn,
+    :create_share_link,
   ]
 
   # GET /api/v1/collections
@@ -222,6 +223,23 @@ class Api::V1::CollectionsController < ApplicationController
     # CdnPurgeWorker.perform_async(@collection.id)
 
     render json: { message: "CDN Cache invalidation initiated for #{@collection.name}." }, status: :ok
+  end
+
+  # POST /api/v1/collections/:slug/share_link
+  #
+  # Mints a time-boxed, tamper-proof signed token (see {Collection#generate_share_token})
+  # and returns the fully-qualified public URL an unauthenticated visitor can
+  # open at {Public::CollectionSharesController#show} to view a read-only,
+  # login-free snapshot of the collection's assets.
+  def create_share_link
+    expires_in = Collection::SHARE_LINK_EXPIRY
+    token = @collection.generate_share_token(expires_in: expires_in)
+
+    render json: {
+      token: token,
+      url: public_collection_share_url(token: token),
+      expires_at: expires_in.from_now.iso8601,
+    }, status: :ok
   end
 
   # POST /api/v1/collections/simulate_rule

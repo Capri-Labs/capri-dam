@@ -162,9 +162,34 @@ RSpec.describe User, type: :model do
     end
   end
 
+  describe "#metadata_schema_manager?" do
+    it "returns true for admins" do
+      admin = build(:user, :admin)
+      expect(admin.metadata_schema_manager?).to be true
+    end
+
+    it "returns true for members of the administrators group" do
+      user  = create(:user)
+      group = create(:user_group, :administrators)
+      user.user_groups << group
+      expect(user.metadata_schema_manager?).to be true
+    end
+
+    it "returns true for members of the metadata_users group" do
+      user  = create(:user)
+      group = create(:user_group, :metadata_users)
+      user.user_groups << group
+      expect(user.metadata_schema_manager?).to be true
+    end
+
+    it "returns false for regular users not in metadata_users" do
+      user = create(:user)
+      expect(user.metadata_schema_manager?).to be false
+    end
+  end
+
   describe '#can_see_folder?' do
-    it 'returns the read permission for the folder' do
-      user = build(:user)
+    it 'returns the read permission for the folder' do      user = build(:user)
       folder = build(:folder)
 
       allow(user).to receive(:permissions_for).with(folder).and_return(read: true)

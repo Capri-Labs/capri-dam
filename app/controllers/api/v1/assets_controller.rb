@@ -58,7 +58,22 @@ module Api
 
       protect_from_forgery with: :null_session,
                            if: -> { request.format.json? || doorkeeper_token.present? }
-      before_action :authenticate_hybrid!
+      # Lets an unauthenticated visitor on a public collection share page
+      # (see Public::CollectionSharesController) load asset thumbnails/files
+      # without a session — but *only* for the exact asset(s) that belong to
+      # the collection the caller's `share_token` was signed for. Every other
+      # request — including every other call to {#serve_local} — still
+      # requires a normal authenticated session.
+      #
+      # NOTE: this must be expressed as an +unless:+ on the *same*
+      # before_action (not as a separate +skip_before_action ... only:, if:+)
+      # because Rails ORs multiple independent +unless+ conditions together
+      # when deciding whether to skip a callback — an +only:+ action filter
+      # combined with a token-validity +if:+ lambda would then skip auth for
+      # *every* {#serve_local} request as soon as the action matched, letting
+      # the token check bypass rather than gate it.
+      before_action :authenticate_hybrid!,
+                    unless: -> { action_name == "serve_local" && valid_collection_share_for_asset?(params[:uuid], params[:share_token]) }
       before_action :require_write_scope!, only: %i[create update destroy restore permanent_delete update_metadata process_image]
 
       # Usage events the frontend is allowed to record via {#track_event}.
@@ -817,10 +832,13 @@ module Api
             url: asset_url_for(asset),
             folderName: asset.folder ? asset.folder.name : "/Root/Uncategorized",
             # Surfaces whether the matched asset currently lives in the
-            # Recycle Bin (soft-deleted), so the upload-time duplicate
-            # comparison overlay can flag it — mirrors the "Bin" badge shown
-            # on Search results (see Api::V1::SearchController#include_bin?).
-            in_bin: asset.deleted_at.present?,
+            # Recycle Bin — either because the asset itself was soft-deleted,
+            # or because its containing folder was (an asset whose folder is
+            # trashed is only reachable via the Bin, so it must be treated
+            # the same way) — so the upload-time duplicate comparison overlay
+            # can flag it, mirroring the "Bin" badge shown on Search results
+            # (see Api::V1::SearchController#include_bin?).
+            in_bin: asset.deleted_at.present? || asset.folder&.deleted_at.present?,
           }
         end
 
@@ -1075,7 +1093,22 @@ module Api
 
       private
 
+      # @api private
+      # Re-validates a `share_token` (see {Collection#generate_share_token})
+      # against the *specific* asset being requested. Used only to decide
+      # whether {#serve_local} may skip normal authentication — never trusts
+      # the token in isolation, always confirms collection membership too.
+      def valid_collection_share_for_asset?(uuid, token)
+        return false if token.blank? || uuid.blank?
+
+        collection = Collection.find_by_share_token(token)
+        return false unless collection
+
+        collection.assets.exists?(uuid: uuid)
+      end
+
       # Parses the DAM filename naming convention and extracts structured metadata.
+
       #
       # Expected format: +ProductID-LanguageCode-AssetTypeCode.ext+
       # Example:         +012993112028-en-FR01.jpg+

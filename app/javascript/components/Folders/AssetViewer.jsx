@@ -179,7 +179,7 @@ export default function AssetViewer({ asset: initialAsset, open, onClose, onAsse
                     <AssetStatsPopover asset={asset} />
 
                     <Tooltip title={translate('assetViewer.toolbar.pinToCollection', 'Pin to Collection')}>
-                        <IconButton color="inherit" onClick={() => setPinOpen(true)}><PushPin fontSize="small" /></IconButton>
+                        <IconButton color="inherit" onClick={() => setPinOpen(true)} data-testid="asset-pin-to-collection-toggle"><PushPin fontSize="small" /></IconButton>
                     </Tooltip>
 
                     <Tooltip title={translate('assetViewer.toolbar.shareAsset', 'Share Asset')}>
@@ -447,7 +447,7 @@ export default function AssetViewer({ asset: initialAsset, open, onClose, onAsse
             <PinToCollectionDialog
                 open={pinOpen}
                 onClose={() => setPinOpen(false)}
-                assetIds={[asset.id]} // Wrap single ID in array if your PinToCollectionDialog expects bulk IDs
+                asset={asset}
             />
         </Dialog>
     );

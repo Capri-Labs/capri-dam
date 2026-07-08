@@ -2244,7 +2244,8 @@
   },
   "assetMetadataPanel": {
     "field": {
-      "inheritedReadOnly": "Vom übergeordneten Schema geerbt — schreibgeschützt",
+      "readOnlyField": "Dieses Feld ist schreibgeschützt",
+      "inheritedFromSchema": "Geerbt vom Schema {{schema}}",
       "selectPlaceholder": "— auswählen —",
       "tagsHelperSuffix": " — Eingabetaste zum Hinzufügen drücken"
     },
@@ -2536,5 +2537,55 @@
     },
     "copyright": "© {{year}} Capri DAM. Alle Rechte vorbehalten.",
     "systemOperational": "Alle Systeme betriebsbereit"
+  },
+  "metadataSchemas": {
+    "title": "Metadatenschemata",
+    "name": {
+      "label": "Schemaname",
+      "helper": "Dieser Name wird im Schemabaum und im Detailbereich angezeigt."
+    },
+    "inheritFrom": {
+      "label": "Erben von",
+      "none": "Keine — keine Vererbung",
+      "helper": "Geerbte Tabs bleiben mit dem Quellschema synchron und erscheinen schreibgeschützt neben Ihren eigenen benutzerdefinierten Tabs.",
+      "builtinUnavailable": "Integrierte Schemata können nicht von einem anderen Schema erben."
+    },
+    "inheritsChip": "Erbt von: {{name}}",
+    "readOnlyBanner": "Nur-Lese-Zugriff. Bitten Sie einen Administrator, Sie der Gruppe metadata_users hinzuzufügen, um benutzerdefinierte Metadatenschemata zu erstellen, zu duplizieren, zu bearbeiten oder zu löschen."
+  },
+  "collectionDetail": {
+    "addAssets": "Medien hinzufügen",
+    "share": "Teilen"
+  },
+  "collectionShare": {
+    "title": "Sammlung teilen",
+    "description": "Jeder mit diesem Link kann eine schreibgeschützte Version dieser Sammlung ansehen. Keine Anmeldung erforderlich.",
+    "copied": "Link in die Zwischenablage kopiert.",
+    "expiresAt": "Dieser Link läuft am {{date}} ab.",
+    "error": "Der Freigabelink konnte nicht erstellt werden. Bitte versuchen Sie es erneut.",
+    "close": "Schließen"
+  },
+  "addAssetsDialog": {
+    "title": "Medien hinzufügen",
+    "searchTab": "Bibliothek durchsuchen",
+    "uploadTab": "Neu hochladen",
+    "searchPlaceholder": "Medien nach Name oder Tag suchen...",
+    "searchHint": "Beginnen Sie zu tippen, um die Mediathek zu durchsuchen.",
+    "noResults": "Keine Medien entsprechen Ihrer Suche.",
+    "searchError": "Medien konnten nicht durchsucht werden.",
+    "added": "Hinzugefügt",
+    "addAria": "{{title}} zu dieser Sammlung hinzufügen",
+    "assetAdded": "Medium zur Sammlung hinzugefügt.",
+    "dragOrClick": "Bilder hierher ziehen oder klicken, um Dateien auszuwählen.",
+    "dropHere": "Dateien hier ablegen...",
+    "uploadAndAttach": "Hochladen & Anhängen",
+    "uploadComplete": "Upload abgeschlossen. Medien wurden dieser Sammlung angehängt.",
+    "done": "Fertig",
+    "status": {
+      "pending": "Bereit zum Hochladen",
+      "uploading": "Wird hochgeladen...",
+      "done": "Zur Sammlung hinzugefügt",
+      "error": "Upload fehlgeschlagen"
+    }
   }
 }

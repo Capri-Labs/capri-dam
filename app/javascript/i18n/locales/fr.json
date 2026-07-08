@@ -2244,7 +2244,8 @@
   },
   "assetMetadataPanel": {
     "field": {
-      "inheritedReadOnly": "Hérité du schéma parent — lecture seule",
+      "readOnlyField": "Ce champ est en lecture seule",
+      "inheritedFromSchema": "Hérité du schéma {{schema}}",
       "selectPlaceholder": "— sélectionner —",
       "tagsHelperSuffix": " — appuyez sur Entrée pour ajouter"
     },
@@ -2536,5 +2537,55 @@
     },
     "copyright": "© {{year}} Capri DAM. Tous droits réservés.",
     "systemOperational": "Tous les systèmes sont opérationnels"
+  },
+  "metadataSchemas": {
+    "title": "Schémas de métadonnées",
+    "name": {
+      "label": "Nom du schéma",
+      "helper": "Ce nom apparaît dans l'arborescence des schémas et le panneau de détails."
+    },
+    "inheritFrom": {
+      "label": "Hériter de",
+      "none": "Aucun — pas d'héritage",
+      "helper": "Les onglets hérités restent synchronisés avec le schéma source et apparaissent en lecture seule à côté de vos propres onglets personnalisés.",
+      "builtinUnavailable": "Les schémas intégrés ne peuvent pas hériter d'un autre schéma."
+    },
+    "inheritsChip": "Hérite de : {{name}}",
+    "readOnlyBanner": "Accès en lecture seule. Demandez à un administrateur de vous ajouter au groupe metadata_users pour créer, dupliquer, modifier ou supprimer des schémas de métadonnées personnalisés."
+  },
+  "collectionDetail": {
+    "addAssets": "Ajouter des ressources",
+    "share": "Partager"
+  },
+  "collectionShare": {
+    "title": "Partager la collection",
+    "description": "Toute personne disposant de ce lien peut consulter une version en lecture seule de cette collection. Aucune connexion requise.",
+    "copied": "Lien copié dans le presse-papiers.",
+    "expiresAt": "Ce lien expire le {{date}}.",
+    "error": "Échec de la génération du lien de partage. Veuillez réessayer.",
+    "close": "Fermer"
+  },
+  "addAssetsDialog": {
+    "title": "Ajouter des ressources",
+    "searchTab": "Rechercher dans la bibliothèque",
+    "uploadTab": "Téléverser un nouveau fichier",
+    "searchPlaceholder": "Rechercher des ressources par nom ou tag...",
+    "searchHint": "Commencez à taper pour rechercher dans la bibliothèque de ressources.",
+    "noResults": "Aucune ressource ne correspond à votre recherche.",
+    "searchError": "Échec de la recherche de ressources.",
+    "added": "Ajouté",
+    "addAria": "Ajouter {{title}} à cette collection",
+    "assetAdded": "Ressource ajoutée à la collection.",
+    "dragOrClick": "Glissez-déposez des images ici, ou cliquez pour parcourir.",
+    "dropHere": "Déposez les fichiers ici...",
+    "uploadAndAttach": "Téléverser et attacher",
+    "uploadComplete": "Téléversement terminé. Ressources attachées à cette collection.",
+    "done": "Terminé",
+    "status": {
+      "pending": "Prêt à téléverser",
+      "uploading": "Téléversement en cours...",
+      "done": "Ajouté à la collection",
+      "error": "Échec du téléversement"
+    }
   }
 }

@@ -9,6 +9,8 @@ import CollectionDetail from '../../../../app/javascript/components/Collections/
 import CollectionPropertiesDialog from '../../../../app/javascript/components/Collections/CollectionPropertiesDialog';
 import CollectionsBoard from '../../../../app/javascript/components/Collections/CollectionsBoard';
 import SemanticClusterMap from '../../../../app/javascript/components/Collections/SemanticClusterMap';
+import ShareCollectionDialog from '../../../../app/javascript/components/Collections/ShareCollectionDialog';
+import AddAssetsToCollectionDialog from '../../../../app/javascript/components/Collections/AddAssetsToCollectionDialog';
 import { CollectionProvider, useCollections } from '../../../../app/javascript/components/Collections/CollectionContext';
 import * as CollectionContextModule from '../../../../app/javascript/components/Collections/CollectionContext';
 
@@ -247,5 +249,104 @@ describe('Collections components', () => {
     expect(await screen.findByText('Spring Launch')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Create Collection' }));
     expect(await screen.findByText('Create New Workspace')).toBeInTheDocument();
+  });
+
+  it('opens Add Assets and Share dialogs from CollectionDetail toolbar', async () => {
+    jest.spyOn(CollectionContextModule, 'useCollections').mockReturnValue({
+      updateSmartRule: jest.fn(),
+      toggleAssetPin: jest.fn(),
+      simulateSmartRule: jest.fn(),
+      temporalDate: '',
+      generateShareLink: jest.fn().mockResolvedValue({ url: 'https://dam.test/s/collections/tok', expires_at: '2026-08-01T00:00:00Z' }),
+      addAssetToCollection: jest.fn(),
+    });
+    global.fetch = mockFetch({
+      'GET /api/v1/collections/spring-launch': collection,
+    });
+
+    render(<CollectionDetail slug="spring-launch" onBack={jest.fn()} />);
+
+    expect(await screen.findByText('Spring Launch')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('collection-add-assets-button'));
+    expect(screen.getByTestId('add-assets-dialog')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('collection-share-button'));
+    expect(screen.getByTestId('share-collection-dialog')).toBeInTheDocument();
+  });
+
+  it('renders the empty-state Add Assets CTA when a collection has no assets', async () => {
+    jest.spyOn(CollectionContextModule, 'useCollections').mockReturnValue({
+      updateSmartRule: jest.fn(),
+      toggleAssetPin: jest.fn(),
+      simulateSmartRule: jest.fn(),
+      temporalDate: '',
+      generateShareLink: jest.fn(),
+      addAssetToCollection: jest.fn(),
+    });
+    global.fetch = mockFetch({
+      'GET /api/v1/collections/spring-launch': { ...collection, collection_assets: [] },
+    });
+
+    render(<CollectionDetail slug="spring-launch" onBack={jest.fn()} />);
+
+    expect(await screen.findByText('Curated Assets (0)')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('collection-add-assets-empty-cta'));
+    expect(screen.getByTestId('add-assets-dialog')).toBeInTheDocument();
+  });
+
+  it('ShareCollectionDialog fetches and copies a signed share link', async () => {
+    const generateShareLink = jest.fn().mockResolvedValue({
+      url: 'https://dam.test/s/collections/tok', expires_at: '2026-08-01T00:00:00Z',
+    });
+    jest.spyOn(CollectionContextModule, 'useCollections').mockReturnValue({ generateShareLink });
+
+    render(<ShareCollectionDialog open onClose={jest.fn()} slug="spring-launch" />);
+
+    await waitFor(() => expect(generateShareLink).toHaveBeenCalledWith('spring-launch'));
+    expect(await screen.findByTestId('share-collection-url-input')).toHaveValue('https://dam.test/s/collections/tok');
+
+    fireEvent.click(screen.getByTestId('share-collection-copy-button'));
+    await waitFor(() => expect(navigator.clipboard.writeText).toHaveBeenCalledWith('https://dam.test/s/collections/tok'));
+  });
+
+  it('ShareCollectionDialog surfaces an error when link generation fails', async () => {
+    jest.spyOn(CollectionContextModule, 'useCollections').mockReturnValue({
+      generateShareLink: jest.fn().mockResolvedValue(null),
+    });
+
+    render(<ShareCollectionDialog open onClose={jest.fn()} slug="spring-launch" />);
+
+    expect(await screen.findByText('collectionShare.error')).toBeInTheDocument();
+  });
+
+  it('AddAssetsToCollectionDialog searches the library and attaches a selected asset', async () => {
+    const addAssetToCollection = jest.fn().mockResolvedValue({ slug: 'spring-launch' });
+    jest.spyOn(CollectionContextModule, 'useCollections').mockReturnValue({ addAssetToCollection });
+    global.fetch = mockFetch({
+      'GET /api/v1/search/suggestions': {
+        query: 'hero',
+        results: [{ type: 'asset', id: 42, title: 'Hero Shot', subtitle: 'hero.jpg', thumb_url: '' }],
+      },
+    });
+
+    render(<AddAssetsToCollectionDialog open onClose={jest.fn()} slug="spring-launch" onAssetsAdded={jest.fn()} />);
+
+    fireEvent.change(screen.getByTestId('add-assets-search-input'), { target: { value: 'hero' } });
+    act(() => jest.advanceTimersByTime(350));
+
+    expect(await screen.findByText('Hero Shot')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('checkbox'));
+
+    await waitFor(() => expect(addAssetToCollection).toHaveBeenCalledWith('spring-launch', 42));
+    expect(await screen.findByText('addAssetsDialog.added')).toBeInTheDocument();
+  });
+
+  it('AddAssetsToCollectionDialog shows a hint before any search query is entered', () => {
+    jest.spyOn(CollectionContextModule, 'useCollections').mockReturnValue({ addAssetToCollection: jest.fn() });
+
+    render(<AddAssetsToCollectionDialog open onClose={jest.fn()} slug="spring-launch" onAssetsAdded={jest.fn()} />);
+
+    expect(screen.getByText('addAssetsDialog.searchHint')).toBeInTheDocument();
   });
 });

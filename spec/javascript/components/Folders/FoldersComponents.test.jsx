@@ -349,6 +349,47 @@ describe('Folders components', () => {
     expect(screen.getByLabelText('Camera Make')).toHaveValue('Canon');
   });
 
+  it('lets a user edit values for fields inherited from a system/root schema, but keeps fields explicitly flagged read_only locked', async () => {
+    global.fetch = mockFetch({
+      'GET /api/v1/assets/4/metadata_schema': {
+        id: 6,
+        name: 'Image Schema',
+        applied_schema_id: 6,
+        resolved_tabs: [
+          {
+            id: 'basic',
+            name: 'Basic',
+            inherited: true,
+            schema_name: 'Default',
+            fields: [
+              { id: 'title', label: 'Title', field_type: 'text', map_to_property: 'dc:title', inherited: true, schema_name: 'Default', value: '' },
+              { id: 'checksum', label: 'Checksum', field_type: 'text', map_to_property: 'sys:checksum', inherited: true, schema_name: 'Default', read_only: true, value: 'abc123' },
+            ],
+          },
+        ],
+      },
+    });
+
+    render(
+      <AssetMetadataPanel
+        asset={{ id: 4, folder_id: 9, properties: { applied_schema_id: 6 } }}
+        onAssetUpdated={jest.fn()}
+      />
+    );
+
+    expect(await screen.findByText('Image Schema')).toBeInTheDocument();
+
+    // Inherited-but-not-read_only field: editable.
+    const titleField = screen.getByLabelText(/Title/);
+    expect(titleField).not.toBeDisabled();
+    fireEvent.change(titleField, { target: { value: 'My New Title' } });
+    expect(titleField).toHaveValue('My New Title');
+
+    // Explicitly read_only field: still locked regardless of being inherited.
+    const checksumField = screen.getByLabelText(/Checksum/);
+    expect(checksumField).toBeDisabled();
+  });
+
   it('falls back to client-side embedded mapping when the asset endpoint is unavailable', async () => {
     global.fetch = mockFetch({
       'GET /api/v1/assets/3/metadata_schema': { ok: false, json: () => Promise.resolve({}) },
@@ -1088,5 +1129,36 @@ describe('Folders components', () => {
 
     expect(metadata.tags).toEqual(expect.arrayContaining(['Campaign', 'Enhanced', 'Web-Ready']));
     expect(metadata.tags).toHaveLength(3); // de-duplicated, no repeats
+  });
+
+  it('attaches dam:product_id/language_code/asset_type metadata when the filename matches ProductID-LanguageCode-AssetTypeCode naming', async () => {
+    // mockParseProductFilename (see beforeEach) returns isProductNaming: true
+    // for any filename, standing in for a real "0123-en-FR01.jpg"-style name.
+    global.fetch = mockFetch({
+      'GET /api/v1/metadata_schemas': [{ id: 7, name: 'Product Images', slug: 'product-images', level: 'root' }],
+      'GET /api/v1/upload_restrictions': { allowed_mime_types: ['image/*'] },
+      'GET /api/v1/collections': [],
+      'POST /api/v1/assets/check_hashes': { duplicates: {} },
+      'POST /api/v1/assets': {},
+    });
+
+    render(<UploadWorkspace folderId={15} onClose={jest.fn()} onUploadComplete={jest.fn()} />);
+
+    await waitFor(() => expect(dropzoneOnDrop).toBeInstanceOf(Function));
+    await act(async () => {
+      await dropzoneOnDrop([new File(['file'], '0123-en-FR01.jpg', { type: 'image/jpeg' })]);
+    });
+    expect(await screen.findByDisplayValue('0123-en-FR01.jpg')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Upload (1)' }));
+
+    await waitFor(() => expect(global.fetch).toHaveBeenCalledWith('/api/v1/assets', expect.objectContaining({ method: 'POST' })));
+
+    const [, options] = global.fetch.mock.calls.find(([url, opts]) => String(url) === '/api/v1/assets' && opts.method === 'POST');
+    const metadata = JSON.parse(options.body.get('metadata'));
+
+    expect(metadata['dam:product_id']).toBe('0123');
+    expect(metadata['dam:language_code']).toBe('en');
+    expect(metadata['dam:asset_type']).toBe('FR01');
   });
 });

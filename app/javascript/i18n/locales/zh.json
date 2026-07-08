@@ -2244,7 +2244,8 @@
   },
   "assetMetadataPanel": {
     "field": {
-      "inheritedReadOnly": "继承自父级架构 — 只读",
+      "readOnlyField": "此字段为只读",
+      "inheritedFromSchema": "继承自 {{schema}} 架构",
       "selectPlaceholder": "— 选择 —",
       "tagsHelperSuffix": " — 按 Enter 添加"
     },
@@ -2536,5 +2537,55 @@
     },
     "copyright": "© {{year}} Capri DAM。保留所有权利。",
     "systemOperational": "所有系统运行正常"
+  },
+  "metadataSchemas": {
+    "title": "元数据架构",
+    "name": {
+      "label": "架构名称",
+      "helper": "该名称会显示在架构树和详情面板中。"
+    },
+    "inheritFrom": {
+      "label": "继承自",
+      "none": "无 — 不继承",
+      "helper": "继承的选项卡会与源架构保持同步，并与您自己的自定义选项卡一起以只读方式显示。",
+      "builtinUnavailable": "内置架构不能继承自其他架构。"
+    },
+    "inheritsChip": "继承自：{{name}}",
+    "readOnlyBanner": "只读访问权限。请管理员将您添加到 metadata_users 组，以便创建、复制、编辑或删除自定义元数据架构。"
+  },
+  "collectionDetail": {
+    "addAssets": "添加资源",
+    "share": "分享"
+  },
+  "collectionShare": {
+    "title": "分享合集",
+    "description": "拥有此链接的任何人都可以查看此合集的只读版本。无需登录。",
+    "copied": "链接已复制到剪贴板。",
+    "expiresAt": "此链接将于 {{date}} 过期。",
+    "error": "生成分享链接失败，请重试。",
+    "close": "关闭"
+  },
+  "addAssetsDialog": {
+    "title": "添加资源",
+    "searchTab": "搜索资源库",
+    "uploadTab": "上传新文件",
+    "searchPlaceholder": "按名称或标签搜索资源...",
+    "searchHint": "开始输入以搜索资源库。",
+    "noResults": "没有与您的搜索匹配的资源。",
+    "searchError": "搜索资源失败。",
+    "added": "已添加",
+    "addAria": "将 {{title}} 添加到此合集",
+    "assetAdded": "资源已添加到合集。",
+    "dragOrClick": "将图像拖放到此处，或点击浏览。",
+    "dropHere": "将文件拖放到此处...",
+    "uploadAndAttach": "上传并附加",
+    "uploadComplete": "上传完成。资源已附加到此合集。",
+    "done": "完成",
+    "status": {
+      "pending": "准备上传",
+      "uploading": "上传中...",
+      "done": "已添加到合集",
+      "error": "上传失败"
+    }
   }
 }

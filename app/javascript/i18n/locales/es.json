@@ -2244,7 +2244,8 @@
   },
   "assetMetadataPanel": {
     "field": {
-      "inheritedReadOnly": "Heredado del esquema principal — solo lectura",
+      "readOnlyField": "Este campo es de solo lectura",
+      "inheritedFromSchema": "Heredado del esquema {{schema}}",
       "selectPlaceholder": "— seleccionar —",
       "tagsHelperSuffix": " — pulsa Intro para añadir"
     },
@@ -2536,5 +2537,55 @@
     },
     "copyright": "© {{year}} Capri DAM. Todos los derechos reservados.",
     "systemOperational": "Todos los sistemas operativos"
+  },
+  "metadataSchemas": {
+    "title": "Esquemas de metadatos",
+    "name": {
+      "label": "Nombre del esquema",
+      "helper": "Este nombre se muestra en el árbol de esquemas y en el panel de detalles."
+    },
+    "inheritFrom": {
+      "label": "Heredar de",
+      "none": "Ninguno — sin herencia",
+      "helper": "Las pestañas heredadas permanecen sincronizadas con el esquema de origen y aparecen de solo lectura junto a sus propias pestañas personalizadas.",
+      "builtinUnavailable": "Los esquemas integrados no pueden heredar de otro esquema."
+    },
+    "inheritsChip": "Hereda de: {{name}}",
+    "readOnlyBanner": "Acceso de solo lectura. Pida a un administrador que lo agregue al grupo metadata_users para crear, duplicar, editar o eliminar esquemas de metadatos personalizados."
+  },
+  "collectionDetail": {
+    "addAssets": "Añadir activos",
+    "share": "Compartir"
+  },
+  "collectionShare": {
+    "title": "Compartir colección",
+    "description": "Cualquiera con este enlace puede ver una versión de solo lectura de esta colección. No se requiere iniciar sesión.",
+    "copied": "Enlace copiado al portapapeles.",
+    "expiresAt": "Este enlace caduca el {{date}}.",
+    "error": "No se pudo generar el enlace para compartir. Inténtalo de nuevo.",
+    "close": "Cerrar"
+  },
+  "addAssetsDialog": {
+    "title": "Añadir activos",
+    "searchTab": "Buscar en la biblioteca",
+    "uploadTab": "Subir nuevo",
+    "searchPlaceholder": "Buscar activos por nombre o etiqueta...",
+    "searchHint": "Comienza a escribir para buscar en la biblioteca de activos.",
+    "noResults": "Ningún activo coincide con tu búsqueda.",
+    "searchError": "No se pudieron buscar los activos.",
+    "added": "Añadido",
+    "addAria": "Añadir {{title}} a esta colección",
+    "assetAdded": "Activo añadido a la colección.",
+    "dragOrClick": "Arrastra y suelta imágenes aquí, o haz clic para explorar.",
+    "dropHere": "Suelta los archivos aquí...",
+    "uploadAndAttach": "Subir y adjuntar",
+    "uploadComplete": "Carga completa. Activos adjuntados a esta colección.",
+    "done": "Listo",
+    "status": {
+      "pending": "Listo para subir",
+      "uploading": "Subiendo...",
+      "done": "Añadido a la colección",
+      "error": "Error al subir"
+    }
   }
 }

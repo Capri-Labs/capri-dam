@@ -225,6 +225,50 @@ make e2e-frontend   # runs Playwright + collects Istanbul coverage
 # → coverage-frontend/e2e/index.html
 ----
 
+=== Folders workspace coverage
+
+`spec/e2e/folders_workspace_coverage.e2e.spec.js` covers `app/javascript/components/Folders/**`
+flows that previously only had Jest (or no) coverage: the ProductID filename
+metadata attachment on upload (`dam:product_id`/`dam:language_code`/`dam:asset_type`),
+Apply Metadata Schema to selected assets, the AI Analysis dialog (run + apply
+suggested tags), and the AssetViewer toolbar/tabs group — Pin to Collection,
+Asset Stats popover, Audit tab, Versions tab restore, and Trigger Workflow.
+All backend responses are mocked via Playwright route interception so the
+suite is deterministic and doesn't depend on live seed data. Run just this
+file with:
+
+[source,bash]
+----
+npx playwright test spec/e2e/folders_workspace_coverage.e2e.spec.js --reporter=list
+----
+
+=== Collections workspace coverage
+
+`spec/e2e/collections_workspace.e2e.spec.js` covers `app/javascript/components/Collections/**`,
+which previously had no dedicated e2e coverage:
+
+* Collections index page loading and listing existing collections.
+* Creating a manual collection, then adding assets to it both via the
+  Search Library picker and the drag-drop upload flow
+  (`AddAssetsToCollectionDialog.jsx`).
+* Creating a smart collection rule (`CollectionDetail.jsx`'s rule
+  configurator) and confirming a newly-routed asset appears after the
+  background worker (`SmartCollectionRouterWorker`) runs — simulated via
+  mocked before/after responses for the collection-detail endpoint,
+  consistent with this suite's full network-mocking convention.
+* Generating a real signed public share link
+  (`POST /api/v1/collections/:slug/share_link`) and visiting it as a
+  genuinely unauthenticated visitor (a fresh browser context with no
+  cookies) — the one scenario in this file that talks to the real backend
+  rather than mocked routes, since it specifically exercises the signed-token
+  security boundary.
+* Collection slug-based nested routing (`/collections/*path`).
+
+[source,bash]
+----
+npx playwright test spec/e2e/collections_workspace.e2e.spec.js --reporter=list
+----
+
 == Continuous integration
 
 All test suites run in `.github/workflows/main.yml`.

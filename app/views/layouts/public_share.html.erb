@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<%# Minimal, standalone layout for public/unauthenticated collection share
+    pages. Deliberately does NOT include the app header, sidebar, or any
+    React SPA mount points — anonymous visitors should see a lightweight,
+    read-only page, not the authenticated app shell. %>
+<html lang="<%= I18n.locale.to_s %>">
+<head>
+  <title><%= content_for(:title) || "Shared Collection — Capri DAM" %></title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <%= csp_meta_tag %>
+  <link rel="icon" href="/icon.png" type="image/png">
+  <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
+</head>
+<body style="margin:0; padding:0; background:#f4f7fb; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+  <header style="background:#fff; border-bottom:1px solid #e2e8f0; padding:16px 24px; display:flex; align-items:center; justify-content:space-between;">
+    <strong style="font-size:1.1rem; color:#121926;">Capri DAM</strong>
+    <span style="font-size:0.8rem; color:#94a3b8; text-transform:uppercase; letter-spacing:0.05em;">Shared, read-only view</span>
+  </header>
+  <main style="max-width:1100px; margin:0 auto; padding:32px 24px;">
+    <%= yield %>
+  </main>
+</body>
+</html>

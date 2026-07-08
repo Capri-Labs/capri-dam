@@ -1,0 +1,52 @@
+<% content_for :title, t("public.collection_shares.meta_title", name: @collection.name) %>
+
+<div style="background:#fff; border-radius:12px; border:1px solid #e2e8f0; padding:24px 28px; margin-bottom:24px;">
+  <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+    <h1 style="margin:0; font-size:1.75rem; color:#121926;"><%= @collection.name %></h1>
+    <% if @collection.collection_type == "smart" %>
+      <span style="background:#f3e5f5; color:#8e24aa; font-size:0.7rem; font-weight:700; border-radius:999px; padding:4px 10px;">AI SMART COLLECTION</span>
+    <% end %>
+  </div>
+
+  <% if @collection.description.present? %>
+    <p style="color:#64748b; max-width:760px; margin-top:8px;"><%= @collection.description %></p>
+  <% else %>
+    <p style="color:#94a3b8; max-width:760px; margin-top:8px;"><%= t("public.collection_shares.description_fallback") %></p>
+  <% end %>
+
+  <p data-testid="public-share-asset-count" style="color:#475569; font-weight:600; font-size:0.9rem; margin-top:16px;">
+    <%= t("public.collection_shares.asset_count", count: @assets.size) %>
+  </p>
+</div>
+
+<% if @assets.empty? %>
+  <div style="text-align:center; padding:64px 24px; background:#fff; border:1px dashed #cbd5e1; border-radius:12px; color:#94a3b8;">
+    <%= t("public.collection_shares.empty_state") %>
+  </div>
+<% else %>
+  <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:20px;" data-testid="public-share-asset-grid">
+    <% @assets.each do |asset| %>
+      <div style="background:#fff; border:1px solid #e2e8f0; border-radius:10px; overflow:hidden;" data-testid="public-share-asset-card">
+        <div style="height:160px; background:#f1f5f9; display:flex; align-items:center; justify-content:center; overflow:hidden;">
+          <% preview_url = asset_preview_url_for(asset) %>
+          <% if preview_url.present? %>
+            <% separator = preview_url.include?("?") ? "&" : "?" %>
+            <img
+              src="<%= preview_url %><%= separator %>share_token=<%= @token %>"
+              alt="<%= asset.title || asset.original_filename %>"
+              style="width:100%; height:100%; object-fit:cover;"
+              loading="lazy"
+            >
+          <% else %>
+            <span style="color:#cbd5e1; font-size:0.75rem;"><%= t("public.collection_shares.no_preview") %></span>
+          <% end %>
+        </div>
+        <div style="padding:10px 12px;">
+          <div style="font-size:0.85rem; font-weight:600; color:#1e293b; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+            <%= asset.title || asset.original_filename || "Untitled" %>
+          </div>
+        </div>
+      </div>
+    <% end %>
+  </div>
+<% end %>

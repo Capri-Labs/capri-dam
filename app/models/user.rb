@@ -253,6 +253,15 @@ class User < ApplicationRecord
     user_groups.where(slug: %w[administrators super-administrators]).exists?
   end
 
+  # Returns +true+ when this user may create/duplicate/edit/delete custom
+  # Metadata Schemas — either because they're an admin/super-admin, or
+  # because they're a member of the built-in +metadata_users+ group.
+  # Non-managers still get read-only access to +/tools/metadata_schemas+.
+  # @return [Boolean]
+  def metadata_schema_manager?
+    admin? || member_of_administrators? || user_groups.where(slug: "metadata_users").exists?
+  end
+
   # ---------------------------------------------------------------------------
   # Instance methods — impersonation
   # ---------------------------------------------------------------------------

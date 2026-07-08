@@ -95,6 +95,13 @@ RSpec.describe UserGroup, type: :model do
       everyone = create(:user_group, :everyone)
       expect(everyone.everyone?).to be true
     end
+
+    it "correctly identifies the built-in metadata_users group" do
+      metadata_users = create(:user_group, :metadata_users)
+      expect(metadata_users.metadata_users?).to be true
+      expect(metadata_users.system?).to be true
+      expect(UserGroup::SYSTEM_SLUGS).to include("metadata_users")
+    end
   end
 
   # ---------------------------------------------------------------------------

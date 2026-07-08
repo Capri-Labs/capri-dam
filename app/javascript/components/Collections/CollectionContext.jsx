@@ -198,6 +198,47 @@ export function CollectionProvider({ children }) {
         }
     };
 
+    // Mint a time-limited, signed public share link for a collection.
+    const generateShareLink = async (slug) => {
+        try {
+            const csrfToken = document.querySelector('[name="csrf-token"]').content;
+            const res = await fetch(`/api/v1/collections/${slug}/share_link`, {
+                method: 'POST',
+                headers: { 'X-CSRF-Token': csrfToken }
+            });
+            const data = await res.json();
+            if (res.ok) {
+                return data;
+            }
+            notify(data.error || "Failed to generate share link.", "error");
+            return null;
+        } catch (error) {
+            notify("Network error while generating share link.", "error");
+            return null;
+        }
+    };
+
+    // Attach an existing asset to a collection (used by the Add Assets picker).
+    const addAssetToCollection = async (slug, assetId) => {
+        try {
+            const csrfToken = document.querySelector('[name="csrf-token"]').content;
+            const res = await fetch(`/api/v1/collections/${slug}/assets`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
+                body: JSON.stringify({ asset_id: assetId })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                return data.collection;
+            }
+            notify(data.errors?.join(", ") || data.error || "Failed to add asset.", "error");
+            return null;
+        } catch (error) {
+            notify("Network error while adding asset.", "error");
+            return null;
+        }
+    };
+
     const bulkUpdateCollections = async (ids, payload) => {
         try {
             const csrfToken = document.querySelector('[name="csrf-token"]').content;
@@ -232,6 +273,8 @@ export function CollectionProvider({ children }) {
             purgeCdnCache,
             updateCollection, bulkUpdateCollections,
             simulateSmartRule,
+            generateShareLink,
+            addAssetToCollection,
             temporalDate,
             setTemporalDate
         }}>

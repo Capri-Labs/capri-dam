@@ -261,6 +261,7 @@ export default function AssetGrid({
                           event.stopPropagation();
                           onAiAnalysis?.(asset);
                         }}
+                        data-testid="asset-ai-analysis-toggle"
                       >
                         <AutoAwesomeOutlined fontSize="small" />
                       </IconButton>

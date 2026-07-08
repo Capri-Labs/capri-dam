@@ -2244,7 +2244,8 @@
   },
   "assetMetadataPanel": {
     "field": {
-      "inheritedReadOnly": "Overgenomen van bovenliggend schema — alleen-lezen",
+      "readOnlyField": "Dit veld is alleen-lezen",
+      "inheritedFromSchema": "Overgenomen van schema {{schema}}",
       "selectPlaceholder": "— selecteren —",
       "tagsHelperSuffix": " — druk op Enter om toe te voegen"
     },
@@ -2536,5 +2537,55 @@
     },
     "copyright": "© {{year}} Capri DAM. Alle rechten voorbehouden.",
     "systemOperational": "Alle systemen operationeel"
+  },
+  "metadataSchemas": {
+    "title": "Metadataschema's",
+    "name": {
+      "label": "Schemanaam",
+      "helper": "Deze naam wordt weergegeven in de schemaboom en het detailpaneel."
+    },
+    "inheritFrom": {
+      "label": "Overerven van",
+      "none": "Geen — geen overerving",
+      "helper": "Overgeërfde tabbladen blijven gesynchroniseerd met het bronschema en worden alleen-lezen weergegeven naast uw eigen aangepaste tabbladen.",
+      "builtinUnavailable": "Ingebouwde schema's kunnen niet overerven van een ander schema."
+    },
+    "inheritsChip": "Erft van: {{name}}",
+    "readOnlyBanner": "Alleen-lezen toegang. Vraag een beheerder om u toe te voegen aan de groep metadata_users om aangepaste metadataschema's te maken, dupliceren, bewerken of verwijderen."
+  },
+  "collectionDetail": {
+    "addAssets": "Assets toevoegen",
+    "share": "Delen"
+  },
+  "collectionShare": {
+    "title": "Collectie delen",
+    "description": "Iedereen met deze link kan een alleen-lezen versie van deze collectie bekijken. Geen aanmelding vereist.",
+    "copied": "Link gekopieerd naar klembord.",
+    "expiresAt": "Deze link verloopt op {{date}}.",
+    "error": "Kan geen deellink genereren. Probeer het opnieuw.",
+    "close": "Sluiten"
+  },
+  "addAssetsDialog": {
+    "title": "Assets toevoegen",
+    "searchTab": "Bibliotheek doorzoeken",
+    "uploadTab": "Nieuw uploaden",
+    "searchPlaceholder": "Assets zoeken op naam of tag...",
+    "searchHint": "Begin met typen om de assetbibliotheek te doorzoeken.",
+    "noResults": "Geen assets komen overeen met uw zoekopdracht.",
+    "searchError": "Zoeken naar assets is mislukt.",
+    "added": "Toegevoegd",
+    "addAria": "{{title}} toevoegen aan deze collectie",
+    "assetAdded": "Asset toegevoegd aan collectie.",
+    "dragOrClick": "Sleep afbeeldingen hierheen of klik om te bladeren.",
+    "dropHere": "Zet de bestanden hier neer...",
+    "uploadAndAttach": "Uploaden en bijvoegen",
+    "uploadComplete": "Upload voltooid. Assets bijgevoegd aan deze collectie.",
+    "done": "Klaar",
+    "status": {
+      "pending": "Klaar om te uploaden",
+      "uploading": "Uploaden...",
+      "done": "Toegevoegd aan collectie",
+      "error": "Uploaden mislukt"
+    }
   }
 }

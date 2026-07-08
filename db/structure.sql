@@ -1227,7 +1227,8 @@ CREATE TABLE public.metadata_schemas (
     slug character varying NOT NULL,
     tabs jsonb DEFAULT '[]'::jsonb NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
-    uuid character varying NOT NULL
+    uuid character varying NOT NULL,
+    inherits_from_id bigint
 );
 
 
@@ -3856,6 +3857,13 @@ CREATE INDEX index_metadata_schemas_on_deleted_at ON public.metadata_schemas USI
 
 
 --
+-- Name: index_metadata_schemas_on_inherits_from_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_metadata_schemas_on_inherits_from_id ON public.metadata_schemas USING btree (inherits_from_id);
+
+
+--
 -- Name: index_metadata_schemas_on_is_builtin; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -4645,6 +4653,14 @@ ALTER TABLE ONLY public.inbox_messages
 
 
 --
+-- Name: metadata_schemas fk_rails_9db3b2ddcc; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.metadata_schemas
+    ADD CONSTRAINT fk_rails_9db3b2ddcc FOREIGN KEY (inherits_from_id) REFERENCES public.metadata_schemas(id);
+
+
+--
 -- Name: asset_versions fk_rails_9eaf8318f3; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -4835,6 +4851,8 @@ ALTER TABLE ONLY public.email_templates
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260707150001'),
+('20260707150000'),
 ('20260705170000'),
 ('20260703120000'),
 ('20260702120000'),

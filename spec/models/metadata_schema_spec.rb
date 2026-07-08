@@ -41,6 +41,53 @@ RSpec.describe MetadataSchema, type: :model do
       schema = build(:metadata_schema, level: 'root', mime_segment: nil)
       expect(schema).to be_valid
     end
+
+    it 'allows inherits_from_id on a root schema pointing at another root schema' do
+      other = create(:metadata_schema, :root)
+      schema = build(:metadata_schema, :root, inherits_from: other)
+      expect(schema).to be_valid
+    end
+
+    it 'rejects inherits_from_id on a non-root schema' do
+      other = create(:metadata_schema, :root)
+      schema = build(:metadata_schema, :type_level, parent: root_schema, inherits_from: other)
+      expect(schema).not_to be_valid
+      expect(schema.errors[:inherits_from_id]).to include("can only be set on root-level schemas")
+    end
+
+    it 'rejects inherits_from pointing at a non-root schema' do
+      schema = build(:metadata_schema, :root, inherits_from: type_schema)
+      expect(schema).not_to be_valid
+      expect(schema.errors[:inherits_from_id]).to include("must reference another root-level schema")
+    end
+
+    it 'rejects inherits_from_id being set on a built-in schema (built-ins must not inherit from each other)' do
+      default_schema     = create(:metadata_schema, :root, :builtin, name: "Default")
+      collection_schema  = build(:metadata_schema, :root, :builtin, name: "Collection", inherits_from: default_schema)
+      expect(collection_schema).not_to be_valid
+      expect(collection_schema.errors[:inherits_from_id]).to include("cannot be set on a built-in schema")
+    end
+
+    it 'still allows a custom (non-builtin) schema to inherit from a built-in schema' do
+      default_schema = create(:metadata_schema, :root, :builtin, name: "Default")
+      custom_schema  = build(:metadata_schema, :root, name: "My Custom Schema", inherits_from: default_schema)
+      expect(custom_schema).to be_valid
+    end
+
+    it 'rejects self-referential inheritance' do
+      schema = create(:metadata_schema, :root)
+      schema.inherits_from_id = schema.id
+      expect(schema).not_to be_valid
+      expect(schema.errors[:inherits_from_id]).to include("cannot inherit from itself")
+    end
+
+    it 'rejects circular inheritance chains' do
+      a = create(:metadata_schema, :root)
+      b = create(:metadata_schema, :root, inherits_from: a)
+      a.inherits_from = b
+      expect(a).not_to be_valid
+      expect(a.errors[:inherits_from_id]).to include("would create a circular inheritance chain")
+    end
   end
 
   # ── UUID / Slug callbacks ──────────────────────────────────────────────────
@@ -136,6 +183,48 @@ RSpec.describe MetadataSchema, type: :model do
       tabs = child.resolved_tabs
       inherited = tabs.select { |t| t['inherited'] }
       expect(inherited.map { |t| t['name'] }).to include('Basic')
+    end
+
+    it 'merges tabs from the inherits_from root-to-root chain' do
+      custom = create(:metadata_schema, :root, inherits_from: root_with_tabs, tabs: [])
+      tabs = custom.resolved_tabs
+      inherited = tabs.select { |t| t['inherited'] }
+      expect(inherited.map { |t| t['name'] }).to include('Basic')
+      expect(inherited.first['schema_name']).to eq(root_with_tabs.name)
+    end
+
+    it 'tags each inherited field with the source schema_name (asset-viewer values stay editable; only read_only fields lock)' do
+      child = create(:metadata_schema, level: 'type', parent: root_with_tabs,
+                     mime_segment: 'image', tabs: [])
+      tabs = child.resolved_tabs
+      inherited_fields = tabs.select { |t| t['inherited'] }.flat_map { |t| t['fields'] }
+      expect(inherited_fields).not_to be_empty
+      inherited_fields.each do |f|
+        expect(f['inherited']).to be true
+        expect(f['schema_name']).to eq(root_with_tabs.name)
+      end
+    end
+
+    it 'includes own tabs alongside inherited ones' do
+      custom = create(:metadata_schema, :root, :with_basic_tab, inherits_from: root_with_tabs)
+      tabs = custom.resolved_tabs
+      expect(tabs.count { |t| t['inherited'] }).to eq(1)
+      expect(tabs.count { |t| !t['inherited'] }).to eq(1)
+    end
+  end
+
+  # ── inheritance_chain ────────────────────────────────────────────────────────
+  describe '#inheritance_chain' do
+    it 'walks the inherits_from chain oldest-first' do
+      grandparent = create(:metadata_schema, :root)
+      parent      = create(:metadata_schema, :root, inherits_from: grandparent)
+      child       = create(:metadata_schema, :root, inherits_from: parent)
+
+      expect(child.inheritance_chain).to eq([ grandparent, parent ])
+    end
+
+    it 'returns an empty array when there is no inherits_from' do
+      expect(root_schema.inheritance_chain).to eq([])
     end
   end
 

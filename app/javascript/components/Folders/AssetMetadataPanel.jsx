@@ -16,15 +16,20 @@ import { mapEmbeddedMetadata } from '../../utils/embeddedMetadataMapper';
 const interpolate = (template, values = {}) => template.replace(/\{\{(\w+)\}\}/g, (_, key) => values[key] ?? '');
 
 // ── Field Renderer ─────────────────────────────────────────────────────────────
-function MetadataField({ field, value, onChange, readOnly, t }) {
-    const isLocked = field.inherited || field.read_only || readOnly;
+function MetadataField({ field, value, onChange, t }) {
+    const isLocked = !!field.read_only;
     const label    = (
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
             {field.label}
             {field.required && <span style={{ color: '#ef4444' }}>*</span>}
-            {field.inherited && (
-                <Tooltip title={t('assetMetadataPanel.field.inheritedReadOnly')}>
-                    <LockOutlined sx={{ fontSize: 12, color: '#94a3b8' }} />
+            {isLocked && (
+                <Tooltip title={t('assetMetadataPanel.field.readOnlyField', 'This field is read-only')}>
+                    <LockOutlined sx={{ fontSize: 12, color: '#94a3b8' }} data-testid="field-readonly-icon" />
+                </Tooltip>
+            )}
+            {field.inherited && !isLocked && (
+                <Tooltip title={t('assetMetadataPanel.field.inheritedFromSchema', 'Inherited from {{schema}} schema', { schema: field.schema_name })}>
+                    <SchemaOutlined sx={{ fontSize: 12, color: '#a78bfa' }} data-testid="field-inherited-icon" />
                 </Tooltip>
             )}
         </Box>
@@ -348,7 +353,6 @@ export default function AssetMetadataPanel({ asset, onAssetUpdated }) {
                         field={field}
                         value={values[field.map_to_property]}
                         onChange={val => handleChange(field.map_to_property, val)}
-                        readOnly={field.inherited && !field.required}
                         t={translate}
                     />
                 ))}

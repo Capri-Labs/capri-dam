@@ -2244,7 +2244,8 @@
   },
   "assetMetadataPanel": {
     "field": {
-      "inheritedReadOnly": "Inherited from parent schema — read only",
+      "readOnlyField": "This field is read-only",
+      "inheritedFromSchema": "Inherited from {{schema}} schema",
       "selectPlaceholder": "— select —",
       "tagsHelperSuffix": " — press Enter to add"
     },
@@ -2536,5 +2537,55 @@
     },
     "copyright": "© {{year}} Capri DAM. All rights reserved.",
     "systemOperational": "All systems operational"
+  },
+  "metadataSchemas": {
+    "title": "Metadata Schemas",
+    "name": {
+      "label": "Schema Name",
+      "helper": "This name is shown in the schema tree and detail panel."
+    },
+    "inheritFrom": {
+      "label": "Inherit From",
+      "none": "None — no inheritance",
+      "helper": "Inherited tabs stay in sync with the source schema and appear read-only alongside your own custom tabs.",
+      "builtinUnavailable": "Built-in schemas can't inherit from another schema."
+    },
+    "inheritsChip": "Inherits: {{name}}",
+    "readOnlyBanner": "Read-only access. Ask an administrator to add you to the metadata_users group to create, duplicate, edit, or delete custom metadata schemas."
+  },
+  "collectionDetail": {
+    "addAssets": "Add Assets",
+    "share": "Share"
+  },
+  "collectionShare": {
+    "title": "Share Collection",
+    "description": "Anyone with this link can view a read-only version of this collection. No sign-in required.",
+    "copied": "Link copied to clipboard.",
+    "expiresAt": "This link expires on {{date}}.",
+    "error": "Failed to generate a share link. Please try again.",
+    "close": "Close"
+  },
+  "addAssetsDialog": {
+    "title": "Add Assets",
+    "searchTab": "Search Library",
+    "uploadTab": "Upload New",
+    "searchPlaceholder": "Search assets by name or tag...",
+    "searchHint": "Start typing to search the asset library.",
+    "noResults": "No assets match your search.",
+    "searchError": "Failed to search assets.",
+    "added": "Added",
+    "addAria": "Add {{title}} to this collection",
+    "assetAdded": "Asset added to collection.",
+    "dragOrClick": "Drag and drop images here, or click to browse.",
+    "dropHere": "Drop the files here...",
+    "uploadAndAttach": "Upload & Attach",
+    "uploadComplete": "Upload complete. Assets attached to this collection.",
+    "done": "Done",
+    "status": {
+      "pending": "Ready to upload",
+      "uploading": "Uploading...",
+      "done": "Added to collection",
+      "error": "Upload failed"
+    }
   }
 }

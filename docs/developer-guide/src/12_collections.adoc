@@ -49,9 +49,56 @@ embeddings. The REST controller also supports simulation before a rule is saved.
 | REST | `GET /api/v1/collections/:slug/cluster_map` | Returns semantic node positions for `SemanticClusterMap.jsx`.
 | REST | `POST /api/v1/collections/:slug/configure_rule` | Upserts smart-routing rule.
 | REST | `POST /api/v1/collections/:slug/simulate_rule` | Dry-run semantic membership.
+| REST | `POST /api/v1/collections/:slug/assets` | Attach an existing asset to a collection (used by the Add Assets picker and drag-drop upload flow).
+| REST | `POST /api/v1/collections/:slug/share_link` | Mint a signed, expiring public share link (see below). REST-only by design, consistent with other operational actions (`purge_cdn`, `simulate_rule`) that are not exposed via GraphQL.
 | GraphQL | `createCollection` | Create collection record.
 | GraphQL | `addAssetToCollection`, `removeAssetFromCollection` | Manual membership changes.
 |===
+
+== Public share links
+
+Any collection can be shared with an **unauthenticated** visitor via a
+time-limited, signed link:
+
+1. `POST /api/v1/collections/:slug/share_link` (authenticated) mints a token via
+   `Collection#generate_share_token`, which is a thin wrapper around Rails'
+   built-in `ActiveRecord::SignedId` (`signed_id`/`find_signed`). No new
+   database column or migration is required — the token itself encodes the
+   collection id, an expiry (`Collection::SHARE_LINK_EXPIRY`, 30 days by
+   default), and a `:collection_share` purpose so it can never be reused to
+   authenticate as something else.
+2. The response includes a full `url` pointing at
+   `GET /s/collections/:token`, served by
+   `Public::CollectionSharesController#show` — a standalone, unauthenticated
+   controller/layout (`app/views/layouts/public_share.html.erb`) with no app
+   chrome, `noindex,nofollow` meta tags, and a read-only asset grid.
+3. Garbage, tampered, expired, or soft-deleted-collection tokens all render a
+   friendly "link is invalid or expired" page with HTTP `410 Gone` —
+   `Collection.find_by_share_token` never raises, it simply returns `nil`.
+4. Asset thumbnails on the share page are served through the existing
+   `GET /api/v1/assets/local/:uuid` endpoint with a `?share_token=` query
+   param. `Api::V1::AssetsController` re-validates that token against the
+   *specific* asset UUID being requested (confirming it is actually a member
+   of the token's collection) before skipping its normal
+   `authenticate_hybrid!` check — every other request to that endpoint still
+   requires a full session/PAT/OAuth token.
+
+== Adding assets to a collection (UI)
+
+`CollectionDetail.jsx` exposes an **Add Assets** button (and an empty-state
+CTA) that opens `AddAssetsToCollectionDialog.jsx`, offering two ways to
+populate a manual collection:
+
+* *Search Library* — a debounced search against the existing lightweight
+  `GET /api/v1/search/suggestions` endpoint, filtered to `type: 'asset'`
+  results, with an inline "Add" checkbox per result.
+* *Upload New* — a `react-dropzone` drop target (mirroring
+  `UploadWorkspace.jsx`'s pattern) that uploads new files via the standard
+  `POST /api/v1/assets` pipeline, then attaches each newly created asset to
+  the collection.
+
+Both paths call the existing `POST /api/v1/collections/:slug/assets`
+endpoint — no new backend endpoint was required for this feature.
 
 == UI components
 
@@ -59,8 +106,10 @@ embeddings. The REST controller also supports simulation before a rule is saved.
 |===
 | Component | Notes
 | `CollectionsBoard.jsx` | Board/list of workspaces with bulk actions, link copying, and property editing.
-| `CollectionDetail.jsx` | Detail screen for rule tuning, asset pinning, governance warnings, and AI analysis hooks.
+| `CollectionDetail.jsx` | Detail screen for rule tuning, asset pinning, governance warnings, AI analysis hooks, sharing, and adding assets.
 | `SemanticClusterMap.jsx` | 2D semantic scatterplot of embedding-derived clusters.
+| `ShareCollectionDialog.jsx` | Mints and displays a copyable public share link.
+| `AddAssetsToCollectionDialog.jsx` | Search-and-attach or drag-drop-upload-and-attach flow for populating a collection.
 |===
 
 TIP: Use the `as_of` query parameter on the detail endpoint to inspect a

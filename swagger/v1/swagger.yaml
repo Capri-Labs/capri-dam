@@ -4367,6 +4367,44 @@ paths:
                 properties:
                   message:
                     type: string
+  "/api/v1/collections/{slug}/share_link":
+    parameters:
+    - name: slug
+      in: path
+      required: true
+      description: Collection slug
+      schema:
+        type: string
+    post:
+      summary: Mint a time-limited, signed public share link for a collection
+      tags:
+      - Collections
+      security:
+      - Bearer: []
+      description: |
+        Generates a signed, expiring token (see `Collection#generate_share_token`)
+        that grants **read-only, unauthenticated** access to this collection at
+        `GET /s/collections/{token}`. No new collection state or database column
+        is required — the token is a Rails `signed_id`, so it can be revoked
+        implicitly by soft-deleting the collection and cannot be tampered with.
+      responses:
+        '200':
+          description: Share link generated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    description: Opaque signed token
+                  url:
+                    type: string
+                    format: uri
+                    example: https://api.yourdam.com/s/collections/eyJf...
+                  expires_at:
+                    type: string
+                    format: date-time
   "/api/v1/collections/{slug}/assets":
     parameters:
     - name: slug
@@ -6522,6 +6560,132 @@ paths:
                       type: object
                       description: Sanitized/enriched metadata ready for import into
                         DAM
+  "/api/v1/metadata_schemas/{id}":
+    patch:
+      summary: Update a metadata schema (rename / set Inherit From)
+      tags:
+      - Metadata Schemas
+      security:
+      - Bearer: []
+      description: Renames a schema and/or sets its inherits_from_id. Requires metadata_schema_manager?.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: schema updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  name:
+                    type: string
+                  level:
+                    type: string
+                  inherits_from_id:
+                    type: integer
+                    nullable: true
+                  inherits_from_name:
+                    type: string
+                    nullable: true
+                  tabs:
+                    type: array
+                    items:
+                      type: object
+        '403':
+          description: forbidden for users outside metadata_users
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '422':
+          description: validation error (blank name, or circular/invalid inherits_from_id)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                metadata_schema:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                      example: Custom Product Images
+                    description:
+                      type: string
+                      nullable: true
+                    inherits_from_id:
+                      type: integer
+                      nullable: true
+                      example: 12
+                    tabs:
+                      type: array
+                      items:
+                        type: object
+  "/api/v1/metadata_schemas/{id}/duplicate":
+    post:
+      summary: Duplicate a metadata schema
+      tags:
+      - Metadata Schemas
+      security:
+      - Bearer: []
+      description: Duplicates a schema tree. For root-level schemas, the copy links
+        back via inherits_from instead of deep-copying tabs, so it starts with zero
+        own tabs plus the source schema's tabs shown read-only. Requires metadata_schema_manager?.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '201':
+          description: schema duplicated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  name:
+                    type: string
+                    example: Copy of Default
+                  inherits_from_id:
+                    type: integer
+                    nullable: true
+                  tabs:
+                    type: array
+                    items:
+                      type: object
+        '403':
+          description: forbidden for users outside metadata_users
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
   "/api/v1/notifications":
     get:
       summary: Retrieves recent unread notifications for the current user

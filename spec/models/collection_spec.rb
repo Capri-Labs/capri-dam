@@ -1,6 +1,8 @@
 require 'rails_helper'
 
 RSpec.describe Collection, type: :model do
+  include ActiveSupport::Testing::TimeHelpers
+
   describe 'validations' do
     it 'is valid with valid attributes' do
       expect(build(:collection)).to be_valid
@@ -94,6 +96,48 @@ RSpec.describe Collection, type: :model do
       deleted = create(:collection, deleted_at: 1.day.ago)
       expect(Collection.active).to include(live)
       expect(Collection.active).not_to include(deleted)
+    end
+  end
+
+  describe '#generate_share_token / .find_by_share_token' do
+    it 'mints a signed token that resolves back to the same collection' do
+      collection = create(:collection)
+      token = collection.generate_share_token
+
+      expect(token).to be_present
+      expect(Collection.find_by_share_token(token)).to eq(collection)
+    end
+
+    it 'returns nil for a tampered or garbage token' do
+      collection = create(:collection)
+      token = collection.generate_share_token
+
+      expect(Collection.find_by_share_token("#{token}tampered")).to be_nil
+      expect(Collection.find_by_share_token('not-a-real-token')).to be_nil
+    end
+
+    it 'returns nil once the token has expired' do
+      collection = create(:collection)
+      token = collection.generate_share_token(expires_in: 1.second)
+
+      travel_to(2.seconds.from_now) do
+        expect(Collection.find_by_share_token(token)).to be_nil
+      end
+    end
+
+    it 'is not honoured by a signed_id minted for a different purpose' do
+      collection = create(:collection)
+      unrelated_token = collection.signed_id(purpose: :something_else)
+
+      expect(Collection.find_by_share_token(unrelated_token)).to be_nil
+    end
+
+    it 'still resolves a token minted for a subsequently soft-deleted collection (controller decides whether to honour it)' do
+      collection = create(:collection)
+      token = collection.generate_share_token
+      collection.update!(deleted_at: 1.day.ago)
+
+      expect(Collection.find_by_share_token(token)).to eq(collection)
     end
   end
 end

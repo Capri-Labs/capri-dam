@@ -2244,7 +2244,8 @@
   },
   "assetMetadataPanel": {
     "field": {
-      "inheritedReadOnly": "親スキーマから継承 — 読み取り専用",
+      "readOnlyField": "このフィールドは読み取り専用です",
+      "inheritedFromSchema": "{{schema}} スキーマから継承",
       "selectPlaceholder": "— 選択 —",
       "tagsHelperSuffix": " — Enterキーで追加"
     },
@@ -2536,5 +2537,55 @@
     },
     "copyright": "© {{year}} Capri DAM. 全著作権所有。",
     "systemOperational": "すべてのシステムは正常に稼働しています"
+  },
+  "metadataSchemas": {
+    "title": "メタデータスキーマ",
+    "name": {
+      "label": "スキーマ名",
+      "helper": "この名前はスキーマツリーと詳細パネルに表示されます。"
+    },
+    "inheritFrom": {
+      "label": "継承元",
+      "none": "なし — 継承しない",
+      "helper": "継承されたタブはソーススキーマと同期を保ち、独自のカスタムタブと並んで読み取り専用として表示されます。",
+      "builtinUnavailable": "組み込みスキーマは他のスキーマを継承できません。"
+    },
+    "inheritsChip": "継承元: {{name}}",
+    "readOnlyBanner": "読み取り専用アクセスです。カスタムメタデータスキーマの作成、複製、編集、削除を行うには、管理者に metadata_users グループへの追加を依頼してください。"
+  },
+  "collectionDetail": {
+    "addAssets": "アセットを追加",
+    "share": "共有"
+  },
+  "collectionShare": {
+    "title": "コレクションを共有",
+    "description": "このリンクを持つ人は誰でも、このコレクションの読み取り専用バージョンを閲覧できます。サインインは不要です。",
+    "copied": "リンクをクリップボードにコピーしました。",
+    "expiresAt": "このリンクは{{date}}に期限切れになります。",
+    "error": "共有リンクの生成に失敗しました。もう一度お試しください。",
+    "close": "閉じる"
+  },
+  "addAssetsDialog": {
+    "title": "アセットを追加",
+    "searchTab": "ライブラリを検索",
+    "uploadTab": "新規アップロード",
+    "searchPlaceholder": "名前またはタグでアセットを検索...",
+    "searchHint": "入力を開始してアセットライブラリを検索します。",
+    "noResults": "検索条件に一致するアセットがありません。",
+    "searchError": "アセットの検索に失敗しました。",
+    "added": "追加済み",
+    "addAria": "{{title}}をこのコレクションに追加",
+    "assetAdded": "アセットがコレクションに追加されました。",
+    "dragOrClick": "画像をここにドラッグ＆ドロップするか、クリックして参照してください。",
+    "dropHere": "ここにファイルをドロップ...",
+    "uploadAndAttach": "アップロードして添付",
+    "uploadComplete": "アップロードが完了しました。アセットがこのコレクションに添付されました。",
+    "done": "完了",
+    "status": {
+      "pending": "アップロード準備完了",
+      "uploading": "アップロード中...",
+      "done": "コレクションに追加済み",
+      "error": "アップロード失敗"
+    }
   }
 }

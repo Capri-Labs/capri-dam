@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     Box, Typography, CircularProgress, Button, Tooltip,
-    Chip, Stack, Paper, Divider, IconButton,
+    Chip, Stack, Paper, Divider, IconButton, Alert,
     List, ListItem, ListItemButton, ListItemIcon, ListItemText,
     Collapse
 } from '@mui/material';
@@ -89,7 +90,8 @@ function SchemaTreeNode({ schema, depth = 0, selected, onSelect }) {
 }
 
 // ── SchemaDetailPanel ─────────────────────────────────────────────────────────
-function SchemaDetailPanel({ schema, onEdit, onDuplicate, onDelete }) {
+function SchemaDetailPanel({ schema, onEdit, onDuplicate, onDelete, canManage = true }) {
+    const { t } = useTranslation();
     const [folders, setFolders] = useState([]);
 
     useEffect(() => {
@@ -133,6 +135,13 @@ function SchemaDetailPanel({ schema, onEdit, onDuplicate, onDelete }) {
                                   size="small" variant="outlined"
                                   sx={{ fontSize: '0.7rem', borderColor: '#e2e8f0', color: '#64748b' }} />
                         )}
+                        {schema.inherits_from_name && (
+                            <Chip icon={<AccountTree sx={{ fontSize: '12px !important' }} />}
+                                  label={t('metadataSchemas.inheritsChip', { name: schema.inherits_from_name })}
+                                  size="small"
+                                  data-testid="schema-inherits-chip"
+                                  sx={{ bgcolor: '#ede9fe', color: '#5b21b6', fontSize: '0.7rem' }} />
+                        )}
                     </Box>
                     <Typography variant="h5" fontWeight={700} sx={{ color: '#1e293b', mb: 0.5 }}>
                         {schema.name}
@@ -141,31 +150,33 @@ function SchemaDetailPanel({ schema, onEdit, onDuplicate, onDelete }) {
                         {schema.description || 'No description provided.'}
                     </Typography>
                 </Box>
-                <Stack direction="row" spacing={1}>
-                    <Tooltip title="Edit schema">
-                        <span>
-                            <Button variant="contained" size="small" startIcon={<EditOutlined />}
-                                    onClick={() => onEdit(schema)}
-                                    sx={{ bgcolor: '#5e35b1', '&:hover': { bgcolor: '#4527a0' }, textTransform: 'none' }}>
-                                Edit
-                            </Button>
-                        </span>
-                    </Tooltip>
-                    <Tooltip title="Duplicate as new custom schema">
-                        <IconButton size="small" onClick={() => onDuplicate(schema)}
-                                    sx={{ border: '1px solid #e2e8f0' }}>
-                            <ContentCopyOutlined fontSize="small" />
-                        </IconButton>
-                    </Tooltip>
-                    {!schema.is_builtin && (
-                        <Tooltip title="Delete schema">
-                            <IconButton size="small" onClick={() => onDelete(schema)}
-                                        sx={{ border: '1px solid #fecaca', color: '#ef4444' }}>
-                                <DeleteOutlined fontSize="small" />
+                {canManage && (
+                    <Stack direction="row" spacing={1}>
+                        <Tooltip title="Edit schema">
+                            <span>
+                                <Button variant="contained" size="small" startIcon={<EditOutlined />}
+                                        onClick={() => onEdit(schema)}
+                                        sx={{ bgcolor: '#5e35b1', '&:hover': { bgcolor: '#4527a0' }, textTransform: 'none' }}>
+                                    Edit
+                                </Button>
+                            </span>
+                        </Tooltip>
+                        <Tooltip title="Duplicate as new custom schema">
+                            <IconButton size="small" onClick={() => onDuplicate(schema)}
+                                        sx={{ border: '1px solid #e2e8f0' }}>
+                                <ContentCopyOutlined fontSize="small" />
                             </IconButton>
                         </Tooltip>
-                    )}
-                </Stack>
+                        {!schema.is_builtin && (
+                            <Tooltip title="Delete schema">
+                                <IconButton size="small" onClick={() => onDelete(schema)}
+                                            sx={{ border: '1px solid #fecaca', color: '#ef4444' }}>
+                                    <DeleteOutlined fontSize="small" />
+                                </IconButton>
+                            </Tooltip>
+                        )}
+                    </Stack>
+                )}
             </Box>
 
             <Divider sx={{ mb: 3 }} />
@@ -282,7 +293,12 @@ function SchemaDetailPanel({ schema, onEdit, onDuplicate, onDelete }) {
 }
 
 // ── MetadataSchemasManager (main) ──────────────────────────────────────────────
-export default function MetadataSchemasManager() {
+export default function MetadataSchemasManager({ canManageSchemas } = {}) {
+    const { t } = useTranslation();
+    // Dataset attributes arrive as strings ('true'/'false'); coerce to boolean,
+    // matching the pattern used by Admin/UserGroupsManager.jsx.
+    const canManage = canManageSchemas === true || canManageSchemas === 'true';
+
     const notify = useNotify();
     const [schemas,          setSchemas]          = useState([]);
     const [loading,          setLoading]          = useState(true);
@@ -387,12 +403,15 @@ export default function MetadataSchemasManager() {
                         <Typography variant="subtitle2" fontWeight={700} sx={{ color: '#1e293b' }}>
                             Schema Library
                         </Typography>
-                        <Tooltip title="Create new root schema">
-                            <IconButton size="small" onClick={() => setNewDialogOpen(true)}
-                                        sx={{ bgcolor: '#5e35b1', color: '#fff', '&:hover': { bgcolor: '#4527a0' }, width: 28, height: 28 }}>
-                                <AddOutlined fontSize="small" />
-                            </IconButton>
-                        </Tooltip>
+                        {canManage && (
+                            <Tooltip title="Create new root schema">
+                                <IconButton size="small" onClick={() => setNewDialogOpen(true)}
+                                            data-testid="new-schema-button"
+                                            sx={{ bgcolor: '#5e35b1', color: '#fff', '&:hover': { bgcolor: '#4527a0' }, width: 28, height: 28 }}>
+                                    <AddOutlined fontSize="small" />
+                                </IconButton>
+                            </Tooltip>
+                        )}
                     </Box>
                     <Typography variant="caption" sx={{ color: '#94a3b8' }}>
                         Root → Type → Subtype hierarchy
@@ -449,11 +468,18 @@ export default function MetadataSchemasManager() {
                     </Typography>
                 </Box>
 
+                {!canManage && (
+                    <Alert severity="info" data-testid="read-only-banner" sx={{ mx: 3, mt: 2, borderRadius: 2 }}>
+                        {t('metadataSchemas.readOnlyBanner')}
+                    </Alert>
+                )}
+
                 <SchemaDetailPanel
                     schema={selected}
                     onEdit={handleEdit}
                     onDuplicate={handleDuplicate}
                     onDelete={handleDelete}
+                    canManage={canManage}
                 />
             </Box>
 
@@ -463,6 +489,8 @@ export default function MetadataSchemasManager() {
                     schema={editingSchema}
                     onClose={() => setEditorOpen(false)}
                     onSave={handleSave}
+                    rootSchemas={schemas}
+                    canManage={canManage}
                 />
             )}
 

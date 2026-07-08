@@ -24,13 +24,14 @@ Email and UID are immutable after initial provisioning to preserve referential i
 
 ## Built-in System Groups
 
-Three groups are seeded automatically and are **protected** — they cannot be deleted by anyone, including super-admins:
+Four groups are seeded automatically and are **protected** — they cannot be deleted by anyone, including super-admins:
 
 | Group | Slug | Notes |
 |-------|------|-------|
 | **everyone** | `everyone` | Every user is an implicit member. Grants default permissions. Do not delete. |
 | **administrators** | `administrators` | Full access to all content. Bypasses explicit-deny rules. Only super-admins can modify membership. |
 | **super-administrators** | `super-administrators` | Strictest operations. Reserved for future super-admin-only configs. |
+| **metadata_users** | `metadata_users` | Gates write access (create/duplicate/edit/delete) to Metadata Schemas (`Tools › Metadata Schemas`). Non-members get read-only access. Membership is editable by admins/super-admins like any other group; the group itself (slug/is_system) is immutable. See `User#metadata_schema_manager?`. |
 
 Model-level `validate` callbacks enforce slug/is_system immutability.  
 `before_destroy` prevents deletion of any system group.

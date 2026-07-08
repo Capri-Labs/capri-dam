@@ -14,9 +14,13 @@ import { useNotify } from '../../context/NotificationContext';
 import { useCollections } from './CollectionContext';
 import { navigateTo } from '../../utils/globalutils';
 import SemanticClusterMap from './SemanticClusterMap';
+import ShareCollectionDialog from './ShareCollectionDialog';
+import AddAssetsToCollectionDialog from './AddAssetsToCollectionDialog';
+import { useTranslation } from 'react-i18next';
 
 export default function CollectionDetail({ slug, onBack }) {
     const notify = useNotify();
+    const { t } = useTranslation();
     const { updateSmartRule, toggleAssetPin, simulateSmartRule, temporalDate } = useCollections();
     const [collection, setCollection] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -30,6 +34,10 @@ export default function CollectionDetail({ slug, onBack }) {
     const [anchorEl, setAnchorEl] = useState(null);
     const [selectedAsset, setSelectedAsset] = useState(null);
     const [removingAssetId, setRemovingAssetId] = useState(null);
+
+    const [shareDialogOpen, setShareDialogOpen] = useState(false);
+    const [addAssetsDialogOpen, setAddAssetsDialogOpen] = useState(false);
+
 
     // AI Insights State
     const [aiDialogOpen, setAiDialogOpen] = useState(false);
@@ -210,6 +218,26 @@ export default function CollectionDetail({ slug, onBack }) {
                     </Box>
 
                     <Stack direction="row" spacing={2}>
+                        {/* Add Assets to this workspace */}
+                        <Button
+                            variant="outlined"
+                            startIcon={<AddPhotoAlternate />}
+                            onClick={() => setAddAssetsDialogOpen(true)}
+                            data-testid="collection-add-assets-button"
+                            sx={{ borderColor: '#e3e8ef', color: '#5e35b1' }}
+                        >
+                            {t('collectionDetail.addAssets')}
+                        </Button>
+                        {/* Generate a public share link */}
+                        <Button
+                            variant="outlined"
+                            startIcon={<Share />}
+                            onClick={() => setShareDialogOpen(true)}
+                            data-testid="collection-share-button"
+                            sx={{ borderColor: '#e3e8ef', color: '#5e35b1' }}
+                        >
+                            {t('collectionDetail.share')}
+                        </Button>
                         {/*  Trigger AI Map */}
                         <Button variant="outlined" startIcon={<AutoFixHigh />} onClick={() => setMapDialogOpen(true)} sx={{ borderColor: '#e3e8ef', color: '#0ea5e9' }}>
                             View AI Map
@@ -255,7 +283,16 @@ export default function CollectionDetail({ slug, onBack }) {
                 <Paper elevation={0} sx={{ p: 6, textAlign: 'center', borderRadius: 3, border: '1px dashed #cbd5e1', bgcolor: '#f8fafc' }}>
                     <ImageIcon sx={{ fontSize: 48, color: '#cbd5e1', mb: 2 }} />
                     <Typography variant="h6" color="textSecondary">This collection is empty</Typography>
-                    <Typography variant="body2" color="textSecondary">Navigate to the Asset Explorer to add files, or define a Smart Rule to auto-populate.</Typography>
+                    <Typography variant="body2" color="textSecondary" sx={{ mb: 3 }}>Navigate to the Asset Explorer to add files, or define a Smart Rule to auto-populate.</Typography>
+                    <Button
+                        variant="contained"
+                        startIcon={<AddPhotoAlternate />}
+                        onClick={() => setAddAssetsDialogOpen(true)}
+                        data-testid="collection-add-assets-empty-cta"
+                        sx={{ bgcolor: '#5e35b1', '&:hover': { bgcolor: '#4527a0' } }}
+                    >
+                        {t('collectionDetail.addAssets')}
+                    </Button>
                 </Paper>
             ) : (
                 <Grid container spacing={3}>
@@ -491,6 +528,19 @@ export default function CollectionDetail({ slug, onBack }) {
                 open={mapDialogOpen}
                 onClose={() => setMapDialogOpen(false)}
                 slug={slug}
+            />
+
+            <ShareCollectionDialog
+                open={shareDialogOpen}
+                onClose={() => setShareDialogOpen(false)}
+                slug={slug}
+            />
+
+            <AddAssetsToCollectionDialog
+                open={addAssetsDialogOpen}
+                onClose={() => setAddAssetsDialogOpen(false)}
+                slug={slug}
+                onAssetsAdded={() => fetchCollectionDetail()}
             />
         </Box>
     );

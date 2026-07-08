@@ -29,7 +29,22 @@
 
 en:
   hello: "Hello world"
-  
+
+  public:
+    collection_shares:
+      meta_title: "%{name} — Shared Collection"
+      read_only_badge: "Shared, read-only view"
+      description_fallback: "No description provided."
+      empty_state: "This collection has no assets yet."
+      no_preview: "No preview available"
+      asset_count:
+        one: "%{count} asset"
+        other: "%{count} assets"
+      invalid:
+        title: "This link is invalid or has expired"
+        body: "The share link you followed is no longer valid. Ask the person who shared it with you for a new link."
+        meta_title: "Link expired — Capri DAM"
+
   errors:
     messages:
       invalid: "is invalid"

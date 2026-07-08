@@ -463,6 +463,37 @@ RSpec.describe 'Api::V1::Collections', type: :request do
   end
 
   # ===========================================================================
+  # SHARE LINK — POST /api/v1/collections/{slug}/share_link
+  # ===========================================================================
+  path '/api/v1/collections/{slug}/share_link' do
+    parameter name: :slug, in: :path, type: :string, required: true,
+              description: 'Collection slug'
+
+    post 'Mint a time-limited, signed public share link for a collection' do
+      tags 'Collections'
+      produces 'application/json'
+      security [ Bearer: [] ]
+      description <<~DESC
+        Generates a signed, expiring token (see `Collection#generate_share_token`)
+        that grants **read-only, unauthenticated** access to this collection at
+        `GET /s/collections/{token}`. No new collection state or database column
+        is required — the token is a Rails `signed_id`, so it can be revoked
+        implicitly by soft-deleting the collection and cannot be tampered with.
+      DESC
+
+      response '200', 'Share link generated' do
+        schema type: :object,
+               properties: {
+                 token:      { type: :string, description: 'Opaque signed token' },
+                 url:        { type: :string, format: 'uri', example: 'https://api.yourdam.com/s/collections/eyJf...' },
+                 expires_at: { type: :string, format: 'date-time' },
+               }
+        run_test!
+      end
+    end
+  end
+
+  # ===========================================================================
   # ADD ASSET — POST /api/v1/collections/{slug}/assets
   # ===========================================================================
   path '/api/v1/collections/{slug}/assets' do

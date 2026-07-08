@@ -85,14 +85,42 @@ class Collection < ApplicationRecord
   scope :manual, -> { where(collection_type: "manual") }
 
   # ---------------------------------------------------------------------------
-  # Public instance methods
+  # Signed sharing
   # ---------------------------------------------------------------------------
+
+  # Purpose tag scoped into every signed share token so a token minted for
+  # sharing can never be replayed against a different signed-id use case (or
+  # vice-versa) even if the underlying `secret_key_base` were ever reused.
+  SHARE_TOKEN_PURPOSE = :collection_share
+
+  # Default validity window for a freshly generated share link.
+  SHARE_LINK_EXPIRY = 30.days
 
   # Returns +true+ when the collection is automatically populated by rules.
   #
   # @return [Boolean]
   def smart?
     collection_type == "smart"
+  end
+
+  # Mints a tamper-proof, time-boxed token (Rails' built-in signed-id
+  # mechanism — HMAC-signed, no extra DB column/migration required) that can
+  # be embedded in a public, unauthenticated share URL.
+  #
+  # @param expires_in [ActiveSupport::Duration]
+  # @return [String] opaque signed token
+  def generate_share_token(expires_in: SHARE_LINK_EXPIRY)
+    signed_id(expires_in: expires_in, purpose: SHARE_TOKEN_PURPOSE)
+  end
+
+  # Resolves a share token back into the {Collection} it was minted for.
+  # Returns +nil+ for a malformed, tampered, expired, or wrong-purpose token
+  # (never raises), so callers can render a friendly "link expired" page.
+  #
+  # @param token [String]
+  # @return [Collection, nil]
+  def self.find_by_share_token(token)
+    find_signed(token, purpose: SHARE_TOKEN_PURPOSE)
   end
 
   # Determines whether the given user is allowed to view this collection.

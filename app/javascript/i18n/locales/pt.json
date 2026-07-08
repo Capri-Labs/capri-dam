@@ -2244,7 +2244,8 @@
   },
   "assetMetadataPanel": {
     "field": {
-      "inheritedReadOnly": "Herdado do esquema pai — somente leitura",
+      "readOnlyField": "Este campo é somente leitura",
+      "inheritedFromSchema": "Herdado do esquema {{schema}}",
       "selectPlaceholder": "— selecionar —",
       "tagsHelperSuffix": " — pressione Enter para adicionar"
     },
@@ -2536,5 +2537,55 @@
     },
     "copyright": "© {{year}} Capri DAM. Todos os direitos reservados.",
     "systemOperational": "Todos os sistemas operacionais"
+  },
+  "metadataSchemas": {
+    "title": "Esquemas de metadados",
+    "name": {
+      "label": "Nome do esquema",
+      "helper": "Este nome é exibido na árvore de esquemas e no painel de detalhes."
+    },
+    "inheritFrom": {
+      "label": "Herdar de",
+      "none": "Nenhum — sem herança",
+      "helper": "As abas herdadas permanecem sincronizadas com o esquema de origem e aparecem somente leitura junto com suas próprias abas personalizadas.",
+      "builtinUnavailable": "Esquemas integrados não podem herdar de outro esquema."
+    },
+    "inheritsChip": "Herda de: {{name}}",
+    "readOnlyBanner": "Acesso somente leitura. Peça a um administrador para adicioná-lo ao grupo metadata_users para criar, duplicar, editar ou excluir esquemas de metadados personalizados."
+  },
+  "collectionDetail": {
+    "addAssets": "Adicionar ativos",
+    "share": "Compartilhar"
+  },
+  "collectionShare": {
+    "title": "Compartilhar coleção",
+    "description": "Qualquer pessoa com este link pode ver uma versão somente leitura desta coleção. Não é necessário login.",
+    "copied": "Link copiado para a área de transferência.",
+    "expiresAt": "Este link expira em {{date}}.",
+    "error": "Falha ao gerar o link de compartilhamento. Tente novamente.",
+    "close": "Fechar"
+  },
+  "addAssetsDialog": {
+    "title": "Adicionar ativos",
+    "searchTab": "Pesquisar biblioteca",
+    "uploadTab": "Enviar novo",
+    "searchPlaceholder": "Pesquisar ativos por nome ou tag...",
+    "searchHint": "Comece a digitar para pesquisar na biblioteca de ativos.",
+    "noResults": "Nenhum ativo corresponde à sua pesquisa.",
+    "searchError": "Falha ao pesquisar ativos.",
+    "added": "Adicionado",
+    "addAria": "Adicionar {{title}} a esta coleção",
+    "assetAdded": "Ativo adicionado à coleção.",
+    "dragOrClick": "Arraste e solte imagens aqui, ou clique para procurar.",
+    "dropHere": "Solte os arquivos aqui...",
+    "uploadAndAttach": "Enviar e anexar",
+    "uploadComplete": "Envio concluído. Ativos anexados a esta coleção.",
+    "done": "Concluído",
+    "status": {
+      "pending": "Pronto para enviar",
+      "uploading": "Enviando...",
+      "done": "Adicionado à coleção",
+      "error": "Falha no envio"
+    }
   }
 }

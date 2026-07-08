@@ -4,6 +4,77 @@ RSpec.describe "Api::V1::MetadataSchemas", type: :request do
   let(:admin) { create(:user, :admin) }
   let(:schema) { create(:metadata_schema, :root, :with_basic_tab, name: "Default") }
 
+  describe "permission gating for write actions" do
+    let(:regular_user) { create(:user) }
+    let(:metadata_member) do
+      user  = create(:user)
+      group = create(:user_group, :metadata_users)
+      user.user_groups << group
+      user
+    end
+
+    it "forbids a regular user from creating a schema" do
+      sign_in regular_user
+
+      expect do
+        post api_v1_metadata_schemas_path,
+             params: { metadata_schema: { name: "Products", level: "root", tabs: [] } },
+             as: :json
+      end.not_to change(MetadataSchema, :count)
+
+      expect(response).to have_http_status(:forbidden)
+    end
+
+    it "forbids a regular user from updating a schema" do
+      sign_in regular_user
+
+      patch api_v1_metadata_schema_path(schema),
+            params: { metadata_schema: { name: "Renamed" } },
+            as: :json
+
+      expect(response).to have_http_status(:forbidden)
+      expect(schema.reload.name).to eq("Default")
+    end
+
+    it "forbids a regular user from duplicating a schema" do
+      sign_in regular_user
+
+      post duplicate_api_v1_metadata_schema_path(schema), as: :json
+
+      expect(response).to have_http_status(:forbidden)
+    end
+
+    it "forbids a regular user from deleting a schema" do
+      sign_in regular_user
+
+      delete api_v1_metadata_schema_path(schema), as: :json
+
+      expect(response).to have_http_status(:forbidden)
+    end
+
+    it "allows a member of metadata_users to create a schema" do
+      sign_in metadata_member
+
+      expect do
+        post api_v1_metadata_schemas_path,
+             params: { metadata_schema: { name: "Products", level: "root", tabs: [] } },
+             as: :json
+      end.to change(MetadataSchema, :count).by(1)
+
+      expect(response).to have_http_status(:created)
+    end
+
+    it "still allows read access (index/show) for regular users" do
+      sign_in regular_user
+
+      get api_v1_metadata_schemas_path, as: :json
+      expect(response).to have_http_status(:ok)
+
+      get api_v1_metadata_schema_path(schema), as: :json
+      expect(response).to have_http_status(:ok)
+    end
+  end
+
   describe "GET /api/v1/metadata_schemas" do
     it "requires authentication" do
       get api_v1_metadata_schemas_path, as: :json
@@ -91,6 +162,42 @@ RSpec.describe "Api::V1::MetadataSchemas", type: :request do
       expect(response).to have_http_status(:unprocessable_entity)
       expect(response.parsed_body["errors"]).to include("Name can't be blank")
     end
+
+    it "renames a schema" do
+      sign_in admin
+
+      patch api_v1_metadata_schema_path(schema),
+            params: { metadata_schema: { name: "Renamed Schema" } },
+            as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(schema.reload.name).to eq("Renamed Schema")
+    end
+
+    it "sets and serializes inherits_from_id for root schemas" do
+      sign_in admin
+      other = create(:metadata_schema, :root, name: "Other Root")
+
+      patch api_v1_metadata_schema_path(schema),
+            params: { metadata_schema: { inherits_from_id: other.id } },
+            as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(schema.reload.inherits_from_id).to eq(other.id)
+      expect(response.parsed_body["inherits_from_id"]).to eq(other.id)
+      expect(response.parsed_body["inherits_from_name"]).to eq("Other Root")
+    end
+
+    it "rejects inherits_from_id updates that would create a cycle" do
+      sign_in admin
+      other = create(:metadata_schema, :root, inherits_from: schema)
+
+      patch api_v1_metadata_schema_path(schema),
+            params: { metadata_schema: { inherits_from_id: other.id } },
+            as: :json
+
+      expect(response).to have_http_status(:unprocessable_entity)
+    end
   end
 
   describe "DELETE /api/v1/metadata_schemas/:id" do
@@ -124,6 +231,18 @@ RSpec.describe "Api::V1::MetadataSchemas", type: :request do
 
       expect(response).to have_http_status(:created)
       expect(response.parsed_body["name"]).to start_with("Copy of ")
+    end
+
+    it "links the duplicated root schema back via inherits_from instead of deep-copying tabs" do
+      sign_in admin
+
+      post duplicate_api_v1_metadata_schema_path(schema), as: :json
+
+      expect(response).to have_http_status(:created)
+      copy = MetadataSchema.find(response.parsed_body["id"])
+      expect(copy.inherits_from_id).to eq(schema.id)
+      expect(copy.tabs).to eq([])
+      expect(copy.resolved_tabs.map { |t| t["name"] }).to include("Basic")
     end
 
     it "returns an error when duplication fails" do

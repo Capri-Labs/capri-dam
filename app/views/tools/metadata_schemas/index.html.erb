@@ -1,6 +1,7 @@
 <% content_for :title, "Metadata Schemas — Capri DAM" %>
 
 <div id="root"
-     data-view="metadata-schemas-screen">
+     data-view="metadata-schemas-screen"
+     data-can-manage-schemas="<%= current_user.metadata_schema_manager? %>">
 </div>
 

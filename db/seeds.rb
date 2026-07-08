@@ -11,6 +11,9 @@ puts "--- 🏗️  Seeding Capri DAM Ecosystem ---"
     description: 'Members have full access. Only super-admins can modify this group.' },
   { slug: 'super-administrators', name: 'super-administrators',
     description: 'Reserved for the highest level of system operations.' },
+  { slug: 'metadata_users',       name: 'metadata_users',
+    description: 'Members can create, duplicate, edit, and delete custom metadata schemas ' \
+                 'under Tools › Metadata Schemas. Non-members have read-only access.' },
 ].each do |attrs|
   # Case-insensitive lookup covers legacy capitalisation like "Everyone"
   group = UserGroup.find_by(slug: attrs[:slug]) ||

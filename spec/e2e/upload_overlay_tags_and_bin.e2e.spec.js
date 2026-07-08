@@ -138,6 +138,13 @@ test.describe('Upload overlay — Duplicate Overlay Bin chip', () => {
     test('flags a matched duplicate that lives in the Recycle Bin with a Bin chip', async ({ page }) => {
         await openUploadOverlay(page);
 
+        // `in_bin` is computed backend-side as
+        // `asset.deleted_at.present? || asset.folder&.deleted_at.present?` —
+        // true whether the asset itself was soft-deleted, or only its
+        // containing folder was (see spec/requests/api/v1/assets_request_spec.rb
+        // for the two corresponding backend regression tests). The frontend
+        // only needs to react to the resulting boolean flag, so a single
+        // `in_bin: true` mock covers both backend cases here.
         await page.route('**/api/v1/assets/check_hashes', (route) => {
             const body = route.request().postDataJSON();
             const hash = (body && body.hashes && body.hashes[0]) || 'hash-1';

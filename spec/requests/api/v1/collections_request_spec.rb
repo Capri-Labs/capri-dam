@@ -196,4 +196,25 @@ RSpec.describe "Api::V1::Collections coverage", type: :request do
     expect(response).to have_http_status(:unprocessable_entity)
     expect(json).to eq("error" => "Failed to archive workspace.")
   end
+
+  it "mints a signed, expiring public share link for a collection" do
+    collection = create(:collection, user: user)
+
+    post "/api/v1/collections/#{collection.slug}/share_link", as: :json
+
+    expect(response).to have_http_status(:ok)
+    expect(json["token"]).to be_present
+    expect(json["url"]).to include("/s/collections/#{json["token"]}")
+    expect(Time.zone.parse(json["expires_at"])).to be_within(1.minute).of(Collection::SHARE_LINK_EXPIRY.from_now)
+    expect(Collection.find_by_share_token(json["token"])).to eq(collection)
+  end
+
+  it "requires authentication to mint a share link" do
+    collection = create(:collection, user: user)
+    sign_out user
+
+    post "/api/v1/collections/#{collection.slug}/share_link", as: :json
+
+    expect(response).to have_http_status(:unauthorized)
+  end
 end

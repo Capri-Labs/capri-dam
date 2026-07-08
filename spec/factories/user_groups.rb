@@ -26,5 +26,11 @@ FactoryBot.define do
       slug      { "super-administrators" }
       is_system { true }
     end
+
+    trait :metadata_users do
+      name      { "metadata_users" }
+      slug      { "metadata_users" }
+      is_system { true }
+    end
   end
 end

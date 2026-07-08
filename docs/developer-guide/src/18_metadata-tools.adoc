@@ -10,6 +10,135 @@ export jobs.
 chooses the most specific schema based on MIME type, while tabs/fields inherit
 from parents.
 
+=== Editing values vs. editing schema structure
+
+There are two distinct places where "read-only" can apply, and they are
+**intentionally decoupled**:
+
+* **`AssetMetadataPanel`** (Asset Viewer → Info tab) — editing the *values*
+  of metadata fields for one specific asset. Here, a field is locked only
+  when it has its own explicit `read_only: true` flag (set per-field in the
+  schema editor's Field Settings panel, e.g. for computed/technical fields
+  like a checksum). **A field being `inherited` from a parent/root schema
+  does NOT lock its value** — e.g. a "Title" field inherited by an "Image"
+  type-level schema from the built-in "Default" root schema is still fully
+  editable when tagging an actual image asset. This lets users fill in
+  values for OOTB/system schema fields (Default, Collection, Product Images,
+  etc.) directly from the asset viewer.
+* **`SchemaEditorDialog`** (Tools → Metadata Schemas) — editing the *schema
+  definition itself* (adding/renaming/reordering/deleting fields). Here,
+  inherited fields remain structurally read-only (shown in the dedicated
+  "Inherited Fields" column, not selectable) because they belong to the
+  ancestor schema — to change them you edit the source schema directly.
+
+`MetadataSchema#resolved_tabs` tags every inherited field with both
+`"inherited" => true` and `"schema_name" => "<source schema>"` so the UI can
+show an informational "Inherited from `<schema>` schema" tooltip (non-locking)
+alongside the separate lock icon/tooltip shown only for `read_only` fields.
+
+==== Suggested `read_only` usage for built-in fields
+
+When deciding which fields on a built-in schema should carry `read_only:
+true` (locking their *value* everywhere, including on assets), a reasonable
+split is:
+
+* **Keep editable** (user-entered/business metadata) — `Title`, `Description`,
+  `Creator`/`Author`, `Keywords`/`Tags`, `Copyright`, `Usage Rights`, `SKU`,
+  custom business fields (Product Images, Collection tabs), any field whose
+  value is meant to be curated by a person.
+* **Consider `read_only`** (system-derived/technical metadata that should
+  only ever be written by the pipeline, never hand-edited) — checksum/hash
+  fields, file size, pixel dimensions/resolution, color profile, camera
+  make/model and other raw EXIF capture fields, duration/frame-rate for
+  video, any field whose value is auto-populated from embedded metadata or
+  computed by a background job and would become inconsistent if manually
+  overwritten.
+
+This is a per-field admin decision made in the schema editor's Field Settings
+panel (`read_only` toggle) — it is not automatically inferred from a field
+being `inherited`.
+
+=== Renaming schemas
+
+Any schema's `name` is editable via `PATCH /api/v1/metadata_schemas/:id`. The
+`SchemaEditorDialog` exposes this as an editable "Name" field in the dialog
+title bar (previously read-only static text) — this is how a "Copy of X"
+duplicate gets a meaningful custom name.
+
+=== Schema editor layout
+
+`SchemaEditorDialog` places the schema "Name" field, its "Level: <root|type|
+subtype>" caption, and (for eligible root-level, non-builtin schemas) the
+"Inherit From" dropdown all on the same title-bar row
+(`data-testid="schema-editor-level"` / `data-testid="schema-editor-inherit-from"`).
+Below the tab bar, the field area is split into three side-by-side columns:
+
+* **Inherited Fields** (`data-testid="inherited-fields-column"`) — read-only
+  list of fields pulled in from ancestor tabs (MIME `ancestors` and/or the
+  `inherits_from` chain). Shows label, mapped property, and type per field but
+  is not selectable/clickable — there is nothing to edit here.
+* **Custom Fields** (`data-testid="custom-fields-column"`) — the current
+  schema's own editable fields for the active tab (add/reorder/delete/select).
+* **Field Settings** (`data-testid="field-editor-column"`) — the `FieldEditor`
+  panel for whichever custom field is selected in the middle column; shows
+  "Select a field to edit its settings" when nothing is selected.
+
+=== Root-to-root inheritance (`inherits_from_id`)
+
+In addition to the type/subtype `parent_id` hierarchy (MIME resolution),
+root-level schemas can independently link to another root schema via
+`inherits_from_id`. This is a **separate, self-referential association** from
+`parent`/`children` — reusing `parent_id` here would incorrectly make a custom
+root schema appear as a "child" in the MIME tree.
+
+* Set via the "Inherit From" dropdown in `NewSchemaDialog` (at creation time)
+  or `SchemaEditorDialog` (after the fact) — both root-level only.
+* `MetadataSchema#resolved_tabs` merges tabs from **both** ancestor chains —
+  the MIME `ancestors` chain (via `parent`) and the `inheritance_chain` (via
+  `inherits_from`) — followed by the schema's own tabs. Inherited tabs/fields
+  are marked `"inherited" => true` and carry a `"schema_name"` so the UI can
+  render them read-only alongside the schema's own editable tabs.
+* Validated to be root-level-only on both ends, and rejected if it would
+  create a circular chain (self-reference or a longer cycle).
+* **Built-in root schemas (Default, Collection, Product Images, etc.) must
+  never inherit from each other** — `inherits_from_id` cannot be set at all
+  on a schema with `is_builtin: true`. Only custom (non-builtin) root
+  schemas may set Inherit From (targeting either a built-in or another
+  custom root schema). The "Inherit From" control is hidden in
+  `SchemaEditorDialog` when editing a built-in schema, backed by the
+  `inherits_from_must_not_be_set_on_builtin_schema` model validation.
+* `POST /api/v1/metadata_schemas/:id/duplicate` on a **root-level** schema now
+  sets `inherits_from` on the copy (linking back to the source) instead of
+  deep-copying its tabs, so "Copy of X" starts with zero own tabs plus X's
+  tabs shown read-only — and stays in sync if X's tabs later change. Type/
+  subtype children are still duplicated with a full tab deep-copy (unaffected,
+  since `inherits_from` is root-only).
+
+=== Permission gate: the `metadata_users` group
+
+Write actions on metadata schemas (`create`, `update`, `destroy`, `duplicate`,
+`apply_to_folder`, `remove_from_folder`) require
+`User#metadata_schema_manager?`, which returns `true` for:
+
+* admins (`User#admin?`),
+* members of the built-in `administrators` group, or
+* members of the built-in `metadata_users` group.
+
+`metadata_users` is a new **OOTB system group** (`UserGroup::SYSTEM_SLUGS`,
+`is_system: true`) — like `everyone`/`administrators`/`super-administrators`,
+its `slug`/`is_system` cannot be changed and it cannot be deleted, but
+admins/super-admins can add or remove *members* freely via
+`Admin::UserGroupsManager`. It is seeded both in `db/seeds.rb` (fresh installs)
+and via the `CreateMetadataUsersSystemGroup` migration (existing installs).
+
+Read actions (`index`/`show`/`folders`) remain open to any authenticated user
+— non-members can still browse the full schema tree, just without the ability
+to mutate it. The `Tools::MetadataSchemas` view passes
+`data-can-manage-schemas="<%= current_user.metadata_schema_manager? %>"` to
+the React root, and `MetadataSchemasManager.jsx` hides the "Create new root
+schema" button and all Edit/Duplicate/Delete actions (falling back to a
+read-only info banner) whenever that flag is `false`.
+
 == Export flow
 
 `MetadataExportManager.jsx` lets admins choose a folder scope, include
@@ -27,8 +156,9 @@ configures delimiters/batch size, optionally launches workflows, and polls until
 [cols="1,2,3", options="header"]
 |===
 | Method | Path | Description
-| `GET/POST` | `/api/v1/metadata_schemas` | List/create schemas.
-| `GET/PATCH/DELETE` | `/api/v1/metadata_schemas/:id` | Maintain schemas.
+| `GET/POST` | `/api/v1/metadata_schemas` | List/create schemas. Write actions require `metadata_schema_manager?`.
+| `GET/PATCH/DELETE` | `/api/v1/metadata_schemas/:id` | Maintain schemas — `PATCH` accepts `name`, `inherits_from_id` (root-level only), `tabs`, etc.
+| `POST` | `/api/v1/metadata_schemas/:id/duplicate` | Duplicate a schema tree. Root-level copies link via `inherits_from_id` instead of deep-copying tabs.
 | `POST` | `/api/v1/metadata_schemas/:id/assign` | Apply schema to folder tree.
 | `GET` | `/api/v1/assets/:id/metadata_schema` | Resolve the schema for one asset (by id or UUID), pre-filled with the asset's own values.
 | `GET/POST` | `/api/v1/metadata_exports` | List/create export jobs.

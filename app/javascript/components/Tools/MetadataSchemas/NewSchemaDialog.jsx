@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     Dialog, DialogTitle, DialogContent, DialogActions,
     Box, Typography, Button, TextField, Select, MenuItem,
@@ -7,11 +8,13 @@ import {
 import { AddOutlined, CloseOutlined } from '@mui/icons-material';
 
 export default function NewSchemaDialog({ open, onClose, onCreate, parentSchemas = [] }) {
+    const { t } = useTranslation();
     const [name,         setName]         = useState('');
     const [description,  setDescription]  = useState('');
     const [level,        setLevel]        = useState('root');
     const [parentId,     setParentId]     = useState('');
     const [mimeSegment,  setMimeSegment]  = useState('');
+    const [inheritsFromId, setInheritsFromId] = useState('');
     const [saving,       setSaving]       = useState(false);
     const [error,        setError]        = useState('');
 
@@ -33,6 +36,10 @@ export default function NewSchemaDialog({ open, onClose, onCreate, parentSchemas
             level === 'subtype' ? s.level === 'type'  : false
         );
 
+    // A new root schema can optionally inherit tabs from an existing root
+    // schema (any built-in or custom root) via this dropdown.
+    const rootOptions = parentSchemas.filter(s => s.level === 'root');
+
     const handleSubmit = async () => {
         if (!name.trim()) { setError('Name is required.'); return; }
         if (level !== 'root' && !parentId) { setError('Parent schema is required for type/subtype.'); return; }
@@ -45,6 +52,7 @@ export default function NewSchemaDialog({ open, onClose, onCreate, parentSchemas
             level,
             parent_id:    parentId || null,
             mime_segment: mimeSegment.trim() || null,
+            inherits_from_id: level === 'root' ? (inheritsFromId || null) : null,
             tabs: [],
         };
         const ok = await onCreate(payload);
@@ -110,12 +118,25 @@ export default function NewSchemaDialog({ open, onClose, onCreate, parentSchemas
                     )}
 
                     {level === 'root' && (
-                        <Box sx={{ bgcolor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 2, p: 1.5 }}>
-                            <Typography variant="caption" sx={{ color: '#166534' }}>
-                                Root schemas can be applied to asset folders. You can add type and subtype
-                                sub-schemas after creation to build a MIME-based resolution hierarchy.
-                            </Typography>
-                        </Box>
+                        <>
+                            <FormControl fullWidth size="small">
+                                <InputLabel id="inherit-from-new-label">{t('metadataSchemas.inheritFrom.label')}</InputLabel>
+                                <Select labelId="inherit-from-new-label" label={t('metadataSchemas.inheritFrom.label')}
+                                        value={inheritsFromId} displayEmpty
+                                        data-testid="new-schema-inherit-from"
+                                        onChange={e => setInheritsFromId(e.target.value)}>
+                                    <MenuItem value=""><em>{t('metadataSchemas.inheritFrom.none')}</em></MenuItem>
+                                    {rootOptions.map(s => (
+                                        <MenuItem key={s.id} value={s.id}>{s.name}</MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                            <Box sx={{ bgcolor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 2, p: 1.5 }}>
+                                <Typography variant="caption" sx={{ color: '#166534' }}>
+                                    {t('metadataSchemas.inheritFrom.helper')}
+                                </Typography>
+                            </Box>
+                        </>
                     )}
                 </Stack>
             </DialogContent>

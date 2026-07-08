@@ -3,7 +3,8 @@
 require "rails_helper"
 
 RSpec.describe "Tools::MetadataSchemas coverage", type: :request do
-  let(:user) { create(:user) }
+  let(:user)  { create(:user) }
+  let(:admin) { create(:user, :admin) }
 
   it "renders the metadata schema shell for authenticated users" do
     sign_in user
@@ -14,6 +15,22 @@ RSpec.describe "Tools::MetadataSchemas coverage", type: :request do
     expect(response.body).to include('data-view="metadata-schemas-screen"')
     expect(assigns(:active_view)).to eq("MetadataSchemas")
     expect(response.body).to include('data-active-view="MetadataSchemas"')
+  end
+
+  it "marks regular users as read-only via data-can-manage-schemas" do
+    sign_in user
+
+    get "/tools/metadata_schemas"
+
+    expect(response.body).to include('data-can-manage-schemas="false"')
+  end
+
+  it "marks admins as schema managers via data-can-manage-schemas" do
+    sign_in admin
+
+    get "/tools/metadata_schemas"
+
+    expect(response.body).to include('data-can-manage-schemas="true"')
   end
 
   it "returns 401 for unauthenticated HTML users" do

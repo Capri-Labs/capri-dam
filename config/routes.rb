@@ -95,6 +95,10 @@ Rails.application.routes.draw do
   # React Router (BrowserRouter basename="/collections") handles client-side routing.
   get "/collections/*path", to: "collections#index", as: :collection_workspace
 
+  # Public, unauthenticated collection share links (signed_id-based, no DB
+  # column). No login required — the token itself *is* the credential.
+  get "/s/collections/:token", to: "public/collection_shares#show", as: :public_collection_share, format: false
+
   # Workflows UI
   get "/workflows", to: "workflows#index"
   get "workflows/dashboard", to: "workflows#dashboard"
@@ -307,6 +311,7 @@ Rails.application.routes.draw do
           get :cluster_map
           post :rule, to: "collections#configure_rule"
           post "purge_cdn", to: "collections#purge_cdn"
+          post "share_link", to: "collections#create_share_link"
 
           # Asset Join Table Operations
           post "assets", to: "collections#add_asset"
