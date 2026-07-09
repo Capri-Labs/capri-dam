@@ -2276,38 +2276,38 @@
   },
   "assetVersionsTab": {
     "title": "バージョンタイムライン",
-    "description": "このアセットの過去の版を表示します。バージョンを復元すると、新しい編集を削除せずにその版がアクティブファイルになります。",
+    "description": "このアセットの以前のイテレーションを表示します。バージョンを復元すると、新しい編集を削除せずにそれがアクティブなファイルになります。",
     "currentActive": "現在アクティブ",
-    "savedOn": "保存日時",
+    "savedOn": "保存日",
     "by": "作成者",
     "fileSize": "ファイルサイズ",
     "restore": "復元",
     "compare": {
-      "title": "Compare versions",
-      "selectionHint": "Select any two versions to open a side-by-side preview with a pixel-diff overlay.",
-      "clearSelection": "Clear selection",
-      "open": "Compare selected",
-      "selectedCount": "{{count}} of 2 versions selected",
-      "selectVersionLabel": "Compare v{{version}}",
-      "compareTitle": "Comparing v{{after}} against v{{before}}",
-      "instructions": "Blend the two previews and toggle the highlight overlay to inspect pixel-level changes between versions.",
-      "backToTimeline": "Back to timeline",
-      "toggleOverlay": "Show diff overlay",
-      "blendLabel": "Blend before/after",
-      "overlayHint": "Move the slider toward 100 to emphasize the earlier version, or leave it low to inspect the current version with diff highlights.",
-      "beforeLabel": "Before (v{{version}})",
-      "afterLabel": "After (v{{version}})",
-      "previewAlt": "Version {{version}} preview",
-      "diffUnavailableCrossOrigin": "Diff overlay is unavailable because one or both preview images block cross-origin canvas access. Side-by-side comparison is still available.",
-      "diffUnavailable": "Diff overlay is unavailable for these versions. Side-by-side comparison is still available.",
-      "missingPreview": "Preview unavailable",
-      "beforeCanvas": "Before image canvas",
-      "afterCanvas": "After image canvas",
-      "diffCanvas": "Difference overlay canvas"
+      "title": "バージョンを比較",
+      "selectionHint": "任意の2つのバージョンを選択すると、ピクセル差分オーバーレイ付きの並列プレビューが開きます。",
+      "clearSelection": "選択をクリア",
+      "open": "選択項目を比較",
+      "selectedCount": "2バージョン中{{count}}件を選択",
+      "selectVersionLabel": "v{{version}}を比較",
+      "compareTitle": "v{{after}}をv{{before}}と比較中",
+      "instructions": "2つのプレビューをブレンドし、ハイライトオーバーレイを切り替えて、バージョン間のピクセルレベルの変更を確認します。",
+      "backToTimeline": "タイムラインに戻る",
+      "toggleOverlay": "差分オーバーレイを表示",
+      "blendLabel": "変更前/変更後をブレンド",
+      "overlayHint": "スライダーを100に近づけると以前のバージョンが強調され、低くすると差分ハイライト付きで現在のバージョンを確認できます。",
+      "beforeLabel": "変更前 (v{{version}})",
+      "afterLabel": "変更後 (v{{version}})",
+      "previewAlt": "バージョン{{version}}のプレビュー",
+      "diffUnavailableCrossOrigin": "一方または両方のプレビュー画像がクロスオリジンのキャンバスアクセスをブロックしているため、差分オーバーレイは利用できません。並列比較は引き続き利用できます。",
+      "diffUnavailable": "これらのバージョンでは差分オーバーレイは利用できません。並列比較は引き続き利用できます。",
+      "missingPreview": "プレビューは利用できません",
+      "beforeCanvas": "変更前画像のキャンバス",
+      "afterCanvas": "変更後画像のキャンバス",
+      "diffCanvas": "差分オーバーレイのキャンバス"
     },
     "notifications": {
       "failedToLoadVersionHistory": "バージョン履歴の読み込みに失敗しました。",
-      "assetRolledBack": "選択したバージョンへのロールバックに成功しました。",
+      "assetRolledBack": "アセットを選択したバージョンに正常にロールバックしました。",
       "failedToRestoreVersion": "バージョンの復元に失敗しました。"
     }
   },
@@ -2615,64 +2615,63 @@
     }
   },
   "quarantine": {
-    "title": "Quarantine Review",
-    "subtitle": "Review suspicious assets, release approved items, or move rejected items to the Recycle Bin.",
-    "empty": "No quarantine entries found",
-    "emptySubtitle": "Newly flagged assets will appear here for review.",
-    "noPreview": "No preview available",
-    "noContentType": "Unknown content type",
+    "title": "検疫レビュー",
+    "subtitle": "疑わしいアセットを確認し、承認済みの項目を公開するか、拒否した項目をゴミ箱に移動します。",
+    "empty": "検疫エントリが見つかりません",
+    "emptySubtitle": "新しくフラグが付けられたアセットがここにレビュー用として表示されます。",
+    "noPreview": "プレビューはありません",
+    "noContentType": "不明なコンテンツタイプ",
     "filters": {
-      "pending_review": "Pending Review",
-      "resolved": "Released",
-      "discarded": "Discarded",
-      "all": "All"
+      "pending_review": "レビュー待ち",
+      "resolved": "公開済み",
+      "discarded": "破棄済み",
+      "all": "すべて"
     },
     "stats": {
-      "pending_review": "Pending items",
-      "resolved": "Released items",
-      "discarded": "Discarded items",
-      "total": "Total entries"
+      "pending_review": "保留中の項目",
+      "resolved": "公開済みの項目",
+      "discarded": "破棄済みの項目",
+      "total": "エントリ合計"
     },
     "table": {
-      "asset": "Asset",
-      "reason": "Quarantine reason",
-      "flaggedAt": "Flagged at",
-      "status": "Status"
+      "asset": "アセット",
+      "reason": "検疫理由",
+      "flaggedAt": "フラグ日時",
+      "status": "ステータス"
     },
     "actions": {
-      "view": "Review",
-      "release": "Release",
-      "discard": "Discard"
+      "view": "レビュー",
+      "release": "公開",
+      "discard": "破棄"
     },
     "status": {
-      "pending_review": "Pending Review",
-      "resolved": "Released",
-      "discarded": "Discarded"
+      "pending_review": "レビュー待ち",
+      "resolved": "公開済み",
+      "discarded": "破棄済み"
     },
     "detail": {
-      "title": "Quarantine entry details",
-      "reason": "Reason",
-      "connector": "Connector",
-      "uploadedBy": "Uploaded by",
-      "uploadedAt": "Uploaded at",
-      "flaggedAt": "Flagged at",
-      "status": "Status",
-      "reviewNotes": "Review notes",
-      "originalPayload": "Original payload"
+      "title": "検疫エントリの詳細",
+      "reason": "理由",
+      "connector": "コネクタ",
+      "uploadedBy": "アップロード者",
+      "uploadedAt": "アップロード日時",
+      "flaggedAt": "フラグ日時",
+      "status": "ステータス",
+      "reviewNotes": "レビューメモ",
+      "originalPayload": "元のペイロード"
     },
     "confirmDiscard": {
-      "title": "Discard quarantined asset?",
-      "body": "The linked asset will be soft-deleted and moved to the Recycle Bin so it can still be restored later if needed.",
-      "confirm": "Discard asset"
+      "title": "検疫中のアセットを破棄しますか？",
+      "body": "リンクされたアセットはソフト削除されてゴミ箱に移動されるため、必要に応じて後で復元できます。",
+      "confirm": "アセットを破棄"
     },
     "notifications": {
-      "loadError": "Unable to load quarantine data.",
-      "released": "Quarantined asset released.",
-      "discarded": "Quarantined asset moved to the Recycle Bin.",
-      "actionFailed": "Quarantine action failed."
+      "loadError": "検疫データを読み込めませんでした。",
+      "released": "検疫中のアセットを公開しました。",
+      "discarded": "検疫中のアセットをゴミ箱に移動しました。",
+      "actionFailed": "検疫アクションに失敗しました。"
     }
-  }
-,
+  },
   "metadataImport": {
     "preview": {
       "action": "プレビュー",

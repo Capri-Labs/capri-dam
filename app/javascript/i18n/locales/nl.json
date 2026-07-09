@@ -2276,38 +2276,38 @@
   },
   "assetVersionsTab": {
     "title": "Versietijdlijn",
-    "description": "Bekijk eerdere iteraties van dit asset. Door een versie te herstellen wordt deze het actieve bestand zonder nieuwere bewerkingen te verwijderen.",
-    "currentActive": "Huidig actief",
+    "description": "Bekijk eerdere iteraties van dit asset. Het herstellen van een versie maakt deze het actieve bestand zonder nieuwere bewerkingen te verwijderen.",
+    "currentActive": "Momenteel actief",
     "savedOn": "Opgeslagen op",
     "by": "door",
     "fileSize": "Bestandsgrootte",
     "restore": "Herstellen",
     "compare": {
-      "title": "Compare versions",
-      "selectionHint": "Select any two versions to open a side-by-side preview with a pixel-diff overlay.",
-      "clearSelection": "Clear selection",
-      "open": "Compare selected",
-      "selectedCount": "{{count}} of 2 versions selected",
-      "selectVersionLabel": "Compare v{{version}}",
-      "compareTitle": "Comparing v{{after}} against v{{before}}",
-      "instructions": "Blend the two previews and toggle the highlight overlay to inspect pixel-level changes between versions.",
-      "backToTimeline": "Back to timeline",
-      "toggleOverlay": "Show diff overlay",
-      "blendLabel": "Blend before/after",
-      "overlayHint": "Move the slider toward 100 to emphasize the earlier version, or leave it low to inspect the current version with diff highlights.",
-      "beforeLabel": "Before (v{{version}})",
-      "afterLabel": "After (v{{version}})",
-      "previewAlt": "Version {{version}} preview",
-      "diffUnavailableCrossOrigin": "Diff overlay is unavailable because one or both preview images block cross-origin canvas access. Side-by-side comparison is still available.",
-      "diffUnavailable": "Diff overlay is unavailable for these versions. Side-by-side comparison is still available.",
-      "missingPreview": "Preview unavailable",
-      "beforeCanvas": "Before image canvas",
-      "afterCanvas": "After image canvas",
-      "diffCanvas": "Difference overlay canvas"
+      "title": "Versies vergelijken",
+      "selectionHint": "Selecteer twee willekeurige versies om een vergelijking naast elkaar te openen met een pixel-diff-overlay.",
+      "clearSelection": "Selectie wissen",
+      "open": "Geselecteerde vergelijken",
+      "selectedCount": "{{count}} van 2 versies geselecteerd",
+      "selectVersionLabel": "v{{version}} vergelijken",
+      "compareTitle": "v{{after}} vergelijken met v{{before}}",
+      "instructions": "Meng de twee voorbeelden en schakel de markeringsoverlay in om wijzigingen op pixelniveau tussen versies te inspecteren.",
+      "backToTimeline": "Terug naar tijdlijn",
+      "toggleOverlay": "Diff-overlay tonen",
+      "blendLabel": "Voor/na mengen",
+      "overlayHint": "Verplaats de schuifregelaar richting 100 om de eerdere versie te benadrukken, of houd hem laag om de huidige versie met diff-markeringen te inspecteren.",
+      "beforeLabel": "Voor (v{{version}})",
+      "afterLabel": "Na (v{{version}})",
+      "previewAlt": "Voorbeeld van versie {{version}}",
+      "diffUnavailableCrossOrigin": "De diff-overlay is niet beschikbaar omdat een of beide voorbeeldafbeeldingen cross-origin canvastoegang blokkeren. Vergelijking naast elkaar is nog steeds beschikbaar.",
+      "diffUnavailable": "De diff-overlay is niet beschikbaar voor deze versies. Vergelijking naast elkaar is nog steeds beschikbaar.",
+      "missingPreview": "Voorbeeld niet beschikbaar",
+      "beforeCanvas": "Canvas van voor-afbeelding",
+      "afterCanvas": "Canvas van na-afbeelding",
+      "diffCanvas": "Canvas van verschiloverlay"
     },
     "notifications": {
       "failedToLoadVersionHistory": "Kan versiegeschiedenis niet laden.",
-      "assetRolledBack": "Asset is succesvol teruggezet naar de geselecteerde versie.",
+      "assetRolledBack": "Asset succesvol teruggezet naar geselecteerde versie.",
       "failedToRestoreVersion": "Kan versie niet herstellen."
     }
   },
@@ -2615,64 +2615,63 @@
     }
   },
   "quarantine": {
-    "title": "Quarantine Review",
-    "subtitle": "Review suspicious assets, release approved items, or move rejected items to the Recycle Bin.",
-    "empty": "No quarantine entries found",
-    "emptySubtitle": "Newly flagged assets will appear here for review.",
-    "noPreview": "No preview available",
-    "noContentType": "Unknown content type",
+    "title": "Quarantainebeoordeling",
+    "subtitle": "Beoordeel verdachte assets, geef goedgekeurde items vrij of verplaats afgewezen items naar de Prullenbak.",
+    "empty": "Geen quarantaine-items gevonden",
+    "emptySubtitle": "Nieuw gemarkeerde assets verschijnen hier ter beoordeling.",
+    "noPreview": "Geen voorbeeld beschikbaar",
+    "noContentType": "Onbekend inhoudstype",
     "filters": {
-      "pending_review": "Pending Review",
-      "resolved": "Released",
-      "discarded": "Discarded",
-      "all": "All"
+      "pending_review": "In afwachting van beoordeling",
+      "resolved": "Vrijgegeven",
+      "discarded": "Verworpen",
+      "all": "Alle"
     },
     "stats": {
-      "pending_review": "Pending items",
-      "resolved": "Released items",
-      "discarded": "Discarded items",
-      "total": "Total entries"
+      "pending_review": "Openstaande items",
+      "resolved": "Vrijgegeven items",
+      "discarded": "Verworpen items",
+      "total": "Totaal aantal items"
     },
     "table": {
       "asset": "Asset",
-      "reason": "Quarantine reason",
-      "flaggedAt": "Flagged at",
+      "reason": "Quarantainereden",
+      "flaggedAt": "Gemarkeerd op",
       "status": "Status"
     },
     "actions": {
-      "view": "Review",
-      "release": "Release",
-      "discard": "Discard"
+      "view": "Beoordelen",
+      "release": "Vrijgeven",
+      "discard": "Verwerpen"
     },
     "status": {
-      "pending_review": "Pending Review",
-      "resolved": "Released",
-      "discarded": "Discarded"
+      "pending_review": "In afwachting van beoordeling",
+      "resolved": "Vrijgegeven",
+      "discarded": "Verworpen"
     },
     "detail": {
-      "title": "Quarantine entry details",
-      "reason": "Reason",
+      "title": "Details van quarantaine-item",
+      "reason": "Reden",
       "connector": "Connector",
-      "uploadedBy": "Uploaded by",
-      "uploadedAt": "Uploaded at",
-      "flaggedAt": "Flagged at",
+      "uploadedBy": "Geüpload door",
+      "uploadedAt": "Geüpload op",
+      "flaggedAt": "Gemarkeerd op",
       "status": "Status",
-      "reviewNotes": "Review notes",
-      "originalPayload": "Original payload"
+      "reviewNotes": "Beoordelingsnotities",
+      "originalPayload": "Oorspronkelijke payload"
     },
     "confirmDiscard": {
-      "title": "Discard quarantined asset?",
-      "body": "The linked asset will be soft-deleted and moved to the Recycle Bin so it can still be restored later if needed.",
-      "confirm": "Discard asset"
+      "title": "Asset in quarantaine verwerpen?",
+      "body": "De gekoppelde asset wordt zacht verwijderd en naar de Prullenbak verplaatst, zodat deze later indien nodig nog kan worden hersteld.",
+      "confirm": "Asset verwerpen"
     },
     "notifications": {
-      "loadError": "Unable to load quarantine data.",
-      "released": "Quarantined asset released.",
-      "discarded": "Quarantined asset moved to the Recycle Bin.",
-      "actionFailed": "Quarantine action failed."
+      "loadError": "Kan quarantainegegevens niet laden.",
+      "released": "Asset in quarantaine vrijgegeven.",
+      "discarded": "Asset in quarantaine naar de Prullenbak verplaatst.",
+      "actionFailed": "Quarantaineactie mislukt."
     }
-  }
-,
+  },
   "metadataImport": {
     "preview": {
       "action": "Voorbeeld",

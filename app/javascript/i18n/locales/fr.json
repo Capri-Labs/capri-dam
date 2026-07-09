@@ -2276,39 +2276,39 @@
   },
   "assetVersionsTab": {
     "title": "Chronologie des versions",
-    "description": "Afficher les versions précédentes de cet asset. Restaurer une version en fait le fichier actif sans supprimer les modifications plus récentes.",
-    "currentActive": "Actuellement actif",
+    "description": "Affichez les itérations précédentes de cette ressource. Restaurer une version en fait le fichier actif sans supprimer les modifications plus récentes.",
+    "currentActive": "Actif actuel",
     "savedOn": "Enregistré le",
     "by": "par",
     "fileSize": "Taille du fichier",
     "restore": "Restaurer",
     "compare": {
-      "title": "Compare versions",
-      "selectionHint": "Select any two versions to open a side-by-side preview with a pixel-diff overlay.",
-      "clearSelection": "Clear selection",
-      "open": "Compare selected",
-      "selectedCount": "{{count}} of 2 versions selected",
-      "selectVersionLabel": "Compare v{{version}}",
-      "compareTitle": "Comparing v{{after}} against v{{before}}",
-      "instructions": "Blend the two previews and toggle the highlight overlay to inspect pixel-level changes between versions.",
-      "backToTimeline": "Back to timeline",
-      "toggleOverlay": "Show diff overlay",
-      "blendLabel": "Blend before/after",
-      "overlayHint": "Move the slider toward 100 to emphasize the earlier version, or leave it low to inspect the current version with diff highlights.",
-      "beforeLabel": "Before (v{{version}})",
-      "afterLabel": "After (v{{version}})",
-      "previewAlt": "Version {{version}} preview",
-      "diffUnavailableCrossOrigin": "Diff overlay is unavailable because one or both preview images block cross-origin canvas access. Side-by-side comparison is still available.",
-      "diffUnavailable": "Diff overlay is unavailable for these versions. Side-by-side comparison is still available.",
-      "missingPreview": "Preview unavailable",
-      "beforeCanvas": "Before image canvas",
-      "afterCanvas": "After image canvas",
-      "diffCanvas": "Difference overlay canvas"
+      "title": "Comparer les versions",
+      "selectionHint": "Sélectionnez deux versions pour ouvrir un aperçu côte à côte avec une superposition de diff au pixel près.",
+      "clearSelection": "Effacer la sélection",
+      "open": "Comparer la sélection",
+      "selectedCount": "{{count}} version(s) sur 2 sélectionnée(s)",
+      "selectVersionLabel": "Comparer v{{version}}",
+      "compareTitle": "Comparaison de v{{after}} avec v{{before}}",
+      "instructions": "Fondez les deux aperçus et activez la superposition de surbrillance pour inspecter les changements au niveau du pixel entre les versions.",
+      "backToTimeline": "Retour à la chronologie",
+      "toggleOverlay": "Afficher la superposition de diff",
+      "blendLabel": "Fondu avant/après",
+      "overlayHint": "Déplacez le curseur vers 100 pour accentuer la version antérieure, ou laissez-le bas pour inspecter la version actuelle avec les surbrillances de diff.",
+      "beforeLabel": "Avant (v{{version}})",
+      "afterLabel": "Après (v{{version}})",
+      "previewAlt": "Aperçu de la version {{version}}",
+      "diffUnavailableCrossOrigin": "La superposition de diff est indisponible car une ou les deux images d'aperçu bloquent l'accès au canevas cross-origin. La comparaison côte à côte reste disponible.",
+      "diffUnavailable": "La superposition de diff est indisponible pour ces versions. La comparaison côte à côte reste disponible.",
+      "missingPreview": "Aperçu indisponible",
+      "beforeCanvas": "Canevas de l'image avant",
+      "afterCanvas": "Canevas de l'image après",
+      "diffCanvas": "Canevas de la superposition de différence"
     },
     "notifications": {
-      "failedToLoadVersionHistory": "Impossible de charger l’historique des versions.",
-      "assetRolledBack": "L’asset a été restauré avec succès vers la version sélectionnée.",
-      "failedToRestoreVersion": "Impossible de restaurer la version."
+      "failedToLoadVersionHistory": "Échec du chargement de l'historique des versions.",
+      "assetRolledBack": "Ressource restaurée avec succès à la version sélectionnée.",
+      "failedToRestoreVersion": "Échec de la restauration de la version."
     }
   },
   "assetAuditTab": {
@@ -2615,64 +2615,63 @@
     }
   },
   "quarantine": {
-    "title": "Quarantine Review",
-    "subtitle": "Review suspicious assets, release approved items, or move rejected items to the Recycle Bin.",
-    "empty": "No quarantine entries found",
-    "emptySubtitle": "Newly flagged assets will appear here for review.",
-    "noPreview": "No preview available",
-    "noContentType": "Unknown content type",
+    "title": "Examen de quarantaine",
+    "subtitle": "Examinez les ressources suspectes, publiez les éléments approuvés ou déplacez les éléments rejetés vers la corbeille.",
+    "empty": "Aucune entrée de quarantaine trouvée",
+    "emptySubtitle": "Les ressources nouvellement signalées apparaîtront ici pour examen.",
+    "noPreview": "Aucun aperçu disponible",
+    "noContentType": "Type de contenu inconnu",
     "filters": {
-      "pending_review": "Pending Review",
-      "resolved": "Released",
-      "discarded": "Discarded",
-      "all": "All"
+      "pending_review": "En attente d'examen",
+      "resolved": "Publié",
+      "discarded": "Rejeté",
+      "all": "Tous"
     },
     "stats": {
-      "pending_review": "Pending items",
-      "resolved": "Released items",
-      "discarded": "Discarded items",
-      "total": "Total entries"
+      "pending_review": "Éléments en attente",
+      "resolved": "Éléments publiés",
+      "discarded": "Éléments rejetés",
+      "total": "Total des entrées"
     },
     "table": {
-      "asset": "Asset",
-      "reason": "Quarantine reason",
-      "flaggedAt": "Flagged at",
-      "status": "Status"
+      "asset": "Ressource",
+      "reason": "Motif de quarantaine",
+      "flaggedAt": "Signalé le",
+      "status": "Statut"
     },
     "actions": {
-      "view": "Review",
-      "release": "Release",
-      "discard": "Discard"
+      "view": "Examiner",
+      "release": "Publier",
+      "discard": "Rejeter"
     },
     "status": {
-      "pending_review": "Pending Review",
-      "resolved": "Released",
-      "discarded": "Discarded"
+      "pending_review": "En attente d'examen",
+      "resolved": "Publié",
+      "discarded": "Rejeté"
     },
     "detail": {
-      "title": "Quarantine entry details",
-      "reason": "Reason",
-      "connector": "Connector",
-      "uploadedBy": "Uploaded by",
-      "uploadedAt": "Uploaded at",
-      "flaggedAt": "Flagged at",
-      "status": "Status",
-      "reviewNotes": "Review notes",
-      "originalPayload": "Original payload"
+      "title": "Détails de l'entrée de quarantaine",
+      "reason": "Motif",
+      "connector": "Connecteur",
+      "uploadedBy": "Téléversé par",
+      "uploadedAt": "Téléversé le",
+      "flaggedAt": "Signalé le",
+      "status": "Statut",
+      "reviewNotes": "Notes d'examen",
+      "originalPayload": "Charge utile d'origine"
     },
     "confirmDiscard": {
-      "title": "Discard quarantined asset?",
-      "body": "The linked asset will be soft-deleted and moved to the Recycle Bin so it can still be restored later if needed.",
-      "confirm": "Discard asset"
+      "title": "Rejeter la ressource en quarantaine ?",
+      "body": "La ressource liée sera supprimée de façon réversible et déplacée vers la corbeille afin de pouvoir être restaurée ultérieurement si nécessaire.",
+      "confirm": "Rejeter la ressource"
     },
     "notifications": {
-      "loadError": "Unable to load quarantine data.",
-      "released": "Quarantined asset released.",
-      "discarded": "Quarantined asset moved to the Recycle Bin.",
-      "actionFailed": "Quarantine action failed."
+      "loadError": "Impossible de charger les données de quarantaine.",
+      "released": "Ressource en quarantaine publiée.",
+      "discarded": "Ressource en quarantaine déplacée vers la corbeille.",
+      "actionFailed": "Échec de l'action de quarantaine."
     }
-  }
-,
+  },
   "metadataImport": {
     "preview": {
       "action": "Aperçu",

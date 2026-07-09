@@ -2275,40 +2275,40 @@
     "saveMetadata": "حفظ البيانات الوصفية"
   },
   "assetVersionsTab": {
-    "title": "المخطط الزمني للإصدارات",
-    "description": "اعرض الإصدارات السابقة لهذا الأصل. تؤدي استعادة إصدار إلى جعله الملف النشط من دون حذف التعديلات الأحدث.",
+    "title": "الجدول الزمني للإصدارات",
+    "description": "اعرض التكرارات السابقة لهذا الأصل. استعادة إصدار ما تجعله الملف النشط دون حذف التعديلات الأحدث.",
     "currentActive": "النشط حاليًا",
     "savedOn": "تم الحفظ في",
     "by": "بواسطة",
     "fileSize": "حجم الملف",
     "restore": "استعادة",
     "compare": {
-      "title": "Compare versions",
-      "selectionHint": "Select any two versions to open a side-by-side preview with a pixel-diff overlay.",
-      "clearSelection": "Clear selection",
-      "open": "Compare selected",
-      "selectedCount": "{{count}} of 2 versions selected",
-      "selectVersionLabel": "Compare v{{version}}",
-      "compareTitle": "Comparing v{{after}} against v{{before}}",
-      "instructions": "Blend the two previews and toggle the highlight overlay to inspect pixel-level changes between versions.",
-      "backToTimeline": "Back to timeline",
-      "toggleOverlay": "Show diff overlay",
-      "blendLabel": "Blend before/after",
-      "overlayHint": "Move the slider toward 100 to emphasize the earlier version, or leave it low to inspect the current version with diff highlights.",
-      "beforeLabel": "Before (v{{version}})",
-      "afterLabel": "After (v{{version}})",
-      "previewAlt": "Version {{version}} preview",
-      "diffUnavailableCrossOrigin": "Diff overlay is unavailable because one or both preview images block cross-origin canvas access. Side-by-side comparison is still available.",
-      "diffUnavailable": "Diff overlay is unavailable for these versions. Side-by-side comparison is still available.",
-      "missingPreview": "Preview unavailable",
-      "beforeCanvas": "Before image canvas",
-      "afterCanvas": "After image canvas",
-      "diffCanvas": "Difference overlay canvas"
+      "title": "مقارنة الإصدارات",
+      "selectionHint": "حدد أي إصدارين لفتح معاينة جنبًا إلى جنب مع طبقة فرق على مستوى البكسل.",
+      "clearSelection": "مسح التحديد",
+      "open": "مقارنة المحدد",
+      "selectedCount": "تم تحديد {{count}} من إصدارين",
+      "selectVersionLabel": "مقارنة الإصدار v{{version}}",
+      "compareTitle": "مقارنة v{{after}} مع v{{before}}",
+      "instructions": "امزج المعاينتين وبدّل طبقة التمييز لفحص التغييرات على مستوى البكسل بين الإصدارات.",
+      "backToTimeline": "العودة إلى الجدول الزمني",
+      "toggleOverlay": "إظهار طبقة الفرق",
+      "blendLabel": "مزج قبل/بعد",
+      "overlayHint": "حرّك شريط التمرير نحو 100 لإبراز الإصدار الأقدم، أو اتركه منخفضًا لفحص الإصدار الحالي مع تمييزات الفرق.",
+      "beforeLabel": "قبل (v{{version}})",
+      "afterLabel": "بعد (v{{version}})",
+      "previewAlt": "معاينة الإصدار {{version}}",
+      "diffUnavailableCrossOrigin": "طبقة الفرق غير متوفرة لأن إحدى صورتي المعاينة أو كلتيهما تحظر الوصول إلى لوحة الرسم عبر الأصول المختلفة. لا تزال المقارنة جنبًا إلى جنب متاحة.",
+      "diffUnavailable": "طبقة الفرق غير متوفرة لهذه الإصدارات. لا تزال المقارنة جنبًا إلى جنب متاحة.",
+      "missingPreview": "المعاينة غير متوفرة",
+      "beforeCanvas": "لوحة الصورة السابقة",
+      "afterCanvas": "لوحة الصورة اللاحقة",
+      "diffCanvas": "لوحة طبقة الفرق"
     },
     "notifications": {
       "failedToLoadVersionHistory": "فشل تحميل سجل الإصدارات.",
       "assetRolledBack": "تمت إعادة الأصل بنجاح إلى الإصدار المحدد.",
-      "failedToRestoreVersion": "فشلت استعادة الإصدار."
+      "failedToRestoreVersion": "فشل استعادة الإصدار."
     }
   },
   "assetAuditTab": {
@@ -2615,64 +2615,63 @@
     }
   },
   "quarantine": {
-    "title": "Quarantine Review",
-    "subtitle": "Review suspicious assets, release approved items, or move rejected items to the Recycle Bin.",
-    "empty": "No quarantine entries found",
-    "emptySubtitle": "Newly flagged assets will appear here for review.",
-    "noPreview": "No preview available",
-    "noContentType": "Unknown content type",
+    "title": "مراجعة الحجر",
+    "subtitle": "راجع الأصول المشبوهة، وانشر العناصر المعتمدة، أو انقل العناصر المرفوضة إلى سلة المحذوفات.",
+    "empty": "لم يتم العثور على إدخالات حجر",
+    "emptySubtitle": "ستظهر الأصول المُعلَّمة حديثًا هنا للمراجعة.",
+    "noPreview": "لا تتوفر معاينة",
+    "noContentType": "نوع محتوى غير معروف",
     "filters": {
-      "pending_review": "Pending Review",
-      "resolved": "Released",
-      "discarded": "Discarded",
-      "all": "All"
+      "pending_review": "قيد المراجعة",
+      "resolved": "منشور",
+      "discarded": "مرفوض",
+      "all": "الكل"
     },
     "stats": {
-      "pending_review": "Pending items",
-      "resolved": "Released items",
-      "discarded": "Discarded items",
-      "total": "Total entries"
+      "pending_review": "عناصر معلّقة",
+      "resolved": "عناصر منشورة",
+      "discarded": "عناصر مرفوضة",
+      "total": "إجمالي الإدخالات"
     },
     "table": {
-      "asset": "Asset",
-      "reason": "Quarantine reason",
-      "flaggedAt": "Flagged at",
-      "status": "Status"
+      "asset": "الأصل",
+      "reason": "سبب الحجر",
+      "flaggedAt": "تم التعليم في",
+      "status": "الحالة"
     },
     "actions": {
-      "view": "Review",
-      "release": "Release",
-      "discard": "Discard"
+      "view": "مراجعة",
+      "release": "نشر",
+      "discard": "رفض"
     },
     "status": {
-      "pending_review": "Pending Review",
-      "resolved": "Released",
-      "discarded": "Discarded"
+      "pending_review": "قيد المراجعة",
+      "resolved": "منشور",
+      "discarded": "مرفوض"
     },
     "detail": {
-      "title": "Quarantine entry details",
-      "reason": "Reason",
-      "connector": "Connector",
-      "uploadedBy": "Uploaded by",
-      "uploadedAt": "Uploaded at",
-      "flaggedAt": "Flagged at",
-      "status": "Status",
-      "reviewNotes": "Review notes",
-      "originalPayload": "Original payload"
+      "title": "تفاصيل إدخال الحجر",
+      "reason": "السبب",
+      "connector": "الموصّل",
+      "uploadedBy": "تم الرفع بواسطة",
+      "uploadedAt": "تم الرفع في",
+      "flaggedAt": "تم التعليم في",
+      "status": "الحالة",
+      "reviewNotes": "ملاحظات المراجعة",
+      "originalPayload": "الحمولة الأصلية"
     },
     "confirmDiscard": {
-      "title": "Discard quarantined asset?",
-      "body": "The linked asset will be soft-deleted and moved to the Recycle Bin so it can still be restored later if needed.",
-      "confirm": "Discard asset"
+      "title": "رفض الأصل المحجوز؟",
+      "body": "سيتم حذف الأصل المرتبط حذفًا مؤقتًا ونقله إلى سلة المحذوفات بحيث يمكن استعادته لاحقًا عند الحاجة.",
+      "confirm": "رفض الأصل"
     },
     "notifications": {
-      "loadError": "Unable to load quarantine data.",
-      "released": "Quarantined asset released.",
-      "discarded": "Quarantined asset moved to the Recycle Bin.",
-      "actionFailed": "Quarantine action failed."
+      "loadError": "تعذّر تحميل بيانات الحجر.",
+      "released": "تم نشر الأصل المحجوز.",
+      "discarded": "تم نقل الأصل المحجوز إلى سلة المحذوفات.",
+      "actionFailed": "فشل إجراء الحجر."
     }
-  }
-,
+  },
   "metadataImport": {
     "preview": {
       "action": "معاينة",

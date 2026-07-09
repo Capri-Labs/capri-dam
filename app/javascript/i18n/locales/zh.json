@@ -2276,37 +2276,37 @@
   },
   "assetVersionsTab": {
     "title": "版本时间线",
-    "description": "查看此资产的先前版本。恢复某个版本会使其成为当前活动文件，而不会删除更新的编辑内容。",
+    "description": "查看此资产的先前迭代。恢复某个版本会使其成为活动文件，而不会删除较新的编辑。",
     "currentActive": "当前活动",
     "savedOn": "保存于",
-    "by": "由",
+    "by": "作者",
     "fileSize": "文件大小",
     "restore": "恢复",
     "compare": {
-      "title": "Compare versions",
-      "selectionHint": "Select any two versions to open a side-by-side preview with a pixel-diff overlay.",
-      "clearSelection": "Clear selection",
-      "open": "Compare selected",
-      "selectedCount": "{{count}} of 2 versions selected",
-      "selectVersionLabel": "Compare v{{version}}",
-      "compareTitle": "Comparing v{{after}} against v{{before}}",
-      "instructions": "Blend the two previews and toggle the highlight overlay to inspect pixel-level changes between versions.",
-      "backToTimeline": "Back to timeline",
-      "toggleOverlay": "Show diff overlay",
-      "blendLabel": "Blend before/after",
-      "overlayHint": "Move the slider toward 100 to emphasize the earlier version, or leave it low to inspect the current version with diff highlights.",
-      "beforeLabel": "Before (v{{version}})",
-      "afterLabel": "After (v{{version}})",
-      "previewAlt": "Version {{version}} preview",
-      "diffUnavailableCrossOrigin": "Diff overlay is unavailable because one or both preview images block cross-origin canvas access. Side-by-side comparison is still available.",
-      "diffUnavailable": "Diff overlay is unavailable for these versions. Side-by-side comparison is still available.",
-      "missingPreview": "Preview unavailable",
-      "beforeCanvas": "Before image canvas",
-      "afterCanvas": "After image canvas",
-      "diffCanvas": "Difference overlay canvas"
+      "title": "比较版本",
+      "selectionHint": "选择任意两个版本，以打开带有像素差异叠加层的并排预览。",
+      "clearSelection": "清除选择",
+      "open": "比较所选",
+      "selectedCount": "已选择 2 个版本中的 {{count}} 个",
+      "selectVersionLabel": "比较 v{{version}}",
+      "compareTitle": "正在将 v{{after}} 与 v{{before}} 进行比较",
+      "instructions": "混合两个预览并切换高亮叠加层，以检查版本之间的像素级更改。",
+      "backToTimeline": "返回时间线",
+      "toggleOverlay": "显示差异叠加层",
+      "blendLabel": "混合前后版本",
+      "overlayHint": "将滑块移向 100 以强调较早的版本，或将其保持较低以使用差异高亮检查当前版本。",
+      "beforeLabel": "之前 (v{{version}})",
+      "afterLabel": "之后 (v{{version}})",
+      "previewAlt": "版本 {{version}} 预览",
+      "diffUnavailableCrossOrigin": "差异叠加层不可用，因为一张或两张预览图像阻止了跨源画布访问。并排比较仍然可用。",
+      "diffUnavailable": "这些版本的差异叠加层不可用。并排比较仍然可用。",
+      "missingPreview": "预览不可用",
+      "beforeCanvas": "之前图像画布",
+      "afterCanvas": "之后图像画布",
+      "diffCanvas": "差异叠加层画布"
     },
     "notifications": {
-      "failedToLoadVersionHistory": "加载版本历史失败。",
+      "failedToLoadVersionHistory": "加载版本历史记录失败。",
       "assetRolledBack": "资产已成功回滚到所选版本。",
       "failedToRestoreVersion": "恢复版本失败。"
     }
@@ -2615,64 +2615,63 @@
     }
   },
   "quarantine": {
-    "title": "Quarantine Review",
-    "subtitle": "Review suspicious assets, release approved items, or move rejected items to the Recycle Bin.",
-    "empty": "No quarantine entries found",
-    "emptySubtitle": "Newly flagged assets will appear here for review.",
-    "noPreview": "No preview available",
-    "noContentType": "Unknown content type",
+    "title": "隔离审查",
+    "subtitle": "审查可疑资产，发布已批准的项目，或将已拒绝的项目移至回收站。",
+    "empty": "未找到隔离条目",
+    "emptySubtitle": "新标记的资产将显示在此处以供审查。",
+    "noPreview": "无可用预览",
+    "noContentType": "未知的内容类型",
     "filters": {
-      "pending_review": "Pending Review",
-      "resolved": "Released",
-      "discarded": "Discarded",
-      "all": "All"
+      "pending_review": "待审查",
+      "resolved": "已发布",
+      "discarded": "已丢弃",
+      "all": "全部"
     },
     "stats": {
-      "pending_review": "Pending items",
-      "resolved": "Released items",
-      "discarded": "Discarded items",
-      "total": "Total entries"
+      "pending_review": "待处理项目",
+      "resolved": "已发布项目",
+      "discarded": "已丢弃项目",
+      "total": "条目总数"
     },
     "table": {
-      "asset": "Asset",
-      "reason": "Quarantine reason",
-      "flaggedAt": "Flagged at",
-      "status": "Status"
+      "asset": "资产",
+      "reason": "隔离原因",
+      "flaggedAt": "标记时间",
+      "status": "状态"
     },
     "actions": {
-      "view": "Review",
-      "release": "Release",
-      "discard": "Discard"
+      "view": "审查",
+      "release": "发布",
+      "discard": "丢弃"
     },
     "status": {
-      "pending_review": "Pending Review",
-      "resolved": "Released",
-      "discarded": "Discarded"
+      "pending_review": "待审查",
+      "resolved": "已发布",
+      "discarded": "已丢弃"
     },
     "detail": {
-      "title": "Quarantine entry details",
-      "reason": "Reason",
-      "connector": "Connector",
-      "uploadedBy": "Uploaded by",
-      "uploadedAt": "Uploaded at",
-      "flaggedAt": "Flagged at",
-      "status": "Status",
-      "reviewNotes": "Review notes",
-      "originalPayload": "Original payload"
+      "title": "隔离条目详情",
+      "reason": "原因",
+      "connector": "连接器",
+      "uploadedBy": "上传者",
+      "uploadedAt": "上传时间",
+      "flaggedAt": "标记时间",
+      "status": "状态",
+      "reviewNotes": "审查备注",
+      "originalPayload": "原始负载"
     },
     "confirmDiscard": {
-      "title": "Discard quarantined asset?",
-      "body": "The linked asset will be soft-deleted and moved to the Recycle Bin so it can still be restored later if needed.",
-      "confirm": "Discard asset"
+      "title": "丢弃隔离的资产？",
+      "body": "关联的资产将被软删除并移至回收站，以便日后在需要时仍可恢复。",
+      "confirm": "丢弃资产"
     },
     "notifications": {
-      "loadError": "Unable to load quarantine data.",
-      "released": "Quarantined asset released.",
-      "discarded": "Quarantined asset moved to the Recycle Bin.",
-      "actionFailed": "Quarantine action failed."
+      "loadError": "无法加载隔离数据。",
+      "released": "已发布隔离的资产。",
+      "discarded": "隔离的资产已移至回收站。",
+      "actionFailed": "隔离操作失败。"
     }
-  }
-,
+  },
   "metadataImport": {
     "preview": {
       "action": "预览",

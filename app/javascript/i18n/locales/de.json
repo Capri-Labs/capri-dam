@@ -2276,38 +2276,38 @@
   },
   "assetVersionsTab": {
     "title": "Versionsverlauf",
-    "description": "Frühere Versionen dieses Assets anzeigen. Durch das Wiederherstellen einer Version wird sie zur aktiven Datei, ohne neuere Bearbeitungen zu löschen.",
-    "currentActive": "Derzeit aktiv",
+    "description": "Frühere Iterationen dieses Assets anzeigen. Beim Wiederherstellen einer Version wird sie zur aktiven Datei, ohne neuere Bearbeitungen zu löschen.",
+    "currentActive": "Aktuell aktiv",
     "savedOn": "Gespeichert am",
     "by": "von",
     "fileSize": "Dateigröße",
     "restore": "Wiederherstellen",
     "compare": {
-      "title": "Compare versions",
-      "selectionHint": "Select any two versions to open a side-by-side preview with a pixel-diff overlay.",
-      "clearSelection": "Clear selection",
-      "open": "Compare selected",
-      "selectedCount": "{{count}} of 2 versions selected",
-      "selectVersionLabel": "Compare v{{version}}",
-      "compareTitle": "Comparing v{{after}} against v{{before}}",
-      "instructions": "Blend the two previews and toggle the highlight overlay to inspect pixel-level changes between versions.",
-      "backToTimeline": "Back to timeline",
-      "toggleOverlay": "Show diff overlay",
-      "blendLabel": "Blend before/after",
-      "overlayHint": "Move the slider toward 100 to emphasize the earlier version, or leave it low to inspect the current version with diff highlights.",
-      "beforeLabel": "Before (v{{version}})",
-      "afterLabel": "After (v{{version}})",
-      "previewAlt": "Version {{version}} preview",
-      "diffUnavailableCrossOrigin": "Diff overlay is unavailable because one or both preview images block cross-origin canvas access. Side-by-side comparison is still available.",
-      "diffUnavailable": "Diff overlay is unavailable for these versions. Side-by-side comparison is still available.",
-      "missingPreview": "Preview unavailable",
-      "beforeCanvas": "Before image canvas",
-      "afterCanvas": "After image canvas",
-      "diffCanvas": "Difference overlay canvas"
+      "title": "Versionen vergleichen",
+      "selectionHint": "Wählen Sie zwei beliebige Versionen aus, um eine Nebeneinander-Vorschau mit Pixel-Diff-Overlay zu öffnen.",
+      "clearSelection": "Auswahl aufheben",
+      "open": "Ausgewählte vergleichen",
+      "selectedCount": "{{count}} von 2 Versionen ausgewählt",
+      "selectVersionLabel": "v{{version}} vergleichen",
+      "compareTitle": "Vergleich von v{{after}} mit v{{before}}",
+      "instructions": "Überblenden Sie die beiden Vorschauen und schalten Sie das Highlight-Overlay um, um pixelgenaue Änderungen zwischen Versionen zu prüfen.",
+      "backToTimeline": "Zurück zur Zeitleiste",
+      "toggleOverlay": "Diff-Overlay anzeigen",
+      "blendLabel": "Vorher/Nachher überblenden",
+      "overlayHint": "Bewegen Sie den Regler in Richtung 100, um die frühere Version hervorzuheben, oder belassen Sie ihn niedrig, um die aktuelle Version mit Diff-Hervorhebungen zu prüfen.",
+      "beforeLabel": "Vorher (v{{version}})",
+      "afterLabel": "Nachher (v{{version}})",
+      "previewAlt": "Vorschau von Version {{version}}",
+      "diffUnavailableCrossOrigin": "Das Diff-Overlay ist nicht verfügbar, da eines oder beide Vorschaubilder den ursprungsübergreifenden Canvas-Zugriff blockieren. Der Nebeneinander-Vergleich ist weiterhin verfügbar.",
+      "diffUnavailable": "Das Diff-Overlay ist für diese Versionen nicht verfügbar. Der Nebeneinander-Vergleich ist weiterhin verfügbar.",
+      "missingPreview": "Vorschau nicht verfügbar",
+      "beforeCanvas": "Canvas des Vorher-Bilds",
+      "afterCanvas": "Canvas des Nachher-Bilds",
+      "diffCanvas": "Canvas des Differenz-Overlays"
     },
     "notifications": {
       "failedToLoadVersionHistory": "Versionsverlauf konnte nicht geladen werden.",
-      "assetRolledBack": "Asset wurde erfolgreich auf die ausgewählte Version zurückgesetzt.",
+      "assetRolledBack": "Asset erfolgreich auf die ausgewählte Version zurückgesetzt.",
       "failedToRestoreVersion": "Version konnte nicht wiederhergestellt werden."
     }
   },
@@ -2615,64 +2615,63 @@
     }
   },
   "quarantine": {
-    "title": "Quarantine Review",
-    "subtitle": "Review suspicious assets, release approved items, or move rejected items to the Recycle Bin.",
-    "empty": "No quarantine entries found",
-    "emptySubtitle": "Newly flagged assets will appear here for review.",
-    "noPreview": "No preview available",
-    "noContentType": "Unknown content type",
+    "title": "Quarantäne-Prüfung",
+    "subtitle": "Verdächtige Assets prüfen, freigegebene Elemente veröffentlichen oder abgelehnte Elemente in den Papierkorb verschieben.",
+    "empty": "Keine Quarantäne-Einträge gefunden",
+    "emptySubtitle": "Neu markierte Assets werden hier zur Prüfung angezeigt.",
+    "noPreview": "Keine Vorschau verfügbar",
+    "noContentType": "Unbekannter Inhaltstyp",
     "filters": {
-      "pending_review": "Pending Review",
-      "resolved": "Released",
-      "discarded": "Discarded",
-      "all": "All"
+      "pending_review": "Ausstehende Prüfung",
+      "resolved": "Freigegeben",
+      "discarded": "Verworfen",
+      "all": "Alle"
     },
     "stats": {
-      "pending_review": "Pending items",
-      "resolved": "Released items",
-      "discarded": "Discarded items",
-      "total": "Total entries"
+      "pending_review": "Ausstehende Elemente",
+      "resolved": "Freigegebene Elemente",
+      "discarded": "Verworfene Elemente",
+      "total": "Einträge gesamt"
     },
     "table": {
       "asset": "Asset",
-      "reason": "Quarantine reason",
-      "flaggedAt": "Flagged at",
+      "reason": "Quarantänegrund",
+      "flaggedAt": "Markiert am",
       "status": "Status"
     },
     "actions": {
-      "view": "Review",
-      "release": "Release",
-      "discard": "Discard"
+      "view": "Prüfen",
+      "release": "Freigeben",
+      "discard": "Verwerfen"
     },
     "status": {
-      "pending_review": "Pending Review",
-      "resolved": "Released",
-      "discarded": "Discarded"
+      "pending_review": "Ausstehende Prüfung",
+      "resolved": "Freigegeben",
+      "discarded": "Verworfen"
     },
     "detail": {
-      "title": "Quarantine entry details",
-      "reason": "Reason",
-      "connector": "Connector",
-      "uploadedBy": "Uploaded by",
-      "uploadedAt": "Uploaded at",
-      "flaggedAt": "Flagged at",
+      "title": "Details des Quarantäne-Eintrags",
+      "reason": "Grund",
+      "connector": "Konnektor",
+      "uploadedBy": "Hochgeladen von",
+      "uploadedAt": "Hochgeladen am",
+      "flaggedAt": "Markiert am",
       "status": "Status",
-      "reviewNotes": "Review notes",
-      "originalPayload": "Original payload"
+      "reviewNotes": "Prüfnotizen",
+      "originalPayload": "Ursprüngliche Nutzdaten"
     },
     "confirmDiscard": {
-      "title": "Discard quarantined asset?",
-      "body": "The linked asset will be soft-deleted and moved to the Recycle Bin so it can still be restored later if needed.",
-      "confirm": "Discard asset"
+      "title": "Asset in Quarantäne verwerfen?",
+      "body": "Das verknüpfte Asset wird vorläufig gelöscht und in den Papierkorb verschoben, sodass es bei Bedarf später wiederhergestellt werden kann.",
+      "confirm": "Asset verwerfen"
     },
     "notifications": {
-      "loadError": "Unable to load quarantine data.",
-      "released": "Quarantined asset released.",
-      "discarded": "Quarantined asset moved to the Recycle Bin.",
-      "actionFailed": "Quarantine action failed."
+      "loadError": "Quarantänedaten konnten nicht geladen werden.",
+      "released": "Asset aus Quarantäne freigegeben.",
+      "discarded": "Asset in Quarantäne in den Papierkorb verschoben.",
+      "actionFailed": "Quarantäneaktion fehlgeschlagen."
     }
-  }
-,
+  },
   "metadataImport": {
     "preview": {
       "action": "Vorschau",
