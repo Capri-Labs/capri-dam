@@ -273,6 +273,35 @@ RSpec.describe "Bin API", type: :request do
       expect(data["errors"]).to be_empty
       expect(data["deleted"]).to eq(2)
     end
+
+    # Regression test: an asset that's still a member of a DuplicateGroup
+    # (via the duplicate_group_assets join table) used to raise
+    # ActiveRecord::InvalidForeignKey (fk_rails_e5995b56ce) when permanently
+    # deleted, because neither Asset nor DuplicateGroupAsset declares a
+    # `dependent:` option on that side of the FK. This left affected bin
+    # items permanently stuck ("can't delete them"). The fix detaches the
+    # asset from any duplicate groups (and cleans up a group left empty)
+    # before destroying it.
+    it "deletes an asset that is still a member of a pending duplicate group" do
+      group = create(:duplicate_group, total_count: 2)
+      create(:duplicate_group_asset, :original, duplicate_group: group, asset: trashed_asset2)
+      create(:duplicate_group_asset, duplicate_group: group, asset: trashed_asset)
+
+      expect {
+        delete "/api/v1/bin/bulk_destroy", params: {
+          items: [ { id: trashed_asset.id, type: "asset" } ],
+        }, as: :json
+      }.not_to raise_error
+
+      data = JSON.parse(response.body)
+      expect(data["errors"]).to be_empty
+      expect(data["deleted"]).to eq(1)
+      expect { trashed_asset.reload }.to raise_error(ActiveRecord::RecordNotFound)
+
+      # The group survives (one member remains) with a recomputed total_count.
+      expect(group.reload.total_count).to eq(1)
+      expect(DuplicateGroupAsset.where(asset_id: trashed_asset.id)).to be_empty
+    end
   end
 
   # ===========================================================================
@@ -377,6 +406,31 @@ RSpec.describe "Bin API", type: :request do
       expect(live_asset.reload.deleted_at).to be_nil
       expect(live_asset.folder_id).to be_nil
     end
+
+    # Regression test: emptying the bin used to raise
+    # ActiveRecord::InvalidForeignKey (fk_rails_e5995b56ce) when a trashed
+    # asset was still referenced by duplicate_group_assets (e.g. Duplicate
+    # Manager demo/seed data, or any asset never resolved/dismissed in that
+    # feature). This is the exact scenario reported as "two items in the bin
+    # I can't delete." The fix detaches the asset from its duplicate group
+    # (destroying the group entirely once it has no members left) before
+    # hard-deleting the asset.
+    it "empties the bin even when a trashed asset is still a duplicate-group member" do
+      group = create(:duplicate_group, total_count: 1)
+      create(:duplicate_group_asset, duplicate_group: group, asset: trashed_asset)
+
+      expect {
+        delete "/api/v1/bin/empty"
+      }.not_to raise_error
+
+      expect(response).to have_http_status(:ok)
+      data = JSON.parse(response.body)
+      expect(data["errors"]).to be_empty
+      expect(Asset.trashed.count).to eq(0)
+      expect(Folder.trashed.count).to eq(0)
+      # No members remain, so the now-meaningless group is cleaned up too.
+      expect(DuplicateGroup.exists?(group.id)).to be(false)
+    end
   end
 
   # ===========================================================================
@@ -393,11 +447,31 @@ RSpec.describe "Bin API", type: :request do
       expect(item).to include(
         "id", "grid_id", "item_type", "name", "media_type",
         "deleted_at", "expires_at", "size_bytes", "size_human",
-        "content_type", "url"
+        "content_type", "url", "preview_url"
       )
       expect(item["item_type"]).to eq("asset")
       expect(item["grid_id"]).to eq("asset_#{trashed_asset.id}")
       expect(item["media_type"]).to eq("image")
+    end
+
+    # Regression test: the bin grid was showing no thumbnail for anything
+    # that isn't a browser-native image format (PSD/TIFF/HEIC, etc.) because
+    # `serialize_asset` only exposed the raw `url`, not the generated
+    # `preview_url` used by Folders/Assets/Search for exactly this case.
+    it "exposes a generated preview_url for special formats a browser cannot render natively" do
+      psd = create(:asset, :trashed, title: "Layered Artwork", properties: {
+        "content_type"         => "image/vnd.adobe.photoshop",
+        "size"                 => 5.megabytes,
+        "storage_path"         => "bin_spec/artwork.psd",
+        "preview_storage_path" => "previews/artwork.png",
+        "preview_content_type" => "image/png",
+      })
+
+      get "/api/v1/bin", params: { type: "asset" }
+      item = JSON.parse(response.body)["items"].find { |i| i["id"] == psd.uuid }
+
+      expect(item["preview_url"]).to include("variant=preview")
+      expect(item["url"]).not_to include("variant=preview")
     end
 
     it "includes required fields for folders" do

@@ -86,6 +86,13 @@ async function login(page) {
       if (shot.wait) {
         await page.waitForSelector(shot.wait, { timeout: 8000 }).catch(() => {});
       }
+      // The Recycle Bin page defaults to list view; switch to grid view so
+      // the product guide screenshot shows colourful asset thumbnails
+      // instead of a plain table.
+      if (shot.name === 'recycle-bin') {
+        await page.locator('[value="grid"]').first().click({ timeout: 5000 }).catch(() => {});
+        await page.waitForTimeout(400);
+      }
       await page.waitForTimeout(600); // allow charts/animations to settle
       const outPath = path.join(OUT_DIR, `${shot.name}.png`);
       await page.screenshot({ path: outPath, fullPage: false });

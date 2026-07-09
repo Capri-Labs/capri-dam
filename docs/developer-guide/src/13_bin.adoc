@@ -71,6 +71,18 @@ bucket for trashed assets whose content type is not an image, a video, or a
 recognised document (e.g. audio files, archives, or assets with a missing/
 unrecognised content type) — see `Api::V1::BinController#filter_by_media_type`.
 
+=== Grid thumbnails
+
+`GET /api/v1/bin` exposes both `url` (the raw asset file) and `preview_url`
+(a generated web-renderable preview, e.g. a flattened PNG for PSD/TIFF/HEIC)
+for each asset item, mirroring the Folders/Assets/Search APIs
+(`AssetUrlHelper#asset_preview_url_for`). `BinGrid.jsx` prefers `preview_url`
+over `url` — and treats an item as an image either when `media_type ==
+"image"` or a generated preview exists — falling back to a type icon on load
+error. Previously the bin grid only used `url`, so any non-browser-native
+format (and any thumbnail that failed to load) rendered nothing instead of
+falling back gracefully.
+
 The "View Trash Bin" button in the folder explorer's top bar
 (`ExplorerTopBar.jsx`) navigates to the dedicated `/bin` page (full
 navigation, `window.location.href = '/bin'`), which renders `BinManager.jsx`.

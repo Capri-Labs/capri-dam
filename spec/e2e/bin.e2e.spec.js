@@ -286,6 +286,59 @@ test.describe('Recycle Bin E2E', () => {
     });
 
     // ─────────────────────────────────────────────────────────────────────────
+    // Preview thumbnails
+    // ─────────────────────────────────────────────────────────────────────────
+
+    // Regression test: the grid view showed only a generic file icon for
+    // trashed image assets instead of an actual thumbnail, because the API
+    // only exposed the raw `url` (not the `preview_url` used everywhere else
+    // — Folders/Assets/Search) and the frontend never fell back to it.
+    test('grid view renders an image thumbnail for a trashed image asset', async ({ page }) => {
+        const csrfToken = await page.evaluate(() => document.querySelector('meta[name="csrf-token"]')?.content);
+
+        const buffer = Buffer.from(
+            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+            'base64',
+        );
+        const title = `Bin Preview E2E ${Date.now()}`;
+
+        const createRes = await page.request.post('/api/v1/assets', {
+            multipart: {
+                file: { name: `bin-preview-e2e-${Date.now()}.png`, mimeType: 'image/png', buffer },
+                title,
+            },
+            headers: { 'X-CSRF-Token': csrfToken },
+        });
+        expect(createRes.ok()).toBe(true);
+        const created = await createRes.json();
+        const assetId = created.id || created.uuid;
+
+        const trashRes = await page.request.delete(`/api/v1/assets/${assetId}`, {
+            headers: { 'X-CSRF-Token': csrfToken },
+        });
+        expect(trashRes.ok()).toBe(true);
+
+        await page.goto('/bin');
+        await page.waitForLoadState('networkidle');
+
+        // Switch to grid view where thumbnails render.
+        await page.locator('[value="grid"]').first().click();
+
+        const card = page.locator('div', { hasText: title }).last();
+        const thumb = page.locator('img[alt="' + title + '"]');
+        await expect(thumb).toBeVisible({ timeout: 15_000 });
+        const src = await thumb.getAttribute('src');
+        expect(src).toBeTruthy();
+
+        // Clean up: permanently delete the test asset.
+        await page.request.delete('/api/v1/bin/bulk_destroy', {
+            headers: { 'X-CSRF-Token': csrfToken, 'Content-Type': 'application/json' },
+            data: { items: [ { id: assetId, type: 'asset' } ] },
+        }).catch(() => {});
+        void card;
+    });
+
+    // ─────────────────────────────────────────────────────────────────────────
     // Sidebar navigation
     // ─────────────────────────────────────────────────────────────────────────
 

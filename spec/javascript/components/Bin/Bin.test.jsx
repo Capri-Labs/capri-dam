@@ -239,6 +239,47 @@ describe('Bin components', () => {
     expect(onDelete).toHaveBeenCalledWith(expect.objectContaining({ id: 1 }));
   });
 
+  it('BinGrid prefers preview_url over url for the thumbnail image', () => {
+    const withPreview = {
+      ...item,
+      grid_id: 'grid-2',
+      url: 'https://example.com/raw.psd',
+      preview_url: 'https://example.com/raw-preview.png',
+    };
+
+    render(
+      <BinGrid
+        items={[withPreview]}
+        isSelected={() => false}
+        onToggleSelect={jest.fn()}
+        onRestore={jest.fn()}
+        onDelete={jest.fn()}
+        gridSize="medium"
+        loading={false}
+      />,
+    );
+
+    expect(screen.getByAltText('Hero image')).toHaveAttribute('src', 'https://example.com/raw-preview.png');
+  });
+
+  it('BinGrid falls back to an icon when the thumbnail image fails to load', () => {
+    render(
+      <BinGrid
+        items={[item]}
+        isSelected={() => false}
+        onToggleSelect={jest.fn()}
+        onRestore={jest.fn()}
+        onDelete={jest.fn()}
+        gridSize="medium"
+        loading={false}
+      />,
+    );
+
+    const img = screen.getByAltText('Hero image');
+    fireEvent.error(img);
+    expect(screen.queryByAltText('Hero image')).not.toBeInTheDocument();
+  });
+
   it('renders BinList rows and toggles sort and selection', () => {
     const onToggleSelect = jest.fn();
     const onSortChange = jest.fn();

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
     Box, Checkbox, Tooltip, IconButton, Typography, Chip
 } from '@mui/material';
@@ -27,7 +27,14 @@ const getIcon = (contentType, mediaType) => {
 const BinCard = ({ item, isSelected, onToggleSelect, onRestore, onDelete, size }) => {
     const { t }   = useTranslation();
     const cfg     = CARD_SIZES[size] || CARD_SIZES.medium;
-    const isImg   = item.media_type === 'image' && item.url;
+    // Prefer the web-renderable preview (e.g. a flattened PNG generated for
+    // PSD/TIFF/HEIC) so non-browser-native formats still show a thumbnail,
+    // mirroring the Folders/Assets grid. Fall back to the raw asset URL for
+    // natively renderable images (jpg/png/gif/webp/...).
+    const previewSrc = item.preview_url || item.url;
+    const hasGeneratedPreview = Boolean(item.properties?.preview_storage_path);
+    const isImg   = (item.media_type === 'image' || hasGeneratedPreview) && Boolean(previewSrc);
+    const [imgError, setImgError] = useState(false);
     const truncate = (s, n) => s?.length > n ? s.substring(0, n) + '…' : (s || '—');
     const daysLeft = item.expires_at
         ? Math.max(0, Math.ceil((new Date(item.expires_at) - Date.now()) / 86400000))
@@ -70,8 +77,9 @@ const BinCard = ({ item, isSelected, onToggleSelect, onRestore, onDelete, size }
 
             {/* Thumbnail / icon */}
             <Box sx={{ height: cfg.imgHeight, bgcolor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                {isImg ? (
-                    <img src={item.url} alt={item.name} loading="lazy"
+                {isImg && !imgError ? (
+                    <img src={previewSrc} alt={item.name} loading="lazy"
+                        onError={() => setImgError(true)}
                         style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'opacity(0.8)' }} />
                 ) : (
                     getIcon(item.content_type, item.media_type)

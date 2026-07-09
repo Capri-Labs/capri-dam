@@ -202,6 +202,7 @@ module Api
             storage&.delete(storage_path) if storage_path
             version.file.purge if version.respond_to?(:file) && version.file.attached?
           end
+          detach_from_duplicate_groups(asset)
           asset.destroy
           deleted += 1
         rescue StandardError => e
@@ -503,6 +504,10 @@ module Api
           content_type: content_type,
           original_path: asset.folder&.name,
           url:          asset_url_for(asset),
+          # Prefer the web-renderable preview (e.g. a flattened PNG generated
+          # for PSD/TIFF/HEIC) so non-browser-native formats still show a
+          # thumbnail in the bin grid, mirroring Folders/Assets/Search.
+          preview_url:  asset_preview_url_for(asset),
           properties:   props,
           editable:     AssetProcessorWorker::WEB_RENDERABLE_MIME_TYPES.include?(content_type),
         }
@@ -525,6 +530,7 @@ module Api
           content_type: nil,
           original_path: nil,
           url:          nil,
+          preview_url:  nil,
           properties:   {},
         }
       end
@@ -567,7 +573,39 @@ module Api
 
         # Break the active_version_id FK before cascading version deletion
         asset.update_column(:active_version_id, nil) if asset.active_version_id # rubocop:disable Rails/SkipsModelValidations
+        detach_from_duplicate_groups(asset)
         asset.destroy
+      end
+
+      # Removes any {DuplicateGroupAsset} join rows referencing +asset+ before
+      # it is hard-deleted. `DuplicateGroupAsset belongs_to :asset` with an FK
+      # constraint (fk_rails_e5995b56ce) but neither {Asset} nor
+      # {DuplicateGroupAsset} declares a `dependent:` option on that side, so
+      # Postgres raises ActiveRecord::InvalidForeignKey if an asset that's
+      # still a duplicate-group member (e.g. Duplicate Manager demo/seed data,
+      # or any asset a user never resolved/dismissed in that feature) is
+      # permanently deleted from the bin. Detach it here and recompute each
+      # affected group's cached +total_count+; a group left with zero members
+      # is no longer meaningful, so it's destroyed too (dependent: :destroy
+      # already cleans up its own duplicate_group_assets).
+      #
+      # @param asset [Asset]
+      # @return [void]
+      def detach_from_duplicate_groups(asset)
+        memberships = DuplicateGroupAsset.where(asset_id: asset.id).to_a
+        return if memberships.empty?
+
+        group_ids = memberships.map(&:duplicate_group_id).uniq
+        DuplicateGroupAsset.where(asset_id: asset.id).delete_all
+
+        DuplicateGroup.where(id: group_ids).find_each do |group|
+          remaining = group.duplicate_group_assets.count
+          if remaining.zero?
+            group.destroy
+          else
+            group.update_column(:total_count, remaining) # rubocop:disable Rails/SkipsModelValidations
+          end
+        end
       end
 
       # ---------------------------------------------------------------------------
