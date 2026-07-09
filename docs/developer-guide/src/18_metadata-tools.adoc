@@ -148,8 +148,14 @@ subset discovered from `/api/v1/metadata_exports/properties`.
 == Import flow
 
 `MetadataImportManager.jsx` uploads a CSV, parses the header client-side,
-configures delimiters/batch size, optionally launches workflows, and polls until
-`MetadataImportWorker` finishes.
+configures delimiters/batch size, optionally launches workflows, and now offers
+a synchronous **Preview** step before the real import is committed. The preview
+calls `POST /api/v1/metadata_imports/preview`, runs the same CSV parsing,
+asset-resolution, and row-level validation logic as the worker-backed import,
+but never persists `Asset` changes, never creates a `MetadataImport` row, and
+never launches workflows. Once the user is satisfied with the dry-run output,
+the existing `POST /api/v1/metadata_imports` flow still creates the async job and
+`MetadataImportWorker` performs the real write.
 
 == Endpoints
 
@@ -163,7 +169,8 @@ configures delimiters/batch size, optionally launches workflows, and polls until
 | `GET` | `/api/v1/assets/:id/metadata_schema` | Resolve the schema for one asset (by id or UUID), pre-filled with the asset's own values.
 | `GET/POST` | `/api/v1/metadata_exports` | List/create export jobs.
 | `GET` | `/api/v1/metadata_exports/properties` | Discover metadata keys.
-| `GET/POST` | `/api/v1/metadata_imports` | List/create import jobs.
+| `GET/POST` | `/api/v1/metadata_imports` | List/create import jobs. `POST` still enqueues the async worker-backed import.
+| `POST` | `/api/v1/metadata_imports/preview` | Run a dry-run preview synchronously and return per-row results without mutating assets or creating an import record.
 |===
 
 == Per-asset schema pre-fill

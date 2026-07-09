@@ -372,6 +372,7 @@ export default function SchemaEditorDialog({ schema, onClose, onSave, rootSchema
                         ) : (
                             <Tooltip title="Add tab">
                                 <IconButton size="small" onClick={() => setAddingTab(true)}
+                                            data-testid="schema-editor-add-tab"
                                             sx={{ bgcolor: '#f0f4ff', width: 24, height: 24 }}>
                                     <AddOutlined sx={{ fontSize: 14 }} />
                                 </IconButton>
@@ -430,6 +431,7 @@ export default function SchemaEditorDialog({ schema, onClose, onSave, rootSchema
                                     </Typography>
                                     <Button size="small" startIcon={<AddOutlined />}
                                             onClick={addField}
+                                           data-testid="schema-editor-add-field"
                                             sx={{ textTransform: 'none', fontSize: '0.75rem', color: '#5e35b1' }}>
                                         Add Field
                                     </Button>
@@ -443,6 +445,7 @@ export default function SchemaEditorDialog({ schema, onClose, onSave, rootSchema
                                         const isSelected = selectedField?.id === field.id;
                                         return (
                                             <Box key={field.id}
+                                                 data-testid={`schema-editor-field-${field.id}`}
                                                  onClick={() => setSelectedField(field)}
                                                  sx={{
                                                      display: 'flex', alignItems: 'center', gap: 1,
@@ -479,6 +482,7 @@ export default function SchemaEditorDialog({ schema, onClose, onSave, rootSchema
                                                     </IconButton>
                                                 </Box>
                                                 <IconButton size="small" color="error"
+                                                             data-testid={`schema-editor-delete-field-${field.id}`}
                                                             onClick={e => { e.stopPropagation(); deleteField(field.id); }}>
                                                     <DeleteOutlined sx={{ fontSize: 14 }} />
                                                 </IconButton>
@@ -513,4 +517,3 @@ export default function SchemaEditorDialog({ schema, onClose, onSave, rootSchema
         </Dialog>
     );
 }
-

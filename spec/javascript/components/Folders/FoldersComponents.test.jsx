@@ -103,6 +103,25 @@ const mockFetch = (routes) => jest.fn((url, options = {}) => {
 });
 
 const iconButton = (testId, index = 0) => screen.getAllByTestId(testId)[index].closest('button');
+const buildCanvasContext = ({ throwSecurityError = false } = {}) => {
+  const getImageData = jest.fn(() => {
+    if (throwSecurityError) {
+      const error = new Error('The canvas has been tainted by cross-origin data');
+      error.name = 'SecurityError';
+      throw error;
+    }
+
+    return { data: new Uint8ClampedArray([0, 0, 0, 255]) };
+  });
+
+  return {
+    clearRect: jest.fn(),
+    drawImage: jest.fn(),
+    getImageData,
+    createImageData: jest.fn((width, height) => ({ data: new Uint8ClampedArray(width * height * 4), width, height })),
+    putImageData: jest.fn(),
+  };
+};
 
 beforeAll(() => {
   global.Image = class {
@@ -115,6 +134,7 @@ beforeAll(() => {
 });
 
 beforeEach(() => {
+  jest.restoreAllMocks();
   jest.clearAllMocks();
   jest.useRealTimers();
   dropzoneOnDrop = null;
@@ -482,8 +502,8 @@ describe('Folders components', () => {
     const onAssetUpdated = jest.fn();
     global.fetch = mockFetch({
       'GET /api/v1/assets/1/versions': { versions: [
-        { id: 'v2', version_number: 2, action_type: 'Edited', is_active: true, created_at: '2024-01-02', created_by: 'Alice', size: '2 MB' },
-        { id: 'v1', version_number: 1, action_type: 'Original Upload', is_active: false, created_at: '2024-01-01', created_by: 'Bob', size: '1 MB' },
+        { id: 'v2', version_number: 2, action_type: 'Edited', is_active: true, created_at: '2024-01-02', created_by: 'Alice', size: '2 MB', preview_url: '/preview-v2.png' },
+        { id: 'v1', version_number: 1, action_type: 'Original Upload', is_active: false, created_at: '2024-01-01', created_by: 'Bob', size: '1 MB', preview_url: '/preview-v1.png' },
       ] },
       'POST /api/v1/assets/1/versions/v1/restore': {},
     });
@@ -498,6 +518,58 @@ describe('Folders components', () => {
     });
     expect(onAssetUpdated).toHaveBeenCalled();
     expect(mockNotify).toHaveBeenCalledWith('Asset successfully rolled back to selected version.', 'success');
+  });
+
+  it('enters AssetVersionsTab compare mode and renders the diff overlay canvas', async () => {
+    const canvasContext = buildCanvasContext();
+    const getContextSpy = jest.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(() => canvasContext);
+
+    global.fetch = mockFetch({
+      'GET /api/v1/assets/1/versions': { versions: [
+        { id: 'v2', version_number: 2, action_type: 'Edited', is_active: true, created_at: '2024-01-02', created_by: 'Alice', size: '2 MB', preview_url: '/preview-v2.png' },
+        { id: 'v1', version_number: 1, action_type: 'Original Upload', is_active: false, created_at: '2024-01-01', created_by: 'Bob', size: '1 MB', preview_url: '/preview-v1.png' },
+      ] },
+    });
+
+    render(<AssetVersionsTab asset={{ id: 1 }} onAssetUpdated={jest.fn()} />);
+
+    expect(await screen.findByText('Original Upload')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Compare v2' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Compare v1' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Compare selected' }));
+
+    expect(await screen.findByText('Comparing v2 against v1')).toBeInTheDocument();
+    await waitFor(() => expect(canvasContext.getImageData).toHaveBeenCalledTimes(2));
+    expect(screen.getByLabelText('Show diff overlay')).toBeInTheDocument();
+    expect(screen.getByTestId('version-diff-overlay-canvas')).toBeInTheDocument();
+
+    getContextSpy.mockRestore();
+  });
+
+  it('falls back to side-by-side AssetVersionsTab compare mode when canvas diff access is blocked', async () => {
+    const canvasContext = buildCanvasContext({ throwSecurityError: true });
+    const getContextSpy = jest.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(() => canvasContext);
+
+    global.fetch = mockFetch({
+      'GET /api/v1/assets/1/versions': { versions: [
+        { id: 'v2', version_number: 2, action_type: 'Edited', is_active: true, created_at: '2024-01-02', created_by: 'Alice', size: '2 MB', preview_url: 'https://cdn.example.com/preview-v2.png' },
+        { id: 'v1', version_number: 1, action_type: 'Original Upload', is_active: false, created_at: '2024-01-01', created_by: 'Bob', size: '1 MB', preview_url: 'https://cdn.example.com/preview-v1.png' },
+      ] },
+    });
+
+    render(<AssetVersionsTab asset={{ id: 1 }} onAssetUpdated={jest.fn()} />);
+
+    expect(await screen.findByText('Original Upload')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Compare v2' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Compare v1' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Compare selected' }));
+
+    expect(await screen.findByText(/cross-origin canvas access/i)).toBeInTheDocument();
+    expect(screen.getByAltText('Version 2 preview')).toBeInTheDocument();
+    expect(screen.getByAltText('Version 1 preview')).toBeInTheDocument();
+    expect(screen.queryByTestId('version-diff-overlay-canvas')).not.toBeInTheDocument();
+
+    getContextSpy.mockRestore();
   });
 
   it('renders AssetViewer info and copies the asset URL', async () => {

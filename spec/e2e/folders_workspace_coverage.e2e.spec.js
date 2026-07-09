@@ -14,6 +14,9 @@ const SAMPLE_PNG_BUFFER = Buffer.from(
     'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
     'base64'
 );
+const svgPreviewDataUrl = (fill) => `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"><rect width="24" height="24" fill="${fill}" /></svg>`
+)}`;
 
 const EMAIL    = process.env.E2E_EMAIL    || 'admin@admin.com';
 const PASSWORD = process.env.E2E_PASSWORD || 'AdminUser';
@@ -371,6 +374,53 @@ test.describe('Folders — AssetViewer toolbar & tabs (Pin, Stats, Audit, Versio
 
         await page.getByRole('button', { name: /restore/i }).first().click();
         await expect.poll(() => restoreCalled).toBe(true);
+    });
+
+    test('Versions tab can compare two versions with the diff overlay controls', async ({ page }) => {
+        const assetId = 'versions-asset-compare-1';
+        await openViewer(page, assetId, 'Versions Compare Target.png');
+
+        await page.route(`**/api/v1/assets/${assetId}/versions`, (route) => {
+            route.fulfill({
+                status: 200,
+                contentType: 'application/json',
+                body: JSON.stringify({
+                    versions: [
+                        {
+                            id: 'v2',
+                            version_number: 2,
+                            is_active: true,
+                            action_type: 'Image Edited',
+                            created_at: '2026-01-02T00:00:00Z',
+                            created_by: 'Admin User',
+                            size: '2 KB',
+                            preview_url: svgPreviewDataUrl('#4338ca'),
+                        },
+                        {
+                            id: 'v1',
+                            version_number: 1,
+                            is_active: false,
+                            action_type: 'Asset Ingested',
+                            created_at: '2026-01-01T00:00:00Z',
+                            created_by: 'Admin User',
+                            size: '1 KB',
+                            preview_url: svgPreviewDataUrl('#ec4899'),
+                        },
+                    ],
+                }),
+            });
+        });
+
+        await page.getByRole('tab', { name: /versions/i }).click();
+        await expect(page.getByText(/compare versions/i)).toBeVisible({ timeout: 10_000 });
+
+        await page.getByRole('checkbox', { name: /compare v2/i }).click();
+        await page.getByRole('checkbox', { name: /compare v1/i }).click();
+        await page.getByRole('button', { name: /compare selected/i }).click();
+
+        await expect(page.getByText(/comparing v2 against v1/i)).toBeVisible();
+        await expect(page.getByLabel(/show diff overlay/i)).toBeVisible();
+        await expect(page.getByTestId('version-diff-stage')).toBeVisible();
     });
 });
 

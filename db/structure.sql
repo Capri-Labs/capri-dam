@@ -1446,7 +1446,11 @@ CREATE TABLE public.quarantined_assets (
     rejection_reason text,
     status character varying,
     system_connector_id bigint NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    asset_id uuid,
+    reviewed_by_id bigint,
+    reviewed_at timestamp(6) without time zone,
+    review_notes text
 );
 
 
@@ -3983,6 +3987,20 @@ CREATE INDEX index_personal_access_tokens_on_user_id_and_active ON public.person
 
 
 --
+-- Name: index_quarantined_assets_on_asset_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_quarantined_assets_on_asset_id ON public.quarantined_assets USING btree (asset_id);
+
+
+--
+-- Name: index_quarantined_assets_on_reviewed_by_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_quarantined_assets_on_reviewed_by_id ON public.quarantined_assets USING btree (reviewed_by_id);
+
+
+--
 -- Name: index_quarantined_assets_on_system_connector_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -4725,6 +4743,14 @@ ALTER TABLE ONLY public.notifications
 
 
 --
+-- Name: quarantined_assets fk_rails_b333fb5988; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.quarantined_assets
+    ADD CONSTRAINT fk_rails_b333fb5988 FOREIGN KEY (reviewed_by_id) REFERENCES public.users(id);
+
+
+--
 -- Name: email_deliveries fk_rails_b387ef50cc; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -4805,6 +4831,14 @@ ALTER TABLE ONLY public.workflow_instances
 
 
 --
+-- Name: quarantined_assets fk_rails_d4a6a4f170; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.quarantined_assets
+    ADD CONSTRAINT fk_rails_d4a6a4f170 FOREIGN KEY (asset_id) REFERENCES public.assets(id);
+
+
+--
 -- Name: user_groups fk_rails_da7f4bdaa5; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -4851,6 +4885,7 @@ ALTER TABLE ONLY public.email_templates
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260709095000'),
 ('20260707150001'),
 ('20260707150000'),
 ('20260705170000'),

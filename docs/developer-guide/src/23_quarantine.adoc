@@ -1,0 +1,63 @@
+[[section-quarantine-module]]
+= Quarantine Review
+
+The quarantine workflow turns suspicious ingestion payloads into a reviewable
+admin queue instead of dropping them on the floor.
+
+== Data model
+
+`QuarantinedAsset` records live in `quarantined_assets` and currently track:
+
+* the source `system_connector`
+* the original ingestion payload (`original_payload`)
+* the rejection reason returned by TDM / policy checks
+* the workflow status (`pending_review`, `resolved`, `discarded`)
+* optional `asset_id` for the released or previously-linked asset
+* review audit fields: `reviewed_by_id`, `reviewed_at`, `review_notes`
+
+If an entry is released and does not yet point at an `Asset`, the model creates
+a new asset from the stored payload metadata and marks it `ready`.
+
+== REST endpoints
+
+[cols="1,2,3", options="header"]
+|===
+| Method | Path | Description
+| `GET` | `/api/v1/quarantined_assets` | Paginated queue listing, defaulting to `pending_review`.
+| `GET` | `/api/v1/quarantined_assets/:id` | Full detail payload for a single quarantine entry.
+| `PATCH` | `/api/v1/quarantined_assets/:id/release` | Release the item and restore/create the linked asset.
+| `PATCH` | `/api/v1/quarantined_assets/:id/discard` | Mark the item discarded and soft-delete the linked asset.
+| `GET` | `/api/v1/quarantined_assets/stats` | Counts per status for the admin dashboard cards.
+|===
+
+All quarantine API actions require an authenticated admin. Mutating actions also
+enforce admin PAT scope when accessed by Personal Access Token.
+
+== Admin UI
+
+`app/javascript/components/Admin/Quarantine/QuarantineManager.jsx` provides the
+review workspace mounted at `/admin/quarantine`.
+
+The screen includes:
+
+* status summary cards
+* filter buttons for pending, released, discarded, and all entries
+* a review table with asset title, reason, flagged timestamp, and actions
+* a detail dialog showing review notes and the raw ingestion payload
+* a destructive discard confirmation that soft-deletes the linked asset into the
+  Recycle Bin instead of permanently destroying it
+
+== Release and discard behaviour
+
+Release:
+
+* restores a linked asset if it was already soft-deleted
+* changes the linked asset status to `ready`
+* creates a new `Asset` from payload metadata when no linked asset exists
+* stamps reviewer, timestamp, and notes on the quarantine row
+
+Discard:
+
+* changes the linked asset status to `rejected`
+* soft-deletes the linked asset via `SoftDeletable`
+* stamps reviewer, timestamp, and notes on the quarantine row

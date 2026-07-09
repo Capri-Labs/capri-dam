@@ -278,6 +278,13 @@ export const MENU_GROUPS = [
                 ]
             },
             {
+                id: 'Quarantine Review',
+                label: 'Quarantine Review',
+                labelKey: 'menu.item.Quarantine Review',
+                icon: <BlockOutlined fontSize="small" />,
+                url: '/admin/quarantine'
+            },
+            {
                 id: 'System',
                 label: 'System Settings',
                 labelKey: 'menu.item.System',

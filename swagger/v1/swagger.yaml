@@ -6564,6 +6564,121 @@ paths:
                       type: object
                       description: Sanitized/enriched metadata ready for import into
                         DAM
+  "/api/v1/metadata_imports/preview":
+    post:
+      summary: Preview a metadata CSV import without persisting changes
+      tags:
+      - Metadata Imports
+      security:
+      - Bearer: []
+      description: |
+        Parses a metadata CSV synchronously and returns per-row preview results without
+        creating a `MetadataImport` record, mutating any `Asset`, attaching a results file,
+        or launching workflows.
+      parameters: []
+      responses:
+        '200':
+          description: Preview generated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - dry_run
+                - total_rows
+                - success_count
+                - failure_count
+                - rows
+                - preview_csv
+                properties:
+                  dry_run:
+                    type: boolean
+                    example: true
+                  name:
+                    type: string
+                    example: metadata-preview.csv
+                  batch_size:
+                    type: integer
+                    example: 50
+                  field_separator:
+                    type: string
+                    example: ","
+                  multi_value_delimiter:
+                    type: string
+                    example: "|"
+                  launch_workflows:
+                    type: boolean
+                    example: false
+                  asset_path_column:
+                    type: string
+                    example: asset_path
+                  ignored_columns:
+                    type: array
+                    items:
+                      type: string
+                  total_rows:
+                    type: integer
+                    example: 1
+                  success_count:
+                    type: integer
+                    example: 0
+                  failure_count:
+                    type: integer
+                    example: 1
+                  preview_csv:
+                    type: string
+                  rows:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        row_number:
+                          type: integer
+                          example: 2
+                        asset_path:
+                          type: string
+                          example: "/Marketing/banner.jpg"
+                        resolved_asset_path:
+                          type: string
+                          nullable: true
+                          example: "/Marketing/banner.jpg"
+                        status:
+                          type: string
+                          enum:
+                          - success
+                          - fail
+                          example: success
+                        message:
+                          type: string
+                          example: Updated 2 properties
+                        changes:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              field:
+                                type: string
+                                example: copyright
+                              from: {}
+                              to: {}
+        '422':
+          description: Preview validation failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: string
+        required: true
+        description: CSV file to preview
   "/api/v1/metadata_schemas/{id}":
     patch:
       summary: Update a metadata schema (rename / set Inherit From)
@@ -6988,6 +7103,126 @@ paths:
                         type: string
                       manifest_data:
                         type: object
+  "/api/v1/quarantined_assets":
+    get:
+      summary: List quarantined assets
+      tags:
+      - Quarantine
+      description: Returns quarantined assets filtered by status with pagination.
+      parameters:
+      - name: status
+        in: query
+        required: false
+        description: pending_review (default), resolved, discarded, all
+        schema:
+          type: string
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+      - name: per_page
+        in: query
+        required: false
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: Returns all quarantined assets when status=all
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                  pagination:
+                    type: object
+  "/api/v1/quarantined_assets/stats":
+    get:
+      summary: Quarantine statistics
+      tags:
+      - Quarantine
+      responses:
+        '200':
+          description: Quarantine stats returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  pending_review:
+                    type: integer
+                  resolved:
+                    type: integer
+                  discarded:
+                    type: integer
+                  total:
+                    type: integer
+  "/api/v1/quarantined_assets/{id}":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+    get:
+      summary: Show a quarantined asset
+      tags:
+      - Quarantine
+      responses:
+        '200':
+          description: Quarantined asset returned
+        '404':
+          description: Quarantined asset not found
+  "/api/v1/quarantined_assets/{id}/release":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+    patch:
+      summary: Release a quarantined asset
+      tags:
+      - Quarantine
+      parameters: []
+      responses:
+        '200':
+          description: Quarantined asset released
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                review_notes:
+                  type: string
+  "/api/v1/quarantined_assets/{id}/discard":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+    patch:
+      summary: Discard a quarantined asset
+      tags:
+      - Quarantine
+      parameters: []
+      responses:
+        '200':
+          description: Quarantined asset discarded
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                review_notes:
+                  type: string
   "/api/v1/style_presets":
     get:
       summary: List style presets

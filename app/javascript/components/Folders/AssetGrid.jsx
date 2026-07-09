@@ -137,6 +137,7 @@ export default function AssetGrid({
 
   return (
     <ImageList
+      data-testid="asset-grid"
       gap={16}
       variant="quilted"
       sx={{
@@ -173,6 +174,7 @@ export default function AssetGrid({
         return (
           <ImageListItem
             key={asset.id}
+            data-testid={`asset-grid-item-${asset.id}`}
             sx={{
               borderRadius: '16px',
               overflow: 'hidden',
@@ -218,6 +220,7 @@ export default function AssetGrid({
             )}
 
             <Box
+              data-testid={`asset-grid-preview-${asset.id}`}
               onClick={(event) => {
                 event.stopPropagation();
                 if (viewMode === 'bin') {

@@ -30,13 +30,14 @@ module AssetUrlHelper
     ENV.fetch("CDN_BASE_URL", "https://cdn.yourdam.com")
   }
 
-  # Returns the public URL for the active version of *asset*.
+  # Returns the public URL for *asset* or a specific historical version.
   #
   # @param asset [Asset]
+  # @param version [AssetVersion, nil]
   # @param disposition [Symbol] +:inline+ (default) or +:download+
   # @return [String, nil] URL string, or nil when no file is attached/staged
-  def asset_url_for(asset, disposition: :inline)
-    active_v = asset.active_version
+  def asset_url_for(asset, version: nil, disposition: :inline)
+    selected_version = version || asset.active_version
 
     # 1. Prefer ActiveStorage attachment — gives us signed Blob URLs for free.
     #
@@ -48,15 +49,20 @@ module AssetUrlHelper
     #
     # Instead we pass disposition directly to `url_for` / `rails_blob_url` via
     # the `download:` option that Rails exposes on the signed-URL helper.
-    if active_v.respond_to?(:file) && active_v.file.attached?
+    if selected_version.respond_to?(:file) && selected_version.file.attached?
       # url_for on an ActiveStorage::Blob resolves to the signed redirect URL.
       # Rails will forward `disposition` as a header at serve time when it is
       # included in the signed params, not as an image transform.
-      return url_for(active_v.file)
+      return url_for(selected_version.file)
     end
 
-    storage_path = active_v&.properties&.fetch("storage_path", nil) ||
-                   asset.properties&.fetch("storage_path", nil)
+    storage_path =
+      if version.present?
+        selected_version&.properties&.fetch("storage_path", nil)
+      else
+        selected_version&.properties&.fetch("storage_path", nil) ||
+          asset.properties&.fetch("storage_path", nil)
+      end
 
     return nil unless storage_path.present?
 
@@ -69,17 +75,16 @@ module AssetUrlHelper
         # Local adapter: url(path) → /api/v1/assets/local/<path> is intentionally
         # bypassed in favour of UUID-based lookup below, because the controller
         # resolves files by UUID, not raw path.
+        return adapter.url(storage_path) if version.present?
         return adapter.url(storage_path) unless adapter.is_a?(StorageAdapters::LocalStorageAdapter)
       end
     end
 
     # 3. Environment default.
     if Rails.env.production? || Rails.env.staging?
-      "#{CDN_BASE_URL.call}/assets/#{asset.uuid}"
+      asset_delivery_url_for(asset, version: selected_version)
     else
-      # Development / test: authenticated local-serve endpoint.
-      # Route: GET /api/v1/assets/local/:uuid → Api::V1::AssetsController#serve_local
-      "/api/v1/assets/local/#{asset.uuid}"
+      local_asset_delivery_path_for(asset, version: selected_version)
     end
   end
 
@@ -90,18 +95,24 @@ module AssetUrlHelper
   # the regular asset URL so callers can use it unconditionally for display.
   #
   # @param asset [Asset]
+  # @param version [AssetVersion, nil]
   # @return [String, nil]
-  def asset_preview_url_for(asset)
-    active_v     = asset.active_version
-    preview_path = active_v&.properties&.fetch("preview_storage_path", nil) ||
-                   asset.properties&.fetch("preview_storage_path", nil)
+  def asset_preview_url_for(asset, version: nil)
+    selected_version = version || asset.active_version
+    preview_path =
+      if version.present?
+        selected_version&.properties&.fetch("preview_storage_path", nil)
+      else
+        selected_version&.properties&.fetch("preview_storage_path", nil) ||
+          asset.properties&.fetch("preview_storage_path", nil)
+      end
 
-    return asset_url_for(asset) if preview_path.blank?
+    return asset_url_for(asset, version: version) if preview_path.blank?
 
     if Rails.env.production? || Rails.env.staging?
-      "#{CDN_BASE_URL.call}/assets/#{asset.uuid}?variant=preview"
+      asset_delivery_url_for(asset, version: selected_version, variant: "preview")
     else
-      "/api/v1/assets/local/#{asset.uuid}?variant=preview"
+      local_asset_delivery_path_for(asset, version: selected_version, variant: "preview")
     end
   end
 
@@ -111,5 +122,21 @@ module AssetUrlHelper
   # @return [String, nil]
   def asset_download_url_for(asset)
     asset_url_for(asset, disposition: :download)
+  end
+
+  private
+
+  def asset_delivery_url_for(asset, version:, variant: nil)
+    query = { variant: variant, version_id: version&.id }.compact.to_query
+    base_url = "#{CDN_BASE_URL.call}/assets/#{asset.uuid}"
+
+    query.present? ? "#{base_url}?#{query}" : base_url
+  end
+
+  def local_asset_delivery_path_for(asset, version:, variant: nil)
+    query = { variant: variant, version_id: version&.id }.compact.to_query
+    base_path = "/api/v1/assets/local/#{asset.uuid}"
+
+    query.present? ? "#{base_path}?#{query}" : base_path
   end
 end

@@ -83,6 +83,18 @@ AI batch progress, and health callbacks.
 | `POST` | `/api/v1/edge_operations/sync_metadata` | admin | Push edge metadata refresh.
 |===
 
+== Asset versioning and local delivery
+
+[cols="1,2,1,3", options="header"]
+|===
+| Method | Path | Auth | Description
+
+| `GET` | `/api/v1/assets/:id/versions` | user | Returns version metadata plus per-version `preview_url`/`thumb_url` values resolved from that specific `AssetVersion#properties` snapshot, so the UI can compare historical previews instead of always using the current active file.
+| `GET` | `/api/v1/assets/:id/audit_trail` | user | Returns the raw per-version `properties` snapshots used for metadata/audit comparisons.
+| `POST` | `/api/v1/assets/:id/versions/:version_id/restore` | user | Promotes the selected historical version to `active_version_id` without deleting newer records.
+| `GET` | `/api/v1/assets/local/:uuid?variant=preview&version_id=:id` | user/share token | Streams the requested historical preview from local storage when a compare URL targets a non-active version.
+|===
+
 == Intelligence and provenance APIs
 
 [cols="1,2,1,3", options="header"]

@@ -42,6 +42,7 @@ export default function FolderGrid({ folders, viewMode, selectedItems, toggleSel
           return (
             <Grid size={size} key={folder.id}>
               <Paper
+                data-testid={`folder-card-${folder.id}`}
                 elevation={0}
                 onClick={(event) => (viewMode === 'bin' ? toggleSelection('folders', folder.id, event) : handleNavigate(folder.id))}
                 sx={{
@@ -115,6 +116,8 @@ export default function FolderGrid({ folders, viewMode, selectedItems, toggleSel
                   <Tooltip title={tr('folderGrid.tooltips.folderProperties', 'Folder properties')}>
                     <IconButton
                       className="folder-info-btn"
+                      data-testid={`folder-info-button-${folder.id}`}
+                      aria-label={tr('folderGrid.tooltips.folderProperties', 'Folder properties')}
                       size="small"
                       onClick={(event) => {
                         event.stopPropagation();

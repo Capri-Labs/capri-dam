@@ -4,13 +4,15 @@ module Api
   module V1
     class MetadataImportsController < ApplicationController
       include Rails.application.routes.url_helpers
+
       before_action :authenticate_hybrid!
+      before_action :require_write_scope!, only: [ :create, :preview, :destroy ]
       before_action :set_import, only: [ :show, :download, :destroy ]
 
       # GET /api/v1/metadata_imports
       def index
         imports = current_user.metadata_imports.not_expired.recent.limit(100)
-        render json: imports.map { |i| serialize(i) }
+        render json: imports.map { |import| serialize(import) }
       end
 
       # GET /api/v1/metadata_imports/:id
@@ -31,14 +33,30 @@ module Api
                   disposition: "attachment"
       end
 
+      # POST /api/v1/metadata_imports/preview  (multipart/form-data)
+      def preview
+        return render_missing_file_error unless source_file.present?
+
+        import = build_preview_import
+        return render json: { errors: import.errors.full_messages }, status: :unprocessable_entity unless import.valid?
+
+        result = MetadataImportService::CsvProcessor.new(
+          import,
+          dry_run: true,
+          source_csv: source_file.read
+        ).process
+
+        render json: serialize_preview(import, result)
+      rescue StandardError => e
+        render json: { errors: [ e.message ] }, status: :unprocessable_entity
+      end
+
       # POST /api/v1/metadata_imports  (multipart/form-data)
       def create
-        unless params.dig(:metadata_import, :source_file).present?
-          return render json: { errors: [ "Please select a CSV file." ] }, status: :unprocessable_entity
-        end
+        return render_missing_file_error unless source_file.present?
 
         import = current_user.metadata_imports.new(import_params)
-        import.name   = import.name.presence || import.source_file.filename.to_s
+        import.name   = import.name.presence || source_file.original_filename.to_s
         import.status = :pending
 
         if import.save
@@ -74,6 +92,10 @@ module Api
         @import = current_user.metadata_imports.find(params[:id])
       end
 
+      def source_file
+        params.dig(:metadata_import, :source_file)
+      end
+
       def import_params
         raw_ignored_columns = params.dig(:metadata_import, :ignored_columns)
         permitted = params.require(:metadata_import).permit(
@@ -94,6 +116,16 @@ module Api
         else
           MetadataImportWorker.perform_async(import.id)
         end
+      end
+
+      def build_preview_import
+        import = current_user.metadata_imports.new(import_params.except(:source_file))
+        import.name = import.name.presence || source_file.original_filename.to_s
+        import
+      end
+
+      def render_missing_file_error
+        render json: { errors: [ "Please select a CSV file." ] }, status: :unprocessable_entity
       end
 
       def serialize(import)
@@ -117,6 +149,35 @@ module Api
           expires_at:            import.expires_at&.strftime("%b %d, %Y"),
           source_file:           file_meta(import, :source),
           result_file:           file_meta(import, :result),
+        }
+      end
+
+      def serialize_preview(import, result)
+        {
+          dry_run:               true,
+          name:                  import.name,
+          batch_size:            import.batch_size,
+          field_separator:       import.field_separator,
+          multi_value_delimiter: import.multi_value_delimiter,
+          launch_workflows:      false,
+          asset_path_column:     import.asset_path_column,
+          ignored_columns:       import.ignored_columns,
+          total_rows:            result.total,
+          success_count:         result.success,
+          failure_count:         result.failure,
+          preview_csv:           result.csv_string,
+          rows:                  result.rows.map { |row| serialize_preview_row(row) },
+        }
+      end
+
+      def serialize_preview_row(row)
+        {
+          row_number:          row.row_number,
+          asset_path:          row.asset_path,
+          resolved_asset_path: row.resolved_asset_path,
+          status:              row.status,
+          message:             row.message,
+          changes:             row.changes,
         }
       end
 

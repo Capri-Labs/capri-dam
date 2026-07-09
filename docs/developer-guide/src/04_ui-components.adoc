@@ -60,6 +60,23 @@ Rails shell and typically fetch JSON from `/api/v1/...`.
 | `Folders/ImageEditorDialog.jsx` | Multi-tab image editor: Suggestions, Adjust, AI Studio, LUT filters, geometry, and custom CLI.
 |===
 
+== Version history comparison
+
+`Folders/AssetVersionsTab.jsx` now supports a two-version compare mode for asset
+history. The default timeline remains unchanged, but users can select any two
+versions and open a comparison workspace that renders:
+
+* a blended before/after stack for quick inspection,
+* a Canvas-computed pixel-diff overlay highlighted in magenta, and
+* separate before/after previews for side-by-side review.
+
+The diff implementation is intentionally dependency-free: both preview URLs are
+loaded into padded canvases sized to the larger source image, then the component
+computes a simple per-pixel absolute RGBA delta to build the overlay canvas.
+When browser security prevents `getImageData()` access for cross-origin/CDN
+images, the component catches the `SecurityError` and falls back to plain
+side-by-side previews instead of breaking the Versions tab.
+
 == Global layout (Header & Footer)
 
 [cols="1,3", options="header"]

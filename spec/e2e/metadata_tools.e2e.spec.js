@@ -4,15 +4,36 @@
 //
 // Prereqs: app running at E2E_BASE_URL and a seeded login (set via env).
 
+const fs = require('node:fs/promises');
+
 const { test, expect } = require('./fixtures');
 
 const EMAIL    = process.env.E2E_EMAIL    || 'admin@admin.com';
 const PASSWORD = process.env.E2E_PASSWORD || 'AdminUser';
+const ONE_PIXEL_PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+  'base64',
+);
 
 async function login(page) {
-  await page.goto('/users/sign_in');
-  await page.waitForSelector('input[autocomplete="email"]', { timeout: 15_000 });
-  await page.fill('input[autocomplete="email"]', EMAIL);
+  await page.goto('/');
+  const emailInput = page.locator('input[autocomplete="email"]');
+  const loginFormVisible = await emailInput.isVisible({ timeout: 5_000 }).catch(() => false);
+
+  if (!loginFormVisible) {
+    await page.waitForLoadState('networkidle');
+    const signedIn = await page.locator('#header-root').getAttribute('data-signed-in').catch(() => null);
+    if (signedIn === 'true') return;
+    await page.goto('/users/sign_in');
+    const directLoginVisible = await emailInput.isVisible({ timeout: 5_000 }).catch(() => false);
+    if (!directLoginVisible) {
+      const signedInRetry = await page.locator('#header-root').getAttribute('data-signed-in').catch(() => null);
+      if (signedInRetry === 'true') return;
+      throw new Error('Login form did not render and no signed-in session was detected.');
+    }
+  }
+
+  await emailInput.fill(EMAIL);
   await page.fill('input[autocomplete="current-password"]', PASSWORD);
 
   const [response] = await Promise.all([
@@ -34,6 +55,202 @@ async function login(page) {
   }
 }
 
+function uniqueName(prefix) {
+  return `${prefix} ${Date.now()} ${Math.random().toString(36).slice(2, 8)}`;
+}
+
+async function duplicateRootSchema(page) {
+  const listRes = await page.request.get('/api/v1/metadata_schemas', {
+    headers: { Accept: 'application/json' },
+  });
+  expect(listRes.ok()).toBeTruthy();
+  const schemas = await listRes.json();
+  test.skip(!Array.isArray(schemas) || schemas.length === 0, 'No root metadata schemas seeded');
+
+  const source = schemas[0];
+  await page.goto('/tools/metadata_schemas');
+  await page.getByText(source.name, { exact: true }).first().click();
+
+  const [response] = await Promise.all([
+    page.waitForResponse((res) => res.url().includes(`/api/v1/metadata_schemas/${source.id}/duplicate`) && res.request().method() === 'POST'),
+    page.getByRole('button', { name: /duplicate/i }).click(),
+  ]);
+
+  const duplicated = await response.json();
+  await expect(page.getByRole('heading', { name: duplicated.name })).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByTestId('schema-inherits-chip')).toBeVisible();
+  return { source, duplicated };
+}
+
+async function deleteSchema(page, id) {
+  const token = await csrfToken(page).catch(() => null);
+  await page.request.delete(`/api/v1/metadata_schemas/${id}`, {
+    headers: { Accept: 'application/json', 'X-CSRF-Token': token || '' },
+  }).catch(() => null);
+
+  if (page.isClosed()) return;
+
+  const signedIn = await page.locator('#header-root').getAttribute('data-signed-in').catch(() => null);
+  if (signedIn !== 'true') {
+    await page.reload();
+    await page.waitForLoadState('networkidle');
+  }
+}
+
+async function csrfToken(page) {
+  const token = await page.evaluate(() => document.querySelector('meta[name="csrf-token"]')?.content);
+  if (!token) throw new Error('Missing CSRF token');
+  return token;
+}
+
+async function createRootSchema(page, name) {
+  const token = await csrfToken(page);
+  const response = await page.request.post('/api/v1/metadata_schemas', {
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': token,
+    },
+    data: {
+      metadata_schema: {
+        name,
+        description: 'E2E schema editor coverage',
+        level: 'root',
+        tabs: [],
+      },
+    },
+  });
+  expect(response.ok()).toBeTruthy();
+  return response.json();
+}
+
+async function createFolder(page, name, csrf) {
+  const response = await page.request.post('/api/v1/folders', {
+    data: { folder: { name, parent_id: 'root' } },
+    headers: { Accept: 'application/json', 'X-CSRF-Token': csrf },
+  });
+
+  expect(response.ok()).toBeTruthy();
+  return response.json();
+}
+
+async function createAsset(page, { title, csrf, folderId, metadata = {} }) {
+  const multipart = {
+    file: { name: title.endsWith('.png') ? title : `${title}.png`, mimeType: 'image/png', buffer: ONE_PIXEL_PNG },
+    title,
+  };
+  if (folderId) multipart.folder_id = String(folderId);
+  if (Object.keys(metadata).length > 0) multipart.metadata = JSON.stringify(metadata);
+
+  const response = await page.request.post('/api/v1/assets', {
+    multipart,
+    headers: { Accept: 'application/json', 'X-CSRF-Token': csrf },
+  });
+
+  expect([ 201, 202 ]).toContain(response.status());
+  const body = await response.json();
+  return body.id || body.uuid;
+}
+
+async function fetchSchema(page, schemaId) {
+  const response = await page.request.get(`/api/v1/metadata_schemas/${schemaId}`, {
+    headers: { Accept: 'application/json' },
+  });
+
+  expect(response.ok()).toBeTruthy();
+  return response.json();
+}
+
+async function fetchAsset(page, assetId) {
+  const response = await page.request.get(`/api/v1/assets/${assetId}`, {
+    headers: { Accept: 'application/json' },
+  });
+
+  expect(response.ok()).toBeTruthy();
+  return response.json();
+}
+
+async function waitForImport(page, importId) {
+  let found = null;
+
+  await expect.poll(async () => {
+    const response = await page.request.get('/api/v1/metadata_imports', {
+      headers: { Accept: 'application/json' },
+    });
+    expect(response.ok()).toBeTruthy();
+    const items = await response.json();
+    found = items.find((item) => item.id === importId) || null;
+    return found?.status || 'missing';
+  }, {
+    timeout: 60_000,
+    intervals: [1_000, 4_000, 4_000, 4_000, 4_000, 4_000],
+  }).toMatch(/completed|failed/);
+
+  expect(found?.status).toBe('completed');
+  return found;
+}
+
+async function waitForExport(page, exportId) {
+  let found = null;
+
+  await expect.poll(async () => {
+    const response = await page.request.get('/api/v1/metadata_exports', {
+      headers: { Accept: 'application/json' },
+    });
+    expect(response.ok()).toBeTruthy();
+    const items = await response.json();
+    found = items.find((item) => item.id === exportId) || null;
+    return found?.status || 'missing';
+  }, {
+    timeout: 60_000,
+    intervals: [1_000, 4_000, 4_000, 4_000, 4_000, 4_000],
+  }).toMatch(/completed|failed/);
+
+  expect(found?.status).toBe('completed');
+  return found;
+}
+
+async function deleteMetadataImport(page, importId, csrf) {
+  if (!importId || !csrf) return;
+
+  await page.request.delete(`/api/v1/metadata_imports/${importId}`, {
+    headers: { 'X-CSRF-Token': csrf },
+  }).catch(() => {});
+}
+
+async function deleteMetadataExport(page, exportId, csrf) {
+  if (!exportId || !csrf) return;
+
+  await page.request.delete(`/api/v1/metadata_exports/${exportId}`, {
+    headers: { 'X-CSRF-Token': csrf },
+  }).catch(() => {});
+}
+
+async function permanentlyDeleteAsset(page, assetId, csrf) {
+  if (!assetId || !csrf) return;
+
+  await page.request.delete(`/api/v1/assets/${assetId}`, {
+    headers: { 'X-CSRF-Token': csrf },
+  }).catch(() => {});
+
+  await page.request.delete('/api/v1/bin/bulk_destroy', {
+    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
+    data: { items: [ { id: assetId, type: 'asset' } ] },
+  }).catch(() => {});
+}
+
+async function permanentlyDeleteFolder(page, folderId, csrf) {
+  if (!folderId || !csrf) return;
+
+  await page.request.delete(`/api/v1/folders/${folderId}`, {
+    headers: { 'X-CSRF-Token': csrf },
+  }).catch(() => {});
+
+  await page.request.delete(`/api/v1/folders/${folderId}/permanent`, {
+    headers: { 'X-CSRF-Token': csrf },
+  }).catch(() => {});
+}
+
 test.describe('Metadata Tools E2E', () => {
   test.beforeEach(async ({ page }) => {
     await login(page);
@@ -49,6 +266,204 @@ test.describe('Metadata Tools E2E', () => {
     await page.goto('/tools/metadata_imports');
     await expect(page.getByRole('link', { name: /download template/i })).toBeVisible();
     await expect(page.getByRole('button', { name: /new import/i })).toBeVisible();
+  });
+
+  test('Metadata Import preview shows row results before creating the real import job', async ({ page }) => {
+    const csrfToken = await page.evaluate(() => document.querySelector('meta[name="csrf-token"]')?.content);
+    const now = Date.now();
+    const assetTitle = `metadata-preview-e2e-${now}.png`;
+    const csvName = `metadata-preview-${now}.csv`;
+
+    const createRes = await page.request.post('/api/v1/assets', {
+      multipart: {
+        file: { name: assetTitle, mimeType: 'image/png', buffer: ONE_PIXEL_PNG },
+        title: assetTitle,
+      },
+      headers: { Accept: 'application/json', 'X-CSRF-Token': csrfToken },
+    });
+    expect([ 201, 202 ]).toContain(createRes.status());
+
+    await page.goto('/tools/metadata_imports');
+    await page.waitForLoadState('networkidle');
+    await page.getByRole('button', { name: /new import/i }).click();
+
+    await page.locator('input[type="file"]').setInputFiles({
+      name: csvName,
+      mimeType: 'text/csv',
+      buffer: Buffer.from(`asset_path,copyright\n/${assetTitle},ACME\n`, 'utf8'),
+    });
+
+    await expect(page.getByText(/Detected 2 columns/i)).toBeVisible();
+
+    const dialog = page.getByRole('dialog');
+    const [previewResponse] = await Promise.all([
+      page.waitForResponse((res) => res.url().includes('/api/v1/metadata_imports/preview'), { timeout: 15_000 }),
+      dialog.getByRole('button', { name: /^preview$/i }).click(),
+    ]);
+    expect(previewResponse.ok()).toBe(true);
+
+    await expect(dialog.getByText(/Preview results/i)).toBeVisible();
+    await expect(dialog.getByText('Updated 1 property')).toBeVisible();
+    await expect(dialog.getByText(/copyright/i)).toBeVisible();
+
+    const [importResponse] = await Promise.all([
+      page.waitForResponse((res) => res.url().includes('/api/v1/metadata_imports') && res.request().method() === 'POST' && !res.url().includes('/preview'), { timeout: 15_000 }),
+      dialog.getByRole('button', { name: /^import$/i }).click(),
+    ]);
+    expect(importResponse.status()).toBe(202);
+
+    await expect(page.getByText(csvName)).toBeVisible({ timeout: 15_000 });
+  });
+
+  test('metadata import processes one valid row, reports one failed row, and downloads the results CSV', async ({ page }) => {
+    test.setTimeout(90_000);
+
+    const stamp = Date.now();
+    const importName = `metadata-import-e2e-${stamp}.csv`;
+    const folderName = `Metadata Import E2E ${stamp}`;
+    const sourceTitle = `Metadata Import Source ${stamp}`;
+    const updatedTitle = `Metadata Import Updated ${stamp}`;
+    const description = `Imported description ${stamp}`;
+    const missingPath = `/${folderName}/Missing Asset ${stamp}`;
+    let csrf;
+    let folderId;
+    let assetId;
+    let importId;
+
+    try {
+      csrf = await csrfToken(page);
+      const folder = await createFolder(page, folderName, csrf);
+      folderId = folder.id;
+      assetId = await createAsset(page, {
+        title: sourceTitle,
+        folderId,
+        csrf,
+        metadata: { description: 'before-import' },
+      });
+
+      const validPath = `/${folderName}/${sourceTitle}`;
+      const csv = [
+        'asset_path,title,description,tags',
+        `"${validPath}","${updatedTitle}","${description}","tag-one|tag-two"`,
+        `"${missingPath}","Ignored title","Should fail","missing|asset"`,
+      ].join('\n');
+
+      await page.goto('/tools/metadata_imports');
+      await page.waitForLoadState('networkidle');
+      await page.getByRole('button', { name: /new import/i }).click();
+      await page.locator('input[type="file"]').setInputFiles({
+        name: importName,
+        mimeType: 'text/csv',
+        buffer: Buffer.from(csv, 'utf8'),
+      });
+      await expect(page.getByText(/detected 4 columns in the header row/i)).toBeVisible();
+
+      const [createResponse] = await Promise.all([
+        page.waitForResponse((res) =>
+          res.url().includes('/api/v1/metadata_imports') &&
+          res.request().method() === 'POST',
+        ),
+        page.getByRole('button', { name: /^import$/i }).click(),
+      ]);
+      expect(createResponse.status()).toBe(202);
+      importId = (await createResponse.json()).id;
+
+      const createdImport = await waitForImport(page, importId);
+      expect(createdImport.success_count).toBe(1);
+      expect(createdImport.failure_count).toBe(1);
+
+      await page.reload();
+      await page.waitForLoadState('networkidle');
+
+      const importRow = page.locator('tbody tr', { hasText: importName }).first();
+      await expect(importRow).toBeVisible();
+      await expect(importRow.getByText('Completed')).toBeVisible();
+      await expect(importRow.getByText('1 ok')).toBeVisible();
+      await expect(importRow.getByText('1 fail')).toBeVisible();
+
+      const [download] = await Promise.all([
+        page.waitForEvent('download'),
+        importRow.getByRole('link', { name: /results/i }).click(),
+      ]);
+      expect(download.suggestedFilename()).toMatch(/metadata[-_]import[-_]e2e-\d+_results\.csv$/i);
+
+      const resultsPath = await download.path();
+      expect(resultsPath).toBeTruthy();
+      const resultsCsv = await fs.readFile(resultsPath, 'utf8');
+      expect(resultsCsv).toContain('import_status');
+      expect(resultsCsv).toContain('import_message');
+      expect(resultsCsv).toContain(missingPath);
+      expect(resultsCsv).toContain(`No asset found at path '${missingPath}'`);
+
+      const asset = await fetchAsset(page, assetId);
+      expect(asset.title).toBe(updatedTitle);
+      expect(asset.properties.description).toBe(description);
+      expect(asset.properties.tags).toEqual([ 'tag-one', 'tag-two' ]);
+    } finally {
+      await deleteMetadataImport(page, importId, csrf);
+      await permanentlyDeleteAsset(page, assetId, csrf);
+      await permanentlyDeleteFolder(page, folderId, csrf);
+    }
+  });
+
+  test('metadata export creates a job for the root scope and downloads the generated CSV', async ({ page }) => {
+    test.setTimeout(90_000);
+
+    const stamp = Date.now();
+    const exportName = `metadata-export-e2e-${stamp}`;
+    const assetTitle = `Metadata Export Asset ${stamp}`;
+    let csrf;
+    let assetId;
+    let exportId;
+
+    try {
+      csrf = await csrfToken(page);
+      const createRes = await page.request.post('/api/v1/assets', {
+        multipart: {
+          file: { name: `${assetTitle}.png`, mimeType: 'image/png', buffer: ONE_PIXEL_PNG },
+          title: assetTitle,
+        },
+        headers: { 'X-CSRF-Token': csrf },
+      });
+      expect(createRes.ok()).toBe(true);
+      const createdAsset = await createRes.json();
+      assetId = createdAsset.id || createdAsset.uuid;
+
+      await page.goto('/tools/metadata_exports');
+      await page.waitForLoadState('networkidle');
+      await page.getByRole('button', { name: /new export/i }).click();
+      const dialog = page.getByRole('dialog');
+      await expect(dialog).toBeVisible();
+      await dialog.getByRole('textbox', { name: /csv file name/i }).fill(exportName);
+      await expect(dialog.getByRole('radio', { name: /all properties/i })).toBeChecked();
+
+      const [createResponse] = await Promise.all([
+        page.waitForResponse((res) =>
+          res.url().includes('/api/v1/metadata_exports') &&
+          res.request().method() === 'POST',
+        ),
+        dialog.getByRole('button', { name: /^export$/i }).click(),
+      ]);
+      expect(createResponse.status()).toBe(202);
+      exportId = (await createResponse.json()).id;
+
+      const createdExport = await waitForExport(page, exportId);
+      expect(createdExport.total_assets).toBeGreaterThanOrEqual(1);
+      expect(createdExport.file_count).toBe(1);
+
+      const downloadHref = createdExport.files?.[0]?.download_url;
+      expect(downloadHref).toBeTruthy();
+      const downloadResponse = await page.request.get(downloadHref, {
+        headers: { Accept: 'text/csv' },
+      });
+      expect(downloadResponse.ok()).toBe(true);
+      const exportCsv = await downloadResponse.text();
+      expect(exportCsv).toContain('asset_id,title,folder_path,status,created_at');
+      expect(exportCsv).toContain(assetTitle);
+    } finally {
+      await deleteMetadataExport(page, exportId, csrf);
+      await permanentlyDeleteAsset(page, assetId, csrf);
+    }
   });
 
   test('per-asset metadata_schema endpoint resolves a pre-filled schema', async ({ page }) => {
@@ -83,37 +498,127 @@ test.describe('Metadata Tools E2E', () => {
   });
 
   test('admin can duplicate a root schema and rename the copy via the schema editor', async ({ page }) => {
-    // Ensure there is at least one root schema to duplicate against, via API.
-    const listRes = await page.request.get('/api/v1/metadata_schemas', {
-      headers: { Accept: 'application/json' },
-    });
-    expect(listRes.ok()).toBeTruthy();
-    const schemas = await listRes.json();
-    test.skip(!Array.isArray(schemas) || schemas.length === 0, 'No root metadata schemas seeded');
+    const { source, duplicated } = await duplicateRootSchema(page);
+    try {
+      // Open the editor and rename the copy.
+      await page.getByRole('button', { name: /^edit$/i }).click();
+      const nameField = page.getByTestId('schema-editor-name').locator('input');
+      await expect(nameField).toBeVisible();
+      await nameField.fill(`Custom ${source.name} ${Date.now()}`);
+      await page.getByRole('button', { name: /save schema/i }).click();
 
-    const source = schemas[0];
+      // Dialog closes and the renamed schema is now shown in the detail panel.
+      await expect(page.getByTestId('schema-editor-name')).toHaveCount(0, { timeout: 10_000 });
+    } finally {
+      await deleteSchema(page, duplicated.id);
+    }
+  });
 
-    await page.goto('/tools/metadata_schemas');
-    await page.getByText(source.name, { exact: true }).first().click();
+  test('admin can add a custom field in the schema editor and see it after saving', async ({ page }) => {
+    const schemaName = uniqueName('Schema Editor Add');
+    const created = await createRootSchema(page, schemaName);
+    const tabName = uniqueName('Coverage Tab');
+    const fieldLabel = uniqueName('Coverage Field');
+    const propertyKey = `dam:${fieldLabel.toLowerCase().replace(/[^a-z0-9]+/g, '_')}`;
 
-    const duplicateButton = page.getByRole('button', { name: /duplicate/i });
-    await expect(duplicateButton).toBeVisible();
-    await duplicateButton.click();
+    try {
+      await page.goto('/tools/metadata_schemas');
+      await page.getByText(schemaName, { exact: true }).first().click();
+      await page.getByRole('button', { name: /^edit$/i }).click();
+      await page.getByTestId('schema-editor-add-tab').click();
+      await page.getByPlaceholder(/tab name/i).fill(tabName);
+      await page.getByRole('button', { name: /^add$/i }).click();
+      await page.getByTestId('schema-editor-add-field').click();
+      const fieldRow = page.locator('[data-testid^="schema-editor-field-"]').last();
+      await expect(fieldRow).toBeVisible();
+      await fieldRow.click();
 
-    // The newly duplicated schema is auto-selected and titled "Copy of <name>".
-    await expect(page.getByRole('heading', { name: `Copy of ${source.name}` })).toBeVisible({ timeout: 10_000 });
-    // It should show an "Inherits: <source name>" chip (linked, not deep-copied).
-    await expect(page.getByTestId('schema-inherits-chip')).toBeVisible();
+      const fieldEditor = page.getByTestId('field-editor-column');
+      await fieldEditor.getByLabel(/field label/i).fill(fieldLabel);
+      await fieldEditor.getByLabel(/map to property/i).fill(propertyKey);
 
-    // Open the editor and rename the copy.
-    await page.getByRole('button', { name: /^edit$/i }).click();
-    const nameField = page.getByTestId('schema-editor-name').locator('input');
-    await expect(nameField).toBeVisible();
-    await nameField.fill(`Custom ${source.name} ${Date.now()}`);
-    await page.getByRole('button', { name: /save schema/i }).click();
+      const [saveResponse] = await Promise.all([
+        page.waitForResponse((res) =>
+          res.url().includes(`/api/v1/metadata_schemas/${created.id}`) &&
+          res.request().method() === 'PATCH',
+        ),
+        page.getByRole('button', { name: /save schema/i }).click(),
+      ]);
+      expect(saveResponse.ok()).toBe(true);
+      await expect(page.getByTestId('schema-editor-name')).toHaveCount(0, { timeout: 10_000 });
 
-    // Dialog closes and the renamed schema is now shown in the detail panel.
-    await expect(page.getByTestId('schema-editor-name')).toHaveCount(0, { timeout: 10_000 });
+      const schemaRes = await page.request.get(`/api/v1/metadata_schemas/${created.id}`, {
+        headers: { Accept: 'application/json' },
+      });
+      expect(schemaRes.ok()).toBe(true);
+      const schemaBody = await schemaRes.json();
+      const allFields = (schemaBody.tabs || []).flatMap((tab) => tab.fields || []);
+      expect(allFields.some((field) => field.label === fieldLabel && field.map_to_property === propertyKey)).toBeTruthy();
+    } finally {
+      await deleteSchema(page, created.id);
+    }
+  });
+
+  test('admin can remove a custom field in the schema editor and verify it is gone', async ({ page }) => {
+    const schemaName = uniqueName('Schema Editor Remove');
+    const created = await createRootSchema(page, schemaName);
+    const tabName = uniqueName('Removal Tab');
+    const fieldLabel = uniqueName('Removable Field');
+    const propertyKey = `dam:${fieldLabel.toLowerCase().replace(/[^a-z0-9]+/g, '_')}`;
+
+    try {
+      await page.goto('/tools/metadata_schemas');
+      await page.getByText(schemaName, { exact: true }).first().click();
+      await page.getByRole('button', { name: /^edit$/i }).click();
+      await page.getByTestId('schema-editor-add-tab').click();
+      await page.getByPlaceholder(/tab name/i).fill(tabName);
+      await page.getByRole('button', { name: /^add$/i }).click();
+      await page.getByTestId('schema-editor-add-field').click();
+      const fieldRow = page.locator('[data-testid^="schema-editor-field-"]').last();
+      await expect(fieldRow).toBeVisible();
+      await fieldRow.click();
+
+      const fieldEditor = page.getByTestId('field-editor-column');
+      await fieldEditor.getByLabel(/field label/i).fill(fieldLabel);
+      await fieldEditor.getByLabel(/map to property/i).fill(propertyKey);
+      await page.getByRole('button', { name: /save schema/i }).click();
+      await expect(page.getByTestId('schema-editor-name')).toHaveCount(0, { timeout: 10_000 });
+
+      const createdSchemaRes = await page.request.get(`/api/v1/metadata_schemas/${created.id}`, {
+        headers: { Accept: 'application/json' },
+      });
+      expect(createdSchemaRes.ok()).toBe(true);
+      const createdSchemaBody = await createdSchemaRes.json();
+      const createdFields = (createdSchemaBody.tabs || []).flatMap((tab) => tab.fields || []);
+      expect(createdFields.some((field) => field.label === fieldLabel && field.map_to_property === propertyKey)).toBeTruthy();
+
+      await page.getByRole('button', { name: /^edit$/i }).click();
+      const reopenedDialog = page.getByRole('dialog');
+      const reopenedFieldRow = reopenedDialog.locator('[data-testid^="schema-editor-field-"]').first();
+      await expect(reopenedFieldRow).toBeVisible();
+      await reopenedFieldRow.locator('[data-testid^="schema-editor-delete-field-"]').click();
+      await expect(reopenedDialog.locator('[data-testid^="schema-editor-field-"]')).toHaveCount(0);
+
+      const [saveResponse] = await Promise.all([
+        page.waitForResponse((res) =>
+          res.url().includes(`/api/v1/metadata_schemas/${created.id}`) &&
+          res.request().method() === 'PATCH',
+        ),
+        page.getByRole('button', { name: /save schema/i }).click(),
+      ]);
+      expect(saveResponse.ok()).toBe(true);
+      await expect(page.getByTestId('schema-editor-name')).toHaveCount(0, { timeout: 10_000 });
+
+      const schemaRes = await page.request.get(`/api/v1/metadata_schemas/${created.id}`, {
+        headers: { Accept: 'application/json' },
+      });
+      expect(schemaRes.ok()).toBe(true);
+      const schemaBody = await schemaRes.json();
+      const allFields = (schemaBody.tabs || []).flatMap((tab) => tab.fields || []);
+      expect(allFields.some((field) => field.label === fieldLabel || field.map_to_property === propertyKey)).toBeFalsy();
+    } finally {
+      await deleteSchema(page, created.id);
+    }
   });
 
   test('asset viewer lets a user edit values for fields inherited from a system schema, but keeps explicit read_only fields locked', async ({ page }) => {
@@ -194,5 +699,3 @@ test.describe('Metadata Tools E2E', () => {
     await expect(checksumInput).toBeDisabled();
   });
 });
-
-

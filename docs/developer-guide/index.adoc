@@ -102,6 +102,9 @@ include::src/21_notifications-email.adoc[]
 // 22. Data Health
 include::src/22_data-health.adoc[]
 
+// 23. Quarantine Review
+include::src/23_quarantine.adoc[]
+
 ifdef::backend-html5[]
 // Back-to-top button
 ++++

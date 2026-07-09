@@ -393,6 +393,16 @@ Rails.application.routes.draw do
         end
       end
 
+      resources :quarantined_assets, only: %i[index show] do
+        collection do
+          get :stats
+        end
+        member do
+          patch :release
+          patch :discard
+        end
+      end
+
       # Image Profiles (asset upload processing configuration)
       resources :image_profiles, only: [ :index, :show, :create, :update, :destroy ] do
         member do
@@ -447,6 +457,7 @@ Rails.application.routes.draw do
       resources :metadata_imports, only: [ :index, :show, :create, :destroy ] do
         collection do
           get :template
+          post :preview
         end
         member do
           get :download
@@ -536,6 +547,8 @@ Rails.application.routes.draw do
     end
 
     # Reporting
+    get "quarantine", to: "quarantine#index"
+
     resources :reports, only: [ :index, :show, :create, :update, :destroy ] do
       collection do
         get :analytics            # GET /admin/reports/analytics?range=last_30_days

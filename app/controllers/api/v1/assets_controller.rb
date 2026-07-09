@@ -359,6 +359,8 @@ module Api
         @asset = find_asset_record(Asset.includes(asset_versions: :created_by))
 
         history = @asset.asset_versions.order(version_number: :desc).map do |v|
+          preview_url = asset_preview_url_for(@asset, version: v)
+
           {
             id: v.id,
             version_number: v.version_number,
@@ -367,6 +369,8 @@ module Api
             created_by: v.created_by&.email || "System User",
             is_active: @asset.active_version_id == v.id,
             size: v.properties["size"] ? "#{(v.properties["size"].to_i / 1024.0 / 1024.0).round(2)} MB" : "Unknown",
+            preview_url: preview_url,
+            thumb_url: preview_url,
           }
         end
 
@@ -1010,59 +1014,34 @@ module Api
       # @return [void] 404 when file cannot be located on disk
       # @return [void] 403 when resolved path escapes the permitted root
       def serve_local
-        asset    = Asset.includes(:active_version).find_by!(uuid: params[:uuid])
-        active_v = asset.active_version
+        asset = Asset.includes(:active_version, :asset_versions).find_by!(uuid: params[:uuid])
+        selected_version = requested_asset_version_for(asset)
+
+        return render json: { error: "Asset version not found" }, status: :not_found if params[:version_id].present? && selected_version.blank?
 
         want_preview = params[:variant].to_s == "preview"
 
-        preview_path = active_v&.properties&.fetch("preview_storage_path", nil) ||
-                       asset.properties["preview_storage_path"]
+        preview_path = resolved_preview_storage_path(asset, selected_version)
 
         storage_path =
           if want_preview && preview_path.present?
             preview_path
           else
-            active_v&.properties&.fetch("storage_path", nil) ||
-              asset.properties["storage_path"]
+            resolved_storage_path(asset, selected_version)
           end
 
-        content_type =
-          if want_preview && preview_path.present?
-            (active_v&.properties&.fetch("preview_content_type", nil) ||
-             asset.properties["preview_content_type"]).presence || "image/png"
-          else
-            (active_v&.properties&.fetch("content_type", nil) ||
-             asset.properties["content_type"]).presence || "application/octet-stream"
-          end
+        content_type = resolved_local_content_type(asset, selected_version, want_preview: want_preview, preview_path: preview_path)
 
         # 1. ActiveStorage attachment: redirect to signed blob URL.
         #    (Only for the original binary — previews are stored on disk.)
-        if !want_preview && active_v.respond_to?(:file) && active_v.file.attached?
-          return redirect_to url_for(active_v.file), allow_other_host: false
+        if !want_preview && selected_version.respond_to?(:file) && selected_version.file.attached?
+          return redirect_to url_for(selected_version.file), allow_other_host: false
         end
 
         return render json: { error: "Asset version has no storage path" }, status: :not_found unless storage_path.present?
 
-        # 2. Resolve DAM root path (files processed and stored by AssetProcessorWorker).
-        storage_root  = Rails.root.join("storage/dam").to_s
-        clean_path    = storage_path.to_s.sub(%r{\A/}, "")
-        dam_candidate = Rails.root.join("storage/dam", clean_path)
-
-        # 3. Resolve tmp staging path (files awaiting background processing).
-        tmp_root      = Rails.root.join("tmp").to_s
-        tmp_candidate = Pathname.new(storage_path.to_s)
-
-        # Security: ensure each resolved path stays within its permitted root.
-        dam_path_safe = File.expand_path(dam_candidate).start_with?(storage_root)
-        tmp_path_safe = File.expand_path(tmp_candidate).start_with?(tmp_root)
-
-        # brakeman:ignore:SendFile - both paths validated against root dirs above; storage_path is a DB value
-        file_to_serve =
-          if dam_path_safe && File.exist?(dam_candidate)
-            dam_candidate.to_s
-          elsif tmp_path_safe && File.exist?(tmp_candidate)
-            tmp_candidate.to_s
-          end
+        dam_candidate = Rails.root.join("storage/dam", storage_path.to_s.sub(%r{\A/}, "")).to_s
+        file_to_serve = validated_local_file_path(storage_path)
 
         unless file_to_serve
           return render json: {
@@ -1088,10 +1067,57 @@ module Api
           return head :not_modified
         end
 
-        send_file file_to_serve, disposition: "inline", type: content_type
+        deliver_validated_local_file(file_to_serve, content_type)
       end
 
       private
+
+      def requested_asset_version_for(asset)
+        return asset.active_version unless params[:version_id].present?
+
+        asset.asset_versions.find_by(id: params[:version_id])
+      end
+
+      def resolved_preview_storage_path(asset, version)
+        return version&.properties&.fetch("preview_storage_path", nil) if params[:version_id].present?
+
+        version&.properties&.fetch("preview_storage_path", nil) || asset.properties["preview_storage_path"]
+      end
+
+      def resolved_storage_path(asset, version)
+        return version&.properties&.fetch("storage_path", nil) if params[:version_id].present?
+
+        version&.properties&.fetch("storage_path", nil) || asset.properties["storage_path"]
+      end
+
+      def resolved_local_content_type(asset, version, want_preview:, preview_path:)
+        if want_preview && preview_path.present?
+          return version&.properties&.fetch("preview_content_type", nil).presence || "image/png" if params[:version_id].present?
+
+          (version&.properties&.fetch("preview_content_type", nil) || asset.properties["preview_content_type"]).presence || "image/png"
+        else
+          return version&.properties&.fetch("content_type", nil).presence || "application/octet-stream" if params[:version_id].present?
+
+          (version&.properties&.fetch("content_type", nil) || asset.properties["content_type"]).presence || "application/octet-stream"
+        end
+      end
+
+      def validated_local_file_path(storage_path)
+        storage_root = Rails.root.join("storage/dam").to_s
+        dam_candidate = Rails.root.join("storage/dam", storage_path.to_s.sub(%r{\A/}, ""))
+        return dam_candidate.to_s if File.expand_path(dam_candidate).start_with?(storage_root) && File.exist?(dam_candidate)
+
+        tmp_root = Rails.root.join("tmp").to_s
+        tmp_candidate = Pathname.new(storage_path.to_s)
+        return tmp_candidate.to_s if File.expand_path(tmp_candidate).start_with?(tmp_root) && File.exist?(tmp_candidate)
+
+        nil
+      end
+
+      def deliver_validated_local_file(file_to_serve, content_type)
+        # brakeman:ignore:SendFile - file_to_serve comes from validated_local_file_path root checks
+        send_file file_to_serve, disposition: "inline", type: content_type
+      end
 
       # @api private
       # Re-validates a `share_token` (see {Collection#generate_share_token})

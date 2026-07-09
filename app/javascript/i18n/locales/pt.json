@@ -44,7 +44,8 @@
       "Email Engine": "Motor de e-mail",
       "System Ops": "Operações do sistema",
       "Queues": "Filas Sidekiq",
-      "Inbox": "Caixa de entrada"
+      "Inbox": "Caixa de entrada",
+      "Quarantine Review": "Quarantine Review"
     }
   },
   "common": {
@@ -2281,6 +2282,29 @@
     "by": "por",
     "fileSize": "Tamanho do arquivo",
     "restore": "Restaurar",
+    "compare": {
+      "title": "Compare versions",
+      "selectionHint": "Select any two versions to open a side-by-side preview with a pixel-diff overlay.",
+      "clearSelection": "Clear selection",
+      "open": "Compare selected",
+      "selectedCount": "{{count}} of 2 versions selected",
+      "selectVersionLabel": "Compare v{{version}}",
+      "compareTitle": "Comparing v{{after}} against v{{before}}",
+      "instructions": "Blend the two previews and toggle the highlight overlay to inspect pixel-level changes between versions.",
+      "backToTimeline": "Back to timeline",
+      "toggleOverlay": "Show diff overlay",
+      "blendLabel": "Blend before/after",
+      "overlayHint": "Move the slider toward 100 to emphasize the earlier version, or leave it low to inspect the current version with diff highlights.",
+      "beforeLabel": "Before (v{{version}})",
+      "afterLabel": "After (v{{version}})",
+      "previewAlt": "Version {{version}} preview",
+      "diffUnavailableCrossOrigin": "Diff overlay is unavailable because one or both preview images block cross-origin canvas access. Side-by-side comparison is still available.",
+      "diffUnavailable": "Diff overlay is unavailable for these versions. Side-by-side comparison is still available.",
+      "missingPreview": "Preview unavailable",
+      "beforeCanvas": "Before image canvas",
+      "afterCanvas": "After image canvas",
+      "diffCanvas": "Difference overlay canvas"
+    },
     "notifications": {
       "failedToLoadVersionHistory": "Falha ao carregar o histórico de versões.",
       "assetRolledBack": "O asset foi revertido com sucesso para a versão selecionada.",
@@ -2588,6 +2612,82 @@
       "uploading": "Enviando...",
       "done": "Adicionado à coleção",
       "error": "Falha no envio"
+    }
+  },
+  "quarantine": {
+    "title": "Quarantine Review",
+    "subtitle": "Review suspicious assets, release approved items, or move rejected items to the Recycle Bin.",
+    "empty": "No quarantine entries found",
+    "emptySubtitle": "Newly flagged assets will appear here for review.",
+    "noPreview": "No preview available",
+    "noContentType": "Unknown content type",
+    "filters": {
+      "pending_review": "Pending Review",
+      "resolved": "Released",
+      "discarded": "Discarded",
+      "all": "All"
+    },
+    "stats": {
+      "pending_review": "Pending items",
+      "resolved": "Released items",
+      "discarded": "Discarded items",
+      "total": "Total entries"
+    },
+    "table": {
+      "asset": "Asset",
+      "reason": "Quarantine reason",
+      "flaggedAt": "Flagged at",
+      "status": "Status"
+    },
+    "actions": {
+      "view": "Review",
+      "release": "Release",
+      "discard": "Discard"
+    },
+    "status": {
+      "pending_review": "Pending Review",
+      "resolved": "Released",
+      "discarded": "Discarded"
+    },
+    "detail": {
+      "title": "Quarantine entry details",
+      "reason": "Reason",
+      "connector": "Connector",
+      "uploadedBy": "Uploaded by",
+      "uploadedAt": "Uploaded at",
+      "flaggedAt": "Flagged at",
+      "status": "Status",
+      "reviewNotes": "Review notes",
+      "originalPayload": "Original payload"
+    },
+    "confirmDiscard": {
+      "title": "Discard quarantined asset?",
+      "body": "The linked asset will be soft-deleted and moved to the Recycle Bin so it can still be restored later if needed.",
+      "confirm": "Discard asset"
+    },
+    "notifications": {
+      "loadError": "Unable to load quarantine data.",
+      "released": "Quarantined asset released.",
+      "discarded": "Quarantined asset moved to the Recycle Bin.",
+      "actionFailed": "Quarantine action failed."
+    }
+  }
+,
+  "metadataImport": {
+    "preview": {
+      "action": "Pré-visualizar",
+      "loading": "Gerando pré-visualização…",
+      "title": "Resultados da pré-visualização",
+      "summary": "{{success}} linha(s) teriam sucesso e {{failure}} falhariam de {{total}}.",
+      "row": "Linha",
+      "asset": "Ativo",
+      "status": "Status",
+      "message": "Mensagem",
+      "changes": "Alterações",
+      "noChanges": "Nenhuma alteração de campo",
+      "resolvedAs": "Resolvido como {{path}}",
+      "previewFailed": "A pré-visualização falhou.",
+      "previewUnavailable": "Os resultados da pré-visualização não estão disponíveis no momento."
     }
   }
 }

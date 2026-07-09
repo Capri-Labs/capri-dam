@@ -326,14 +326,25 @@ RSpec.describe "Api::V1::Assets coverage", type: :request do
 
   describe "custom member actions" do
     it "returns versions, audit trail and restores a selected version" do
-      asset = asset_with_version(title: "Versioned")
+      asset = asset_with_version(title: "Versioned", properties: {
+        "storage_path" => "versions/version-1.jpg",
+        "preview_storage_path" => "versions/version-1-preview.png",
+      })
       old_version = asset.active_version
-      new_version = create(:asset_version, asset: asset, version_number: 2, created_by: user, properties: { "size" => 4096 })
+      new_version = create(:asset_version, asset: asset, version_number: 2, created_by: user, properties: asset.properties.merge(
+        "storage_path" => "versions/version-2.jpg",
+        "preview_storage_path" => "versions/version-2-preview.png",
+        "size" => 4096
+      ))
       asset.update!(active_version: new_version)
 
       get "/api/v1/assets/#{asset.uuid}/versions", as: :json
       expect(response).to have_http_status(:ok)
       expect(json["versions"].map { |v| v["version_number"] }).to eq([ 2, 1 ])
+      expect(json["versions"].map { |v| v["preview_url"] }).to all(include("/api/v1/assets/local/#{asset.uuid}?variant=preview"))
+      expect(json["versions"].first["preview_url"]).to include("version_id=#{new_version.id}")
+      expect(json["versions"].second["preview_url"]).to include("version_id=#{old_version.id}")
+      expect(json["versions"].first["preview_url"]).not_to eq(json["versions"].second["preview_url"])
 
       get "/api/v1/assets/#{asset.uuid}/audit_trail", as: :json
       expect(response).to have_http_status(:ok)
@@ -706,6 +717,39 @@ RSpec.describe "Api::V1::Assets coverage", type: :request do
       FileUtils.rm_f(preview_path)
       FileUtils.rm_f(original_path)
       FileUtils.rm_rf(preview_path.dirname) if defined?(preview_path) && preview_path.dirname.to_s.end_with?("assets_controller_coverage")
+    end
+
+    it "serves a historical version preview when version_id is provided" do
+      old_preview_path = Rails.root.join("storage/dam/assets_controller_coverage/version-1-preview.png")
+      new_preview_path = Rails.root.join("storage/dam/assets_controller_coverage/version-2-preview.png")
+      FileUtils.mkdir_p(old_preview_path.dirname)
+      File.binwrite(old_preview_path, "OLDPREVIEW")
+      File.binwrite(new_preview_path, "NEWPREVIEW")
+
+      asset = asset_with_version(title: "Versioned Preview", properties: {
+        "storage_path" => "assets_controller_coverage/version-1.psd",
+        "content_type" => "image/vnd.adobe.photoshop",
+        "preview_storage_path" => "assets_controller_coverage/version-1-preview.png",
+        "preview_content_type" => "image/png",
+      })
+      old_version = asset.active_version
+      new_version = create(:asset_version, asset: asset, version_number: 2, created_by: user, properties: asset.properties.merge(
+        "storage_path" => "assets_controller_coverage/version-2.psd",
+        "preview_storage_path" => "assets_controller_coverage/version-2-preview.png"
+      ))
+      asset.update!(active_version: new_version)
+
+      get "/api/v1/assets/local/#{asset.uuid}", params: { variant: "preview" }
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to eq("NEWPREVIEW")
+
+      get "/api/v1/assets/local/#{asset.uuid}", params: { variant: "preview", version_id: old_version.id }
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to eq("OLDPREVIEW")
+    ensure
+      FileUtils.rm_f(old_preview_path)
+      FileUtils.rm_f(new_preview_path)
+      FileUtils.rm_rf(old_preview_path.dirname) if defined?(old_preview_path) && old_preview_path.dirname.to_s.end_with?("assets_controller_coverage")
     end
 
     it "exposes a preview_url that points at the preview variant" do

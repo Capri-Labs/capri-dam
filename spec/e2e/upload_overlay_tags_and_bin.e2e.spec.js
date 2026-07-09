@@ -30,9 +30,24 @@ const EMAIL    = process.env.E2E_EMAIL    || 'admin@admin.com';
 const PASSWORD = process.env.E2E_PASSWORD || 'AdminUser';
 
 async function login(page) {
-    await page.goto('/users/sign_in');
-    await page.waitForSelector('input[autocomplete="email"]', { timeout: 15_000 });
-    await page.fill('input[autocomplete="email"]', EMAIL);
+    await page.goto('/');
+    const emailInput = page.locator('input[autocomplete="email"]');
+    const loginFormVisible = await emailInput.isVisible({ timeout: 5_000 }).catch(() => false);
+
+    if (!loginFormVisible) {
+        await page.waitForLoadState('networkidle');
+        const signedIn = await page.locator('#header-root').getAttribute('data-signed-in').catch(() => null);
+        if (signedIn === 'true') return;
+        await page.goto('/users/sign_in');
+        const directLoginVisible = await emailInput.isVisible({ timeout: 5_000 }).catch(() => false);
+        if (!directLoginVisible) {
+            const signedInRetry = await page.locator('#header-root').getAttribute('data-signed-in').catch(() => null);
+            if (signedInRetry === 'true') return;
+            throw new Error('Login form did not render and no signed-in session was detected.');
+        }
+    }
+
+    await emailInput.fill(EMAIL);
     await page.fill('input[autocomplete="current-password"]', PASSWORD);
 
     const [response] = await Promise.all([
@@ -43,6 +58,12 @@ async function login(page) {
 
     await page.waitForURL(/^https?:\/\/[^/]+\/?(\?.*)?$/, { timeout: 15_000 });
     await page.waitForLoadState('networkidle');
+
+    const signedIn = await page.locator('#header-root').getAttribute('data-signed-in');
+    if (signedIn !== 'true') {
+        await page.reload();
+        await page.waitForLoadState('networkidle');
+    }
 }
 
 function mockEmptyFolderContents(page) {
@@ -168,5 +189,45 @@ test.describe('Upload overlay — Duplicate Overlay Bin chip', () => {
         // the primary preview image, once next to the binned location chip.
         await expect(page.getByText('Bin', { exact: true }).first()).toBeVisible({ timeout: 10_000 });
         expect(await page.getByText('Bin', { exact: true }).count()).toBeGreaterThanOrEqual(2);
+    });
+});
+
+test.describe('Upload overlay — progress indicators', () => {
+    test.beforeEach(async ({ page }) => { await login(page); });
+
+    test('shows batch and per-file upload progress while a staged upload is in flight', async ({ page }) => {
+        await openUploadOverlay(page);
+
+        await page.route('**/api/v1/assets/check_hashes', (route) => {
+            route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ duplicates: {} }) });
+        });
+
+        await dropFixtureFile(page);
+        await expect(page.locator('input[value="sample.png"]').first()).toBeVisible({ timeout: 15_000 });
+
+        let uploadStarted = false;
+        let uploadFinished = false;
+        await page.route('**/api/v1/assets', async (route) => {
+            if (route.request().method() !== 'POST') return route.continue();
+            uploadStarted = true;
+            await new Promise((resolve) => setTimeout(resolve, 1200));
+            uploadFinished = true;
+            await route.fulfill({
+                status: 201,
+                contentType: 'application/json',
+                body: JSON.stringify({ id: 'progress-asset-1', uuid: 'progress-asset-1', title: 'sample.png' }),
+            });
+        });
+
+        await page.getByRole('button', { name: /upload \(1\)/i }).click();
+        await expect.poll(() => uploadStarted).toBe(true);
+
+        await expect(page.getByTestId('upload-progress')).toBeVisible();
+        await expect(page.getByTestId('upload-progress')).toContainText(/uploading/i);
+        await expect(page.getByTestId('upload-progress')).toContainText(/0 of 1/i);
+        await expect(page.getByText(/uploading\.\.\./i)).toBeVisible();
+
+        await expect.poll(() => uploadFinished).toBe(true);
+        await expect(page.getByText('Upload & Enrich')).toHaveCount(0, { timeout: 10_000 });
     });
 });

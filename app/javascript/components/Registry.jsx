@@ -30,6 +30,7 @@ import MetadataImportManager from "./Tools/MetadataImport";
 import AssetConfigurationsManager from "./Tools/AssetConfigurations";
 import ProfilePage from "./Profile/ProfilePage";
 import InboxPage from "./Inbox/InboxPage";
+import QuarantineManager from "./Admin/Quarantine/QuarantineManager";
 
 export const COMPONENT_REGISTRY = {
     'dashboard': DashboardManager,
@@ -64,4 +65,5 @@ export const COMPONENT_REGISTRY = {
     'asset-configurations-screen': AssetConfigurationsManager,
     'profile': ProfilePage,
     'inbox': InboxPage,
+    'quarantine-manager-screen': QuarantineManager,
 };

@@ -111,7 +111,17 @@ class Api::V1::MetadataSchemasController < ApplicationController
   def schema_params
     params.require(:metadata_schema).permit(
       :name, :description, :level, :parent_id, :mime_segment, :inherits_from_id,
-      tabs: {}
+      tabs: [
+        :id, :name, :position, :inherited, :schema_name,
+        {
+          fields: [
+            :id, :field_type, :label, :map_to_property, :position,
+            :required, :read_only, :inherited, :schema_name,
+            { options: [ :value, :label ] },
+            { rules: {} }
+          ],
+        }
+      ]
     )
   end
 

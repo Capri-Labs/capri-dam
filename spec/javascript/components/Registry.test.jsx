@@ -33,6 +33,7 @@ jest.mock('../../../app/javascript/components/Tools/MetadataImport', () => () =>
 jest.mock('../../../app/javascript/components/Tools/AssetConfigurations', () => () => <div>AssetConfigurationsManager</div>);
 jest.mock('../../../app/javascript/components/Profile/ProfilePage', () => () => <div>ProfilePage</div>);
 jest.mock('../../../app/javascript/components/Inbox/InboxPage', () => () => <div>InboxPage</div>);
+jest.mock('../../../app/javascript/components/Admin/Quarantine/QuarantineManager', () => () => <div>QuarantineManager</div>);
 
 import { COMPONENT_REGISTRY } from '../../../app/javascript/components/Registry';
 
@@ -71,6 +72,7 @@ describe('COMPONENT_REGISTRY', () => {
       'asset-configurations-screen',
       'profile',
       'inbox',
+      'quarantine-manager-screen',
     ]));
   });
 
@@ -108,6 +110,7 @@ describe('COMPONENT_REGISTRY', () => {
       'asset-configurations-screen': 'AssetConfigurationsManager',
       profile: 'ProfilePage',
       inbox: 'InboxPage',
+      'quarantine-manager-screen': 'QuarantineManager',
     };
 
     Object.entries(COMPONENT_REGISTRY).forEach(([key, Component]) => {
