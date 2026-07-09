@@ -33,6 +33,8 @@ import GenerateThumbNode  from '../nodes/GenerateThumbNode';
 import CdnSyncNode        from '../nodes/CdnSyncNode';
 import DelayNode          from '../nodes/DelayNode';
 import ConditionNode      from '../nodes/ConditionNode';
+import SwitchNode         from '../nodes/SwitchNode';
+import CustomNode         from '../nodes/CustomNode';
 
 const APPROVAL_TYPES = ['approvalNode', 'parallelApprovalNode', 'sequentialApprovalNode'];
 const DEDICATED_TYPES = [
@@ -41,7 +43,7 @@ const DEDICATED_TYPES = [
     'setStatusNode', 'addTagsNode', 'removeTagsNode',
     'moveAssetNode', 'copyAssetNode', 'archiveNode', 'publishNode', 'metadataUpdateNode',
     'aiMetadataNode', 'generateThumbNode', 'cdnSyncNode',
-    'delayNode', 'conditionNode',
+    'delayNode', 'conditionNode', 'switchNode', 'customNode',
 ];
 const ALL_INTERACTIVE = [...APPROVAL_TYPES, ...DEDICATED_TYPES];
 
@@ -73,6 +75,8 @@ const nodeTypes = {
     cdnSyncNode: CdnSyncNode,
     delayNode: DelayNode,
     conditionNode: ConditionNode,
+    switchNode: SwitchNode,
+    customNode: CustomNode,
 };
 
 export default function WorkflowCanvas({ nodes, setNodes, edges, setEdges, users = [], groups = [] }) {
@@ -121,6 +125,14 @@ export default function WorkflowCanvas({ nodes, setNodes, edges, setEdges, users
         const type = event.dataTransfer.getData('application/reactflow');
         if (!type) return;
 
+        // Custom (plugin) nodes carry their manifest as an extra payload so the
+        // schema-driven CustomNode can render its form and branch handles.
+        let customDef = null;
+        const rawCustom = event.dataTransfer.getData('application/reactflow-custom');
+        if (rawCustom) {
+            try { customDef = JSON.parse(rawCustom); } catch { customDef = null; }
+        }
+
         const position = reactFlowInstance.screenToFlowPosition({
             x: event.clientX,
             y: event.clientY,
@@ -128,6 +140,14 @@ export default function WorkflowCanvas({ nodes, setNodes, edges, setEdges, users
 
         const newNodeId = `${type}_${Date.now()}`;
         const isApproval = APPROVAL_TYPES.includes(type);
+        const customFields = customDef ? {
+            nodeType: customDef.node_type,
+            customKey: customDef.key,
+            customName: customDef.name,
+            customColor: customDef.color,
+            customSchema: customDef.config_schema || [],
+            customOutputs: (customDef.runtime && customDef.runtime.outputs) || [],
+        } : {};
         const newNode = {
             id: newNodeId,
             type,
@@ -151,6 +171,7 @@ export default function WorkflowCanvas({ nodes, setNodes, edges, setEdges, users
                     nodeType: type,
                     isApproval,
                     config: {},
+                    ...customFields,
                 }
             }
         };

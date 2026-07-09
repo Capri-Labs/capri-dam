@@ -31,6 +31,7 @@ import AssetConfigurationsManager from "./Tools/AssetConfigurations";
 import ProfilePage from "./Profile/ProfilePage";
 import InboxPage from "./Inbox/InboxPage";
 import QuarantineManager from "./Admin/Quarantine/QuarantineManager";
+import CustomNodeManager from "./Admin/CustomNodes/CustomNodeManager";
 
 export const COMPONENT_REGISTRY = {
     'dashboard': DashboardManager,
@@ -66,4 +67,5 @@ export const COMPONENT_REGISTRY = {
     'profile': ProfilePage,
     'inbox': InboxPage,
     'quarantine-manager-screen': QuarantineManager,
+    'custom-nodes-screen': CustomNodeManager,
 };

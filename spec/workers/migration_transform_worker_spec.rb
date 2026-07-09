@@ -51,7 +51,7 @@ RSpec.describe MigrationTransformWorker, type: :worker do
     expect(item.reload.clean_properties).to include("title" => "Gateway Hero", "tags" => [ "approved" ])
   end
 
-  it "falls back to canonicalized metadata and filename title when the gateway returns an error" do
+  it "falls back to canonicalized metadata and the literal filename (with extension) as title when the gateway returns an error" do
     item = create(
       :ingestion_item,
       ingestion_batch: batch,
@@ -69,7 +69,7 @@ RSpec.describe MigrationTransformWorker, type: :worker do
     described_class.new.perform(item.id)
 
     expect(item.reload.clean_properties).to include(
-      "title" => "Launch Video",
+      "title" => "launch-video.mov",
       "description" => "Launch",
       "tags" => [ "hero" ],
       "custom_field" => "custom"

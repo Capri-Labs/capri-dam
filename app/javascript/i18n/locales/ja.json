@@ -45,7 +45,8 @@
       "System Ops": "システム運用",
       "Queues": "Sidekiqキュー",
       "Inbox": "受信トレイ",
-      "Quarantine Review": "Quarantine Review"
+      "Quarantine Review": "Quarantine Review",
+      "Custom Nodes": "カスタムノード"
     }
   },
   "common": {
@@ -949,6 +950,8 @@
     "delayNodeDesc": "Pause workflow for N hours or days.",
     "conditionNode": "Condition Branch",
     "conditionNodeDesc": "Branch on asset metadata or status value.",
+    "switchNode": "スイッチ / 多分岐",
+    "switchNodeDesc": "フィールドを順序付きケースと照合し、複数の出力のいずれかにルーティングします。",
     "email": {
       "recipient": "Recipient",
       "recipientOwner": "Asset Owner",
@@ -1096,6 +1099,29 @@
       "trueBranch": "TRUE",
       "falseBranch": "FALSE"
     },
+    "switch": {
+      "field": "スイッチフィールド",
+      "fieldPlaceholder": "status / properties.content_type",
+      "cases": "ケース",
+      "noCases": "ケースがまだありません。追加して出力ブランチを作成してください。",
+      "caseN": "ケース {{n}}",
+      "operator": "演算子",
+      "op_equals": "等しい",
+      "op_not_equals": "等しくない",
+      "op_contains": "含む",
+      "op_starts_with": "で始まる",
+      "op_ends_with": "で終わる",
+      "op_greater_than": "より大きい",
+      "op_less_than": "より小さい",
+      "compareValue": "比較値",
+      "outputLabel": "出力ラベル",
+      "outputLabelPlaceholder": "例: 画像、動画",
+      "addCase": "ケースを追加",
+      "removeCase": "ケースを削除",
+      "defaultLabel": "デフォルト出力ラベル",
+      "defaultHelp": "どのケースにも一致しない場合に使用される経路。",
+      "defaultBranch": "デフォルト"
+    },
     "approval": {
       "title": "Approval Step",
       "assigneeType": "Type",
@@ -1215,6 +1241,10 @@
       "notesHelper": "管理者のみに表示される内部メモです。",
       "tdmSanitation": "AI / TDM サニタイズを適用",
       "tdmSanitationDesc": "各アセットを AI Gateway に通し、メタデータの正規化とコンプライアンススキャンを行います。",
+      "migrateMetadata": "メタデータを移行",
+      "migrateMetadataDesc": "軽量な一覧プロパティに加えて、各アセットの完全なメタデータ(例: AEM の jcr:content/metadata.json)を取得します。アセットごとにリクエストが1回追加されます。デフォルトで有効です。",
+      "migrateMetadataEnabledSummary": "有効 — アセットごとに完全なメタデータを取得済み",
+      "migrateMetadataDisabledSummary": "無効 — 一覧メタデータのみ",
       "concurrency": "最大同時スレッド数",
       "concurrencyHelper": "並列ダウンロードスレッド数（1～10）。",
       "confirmInfo": "「初期化」をクリックすると、抽出パイプラインがすぐに開始されます。処理はバックグラウンドで実行されます。",
@@ -2228,7 +2258,11 @@
       "embeddedMetadataSection": "EXIF / IPTC / XMP データ",
       "noExifDataExtractedYet": "EXIFデータはまだ抽出されていません。",
       "collapseExifData": "EXIF / IPTC / XMP データを折りたたむ",
-      "expandExifData": "EXIF / IPTC / XMP データを展開する"
+      "expandExifData": "EXIF / IPTC / XMP データを展開する",
+      "rawMetadataSection": "生メタデータ",
+      "noRawMetadataAvailable": "生メタデータがありません。",
+      "collapseRawMetadata": "生メタデータを折りたたむ",
+      "expandRawMetadata": "生メタデータを展開する"
     },
     "ai": {
       "semanticAndVisionAnalysis": "セマンティック & ビジョン分析"
@@ -2687,6 +2721,61 @@
       "resolvedAs": "{{path}} として解決",
       "previewFailed": "プレビューに失敗しました。",
       "previewUnavailable": "現在プレビュー結果を表示できません。"
+    }
+  },
+  "customNodes": {
+    "title": "カスタムワークフローノード",
+    "subtitle": "テナントがホストするプラグインノードを宣言的マニフェストとして登録します。Capri DAM はプラグインコードをプロセス内で実行することはありません。エンジンは SSRF 保護された HMAC 署名付き Webhook を HTTPS エンドポイントに送信し、許可リストの応答アクションのみを適用します。",
+    "refresh": "更新",
+    "register": "ノードを登録",
+    "registerTitle": "カスタムノードを登録",
+    "colName": "名前",
+    "colKey": "ノードタイプ",
+    "colEndpoint": "エンドポイント",
+    "colStatus": "ステータス",
+    "colHealth": "正常性",
+    "colActions": "アクション",
+    "empty": "登録されたカスタムノードはまだありません。",
+    "circuitOpen": "サーキットオープン",
+    "failures": "{{count}} 件の失敗",
+    "enable": "有効化",
+    "disable": "無効化",
+    "delete": "削除",
+    "confirmDelete": "カスタムノード「{{name}}」を削除しますか？この操作は元に戻せません。",
+    "cancel": "キャンセル",
+    "save": "保存",
+    "nodeLabel": "カスタムノード",
+    "pluginBadge": "プラグイン: {{key}}",
+    "noFields": "このプラグインには設定可能なフィールドがありません。",
+    "fieldKey": "キー",
+    "fieldKeyHelp": "小文字の識別子（a-z、0-9、_）。plugin:<key> として公開されます。",
+    "fieldName": "表示名",
+    "fieldDescription": "説明",
+    "fieldEndpoint": "エンドポイント URL",
+    "fieldEndpointHelp": "パブリックな HTTPS URL である必要があります。プライベート/ループバックホストはブロックされます。",
+    "fieldTimeout": "タイムアウト（ミリ秒）",
+    "fieldAuthType": "認証",
+    "fieldSecret": "署名シークレット",
+    "fieldSecretHelp": "ディスパッチの HMAC 署名に使用されます。API から返されることはありません。",
+    "fieldOutputs": "分岐出力",
+    "fieldOutputsHelp": "分岐ノードのカンマ区切りラベル（線形の場合は空欄）。",
+    "fieldSchema": "設定スキーマ（JSON）",
+    "fieldSchemaHelp": "ノードフォームを駆動する { key, type, label } フィールド記述子の配列。",
+    "fieldStatus": "ステータス",
+    "status": {
+      "draft": "下書き",
+      "enabled": "有効",
+      "disabled": "無効"
+    },
+    "notifications": {
+      "loadFailed": "カスタムノードの読み込みに失敗しました。",
+      "created": "カスタムノードを登録しました。",
+      "saveFailed": "カスタムノードを保存できませんでした。",
+      "invalidSchema": "設定スキーマは有効な JSON である必要があります。",
+      "enabled": "カスタムノードを有効にしました。",
+      "disabled": "カスタムノードを無効にしました。",
+      "deleted": "カスタムノードを削除しました。",
+      "actionFailed": "カスタムノードのアクションに失敗しました。"
     }
   }
 }

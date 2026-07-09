@@ -45,7 +45,8 @@
       "System Ops": "Systeembeheer",
       "Queues": "Sidekiq-wachtrijen",
       "Inbox": "Inbox",
-      "Quarantine Review": "Quarantine Review"
+      "Quarantine Review": "Quarantine Review",
+      "Custom Nodes": "Aangepaste knooppunten"
     }
   },
   "common": {
@@ -949,6 +950,8 @@
     "delayNodeDesc": "Pause workflow for N hours or days.",
     "conditionNode": "Condition Branch",
     "conditionNodeDesc": "Branch on asset metadata or status value.",
+    "switchNode": "Switch / Meervoudige vertakking",
+    "switchNodeDesc": "Routeert naar een van vele uitvoeren door een veld te vergelijken met geordende gevallen.",
     "email": {
       "recipient": "Recipient",
       "recipientOwner": "Asset Owner",
@@ -1096,6 +1099,29 @@
       "trueBranch": "TRUE",
       "falseBranch": "FALSE"
     },
+    "switch": {
+      "field": "Switch-veld",
+      "fieldPlaceholder": "status / properties.content_type",
+      "cases": "Gevallen",
+      "noCases": "Nog geen gevallen — voeg er een toe om een uitvoertak te maken.",
+      "caseN": "Geval {{n}}",
+      "operator": "Operator",
+      "op_equals": "Gelijk aan",
+      "op_not_equals": "Niet gelijk aan",
+      "op_contains": "Bevat",
+      "op_starts_with": "Begint met",
+      "op_ends_with": "Eindigt met",
+      "op_greater_than": "Groter dan",
+      "op_less_than": "Kleiner dan",
+      "compareValue": "Vergelijkingswaarde",
+      "outputLabel": "Uitvoerlabel",
+      "outputLabelPlaceholder": "bijv. afbeeldingen, video's",
+      "addCase": "Geval toevoegen",
+      "removeCase": "Geval verwijderen",
+      "defaultLabel": "Standaard uitvoerlabel",
+      "defaultHelp": "Pad dat wordt gevolgd wanneer geen enkel geval overeenkomt.",
+      "defaultBranch": "STANDAARD"
+    },
     "approval": {
       "title": "Approval Step",
       "assigneeType": "Type",
@@ -1215,6 +1241,10 @@
       "notesHelper": "Interne notities die alleen zichtbaar zijn voor beheerders.",
       "tdmSanitation": "AI- / TDM-sanering toepassen",
       "tdmSanitationDesc": "Leid elk asset via de AI Gateway voor normalisatie van metadata en nalevingsscan.",
+      "migrateMetadata": "Metadata migreren",
+      "migrateMetadataDesc": "Haalt de volledige metadata van elk asset op (bijv. AEM's jcr:content/metadata.json) naast de lichte lijsteigenschappen. Voegt één extra verzoek per asset toe. Standaard ingeschakeld voor volledige metadata.",
+      "migrateMetadataEnabledSummary": "Ingeschakeld — volledige metadata per asset opgehaald",
+      "migrateMetadataDisabledSummary": "Uitgeschakeld — alleen lijstmetadata",
       "concurrency": "Maximaal aantal gelijktijdige threads",
       "concurrencyHelper": "Aantal parallelle downloadthreads (1–10).",
       "confirmInfo": "Wanneer u op 'Initialiseren' klikt, start de extractiepipeline direct. Het proces draait op de achtergrond.",
@@ -2228,7 +2258,11 @@
       "embeddedMetadataSection": "EXIF / IPTC / XMP-gegevens",
       "noExifDataExtractedYet": "Nog geen EXIF-gegevens geëxtraheerd.",
       "collapseExifData": "EXIF-/IPTC-/XMP-gegevens samenvouwen",
-      "expandExifData": "EXIF-/IPTC-/XMP-gegevens uitvouwen"
+      "expandExifData": "EXIF-/IPTC-/XMP-gegevens uitvouwen",
+      "rawMetadataSection": "Ruwe metadata",
+      "noRawMetadataAvailable": "Geen ruwe metadata beschikbaar.",
+      "collapseRawMetadata": "Ruwe metadata samenvouwen",
+      "expandRawMetadata": "Ruwe metadata uitvouwen"
     },
     "ai": {
       "semanticAndVisionAnalysis": "Semantische en visuele analyse"
@@ -2687,6 +2721,61 @@
       "resolvedAs": "Opgelost als {{path}}",
       "previewFailed": "Voorbeeld mislukt.",
       "previewUnavailable": "Voorbeeldresultaten zijn nu niet beschikbaar."
+    }
+  },
+  "customNodes": {
+    "title": "Aangepaste workflowknooppunten",
+    "subtitle": "Registreer door de tenant gehoste plugin-knooppunten als declaratieve manifesten. Capri DAM voert nooit plugin-code in het proces uit — de engine verzendt een SSRF-beveiligde, HMAC-ondertekende webhook naar uw HTTPS-eindpunt en past alleen een witte lijst van reactieacties toe.",
+    "refresh": "Vernieuwen",
+    "register": "Knooppunt registreren",
+    "registerTitle": "Aangepast knooppunt registreren",
+    "colName": "Naam",
+    "colKey": "Knooppunttype",
+    "colEndpoint": "Eindpunt",
+    "colStatus": "Status",
+    "colHealth": "Gezondheid",
+    "colActions": "Acties",
+    "empty": "Nog geen aangepaste knooppunten geregistreerd.",
+    "circuitOpen": "Circuit open",
+    "failures": "{{count}} fouten",
+    "enable": "Inschakelen",
+    "disable": "Uitschakelen",
+    "delete": "Verwijderen",
+    "confirmDelete": "Aangepast knooppunt \"{{name}}\" verwijderen? Dit kan niet ongedaan worden gemaakt.",
+    "cancel": "Annuleren",
+    "save": "Opslaan",
+    "nodeLabel": "Aangepast knooppunt",
+    "pluginBadge": "plugin: {{key}}",
+    "noFields": "Deze plugin heeft geen configureerbare velden.",
+    "fieldKey": "Sleutel",
+    "fieldKeyHelp": "Kleine-letteridentificatie (a-z, 0-9, _). Weergegeven als plugin:<key>.",
+    "fieldName": "Weergavenaam",
+    "fieldDescription": "Beschrijving",
+    "fieldEndpoint": "Eindpunt-URL",
+    "fieldEndpointHelp": "Moet een openbare HTTPS-URL zijn. Privé/loopback-hosts worden geblokkeerd.",
+    "fieldTimeout": "Time-out (ms)",
+    "fieldAuthType": "Authenticatie",
+    "fieldSecret": "Ondertekeningsgeheim",
+    "fieldSecretHelp": "Gebruikt om de verzending HMAC te ondertekenen. Wordt nooit door de API geretourneerd.",
+    "fieldOutputs": "Vertakkingsuitgangen",
+    "fieldOutputsHelp": "Door komma's gescheiden labels voor vertakkingsknooppunten (leeg laten voor lineair).",
+    "fieldSchema": "Configuratieschema (JSON)",
+    "fieldSchemaHelp": "Array van { key, type, label } velddescriptors die het knooppuntformulier aansturen.",
+    "fieldStatus": "Status",
+    "status": {
+      "draft": "Concept",
+      "enabled": "Ingeschakeld",
+      "disabled": "Uitgeschakeld"
+    },
+    "notifications": {
+      "loadFailed": "Kan aangepaste knooppunten niet laden.",
+      "created": "Aangepast knooppunt geregistreerd.",
+      "saveFailed": "Kan het aangepaste knooppunt niet opslaan.",
+      "invalidSchema": "Configuratieschema moet geldige JSON zijn.",
+      "enabled": "Aangepast knooppunt ingeschakeld.",
+      "disabled": "Aangepast knooppunt uitgeschakeld.",
+      "deleted": "Aangepast knooppunt verwijderd.",
+      "actionFailed": "Actie voor aangepast knooppunt mislukt."
     }
   }
 }

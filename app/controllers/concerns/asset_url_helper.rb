@@ -3,11 +3,24 @@
 #
 # == URL resolution priority
 #
-#   1. ActiveStorage attachment on the active version → Rails URL helper
-#   2. Active StorageBackend adapter → adapter#url(storage_path)
-#   3. Environment default:
+#   1. +storage_path+ recorded on the version/asset properties (authoritative —
+#      this is what {AssetProcessorWorker} and the migration pipeline write).
+#   2. ActiveStorage attachment on the active version → Rails URL helper
+#      (fallback only; see NOTE below).
+#   3. Active StorageBackend adapter → adapter#url(storage_path)
+#   4. Environment default:
 #      - production/staging: CDN base URL (ENV["CDN_BASE_URL"])
 #      - development/test:   local serve endpoint (/api/v1/assets/local/:uuid)
+#
+# NOTE: +active_storage_attachments.record_id+ is a +bigint+ column, but
+# {Asset}/{AssetVersion} use +uuid+ primary keys. Rails cannot match a uuid
+# against that column, so every attachment for these models is persisted with
+# +record_id: 0+. This means +version.file.attached?+ can spuriously return
+# +true+ for a *different* version's blob (whichever row happens to satisfy
+# +record_type = "AssetVersion" AND record_id = 0+), serving the wrong image.
+# Preferring +storage_path+ — which is always written right after upload —
+# avoids that cross-contamination without requiring an ActiveStorage schema
+# migration.
 #
 # The CDN base URL is read from ENV["CDN_BASE_URL"] so it can be overridden per
 # environment without touching code.  Set it in your credentials or .env file:
@@ -39,7 +52,17 @@ module AssetUrlHelper
   def asset_url_for(asset, version: nil, disposition: :inline)
     selected_version = version || asset.active_version
 
-    # 1. Prefer ActiveStorage attachment — gives us signed Blob URLs for free.
+    storage_path =
+      if version.present?
+        selected_version&.properties&.fetch("storage_path", nil)
+      else
+        selected_version&.properties&.fetch("storage_path", nil) ||
+          asset.properties&.fetch("storage_path", nil)
+      end
+
+    # 1. Fall back to the ActiveStorage attachment only when we have no
+    # authoritative `storage_path` — see the class-level NOTE for why this
+    # can't be trusted as the primary source for uuid-keyed models.
     #
     # IMPORTANT: `disposition` is a URL / HTTP-header concept.  It must NOT be
     # passed to `blob.variant(...)` — variant() only accepts image-processing
@@ -49,26 +72,23 @@ module AssetUrlHelper
     #
     # Instead we pass disposition directly to `url_for` / `rails_blob_url` via
     # the `download:` option that Rails exposes on the signed-URL helper.
-    if selected_version.respond_to?(:file) && selected_version.file.attached?
+    if storage_path.blank? && selected_version.respond_to?(:file) && selected_version.file.attached?
       # url_for on an ActiveStorage::Blob resolves to the signed redirect URL.
       # Rails will forward `disposition` as a header at serve time when it is
       # included in the signed params, not as an image transform.
       return url_for(selected_version.file)
     end
 
-    storage_path =
-      if version.present?
-        selected_version&.properties&.fetch("storage_path", nil)
-      else
-        selected_version&.properties&.fetch("storage_path", nil) ||
-          asset.properties&.fetch("storage_path", nil)
-      end
-
     return nil unless storage_path.present?
 
     # 2. Ask the active storage backend adapter (S3, GCS, Azure, local, …).
     #    Adapters that support presigned URLs can return them here.
-    backend = StorageBackend.find_by(active: true) rescue nil
+    #
+    # PERF: memoized per-request (see {#active_storage_backend}) — this
+    # method is called once per asset when formatting a folder listing, so a
+    # fresh `StorageBackend.find_by(active: true)` query per asset turned
+    # into 1,000-3,000+ extra round-trips for large folders.
+    backend = active_storage_backend
     if backend
       adapter = StorageManager.adapter_for(backend) rescue nil
       if adapter.respond_to?(:url)
@@ -125,6 +145,19 @@ module AssetUrlHelper
   end
 
   private
+
+  # Memoized per-request lookup of the active {StorageBackend} — avoids
+  # re-querying the database for every asset when formatting a folder/search
+  # listing (see the PERF note at the {#asset_url_for} call site).
+  #
+  # @return [StorageBackend, nil]
+  def active_storage_backend
+    return @active_storage_backend if defined?(@active_storage_backend)
+
+    @active_storage_backend = StorageBackend.find_by(active: true)
+  rescue StandardError
+    @active_storage_backend = nil
+  end
 
   def asset_delivery_url_for(asset, version:, variant: nil)
     query = { variant: variant, version_id: version&.id }.compact.to_query

@@ -3,9 +3,9 @@ import {
     Dialog, DialogTitle, DialogContent, DialogActions,
     TextField, Switch, FormControlLabel, MenuItem,
     CircularProgress, Alert, IconButton, Box, Typography,
-    Stack, Button, Grid, Divider
+    Stack, Button, Grid, Divider, ToggleButtonGroup, ToggleButton, Chip
 } from '@mui/material';
-import { Close, CheckCircleOutlined, ErrorOutlined, AutoFixHigh, Info } from '@mui/icons-material';
+import { Close, CheckCircleOutlined, ErrorOutlined, AutoFixHigh, Info, VpnKeyOutlined, RefreshOutlined, BlockOutlined } from '@mui/icons-material';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Provider Definitions — drives the dropdown and per-provider field rendering
@@ -14,6 +14,7 @@ const DAM_PROVIDERS = {
     aem: {
         label: 'Adobe Experience Manager (AEM)',
         category: 'Enterprise DAM',
+        supportsJwt: true,
         fields: [
             { key: 'endpoint', label: 'AEM Author Instance URL', placeholder: 'https://author.yourdomain.com', required: true },
             { key: 'auth_token', label: 'Bearer / Service Account Token', type: 'password', required: true },
@@ -144,13 +145,17 @@ const CATEGORIES = [...new Set(Object.values(DAM_PROVIDERS).map(p => p.category)
 
 export default function ConnectorDialog({
     open, onClose, formData, setFormData, onSave, onTest,
-    isSaving, isTesting, testResult, isFormValid
+    isSaving, isTesting, testResult, isFormValid,
+    onRefreshToken, onRevokeToken, isRefreshingToken
 }) {
     const providerDef = DAM_PROVIDERS[formData.provider_type?.toLowerCase()] || null;
+    const isJwt = providerDef?.supportsJwt && (formData.credential_type || 'token') === 'jwt_service_account';
 
     const updateExtra = (key, value) => {
         setFormData(prev => ({ ...prev, [key]: value }));
     };
+
+    const tokenStatusColor = { valid: 'success', error: 'error', revoked: 'default', not_configured: 'default' }[formData.token_status] || 'default';
 
     return (
         <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth slotProps={{ paper: { sx: { borderRadius: 3 } } }}>
@@ -198,8 +203,22 @@ export default function ConnectorDialog({
                         value={formData.name || ''}
                         onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
 
-                    {/* Provider-specific credential fields */}
-                    {providerDef && (
+                    {/* Credential type toggle — only providers with an IMS/JWT service-account option */}
+                    {providerDef?.supportsJwt && (
+                        <ToggleButtonGroup
+                            exclusive
+                            fullWidth
+                            size="small"
+                            value={formData.credential_type || 'token'}
+                            onChange={(e, val) => val && setFormData({ ...formData, credential_type: val })}
+                        >
+                            <ToggleButton value="token">Access Token</ToggleButton>
+                            <ToggleButton value="jwt_service_account">Service Account (JWT)</ToggleButton>
+                        </ToggleButtonGroup>
+                    )}
+
+                    {/* Provider-specific credential fields (Access Token mode) */}
+                    {providerDef && !isJwt && (
                         <Box sx={{ p: 2, bgcolor: '#f8fafc', borderRadius: 2, border: '1px solid #e2e8f0' }}>
                             <Typography variant="caption" sx={{ fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', mb: 1.5 }}>
                                 Credentials
@@ -222,6 +241,59 @@ export default function ConnectorDialog({
                                 ))}
                             </Grid>
                         </Box>
+                    )}
+
+                    {/* Adobe IMS Service Account (JWT) credentials */}
+                    {providerDef && isJwt && (
+                        <Box sx={{ p: 2, bgcolor: '#f8fafc', borderRadius: 2, border: '1px solid #e2e8f0' }}>
+                            <Typography variant="caption" sx={{ fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', mb: 1.5 }}>
+                                <VpnKeyOutlined fontSize="inherit" sx={{ verticalAlign: 'middle', mr: 0.5 }} />
+                                Adobe IMS Service Account
+                            </Typography>
+
+                            <TextField fullWidth label="AEM Author Instance URL" placeholder="https://author-xxxx.adobeaemcloud.com"
+                                required sx={{ bgcolor: 'white', mb: 2 }}
+                                value={formData.endpoint || ''}
+                                onChange={(e) => updateExtra('endpoint', e.target.value)} />
+
+                            <TextField
+                                fullWidth multiline minRows={6} sx={{ bgcolor: 'white', fontFamily: 'monospace', mb: 1 }}
+                                label="Paste Adobe Developer Console integration JSON"
+                                placeholder='{"integration": {"imsEndpoint": "ims-na1.adobelogin.com", "technicalAccount": {"clientId": "...", "clientSecret": "..."}, "privateKey": "...", "org": "...", "id": "...", "metascopes": "ent_aem_cloud_api"}}'
+                                value={formData.integration_json || ''}
+                                onChange={(e) => updateExtra('integration_json', e.target.value)}
+                                helperText="Generated from Adobe Developer Console → your project → Service Account (JWT) → Download the JSON credential. Secrets are encrypted at rest and never re-displayed."
+                            />
+
+                            {formData.id && formData.credential_type === 'jwt_service_account' && (
+                                <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 1 }}>
+                                    <Chip size="small" color={tokenStatusColor} label={`Token: ${formData.token_status || 'not_configured'}`} />
+                                    {formData.access_token_expires_at && (
+                                        <Typography variant="caption" color="textSecondary">
+                                            expires {new Date(formData.access_token_expires_at).toLocaleString()}
+                                        </Typography>
+                                    )}
+                                    <Box sx={{ flexGrow: 1 }} />
+                                    <Button size="small" startIcon={isRefreshingToken ? <CircularProgress size={14} /> : <RefreshOutlined fontSize="small" />}
+                                        onClick={onRefreshToken} disabled={isRefreshingToken} sx={{ textTransform: 'none' }}>
+                                        Refresh Token
+                                    </Button>
+                                    <Button size="small" color="error" startIcon={<BlockOutlined fontSize="small" />}
+                                        onClick={onRevokeToken} sx={{ textTransform: 'none' }}>
+                                        Revoke
+                                    </Button>
+                                </Stack>
+                            )}
+                        </Box>
+                    )}
+
+                    {/* Folder scope — lets the admin pick which DAM folder to migrate */}
+                    {providerDef && (
+                        <TextField fullWidth label="Default Folder to Migrate (optional)"
+                            placeholder="/content/dam/marketing-assets/beautiful-assets"
+                            helperText="Scopes migrations to this folder. Leave blank to migrate the whole DAM root. Can be overridden per migration run."
+                            value={formData.default_source_path || ''}
+                            onChange={(e) => updateExtra('default_source_path', e.target.value)} />
                     )}
 
                     <Divider />

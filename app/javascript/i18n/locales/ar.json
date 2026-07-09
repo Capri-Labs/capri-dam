@@ -45,7 +45,8 @@
       "System Ops": "System Operations",
       "Queues": "Sidekiq Queues",
       "Inbox": "صندوق الوارد",
-      "Quarantine Review": "Quarantine Review"
+      "Quarantine Review": "Quarantine Review",
+      "Custom Nodes": "العُقد المخصصة"
     }
   },
   "common": {
@@ -902,6 +903,8 @@
     "delayNodeDesc": "Pause workflow for N hours or days.",
     "conditionNode": "Condition Branch",
     "conditionNodeDesc": "Branch on asset metadata or status value.",
+    "switchNode": "تبديل / تفرع متعدد",
+    "switchNodeDesc": "يوجّه إلى أحد المخرجات العديدة عن طريق مطابقة حقل مع حالات مرتبة.",
     "email": {
       "recipient": "Recipient",
       "recipientOwner": "Asset Owner",
@@ -1048,6 +1051,29 @@
       "compareValue": "Compare Value",
       "trueBranch": "TRUE",
       "falseBranch": "FALSE"
+    },
+    "switch": {
+      "field": "حقل التبديل",
+      "fieldPlaceholder": "status / properties.content_type",
+      "cases": "الحالات",
+      "noCases": "لا توجد حالات بعد — أضف واحدة لإنشاء فرع إخراج.",
+      "caseN": "الحالة {{n}}",
+      "operator": "عامل",
+      "op_equals": "يساوي",
+      "op_not_equals": "لا يساوي",
+      "op_contains": "يحتوي على",
+      "op_starts_with": "يبدأ بـ",
+      "op_ends_with": "ينتهي بـ",
+      "op_greater_than": "أكبر من",
+      "op_less_than": "أصغر من",
+      "compareValue": "قيمة المقارنة",
+      "outputLabel": "تسمية الإخراج",
+      "outputLabelPlaceholder": "مثل الصور، مقاطع الفيديو",
+      "addCase": "إضافة حالة",
+      "removeCase": "إزالة الحالة",
+      "defaultLabel": "تسمية الإخراج الافتراضية",
+      "defaultHelp": "المسار المتبع عند عدم تطابق أي حالة.",
+      "defaultBranch": "افتراضي"
     },
     "approval": {
       "title": "Approval Step",
@@ -1215,6 +1241,10 @@
       "notesHelper": "Internal notes visible only to admins.",
       "tdmSanitation": "Apply AI / TDM Sanitization",
       "tdmSanitationDesc": "Route each asset through the AI Gateway for metadata normalization and compliance scanning.",
+      "migrateMetadata": "Migrate Metadata",
+      "migrateMetadataDesc": "Fetch each asset's complete metadata (e.g. AEM's jcr:content/metadata.json) in addition to the lightweight listing properties. Adds one extra request per asset. Enabled by default for complete metadata.",
+      "migrateMetadataEnabledSummary": "Enabled — full per-asset metadata fetched",
+      "migrateMetadataDisabledSummary": "Disabled — listing metadata only",
       "concurrency": "Max Concurrent Threads",
       "concurrencyHelper": "Number of parallel download threads (1–10).",
       "confirmInfo": "Clicking 'Initialize' will immediately start the extraction pipeline. The process runs in the background.",
@@ -2228,7 +2258,11 @@
       "embeddedMetadataSection": "بيانات EXIF / IPTC / XMP",
       "noExifDataExtractedYet": "لم يتم استخراج بيانات EXIF بعد.",
       "collapseExifData": "طي بيانات EXIF / IPTC / XMP",
-      "expandExifData": "توسيع بيانات EXIF / IPTC / XMP"
+      "expandExifData": "توسيع بيانات EXIF / IPTC / XMP",
+      "rawMetadataSection": "البيانات الوصفية الأولية",
+      "noRawMetadataAvailable": "لا توجد بيانات وصفية أولية متاحة.",
+      "collapseRawMetadata": "طي البيانات الوصفية الأولية",
+      "expandRawMetadata": "توسيع البيانات الوصفية الأولية"
     },
     "ai": {
       "semanticAndVisionAnalysis": "التحليل الدلالي والبصري"
@@ -2687,6 +2721,61 @@
       "resolvedAs": "تم الحل كـ {{path}}",
       "previewFailed": "فشلت المعاينة.",
       "previewUnavailable": "نتائج المعاينة غير متاحة الآن."
+    }
+  },
+  "customNodes": {
+    "title": "عُقد سير عمل مخصصة",
+    "subtitle": "سجّل عُقد الإضافات المستضافة من قبل المستأجر كبيانات تعريف تعريفية. لا يقوم Capri DAM أبدًا بتشغيل كود الإضافة داخل العملية — يرسل المحرك خطاف ويب محميًا من SSRF وموقعًا بـ HMAC إلى نقطة نهاية HTTPS الخاصة بك ويطبق فقط قائمة سماح من إجراءات الاستجابة.",
+    "refresh": "تحديث",
+    "register": "تسجيل عقدة",
+    "registerTitle": "تسجيل عقدة مخصصة",
+    "colName": "الاسم",
+    "colKey": "نوع العقدة",
+    "colEndpoint": "نقطة النهاية",
+    "colStatus": "الحالة",
+    "colHealth": "الصحة",
+    "colActions": "الإجراءات",
+    "empty": "لم يتم تسجيل أي عُقد مخصصة بعد.",
+    "circuitOpen": "الدائرة مفتوحة",
+    "failures": "{{count}} حالات فشل",
+    "enable": "تفعيل",
+    "disable": "تعطيل",
+    "delete": "حذف",
+    "confirmDelete": "حذف العقدة المخصصة \"{{name}}\"؟ لا يمكن التراجع عن هذا الإجراء.",
+    "cancel": "إلغاء",
+    "save": "حفظ",
+    "nodeLabel": "عقدة مخصصة",
+    "pluginBadge": "إضافة: {{key}}",
+    "noFields": "لا تحتوي هذه الإضافة على حقول قابلة للتكوين.",
+    "fieldKey": "المفتاح",
+    "fieldKeyHelp": "معرّف بأحرف صغيرة (a-z، 0-9، _). يُعرض كـ plugin:<key>.",
+    "fieldName": "اسم العرض",
+    "fieldDescription": "الوصف",
+    "fieldEndpoint": "عنوان URL لنقطة النهاية",
+    "fieldEndpointHelp": "يجب أن يكون عنوان URL عام بـ HTTPS. يتم حظر المضيفين الخاصين/الاسترجاعيين.",
+    "fieldTimeout": "المهلة (مللي ثانية)",
+    "fieldAuthType": "المصادقة",
+    "fieldSecret": "سر التوقيع",
+    "fieldSecretHelp": "يُستخدم لتوقيع الإرسال بـ HMAC. لا تُرجعه واجهة برمجة التطبيقات أبدًا.",
+    "fieldOutputs": "مخرجات التفرع",
+    "fieldOutputsHelp": "تسميات مفصولة بفواصل لعُقد التفرع (اتركها فارغة للخطي).",
+    "fieldSchema": "مخطط التكوين (JSON)",
+    "fieldSchemaHelp": "مصفوفة من واصفات الحقول { key, type, label } التي تقود نموذج العقدة.",
+    "fieldStatus": "الحالة",
+    "status": {
+      "draft": "مسودة",
+      "enabled": "مُفعّل",
+      "disabled": "معطّل"
+    },
+    "notifications": {
+      "loadFailed": "فشل تحميل العُقد المخصصة.",
+      "created": "تم تسجيل العقدة المخصصة.",
+      "saveFailed": "تعذّر حفظ العقدة المخصصة.",
+      "invalidSchema": "يجب أن يكون مخطط التكوين JSON صالحًا.",
+      "enabled": "تم تفعيل العقدة المخصصة.",
+      "disabled": "تم تعطيل العقدة المخصصة.",
+      "deleted": "تم حذف العقدة المخصصة.",
+      "actionFailed": "فشل إجراء العقدة المخصصة."
     }
   }
 }

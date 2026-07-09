@@ -68,11 +68,27 @@ class ExtractionWorker
       original_filename: file_data[:identifier],
       file_size: file_data[:size],
       file_hash: final_hash,
+      legacy_metadata: file_data[:metadata] || {},
+      full_metadata: file_data[:raw_metadata] || {},
       status: status
     )
 
-    # 5. Broadcast to the AI Gateway if it needs metadata transformation
+    # 5. Broadcast to the AI Gateway if it needs metadata transformation, and
+    # enqueue the normalization worker that actually advances the item's
+    # state. (The Redis broadcast alone is a fire-and-forget notification for
+    # an external listener — MigrationTransformWorker is what performs the
+    # local AI-normalize-with-rule-based-fallback step and flips the item to
+    # ready_for_import/rejected; without enqueuing it here every staged item
+    # — including duplicates, which MigrationTransformWorker rejects — stays
+    # stuck forever and the batch never reaches review_needed.)
+    #
+    # NOTE: capture the pre-broadcast state first — broadcast_to_ai_gateway
+    # mutates `item.status` to :ai_processing in place, so checking
+    # item.pending? *after* calling it would always be false and silently
+    # skip the enqueue below.
+    needs_transform = item.pending? || item.flagged_duplicate?
     broadcast_to_ai_gateway(item) if item.pending?
+    MigrationTransformWorker.perform_async(item.id) if needs_transform
 
     # Cleanup the temp file from the Sidekiq server immediately
     File.delete(temp_file_path) if File.exist?(temp_file_path)
@@ -85,8 +101,12 @@ class ExtractionWorker
       item_uuid: item.respond_to?(:uuid) ? item.uuid : item.id,
     }.to_json
 
-    # Dispatching the event so the Python MCP Gateway can pick it up
-    Redis.current.publish("ai_gateway_events", payload)
+    # Dispatching the event so the Python MCP Gateway can pick it up.
+    # Redis.current was removed in redis-rb 5.x — use an explicit connection
+    # instead (matches the pattern used elsewhere in the codebase, e.g.
+    # SearchCache, RedisTokenManager, Asset).
+    redis = Redis.new(url: ENV.fetch("REDIS_URL", "redis://localhost:6379/0"))
+    redis.publish("ai_gateway_events", payload)
 
     item.update!(status: :ai_processing)
   end

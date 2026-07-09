@@ -7,7 +7,7 @@ import {
 } from '@mui/material';
 import {
     ArrowBack, CheckCircle, Block, ErrorOutlined, AutoAwesome,
-    FilterList, Refresh, BarChart
+    FilterList, Refresh, BarChart, Sync
 } from '@mui/icons-material';
 import { useNotify } from '../../../context/NotificationContext';
 
@@ -323,6 +323,30 @@ export default function BatchReviewWorkspace({ batchId, onBack }) {
                                         ) : (
                                             <Alert severity="warning" sx={{ borderRadius: 2 }}>
                                                 AI normalization pending or unavailable for this item.
+                                            </Alert>
+                                        )}
+                                    </Grid>
+                                    {/* Metadata — full per-asset metadata migrated from the source system's
+                                        dedicated metadata endpoint (e.g. AEM's jcr:content/metadata.json),
+                                        distinct from the "Raw Legacy Attributes" listing-time properties above. */}
+                                    <Grid size={{ xs: 12 }}>
+                                        <Stack direction="row" spacing={1} sx={{
+  mb: 1.5,
+  alignItems: "center"
+}}>
+                                            <Sync sx={{ color: '#0ea5e9', fontSize: 18 }} />
+                                            <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#0ea5e9' }}>Metadata</Typography>
+                                            <Typography variant="caption" color="textSecondary">
+                                                — full per-asset metadata fetched from the source system (e.g. jcr:content/metadata.json)
+                                            </Typography>
+                                        </Stack>
+                                        {selectedItem.full_metadata && Object.keys(selectedItem.full_metadata).length > 0 ? (
+                                            <Box sx={{ p: 2, bgcolor: '#f0f9ff', borderRadius: 2, border: '1px solid #e0f2fe', fontFamily: 'monospace', fontSize: '0.75rem', maxHeight: 300, overflowY: 'auto' }}>
+                                                <pre style={{ margin: 0 }}>{JSON.stringify(selectedItem.full_metadata, null, 2)}</pre>
+                                            </Box>
+                                        ) : (
+                                            <Alert severity="info" sx={{ borderRadius: 2 }}>
+                                                No full metadata was migrated for this item — "Migrate Metadata" was disabled for this batch, or the source system's per-asset metadata endpoint returned nothing.
                                             </Alert>
                                         )}
                                     </Grid>

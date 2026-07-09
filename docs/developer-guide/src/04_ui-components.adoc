@@ -102,6 +102,20 @@ grid), and drives duplicate detection via `DuplicateResolverDialog.jsx`.
 | Bin-aware duplicate matches | `check_hashes` returns `in_bin: asset.deleted_at.present? \|\| asset.folder&.deleted_at.present?` per matched duplicate (see <<section-duplicate-detection>>) — true when the asset itself is soft-deleted *or* its containing folder is (an asset inside a trashed folder is only reachable via the Bin). `LegacyDuplicateResolverDialog` renders the same `BinChip` pattern used by Search results (`SearchResultCard.jsx`) as an overlay badge on the primary comparison image, and next to any per-location chip, whenever the matched existing asset currently lives in the Recycle Bin — so a user can't be confused into thinking a soft-deleted asset (or one whose folder was binned) is still active in the library.
 |===
 
+== Asset Viewer — Info tab
+
+`Folders/AssetViewer.jsx`'s Info tab (`TabPanel` index 0) renders the curated
+general-metadata list plus two independently-collapsible raw-JSON debug
+panels, both collapsed by default so the panel doesn't dump a large blob into
+view on open:
+
+[cols="1,3", options="header"]
+|===
+| Panel | Notes
+| EXIF / IPTC / XMP Data | Controlled by the `exifExpanded` state. Renders `asset.properties.embedded_metadata` (falling back to the legacy `asset.properties.exif_data`) as pretty-printed JSON inside a scrollable `Paper`. Toggle header/icon `aria-label` flips between `assetViewer.info.expandExifData` / `assetViewer.info.collapseExifData`.
+| Raw Metadata | Controlled by the separate `rawMetadataExpanded` state, rendered directly below the EXIF panel (behind its own `Divider`). Renders the asset's *entire* raw `properties` JSONB blob (not just the embedded-metadata subset) as pretty-printed JSON, so any field stored on the asset — including ones with no dedicated UI row — can be inspected. Falls back to `assetViewer.info.noRawMetadataAvailable` when `properties` is empty. Toggle header/icon `aria-label` flips between `assetViewer.info.expandRawMetadata` / `assetViewer.info.collapseRawMetadata`. Expanding/collapsing this panel is independent of the EXIF panel's state.
+|===
+
 NOTE: New module-specific details are documented in <<section-admin-module>>,
 <<section-collections-module>>, <<section-bin-module>>, <<section-duplicate-detection>>,
 <<section-intelligence-module>>, <<section-ingestion-migration>>, and

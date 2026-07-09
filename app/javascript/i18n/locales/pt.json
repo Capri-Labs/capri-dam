@@ -45,7 +45,8 @@
       "System Ops": "Operações do sistema",
       "Queues": "Filas Sidekiq",
       "Inbox": "Caixa de entrada",
-      "Quarantine Review": "Quarantine Review"
+      "Quarantine Review": "Quarantine Review",
+      "Custom Nodes": "Nós personalizados"
     }
   },
   "common": {
@@ -949,6 +950,8 @@
     "delayNodeDesc": "Pause workflow for N hours or days.",
     "conditionNode": "Condition Branch",
     "conditionNodeDesc": "Branch on asset metadata or status value.",
+    "switchNode": "Switch / Multirramificação",
+    "switchNodeDesc": "Encaminha para uma de várias saídas comparando um campo com casos ordenados.",
     "email": {
       "recipient": "Recipient",
       "recipientOwner": "Asset Owner",
@@ -1096,6 +1099,29 @@
       "trueBranch": "TRUE",
       "falseBranch": "FALSE"
     },
+    "switch": {
+      "field": "Campo do switch",
+      "fieldPlaceholder": "status / properties.content_type",
+      "cases": "Casos",
+      "noCases": "Ainda não há casos — adicione um para criar uma ramificação de saída.",
+      "caseN": "Caso {{n}}",
+      "operator": "Operador",
+      "op_equals": "Igual a",
+      "op_not_equals": "Diferente de",
+      "op_contains": "Contém",
+      "op_starts_with": "Começa com",
+      "op_ends_with": "Termina com",
+      "op_greater_than": "Maior que",
+      "op_less_than": "Menor que",
+      "compareValue": "Valor de comparação",
+      "outputLabel": "Rótulo de saída",
+      "outputLabelPlaceholder": "ex. imagens, vídeos",
+      "addCase": "Adicionar caso",
+      "removeCase": "Remover caso",
+      "defaultLabel": "Rótulo de saída padrão",
+      "defaultHelp": "Caminho seguido quando nenhum caso corresponde.",
+      "defaultBranch": "PADRÃO"
+    },
     "approval": {
       "title": "Approval Step",
       "assigneeType": "Type",
@@ -1215,6 +1241,10 @@
       "notesHelper": "Notas internas visíveis apenas para administradores.",
       "tdmSanitation": "Aplicar saneamento de IA / TDM",
       "tdmSanitationDesc": "Encaminhe cada ativo pelo AI Gateway para normalização de metadados e verificação de conformidade.",
+      "migrateMetadata": "Migrar metadados",
+      "migrateMetadataDesc": "Busca os metadados completos de cada ativo (por exemplo, jcr:content/metadata.json da AEM) além das propriedades leves de listagem. Adiciona uma solicitação extra por ativo. Habilitado por padrão para metadados completos.",
+      "migrateMetadataEnabledSummary": "Ativado — metadados completos obtidos por ativo",
+      "migrateMetadataDisabledSummary": "Desativado — apenas metadados de listagem",
       "concurrency": "Máximo de threads simultâneas",
       "concurrencyHelper": "Número de threads paralelas de download (1–10).",
       "confirmInfo": "Ao clicar em 'Inicializar', o pipeline de extração começará imediatamente. O processo é executado em segundo plano.",
@@ -2228,7 +2258,11 @@
       "embeddedMetadataSection": "Dados EXIF / IPTC / XMP",
       "noExifDataExtractedYet": "Nenhum dado EXIF extraído ainda.",
       "collapseExifData": "Recolher dados EXIF/IPTC/XMP",
-      "expandExifData": "Expandir dados EXIF/IPTC/XMP"
+      "expandExifData": "Expandir dados EXIF/IPTC/XMP",
+      "rawMetadataSection": "Metadados brutos",
+      "noRawMetadataAvailable": "Nenhum metadado bruto disponível.",
+      "collapseRawMetadata": "Recolher metadados brutos",
+      "expandRawMetadata": "Expandir metadados brutos"
     },
     "ai": {
       "semanticAndVisionAnalysis": "Análise semântica e visual"
@@ -2687,6 +2721,61 @@
       "resolvedAs": "Resolvido como {{path}}",
       "previewFailed": "A pré-visualização falhou.",
       "previewUnavailable": "Os resultados da pré-visualização não estão disponíveis no momento."
+    }
+  },
+  "customNodes": {
+    "title": "Nós de fluxo de trabalho personalizados",
+    "subtitle": "Registre nós de plugin hospedados pelo locatário como manifestos declarativos. O Capri DAM nunca executa código de plugin no processo — o mecanismo despacha um webhook protegido contra SSRF e assinado com HMAC para o seu endpoint HTTPS e aplica apenas uma lista de permissões de ações de resposta.",
+    "refresh": "Atualizar",
+    "register": "Registrar nó",
+    "registerTitle": "Registrar nó personalizado",
+    "colName": "Nome",
+    "colKey": "Tipo de nó",
+    "colEndpoint": "Endpoint",
+    "colStatus": "Status",
+    "colHealth": "Integridade",
+    "colActions": "Ações",
+    "empty": "Nenhum nó personalizado registrado ainda.",
+    "circuitOpen": "Circuito aberto",
+    "failures": "{{count}} falhas",
+    "enable": "Habilitar",
+    "disable": "Desabilitar",
+    "delete": "Excluir",
+    "confirmDelete": "Excluir o nó personalizado \"{{name}}\"? Isso não pode ser desfeito.",
+    "cancel": "Cancelar",
+    "save": "Salvar",
+    "nodeLabel": "Nó personalizado",
+    "pluginBadge": "plugin: {{key}}",
+    "noFields": "Este plugin não tem campos configuráveis.",
+    "fieldKey": "Chave",
+    "fieldKeyHelp": "Identificador em minúsculas (a-z, 0-9, _). Exposto como plugin:<key>.",
+    "fieldName": "Nome de exibição",
+    "fieldDescription": "Descrição",
+    "fieldEndpoint": "URL do endpoint",
+    "fieldEndpointHelp": "Deve ser uma URL HTTPS pública. Hosts privados/loopback são bloqueados.",
+    "fieldTimeout": "Tempo limite (ms)",
+    "fieldAuthType": "Autenticação",
+    "fieldSecret": "Segredo de assinatura",
+    "fieldSecretHelp": "Usado para assinar o despacho com HMAC. Nunca retornado pela API.",
+    "fieldOutputs": "Saídas de ramificação",
+    "fieldOutputsHelp": "Rótulos separados por vírgula para nós de ramificação (deixe em branco para linear).",
+    "fieldSchema": "Esquema de configuração (JSON)",
+    "fieldSchemaHelp": "Matriz de descritores de campo { key, type, label } que orientam o formulário do nó.",
+    "fieldStatus": "Status",
+    "status": {
+      "draft": "Rascunho",
+      "enabled": "Habilitado",
+      "disabled": "Desabilitado"
+    },
+    "notifications": {
+      "loadFailed": "Falha ao carregar os nós personalizados.",
+      "created": "Nó personalizado registrado.",
+      "saveFailed": "Não foi possível salvar o nó personalizado.",
+      "invalidSchema": "O esquema de configuração deve ser JSON válido.",
+      "enabled": "Nó personalizado habilitado.",
+      "disabled": "Nó personalizado desabilitado.",
+      "deleted": "Nó personalizado excluído.",
+      "actionFailed": "Falha na ação do nó personalizado."
     }
   }
 }

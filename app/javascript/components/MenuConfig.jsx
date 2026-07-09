@@ -15,7 +15,7 @@ import {
     PersonOutlined,
     SecurityOutlined, ContentCopy,
     ManageSearchOutlined, CollectionsBookmark, AutoAwesome, Route, QueryStats, CloudSync, BackupTable, HealthAndSafety,
-    BuildOutlined, SchemaOutlined, FileDownloadOutlined, FileUploadOutlined, BlockOutlined, TuneOutlined, Inbox as InboxIcon
+    BuildOutlined, SchemaOutlined, FileDownloadOutlined, FileUploadOutlined, BlockOutlined, TuneOutlined, Inbox as InboxIcon, ExtensionOutlined
 } from '@mui/icons-material';
 
 /**
@@ -159,7 +159,13 @@ export const MENU_GROUPS = [
                 label: 'Active Workflows',
                 labelKey: 'menu.item.Workflows',
                 icon: <AccountTree fontSize="small" />,
-                url: '/workflows' }
+                url: '/workflows' },
+            {
+                id: 'Custom Nodes',
+                label: 'Custom Nodes',
+                labelKey: 'menu.item.Custom Nodes',
+                icon: <ExtensionOutlined fontSize="small" />,
+                url: '/admin/custom_nodes' }
         ]
     },
     {

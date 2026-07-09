@@ -24,6 +24,8 @@ branches pause and which continue immediately.
 | `start`, `end` | Entry/terminal nodes.
 | `approval` | Creates a `WorkflowTask` and pauses until decision.
 | `condition` | Routes to `true_branch` or `false_branch`.
+| `switch` | Multi-way branch: routes to the first matching case handle, else `default`.
+| `plugin:<key>` | Tenant-registered custom node (see Custom-Node SDK below).
 | `delay` | Defers continuation through `WorkflowDelayWorker`.
 | `email`, `in_app_notify`, `slack`, `teams`, `sms` | Notification nodes.
 | `webhook`, `secure_webhook`, `api_call` | Outbound integration nodes.
@@ -85,3 +87,97 @@ Related supporting screens:
 
 NOTE: Step escalation is configured per approval node; legacy workflow-level
 fallback fields remain only for backward compatibility.
+
+
+== Multi-way switch branching
+
+The `switch` node evaluates a single asset `field` against an *ordered* list of
+cases and routes execution to the first case that matches, falling back to a
+`default` output when none match. Unlike the binary `condition` node (which
+keeps its `true_branch`/`false_branch` handles for backward compatibility), a
+switch node exposes one labelled source handle per case plus a default handle.
+
+Config shape (`step_config`):
+
+[source,json]
+----
+{
+  "field": "properties.content_type",
+  "default_label": "other",
+  "cases": [
+    { "operator": "starts_with", "value": "image/", "label": "images" },
+    { "operator": "starts_with", "value": "video/", "label": "videos" }
+  ]
+}
+----
+
+Each case handle id equals its `label` (or `case_<n>` when blank); the default
+handle id equals `default_label` (or `default`). At runtime
+`WorkflowActionExecutor#evaluate_switch` returns `[:branch, "<handle>"]`, and
+`WorkflowAdvancerService#branch_handle` matches that handle id against the
+canvas edge `sourceHandle` to select the next step. Supported operators mirror
+the condition node: `equals`, `not_equals`, `contains`, `starts_with`,
+`ends_with`, `greater_than`, `less_than`.
+
+
+== Custom-Node SDK (plugin)
+
+Admins can extend the workflow designer with declarative custom-node manifests.
+The persisted `key` is the bare namespace identifier (for example
+`acme_watermark`); workflow steps reference it as `plugin:acme_watermark`.
+
+=== Security model
+
+Custom nodes never run customer code inside Capri DAM. At runtime
+`CustomNodeExecutor` posts workflow context to the customer's HTTPS endpoint,
+rejects loopback/private/link-local/metadata-network destinations, signs the JSON
+body with `X-Capri-Signature` (HMAC-SHA256), and applies only these response
+keys: `set_tags`, `add_tags`, `remove_tags`, `patch_metadata`, `set_status`, and
+`branch`. Unknown response fields are ignored. Repeated failures trip a circuit
+breaker (`failure_count >= 5`) and disable the definition; failed nodes fail open
+to the linear workflow edge.
+
+=== Manifest schema
+
+[source,json]
+----
+{
+  "key": "acme_watermark",
+  "name": "Acme Watermark",
+  "description": "Apply tenant-hosted watermark logic",
+  "icon": "water_drop",
+  "category": "custom",
+  "color": "#6366f1",
+  "config_schema": [
+    { "key": "quality", "type": "string", "label": "Quality" }
+  ],
+  "runtime": {
+    "endpoint_url": "https://plugins.example.com/workflow/custom-node",
+    "timeout_ms": 5000,
+    "outputs": ["approved", "rejected"],
+    "secret": "stored-write-only-never-serialized"
+  },
+  "status": "draft"
+}
+----
+
+`config_schema` is an array of field descriptors; each descriptor must include
+`key` and `type`. `runtime.endpoint_url` is required and must be HTTPS before a
+manifest can be enabled. Runtime secrets are write-only from the API perspective:
+controllers and GraphQL strip `runtime.secret` from all responses.
+
+=== REST endpoints
+
+All endpoints are admin-only:
+
+[cols="1,2,3", options="header"]
+|===
+| Method | Path | Purpose
+| `GET` | `/api/v1/custom_node_definitions` | List manifests.
+| `POST` | `/api/v1/custom_node_definitions` | Register a manifest.
+| `GET` | `/api/v1/custom_node_definitions/:id` | Fetch one manifest.
+| `PATCH` | `/api/v1/custom_node_definitions/:id` | Update a manifest.
+| `DELETE` | `/api/v1/custom_node_definitions/:id` | Delete a manifest.
+| `POST` | `/api/v1/custom_node_definitions/:id/enable` | Enable after validation.
+| `POST` | `/api/v1/custom_node_definitions/:id/disable` | Disable immediately.
+|===

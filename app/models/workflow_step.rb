@@ -15,7 +15,7 @@ class WorkflowStep < ApplicationRecord
     webhook secure_webhook api_call
     set_status add_tags remove_tags move_asset copy_asset archive publish update_metadata
     ai_metadata generate_thumbnail cdn_sync
-    delay condition
+    delay condition switch
   ].freeze
 
   # node_types that require human interaction (approval family)
@@ -24,9 +24,14 @@ class WorkflowStep < ApplicationRecord
   # node_types that require an endpoint URL
   URL_NODE_TYPES = %w[webhook secure_webhook api_call].freeze
 
+  # Custom-node (plugin SDK) types are namespaced "plugin:<key>". They are
+  # validated against a registered CustomNodeDefinition rather than the static
+  # NODE_TYPES list so tenants can extend the catalogue without a code change.
+  PLUGIN_NODE_TYPE = /\Aplugin:[a-z0-9_]+\z/
+
   validates :step_type, presence: true
   validates :position,  presence: true
-  validates :node_type, inclusion: { in: NODE_TYPES }, allow_nil: true
+  validate  :node_type_supported
 
   # Approval steps need a real assignee; automated steps default to 'system'.
   validates :assignee_type, presence: true
@@ -58,7 +63,22 @@ class WorkflowStep < ApplicationRecord
     fallback_assignee_id.present? && fallback_assignee_id != "0"
   end
 
+  # Returns true when this step is a custom-node (plugin SDK) step.
+  def plugin?
+    node_type.to_s.match?(PLUGIN_NODE_TYPE)
+  end
+
   private
+
+  # node_type may be nil (legacy approval rows), one of the built-in NODE_TYPES,
+  # or a namespaced plugin type ("plugin:<key>") registered via the SDK.
+  def node_type_supported
+    return if node_type.nil?
+    return if NODE_TYPES.include?(node_type)
+    return if plugin?
+
+    errors.add(:node_type, "is not a supported node type")
+  end
 
   def step_config_complete
     cfg = (step_config || {}).with_indifferent_access
@@ -67,6 +87,9 @@ class WorkflowStep < ApplicationRecord
       errors.add(:step_config, "must include a non-blank URL for #{node_type}") if cfg[:url].blank?
     when "email_notification"
       errors.add(:step_config, "must include a subject for email_notification") if cfg[:subject].blank?
+    when "switch"
+      errors.add(:step_config, "must include a field to evaluate for switch") if cfg[:field].blank?
+      errors.add(:step_config, "must include at least one case for switch") if Array(cfg[:cases]).empty?
     end
   end
 end

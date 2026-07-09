@@ -55,18 +55,20 @@ RSpec.describe 'IngestionAdapters subclasses', type: :service do
                   adapter_class: IngestionAdapters::AemAdapter,
                   credentials: { endpoint: 'https://aem.example.com', auth_token: 'token' },
                   fetch_response: {
-                    'entities' => [ {
-                      'id' => 'asset-1',
-                      'name' => 'hero.jpg',
-                      'links' => [ { 'rel' => 'self', 'href' => '/content/dam/hero.jpg' } ],
-                      'properties' => {
-                        'dam:size' => 123,
-                        'dc:title' => 'Hero',
-                        'dc:description' => 'Homepage asset',
-                        'cq:tags' => [ 'marketing' ],
-                        'dc:creator' => 'Jane',
+                    'total' => 1,
+                    'hits' => [ {
+                      'jcr:path' => '/content/dam/hero.jpg',
+                      'jcr:content' => {
+                        'jcr:createdBy' => 'Jane',
                         'jcr:created' => '2026-01-01',
-                        'dam:mimeType' => 'image/jpeg',
+                        'metadata' => {
+                          'dam:size' => 123,
+                          'dc:title' => 'Hero',
+                          'dc:description' => 'Homepage asset',
+                          'cq:tags' => [ 'marketing' ],
+                          'dc:creator' => 'Jane',
+                          'dc:format' => 'image/jpeg',
+                        },
                       },
                     } ],
                   },
@@ -77,7 +79,12 @@ RSpec.describe 'IngestionAdapters subclasses', type: :service do
                   expected_metadata: { 'title' => 'Hero', 'creator' => 'Jane' },
                   download_id: '/content/dam/hero.jpg',
                   expected_download_url: 'https://aem.example.com/content/dam/hero.jpg/jcr:content/renditions/original',
-                  expected_connection_path: 'https://aem.example.com/api/assets/content/dam.json?count=1',
+                  expected_connection_path: "https://aem.example.com/bin/querybuilder.json?" \
+                                            "#{URI.encode_www_form(
+                                              "path" => "/content/dam", "type" => "dam:Asset",
+                                              "p.limit" => 1, "p.offset" => 0, "p.hits" => "selective",
+                                              "p.properties" => IngestionAdapters::AemAdapter::SELECTIVE_PROPERTIES
+                                            )}",
                   stream_extension: '.jpg'
 
   it_behaves_like 'an HTTP ingestion adapter',
@@ -608,19 +615,52 @@ RSpec.describe 'IngestionAdapters subclasses', type: :service do
   describe IngestionAdapters::AemAdapter do
     subject(:adapter) { described_class.new(nil, endpoint: "https://aem.example.com", auth_token: "token") }
 
-    it "falls back to the item id when no self link is present" do
+    def qb_url(path:, start: 0, limit: 100)
+      params = {
+        "path" => path, "type" => "dam:Asset", "p.limit" => limit, "p.offset" => start,
+        "p.hits" => "selective", "p.properties" => described_class::SELECTIVE_PROPERTIES
+      }
+      "https://aem.example.com/bin/querybuilder.json?#{URI.encode_www_form(params)}"
+    end
+
+    it "always uses the node's basename (with extension) as original_name, even when dc:title is present" do
       allow(adapter).to receive(:get_json).and_return(
-        "entities" => [ {
-          "id" => "asset-1",
-          "name" => "hero.jpg",
-          "links" => [ { "rel" => nil, "href" => "/ignored" } ],
-          "properties" => {},
-        } ]
+        "total" => 1,
+        "hits" => [ { "jcr:path" => "/content/dam/hero.jpg", "jcr:content" => { "metadata" => {} } } ]
       )
 
       result = adapter.fetch_next_chunk
 
-      expect(result.dig(:files, 0, :identifier)).to eq("asset-1")
+      expect(result.dig(:files, 0, :identifier)).to eq("/content/dam/hero.jpg")
+      expect(result.dig(:files, 0, :original_name)).to eq("hero.jpg")
+    end
+
+    it "keeps the literal filename (extension included) as original_name even when a humanized dc:title exists" do
+      allow(adapter).to receive(:get_json).and_return(
+        "total" => 1,
+        "hits" => [
+          {
+            "jcr:path"    => "/content/dam/715839_C_CascadeMilling_OrganicPancakeMix_S.psd",
+            "jcr:content" => { "metadata" => { "dc:title" => "Cascade Milling Organic Pancake Mix" } },
+          },
+        ]
+      )
+
+      result = adapter.fetch_next_chunk
+
+      expect(result.dig(:files, 0, :original_name)).to eq("715839_C_CascadeMilling_OrganicPancakeMix_S.psd")
+    end
+
+    it "reports has_more when there are additional hits beyond the current page" do
+      allow(adapter).to receive(:get_json).and_return(
+        "total" => 250,
+        "hits" => Array.new(100) { |i| { "jcr:path" => "/content/dam/asset-#{i}.jpg", "jcr:content" => {} } }
+      )
+
+      result = adapter.fetch_next_chunk
+
+      expect(result[:next_cursor]).to eq("100")
+      expect(result[:has_more]).to be true
     end
 
     it "reuses an original-rendition identifier without appending it twice" do
@@ -632,6 +672,196 @@ RSpec.describe 'IngestionAdapters subclasses', type: :service do
         "https://aem.example.com/content/dam/hero.jpg/jcr:content/renditions/original",
         ".bin"
       )
+    end
+
+    it "defaults to the whole /content/dam root when no root_path is given" do
+      expect(adapter).to receive(:get_json)
+        .with(qb_url(path: "/content/dam", limit: 1))
+        .and_return({})
+
+      adapter.test_connection
+    end
+
+    context "with a root_path credential (folder-scoped migration)" do
+      subject(:adapter) do
+        described_class.new(nil, endpoint: "https://aem.example.com", auth_token: "token",
+                                  root_path: "/content/dam/US/marketing-assets/product-assets")
+      end
+
+      it "scopes fetch_next_chunk to the requested folder via QueryBuilder" do
+        expect(adapter).to receive(:get_json)
+          .with(qb_url(path: "/content/dam/US/marketing-assets/product-assets"))
+          .and_return({})
+
+        adapter.fetch_next_chunk
+      end
+
+      it "accepts a folder path given relative to /content/dam" do
+        adapter = described_class.new(nil, endpoint: "https://aem.example.com", auth_token: "token",
+                                            root_path: "US/marketing-assets/product-assets")
+        expect(adapter).to receive(:get_json)
+          .with(qb_url(path: "/content/dam/US/marketing-assets/product-assets", limit: 1))
+          .and_return({})
+
+        adapter.test_connection
+      end
+    end
+
+    # ── Full metadata migration ("Migrate Metadata" toggle) ──────────────────
+    context "when the batch enables migrate_metadata (default on)" do
+      let(:batch) { instance_double(IngestionBatch, migrate_metadata?: true) }
+      subject(:adapter) { described_class.new(batch, endpoint: "https://aem.example.com", auth_token: "token") }
+
+      it "fetches the full jcr:content/metadata.json node for each hit and merges it over the selective properties" do
+        allow(adapter).to receive(:get_json).with(qb_url(path: "/content/dam")).and_return(
+          "total" => 1,
+          "hits" => [
+            {
+              "jcr:path" => "/content/dam/hero.jpg",
+              "jcr:content" => { "metadata" => { "dc:title" => "Selective Title" } },
+            },
+          ]
+        )
+        allow(adapter).to receive(:get_json)
+          .with("https://aem.example.com/content/dam/hero.jpg/jcr:content/metadata.json")
+          .and_return(
+            "dc:title"       => "Full Metadata Title",
+            "dc:description" => "A complete description",
+            "dc:language"    => "en-US",
+            "dc:creator"     => "Jane Doe",
+            "cq:tags"        => [ "marketing:campaign/summer" ],
+            "dc:format"      => "image/pjpeg",
+          )
+
+        result   = adapter.fetch_next_chunk
+        metadata = result.dig(:files, 0, :metadata)
+
+        # Full metadata wins over the selective dc:title pulled alongside the listing.
+        expect(metadata["title"]).to eq("Full Metadata Title")
+        expect(metadata["description"]).to eq("A complete description")
+        expect(metadata["language"]).to eq("en-US")
+        expect(metadata["creator"]).to eq("Jane Doe")
+        expect(metadata["tags"]).to eq([ "marketing:campaign/summer" ])
+        # AEM's non-standard "image/pjpeg" is normalized to the canonical "image/jpeg".
+        expect(metadata["content_type"]).to eq("image/jpeg")
+
+        # The untouched raw payload from jcr:content/metadata.json is preserved
+        # separately for audit purposes (IngestionItem#full_metadata), distinct
+        # from the canonical `metadata:` mapping above.
+        expect(result.dig(:files, 0, :raw_metadata)).to eq(
+          "dc:title"       => "Full Metadata Title",
+          "dc:description" => "A complete description",
+          "dc:language"    => "en-US",
+          "dc:creator"     => "Jane Doe",
+          "cq:tags"        => [ "marketing:campaign/summer" ],
+          "dc:format"      => "image/pjpeg",
+        )
+
+        # The identifier always uses the actual node's basename (with
+        # extension), never the humanized dc:title — so the migrated asset's
+        # name matches the legacy filename exactly.
+        expect(result.dig(:files, 0, :original_name)).to eq("hero.jpg")
+      end
+
+      it "falls back to the raw jcr: keys when AEM hasn't rewritten them to dc:" do
+        allow(adapter).to receive(:get_json).with(qb_url(path: "/content/dam")).and_return(
+          "total" => 1,
+          "hits" => [ { "jcr:path" => "/content/dam/hero.jpg", "jcr:content" => {} } ]
+        )
+        allow(adapter).to receive(:get_json)
+          .with("https://aem.example.com/content/dam/hero.jpg/jcr:content/metadata.json")
+          .and_return(
+            "jcr:title"       => "Raw JCR Title",
+            "jcr:description" => "Raw JCR Description",
+            "jcr:language"    => "fr-FR",
+          )
+
+        result   = adapter.fetch_next_chunk
+        metadata = result.dig(:files, 0, :metadata)
+
+        expect(metadata["title"]).to eq("Raw JCR Title")
+        expect(metadata["description"]).to eq("Raw JCR Description")
+        expect(metadata["language"]).to eq("fr-FR")
+      end
+
+      it "does not blow up the whole chunk when a single asset's metadata fetch fails" do
+        allow(adapter).to receive(:get_json).with(qb_url(path: "/content/dam")).and_return(
+          "total" => 1,
+          "hits" => [
+            { "jcr:path" => "/content/dam/hero.jpg", "jcr:content" => { "metadata" => { "dc:title" => "Fallback Title" } } },
+          ]
+        )
+        allow(adapter).to receive(:get_json)
+          .with("https://aem.example.com/content/dam/hero.jpg/jcr:content/metadata.json")
+          .and_raise("HTTP 404 from AEM")
+
+        result   = adapter.fetch_next_chunk
+        metadata = result.dig(:files, 0, :metadata)
+
+        # Selective metadata is preserved as a fallback when the full fetch errors.
+        expect(metadata["title"]).to eq("Fallback Title")
+      end
+    end
+
+    context "when the batch disables migrate_metadata" do
+      let(:batch) { instance_double(IngestionBatch, migrate_metadata?: false) }
+      subject(:adapter) { described_class.new(batch, endpoint: "https://aem.example.com", auth_token: "token") }
+
+      it "never performs the extra per-asset metadata.json request" do
+        allow(adapter).to receive(:get_json).with(qb_url(path: "/content/dam")).and_return(
+          "total" => 1,
+          "hits" => [
+            { "jcr:path" => "/content/dam/hero.jpg", "jcr:content" => { "metadata" => { "dc:title" => "Selective Only" } } },
+          ]
+        )
+
+        expect(adapter).not_to receive(:get_json).with(a_string_ending_with("metadata.json"))
+
+        result = adapter.fetch_next_chunk
+        expect(result.dig(:files, 0, :metadata, "title")).to eq("Selective Only")
+      end
+    end
+
+    describe "#normalize_mime_type (via build_file_entry)" do
+      let(:batch) { instance_double(IngestionBatch, migrate_metadata?: false) }
+      subject(:adapter) { described_class.new(batch, endpoint: "https://aem.example.com", auth_token: "token") }
+
+      {
+        "image/pjpeg"                                       => "image/jpeg",
+        "image/x-tiff"                                       => "image/tiff",
+        "application/postscript"                             => "application/pdf",
+        "video/x-quicktime"                                  => "video/quicktime",
+        "video/mp4"                                          => "video/mpeg4",
+        "video/x-ms-wmv"                                     => "video/wmv",
+        "video/x-flv"                                         => "video/flv",
+        "video/avi"                                           => "video/avi",
+        "video/msvideo"                                       => "video/avi",
+        "video/x-msvideo"                                     => "video/avi",
+      }.each do |variant, canonical|
+        it "normalizes #{variant.inspect} to #{canonical.inspect}" do
+          allow(adapter).to receive(:get_json).and_return(
+            "total" => 1,
+            "hits" => [
+              { "jcr:path" => "/content/dam/a.bin", "jcr:content" => { "metadata" => { "dc:format" => variant } } },
+            ]
+          )
+
+          result = adapter.fetch_next_chunk
+          expect(result.dig(:files, 0, :metadata, "content_type")).to eq(canonical)
+        end
+      end
+
+      it "passes through unrecognized MIME types unchanged" do
+        allow(adapter).to receive(:get_json).and_return(
+          "total" => 1,
+          "hits" => [
+            { "jcr:path" => "/content/dam/a.jpg", "jcr:content" => { "metadata" => { "dc:format" => "image/jpeg" } } },
+          ]
+        )
+
+        result = adapter.fetch_next_chunk
+        expect(result.dig(:files, 0, :metadata, "content_type")).to eq("image/jpeg")
+      end
     end
   end
 

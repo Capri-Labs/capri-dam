@@ -34,6 +34,7 @@ jest.mock('../../../app/javascript/components/Tools/AssetConfigurations', () => 
 jest.mock('../../../app/javascript/components/Profile/ProfilePage', () => () => <div>ProfilePage</div>);
 jest.mock('../../../app/javascript/components/Inbox/InboxPage', () => () => <div>InboxPage</div>);
 jest.mock('../../../app/javascript/components/Admin/Quarantine/QuarantineManager', () => () => <div>QuarantineManager</div>);
+jest.mock('../../../app/javascript/components/Admin/CustomNodes/CustomNodeManager', () => () => <div>CustomNodeManager</div>);
 
 import { COMPONENT_REGISTRY } from '../../../app/javascript/components/Registry';
 
@@ -73,6 +74,7 @@ describe('COMPONENT_REGISTRY', () => {
       'profile',
       'inbox',
       'quarantine-manager-screen',
+      'custom-nodes-screen',
     ]));
   });
 
@@ -111,6 +113,7 @@ describe('COMPONENT_REGISTRY', () => {
       profile: 'ProfilePage',
       inbox: 'InboxPage',
       'quarantine-manager-screen': 'QuarantineManager',
+      'custom-nodes-screen': 'CustomNodeManager',
     };
 
     Object.entries(COMPONENT_REGISTRY).forEach(([key, Component]) => {

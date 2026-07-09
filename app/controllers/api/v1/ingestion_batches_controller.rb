@@ -46,6 +46,7 @@ class Api::V1::IngestionBatchesController < ApplicationController
           status:            item.status,
           error_log:         item.error_log,
           legacy_metadata:   item.legacy_metadata,
+          full_metadata:     item.full_metadata,
           clean_properties:  item.clean_properties,
           created_at:        item.created_at,
         }
@@ -133,6 +134,7 @@ class Api::V1::IngestionBatchesController < ApplicationController
   def batch_params
     params.require(:ingestion_batch).permit(
       :name, :source_type, :connector_id, :notes, :destination_folder_id,
+      :migrate_metadata,
       source_credentials: {}
     )
   end

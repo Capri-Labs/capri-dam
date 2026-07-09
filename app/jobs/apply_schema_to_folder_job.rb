@@ -36,6 +36,7 @@ class ApplySchemaToFolderJob < ApplicationJob
 
     # 2. Apply schema_id to all assets directly in this folder
     apply_to_assets(folder_id, schema, user_id: user_id)
+    FolderContentsCache.bust(folder_id.presence)
 
     # 3. Recursively apply to child folders
     if cascade

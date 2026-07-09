@@ -3,9 +3,10 @@
  *
  * Provides:
  *   • Consistent card styling (colour accent top border, header row)
- *   • @xyflow/react Handle placement for 3 layouts:
+ *   • @xyflow/react Handle placement for 5 layouts:
  *       'linear'      → top target + bottom source (default)
  *       'branching'   → top target + two bottom sources (true/false)
+ *       'multi'       → top target + N labelled bottom sources (switch / plugin)
  *       'source-only' → bottom source only (Start node)
  *       'target-only' → top target only (End node)
  *
@@ -26,6 +27,7 @@ export default function NodeShell({
   label,
   handles = 'linear',
   branchLabels,
+  branches,
   isConnectable,
   children,
 }) {
@@ -107,6 +109,52 @@ export default function NodeShell({
             </Typography>
           </Box>
         </>
+      ) : handles === 'multi' ? (
+        <>
+          {(branches || []).map((b, i) => {
+            const left = `${((i + 1) / ((branches?.length || 0) + 1)) * 100}%`;
+            return (
+              <Handle
+                key={b.id}
+                type="source"
+                position={Position.Bottom}
+                id={b.id}
+                style={{ left, background: b.color || color, width: 12, height: 12 }}
+                isConnectable={isConnectable}
+              />
+            );
+          })}
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'space-around',
+              gap: 0.5,
+              px: 1.5,
+              pb: 1,
+              pt: 0.5,
+              bgcolor: '#f8fafc',
+              borderTop: '1px solid #e2e8f0',
+            }}
+          >
+            {(branches || []).map((b) => (
+              <Typography
+                key={b.id}
+                variant="caption"
+                title={b.label}
+                sx={{
+                  color: b.color || color,
+                  fontWeight: 800,
+                  maxWidth: 90,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {b.label}
+              </Typography>
+            ))}
+          </Box>
+        </>
       ) : handles !== 'target-only' ? (
         <Handle
           type="source"
@@ -123,8 +171,13 @@ NodeShell.propTypes = {
   color: PropTypes.string,
   icon: PropTypes.elementType,
   label: PropTypes.string.isRequired,
-  handles: PropTypes.oneOf(['linear', 'branching', 'source-only', 'target-only']),
+  handles: PropTypes.oneOf(['linear', 'branching', 'multi', 'source-only', 'target-only']),
   branchLabels: PropTypes.shape({ true: PropTypes.string, false: PropTypes.string }),
+  branches: PropTypes.arrayOf(PropTypes.shape({
+    id: PropTypes.string.isRequired,
+    label: PropTypes.string,
+    color: PropTypes.string,
+  })),
   isConnectable: PropTypes.bool,
   children: PropTypes.node,
 };

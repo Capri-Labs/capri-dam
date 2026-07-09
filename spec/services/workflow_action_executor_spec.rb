@@ -131,6 +131,47 @@ RSpec.describe WorkflowActionExecutor do
       expect(described_class.new(instance, step).call).to eq(:true_branch)
     end
 
+    it 'switch routes to the first matching case label' do
+      asset.update!(properties: asset.properties.merge('tier' => 'gold'))
+      step = build_step('switch', {
+        'field' => 'properties.tier',
+        'cases' => [
+          { 'operator' => 'equals', 'value' => 'silver', 'label' => 'silver_path' },
+          { 'operator' => 'equals', 'value' => 'gold',   'label' => 'gold_path' },
+        ],
+        'default_label' => 'other',
+      })
+      expect(described_class.new(instance, step).call).to eq([ :branch, 'gold_path' ])
+    end
+
+    it 'switch falls back to default_label when no case matches' do
+      asset.update!(properties: asset.properties.merge('tier' => 'bronze'))
+      step = build_step('switch', {
+        'field' => 'properties.tier',
+        'cases' => [ { 'operator' => 'equals', 'value' => 'gold', 'label' => 'gold_path' } ],
+        'default_label' => 'other',
+      })
+      expect(described_class.new(instance, step).call).to eq([ :branch, 'other' ])
+    end
+
+    it 'switch uses a positional label when a matching case omits an explicit label' do
+      asset.update!(properties: asset.properties.merge('tier' => 'gold'))
+      step = build_step('switch', {
+        'field' => 'properties.tier',
+        'cases' => [ { 'operator' => 'equals', 'value' => 'gold' } ],
+      })
+      expect(described_class.new(instance, step).call).to eq([ :branch, 'case_1' ])
+    end
+
+    it 'switch defaults to "default" handle when no default_label is configured' do
+      asset.update!(properties: asset.properties.merge('tier' => 'bronze'))
+      step = build_step('switch', {
+        'field' => 'properties.tier',
+        'cases' => [ { 'operator' => 'equals', 'value' => 'gold', 'label' => 'gold_path' } ],
+      })
+      expect(described_class.new(instance, step).call).to eq([ :branch, 'default' ])
+    end
+
     it 'delay enqueues WorkflowDelayWorker with correct duration and returns :delay_scheduled' do
       allow(WorkflowDelayWorker).to receive(:perform_in)
       step = build_step('delay', { 'delayValue' => 2, 'delayUnit' => 'hours' })

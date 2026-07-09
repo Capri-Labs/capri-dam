@@ -45,7 +45,8 @@
       "System Ops": "Operaciones del sistema",
       "Queues": "Colas Sidekiq",
       "Inbox": "Bandeja de entrada",
-      "Quarantine Review": "Quarantine Review"
+      "Quarantine Review": "Quarantine Review",
+      "Custom Nodes": "Nodos personalizados"
     }
   },
   "common": {
@@ -949,6 +950,8 @@
     "delayNodeDesc": "Pause workflow for N hours or days.",
     "conditionNode": "Condition Branch",
     "conditionNodeDesc": "Branch on asset metadata or status value.",
+    "switchNode": "Switch / Multirrama",
+    "switchNodeDesc": "Enruta a una de muchas salidas comparando un campo con casos ordenados.",
     "email": {
       "recipient": "Recipient",
       "recipientOwner": "Asset Owner",
@@ -1096,6 +1099,29 @@
       "trueBranch": "TRUE",
       "falseBranch": "FALSE"
     },
+    "switch": {
+      "field": "Campo del switch",
+      "fieldPlaceholder": "status / properties.content_type",
+      "cases": "Casos",
+      "noCases": "Aún no hay casos: agregue uno para crear una rama de salida.",
+      "caseN": "Caso {{n}}",
+      "operator": "Operador",
+      "op_equals": "Igual a",
+      "op_not_equals": "Distinto de",
+      "op_contains": "Contiene",
+      "op_starts_with": "Empieza por",
+      "op_ends_with": "Termina en",
+      "op_greater_than": "Mayor que",
+      "op_less_than": "Menor que",
+      "compareValue": "Valor de comparación",
+      "outputLabel": "Etiqueta de salida",
+      "outputLabelPlaceholder": "p. ej. imágenes, vídeos",
+      "addCase": "Agregar caso",
+      "removeCase": "Eliminar caso",
+      "defaultLabel": "Etiqueta de salida predeterminada",
+      "defaultHelp": "Ruta tomada cuando ningún caso coincide.",
+      "defaultBranch": "PREDETERMINADO"
+    },
     "approval": {
       "title": "Approval Step",
       "assigneeType": "Type",
@@ -1215,6 +1241,10 @@
       "notesHelper": "Notas internas visibles solo para administradores.",
       "tdmSanitation": "Aplicar saneamiento de IA / TDM",
       "tdmSanitationDesc": "Dirija cada activo a través de la puerta de enlace de IA para la normalización de metadatos y el escaneo de cumplimiento.",
+      "migrateMetadata": "Migrar metadatos",
+      "migrateMetadataDesc": "Obtiene los metadatos completos de cada activo (p. ej., jcr:content/metadata.json de AEM) además de las propiedades ligeras de la lista. Añade una solicitud adicional por activo. Habilitado de forma predeterminada para metadatos completos.",
+      "migrateMetadataEnabledSummary": "Habilitado — metadatos completos obtenidos por activo",
+      "migrateMetadataDisabledSummary": "Deshabilitado — solo metadatos de listado",
       "concurrency": "Máximo de hilos simultáneos",
       "concurrencyHelper": "Número de hilos de descarga en paralelo (1–10).",
       "confirmInfo": "Al hacer clic en 'Inicializar', el canal de extracción se iniciará inmediatamente. El proceso se ejecuta en segundo plano.",
@@ -2228,7 +2258,11 @@
       "embeddedMetadataSection": "Datos EXIF / IPTC / XMP",
       "noExifDataExtractedYet": "Aún no se han extraído datos EXIF.",
       "collapseExifData": "Contraer datos EXIF/IPTC/XMP",
-      "expandExifData": "Expandir datos EXIF/IPTC/XMP"
+      "expandExifData": "Expandir datos EXIF/IPTC/XMP",
+      "rawMetadataSection": "Metadatos sin procesar",
+      "noRawMetadataAvailable": "No hay metadatos sin procesar disponibles.",
+      "collapseRawMetadata": "Contraer metadatos sin procesar",
+      "expandRawMetadata": "Expandir metadatos sin procesar"
     },
     "ai": {
       "semanticAndVisionAnalysis": "Análisis semántico y visual"
@@ -2687,6 +2721,61 @@
       "resolvedAs": "Resuelto como {{path}}",
       "previewFailed": "La vista previa falló.",
       "previewUnavailable": "Los resultados de la vista previa no están disponibles ahora mismo."
+    }
+  },
+  "customNodes": {
+    "title": "Nodos de flujo de trabajo personalizados",
+    "subtitle": "Registre nodos de complemento alojados por el inquilino como manifiestos declarativos. Capri DAM nunca ejecuta código de complemento en el proceso: el motor envía un webhook protegido contra SSRF y firmado con HMAC a su punto de conexión HTTPS y solo aplica una lista blanca de acciones de respuesta.",
+    "refresh": "Actualizar",
+    "register": "Registrar nodo",
+    "registerTitle": "Registrar nodo personalizado",
+    "colName": "Nombre",
+    "colKey": "Tipo de nodo",
+    "colEndpoint": "Punto de conexión",
+    "colStatus": "Estado",
+    "colHealth": "Salud",
+    "colActions": "Acciones",
+    "empty": "Aún no hay nodos personalizados registrados.",
+    "circuitOpen": "Circuito abierto",
+    "failures": "{{count}} fallos",
+    "enable": "Habilitar",
+    "disable": "Deshabilitar",
+    "delete": "Eliminar",
+    "confirmDelete": "¿Eliminar el nodo personalizado \"{{name}}\"? Esto no se puede deshacer.",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "nodeLabel": "Nodo personalizado",
+    "pluginBadge": "complemento: {{key}}",
+    "noFields": "Este complemento no tiene campos configurables.",
+    "fieldKey": "Clave",
+    "fieldKeyHelp": "Identificador en minúsculas (a-z, 0-9, _). Se expone como plugin:<key>.",
+    "fieldName": "Nombre para mostrar",
+    "fieldDescription": "Descripción",
+    "fieldEndpoint": "URL del punto de conexión",
+    "fieldEndpointHelp": "Debe ser una URL HTTPS pública. Los hosts privados/loopback están bloqueados.",
+    "fieldTimeout": "Tiempo de espera (ms)",
+    "fieldAuthType": "Autenticación",
+    "fieldSecret": "Secreto de firma",
+    "fieldSecretHelp": "Se usa para firmar el envío con HMAC. La API nunca lo devuelve.",
+    "fieldOutputs": "Salidas de rama",
+    "fieldOutputsHelp": "Etiquetas separadas por comas para nodos de ramificación (dejar en blanco para lineal).",
+    "fieldSchema": "Esquema de configuración (JSON)",
+    "fieldSchemaHelp": "Matriz de descriptores de campo { key, type, label } que impulsan el formulario del nodo.",
+    "fieldStatus": "Estado",
+    "status": {
+      "draft": "Borrador",
+      "enabled": "Habilitado",
+      "disabled": "Deshabilitado"
+    },
+    "notifications": {
+      "loadFailed": "Error al cargar los nodos personalizados.",
+      "created": "Nodo personalizado registrado.",
+      "saveFailed": "No se pudo guardar el nodo personalizado.",
+      "invalidSchema": "El esquema de configuración debe ser JSON válido.",
+      "enabled": "Nodo personalizado habilitado.",
+      "disabled": "Nodo personalizado deshabilitado.",
+      "deleted": "Nodo personalizado eliminado.",
+      "actionFailed": "Error en la acción del nodo personalizado."
     }
   }
 }

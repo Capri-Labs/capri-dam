@@ -3,6 +3,12 @@ require "rails_helper"
 RSpec.describe MigrationCommitWorker, type: :worker do
   let(:user) { create(:user) }
   let(:batch) { create(:ingestion_batch, status: :review_needed, initiated_by_id: user.id, total_count: 1) }
+  let(:adapter) { instance_double("IngestionAdapter", download_and_stream: "/tmp/staged-file.jpg") }
+
+  before do
+    allow(IngestionAdapters::Factory).to receive(:build).and_return(adapter)
+    allow(AssetProcessorWorker).to receive(:perform_async)
+  end
 
   it "returns early for missing batches and invalid statuses" do
     initializing = create(:ingestion_batch, status: :initializing)
@@ -25,7 +31,40 @@ RSpec.describe MigrationCommitWorker, type: :worker do
     expect(asset.asset_versions.first.action_type).to eq("migration_import")
     expect(item.reload).to be_committed
     expect(batch.reload.committed_count).to eq(1)
-    expect(described_class).to have_received(:perform_async).with(batch.id, described_class::COMMIT_CHUNK)
+    expect(described_class).to have_received(:perform_async).with(batch.id)
+    expect(AssetProcessorWorker).to have_received(:perform_async).with(asset.active_version_id, "/tmp/staged-file.jpg")
+  end
+
+  it "falls back to the literal filename (with extension, not titleized) when clean_properties has no title" do
+    create(
+      :ingestion_item,
+      ingestion_batch: batch,
+      status: :ready_for_import,
+      original_filename: "/content/dam/US/marketing-assets/715839_C_CascadeMilling_OrganicPancakeMix_S.psd",
+      clean_properties: { "description" => "Desc" }
+    )
+    allow(described_class).to receive(:perform_async)
+    allow_any_instance_of(Asset).to receive(:broadcast_for_embedding)
+
+    described_class.new.perform(batch.id)
+
+    asset = Asset.order(:created_at).last
+    expect(asset.title).to eq("715839_C_CascadeMilling_OrganicPancakeMix_S.psd")
+  end
+
+  it "commits the full per-asset metadata directly onto the version's properties" do
+    create(:ingestion_item, ingestion_batch: batch, status: :ready_for_import,
+      clean_properties: { "title" => "Hero" },
+      full_metadata: { "dc:title" => "Hero", "dc:description" => "Full desc", "cq:tags" => [ "a" ] })
+    allow(described_class).to receive(:perform_async)
+    allow_any_instance_of(Asset).to receive(:broadcast_for_embedding)
+
+    described_class.new.perform(batch.id)
+
+    version = Asset.order(:created_at).last.asset_versions.first
+    expect(version.properties["full_metadata"]).to eq(
+      "dc:title" => "Hero", "dc:description" => "Full desc", "cq:tags" => [ "a" ]
+    )
   end
 
   it "commits ready items into the chosen destination folder when set" do
@@ -60,6 +99,34 @@ RSpec.describe MigrationCommitWorker, type: :worker do
     expect { described_class.new.perform(batch.id) }.not_to raise_error
     expect(item.reload).to be_flagged_error
     expect(batch.reload.error_count).to eq(1)
+    expect(AssetProcessorWorker).not_to have_received(:perform_async)
+  end
+
+  it "regression: re-downloads the source binary and hands it to AssetProcessorWorker " \
+     "instead of leaving committed assets as metadata-only records stuck at status: pending" do
+    item = create(:ingestion_item, ingestion_batch: batch, status: :ready_for_import,
+                                    original_filename: "/content/dam/hero.jpg")
+    allow(described_class).to receive(:perform_async)
+    allow_any_instance_of(Asset).to receive(:broadcast_for_embedding)
+
+    described_class.new.perform(batch.id)
+
+    expect(adapter).to have_received(:download_and_stream).with("/content/dam/hero.jpg")
+    asset = Asset.order(:created_at).last
+    expect(AssetProcessorWorker).to have_received(:perform_async).with(asset.active_version_id, "/tmp/staged-file.jpg")
+  end
+
+  it "regression: does not enqueue AssetProcessorWorker and cleans up the staged " \
+     "tempfile when the download succeeds but the commit transaction fails afterwards" do
+    staged_path = Tempfile.new("regression-cleanup").tap { |f| f.write("data"); f.rewind }.path
+    allow(adapter).to receive(:download_and_stream).and_return(staged_path)
+    item = create(:ingestion_item, ingestion_batch: batch, status: :ready_for_import)
+    allow(Asset).to receive(:create!).and_raise(StandardError, "invalid asset")
+
+    described_class.new.send(:commit_item!, batch, item)
+
+    expect(AssetProcessorWorker).not_to have_received(:perform_async)
+    expect(File.exist?(staged_path)).to be false
   end
 
   it "falls back to the first user when initiated_by_id is missing" do

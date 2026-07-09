@@ -10,6 +10,109 @@ The ingestion stack normalises external DAM sources into staged
 Brandfolder, Bynder, Canto, Cloudinary, Extensis, FTP, MediaValet, Nuxeo,
 SharePoint, Widen, and a legacy S3-style source.
 
+NOTE: The AEM adapter talks to AEM's **QueryBuilder servlet**
+(`/bin/querybuilder.json`), not the legacy "Assets HTTP API"
+(`/api/assets/**.json`). The latter is a separate, optional bundle that is
+**not installed on modern AEM as a Cloud Service instances** and returns a
+generic Sling 404 ("No resource found") there. QueryBuilder ships with every
+AEM instance (on-prem and Cloud Service), supports real offset/limit
+pagination via `p.offset`/`p.limit`, and its `p.hits=selective` mode lets us
+pull `jcr:content/metadata/*` properties (title, description, tags, size,
+format, creator) in the *same* request as the listing — no N+1 per-asset
+metadata fetch required.
+
+== Full metadata migration ("Migrate Metadata")
+
+`IngestionBatch#migrate_metadata` (boolean, default `true`) controls whether
+the AEM adapter fetches each asset's **complete** per-asset metadata document
+in addition to the lightweight QueryBuilder "selective" properties described
+above.
+
+When enabled, `IngestionAdapters::AemAdapter#build_file_entry` issues one
+extra `GET <asset-path>/jcr:content/metadata.json` request per asset (an
+intentional N+1 cost, opted into only when the operator wants complete
+metadata) and deep-merges the result over the selective QueryBuilder
+properties, so full-metadata values take precedence over the abbreviated
+listing values. If the per-asset request fails (network error, 404, etc.),
+the adapter logs a warning and falls back to the selective metadata already
+collected — a single bad asset never aborts the batch.
+
+=== `jcr:` → `dc:` property aliasing
+
+Per Adobe's AEM Assets HTTP API docs, `jcr:title`, `jcr:description`, and
+`jcr:language` are transparently rewritten to `dc:title`, `dc:description`,
+and `dc:language` in JSON API responses. `AemAdapter::JCR_TO_DC_PROPERTY_ALIASES`
+checks both the `dc:` and raw `jcr:` key for each of these properties (in that
+order) so the adapter still works correctly against older/on-prem AEM
+instances that may not apply the substitution.
+
+=== MIME type normalisation
+
+AEM's metadata (`dc:format`) sometimes reports non-standard/legacy MIME type
+spellings. `AemAdapter::MIME_TYPE_NORMALIZATION_MAP` normalises these to their
+canonical "Schema Form" equivalent before the value is persisted:
+
+[cols="1,2", options="header"]
+|===
+| AEM variant | Canonical value
+| `image/pjpeg` | `image/jpeg`
+| `image/x-tiff` | `image/tiff`
+| `application/postscript` | `application/pdf`
+| `Multipart/Related; type=application/x-ImageSet` | `application/x-ImageSet`
+| `Multipart/Related; type=application/x-SpinSet` | `application/x-SpinSet`
+| `Multipart/Related; type=application/x-MixedMediaSet` | `application/x-MixedMediaSet`
+| `video/x-quicktime` | `video/quicktime`
+| `video/mp4` | `video/mpeg4`
+| `video/x-ms-wmv` | `video/wmv`
+| `video/x-flv` | `video/flv`
+| `video/avi`, `video/msvideo`, `video/x-msvideo` | `video/avi`
+|===
+
+Matching is case-insensitive; any MIME type not present in the map passes
+through unchanged. The *Configure Batch* wizard step exposes this as the
+**Migrate Metadata** toggle (`NewMigrationDialog.jsx`,
+`data-testid="migrate-metadata-switch"`), enabled by default, and the choice
+is echoed back in the *Confirm & Launch* summary step and in
+`IngestionBatch#summary`.
+
+=== Asset naming uses the literal source filename
+
+`original_name` (from `AemAdapter#build_file_entry`) and the migrated asset's
+`title` fallback (`MigrationTransformWorker#fallback_normalize`,
+`MigrationCommitWorker#commit_item!`) always use the source system's literal
+filename, extension included (e.g. `715839_C_CascadeMilling_OrganicPancakeMix_S.psd`)
+— never a titleized/humanized rewrite (e.g. "715839 C Cascade Milling Organic
+Pancake Mix S") and never AEM's `dc:title` value. This keeps the migrated
+asset's name matching exactly what the operator sees in the legacy DAM,
+regardless of whether `dc:title` metadata is present. When `clean_properties`
+(the AI-normalized schema) supplies an explicit `title`, that value still
+takes precedence — this only affects the *fallback* used when no title is
+present in the AI-normalized/legacy metadata.
+
+=== Auditing migrated metadata: `IngestionItem#full_metadata`
+
+`IngestionItem#full_metadata` (jsonb, default `{}`) stores the **raw,
+untouched** payload returned by the source system's per-asset metadata
+endpoint (e.g. AEM's `GET <asset-path>/jcr:content/metadata.json`) — captured
+only when `migrate_metadata` is enabled. It is populated by
+`ExtractionWorker#process_single_file` from the adapter's `raw_metadata:` file
+entry field, kept deliberately separate from `legacy_metadata` (which already
+holds the *merged and canonically-mapped* selective + full metadata used by
+the AI transform step) so operators can see exactly what was fetched from the
+source system, independent of how it was subsequently normalized.
+
+The Batch Review audit view (`BatchReviewWorkspace.jsx`) renders this in a
+dedicated **Metadata** panel, alongside the existing **Raw Legacy Attributes**
+(`legacy_metadata`) and **AI Normalized Schema** (`clean_properties`) panels.
+
+At commit time, `MigrationCommitWorker#commit_item!` writes `full_metadata`
+directly onto the new `AssetVersion#properties` (as `full_metadata:`) — i.e.
+the raw per-asset metadata is committed as-is into the live DAM record, not
+just retained on the (pre-commit) `IngestionItem`. Note that **extraction
+itself is unchanged** — this only adds a persistence step at commit; the
+`legacy_metadata` → `clean_properties` normalization pipeline that drives the
+asset's actual field values (title, description, tags, etc.) is untouched.
+
 == Batch lifecycle
 
 [cols="1,3", options="header"]
@@ -67,8 +170,94 @@ auto-generated `Migration — <SOURCE> — <DATE>` staging folder.
 | Method | Path | Description
 | `GET/POST` | `/api/v1/system_connectors` | Manage connectors.
 | `POST` | `/api/v1/system_connectors/test_connection` | Validate connectivity.
-| `POST` | `/api/v1/system_connectors/:id/start_migration` | Create a new `IngestionBatch`.
-| `GET/POST` | `/api/v1/ingestion_batches` | List/create batches.
+| `POST` | `/api/v1/system_connectors/:id/start_migration` | Create a new `IngestionBatch` (accepts an optional `source_path` to scope the migration to a single DAM folder).
+| `POST` | `/api/v1/system_connectors/:id/refresh_token` | Force a fresh Adobe IMS access token for a `jwt_service_account` connector.
+| `POST` | `/api/v1/system_connectors/:id/revoke_token` | Clear the locally cached access token.
+| `GET/POST` | `/api/v1/ingestion_batches` | List/create batches. Accepts `ingestion_batch[migrate_metadata]` (boolean, default `true`) — see the "Full metadata migration" section above.
 | `GET` | `/api/v1/ingestion_batches/stats` | Dashboard aggregates.
 | `POST` | `/api/v1/ingestion_batches/:id/abort` | Abort a running batch.
 |===
+
+== AEM credentials: static token vs. JWT service account
+
+`SystemConnector#credential_type` is one of:
+
+[cols="1,3", options="header"]
+|===
+| Value | Meaning
+| `token` (default) | A static Bearer token supplied directly (`auth_token`, encrypted at rest). Used as-is on every request; never expires from the connector's point of view.
+| `jwt_service_account` | An Adobe IMS **Service Account (JWT)** technical account. No static token exists — a short-lived (~24h) access token is minted on demand by signing an RS256 JWT with the account's private key and exchanging it at `POST https://<imsEndpoint>/ims/exchange/jwt`. See https://experienceleague.adobe.com/en/docs/experience-manager-cloud-service/content/implementing/developing/generating-access-tokens-for-server-side-apis[Adobe's JWT access-token docs].
+|===
+
+=== Storing JWT credentials
+
+The full technical-account payload (`client_id`, `client_secret`, `private_key`,
+`technical_account_id`, `org_id`, `ims_endpoint`, `metascopes`) is stored in
+`credentials_payload`, an ActiveRecord-encrypted `text` column (`attribute
+:credentials_payload, :json` + `encrypts :credentials_payload` — note: do
+**not** pass `type: :json` to `encrypts`, see caveat below). The admin UI
+accepts either individual fields or a single paste of the raw JSON exported
+from the Adobe Developer Console's "Service Account (JWT)" credential page
+(`integration_json` param) — `Api::V1::SystemConnectorsController#parse_integration_json`
+extracts the required fields server-side; the raw JSON blob itself is never
+persisted or echoed back in any response. `SystemConnector#as_json` always
+strips `credentials_payload`, `access_token`, and `auth_token` so secrets never
+leave the server, even to authenticated admins via the API.
+
+=== Token lifecycle
+
+* `SystemConnector#credentials_for_adapter(source_path:)` is the single entry
+  point adapters use to get a live, ready-to-use credential hash. For JWT
+  connectors it calls `ensure_fresh_access_token!`, which refreshes only when
+  the cached token is missing or expires within `TOKEN_REFRESH_BUFFER`
+  (10 minutes).
+* `AemTokenRefreshWorker` runs every 10 minutes (see `config/schedule.rb`,
+  scheduled via `whenever`) and proactively refreshes any `jwt_service_account`
+  connector whose token is stale — so interactive "Test Connection" calls and
+  long-running migrations rarely hit a cold refresh. Per-connector failures
+  are logged and recorded on the connector (`token_status: "error"`,
+  `last_token_error`) rather than raised, so one broken connector never blocks
+  the sweep for the others.
+* `IngestionBatch#source_credentials` is deliberately left blank for
+  `jwt_service_account` connectors when a migration starts — `Factory#resolve_credentials`
+  falls through to `connector.credentials_for_adapter` on **every** chunk
+  fetch, so a multi-hour migration self-heals across token expiry instead of
+  running with a single frozen snapshot. Plain `token`-type connectors keep
+  the legacy behaviour of snapshotting the credential once, at start.
+* `POST .../refresh_token` and `POST .../revoke_token` let an admin force a
+  refresh or clear the cache manually from the connector dialog.
+* **Revocation caveat**: Adobe IMS has no public API to revoke a technical
+  account's signing capability. `revoke_token!` only clears Capri DAM's local
+  cache — to truly invalidate a compromised credential, rotate the client
+  secret or regenerate the key pair in the Adobe Developer Console.
+
+=== Folder-scoped migrations
+
+`SystemConnector#default_source_path` (optional) and the per-run
+`start_migration` `source_path` param let an admin restrict a migration to a
+single DAM subtree (e.g. `/content/dam/US/marketing-assets/product-assets`)
+instead of the whole repository. `AemAdapter#scoped_path` normalises the given
+path against AEM's `/content/dam` root and builds
+`GET {endpoint}/api/assets{path}.json` accordingly; a blank path falls back to
+the historical whole-repository listing.
+
+=== ActiveRecord Encryption caveat (Rails 8.1)
+
+`encrypts :column, type: :json` is **not** a valid option — `type:` is not a
+recognised keyword of `encrypts` and gets silently folded into
+`context_properties`, which later raises
+`NoMethodError: undefined method 'type=' for ActiveRecord::Encryption::Context`
+on any read. The fix is to declare the cast type first, then encrypt with no
+extra options:
+
+[source,ruby]
+----
+attribute :credentials_payload, :json
+encrypts :credentials_payload
+----
+
+Encrypted columns must also be `text`/`varchar`, not `jsonb` — Postgres enforces
+JSON casting on `jsonb` columns at the adapter level, which conflicts with
+storing ciphertext. (`CdnConfiguration#settings` predates this fix and still
+uses the invalid `type: :json` pattern — it is out of scope for this feature
+but should be corrected the same way in a follow-up.)

@@ -45,7 +45,8 @@
       "System Ops": "系统运维",
       "Queues": "Sidekiq队列",
       "Inbox": "收件箱",
-      "Quarantine Review": "Quarantine Review"
+      "Quarantine Review": "Quarantine Review",
+      "Custom Nodes": "自定义节点"
     }
   },
   "common": {
@@ -949,6 +950,8 @@
     "delayNodeDesc": "Pause workflow for N hours or days.",
     "conditionNode": "Condition Branch",
     "conditionNodeDesc": "Branch on asset metadata or status value.",
+    "switchNode": "分支 / 多路分支",
+    "switchNodeDesc": "通过将字段与有序条件匹配，路由到多个输出之一。",
     "email": {
       "recipient": "Recipient",
       "recipientOwner": "Asset Owner",
@@ -1096,6 +1099,29 @@
       "trueBranch": "TRUE",
       "falseBranch": "FALSE"
     },
+    "switch": {
+      "field": "分支字段",
+      "fieldPlaceholder": "status / properties.content_type",
+      "cases": "分支条件",
+      "noCases": "暂无条件——添加一个以创建输出分支。",
+      "caseN": "条件 {{n}}",
+      "operator": "运算符",
+      "op_equals": "等于",
+      "op_not_equals": "不等于",
+      "op_contains": "包含",
+      "op_starts_with": "开头为",
+      "op_ends_with": "结尾为",
+      "op_greater_than": "大于",
+      "op_less_than": "小于",
+      "compareValue": "比较值",
+      "outputLabel": "输出标签",
+      "outputLabelPlaceholder": "例如 图片、视频",
+      "addCase": "添加条件",
+      "removeCase": "删除条件",
+      "defaultLabel": "默认输出标签",
+      "defaultHelp": "当没有条件匹配时采用的路径。",
+      "defaultBranch": "默认"
+    },
     "approval": {
       "title": "Approval Step",
       "assigneeType": "Type",
@@ -1215,6 +1241,10 @@
       "notesHelper": "仅管理员可见的内部备注。",
       "tdmSanitation": "应用 AI / TDM 清理",
       "tdmSanitationDesc": "将每个资产路由到 AI Gateway 进行元数据规范化和合规扫描。",
+      "migrateMetadata": "迁移元数据",
+      "migrateMetadataDesc": "除了轻量级列表属性外,还获取每个资产的完整元数据(例如 AEM 的 jcr:content/metadata.json)。每个资产会增加一次请求。默认启用以获取完整元数据。",
+      "migrateMetadataEnabledSummary": "已启用 — 已获取每个资产的完整元数据",
+      "migrateMetadataDisabledSummary": "已禁用 — 仅列表元数据",
       "concurrency": "最大并发线程数",
       "concurrencyHelper": "并行下载线程数（1–10）。",
       "confirmInfo": "点击“初始化”将立即启动提取流水线。该过程将在后台运行。",
@@ -2228,7 +2258,11 @@
       "embeddedMetadataSection": "EXIF / IPTC / XMP 数据",
       "noExifDataExtractedYet": "尚未提取 EXIF 数据。",
       "collapseExifData": "折叠 EXIF / IPTC / XMP 数据",
-      "expandExifData": "展开 EXIF / IPTC / XMP 数据"
+      "expandExifData": "展开 EXIF / IPTC / XMP 数据",
+      "rawMetadataSection": "原始元数据",
+      "noRawMetadataAvailable": "没有可用的原始元数据。",
+      "collapseRawMetadata": "折叠原始元数据",
+      "expandRawMetadata": "展开原始元数据"
     },
     "ai": {
       "semanticAndVisionAnalysis": "语义与视觉分析"
@@ -2687,6 +2721,61 @@
       "resolvedAs": "解析为 {{path}}",
       "previewFailed": "预览失败。",
       "previewUnavailable": "当前无法获取预览结果。"
+    }
+  },
+  "customNodes": {
+    "title": "自定义工作流节点",
+    "subtitle": "将租户托管的插件节点注册为声明式清单。Capri DAM 从不在进程内运行插件代码——引擎会向您的 HTTPS 端点发送受 SSRF 保护、HMAC 签名的 Webhook，并且仅应用响应操作的白名单。",
+    "refresh": "刷新",
+    "register": "注册节点",
+    "registerTitle": "注册自定义节点",
+    "colName": "名称",
+    "colKey": "节点类型",
+    "colEndpoint": "端点",
+    "colStatus": "状态",
+    "colHealth": "健康状况",
+    "colActions": "操作",
+    "empty": "尚未注册自定义节点。",
+    "circuitOpen": "熔断已打开",
+    "failures": "{{count}} 次失败",
+    "enable": "启用",
+    "disable": "禁用",
+    "delete": "删除",
+    "confirmDelete": "删除自定义节点“{{name}}”？此操作无法撤消。",
+    "cancel": "取消",
+    "save": "保存",
+    "nodeLabel": "自定义节点",
+    "pluginBadge": "插件：{{key}}",
+    "noFields": "此插件没有可配置的字段。",
+    "fieldKey": "键",
+    "fieldKeyHelp": "小写标识符（a-z、0-9、_）。以 plugin:<key> 形式公开。",
+    "fieldName": "显示名称",
+    "fieldDescription": "描述",
+    "fieldEndpoint": "端点 URL",
+    "fieldEndpointHelp": "必须是公共 HTTPS URL。私有/回环主机将被阻止。",
+    "fieldTimeout": "超时（毫秒）",
+    "fieldAuthType": "认证",
+    "fieldSecret": "签名密钥",
+    "fieldSecretHelp": "用于对分发进行 HMAC 签名。API 从不返回此值。",
+    "fieldOutputs": "分支输出",
+    "fieldOutputsHelp": "分支节点的逗号分隔标签（线性节点留空）。",
+    "fieldSchema": "配置架构（JSON）",
+    "fieldSchemaHelp": "驱动节点表单的 { key, type, label } 字段描述符数组。",
+    "fieldStatus": "状态",
+    "status": {
+      "draft": "草稿",
+      "enabled": "已启用",
+      "disabled": "已禁用"
+    },
+    "notifications": {
+      "loadFailed": "加载自定义节点失败。",
+      "created": "已注册自定义节点。",
+      "saveFailed": "无法保存自定义节点。",
+      "invalidSchema": "配置架构必须是有效的 JSON。",
+      "enabled": "已启用自定义节点。",
+      "disabled": "已禁用自定义节点。",
+      "deleted": "已删除自定义节点。",
+      "actionFailed": "自定义节点操作失败。"
     }
   }
 }

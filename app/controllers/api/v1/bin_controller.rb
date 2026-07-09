@@ -117,6 +117,13 @@ module Api
           end
         end
 
+        if restored > 0
+          # Bulk restore can touch many folders at once (and reparent items
+          # across the tree) — a full flush is simpler and safer than
+          # tracking every affected folder id individually for a rare,
+          # already-slow-path bulk operation.
+          FolderContentsCache.flush_all
+        end
         render json: { restored: restored, errors: errors }, status: :ok
       end
 
@@ -167,6 +174,7 @@ module Api
           end
         end
 
+        FolderContentsCache.flush_all if deleted > 0
         render json: { deleted: deleted, errors: errors }, status: :ok
       end
 
@@ -228,6 +236,7 @@ module Api
           errors << "Failed to delete folder ##{folder.id}: #{e.message}"
         end
 
+        FolderContentsCache.flush_all if deleted > 0
         render json: { deleted: deleted, errors: errors, message: "Recycle bin emptied." }, status: :ok
       end
 

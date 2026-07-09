@@ -18,3 +18,9 @@ end
 every 1.day, at: "3:00 am" do
   runner "BinPurgeWorker.perform_async"
 end
+
+# Keeps Adobe IMS (AEM) service-account access tokens fresh so scheduled/
+# in-flight migrations never stall on an expired token.
+every 10.minutes do
+  runner "AemTokenRefreshWorker.perform_async"
+end

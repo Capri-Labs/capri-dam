@@ -131,7 +131,8 @@ RSpec.describe IngestionBatch, type: :model do
       expect(keys).to include(:id, :name, :source_type, :status, :progress_pct,
                                :total_count, :processed_count, :committed_count,
                                :duplicate_count, :error_count, :source_label,
-                               :destination_folder_id, :destination_folder_name)
+                               :destination_folder_id, :destination_folder_name,
+                               :migrate_metadata)
     end
 
     it 'surfaces the destination folder when set' do
@@ -140,6 +141,23 @@ RSpec.describe IngestionBatch, type: :model do
 
       expect(batch.summary[:destination_folder_id]).to eq(folder.id)
       expect(batch.summary[:destination_folder_name]).to eq('Campaign Assets')
+    end
+
+    it 'surfaces the migrate_metadata flag' do
+      batch = create(:ingestion_batch, migrate_metadata: false)
+      expect(batch.summary[:migrate_metadata]).to be false
+    end
+  end
+
+  describe '#migrate_metadata' do
+    it 'defaults to true (full metadata migration enabled by default)' do
+      batch = IngestionBatch.new(name: 'Import', source_type: 'aem')
+      expect(batch.migrate_metadata).to be true
+    end
+
+    it 'can be explicitly disabled' do
+      batch = create(:ingestion_batch, migrate_metadata: false)
+      expect(batch.reload.migrate_metadata?).to be false
     end
   end
 

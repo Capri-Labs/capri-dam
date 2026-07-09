@@ -324,6 +324,62 @@ RSpec.describe "Api::V1::Assets coverage", type: :request do
     end
   end
 
+  describe "folder-contents cache busting (FolderContentsCache)" do
+    # Large folders (1,000-3,000+ assets) are Redis-cached (see
+    # FolderContentsCache). These actions must bust that cache so the folder
+    # view reflects the mutation immediately instead of waiting out the TTL.
+
+    it "busts the target folder's cache on upload" do
+      folder = create(:folder, user: user)
+      file = fixture_file_upload(Rails.root.join("spec/fixtures/images/test-image.jpg"), "image/jpeg")
+
+      expect(FolderContentsCache).to receive(:bust).with(folder.id)
+      post "/api/v1/assets", params: { file: file, title: "Cached Folder Upload", folder_id: folder.id }
+      expect(response).to have_http_status(:accepted)
+    end
+
+    it "busts both the old and new folder caches when an asset is moved via #update" do
+      origin = create(:folder, user: user)
+      destination = create(:folder, user: user)
+      asset = asset_with_version(title: "Movable")
+      asset.update!(folder: origin)
+
+      expect(FolderContentsCache).to receive(:bust).with([ origin.id, destination.id ])
+      patch "/api/v1/assets/#{asset.uuid}", params: { asset: { folder_id: destination.id } }, as: :json
+      expect(response).to have_http_status(:ok)
+    end
+
+    it "busts the asset's folder cache on update_metadata, destroy and restore" do
+      folder = create(:folder, user: user)
+      asset = asset_with_version(title: "Metadata Target")
+      asset.update!(folder: folder)
+
+      expect(FolderContentsCache).to receive(:bust).with(folder.id)
+      patch "/api/v1/assets/#{asset.uuid}/metadata", params: { metadata: { "dc:title" => "Updated" } }, as: :json
+      expect(response).to have_http_status(:ok)
+
+      expect(FolderContentsCache).to receive(:bust).with(folder.id)
+      delete "/api/v1/assets/#{asset.uuid}", as: :json
+      expect(response).to have_http_status(:ok)
+
+      asset.reload
+      expect(FolderContentsCache).to receive(:bust).with(folder.id)
+      post "/api/v1/assets/#{asset.uuid}/restore", as: :json
+      expect(response).to have_http_status(:ok)
+    end
+
+    it "busts the asset's folder cache on permanent delete" do
+      folder = create(:folder, user: user)
+      asset = asset_with_version(title: "Gone Forever")
+      asset.update!(folder: folder)
+      asset.soft_delete
+
+      expect(FolderContentsCache).to receive(:bust).with(folder.id)
+      delete "/api/v1/assets/#{asset.uuid}/permanent", as: :json
+      expect(response).to have_http_status(:ok)
+    end
+  end
+
   describe "custom member actions" do
     it "returns versions, audit trail and restores a selected version" do
       asset = asset_with_version(title: "Versioned", properties: {
@@ -629,6 +685,32 @@ RSpec.describe "Api::V1::Assets coverage", type: :request do
       FileUtils.rm_rf(dam_path.dirname) if defined?(dam_path) && dam_path.dirname.to_s.end_with?("assets_controller_coverage")
     end
 
+    it "prefers storage_path over an attached ActiveStorage file to avoid serving the wrong image" do
+      # Regression test: active_storage_attachments.record_id is a bigint
+      # column but Asset/AssetVersion use uuid primary keys, so every
+      # attachment ends up persisted with record_id: 0. `file.attached?` can
+      # therefore spuriously return true for an unrelated version's blob.
+      # storage_path is written authoritatively right after upload and must
+      # win whenever present.
+      dam_path = Rails.root.join("storage/dam/assets_controller_coverage/correct-file.txt")
+      FileUtils.mkdir_p(dam_path.dirname)
+      File.binwrite(dam_path, "correct body")
+      asset = asset_with_version(title: "Storage Path Wins", properties: {
+        "storage_path" => "assets_controller_coverage/correct-file.txt",
+        "content_type" => "text/plain",
+      })
+      attachment = instance_double(ActiveStorage::Attached::One, attached?: true)
+      allow_any_instance_of(AssetVersion).to receive(:file).and_return(attachment)
+
+      get "/api/v1/assets/local/#{asset.uuid}"
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to eq("correct body")
+    ensure
+      FileUtils.rm_f(dam_path)
+      FileUtils.rm_rf(dam_path.dirname) if defined?(dam_path) && dam_path.dirname.to_s.end_with?("assets_controller_coverage")
+    end
+
     it "falls back to asset-level storage for preview requests and honors If-Modified-Since" do
       dam_path = Rails.root.join("storage/dam/assets_controller_coverage/fallback-preview.txt")
       FileUtils.mkdir_p(dam_path.dirname)
@@ -658,7 +740,12 @@ RSpec.describe "Api::V1::Assets coverage", type: :request do
       # schema. We stub the attachment so this exercises the redirect branch
       # (AssetsController#local) deterministically instead of depending on
       # that pre-existing schema mismatch.
-      asset = asset_with_version(title: "Attached Local", properties: { "storage_path" => "unused.txt" })
+      #
+      # The ActiveStorage fallback only applies when there is no
+      # `storage_path` on the version — storage_path is authoritative
+      # whenever present, precisely to avoid trusting the unreliable
+      # attachment lookup described above (see AssetUrlHelper).
+      asset = asset_with_version(title: "Attached Local", properties: {})
       attachment = instance_double(ActiveStorage::Attached::One, attached?: true)
       allow_any_instance_of(AssetVersion).to receive(:file).and_return(attachment)
       allow_any_instance_of(Api::V1::AssetsController).to receive(:url_for)

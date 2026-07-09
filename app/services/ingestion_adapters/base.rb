@@ -17,7 +17,8 @@ module IngestionAdapters
     # Returns the next page of file references from the source system.
     # @param cursor [String, nil] opaque pagination cursor from previous call
     # @param limit  [Integer]    max records per page
-    # @return [Hash] { files: [{identifier:, size:, original_name:, metadata:}],
+    # @return [Hash] { files: [{identifier:, size:, original_name:, metadata:,
+    #   raw_metadata: (optional, adapter-specific)}],
     #                  next_cursor: String|nil, has_more: Boolean }
     def fetch_next_chunk(cursor = nil, limit = 100)
       raise NotImplementedError, "#{self.class} must implement #fetch_next_chunk"
@@ -87,6 +88,19 @@ module IngestionAdapters
       end
 
       tempfile.rewind
+
+      # Ruby's Tempfile registers a GC finalizer that unlinks the underlying
+      # file as soon as the Tempfile *object* becomes unreachable — which
+      # happens right after this method returns, since only the path string
+      # (not the object) is handed back to the caller. Every caller in this
+      # codebase already explicitly deletes the file when it's done with it
+      # (ExtractionWorker, AssetProcessorWorker), so disable the finalizer
+      # here to stop Ruby's GC from racing/deleting the file out from under
+      # callers — this is especially critical when the path is handed off
+      # across an async Sidekiq job boundary (MigrationCommitWorker →
+      # AssetProcessorWorker), where enough time elapses for a GC cycle to
+      # run and silently delete the file before the job ever reads it.
+      ObjectSpace.undefine_finalizer(tempfile)
       tempfile.path
     ensure
       tempfile&.close

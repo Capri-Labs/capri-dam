@@ -32,6 +32,9 @@ RSpec.describe WorkflowStep, type: :model do
         elsif nt == 'email_notification'
           attrs.merge!(step_type: 'automated_action', assignee_type: 'system',
                        assignee_id: 0, step_config: { 'subject' => 'Hello' })
+        elsif nt == 'switch'
+          attrs.merge!(step_type: 'automated_action', assignee_type: 'system', assignee_id: 0,
+                       step_config: { 'field' => 'status', 'cases' => [ { 'operator' => 'equals', 'value' => 'x', 'label' => 'a' } ] })
         elsif nt != 'approval'
           attrs.merge!(step_type: 'automated_action', assignee_type: 'system', assignee_id: 0)
         end
@@ -55,6 +58,37 @@ RSpec.describe WorkflowStep, type: :model do
                    step_config: { 'recipient' => 'assignee' })
       expect(step).not_to be_valid
       expect(step.errors[:step_config].join).to include('subject')
+    end
+
+    it 'is invalid when a switch node has no field or cases' do
+      step = build(:workflow_step, step_type: 'automated_action', node_type: 'switch',
+                   assignee_type: 'system', assignee_id: 0, logic: 'any', step_config: {})
+      expect(step).not_to be_valid
+      expect(step.errors[:step_config].join).to include('field')
+      expect(step.errors[:step_config].join).to include('case')
+    end
+
+    it 'is valid when a switch node has a field and at least one case' do
+      step = build(:workflow_step, step_type: 'automated_action', node_type: 'switch',
+                   assignee_type: 'system', assignee_id: 0, logic: 'any',
+                   step_config: { 'field' => 'status', 'cases' => [ { 'operator' => 'equals', 'value' => 'x', 'label' => 'a' } ] })
+      expect(step).to be_valid, step.errors.full_messages.join(', ')
+    end
+  end
+
+  describe 'plugin (custom-node SDK) node types' do
+    it "accepts a namespaced plugin node_type" do
+      step = build(:workflow_step, step_type: 'automated_action', node_type: 'plugin:acme_watermark',
+                   assignee_type: 'system', assignee_id: 0, logic: 'any', step_config: {})
+      expect(step).to be_valid, step.errors.full_messages.join(', ')
+      expect(step.plugin?).to be(true)
+    end
+
+    it "rejects a malformed plugin node_type" do
+      step = build(:workflow_step, step_type: 'automated_action', node_type: 'plugin:Bad Key!',
+                   assignee_type: 'system', assignee_id: 0, logic: 'any', step_config: {})
+      expect(step).not_to be_valid
+      expect(step.errors[:node_type]).to be_present
     end
   end
 

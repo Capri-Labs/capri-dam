@@ -80,42 +80,151 @@ RSpec.describe ExtractionWorker, type: :worker do
       expect(batch).to have_received(:update!).with(status: :transforming)
       expect(described_class).not_to have_received(:perform_async)
     end
+
+    it "persists last_cursor on a real IngestionBatch so a multi-page fetch actually advances " \
+       "(regression: last_cursor previously didn't exist as a column, so pagination silently " \
+       "never advanced and the same first page was re-fetched forever)" do
+      batch = create(:ingestion_batch, status: :extracting)
+      adapter = instance_double("IngestionAdapter")
+
+      allow(adapter).to receive(:fetch_next_chunk).with(nil).and_return(
+        files: [ { identifier: "page-1-file.jpg", size: 1 } ],
+        next_cursor: "100",
+        has_more: true,
+      )
+      allow(worker).to receive(:process_single_file)
+      allow(described_class).to receive(:perform_async)
+
+      worker.send(:process_chunk, batch, adapter)
+
+      expect(batch.reload.last_cursor).to eq("100")
+      expect(described_class).to have_received(:perform_async).with(batch.id)
+
+      # Simulate the re-enqueued job's next invocation: it must read the
+      # *persisted* cursor, not start over from offset 0.
+      allow(adapter).to receive(:fetch_next_chunk).with("100").and_return(
+        files: [], next_cursor: "100", has_more: false
+      )
+
+      worker.send(:process_chunk, batch, adapter)
+
+      expect(adapter).to have_received(:fetch_next_chunk).with("100")
+      expect(batch.reload).to be_transforming
+    end
   end
 
   describe "#process_single_file" do
     let(:batch) { create(:ingestion_batch, status: :extracting) }
     let(:adapter) { instance_double("IngestionAdapter") }
 
-    it "flags duplicate hashes without broadcasting or deleting missing files" do
+    it "flags duplicate hashes without broadcasting, but still enqueues transform to reject it" do
       allow(adapter).to receive(:download_and_stream).with("dup.jpg").and_yield("duplicate-bytes").and_return("missing-file")
       allow(Asset).to receive(:column_names).and_return(%w[id file_hash])
       allow(Asset).to receive(:exists?).and_return(true)
       allow(worker).to receive(:broadcast_to_ai_gateway)
+      allow(MigrationTransformWorker).to receive(:perform_async)
       allow(File).to receive(:exist?).with("missing-file").and_return(false)
       allow(File).to receive(:delete)
 
-      worker.send(:process_single_file, batch, adapter, identifier: "dup.jpg", size: 12)
+      worker.send(:process_single_file, batch, adapter, identifier: "dup.jpg", size: 12, metadata: { "dc:title" => "Dup" })
 
       item = batch.ingestion_items.order(:created_at).last
       expect(item).to be_flagged_duplicate
+      expect(item.legacy_metadata).to eq("dc:title" => "Dup")
       expect(worker).not_to have_received(:broadcast_to_ai_gateway)
+      expect(MigrationTransformWorker).to have_received(:perform_async).with(item.id)
       expect(File).not_to have_received(:delete)
     end
 
-    it "keeps unique hashes pending, broadcasts them, and deletes the temp file" do
+    it "keeps unique hashes pending, persists metadata, broadcasts + enqueues transform, and deletes the temp file" do
       allow(adapter).to receive(:download_and_stream).with("new.jpg").and_yield("unique-bytes").and_return("downloaded-file")
       allow(Asset).to receive(:column_names).and_return(%w[id file_hash])
       allow(Asset).to receive(:exists?).and_return(false)
       allow(worker).to receive(:broadcast_to_ai_gateway)
+      allow(MigrationTransformWorker).to receive(:perform_async)
       allow(File).to receive(:exist?).with("downloaded-file").and_return(true)
       allow(File).to receive(:delete).with("downloaded-file")
 
-      worker.send(:process_single_file, batch, adapter, identifier: "new.jpg", size: 20)
+      worker.send(:process_single_file, batch, adapter, identifier: "new.jpg", size: 20, metadata: { "dc:title" => "New Asset" })
 
       item = batch.ingestion_items.order(:created_at).last
       expect(item).to be_pending
+      expect(item.legacy_metadata).to eq("dc:title" => "New Asset")
       expect(worker).to have_received(:broadcast_to_ai_gateway).with(item)
+      expect(MigrationTransformWorker).to have_received(:perform_async).with(item.id)
       expect(File).to have_received(:delete).with("downloaded-file")
+    end
+
+    it "defaults legacy_metadata to an empty hash when the adapter provides no metadata key" do
+      allow(adapter).to receive(:download_and_stream).with("no-meta.jpg").and_yield("bytes").and_return("temp-file")
+      allow(Asset).to receive(:column_names).and_return(%w[id file_hash])
+      allow(Asset).to receive(:exists?).and_return(false)
+      allow(worker).to receive(:broadcast_to_ai_gateway)
+      allow(MigrationTransformWorker).to receive(:perform_async)
+      allow(File).to receive(:exist?).with("temp-file").and_return(true)
+      allow(File).to receive(:delete).with("temp-file")
+
+      worker.send(:process_single_file, batch, adapter, identifier: "no-meta.jpg", size: 5)
+
+      item = batch.ingestion_items.order(:created_at).last
+      expect(item.legacy_metadata).to eq({})
+    end
+
+    it "persists the adapter's raw_metadata payload (when present) onto full_metadata for audit purposes" do
+      allow(adapter).to receive(:download_and_stream).with("hero.psd").and_yield("bytes").and_return("temp-file")
+      allow(Asset).to receive(:column_names).and_return(%w[id file_hash])
+      allow(Asset).to receive(:exists?).and_return(false)
+      allow(worker).to receive(:broadcast_to_ai_gateway)
+      allow(MigrationTransformWorker).to receive(:perform_async)
+      allow(File).to receive(:exist?).with("temp-file").and_return(true)
+      allow(File).to receive(:delete).with("temp-file")
+
+      worker.send(
+        :process_single_file, batch, adapter,
+        identifier: "hero.psd", size: 5,
+        metadata: { "title" => "Hero" },
+        raw_metadata: { "dc:title" => "Hero", "dc:description" => "Full desc" }
+      )
+
+      item = batch.ingestion_items.order(:created_at).last
+      expect(item.full_metadata).to eq("dc:title" => "Hero", "dc:description" => "Full desc")
+    end
+
+    it "defaults full_metadata to an empty hash when the adapter provides no raw_metadata key (migrate_metadata disabled)" do
+      allow(adapter).to receive(:download_and_stream).with("no-raw.jpg").and_yield("bytes").and_return("temp-file")
+      allow(Asset).to receive(:column_names).and_return(%w[id file_hash])
+      allow(Asset).to receive(:exists?).and_return(false)
+      allow(worker).to receive(:broadcast_to_ai_gateway)
+      allow(MigrationTransformWorker).to receive(:perform_async)
+      allow(File).to receive(:exist?).with("temp-file").and_return(true)
+      allow(File).to receive(:delete).with("temp-file")
+
+      worker.send(:process_single_file, batch, adapter, identifier: "no-raw.jpg", size: 5, metadata: { "title" => "X" })
+
+      item = batch.ingestion_items.order(:created_at).last
+      expect(item.full_metadata).to eq({})
+    end
+
+    it "regression: still enqueues MigrationTransformWorker with the real " \
+       "(non-stubbed) broadcast_to_ai_gateway, which mutates item.status to " \
+       "ai_processing in place — a naive `item.pending?` check performed " \
+       "*after* broadcasting would always read false and silently skip the " \
+       "enqueue for every newly extracted item" do
+      allow(adapter).to receive(:download_and_stream).with("real-broadcast.jpg").and_yield("bytes").and_return("temp-file")
+      allow(Asset).to receive(:column_names).and_return(%w[id file_hash])
+      allow(Asset).to receive(:exists?).and_return(false)
+      allow(MigrationTransformWorker).to receive(:perform_async)
+      allow(File).to receive(:exist?).with("temp-file").and_return(true)
+      allow(File).to receive(:delete).with("temp-file")
+
+      redis = instance_double(Redis, publish: true)
+      without_partial_double_verification { allow(Redis).to receive(:new).and_return(redis) }
+
+      worker.send(:process_single_file, batch, adapter, identifier: "real-broadcast.jpg", size: 5)
+
+      item = batch.ingestion_items.order(:created_at).last
+      expect(item).to be_ai_processing
+      expect(MigrationTransformWorker).to have_received(:perform_async).with(item.id)
     end
   end
 
@@ -125,7 +234,7 @@ RSpec.describe ExtractionWorker, type: :worker do
       redis = instance_double(Redis, publish: true)
       allow(item).to receive(:update!).with(status: :ai_processing)
       without_partial_double_verification do
-        allow(Redis).to receive(:current).and_return(redis)
+        allow(Redis).to receive(:new).and_return(redis)
 
         worker.send(:broadcast_to_ai_gateway, item)
 

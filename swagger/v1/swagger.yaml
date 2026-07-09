@@ -4614,6 +4614,128 @@ paths:
                   example: image
                   description: 'Optional MIME-type prefix filter: image | video |
                     document | audio'
+  "/api/v1/custom_node_definitions":
+    get:
+      summary: List custom node definitions
+      tags:
+      - Custom Nodes
+      security:
+      - Bearer: []
+      responses:
+        '200':
+          description: Definitions returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      "$ref": "#/components/schemas/CustomNodeDefinition"
+    post:
+      summary: Create a custom node definition (admin only)
+      tags:
+      - Custom Nodes
+      security:
+      - Bearer: []
+      parameters: []
+      responses:
+        '201':
+          description: Definition created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  custom_node_definition:
+                    "$ref": "#/components/schemas/CustomNodeDefinition"
+        '422':
+          description: Validation failed
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+  "/api/v1/custom_node_definitions/{id}":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+    get:
+      summary: Fetch a custom node definition
+      tags:
+      - Custom Nodes
+      security:
+      - Bearer: []
+      responses:
+        '200':
+          description: Definition returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  custom_node_definition:
+                    "$ref": "#/components/schemas/CustomNodeDefinition"
+    patch:
+      summary: Update a custom node definition
+      tags:
+      - Custom Nodes
+      security:
+      - Bearer: []
+      parameters: []
+      responses:
+        '200':
+          description: Definition updated
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+    delete:
+      summary: Delete a custom node definition
+      tags:
+      - Custom Nodes
+      security:
+      - Bearer: []
+      responses:
+        '204':
+          description: Definition deleted
+  "/api/v1/custom_node_definitions/{id}/enable":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+    post:
+      summary: Enable a custom node definition
+      tags:
+      - Custom Nodes
+      security:
+      - Bearer: []
+      responses:
+        '200':
+          description: Definition enabled
+  "/api/v1/custom_node_definitions/{id}/disable":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+    post:
+      summary: Disable a custom node definition
+      tags:
+      - Custom Nodes
+      security:
+      - Bearer: []
+      responses:
+        '200':
+          description: Definition disabled
   "/api/v1/dashboard/overview":
     get:
       summary: Get dashboard overview statistics
@@ -6128,6 +6250,13 @@ paths:
                     notes:
                       type: string
                       nullable: true
+                    migrate_metadata:
+                      type: boolean
+                      default: true
+                      description: When true (default), the extraction pipeline fetches
+                        each asset's complete metadata (e.g. AEM's jcr:content/metadata.json
+                        node) in addition to the lightweight listing properties pulled
+                        during the file scan. Disable for faster, listing-only imports.
                     source_credentials:
                       type: object
                       description: Provider-specific credentials map (stored encrypted).
@@ -6272,6 +6401,12 @@ paths:
                         legacy_metadata:
                           type: object
                           nullable: true
+                        full_metadata:
+                          type: object
+                          nullable: true
+                          description: Raw per-asset metadata fetched from the source
+                            system's dedicated metadata endpoint (e.g. AEM's jcr:content/metadata.json),
+                            captured only when migrate_metadata was enabled.
                         clean_properties:
                           type: object
                           nullable: true
@@ -7529,6 +7664,7 @@ paths:
                       type: string
                       example: cloudinary
                       description: cloudinary | brandfolder | bynder | ftp | http_api
+                        | aem
                     endpoint:
                       type: string
                       nullable: true
@@ -7536,7 +7672,31 @@ paths:
                     auth_token:
                       type: string
                       nullable: true
-                      description: API key / Bearer token for the external system
+                      description: 'API key / Bearer token for the external system
+                        (credential_type: token)'
+                    credential_type:
+                      type: string
+                      nullable: true
+                      example: token
+                      description: '"token" (static Bearer token, default) or "jwt_service_account"
+                        (Adobe IMS technical-account, private-key JWT exchange — used
+                        by AEM)'
+                    integration_json:
+                      type: string
+                      nullable: true
+                      description: 'Convenience field: the raw JSON blob copy-pasted
+                        from the Adobe Developer Console "Service Account (JWT)" credential
+                        page. When present, the server parses client_id/client_secret/private_key/org/technical
+                        account id out of it and stores them (encrypted) as credentials_payload,
+                        forcing credential_type=jwt_service_account. The raw JSON
+                        itself is never persisted or echoed back.'
+                    default_source_path:
+                      type: string
+                      nullable: true
+                      example: "/content/dam/US/marketing-assets/product-assets"
+                      description: Default DAM folder to scope migrations to (AEM
+                        only). Can be overridden per-migration via start_migration's
+                        source_path param.
                     concurrency_limit:
                       type: integer
                       nullable: true
@@ -7757,7 +7917,13 @@ paths:
         credentials and immediately fires `ExtractionWorker`. The connector
         must be in `status: active` to start a migration.
 
+        For `credential_type: jwt_service_account` connectors, no static
+        access token is snapshotted onto the batch — the extraction worker
+        re-derives (and auto-refreshes) a live token on every chunk fetch,
+        so long-running migrations survive token expiry.
+
         Monitor progress via `GET /api/v1/ingestion_batches/{batch_id}`.
+      parameters: []
       responses:
         '202':
           description: Migration started — batch summary returned
@@ -7780,6 +7946,113 @@ paths:
                 properties:
                   error:
                     type: string
+        '404':
+          description: Connector not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                source_path:
+                  type: string
+                  nullable: true
+                  example: "/content/dam/US/marketing-assets/product-assets"
+                  description: DAM folder to scope this migration to. Falls back to
+                    the connector's default_source_path, then to the provider root.
+  "/api/v1/system_connectors/{id}/refresh_token":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      description: SystemConnector ID
+      schema:
+        type: integer
+    post:
+      summary: Force-refresh a jwt_service_account connector's IMS access token
+      tags:
+      - System Connectors
+      security:
+      - Bearer: []
+      description: |
+        Signs a fresh RS256 JWT from the connector's stored technical-account
+        credentials and exchanges it with Adobe IMS for a new short-lived
+        access token, persisting the result. Only valid for connectors with
+        `credential_type: jwt_service_account`. Access tokens are also
+        refreshed automatically in the background (see `AemTokenRefreshWorker`)
+        whenever they are missing or near expiry.
+      responses:
+        '200':
+          description: Token refreshed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token_status:
+                    type: string
+                    example: valid
+                  access_token_expires_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+        '422':
+          description: Connector is not a jwt_service_account connector, or the IMS
+            exchange failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '404':
+          description: Connector not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+  "/api/v1/system_connectors/{id}/revoke_token":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      description: SystemConnector ID
+      schema:
+        type: integer
+    post:
+      summary: Clear the locally cached IMS access token for a connector
+      tags:
+      - System Connectors
+      security:
+      - Bearer: []
+      description: |
+        Clears the cached access token so the next migration/refresh forces a
+        fresh IMS exchange. This does **not** revoke the credential on Adobe's
+        side — Adobe IMS has no public API for that. To fully invalidate a
+        compromised technical account, rotate the client secret / regenerate
+        the key pair in the Adobe Developer Console.
+      responses:
+        '200':
+          description: Token revoked (locally cleared)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token_status:
+                    type: string
+                    example: revoked
         '404':
           description: Connector not found
           content:
@@ -9572,6 +9845,64 @@ components:
           type: boolean
         explicit_deny:
           type: boolean
+    CustomNodeDefinition:
+      type: object
+      properties:
+        id:
+          type: integer
+        key:
+          type: string
+          example: acme_watermark
+        node_type:
+          type: string
+          example: plugin:acme_watermark
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        icon:
+          type: string
+          nullable: true
+        category:
+          type: string
+          example: custom
+        color:
+          type: string
+          example: "#6366f1"
+        config_schema:
+          type: array
+          items:
+            type: object
+        runtime:
+          type: object
+          description: Secrets are never serialized.
+        status:
+          type: string
+          enum:
+          - draft
+          - enabled
+          - disabled
+        failure_count:
+          type: integer
+        last_error:
+          type: string
+          nullable: true
+        last_dispatched_at:
+          type: string
+          format: date-time
+          nullable: true
+        circuit_open:
+          type: boolean
+        created_by:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
     AgentWorkflow:
       type: object
       properties:

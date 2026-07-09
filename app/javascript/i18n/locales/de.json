@@ -45,7 +45,8 @@
       "System Ops": "Systembetrieb",
       "Queues": "Sidekiq-Warteschlangen",
       "Inbox": "Posteingang",
-      "Quarantine Review": "Quarantine Review"
+      "Quarantine Review": "Quarantine Review",
+      "Custom Nodes": "Benutzerdefinierte Knoten"
     }
   },
   "common": {
@@ -949,6 +950,8 @@
     "delayNodeDesc": "Pause workflow for N hours or days.",
     "conditionNode": "Condition Branch",
     "conditionNodeDesc": "Branch on asset metadata or status value.",
+    "switchNode": "Switch / Mehrfachverzweigung",
+    "switchNodeDesc": "Leitet an einen von vielen Ausgängen weiter, indem ein Feld mit geordneten Fällen abgeglichen wird.",
     "email": {
       "recipient": "Recipient",
       "recipientOwner": "Asset Owner",
@@ -1096,6 +1099,29 @@
       "trueBranch": "TRUE",
       "falseBranch": "FALSE"
     },
+    "switch": {
+      "field": "Switch-Feld",
+      "fieldPlaceholder": "status / properties.content_type",
+      "cases": "Fälle",
+      "noCases": "Noch keine Fälle – fügen Sie einen hinzu, um einen Ausgabezweig zu erstellen.",
+      "caseN": "Fall {{n}}",
+      "operator": "Operator",
+      "op_equals": "Gleich",
+      "op_not_equals": "Ungleich",
+      "op_contains": "Enthält",
+      "op_starts_with": "Beginnt mit",
+      "op_ends_with": "Endet mit",
+      "op_greater_than": "Größer als",
+      "op_less_than": "Kleiner als",
+      "compareValue": "Vergleichswert",
+      "outputLabel": "Ausgabebezeichnung",
+      "outputLabelPlaceholder": "z. B. Bilder, Videos",
+      "addCase": "Fall hinzufügen",
+      "removeCase": "Fall entfernen",
+      "defaultLabel": "Standard-Ausgabebezeichnung",
+      "defaultHelp": "Weg, der genommen wird, wenn kein Fall zutrifft.",
+      "defaultBranch": "STANDARD"
+    },
     "approval": {
       "title": "Approval Step",
       "assigneeType": "Type",
@@ -1215,6 +1241,10 @@
       "notesHelper": "Interne Notizen, die nur für Administratoren sichtbar sind.",
       "tdmSanitation": "KI- / TDM-Bereinigung anwenden",
       "tdmSanitationDesc": "Leiten Sie jedes Asset über das KI-Gateway zur Metadaten-Normalisierung und Compliance-Prüfung.",
+      "migrateMetadata": "Metadaten migrieren",
+      "migrateMetadataDesc": "Ruft die vollständigen Metadaten jedes Assets ab (z. B. die jcr:content/metadata.json von AEM) zusätzlich zu den leichten Listeneigenschaften. Erfordert eine zusätzliche Anfrage pro Asset. Standardmäßig aktiviert für vollständige Metadaten.",
+      "migrateMetadataEnabledSummary": "Aktiviert — vollständige Metadaten pro Asset abgerufen",
+      "migrateMetadataDisabledSummary": "Deaktiviert — nur Listen-Metadaten",
       "concurrency": "Maximale gleichzeitige Threads",
       "concurrencyHelper": "Anzahl paralleler Download-Threads (1–10).",
       "confirmInfo": "Ein Klick auf 'Initialisieren' startet die Extraktions-Pipeline sofort. Der Prozess läuft im Hintergrund.",
@@ -2228,7 +2258,11 @@
       "embeddedMetadataSection": "EXIF / IPTC / XMP-Daten",
       "noExifDataExtractedYet": "Noch keine EXIF-Daten extrahiert.",
       "collapseExifData": "EXIF-/IPTC-/XMP-Daten einklappen",
-      "expandExifData": "EXIF-/IPTC-/XMP-Daten erweitern"
+      "expandExifData": "EXIF-/IPTC-/XMP-Daten erweitern",
+      "rawMetadataSection": "Rohmetadaten",
+      "noRawMetadataAvailable": "Keine Rohmetadaten verfügbar.",
+      "collapseRawMetadata": "Rohmetadaten einklappen",
+      "expandRawMetadata": "Rohmetadaten erweitern"
     },
     "ai": {
       "semanticAndVisionAnalysis": "Semantik- und Bildanalyse"
@@ -2687,6 +2721,61 @@
       "resolvedAs": "Aufgelöst als {{path}}",
       "previewFailed": "Vorschau fehlgeschlagen.",
       "previewUnavailable": "Vorschauergebnisse sind derzeit nicht verfügbar."
+    }
+  },
+  "customNodes": {
+    "title": "Benutzerdefinierte Workflow-Knoten",
+    "subtitle": "Registrieren Sie vom Mandanten gehostete Plugin-Knoten als deklarative Manifeste. Capri DAM führt keinen Plugin-Code im Prozess aus – die Engine sendet einen SSRF-geschützten, HMAC-signierten Webhook an Ihren HTTPS-Endpunkt und wendet nur eine Whitelist von Antwortaktionen an.",
+    "refresh": "Aktualisieren",
+    "register": "Knoten registrieren",
+    "registerTitle": "Benutzerdefinierten Knoten registrieren",
+    "colName": "Name",
+    "colKey": "Knotentyp",
+    "colEndpoint": "Endpunkt",
+    "colStatus": "Status",
+    "colHealth": "Zustand",
+    "colActions": "Aktionen",
+    "empty": "Noch keine benutzerdefinierten Knoten registriert.",
+    "circuitOpen": "Stromkreis offen",
+    "failures": "{{count}} Fehler",
+    "enable": "Aktivieren",
+    "disable": "Deaktivieren",
+    "delete": "Löschen",
+    "confirmDelete": "Benutzerdefinierten Knoten \"{{name}}\" löschen? Dies kann nicht rückgängig gemacht werden.",
+    "cancel": "Abbrechen",
+    "save": "Speichern",
+    "nodeLabel": "Benutzerdefinierter Knoten",
+    "pluginBadge": "Plugin: {{key}}",
+    "noFields": "Dieses Plugin hat keine konfigurierbaren Felder.",
+    "fieldKey": "Schlüssel",
+    "fieldKeyHelp": "Kleinbuchstaben-Bezeichner (a-z, 0-9, _). Wird als plugin:<key> bereitgestellt.",
+    "fieldName": "Anzeigename",
+    "fieldDescription": "Beschreibung",
+    "fieldEndpoint": "Endpunkt-URL",
+    "fieldEndpointHelp": "Muss eine öffentliche HTTPS-URL sein. Private/Loopback-Hosts sind blockiert.",
+    "fieldTimeout": "Timeout (ms)",
+    "fieldAuthType": "Authentifizierung",
+    "fieldSecret": "Signaturgeheimnis",
+    "fieldSecretHelp": "Wird zum HMAC-Signieren des Versands verwendet. Wird nie von der API zurückgegeben.",
+    "fieldOutputs": "Verzweigungsausgänge",
+    "fieldOutputsHelp": "Kommagetrennte Bezeichnungen für Verzweigungsknoten (leer lassen für linear).",
+    "fieldSchema": "Konfigurationsschema (JSON)",
+    "fieldSchemaHelp": "Array von { key, type, label } Felddeskriptoren, die das Knotenformular steuern.",
+    "fieldStatus": "Status",
+    "status": {
+      "draft": "Entwurf",
+      "enabled": "Aktiviert",
+      "disabled": "Deaktiviert"
+    },
+    "notifications": {
+      "loadFailed": "Laden der benutzerdefinierten Knoten fehlgeschlagen.",
+      "created": "Benutzerdefinierter Knoten registriert.",
+      "saveFailed": "Der benutzerdefinierte Knoten konnte nicht gespeichert werden.",
+      "invalidSchema": "Das Konfigurationsschema muss gültiges JSON sein.",
+      "enabled": "Benutzerdefinierter Knoten aktiviert.",
+      "disabled": "Benutzerdefinierter Knoten deaktiviert.",
+      "deleted": "Benutzerdefinierter Knoten gelöscht.",
+      "actionFailed": "Aktion für benutzerdefinierten Knoten fehlgeschlagen."
     }
   }
 }

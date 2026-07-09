@@ -95,6 +95,7 @@ const reviewBatchPayload = {
       file_size: 1048576,
       file_hash: 'abcdef1234567890',
       legacy_metadata: { title: 'Hero' },
+      full_metadata: { 'dc:title': 'Hero', 'dc:description': 'Full desc from jcr:content/metadata.json' },
       clean_properties: { title: 'Hero', tags: ['homepage'] },
     },
     {
@@ -219,6 +220,7 @@ describe('Admin Migrations components', () => {
     jest.clearAllMocks();
     ensureCsrf();
     window.confirm = jest.fn(() => true);
+    window.prompt = jest.fn(() => '');
   });
 
   afterEach(() => {
@@ -355,6 +357,50 @@ describe('Admin Migrations components', () => {
     await waitFor(() => expect(onSuccess).toHaveBeenCalledWith({ id: 77, name: 'July Launch' }));
     expect(mockNotify).toHaveBeenCalledWith('ingestion.wizard.launchSuccess:July Launch', 'success');
     expect(postedBody.ingestion_batch.destination_folder_id).toBe('f2');
+    expect(postedBody.ingestion_batch.migrate_metadata).toBe(true);
+  });
+
+  it('defaults Migrate Metadata to enabled and allows opting out before launch', async () => {
+    const onSuccess = jest.fn();
+    let postedBody = null;
+
+    installFetchMock((url, options) => {
+      if (url === '/api/v1/system_connectors') return jsonResponse([systemConnector]);
+      if (url === '/api/v1/folders') return jsonResponse({ folders: folderList });
+      if (url === '/api/v1/ingestion_batches' && options.method === 'POST') {
+        postedBody = JSON.parse(options.body);
+        return jsonResponse({ batch: { id: 78, name: 'Metadata Off Run' } });
+      }
+    });
+
+    render(<NewMigrationDialog open onClose={jest.fn()} onSuccess={onSuccess} />);
+
+    // Step 1 — Select Source
+    fireEvent.click(await screen.findByText('AEM Source'));
+    fireEvent.click(screen.getByRole('button', { name: /^next$/i }));
+
+    // Step 2 — Select Destination
+    fireEvent.click(await screen.findByText('/Marketing/Campaigns'));
+    fireEvent.click(screen.getByRole('button', { name: /^next$/i }));
+
+    // Step 3 — Configure Batch: Migrate Metadata toggle defaults to checked
+    const migrateMetadataToggle = screen.getByText('ingestion.wizard.migrateMetadata')
+      .closest('label')
+      .querySelector('input[type="checkbox"]');
+    expect(migrateMetadataToggle).toBeChecked();
+
+    fireEvent.click(migrateMetadataToggle);
+    expect(migrateMetadataToggle).not.toBeChecked();
+
+    fireEvent.click(screen.getByRole('button', { name: /^next$/i }));
+
+    // Step 4 — Summary reflects the opt-out
+    expect(screen.getByText('ingestion.wizard.migrateMetadataDisabledSummary')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /ingestion\.wizard\.launch/i }));
+
+    await waitFor(() => expect(onSuccess).toHaveBeenCalledWith({ id: 78, name: 'Metadata Off Run' }));
+    expect(postedBody.ingestion_batch.migrate_metadata).toBe(false);
   });
 
   it('renders BatchReviewWorkspace and commits a review batch', async () => {
@@ -369,6 +415,11 @@ describe('Admin Migrations components', () => {
 
     expect(await screen.findByText('Workspace Batch')).toBeInTheDocument();
     expect(screen.getByText('hero.jpg')).toBeInTheDocument();
+
+    // Metadata panel shows the raw per-asset metadata fetched from the
+    // source system's dedicated metadata endpoint for the auto-selected item.
+    expect(screen.getByText('Metadata')).toBeInTheDocument();
+    expect(screen.getByText(/Full desc from jcr:content\/metadata\.json/)).toBeInTheDocument();
 
     fireEvent.click(screen.getByText('duplicate.jpg'));
     expect(await screen.findByText('Deduplication Interception')).toBeInTheDocument();
@@ -528,5 +579,98 @@ describe('Admin Migrations components', () => {
     expect(await screen.findByText('Bynder Source')).toBeInTheDocument();
     expect(screen.getByText('Page 2 of 2')).toBeInTheDocument();
     expect(global.fetch).toHaveBeenCalledWith('/api/v1/system_connectors?page=2');
+  });
+
+  it('renders ConnectorDialog in JWT service-account mode with integration JSON + token actions', async () => {
+    const setFormData = jest.fn();
+    const onRefreshToken = jest.fn();
+    const onRevokeToken = jest.fn();
+
+    render(
+      <ConnectorDialog
+        open
+        onClose={jest.fn()}
+        formData={{
+          id: 5, provider_type: 'AEM', name: 'AEM JWT Source', endpoint: 'https://author-x.adobeaemcloud.com',
+          credential_type: 'jwt_service_account', token_status: 'valid',
+          access_token_expires_at: '2026-07-10T00:00:00Z',
+        }}
+        setFormData={setFormData}
+        onSave={jest.fn()}
+        onTest={jest.fn()}
+        isSaving={false}
+        isTesting={false}
+        testResult={null}
+        isFormValid
+        onRefreshToken={onRefreshToken}
+        onRevokeToken={onRevokeToken}
+        isRefreshingToken={false}
+      />
+    );
+
+    expect(screen.getByText(/Adobe IMS Service Account/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Paste Adobe Developer Console integration JSON/i)).toBeInTheDocument();
+    expect(screen.getByText('Token: valid')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /refresh token/i }));
+    expect(onRefreshToken).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole('button', { name: /revoke/i }));
+    expect(onRevokeToken).toHaveBeenCalledTimes(1);
+  });
+
+  it('SystemConnectors refreshes and revokes a JWT connector token', async () => {
+    const jwtConnector = { ...systemConnector, id: 9, credential_type: 'jwt_service_account', token_status: 'valid', access_token_expires_at: '2026-07-10T00:00:00Z' };
+
+    installFetchMock((url, options) => {
+      if (url === '/api/v1/system_connectors?page=1') {
+        return jsonResponse({ connectors: [ jwtConnector ], pagination: { page: 1, per_page: 12, total: 1, total_pages: 1 } });
+      }
+      if (url === '/api/v1/system_connectors/9/refresh_token' && options.method === 'POST') {
+        return jsonResponse({ token_status: 'valid', access_token_expires_at: '2026-07-11T00:00:00Z' });
+      }
+      if (url === '/api/v1/system_connectors/9/revoke_token' && options.method === 'POST') {
+        return jsonResponse({ token_status: 'revoked' });
+      }
+    });
+
+    render(<SystemConnectors />);
+
+    expect(await screen.findByText('AEM Source')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /configure/i }));
+
+    expect(await screen.findByText('Token: valid')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /refresh token/i }));
+    await waitFor(() => expect(mockNotify).toHaveBeenCalledWith('Access token refreshed.', 'success'));
+
+    fireEvent.click(screen.getByRole('button', { name: /revoke/i }));
+    await waitFor(() => expect(mockNotify).toHaveBeenCalledWith('Token revoked locally.', 'info'));
+  });
+
+  it('SystemConnectors prompts for a folder path before starting a migration', async () => {
+    window.prompt = jest.fn(() => '/content/dam/US/marketing-assets/product-assets');
+    let postedBody = null;
+
+    installFetchMock((url, options) => {
+      if (url === '/api/v1/system_connectors?page=1') {
+        return jsonResponse({ connectors: [ systemConnector ], pagination: { page: 1, per_page: 12, total: 1, total_pages: 1 } });
+      }
+      if (url === '/api/v1/system_connectors/1/start_migration' && options.method === 'POST') {
+        postedBody = JSON.parse(options.body);
+        return jsonResponse({ batch: { name: 'Folder Migration' } });
+      }
+    });
+
+    render(<SystemConnectors />);
+    expect(await screen.findByText('AEM Source')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /start migration/i }));
+    await waitFor(() => expect(mockNotify).toHaveBeenCalledWith(
+      'Migration started: Folder Migration. Track progress in the Pipeline tab.',
+      'success'
+    ));
+
+    expect(postedBody.source_path).toBe('/content/dam/US/marketing-assets/product-assets');
   });
 });

@@ -134,6 +134,106 @@ RSpec.describe "Api::V1::SystemConnectors coverage", type: :request do
       expect(response).to have_http_status(:unprocessable_entity)
       expect(json["error"]).to be_present
     end
+
+    it "scopes a migration to the requested source_path and records it on the batch" do
+      active = create(:system_connector, status: "active", endpoint: "https://active.example.com", auth_token: "secret")
+
+      post "/api/v1/system_connectors/#{active.id}/start_migration",
+           params: { source_path: "/content/dam/US/marketing-assets/product-assets" }, as: :json
+
+      expect(response).to have_http_status(:accepted)
+      expect(IngestionBatch.last.source_path).to eq("/content/dam/US/marketing-assets/product-assets")
+      expect(IngestionBatch.last.source_credentials).to include("root_path" => "/content/dam/US/marketing-assets/product-assets")
+    end
+
+    it "does not snapshot a token for jwt_service_account connectors so future chunk fetches always refresh live" do
+      connector = create(:system_connector, :jwt_service_account, status: "active")
+
+      post "/api/v1/system_connectors/#{connector.id}/start_migration", as: :json
+
+      expect(response).to have_http_status(:accepted)
+      expect(IngestionBatch.last.source_credentials).to eq({})
+    end
+  end
+
+  describe "token lifecycle actions" do
+    before { sign_in admin }
+
+    it "refreshes an IMS access token on demand" do
+      connector = create(:system_connector, :jwt_service_account)
+      allow(Ims::JwtTokenExchangeService).to receive(:new).with(connector).and_return(
+        instance_double(Ims::JwtTokenExchangeService, call: { access_token: "fresh", expires_at: 1.hour.from_now })
+      )
+
+      post "/api/v1/system_connectors/#{connector.id}/refresh_token", as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(json["token_status"]).to eq("valid")
+      expect(connector.reload.access_token).to eq("fresh")
+    end
+
+    it "rejects a token refresh for non-JWT connectors" do
+      connector = create(:system_connector)
+
+      post "/api/v1/system_connectors/#{connector.id}/refresh_token", as: :json
+
+      expect(response).to have_http_status(:unprocessable_entity)
+    end
+
+    it "surfaces exchange errors from a failed refresh" do
+      connector = create(:system_connector, :jwt_service_account)
+      allow(Ims::JwtTokenExchangeService).to receive(:new).and_raise(Ims::JwtTokenExchangeService::Error, "invalid_client_secret")
+
+      post "/api/v1/system_connectors/#{connector.id}/refresh_token", as: :json
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(json["error"]).to eq("invalid_client_secret")
+    end
+
+    it "revokes (locally clears) a cached access token" do
+      connector = create(:system_connector, :jwt_service_account, access_token: "cached", access_token_expires_at: 1.hour.from_now)
+
+      post "/api/v1/system_connectors/#{connector.id}/revoke_token", as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(json["token_status"]).to eq("revoked")
+      expect(connector.reload.access_token).to be_nil
+    end
+  end
+
+  describe "creating a jwt_service_account connector from pasted Adobe integration JSON" do
+    before { sign_in admin }
+
+    let(:integration_json) do
+      {
+        integration: {
+          imsEndpoint: "ims-na1.adobelogin.com",
+          metascopes: "ent_aem_cloud_api",
+          technicalAccount: { clientId: "cm-p1-integration-0", clientSecret: "p8e-secret" },
+          email: "acct@techacct.adobe.com",
+          id: "ACCTID@techacct.adobe.com",
+          org: "ORGID@AdobeOrg",
+          privateKey: OpenSSL::PKey::RSA.new(2048).to_pem,
+          certificateExpirationDate: "2027-07-09T11:00:11.000Z",
+        },
+      }.to_json
+    end
+
+    it "parses the pasted JSON into credentials_payload and sets credential_type" do
+      post "/api/v1/system_connectors", params: {
+        system_connector: {
+          name: "AEM JWT", provider_type: "aem", endpoint: "https://author-x.adobeaemcloud.com",
+          integration_json: integration_json
+        },
+      }, as: :json
+
+      expect(response).to have_http_status(:created)
+      connector = SystemConnector.last
+      expect(connector.credential_type).to eq("jwt_service_account")
+      expect(connector.credentials_payload).to include("client_id" => "cm-p1-integration-0", "org_id" => "ORGID@AdobeOrg")
+      # Secrets never leak back over the API
+      expect(json).not_to have_key("credentials_payload")
+    end
   end
 
   describe "additional update branches" do

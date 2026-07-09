@@ -40,6 +40,57 @@ callbacks and queried by provenance dashboards.
 `AssetWorkflowTriggerWorker` and persisted as `WorkflowInstance` rows.
 |===
 
+=== Folder-browsing performance (large folders)
+
+Opening a folder with 1,000-3,000+ assets is the most expensive read path in
+the app: `FoldersController#show` builds a fully-formatted listing (URLs,
+thumbnails, sort) for every active asset in the folder on every request.
+
+* **`FolderContentsCache`** (`app/services/folder_contents_cache.rb`) — a
+  Redis-backed cache mirroring `SearchCache` (see
+  <<section-search,`09_search.adoc`>>): namespaced keys
+  (`dam:folder_contents:<folder_id>:<params-hash>`), 30s TTL, defensive
+  `Redis::BaseError`/`SystemCallError` fallback to uncached execution, and
+  skipped entirely in the test environment. Permission checks in
+  `FoldersController#show` always run **uncached**, before the cache is
+  consulted, so a cache hit never bypasses authorization.
+* **Active busting**, not just TTL expiry: `FolderContentsCache.bust` is
+  called on every mutation that can change a folder's listing — folder
+  create/update/destroy/restore (busts the affected `parent_id`), asset
+  create/update/destroy/restore/permanent_delete/update_metadata (busts the
+  old and new `folder_id` on a move), and `ApplySchemaToFolderJob` (busts
+  each folder level it cascades through). Bulk operations in
+  `BinController` (`bulk_restore`, `bulk_destroy`, `empty`) call
+  `FolderContentsCache.flush_all` instead of tracking individual folder ids,
+  since a bulk op can reparent/touch arbitrarily many folders at once.
+* Renaming/moving a folder busts its **parent's** cache (the parent's
+  listing shows this folder's name/position) — not the folder's own cache,
+  since a folder's own children listing is unaffected by its own name
+  change.
+* **N+1 fix**: `AssetUrlHelper#asset_url_for` used to call
+  `StorageBackend.find_by(active: true)` once per asset formatted — for a
+  3,000-asset folder that's 3,000+ redundant identical queries per request.
+  It is now memoized per-request via a private `active_storage_backend`
+  helper (safe because concerns are mixed into a fresh controller instance
+  per request).
+* **Indexes**: `db/migrate/20260709163140_add_performance_indexes_for_large_folders.rb`
+  adds composite indexes on `assets(folder_id, deleted_at)` and
+  `folders(parent_id, deleted_at)` (the two columns every folder listing
+  filters/sorts by), plus expression indexes on the JSONB `properties` keys
+  with fixed, hardcoded call sites (`content_type`, `applied_schema_id`,
+  `file_size`). The existing whole-column GIN index on `properties` only
+  accelerates containment operators (`@>`/`?`/`?&`/`?|`); it does not speed
+  up `properties->>'key'` extraction, which is what these hot filters use.
+  With 100+ possible schema-defined metadata keys queried dynamically via
+  `apply_dynamic_filters`, it is not feasible to statically index every
+  key — only fixed call sites got dedicated indexes; add a matching
+  expression index for a specific custom field later if it becomes a hot
+  filter path. The `file_size` index is a **partial** index
+  (`WHERE (properties->>'file_size') ~ '^[0-9]+$'`) because Postgres
+  evaluates expression indexes on every write, and an unconditional
+  `::bigint` cast raises `PG::InvalidTextRepresentation` on legacy
+  non-numeric values.
+
 === Access, identity, and auditing
 
 [cols="1,1,3", options="header"]

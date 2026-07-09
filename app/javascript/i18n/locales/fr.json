@@ -45,7 +45,8 @@
       "System Ops": "Opérations système",
       "Queues": "Files Sidekiq",
       "Inbox": "Boîte de réception",
-      "Quarantine Review": "Quarantine Review"
+      "Quarantine Review": "Quarantine Review",
+      "Custom Nodes": "Nœuds personnalisés"
     }
   },
   "common": {
@@ -949,6 +950,8 @@
     "delayNodeDesc": "Pause workflow for N hours or days.",
     "conditionNode": "Condition Branch",
     "conditionNodeDesc": "Branch on asset metadata or status value.",
+    "switchNode": "Switch / Multi-branche",
+    "switchNodeDesc": "Route vers l'une des nombreuses sorties en comparant un champ à des cas ordonnés.",
     "email": {
       "recipient": "Recipient",
       "recipientOwner": "Asset Owner",
@@ -1096,6 +1099,29 @@
       "trueBranch": "TRUE",
       "falseBranch": "FALSE"
     },
+    "switch": {
+      "field": "Champ du switch",
+      "fieldPlaceholder": "status / properties.content_type",
+      "cases": "Cas",
+      "noCases": "Aucun cas pour l'instant — ajoutez-en un pour créer une branche de sortie.",
+      "caseN": "Cas {{n}}",
+      "operator": "Opérateur",
+      "op_equals": "Égal à",
+      "op_not_equals": "Différent de",
+      "op_contains": "Contient",
+      "op_starts_with": "Commence par",
+      "op_ends_with": "Se termine par",
+      "op_greater_than": "Supérieur à",
+      "op_less_than": "Inférieur à",
+      "compareValue": "Valeur de comparaison",
+      "outputLabel": "Libellé de sortie",
+      "outputLabelPlaceholder": "ex. images, vidéos",
+      "addCase": "Ajouter un cas",
+      "removeCase": "Supprimer le cas",
+      "defaultLabel": "Libellé de sortie par défaut",
+      "defaultHelp": "Chemin emprunté lorsqu'aucun cas ne correspond.",
+      "defaultBranch": "PAR DÉFAUT"
+    },
     "approval": {
       "title": "Approval Step",
       "assigneeType": "Type",
@@ -1215,6 +1241,10 @@
       "notesHelper": "Notes internes visibles uniquement par les administrateurs.",
       "tdmSanitation": "Appliquer l'assainissement IA / TDM",
       "tdmSanitationDesc": "Faites passer chaque ressource par la passerelle IA pour la normalisation des métadonnées et l'analyse de conformité.",
+      "migrateMetadata": "Migrer les métadonnées",
+      "migrateMetadataDesc": "Récupère les métadonnées complètes de chaque ressource (par ex. jcr:content/metadata.json d'AEM) en plus des propriétés légères de la liste. Ajoute une requête supplémentaire par ressource. Activé par défaut pour des métadonnées complètes.",
+      "migrateMetadataEnabledSummary": "Activé — métadonnées complètes récupérées par ressource",
+      "migrateMetadataDisabledSummary": "Désactivé — métadonnées de liste uniquement",
       "concurrency": "Nombre maximal de threads simultanés",
       "concurrencyHelper": "Nombre de threads de téléchargement parallèles (1 à 10).",
       "confirmInfo": "En cliquant sur 'Initialiser', le pipeline d'extraction démarrera immédiatement. Le processus s'exécute en arrière-plan.",
@@ -2228,7 +2258,11 @@
       "embeddedMetadataSection": "Données EXIF / IPTC / XMP",
       "noExifDataExtractedYet": "Aucune donnée EXIF extraite pour le moment.",
       "collapseExifData": "Réduire les données EXIF/IPTC/XMP",
-      "expandExifData": "Développer les données EXIF/IPTC/XMP"
+      "expandExifData": "Développer les données EXIF/IPTC/XMP",
+      "rawMetadataSection": "Métadonnées brutes",
+      "noRawMetadataAvailable": "Aucune métadonnée brute disponible.",
+      "collapseRawMetadata": "Réduire les métadonnées brutes",
+      "expandRawMetadata": "Développer les métadonnées brutes"
     },
     "ai": {
       "semanticAndVisionAnalysis": "Analyse sémantique et visuelle"
@@ -2687,6 +2721,61 @@
       "resolvedAs": "Résolu comme {{path}}",
       "previewFailed": "L’aperçu a échoué.",
       "previewUnavailable": "Les résultats de l’aperçu ne sont pas disponibles pour le moment."
+    }
+  },
+  "customNodes": {
+    "title": "Nœuds de workflow personnalisés",
+    "subtitle": "Enregistrez des nœuds de plugin hébergés par le locataire sous forme de manifestes déclaratifs. Capri DAM n'exécute jamais de code de plugin en interne — le moteur envoie un webhook protégé contre le SSRF et signé HMAC à votre point de terminaison HTTPS et n'applique qu'une liste blanche d'actions de réponse.",
+    "refresh": "Actualiser",
+    "register": "Enregistrer un nœud",
+    "registerTitle": "Enregistrer un nœud personnalisé",
+    "colName": "Nom",
+    "colKey": "Type de nœud",
+    "colEndpoint": "Point de terminaison",
+    "colStatus": "Statut",
+    "colHealth": "État",
+    "colActions": "Actions",
+    "empty": "Aucun nœud personnalisé enregistré.",
+    "circuitOpen": "Circuit ouvert",
+    "failures": "{{count}} échecs",
+    "enable": "Activer",
+    "disable": "Désactiver",
+    "delete": "Supprimer",
+    "confirmDelete": "Supprimer le nœud personnalisé \"{{name}}\" ? Cette action est irréversible.",
+    "cancel": "Annuler",
+    "save": "Enregistrer",
+    "nodeLabel": "Nœud personnalisé",
+    "pluginBadge": "plugin : {{key}}",
+    "noFields": "Ce plugin n'a aucun champ configurable.",
+    "fieldKey": "Clé",
+    "fieldKeyHelp": "Identifiant en minuscules (a-z, 0-9, _). Exposé comme plugin:<key>.",
+    "fieldName": "Nom d'affichage",
+    "fieldDescription": "Description",
+    "fieldEndpoint": "URL du point de terminaison",
+    "fieldEndpointHelp": "Doit être une URL HTTPS publique. Les hôtes privés/loopback sont bloqués.",
+    "fieldTimeout": "Délai (ms)",
+    "fieldAuthType": "Authentification",
+    "fieldSecret": "Secret de signature",
+    "fieldSecretHelp": "Utilisé pour signer l'envoi en HMAC. Jamais renvoyé par l'API.",
+    "fieldOutputs": "Sorties de branche",
+    "fieldOutputsHelp": "Libellés séparés par des virgules pour les nœuds de branchement (laisser vide pour linéaire).",
+    "fieldSchema": "Schéma de configuration (JSON)",
+    "fieldSchemaHelp": "Tableau de descripteurs de champ { key, type, label } qui pilotent le formulaire du nœud.",
+    "fieldStatus": "Statut",
+    "status": {
+      "draft": "Brouillon",
+      "enabled": "Activé",
+      "disabled": "Désactivé"
+    },
+    "notifications": {
+      "loadFailed": "Échec du chargement des nœuds personnalisés.",
+      "created": "Nœud personnalisé enregistré.",
+      "saveFailed": "Impossible d'enregistrer le nœud personnalisé.",
+      "invalidSchema": "Le schéma de configuration doit être un JSON valide.",
+      "enabled": "Nœud personnalisé activé.",
+      "disabled": "Nœud personnalisé désactivé.",
+      "deleted": "Nœud personnalisé supprimé.",
+      "actionFailed": "Échec de l'action sur le nœud personnalisé."
     }
   }
 }

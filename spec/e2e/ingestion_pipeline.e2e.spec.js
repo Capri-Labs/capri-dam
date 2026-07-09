@@ -180,6 +180,76 @@ test.describe('Ingestion Pipeline Dashboard E2E', () => {
         await expect(page.getByText(/assets will be migrated into/i)).toBeVisible();
     });
 
+    // ── Wizard "Migrate Metadata" toggle ──────────────────────────────────────
+    test('"Migrate Metadata" toggle defaults on and can be switched off before launch', async ({ page }) => {
+        await page.route('/api/v1/system_connectors', route => {
+            route.fulfill({
+                status:      200,
+                contentType: 'application/json',
+                body:        JSON.stringify([
+                    { id: 1, name: 'AEM Source', provider_type: 'aem', status: 'active', tdm_sanitation: true, assets_imported: 0 },
+                ]),
+            });
+        });
+        await page.route('/api/v1/folders', route => {
+            route.fulfill({
+                status:      200,
+                contentType: 'application/json',
+                body:        JSON.stringify({ folders: [
+                    { id: 'f1', name: 'Marketing', path: '/Marketing', slug: 'marketing' },
+                    { id: 'f2', name: 'Campaigns', path: '/Marketing/Campaigns', slug: 'campaigns' },
+                ] }),
+            });
+        });
+
+        let postedBody = null;
+        await page.route('/api/v1/ingestion_batches', route => {
+            if (route.request().method() === 'POST') {
+                postedBody = route.request().postDataJSON();
+                return route.fulfill({
+                    status:      200,
+                    contentType: 'application/json',
+                    body:        JSON.stringify({ batch: { id: 999, name: 'Metadata Toggle Run' } }),
+                });
+            }
+            return route.fulfill({
+                status:      200,
+                contentType: 'application/json',
+                body:        JSON.stringify({ batches: [], meta: { total: 0, page: 1, per_page: 50 } }),
+            });
+        });
+
+        await page.goto('/admin/migrations/ingestion');
+        await page.waitForLoadState('networkidle');
+
+        await page.getByRole('button', { name: /start migration/i }).first().click();
+        await expect(page.getByRole('dialog')).toBeVisible();
+
+        // Step 1 — select source, advance.
+        await page.getByText('AEM Source').click();
+        await page.getByRole('button', { name: /^next$/i }).click();
+
+        // Step 2 — select destination, advance.
+        await page.getByText('/Marketing/Campaigns').click();
+        await page.getByRole('button', { name: /^next$/i }).click();
+
+        // Step 3 — Configure Batch: Migrate Metadata switch defaults checked.
+        const migrateMetadataSwitch = page.getByTestId('migrate-metadata-switch').locator('input[type="checkbox"]');
+        await expect(migrateMetadataSwitch).toBeChecked();
+
+        await migrateMetadataSwitch.click();
+        await expect(migrateMetadataSwitch).not.toBeChecked();
+
+        await page.getByRole('button', { name: /^next$/i }).click();
+
+        // Step 4 — Summary reflects the opt-out.
+        await expect(page.getByText(/disabled.*listing metadata only/i)).toBeVisible();
+
+        await page.getByRole('button', { name: /initialize migration pipeline/i }).click();
+
+        await expect.poll(() => postedBody?.ingestion_batch?.migrate_metadata).toBe(false);
+    });
+
     // ── Batch table with data (mocked) ───────────────────────────────────────
     test('renders batch rows with status chips and actions', async ({ page }) => {
         const fakeBatches = [
@@ -219,6 +289,63 @@ test.describe('Ingestion Pipeline Dashboard E2E', () => {
 
         // The review_needed batch should show "Audit"
         await expect(page.getByRole('button', { name: 'Audit', exact: true })).toBeVisible();
+    });
+
+    // ── Batch Review audit: full migrated metadata panel ─────────────────────
+    test('Audit workspace shows the migrated full metadata alongside Raw Legacy Attributes', async ({ page }) => {
+        await page.route('/api/v1/ingestion_batches**', route => {
+            const url = route.request().url();
+            if (url.includes('/stats')) return route.continue();
+            if (/\/ingestion_batches\/uuid-2(\?|$)/.test(url)) {
+                return route.fulfill({
+                    status:      200,
+                    contentType: 'application/json',
+                    body:        JSON.stringify({
+                        batch: {
+                            id: 'uuid-2', name: 'Bynder Review Batch', source_type: 'BYNDER',
+                            status: 'review_needed', progress_pct: 90, total_count: 1, processed_count: 1,
+                            committed_count: 0, duplicate_count: 0, error_count: 0,
+                        },
+                        items: [ {
+                            id: 500,
+                            original_filename: '715839_C_CascadeMilling_OrganicPancakeMix_S.psd',
+                            status: 'ready_for_import',
+                            file_size: 2048,
+                            file_hash: 'abc123',
+                            legacy_metadata: { title: '715839_C_CascadeMilling_OrganicPancakeMix_S.psd' },
+                            full_metadata: {
+                                'dc:title':       '715839_C_CascadeMilling_OrganicPancakeMix_S',
+                                'dc:description': 'Organic Pancake Mix — full metadata from jcr:content/metadata.json',
+                            },
+                            clean_properties: { title: '715839_C_CascadeMilling_OrganicPancakeMix_S.psd' },
+                        } ],
+                        meta: { total: 1, page: 1, per_page: 50 },
+                    }),
+                });
+            }
+            return route.fulfill({
+                status:      200,
+                contentType: 'application/json',
+                body:        JSON.stringify({ batches: [ {
+                    id: 'uuid-2', name: 'Bynder Review Batch', source_type: 'BYNDER', source_label: 'Bynder',
+                    status: 'review_needed', progress_pct: 90, total_count: 1, processed_count: 1,
+                    committed_count: 0, duplicate_count: 0, error_count: 0,
+                    started_at: '2026-06-15T08:00:00Z', completed_at: null, created_at: '2026-06-15T08:00:00Z',
+                    connector_name: 'Bynder EU', report_snapshot_id: null,
+                } ], meta: { total: 1, page: 1, per_page: 50 } }),
+            });
+        });
+
+        await page.goto('/admin/migrations/ingestion');
+        await page.waitForLoadState('networkidle');
+
+        await page.getByRole('button', { name: 'Audit', exact: true }).click();
+        await page.waitForLoadState('networkidle');
+
+        await expect(page.getByText('715839_C_CascadeMilling_OrganicPancakeMix_S.psd').first()).toBeVisible();
+        await expect(page.getByText('Raw Legacy Attributes')).toBeVisible();
+        await expect(page.getByText('Metadata', { exact: true })).toBeVisible();
+        await expect(page.getByText(/full metadata from jcr:content\/metadata\.json/)).toBeVisible();
     });
 
     // ── Status filter ─────────────────────────────────────────────────────────

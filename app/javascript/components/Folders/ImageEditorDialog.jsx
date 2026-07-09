@@ -361,7 +361,7 @@ export default function ImageEditorDialog({ asset, open, onClose, onSave }) {
                     >
                         <Box
                             component="img"
-                            src={`${asset.url}?v=${asset.version || Date.now()}`}
+                            src={`${asset.url}${asset.url?.includes('?') ? '&' : '?'}v=${asset.version || Date.now()}`}
                             alt={tr(t, 'imageEditor.editorCanvasAlt', 'Editor Canvas')}
                             draggable={false} // Disable native drag
                             sx={{

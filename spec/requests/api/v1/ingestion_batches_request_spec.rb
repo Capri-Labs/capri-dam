@@ -34,6 +34,30 @@ RSpec.describe 'Api::V1::IngestionBatches coverage', type: :request do
       expect(ExtractionWorker).to have_received(:perform_async).with(batch.id)
     end
 
+    it 'defaults migrate_metadata to true when not specified' do
+      allow(ExtractionWorker).to receive(:perform_async)
+
+      post '/api/v1/ingestion_batches', params: { ingestion_batch: { name: 'Import', source_type: 'aem' } }, as: :json
+
+      batch = IngestionBatch.last
+      expect(response).to have_http_status(:created)
+      expect(batch.migrate_metadata).to be true
+      expect(JSON.parse(response.body).dig('batch', 'migrate_metadata')).to be true
+    end
+
+    it 'allows opting out of full metadata migration' do
+      allow(ExtractionWorker).to receive(:perform_async)
+
+      post '/api/v1/ingestion_batches',
+           params: { ingestion_batch: { name: 'Import', source_type: 'aem', migrate_metadata: false } },
+           as: :json
+
+      batch = IngestionBatch.last
+      expect(response).to have_http_status(:created)
+      expect(batch.migrate_metadata).to be false
+      expect(JSON.parse(response.body).dig('batch', 'migrate_metadata')).to be false
+    end
+
     it 'persists the chosen destination folder' do
       allow(ExtractionWorker).to receive(:perform_async)
       folder = create(:folder, name: 'Target')
@@ -78,6 +102,17 @@ RSpec.describe 'Api::V1::IngestionBatches coverage', type: :request do
 
       expect(response).to have_http_status(:not_found)
       expect(JSON.parse(response.body)).to include('error' => 'Batch not found')
+    end
+
+    it 'includes each item\'s full_metadata (raw per-asset metadata payload) for the audit view' do
+      batch = create(:ingestion_batch)
+      create(:ingestion_item, ingestion_batch: batch, original_filename: 'hero.psd',
+        full_metadata: { 'dc:title' => 'Hero', 'dc:description' => 'Full desc' })
+
+      get "/api/v1/ingestion_batches/#{batch.id}", as: :json
+
+      item = JSON.parse(response.body)['items'].first
+      expect(item['full_metadata']).to eq('dc:title' => 'Hero', 'dc:description' => 'Full desc')
     end
   end
 

@@ -60,6 +60,10 @@ export default function AssetViewer({ asset: initialAsset, open, onClose, onAsse
     // EXIF/IPTC/XMP raw metadata block in the Info tab — collapsed by default
     // since it's a large, rarely-needed JSON dump.
     const [exifExpanded, setExifExpanded] = useState(false);
+    // Full raw `properties` JSON blob — a separate, also-collapsed-by-default
+    // section so users can inspect *everything* stored on the asset (not just
+    // the curated EXIF/IPTC/XMP subset).
+    const [rawMetadataExpanded, setRawMetadataExpanded] = useState(false);
 
     // Keep it synced if the parent explicitly passes a new asset
     useEffect(() => {
@@ -382,6 +386,36 @@ export default function AssetViewer({ asset: initialAsset, open, onClose, onAsse
                                             : asset.properties?.exif_data
                                                 ? JSON.stringify(asset.properties.exif_data, null, 2)
                                                 : translate('assetViewer.info.noExifDataExtractedYet', 'No EXIF data extracted yet.')}
+                                    </Typography>
+                                </Paper>
+                            </Collapse>
+
+                            <Divider sx={{ my: 3 }} />
+
+                            <Box
+                                onClick={() => setRawMetadataExpanded((prev) => !prev)}
+                                sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', mb: rawMetadataExpanded ? 2 : 0 }}
+                            >
+                                <Typography variant="subtitle2" fontWeight="700">{translate('assetViewer.info.rawMetadataSection', 'Raw Metadata')}</Typography>
+                                <IconButton
+                                    size="small"
+                                    aria-label={rawMetadataExpanded
+                                        ? translate('assetViewer.info.collapseRawMetadata', 'Collapse Raw Metadata')
+                                        : translate('assetViewer.info.expandRawMetadata', 'Expand Raw Metadata')}
+                                    sx={{
+                                        transform: rawMetadataExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                                        transition: 'transform 0.2s',
+                                    }}
+                                >
+                                    <ExpandMore fontSize="small" />
+                                </IconButton>
+                            </Box>
+                            <Collapse in={rawMetadataExpanded} unmountOnExit>
+                                <Paper elevation={0} sx={{ p: 2, bgcolor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 2, maxHeight: 360, overflowY: 'auto' }}>
+                                    <Typography component="pre" variant="caption" color="textSecondary" sx={{ fontFamily: 'monospace', whiteSpace: 'pre-wrap', m: 0 }}>
+                                        {asset.properties && Object.keys(asset.properties).length > 0
+                                            ? JSON.stringify(asset.properties, null, 2)
+                                            : translate('assetViewer.info.noRawMetadataAvailable', 'No raw metadata available.')}
                                     </Typography>
                                 </Paper>
                             </Collapse>

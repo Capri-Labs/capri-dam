@@ -1,4 +1,4 @@
-// E2E coverage for two AssetViewer UX fixes:
+// E2E coverage for AssetViewer Info-tab UX fixes:
 //
 //  1. The "EXIF / IPTC / XMP Data" block in the Info tab is collapsed by
 //     default (previously it was always expanded, dumping a large raw JSON
@@ -8,8 +8,11 @@
 //     (Info / Metadata / Versions / Audit / Workflows / AI Engine) — a
 //     flexbox `min-width: auto` bug previously let wide tab content (e.g. a
 //     long Metadata table) squeeze/shift the image pane.
+//  3. A separate "Raw Metadata" block (below EXIF / IPTC / XMP Data) shows
+//     the asset's full raw `properties` JSON, also collapsed by default and
+//     toggled independently from the EXIF section.
 //
-// Both are exercised via the same `/folders?folder=<id>&id=<id>` deep-link
+// All three are exercised via the same `/folders?folder=<id>&id=<id>` deep-link
 // entry point already covered in search_and_duplicates_fixes.e2e.spec.js.
 // All backend responses are mocked via route interception so this test is
 // deterministic and doesn't depend on live seed data.
@@ -130,6 +133,23 @@ test.describe('AssetViewer — EXIF collapse & fixed image layout', () => {
         // flips between "Expand ..." / "Collapse ...").
         await page.getByLabel(/collapse exif/i).click();
         await expect(page.getByText(/NIKON CORPORATION/)).toHaveCount(0, { timeout: 5_000 });
+    });
+
+    test('Raw Metadata section is collapsed by default and expands/collapses on click, independently of the EXIF section', async ({ page }) => {
+        // Collapsed by default.
+        await expect(page.getByText('Raw Metadata')).toBeVisible();
+        await expect(page.getByText(/metadata_field_count/)).toHaveCount(0);
+
+        // Expanding Raw Metadata must not also expand the (still-collapsed)
+        // EXIF section's own Paper block — the EXIF header's aria-label
+        // must still read "Expand ...".
+        await page.getByText('Raw Metadata').click();
+        await expect(page.getByText(/metadata_field_count/)).toBeVisible({ timeout: 5_000 });
+        await expect(page.getByLabel(/expand exif/i)).toBeVisible();
+
+        // Click again to collapse.
+        await page.getByLabel(/collapse raw metadata/i).click();
+        await expect(page.getByText(/metadata_field_count/)).toHaveCount(0, { timeout: 5_000 });
     });
 
     test('left-hand image preview pane does not shift when switching inspector tabs', async ({ page }) => {

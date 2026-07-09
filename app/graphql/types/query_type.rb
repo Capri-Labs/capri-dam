@@ -184,6 +184,34 @@ module Types
     end
 
     # -------------------------------------------------------------------------
+    # Custom Workflow Nodes (Plugin SDK, admin only)
+    # -------------------------------------------------------------------------
+
+    field :custom_node_definitions, [ Types::CustomNodeDefinitionType ], null: false do
+      description "List custom workflow node manifests (admin only)"
+      argument :status, String, required: false, description: "Filter by draft, enabled, or disabled"
+    end
+
+    def custom_node_definitions(status: nil)
+      return [] unless context[:current_user]&.admin?
+
+      scope = CustomNodeDefinition.includes(:created_by).order(updated_at: :desc)
+      scope = scope.where(status: status) if status.present?
+      scope
+    end
+
+    field :custom_node_definition, Types::CustomNodeDefinitionType, null: true do
+      description "Find a custom workflow node manifest by ID (admin only)"
+      argument :id, ID, required: true
+    end
+
+    def custom_node_definition(id:)
+      return nil unless context[:current_user]&.admin?
+
+      CustomNodeDefinition.find_by(id: id)
+    end
+
+    # -------------------------------------------------------------------------
     # Agent Workflows (AI Automations)
     # -------------------------------------------------------------------------
 

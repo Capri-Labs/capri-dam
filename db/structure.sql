@@ -692,6 +692,49 @@ ALTER SEQUENCE public.collections_id_seq OWNED BY public.collections.id;
 
 
 --
+-- Name: custom_node_definitions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.custom_node_definitions (
+    id bigint NOT NULL,
+    key character varying NOT NULL,
+    name character varying NOT NULL,
+    description text,
+    icon character varying,
+    category character varying DEFAULT 'custom'::character varying NOT NULL,
+    color character varying DEFAULT '#6366f1'::character varying NOT NULL,
+    config_schema jsonb DEFAULT '[]'::jsonb NOT NULL,
+    runtime jsonb DEFAULT '{}'::jsonb NOT NULL,
+    status character varying DEFAULT 'draft'::character varying NOT NULL,
+    failure_count integer DEFAULT 0 NOT NULL,
+    last_error text,
+    last_dispatched_at timestamp(6) without time zone,
+    created_by_id bigint,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: custom_node_definitions_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.custom_node_definitions_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: custom_node_definitions_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.custom_node_definitions_id_seq OWNED BY public.custom_node_definitions.id;
+
+
+--
 -- Name: daily_metrics; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1067,7 +1110,10 @@ CREATE TABLE public.ingestion_batches (
     status integer DEFAULT 0 NOT NULL,
     total_count integer DEFAULT 0,
     updated_at timestamp(6) without time zone NOT NULL,
-    user_id integer
+    user_id integer,
+    source_path character varying,
+    last_cursor character varying,
+    migrate_metadata boolean DEFAULT true NOT NULL
 );
 
 
@@ -1086,7 +1132,8 @@ CREATE TABLE public.ingestion_items (
     legacy_metadata jsonb DEFAULT '{}'::jsonb,
     original_filename character varying NOT NULL,
     status integer DEFAULT 0 NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    full_metadata jsonb DEFAULT '{}'::jsonb NOT NULL
 );
 
 
@@ -1713,7 +1760,15 @@ CREATE TABLE public.system_connectors (
     status character varying,
     tdm_sanitation boolean,
     updated_at timestamp(6) without time zone NOT NULL,
-    webhook_secret character varying
+    webhook_secret character varying,
+    credential_type character varying DEFAULT 'token'::character varying NOT NULL,
+    credentials_payload text,
+    access_token character varying,
+    access_token_expires_at timestamp(6) without time zone,
+    token_status character varying DEFAULT 'not_configured'::character varying NOT NULL,
+    last_token_refreshed_at timestamp(6) without time zone,
+    last_token_error text,
+    default_source_path character varying
 );
 
 
@@ -2354,6 +2409,13 @@ ALTER TABLE ONLY public.collections ALTER COLUMN id SET DEFAULT nextval('public.
 
 
 --
+-- Name: custom_node_definitions id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.custom_node_definitions ALTER COLUMN id SET DEFAULT nextval('public.custom_node_definitions_id_seq'::regclass);
+
+
+--
 -- Name: daily_metrics id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -2770,6 +2832,14 @@ ALTER TABLE ONLY public.collection_rules
 
 ALTER TABLE ONLY public.collections
     ADD CONSTRAINT collections_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: custom_node_definitions custom_node_definitions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.custom_node_definitions
+    ADD CONSTRAINT custom_node_definitions_pkey PRIMARY KEY (id);
 
 
 --
@@ -3434,10 +3504,38 @@ CREATE INDEX index_assets_on_folder_id ON public.assets USING btree (folder_id);
 
 
 --
+-- Name: index_assets_on_folder_id_and_deleted_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_assets_on_folder_id_and_deleted_at ON public.assets USING btree (folder_id, deleted_at);
+
+
+--
 -- Name: index_assets_on_properties; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_assets_on_properties ON public.assets USING gin (properties);
+
+
+--
+-- Name: index_assets_on_properties_applied_schema_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_assets_on_properties_applied_schema_id ON public.assets USING btree (((properties ->> 'applied_schema_id'::text)));
+
+
+--
+-- Name: index_assets_on_properties_content_type; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_assets_on_properties_content_type ON public.assets USING btree (((properties ->> 'content_type'::text)));
+
+
+--
+-- Name: index_assets_on_properties_file_size; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_assets_on_properties_file_size ON public.assets USING btree ((((properties ->> 'file_size'::text))::bigint)) WHERE ((properties ->> 'file_size'::text) ~ '^[0-9]+$'::text);
 
 
 --
@@ -3522,6 +3620,20 @@ CREATE UNIQUE INDEX index_collections_on_slug ON public.collections USING btree 
 --
 
 CREATE UNIQUE INDEX index_collections_on_uuid ON public.collections USING btree (uuid);
+
+
+--
+-- Name: index_custom_node_definitions_on_created_by_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_custom_node_definitions_on_created_by_id ON public.custom_node_definitions USING btree (created_by_id);
+
+
+--
+-- Name: index_custom_node_definitions_on_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_custom_node_definitions_on_key ON public.custom_node_definitions USING btree (key);
 
 
 --
@@ -3648,6 +3760,13 @@ CREATE INDEX index_folders_on_deleted_at ON public.folders USING btree (deleted_
 --
 
 CREATE INDEX index_folders_on_parent_id ON public.folders USING btree (parent_id);
+
+
+--
+-- Name: index_folders_on_parent_id_and_deleted_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_folders_on_parent_id_and_deleted_at ON public.folders USING btree (parent_id, deleted_at);
 
 
 --
@@ -4647,6 +4766,14 @@ ALTER TABLE ONLY public.folder_policies
 
 
 --
+-- Name: custom_node_definitions fk_rails_982551730a; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.custom_node_definitions
+    ADD CONSTRAINT fk_rails_982551730a FOREIGN KEY (created_by_id) REFERENCES public.users(id);
+
+
+--
 -- Name: agent_executions fk_rails_984da1e238; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -4885,6 +5012,12 @@ ALTER TABLE ONLY public.email_templates
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260709163140'),
+('20260709160000'),
+('20260709150000'),
+('20260709140000'),
+('20260709130000'),
+('20260709112600'),
 ('20260709095000'),
 ('20260707150001'),
 ('20260707150000'),

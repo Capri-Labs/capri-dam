@@ -118,5 +118,22 @@ RSpec.describe ApplySchemaToFolderJob, type: :job do
         expect(nested_asset.reload.properties).not_to have_key('applied_schema_id')
       end
     end
+
+    context 'folder-contents cache busting' do
+      it 'busts the folder-contents cache for each folder whose assets were updated' do
+        child = FactoryBot.create(:folder, user: FactoryBot.create(:user), parent_id: folder.id)
+
+        expect(FolderContentsCache).to receive(:bust).with(folder.id.to_s)
+        expect(FolderContentsCache).to receive(:bust).with(child.id.to_s)
+
+        described_class.perform_now(folder_id: folder.id, schema_id: schema_a.id, cascade: true)
+      end
+
+      it 'busts the root cache when applying to root assets' do
+        expect(FolderContentsCache).to receive(:bust).with('root')
+
+        described_class.perform_now(folder_id: 'root', schema_id: schema_a.id, cascade: false)
+      end
+    end
   end
 end

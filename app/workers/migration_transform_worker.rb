@@ -110,8 +110,11 @@ class MigrationTransformWorker
       result[canonical_key] = value
     end
 
-    # Ensure title is always set
-    result["title"] ||= File.basename(filename.to_s, ".*").titleize
+    # Ensure title is always set — use the source system's actual filename
+    # verbatim (e.g. "715839_C_CascadeMilling_OrganicPancakeMix_S.psd"), not a
+    # titleized/humanized rewrite, so the migrated asset name matches what the
+    # operator sees in the legacy system.
+    result["title"] ||= File.basename(filename.to_s)
     # Normalize tags to array
     result["tags"] = Array(result["tags"]).flatten.map(&:to_s).uniq
     result

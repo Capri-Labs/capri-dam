@@ -45,7 +45,8 @@
       "System Ops": "시스템 운영",
       "Queues": "Sidekiq 대기열",
       "Inbox": "받은 편지함",
-      "Quarantine Review": "Quarantine Review"
+      "Quarantine Review": "Quarantine Review",
+      "Custom Nodes": "사용자 지정 노드"
     }
   },
   "common": {
@@ -949,6 +950,8 @@
     "delayNodeDesc": "Pause workflow for N hours or days.",
     "conditionNode": "Condition Branch",
     "conditionNodeDesc": "Branch on asset metadata or status value.",
+    "switchNode": "스위치 / 다중 분기",
+    "switchNodeDesc": "필드를 정렬된 케이스와 대조하여 여러 출력 중 하나로 라우팅합니다.",
     "email": {
       "recipient": "Recipient",
       "recipientOwner": "Asset Owner",
@@ -1096,6 +1099,29 @@
       "trueBranch": "TRUE",
       "falseBranch": "FALSE"
     },
+    "switch": {
+      "field": "스위치 필드",
+      "fieldPlaceholder": "status / properties.content_type",
+      "cases": "케이스",
+      "noCases": "아직 케이스가 없습니다. 하나를 추가하여 출력 분기를 만드세요.",
+      "caseN": "케이스 {{n}}",
+      "operator": "연산자",
+      "op_equals": "같음",
+      "op_not_equals": "같지 않음",
+      "op_contains": "포함",
+      "op_starts_with": "다음으로 시작",
+      "op_ends_with": "다음으로 끝남",
+      "op_greater_than": "보다 큼",
+      "op_less_than": "보다 작음",
+      "compareValue": "비교 값",
+      "outputLabel": "출력 레이블",
+      "outputLabelPlaceholder": "예: 이미지, 동영상",
+      "addCase": "케이스 추가",
+      "removeCase": "케이스 제거",
+      "defaultLabel": "기본 출력 레이블",
+      "defaultHelp": "일치하는 케이스가 없을 때 사용되는 경로.",
+      "defaultBranch": "기본값"
+    },
     "approval": {
       "title": "Approval Step",
       "assigneeType": "Type",
@@ -1215,6 +1241,10 @@
       "notesHelper": "관리자에게만 표시되는 내부 메모입니다.",
       "tdmSanitation": "AI / TDM 정제 적용",
       "tdmSanitationDesc": "각 자산을 AI Gateway로 전달하여 메타데이터 정규화 및 규정 준수 검사를 수행합니다.",
+      "migrateMetadata": "메타데이터 마이그레이션",
+      "migrateMetadataDesc": "가벼운 목록 속성 외에도 각 자산의 전체 메타데이터(예: AEM의 jcr:content/metadata.json)를 가져옵니다. 자산당 요청이 하나 추가됩니다. 기본적으로 활성화되어 있습니다.",
+      "migrateMetadataEnabledSummary": "활성화됨 — 자산별 전체 메타데이터 가져옴",
+      "migrateMetadataDisabledSummary": "비활성화됨 — 목록 메타데이터만",
       "concurrency": "최대 동시 스레드 수",
       "concurrencyHelper": "병렬 다운로드 스레드 수(1~10).",
       "confirmInfo": "'초기화'를 클릭하면 추출 파이프라인이 즉시 시작됩니다. 프로세스는 백그라운드에서 실행됩니다.",
@@ -2228,7 +2258,11 @@
       "embeddedMetadataSection": "EXIF / IPTC / XMP 데이터",
       "noExifDataExtractedYet": "아직 EXIF 데이터가 추출되지 않았습니다.",
       "collapseExifData": "EXIF/IPTC/XMP 데이터 접기",
-      "expandExifData": "EXIF/IPTC/XMP 데이터 펼치기"
+      "expandExifData": "EXIF/IPTC/XMP 데이터 펼치기",
+      "rawMetadataSection": "원시 메타데이터",
+      "noRawMetadataAvailable": "사용 가능한 원시 메타데이터가 없습니다.",
+      "collapseRawMetadata": "원시 메타데이터 접기",
+      "expandRawMetadata": "원시 메타데이터 펼치기"
     },
     "ai": {
       "semanticAndVisionAnalysis": "시맨틱 및 비전 분석"
@@ -2687,6 +2721,61 @@
       "resolvedAs": "{{path}}(으)로 확인됨",
       "previewFailed": "미리보기에 실패했습니다.",
       "previewUnavailable": "지금은 미리보기 결과를 사용할 수 없습니다."
+    }
+  },
+  "customNodes": {
+    "title": "사용자 지정 워크플로 노드",
+    "subtitle": "테넌트가 호스팅하는 플러그인 노드를 선언적 매니페스트로 등록합니다. Capri DAM은 플러그인 코드를 프로세스 내에서 실행하지 않습니다. 엔진은 SSRF로 보호되고 HMAC 서명된 웹훅을 HTTPS 엔드포인트로 전송하며 허용 목록의 응답 작업만 적용합니다.",
+    "refresh": "새로 고침",
+    "register": "노드 등록",
+    "registerTitle": "사용자 지정 노드 등록",
+    "colName": "이름",
+    "colKey": "노드 유형",
+    "colEndpoint": "엔드포인트",
+    "colStatus": "상태",
+    "colHealth": "상태",
+    "colActions": "작업",
+    "empty": "아직 등록된 사용자 지정 노드가 없습니다.",
+    "circuitOpen": "회로 열림",
+    "failures": "{{count}}회 실패",
+    "enable": "활성화",
+    "disable": "비활성화",
+    "delete": "삭제",
+    "confirmDelete": "사용자 지정 노드 \"{{name}}\"을(를) 삭제하시겠습니까? 이 작업은 취소할 수 없습니다.",
+    "cancel": "취소",
+    "save": "저장",
+    "nodeLabel": "사용자 지정 노드",
+    "pluginBadge": "플러그인: {{key}}",
+    "noFields": "이 플러그인에는 구성 가능한 필드가 없습니다.",
+    "fieldKey": "키",
+    "fieldKeyHelp": "소문자 식별자(a-z, 0-9, _). plugin:<key>로 노출됩니다.",
+    "fieldName": "표시 이름",
+    "fieldDescription": "설명",
+    "fieldEndpoint": "엔드포인트 URL",
+    "fieldEndpointHelp": "공개 HTTPS URL이어야 합니다. 개인/루프백 호스트는 차단됩니다.",
+    "fieldTimeout": "제한 시간(ms)",
+    "fieldAuthType": "인증",
+    "fieldSecret": "서명 비밀",
+    "fieldSecretHelp": "디스패치를 HMAC 서명하는 데 사용됩니다. API에서 반환되지 않습니다.",
+    "fieldOutputs": "분기 출력",
+    "fieldOutputsHelp": "분기 노드의 쉼표로 구분된 레이블(선형인 경우 비워 둠).",
+    "fieldSchema": "구성 스키마(JSON)",
+    "fieldSchemaHelp": "노드 양식을 구동하는 { key, type, label } 필드 설명자 배열.",
+    "fieldStatus": "상태",
+    "status": {
+      "draft": "초안",
+      "enabled": "활성화됨",
+      "disabled": "비활성화됨"
+    },
+    "notifications": {
+      "loadFailed": "사용자 지정 노드를 불러오지 못했습니다.",
+      "created": "사용자 지정 노드가 등록되었습니다.",
+      "saveFailed": "사용자 지정 노드를 저장할 수 없습니다.",
+      "invalidSchema": "구성 스키마는 유효한 JSON이어야 합니다.",
+      "enabled": "사용자 지정 노드가 활성화되었습니다.",
+      "disabled": "사용자 지정 노드가 비활성화되었습니다.",
+      "deleted": "사용자 지정 노드가 삭제되었습니다.",
+      "actionFailed": "사용자 지정 노드 작업에 실패했습니다."
     }
   }
 }

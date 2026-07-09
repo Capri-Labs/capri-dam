@@ -17,8 +17,9 @@ export default function SystemConnectors() {
     const [isSaving, setIsSaving] = useState(false);
     const [isTesting, setIsTesting] = useState(false);
     const [testResult, setTestResult] = useState(null);
+    const [isRefreshingToken, setIsRefreshingToken] = useState(false);
 
-    const initialFormState = { id: null, provider_type: 'AEM', name: '', endpoint: '', auth_token: '', tdm_sanitation: true, status: 'idle' };
+    const initialFormState = { id: null, provider_type: 'AEM', name: '', endpoint: '', auth_token: '', credential_type: 'token', default_source_path: '', tdm_sanitation: true, status: 'idle' };
     const [formData, setFormData] = useState(initialFormState);
 
     useEffect(() => { fetchConnectors(1); }, []);
@@ -44,9 +45,51 @@ export default function SystemConnectors() {
     };
 
     const handleOpenEdit = (connector) => {
-        setFormData({ ...connector, auth_token: '' });
+        setFormData({ ...connector, auth_token: '', integration_json: '' });
         setTestResult(null);
         setOpenDialog(true);
+    };
+
+    const handleRefreshToken = async () => {
+        if (!formData.id) return;
+        setIsRefreshingToken(true);
+        try {
+            const csrfToken = document.querySelector('[name="csrf-token"]').content;
+            const res = await fetch(`/api/v1/system_connectors/${formData.id}/refresh_token`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken }
+            });
+            const data = await res.json();
+            if (res.ok) {
+                setFormData(prev => ({ ...prev, token_status: data.token_status, access_token_expires_at: data.access_token_expires_at }));
+                notify('Access token refreshed.', 'success');
+            } else {
+                notify(data.error || 'Failed to refresh token.', 'error');
+            }
+        } catch {
+            notify('Network error.', 'error');
+        } finally {
+            setIsRefreshingToken(false);
+        }
+    };
+
+    const handleRevokeToken = async () => {
+        if (!formData.id) return;
+        if (!window.confirm('Revoke the cached access token? Note: full revocation requires rotating the client secret in the Adobe Developer Console.')) return;
+        try {
+            const csrfToken = document.querySelector('[name="csrf-token"]').content;
+            const res = await fetch(`/api/v1/system_connectors/${formData.id}/revoke_token`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken }
+            });
+            const data = await res.json();
+            if (res.ok) {
+                setFormData(prev => ({ ...prev, token_status: data.token_status, access_token_expires_at: null }));
+                notify('Token revoked locally.', 'info');
+            }
+        } catch {
+            notify('Network error.', 'error');
+        }
     };
 
     const handleToggleStatus = async (connector) => {
@@ -115,12 +158,19 @@ export default function SystemConnectors() {
     };
 
     const handleStartMigration = async (connector) => {
-        if (!window.confirm(`Start migration from ${connector.name}? This will pull assets from the source system.`)) return;
+        const sourcePath = window.prompt(
+            'Which DAM folder should this migration import? Leave blank to use the connector default / whole root.',
+            connector.default_source_path || ''
+        );
+        if (sourcePath === null) return; // cancelled
+
+        if (!window.confirm(`Start migration from ${connector.name}${sourcePath ? ` (folder: ${sourcePath})` : ''}? This will pull assets from the source system.`)) return;
         try {
             const csrfToken = document.querySelector('[name="csrf-token"]').content;
             const res = await fetch(`/api/v1/system_connectors/${connector.id}/start_migration`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken }
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
+                body: JSON.stringify({ source_path: sourcePath || undefined })
             });
             const data = await res.json();
             if (res.ok) {
@@ -133,7 +183,10 @@ export default function SystemConnectors() {
         }
     };
 
-    const isFormValid = formData.name && formData.endpoint && (formData.id || formData.auth_token);
+    const isFormValid = formData.name && formData.endpoint &&
+        (formData.credential_type === 'jwt_service_account'
+            ? (formData.id || formData.integration_json)
+            : (formData.id || formData.auth_token));
 
     return (
         <Box sx={{ p: 4, bgcolor: '#f8fafc', minHeight: '100vh' }}>
@@ -194,6 +247,9 @@ export default function SystemConnectors() {
                 isTesting={isTesting}
                 testResult={testResult}
                 isFormValid={isFormValid}
+                onRefreshToken={handleRefreshToken}
+                onRevokeToken={handleRevokeToken}
+                isRefreshingToken={isRefreshingToken}
             />
         </Box>
     );

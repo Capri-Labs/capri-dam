@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box, Typography, Stack, Tooltip, Divider, TextField, InputAdornment } from '@mui/material';
 import {
   HowToReg, Groups, AccountTree,
@@ -6,7 +6,7 @@ import {
   Webhook, HttpsOutlined, Api,
   Label, DriveFileMove, FileCopy, Archive, PublicOutlined, DataObject,
   AutoAwesome, Image, CloudSync,
-  Timer, CallSplit, Search,
+  Timer, CallSplit, Search, AltRoute, Extension,
 } from '@mui/icons-material';
 
 // ─── Toolbox Catalogue ────────────────────────────────────────────────────────
@@ -75,13 +75,17 @@ const CATEGORIES = [
     items: [
       { nodeType: 'delayNode',          label: 'Delay / Wait',          icon: Timer,               color: '#475569', bg: '#f8fafc', description: 'Pause workflow for N hours or days.' },
       { nodeType: 'conditionNode',      label: 'Condition Branch',      icon: CallSplit,            color: '#334155', bg: '#f1f5f9', description: 'Branch on asset metadata or status value.' },
+      { nodeType: 'switchNode',         label: 'Switch / Multi-branch', icon: AltRoute,             color: '#0f766e', bg: '#f0fdfa', description: 'Route to one of many outputs by matching a field against ordered cases.' },
     ],
   },
 ];
 
-function ToolItem({ nodeType, label, icon: Icon, color, bg, description }) {
+function ToolItem({ nodeType, label, icon: Icon, color, bg, description, customDef }) {
   const onDragStart = (e) => {
     e.dataTransfer.setData('application/reactflow', nodeType);
+    if (customDef) {
+      e.dataTransfer.setData('application/reactflow-custom', JSON.stringify(customDef));
+    }
     e.dataTransfer.effectAllowed = 'move';
   };
   return (
@@ -106,9 +110,41 @@ function ToolItem({ nodeType, label, icon: Icon, color, bg, description }) {
 
 export default function NodePalette() {
   const [search, setSearch] = useState('');
+  const [customNodes, setCustomNodes] = useState([]);
   const q = search.toLowerCase();
 
-  const filtered = CATEGORIES.map(c => ({ ...c, items: c.items.filter(i => i.label.toLowerCase().includes(q) || i.description.toLowerCase().includes(q)) })).filter(c => c.items.length > 0);
+  useEffect(() => {
+    let active = true;
+    fetch('/api/v1/custom_node_definitions', { headers: { Accept: 'application/json' } })
+      .then((res) => (res.ok ? res.json() : { items: [] }))
+      .then((data) => {
+        if (!active) return;
+        const enabled = (data.items || []).filter((d) => d.status === 'enabled');
+        setCustomNodes(enabled);
+      })
+      .catch(() => { /* palette still works without custom nodes */ });
+    return () => { active = false; };
+  }, []);
+
+  const customCategory = customNodes.length > 0 ? {
+    id: 'custom',
+    label: 'Custom Nodes',
+    color: '#6366f1',
+    items: customNodes.map((d) => ({
+      nodeType: 'customNode',
+      itemKey: `custom_${d.key}`,
+      label: d.name,
+      icon: Extension,
+      color: d.color || '#6366f1',
+      bg: '#eef2ff',
+      description: d.description || 'Tenant-registered custom workflow node.',
+      customDef: d,
+    })),
+  } : null;
+
+  const catalogue = customCategory ? [...CATEGORIES, customCategory] : CATEGORIES;
+
+  const filtered = catalogue.map(c => ({ ...c, items: c.items.filter(i => i.label.toLowerCase().includes(q) || i.description.toLowerCase().includes(q)) })).filter(c => c.items.length > 0);
 
   return (
     <Box sx={{ width: 210, flexShrink: 0, borderRight: '1px solid #e2e8f0', bgcolor: '#f8fafc', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -131,7 +167,7 @@ export default function NodePalette() {
               <Box sx={{ width: 7, height: 7, borderRadius: '50%', bgcolor: cat.color, flexShrink: 0 }} />
               <Typography variant="caption" sx={{ fontWeight: 700, color: cat.color, fontSize: '0.62rem', letterSpacing: '0.08em', textTransform: 'uppercase' }}>{cat.label}</Typography>
             </Box>
-            <Stack spacing={0.25}>{cat.items.map(item => <ToolItem key={item.nodeType} {...item} />)}</Stack>
+            <Stack spacing={0.25}>{cat.items.map(item => <ToolItem key={item.itemKey || item.nodeType} {...item} />)}</Stack>
             {ci < filtered.length - 1 && <Divider sx={{ mt: 1.5 }} />}
           </Box>
         ))}

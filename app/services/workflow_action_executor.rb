@@ -20,7 +20,7 @@
 #   WorkflowActionExecutor.new(instance, step).call
 class WorkflowActionExecutor
   # Steps whose execution result decides which branch the workflow follows.
-  BRANCHING_TYPES = %w[condition].freeze
+  BRANCHING_TYPES = %w[condition switch].freeze
 
   def initialize(instance, step)
     @instance = instance
@@ -31,8 +31,9 @@ class WorkflowActionExecutor
 
   # Runs the step's side effect.
   #
-  # @return [Symbol, nil] for branching nodes returns +:true_branch+ or
-  #   +:false_branch+; +nil+ for linear nodes.
+  # @return [Symbol, Array, nil] for branching nodes returns +:true_branch+ /
+  #   +:false_branch+ (condition) or +[:branch, "<handle>"]+ (switch / branching
+  #   plugins); +nil+ for linear nodes; +:delay_scheduled+ for delay nodes.
   def call
     case @step.node_type
     when "email_notification"   then send_email
@@ -54,9 +55,14 @@ class WorkflowActionExecutor
     when "cdn_sync"             then cdn_sync
     when "delay"                then handle_delay
     when "condition"            then evaluate_condition
+    when "switch"               then evaluate_switch
     else
-      Rails.logger.warn("[WorkflowActionExecutor] Unknown node_type '#{@step.node_type}' — skipping")
-      nil
+      if @step.node_type.to_s.start_with?("plugin:")
+        execute_custom_node
+      else
+        Rails.logger.warn("[WorkflowActionExecutor] Unknown node_type '#{@step.node_type}' — skipping")
+        nil
+      end
     end
   rescue StandardError => e
     Rails.logger.error("[WorkflowActionExecutor] Step ##{@step.id} (#{@step.node_type}) failed: #{e.message}")
@@ -310,21 +316,64 @@ class WorkflowActionExecutor
   end
 
   def evaluate_condition
-    actual   = asset_field_value(@config[:field])
-    expected = @config[:value].to_s
-    result =
-      case @config[:operator]
-      when "equals"        then actual.to_s == expected
-      when "not_equals"    then actual.to_s != expected
-      when "contains"      then actual.to_s.include?(expected)
-      when "starts_with"   then actual.to_s.start_with?(expected)
-      when "ends_with"     then actual.to_s.end_with?(expected)
-      when "greater_than"  then actual.to_f > expected.to_f
-      when "less_than"     then actual.to_f < expected.to_f
-      else                      false
+    actual = asset_field_value(@config[:field])
+    compare_values(actual, @config[:operator], @config[:value]) ? :true_branch : :false_branch
+  end
+
+  # Multi-way switch/case branching. Evaluates +field+ against an ordered list of
+  # cases and routes to the first matching case's labelled output handle, falling
+  # back to +default_label+ (default "default") when no case matches.
+  #
+  # Config shape:
+  #   { field:, default_label:, cases: [{ operator:, value:, label: }, ...] }
+  #
+  # @return [Array(Symbol, String)] +[:branch, "<handle-id>"]+
+  def evaluate_switch
+    actual = asset_field_value(@config[:field])
+    cases  = Array(@config[:cases])
+
+    matched_index = cases.find_index do |c|
+      c = c.with_indifferent_access
+      compare_values(actual, c[:operator], c[:value])
+    end
+
+    label =
+      if matched_index
+        matched = cases[matched_index].with_indifferent_access
+        matched[:label].presence || "case_#{matched_index + 1}"
+      else
+        @config[:default_label].presence || "default"
       end
 
-    result ? :true_branch : :false_branch
+    [ :branch, label.to_s ]
+  end
+
+  # Shared comparator used by both condition and switch evaluation.
+  def compare_values(actual, operator, expected)
+    expected = expected.to_s
+    case operator.to_s
+    when "equals"       then actual.to_s == expected
+    when "not_equals"   then actual.to_s != expected
+    when "contains"     then actual.to_s.include?(expected)
+    when "starts_with"  then actual.to_s.start_with?(expected)
+    when "ends_with"    then actual.to_s.end_with?(expected)
+    when "greater_than" then actual.to_f > expected.to_f
+    when "less_than"    then actual.to_f < expected.to_f
+    else                     false
+    end
+  end
+
+  # Dispatches a custom-node (plugin SDK) step. Execution is delegated to the
+  # customer's registered HTTPS endpoint via {CustomNodeExecutor} (SSRF-guarded,
+  # HMAC-signed, whitelisted response actions — no in-process code execution).
+  # No-ops gracefully when the plugin SDK is not installed/registered.
+  def execute_custom_node
+    unless defined?(CustomNodeExecutor)
+      Rails.logger.warn("[WorkflowActionExecutor] Plugin '#{@step.node_type}' — CustomNodeExecutor unavailable, skipping")
+      return nil
+    end
+
+    CustomNodeExecutor.new(@instance, @step, @config).call
   end
 
   # ── Helpers ─────────────────────────────────────────────────────────────────

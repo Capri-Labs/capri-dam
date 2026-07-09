@@ -40,46 +40,24 @@ module Api
       end
 
       def show
-        if params[:id] == "root"
-          # Strictly fetch only ACTIVE top-level items
-          @folders = Folder.active.where(parent_id: nil).includes(:children)
-
-          #  FIX 1: Eager load the active_version to prevent database N+1 performance issues
-          @assets = Asset.active.where(folder_id: nil).includes(:active_version)
-
-          breadcrumbs = [ { id: "root", name: "Home" } ]
-        else
-          # Ensure a user cannot hack the URL to view a deleted folder
+        # Large folders (1,000-3,000+ assets) are expensive to format and sort
+        # on every click, so the whole response is Redis-cached per
+        # folder+sort/direction combo (see {FolderContentsCache}). The
+        # permission check below always runs first (uncached) so access
+        # control is never skipped for a cached response.
+        if params[:id] != "root"
+          # Ensure a user cannot hack the URL to view a deleted folder, and
+          # enforce folder-level read permission, before touching the cache.
           current_folder = Folder.active.find(params[:id])
-
-          # Enforce folder-level read permission
           check_folder_permission!(current_folder, :read)
           return if performed?
-
-          # Filter subfolders and assets by active scope
-          @folders = Folder.active.where(parent_id: current_folder.id).includes(:children)
-
-          #  FIX 1: Eager load the active_version
-          @assets = Asset.active.where(folder_id: current_folder.id).includes(:active_version)
-
-          breadcrumbs = build_breadcrumbs(current_folder)
         end
 
-        # Batch-count assets per subfolder in one query to avoid N+1
-        folder_ids = @folders.map(&:id)
-        asset_counts_by_folder = folder_ids.any? ?
-          Asset.active.where(folder_id: folder_ids).group(:folder_id).count : {}
+        payload = FolderContentsCache.fetch(params[:id], params: { sort: params[:sort], direction: params[:direction] }) do
+          build_folder_contents_payload(params[:id] == "root" ? nil : current_folder)
+        end
 
-        # Apply optional sorting (sort + direction query params)
-        folders_payload = sort_folders(@folders.map { |f| format_folder_payload(f, asset_counts_by_folder[f.id] || 0) })
-        assets_payload  = sort_assets(@assets.map { |asset| format_asset_payload(asset) })
-
-        render json: {
-          folders: folders_payload,
-          assets: assets_payload,
-          breadcrumbs: breadcrumbs,
-          sort: { field: sort_field, direction: sort_direction },
-        }
+        render json: payload
       end
 
       def create
@@ -88,6 +66,7 @@ module Api
         @folder.parent_id = nil if params[:folder][:parent_id] == "root"
 
         if @folder.save
+          FolderContentsCache.bust(@folder.parent_id)
           render json: @folder, status: :created
         else
           render json: { errors: @folder.errors.full_messages }, status: :unprocessable_entity
@@ -97,7 +76,9 @@ module Api
       # PATCH /api/v1/folders/:id (rename + description)
       def update
         @folder = Folder.active.find(params[:id])
+        old_parent_id = @folder.parent_id
         if @folder.update(folder_params)
+          FolderContentsCache.bust([ old_parent_id, @folder.parent_id ])
           render json: {
             id:          @folder.id,
             name:        @folder.name,
@@ -159,6 +140,7 @@ module Api
       def destroy
         @folder = Folder.find(params[:id])
         @folder.soft_delete
+        FolderContentsCache.bust(@folder.parent_id)
 
         # Auto-purge CDN: Instantly drop deprecated assets from edge nodes
         CdnInvalidationWorker.perform_async("folder", @folder.id)
@@ -169,6 +151,7 @@ module Api
       def restore
         @folder = Folder.trashed.find(params[:id])
         @folder.restore
+        FolderContentsCache.bust(@folder.parent_id)
         render json: { success: true, message: "Folder restored" }
       end
 
@@ -325,6 +308,42 @@ module Api
       end
 
       private
+
+      # Builds the (potentially large) folders/assets/breadcrumbs payload for
+      # a single folder. Extracted from {#show} so it can be wrapped in
+      # {FolderContentsCache.fetch} — this is the expensive part (N asset
+      # formatting calls + in-memory sort) that benefits from caching, while
+      # the permission check in {#show} always runs uncached.
+      #
+      # @param current_folder [Folder, nil] +nil+ for the top-level/root listing
+      # @return [Hash] the JSON-serialisable response body
+      def build_folder_contents_payload(current_folder)
+        if current_folder.nil?
+          folders = Folder.active.where(parent_id: nil).includes(:children)
+          assets  = Asset.active.where(folder_id: nil).includes(:active_version)
+          breadcrumbs = [ { id: "root", name: "Home" } ]
+        else
+          folders = Folder.active.where(parent_id: current_folder.id).includes(:children)
+          assets  = Asset.active.where(folder_id: current_folder.id).includes(:active_version)
+          breadcrumbs = build_breadcrumbs(current_folder)
+        end
+
+        # Batch-count assets per subfolder in one query to avoid N+1
+        folder_ids = folders.map(&:id)
+        asset_counts_by_folder = folder_ids.any? ?
+          Asset.active.where(folder_id: folder_ids).group(:folder_id).count : {}
+
+        # Apply optional sorting (sort + direction query params)
+        folders_payload = sort_folders(folders.map { |f| format_folder_payload(f, asset_counts_by_folder[f.id] || 0) })
+        assets_payload  = sort_assets(assets.map { |asset| format_asset_payload(asset) })
+
+        {
+          folders: folders_payload,
+          assets: assets_payload,
+          breadcrumbs: breadcrumbs,
+          sort: { field: sort_field, direction: sort_direction },
+        }
+      end
 
       # Helper to standardize the asset payload structure for React
       def format_asset_payload(asset)

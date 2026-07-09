@@ -56,11 +56,25 @@ RSpec.describe 'Api::V1::SystemConnectors', type: :request do
             properties: {
               name:              { type: :string,  example: 'Cloudinary Production' },
               provider_type:     { type: :string,  example: 'cloudinary',
-                                   description: 'cloudinary | brandfolder | bynder | ftp | http_api' },
+                                   description: 'cloudinary | brandfolder | bynder | ftp | http_api | aem' },
               endpoint:          { type: :string,  nullable: true,
                                    example: 'https://api.cloudinary.com/v1_1/mycloud' },
               auth_token:        { type: :string,  nullable: true,
-                                   description: 'API key / Bearer token for the external system' },
+                                   description: 'API key / Bearer token for the external system (credential_type: token)' },
+              credential_type:   { type: :string, nullable: true, example: 'token',
+                                   description: '"token" (static Bearer token, default) or "jwt_service_account" ' \
+                                                '(Adobe IMS technical-account, private-key JWT exchange — used by AEM)' },
+              integration_json:  { type: :string, nullable: true,
+                                   description: 'Convenience field: the raw JSON blob copy-pasted from the Adobe ' \
+                                                'Developer Console "Service Account (JWT)" credential page. When ' \
+                                                'present, the server parses client_id/client_secret/private_key/' \
+                                                'org/technical account id out of it and stores them (encrypted) as ' \
+                                                'credentials_payload, forcing credential_type=jwt_service_account. ' \
+                                                'The raw JSON itself is never persisted or echoed back.' },
+              default_source_path: { type: :string, nullable: true,
+                                     example: '/content/dam/US/marketing-assets/product-assets',
+                                     description: 'Default DAM folder to scope migrations to (AEM only). Can be ' \
+                                                  'overridden per-migration via start_migration\'s source_path param.' },
               concurrency_limit: { type: :integer, nullable: true, example: 5 },
               rps_limit:         { type: :integer, nullable: true, example: 10 },
               tdm_sanitation:    { type: :boolean, example: true,
@@ -240,6 +254,7 @@ RSpec.describe 'Api::V1::SystemConnectors', type: :request do
 
     post 'Start a full migration from a connector source' do
       tags 'System Connectors'
+      consumes 'application/json'
       produces 'application/json'
       security [ Bearer: [] ]
       description <<~DESC
@@ -247,8 +262,23 @@ RSpec.describe 'Api::V1::SystemConnectors', type: :request do
         credentials and immediately fires `ExtractionWorker`. The connector
         must be in `status: active` to start a migration.
 
+        For `credential_type: jwt_service_account` connectors, no static
+        access token is snapshotted onto the batch — the extraction worker
+        re-derives (and auto-refreshes) a live token on every chunk fetch,
+        so long-running migrations survive token expiry.
+
         Monitor progress via `GET /api/v1/ingestion_batches/{batch_id}`.
       DESC
+
+      parameter name: :payload, in: :body, required: false, schema: {
+        type: :object,
+        properties: {
+          source_path: { type: :string, nullable: true,
+                         example: '/content/dam/US/marketing-assets/product-assets',
+                         description: 'DAM folder to scope this migration to. Falls back to the ' \
+                                      'connector\'s default_source_path, then to the provider root.' },
+        },
+      }
 
       response '202', 'Migration started — batch summary returned' do
         schema type: :object,
@@ -261,6 +291,78 @@ RSpec.describe 'Api::V1::SystemConnectors', type: :request do
 
       response '422', 'Connector is not in active status' do
         schema type: :object, properties: { error: { type: :string } }
+        run_test!
+      end
+
+      response '404', 'Connector not found' do
+        schema type: :object, properties: { error: { type: :string } }
+        run_test!
+      end
+    end
+  end
+
+  # ===========================================================================
+  # REFRESH TOKEN — POST /api/v1/system_connectors/{id}/refresh_token
+  # ===========================================================================
+  path '/api/v1/system_connectors/{id}/refresh_token' do
+    parameter name: :id, in: :path, type: :integer, required: true,
+              description: 'SystemConnector ID'
+
+    post 'Force-refresh a jwt_service_account connector\'s IMS access token' do
+      tags 'System Connectors'
+      produces 'application/json'
+      security [ Bearer: [] ]
+      description <<~DESC
+        Signs a fresh RS256 JWT from the connector's stored technical-account
+        credentials and exchanges it with Adobe IMS for a new short-lived
+        access token, persisting the result. Only valid for connectors with
+        `credential_type: jwt_service_account`. Access tokens are also
+        refreshed automatically in the background (see `AemTokenRefreshWorker`)
+        whenever they are missing or near expiry.
+      DESC
+
+      response '200', 'Token refreshed' do
+        schema type: :object,
+               properties: {
+                 token_status:              { type: :string, example: 'valid' },
+                 access_token_expires_at:   { type: :string, format: 'date-time', nullable: true },
+               }
+        run_test!
+      end
+
+      response '422', 'Connector is not a jwt_service_account connector, or the IMS exchange failed' do
+        schema type: :object, properties: { error: { type: :string } }
+        run_test!
+      end
+
+      response '404', 'Connector not found' do
+        schema type: :object, properties: { error: { type: :string } }
+        run_test!
+      end
+    end
+  end
+
+  # ===========================================================================
+  # REVOKE TOKEN — POST /api/v1/system_connectors/{id}/revoke_token
+  # ===========================================================================
+  path '/api/v1/system_connectors/{id}/revoke_token' do
+    parameter name: :id, in: :path, type: :integer, required: true,
+              description: 'SystemConnector ID'
+
+    post 'Clear the locally cached IMS access token for a connector' do
+      tags 'System Connectors'
+      produces 'application/json'
+      security [ Bearer: [] ]
+      description <<~DESC
+        Clears the cached access token so the next migration/refresh forces a
+        fresh IMS exchange. This does **not** revoke the credential on Adobe's
+        side — Adobe IMS has no public API for that. To fully invalidate a
+        compromised technical account, rotate the client secret / regenerate
+        the key pair in the Adobe Developer Console.
+      DESC
+
+      response '200', 'Token revoked (locally cleared)' do
+        schema type: :object, properties: { token_status: { type: :string, example: 'revoked' } }
         run_test!
       end
 

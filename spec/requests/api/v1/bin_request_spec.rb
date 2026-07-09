@@ -87,12 +87,14 @@ RSpec.describe "Api::V1::Bin coverage", type: :request do
     asset = trashed_asset("Restore Me")
     folder = create(:folder, :trashed, user: admin)
 
+    expect(FolderContentsCache).to receive(:flush_all)
     post "/api/v1/bin/bulk_restore", params: { items: [ { id: asset.id, type: "asset" }, { id: folder.id, type: "folder" }, { id: 0, type: "asset" } ] }, as: :json
     expect(response).to have_http_status(:ok)
     expect(json["restored"]).to eq(2)
     expect(json["errors"]).not_to be_empty
 
     doomed = trashed_asset("Destroy Me")
+    expect(FolderContentsCache).to receive(:flush_all)
     delete "/api/v1/bin/bulk_destroy", params: { items: [ { id: doomed.id, type: "asset" }, { id: 0, type: "folder" } ] }, as: :json
     expect(response).to have_http_status(:ok)
     expect(json["deleted"]).to eq(1)
@@ -103,6 +105,7 @@ RSpec.describe "Api::V1::Bin coverage", type: :request do
     doomed = trashed_asset("Boom")
     allow_any_instance_of(Api::V1::BinController).to receive(:permanent_delete_asset).and_raise(StandardError, "kaboom") # rubocop:disable RSpec/AnyInstance
 
+    expect(FolderContentsCache).not_to receive(:flush_all)
     delete "/api/v1/bin/bulk_destroy", params: { items: [ { id: doomed.id, type: "asset" } ] }, as: :json
 
     expect(response).to have_http_status(:ok)
@@ -116,6 +119,7 @@ RSpec.describe "Api::V1::Bin coverage", type: :request do
     create(:folder, :trashed, user: admin)
     allow(StorageManager).to receive(:adapter_for).and_return(instance_double("StorageAdapter", delete: true))
 
+    expect(FolderContentsCache).to receive(:flush_all)
     delete "/api/v1/bin/empty", as: :json
     expect(response).to have_http_status(:ok)
     expect(json["deleted"]).to eq(2)

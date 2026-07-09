@@ -12,18 +12,26 @@ class MigrationCommitWorker
 
   COMMIT_CHUNK = 50  # process this many items per job call
 
-  def perform(batch_id, cursor = 0)
+  def perform(batch_id)
     batch = IngestionBatch.find_by(id: batch_id)
     return unless batch
     return unless batch.review_needed? || batch.committed?
 
     batch.update!(status: :committed, started_at: batch.started_at || Time.current) if batch.review_needed?
 
+    # NOTE: no OFFSET here — the WHERE clause naturally shrinks as items get
+    # committed (commit_item! flips their status away from ready_for_import),
+    # so always re-querying "the next COMMIT_CHUNK still ready_for_import"
+    # is correct. Using an offset here was a real bug: as each chunk commits
+    # and removes itself from the ready_for_import pool, advancing the
+    # offset on the next call would skip over the next uncommitted chunk
+    # (the pool shifts under you), silently leaving roughly half of every
+    # large batch stuck at ready_for_import forever while the batch still
+    # reported "committed".
     items = batch.ingestion_items
                  .where(status: :ready_for_import)
                  .order(:id)
                  .limit(COMMIT_CHUNK)
-                 .offset(cursor)
 
     if items.empty?
       finalize_batch!(batch)
@@ -35,7 +43,7 @@ class MigrationCommitWorker
     end
 
     # Recurse via Sidekiq to process the next chunk (avoids memory bloat on huge batches)
-    MigrationCommitWorker.perform_async(batch_id, cursor + COMMIT_CHUNK)
+    MigrationCommitWorker.perform_async(batch_id)
   end
 
   private
@@ -44,10 +52,23 @@ class MigrationCommitWorker
     props   = item.clean_properties.presence || {}
     folder  = resolve_target_folder(batch, props)
 
+    # Re-fetch the original binary from the source system now. ExtractionWorker
+    # only streamed the file through a SHA256 digest for hashing/dedup and
+    # discarded the tempfile — nothing before this point has ever persisted
+    # the actual asset content. AssetProcessorWorker (enqueued below, after
+    # the transaction commits) is what stores the real binary, generates
+    # thumbnails/previews, extracts binary-level metadata, and flips the
+    # asset's status from pending to ready. Without this, committed assets
+    # are just metadata records with no file behind them, stuck at "pending"
+    # forever.
+    adapter      = IngestionAdapters::Factory.build(batch)
+    staging_path = adapter.download_and_stream(item.original_filename)
+    version      = nil
+
     ActiveRecord::Base.transaction do
       # Create the canonical Asset record
       asset = Asset.create!(
-        title:     props["title"].presence || File.basename(item.original_filename, ".*").titleize,
+        title:     props["title"].presence || File.basename(item.original_filename),
         user_id:   batch.initiated_by_id || User.first&.id,
         folder:    folder,
         status:    :pending,
@@ -77,6 +98,13 @@ class MigrationCommitWorker
           file_hash:         item.file_hash,
           file_size:         item.file_size,
           legacy_metadata:   item.legacy_metadata,
+          # The raw jcr:content/metadata.json payload fetched at extraction
+          # time (present only when the batch had "Migrate Metadata"
+          # enabled) — committed directly onto the version record so
+          # operators can audit exactly what full metadata was migrated for
+          # this asset, without re-deriving it from the (already-deleted)
+          # IngestionItem.
+          full_metadata:     item.full_metadata,
         }
       )
 
@@ -91,10 +119,17 @@ class MigrationCommitWorker
 
       Rails.logger.info("[MigrationCommit] Asset #{asset.uuid} committed from item #{item.id}")
     end
+
+    # Enqueue *after* the transaction commits — enqueuing inside an open
+    # transaction risks the Sidekiq job (picked up by a separate worker
+    # process) looking up the AssetVersion before this transaction's writes
+    # are actually visible to other DB connections.
+    AssetProcessorWorker.perform_async(version.id, staging_path)
   rescue => e
     Rails.logger.error("[MigrationCommit] Failed to commit item #{item.id}: #{e.message}")
     item.update!(status: :flagged_error, error_log: e.message)
     batch.increment!(:error_count)
+    File.delete(staging_path) if staging_path && File.exist?(staging_path)
   end
 
   def finalize_batch!(batch)

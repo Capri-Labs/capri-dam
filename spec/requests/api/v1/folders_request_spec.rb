@@ -235,4 +235,56 @@ RSpec.describe "Api::V1::Folders coverage", type: :request do
     expect(folder.reload.deleted_at).to be_present
     expect(CdnInvalidationWorker).to have_received(:perform_async).with("folder", folder.id)
   end
+
+  describe "folder-contents caching (FolderContentsCache)" do
+    # FolderContentsCache.fetch short-circuits to an uncached yield in the
+    # test environment (see the class's own spec for direct Redis-path
+    # coverage), so here we verify the *integration*: #show always builds the
+    # payload via FolderContentsCache.fetch (with the folder id + sort params),
+    # permission checks still run before the cache is touched, and mutating
+    # actions call FolderContentsCache.bust with the right folder id(s).
+
+    it "wraps #show in FolderContentsCache.fetch keyed by folder id and sort/direction params" do
+      folder = create(:folder, user: user)
+
+      expect(FolderContentsCache).to receive(:fetch)
+        .with(folder.id, params: { sort: "name", direction: "asc" })
+        .and_call_original
+
+      get "/api/v1/folders/#{folder.id}", params: { sort: "name", direction: "asc" }, as: :json
+      expect(response).to have_http_status(:ok)
+    end
+
+    it "enforces the read permission check before ever touching the cache" do
+      other_user = create(:user)
+      folder = create(:folder, user: user)
+
+      expect(FolderContentsCache).not_to receive(:fetch)
+
+      sign_in other_user
+      get "/api/v1/folders/#{folder.id}", as: :json
+      expect(response).to have_http_status(:forbidden)
+    end
+
+    it "busts the parent folder's cache on create/update/destroy/restore" do
+      parent = create(:folder, user: user)
+
+      expect(FolderContentsCache).to receive(:bust).with(nil)
+      post "/api/v1/folders", params: { folder: { name: "New", parent_id: "root" } }, as: :json
+      expect(response).to have_http_status(:created)
+
+      expect(FolderContentsCache).to receive(:bust).with([ nil, parent.id ])
+      new_child = create(:folder, user: user)
+      patch "/api/v1/folders/#{new_child.id}", params: { folder: { name: "Renamed", parent_id: parent.id } }, as: :json
+      expect(response).to have_http_status(:ok)
+
+      expect(FolderContentsCache).to receive(:bust).with(parent.parent_id)
+      delete "/api/v1/folders/#{parent.id}", as: :json
+      expect(response).to have_http_status(:ok)
+
+      expect(FolderContentsCache).to receive(:bust).with(parent.parent_id)
+      post "/api/v1/folders/#{parent.id}/restore", as: :json
+      expect(response).to have_http_status(:ok)
+    end
+  end
 end

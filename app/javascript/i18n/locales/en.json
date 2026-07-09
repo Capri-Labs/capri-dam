@@ -45,7 +45,8 @@
       "System Ops": "System Operations",
       "Queues": "Sidekiq Queues",
       "Inbox": "Inbox",
-      "Quarantine Review": "Quarantine Review"
+      "Quarantine Review": "Quarantine Review",
+      "Custom Nodes": "Custom Nodes"
     }
   },
   "common": {
@@ -902,6 +903,8 @@
     "delayNodeDesc": "Pause workflow for N hours or days.",
     "conditionNode": "Condition Branch",
     "conditionNodeDesc": "Branch on asset metadata or status value.",
+    "switchNode": "Switch / Multi-branch",
+    "switchNodeDesc": "Route to one of many outputs by matching a field against ordered cases.",
     "email": {
       "recipient": "Recipient",
       "recipientOwner": "Asset Owner",
@@ -1048,6 +1051,29 @@
       "compareValue": "Compare Value",
       "trueBranch": "TRUE",
       "falseBranch": "FALSE"
+    },
+    "switch": {
+      "field": "Switch Field",
+      "fieldPlaceholder": "status / properties.content_type",
+      "cases": "Cases",
+      "noCases": "No cases yet — add one to create an output branch.",
+      "caseN": "Case {{n}}",
+      "operator": "Operator",
+      "op_equals": "Equals",
+      "op_not_equals": "Not equals",
+      "op_contains": "Contains",
+      "op_starts_with": "Starts with",
+      "op_ends_with": "Ends with",
+      "op_greater_than": "Greater than",
+      "op_less_than": "Less than",
+      "compareValue": "Compare Value",
+      "outputLabel": "Output Label",
+      "outputLabelPlaceholder": "e.g. images, videos",
+      "addCase": "Add Case",
+      "removeCase": "Remove case",
+      "defaultLabel": "Default Output Label",
+      "defaultHelp": "Route taken when no case matches.",
+      "defaultBranch": "DEFAULT"
     },
     "approval": {
       "title": "Approval Step",
@@ -1215,6 +1241,10 @@
       "notesHelper": "Internal notes visible only to admins.",
       "tdmSanitation": "Apply AI / TDM Sanitization",
       "tdmSanitationDesc": "Route each asset through the AI Gateway for metadata normalization and compliance scanning.",
+      "migrateMetadata": "Migrate Metadata",
+      "migrateMetadataDesc": "Fetch each asset's complete metadata (e.g. AEM's jcr:content/metadata.json) in addition to the lightweight listing properties. Adds one extra request per asset. Enabled by default for complete metadata.",
+      "migrateMetadataEnabledSummary": "Enabled — full per-asset metadata fetched",
+      "migrateMetadataDisabledSummary": "Disabled — listing metadata only",
       "concurrency": "Max Concurrent Threads",
       "concurrencyHelper": "Number of parallel download threads (1–10).",
       "confirmInfo": "Clicking 'Initialize' will immediately start the extraction pipeline. The process runs in the background.",
@@ -2228,7 +2258,11 @@
       "embeddedMetadataSection": "EXIF / IPTC / XMP Data",
       "noExifDataExtractedYet": "No EXIF data extracted yet.",
       "collapseExifData": "Collapse EXIF / IPTC / XMP data",
-      "expandExifData": "Expand EXIF / IPTC / XMP data"
+      "expandExifData": "Expand EXIF / IPTC / XMP data",
+      "rawMetadataSection": "Raw Metadata",
+      "noRawMetadataAvailable": "No raw metadata available.",
+      "collapseRawMetadata": "Collapse Raw Metadata",
+      "expandRawMetadata": "Expand Raw Metadata"
     },
     "ai": {
       "semanticAndVisionAnalysis": "Semantic & Vision Analysis"
@@ -2671,8 +2705,7 @@
       "discarded": "Quarantined asset moved to the Recycle Bin.",
       "actionFailed": "Quarantine action failed."
     }
-  }
-,
+  },
   "metadataImport": {
     "preview": {
       "action": "Preview",
@@ -2688,6 +2721,61 @@
       "resolvedAs": "Resolved as {{path}}",
       "previewFailed": "Preview failed.",
       "previewUnavailable": "Preview results are not available right now."
+    }
+  },
+  "customNodes": {
+    "title": "Custom Workflow Nodes",
+    "subtitle": "Register tenant-hosted plugin nodes as declarative manifests. Capri DAM never runs plugin code in-process — the engine dispatches an SSRF-guarded, HMAC-signed webhook to your HTTPS endpoint and applies only a whitelist of response actions.",
+    "refresh": "Refresh",
+    "register": "Register Node",
+    "registerTitle": "Register Custom Node",
+    "colName": "Name",
+    "colKey": "Node Type",
+    "colEndpoint": "Endpoint",
+    "colStatus": "Status",
+    "colHealth": "Health",
+    "colActions": "Actions",
+    "empty": "No custom nodes registered yet.",
+    "circuitOpen": "Circuit open",
+    "failures": "{{count}} failures",
+    "enable": "Enable",
+    "disable": "Disable",
+    "delete": "Delete",
+    "confirmDelete": "Delete custom node \"{{name}}\"? This cannot be undone.",
+    "cancel": "Cancel",
+    "save": "Save",
+    "nodeLabel": "Custom Node",
+    "pluginBadge": "plugin: {{key}}",
+    "noFields": "This plugin has no configurable fields.",
+    "fieldKey": "Key",
+    "fieldKeyHelp": "Lowercase identifier (a-z, 0-9, _). Exposed as plugin:<key>.",
+    "fieldName": "Display Name",
+    "fieldDescription": "Description",
+    "fieldEndpoint": "Endpoint URL",
+    "fieldEndpointHelp": "Must be a public HTTPS URL. Private/loopback hosts are blocked.",
+    "fieldTimeout": "Timeout (ms)",
+    "fieldAuthType": "Auth",
+    "fieldSecret": "Signing Secret",
+    "fieldSecretHelp": "Used to HMAC-sign the dispatch. Never returned by the API.",
+    "fieldOutputs": "Branch Outputs",
+    "fieldOutputsHelp": "Comma-separated labels for branching nodes (leave blank for linear).",
+    "fieldSchema": "Config Schema (JSON)",
+    "fieldSchemaHelp": "Array of { key, type, label } field descriptors that drive the node form.",
+    "fieldStatus": "Status",
+    "status": {
+      "draft": "Draft",
+      "enabled": "Enabled",
+      "disabled": "Disabled"
+    },
+    "notifications": {
+      "loadFailed": "Failed to load custom nodes.",
+      "created": "Custom node registered.",
+      "saveFailed": "Could not save the custom node.",
+      "invalidSchema": "Config schema must be valid JSON.",
+      "enabled": "Custom node enabled.",
+      "disabled": "Custom node disabled.",
+      "deleted": "Custom node deleted.",
+      "actionFailed": "Custom node action failed."
     }
   }
 }

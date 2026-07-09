@@ -250,7 +250,7 @@ RSpec.describe MigrationCommitWorker, type: :worker do
   before { described_class.clear }
 
   it "queues the job" do
-    expect { described_class.perform_async("batch-id", 0) }.to change(described_class.jobs, :size).by(1)
+    expect { described_class.perform_async("batch-id") }.to change(described_class.jobs, :size).by(1)
   end
 
   it "finalizes empty batches and enqueues the report worker" do
@@ -270,9 +270,12 @@ RSpec.describe MigrationCommitWorker, type: :worker do
     asset_versions = instance_double(ActiveRecord::Associations::CollectionProxy)
     version = instance_double(AssetVersion, id: SecureRandom.uuid)
     asset = instance_double(Asset, asset_versions: asset_versions, uuid: SecureRandom.uuid)
+    adapter = instance_double("IngestionAdapter", download_and_stream: "/tmp/staged.jpg")
     worker = described_class.new
 
     allow(worker).to receive(:resolve_target_folder).and_return(nil)
+    allow(IngestionAdapters::Factory).to receive(:build).and_return(adapter)
+    allow(AssetProcessorWorker).to receive(:perform_async)
     allow(Asset).to receive(:create!).and_return(asset)
     allow(asset_versions).to receive(:create!).and_return(version)
     allow(asset).to receive(:update!)
@@ -280,9 +283,11 @@ RSpec.describe MigrationCommitWorker, type: :worker do
 
     worker.send(:commit_item!, batch, item)
 
+    expect(adapter).to have_received(:download_and_stream).with("hero.jpg")
     expect(Asset).to have_received(:create!).with(hash_including(title: "Hero", properties: hash_including(:original_filename)))
     expect(asset_versions).to have_received(:create!)
     expect(item.reload.status).to eq("committed")
+    expect(AssetProcessorWorker).to have_received(:perform_async).with(version.id, "/tmp/staged.jpg")
   end
 end
 

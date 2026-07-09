@@ -297,6 +297,7 @@ module Api
             dispatch_asset_workers(@asset, @version, staging_path)
           end
 
+          FolderContentsCache.bust(@asset.folder_id)
           render json: { id: @asset.uuid, status: "processing" }, status: :accepted
         else
           render json: { error: "No file provided" }, status: :unprocessable_entity
@@ -322,6 +323,7 @@ module Api
         target_folder_id = normalised_folder_id
         metadata_updates = update_metadata_payload
         title = params.dig(:asset, :title) || params[:title]
+        old_folder_id = asset.folder_id
 
         ActiveRecord::Base.transaction do
           if metadata_updates.present? || title.present? || folder_id_supplied?
@@ -344,6 +346,7 @@ module Api
           asset.update!(attributes)
         end
 
+        FolderContentsCache.bust([ old_folder_id, asset.folder_id ])
         render json: format_asset(asset.reload), status: :ok
       rescue ActiveRecord::RecordNotFound
         render json: { error: "Asset not found" }, status: :not_found
@@ -618,6 +621,7 @@ module Api
         return if performed?
 
         @asset.soft_delete
+        FolderContentsCache.bust(@asset.folder_id)
         render json: { success: true, message: "Moved to bin" }
       end
 
@@ -657,6 +661,7 @@ module Api
           active_version_id: new_version.id
         )
 
+        FolderContentsCache.bust(@asset.folder_id)
         render json: format_asset(@asset), status: :ok
       rescue ActiveRecord::RecordNotFound
         render json: { error: "Asset not found" }, status: :not_found
@@ -696,6 +701,7 @@ module Api
       def restore
         @asset = find_asset_record(Asset.trashed)
         @asset.restore
+        FolderContentsCache.bust(@asset.folder_id)
         render json: { success: true, message: "Asset restored" }
       end
 
@@ -724,7 +730,9 @@ module Api
 
         # 2. Destroy database record (cascades to versions)
         @asset.update_column(:active_version_id, nil) if @asset.active_version_id # rubocop:disable Rails/SkipsModelValidations
+        folder_id = @asset.folder_id
         @asset.destroy
+        FolderContentsCache.bust(folder_id)
         render json: { success: true, message: "Permanently deleted all versions" }
       end
 
@@ -1034,7 +1042,15 @@ module Api
 
         # 1. ActiveStorage attachment: redirect to signed blob URL.
         #    (Only for the original binary — previews are stored on disk.)
-        if !want_preview && selected_version.respond_to?(:file) && selected_version.file.attached?
+        #
+        #    NOTE: `active_storage_attachments.record_id` is a bigint column,
+        #    but Asset/AssetVersion use uuid primary keys, so every attachment
+        #    for these models is persisted with record_id: 0. That means
+        #    `file.attached?` can spuriously return true for a *different*
+        #    version's blob. Only use it when we have no `storage_path` to
+        #    fall back on (storage_path is always written right after upload,
+        #    so this only affects legacy/seed data with no storage_path).
+        if !want_preview && storage_path.blank? && selected_version.respond_to?(:file) && selected_version.file.attached?
           return redirect_to url_for(selected_version.file), allow_other_host: false
         end
 

@@ -84,6 +84,7 @@ class IngestionBatch < ApplicationRecord
       destination_folder_id:   destination_folder_id,
       destination_folder_name: destination_folder&.name,
       report_snapshot_id: report_snapshot_id,
+      migrate_metadata:   migrate_metadata,
     }
   end
 end

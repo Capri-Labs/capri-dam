@@ -79,6 +79,8 @@ RSpec.describe 'Api::V1::IngestionBatches', type: :request do
               destination_folder_id: { type: :integer, nullable: true,
                               description: 'ID of the DAM Folder where migrated assets will be stored. When omitted, assets land in an auto-generated migration staging folder.' },
               notes:        { type: :string,  nullable: true },
+              migrate_metadata: { type: :boolean, default: true,
+                              description: 'When true (default), the extraction pipeline fetches each asset\'s complete metadata (e.g. AEM\'s jcr:content/metadata.json node) in addition to the lightweight listing properties pulled during the file scan. Disable for faster, listing-only imports.' },
               source_credentials: {
                 type: :object,
                 description: 'Provider-specific credentials map (stored encrypted). Prefer using connector_id.',
@@ -200,6 +202,7 @@ RSpec.describe 'Api::V1::IngestionBatches', type: :request do
                        status:            { type: :string },
                        error_log:         { type: :string, nullable: true },
                        legacy_metadata:   { type: :object, nullable: true },
+                       full_metadata:     { type: :object, nullable: true, description: "Raw per-asset metadata fetched from the source system's dedicated metadata endpoint (e.g. AEM's jcr:content/metadata.json), captured only when migrate_metadata was enabled." },
                        clean_properties:  { type: :object, nullable: true },
                        created_at:        { type: :string, format: 'date-time' },
                      },

@@ -637,6 +637,52 @@ describe('Folders components', () => {
     expect(screen.getByText(/NIKON CORPORATION/)).toBeInTheDocument();
   });
 
+  it('collapses the Raw Metadata section by default and expands/collapses it on click', async () => {
+    const asset = {
+      id: 11,
+      title: 'Viewer Asset',
+      url: '/viewer.jpg',
+      created_at: '2024-01-01T10:00:00Z',
+      status: 'approved',
+      properties: {
+        content_type: 'image/jpeg',
+        embedded_metadata: { XMP: { Creator: ['Andy Thoma'] } },
+        raw_test_marker: 'RAWMARKERXYZ',
+      },
+    };
+
+    render(<AssetViewer asset={asset} open onClose={jest.fn()} onAssetUpdated={jest.fn()} />);
+
+    expect(screen.getByText('Raw Metadata')).toBeInTheDocument();
+    // Collapsed by default: the raw JSON dump isn't rendered/visible yet.
+    expect(screen.queryByText(/RAWMARKERXYZ/)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Raw Metadata'));
+
+    expect(screen.getByText(/RAWMARKERXYZ/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText(/collapse raw metadata/i));
+
+    await waitFor(() => expect(screen.queryByText(/RAWMARKERXYZ/)).not.toBeInTheDocument());
+  });
+
+  it('shows a fallback message in Raw Metadata when the asset has no properties', () => {
+    const asset = {
+      id: 11,
+      title: 'Viewer Asset',
+      url: '/viewer.jpg',
+      created_at: '2024-01-01T10:00:00Z',
+      status: 'approved',
+      properties: {},
+    };
+
+    render(<AssetViewer asset={asset} open onClose={jest.fn()} onAssetUpdated={jest.fn()} />);
+
+    fireEvent.click(screen.getByText('Raw Metadata'));
+
+    expect(screen.getByText('No raw metadata available.')).toBeInTheDocument();
+  });
+
   it('enables Edit Image for web-renderable formats and disables it for PSD (relies on the backend `editable` flag)', () => {
     const jpegAsset = {
       id: 12,
@@ -994,6 +1040,18 @@ describe('Folders components', () => {
       expect(JSON.parse(saveCall[1].body).geometry.rotate).toBe(90);
     });
     expect(onSave).toHaveBeenCalledWith({ id: 21, version: 2 });
+  });
+
+  it('appends the cache-busting `v` param with `&` (not `?`) when asset.url already carries a query string', () => {
+    // Regression test: `asset.url` returned by the backend (via
+    // AssetUrlHelper#asset_url_for) always includes a `?version_id=...` query
+    // string. The editor canvas used to hardcode `${asset.url}?v=...`, which
+    // produced a malformed double-`?` URL (e.g. `...?version_id=1?v=2`) that
+    // 404'd and broke the "Edit Image" feature entirely.
+    render(<ImageEditorDialog asset={{ id: 21, url: '/api/v1/assets/local/21?version_id=9', version: 3, properties: {} }} open onClose={jest.fn()} onSave={jest.fn()} />);
+
+    const img = screen.getByAltText('Editor Canvas');
+    expect(img).toHaveAttribute('src', '/api/v1/assets/local/21?version_id=9&v=3');
   });
 
   it('renders PinToCollectionDialog and pins an asset to a collection', async () => {

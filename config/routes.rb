@@ -161,6 +161,14 @@ Rails.application.routes.draw do
       get  "ai/lab/models", to: "ai/lab#models", as: :ai_lab_models
       post "ai/lab/chat",   to: "ai/lab#chat",   as: :ai_lab_chat
 
+      # Custom Workflow Nodes (Plugin SDK)
+      resources :custom_node_definitions, only: %i[index show create update destroy] do
+        member do
+          post :enable
+          post :disable
+        end
+      end
+
       # Agent Workflows
       resources :agent_workflows, only: %i[index show create update destroy] do
         member do
@@ -338,6 +346,8 @@ Rails.application.routes.draw do
         end
         member do
           post :start_migration
+          post :refresh_token
+          post :revoke_token
         end
       end
       post "webhooks/connectors/:connector_id/receive", to: "webhooks#receive"
@@ -548,6 +558,9 @@ Rails.application.routes.draw do
 
     # Reporting
     get "quarantine", to: "quarantine#index"
+
+    # Workflow custom-node SDK admin screen
+    get "custom_nodes", to: "custom_nodes#index"
 
     resources :reports, only: [ :index, :show, :create, :update, :destroy ] do
       collection do

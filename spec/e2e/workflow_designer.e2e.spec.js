@@ -124,6 +124,35 @@ test.describe('Workflow Designer — canvas drag-and-drop', () => {
     await expect(page.locator('text=TRUE')).toBeVisible({ timeout: 5_000 });
     await expect(page.locator('text=FALSE')).toBeVisible({ timeout: 5_000 });
   });
+
+  test('drops a Switch node and shows the DEFAULT branch label', async ({ page }) => {
+    await dragPaletteItemToCanvas(page, 'Switch / Multi-branch');
+
+    // The switch node always renders a default output branch chip. Use an exact
+    // match so it doesn't collide with the "Default Output Label" field label.
+    await expect(page.getByText('DEFAULT', { exact: true })).toBeVisible({ timeout: 5_000 });
+    // The switch field input (t('nodes.switch.field') → "Switch Field") is present.
+    await expect(page.getByLabel('Switch Field').first()).toBeVisible({ timeout: 5_000 });
+  });
+
+  test('adds cases to a Switch node and renders labelled branches', async ({ page }) => {
+    await dragPaletteItemToCanvas(page, 'Switch / Multi-branch');
+
+    // Ensure the node actually mounted before interacting (drag can be async).
+    await expect(page.getByLabel('Switch Field').first()).toBeVisible({ timeout: 5_000 });
+
+    // The dropped node can extend under the ReactFlow minimap (bottom-right),
+    // which sits on top and would receive a real mouse click. dispatchEvent
+    // delivers the click straight to the button, bypassing hit-testing.
+    await page.getByRole('button', { name: 'Add Case' }).dispatchEvent('click');
+
+    // A new case row appears with its own "Output Label" field.
+    await expect(page.getByText('Case 1', { exact: true })).toBeVisible({ timeout: 5_000 });
+    const labelInput = page.getByLabel('Output Label').first();
+    await labelInput.fill('images');
+    // The branch footer chip mirrors the case handle id (the output label).
+    await expect(page.getByText('images', { exact: true }).first()).toBeVisible({ timeout: 5_000 });
+  });
 });
 
 test.describe('Workflow Designer — blueprint save', () => {

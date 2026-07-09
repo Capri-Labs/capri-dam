@@ -39,6 +39,7 @@ const NODE_TYPE_MAP = {
     cdnSyncNode:             'cdn_sync',
     delayNode:               'delay',
     conditionNode:           'condition',
+    switchNode:              'switch',
 };
 
 const APPROVAL_NODE_TYPES = new Set(['approvalNode', 'parallelApprovalNode', 'sequentialApprovalNode']);
@@ -220,7 +221,9 @@ export default function WorkflowDesigner({ initialData, onSave, onCancel }) {
                 description:            s.description || '',
                 position:               index + 1,
                 step_type:              isApproval ? 'approval' : 'automated_action',
-                node_type:              NODE_TYPE_MAP[node.type] || 'approval',
+                node_type:              (typeof s.nodeType === 'string' && s.nodeType.startsWith('plugin:'))
+                                            ? s.nodeType
+                                            : (NODE_TYPE_MAP[node.type] || 'approval'),
                 step_config:            s.config      || {},
                 assignee_type:          isApproval ? (s.assigneeType || 'user') : 'system',
                 assignee_id:            isApproval ? (s.assigneeId   || '0')    : '0',

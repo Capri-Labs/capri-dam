@@ -50,6 +50,8 @@ import GenerateThumbNode  from '../../../../app/javascript/components/nodes/Gene
 import CdnSyncNode        from '../../../../app/javascript/components/nodes/CdnSyncNode';
 import DelayNode          from '../../../../app/javascript/components/nodes/DelayNode';
 import ConditionNode      from '../../../../app/javascript/components/nodes/ConditionNode';
+import SwitchNode         from '../../../../app/javascript/components/nodes/SwitchNode';
+import CustomNode         from '../../../../app/javascript/components/nodes/CustomNode';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -349,6 +351,129 @@ describe('ConditionNode', () => {
     render(<ConditionNode data={data} isConnectable={isConnectable} />);
     expect(screen.getByLabelText('nodes.condition.field')).toBeInTheDocument();
     expect(screen.getByLabelText('nodes.condition.compareValue')).toBeInTheDocument();
+  });
+});
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SwitchNode
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('SwitchNode', () => {
+  it('renders the switch label and field input', () => {
+    const { data, isConnectable } = makeData();
+    render(<SwitchNode data={data} isConnectable={isConnectable} />);
+    expect(screen.getByText('nodes.switchNode')).toBeInTheDocument();
+    expect(screen.getByLabelText('nodes.switch.field')).toBeInTheDocument();
+  });
+
+  it('always renders at least the default branch handle', () => {
+    const { data, isConnectable } = makeData();
+    render(<SwitchNode data={data} isConnectable={isConnectable} />);
+    // No cases → one source handle (the default branch)
+    const sourceHandles = screen.getAllByTestId('handle-source');
+    expect(sourceHandles.length).toBe(1);
+  });
+
+  it('renders one source handle per case plus the default', () => {
+    const { data, isConnectable } = makeData({
+      config: {
+        field: 'status',
+        cases: [
+          { operator: 'equals', value: 'a', label: 'alpha' },
+          { operator: 'equals', value: 'b', label: 'beta' },
+        ],
+      },
+    });
+    render(<SwitchNode data={data} isConnectable={isConnectable} />);
+    const sourceHandles = screen.getAllByTestId('handle-source');
+    expect(sourceHandles.length).toBe(3); // 2 cases + default
+  });
+
+  it('adds a case when the Add Case button is clicked', async () => {
+    const { data, isConnectable, updateNodeData } = makeData({ config: { field: 'status' } });
+    render(<SwitchNode data={data} isConnectable={isConnectable} />);
+    await userEvent.click(screen.getByText('nodes.switch.addCase'));
+    expect(updateNodeData).toHaveBeenCalledWith(
+      'test-node',
+      'config',
+      expect.objectContaining({
+        cases: expect.arrayContaining([
+          expect.objectContaining({ operator: 'equals', value: '', label: '' }),
+        ]),
+      })
+    );
+  });
+
+  it('updates the switch field via updateNodeData', async () => {
+    const { data, isConnectable, updateNodeData } = makeData();
+    render(<SwitchNode data={data} isConnectable={isConnectable} />);
+    await userEvent.type(screen.getByLabelText('nodes.switch.field'), 's');
+    expect(updateNodeData).toHaveBeenCalledWith(
+      'test-node',
+      'config',
+      expect.objectContaining({ field: 's' })
+    );
+  });
+});
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CustomNode (schema-driven plugin node)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('CustomNode', () => {
+  function makeCustomData(overrides = {}) {
+    const updateNodeData = jest.fn();
+    return {
+      data: {
+        step: {
+          id: 'plugin-node',
+          title: '',
+          config: {},
+          nodeType: 'plugin:acme',
+          customKey: 'acme',
+          customName: 'Acme Node',
+          customColor: '#6366f1',
+          customSchema: [{ key: 'quality', type: 'string', label: 'Quality Level' }],
+          customOutputs: [],
+          ...overrides,
+        },
+        updateNodeData,
+      },
+      updateNodeData,
+      isConnectable: true,
+    };
+  }
+
+  it('renders the plugin display name and schema fields', () => {
+    const { data, isConnectable } = makeCustomData();
+    render(<CustomNode data={data} isConnectable={isConnectable} />);
+    expect(screen.getByText('Acme Node')).toBeInTheDocument();
+    expect(screen.getByLabelText('Quality Level')).toBeInTheDocument();
+  });
+
+  it('renders a linear handle when no branch outputs are declared', () => {
+    const { data, isConnectable } = makeCustomData({ customOutputs: [] });
+    render(<CustomNode data={data} isConnectable={isConnectable} />);
+    expect(screen.getAllByTestId('handle-source').length).toBe(1);
+  });
+
+  it('renders one branch handle per declared output', () => {
+    const { data, isConnectable } = makeCustomData({ customOutputs: ['approved', 'rejected'] });
+    render(<CustomNode data={data} isConnectable={isConnectable} />);
+    expect(screen.getAllByTestId('handle-source').length).toBe(2);
+  });
+
+  it('updates config when a schema field changes', async () => {
+    const { data, isConnectable, updateNodeData } = makeCustomData();
+    render(<CustomNode data={data} isConnectable={isConnectable} />);
+    await userEvent.type(screen.getByLabelText('Quality Level'), 'x');
+    expect(updateNodeData).toHaveBeenCalledWith(
+      'plugin-node',
+      'config',
+      expect.objectContaining({ quality: 'x' })
+    );
   });
 });
 

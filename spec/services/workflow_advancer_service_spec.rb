@@ -227,6 +227,46 @@ RSpec.describe WorkflowAdvancerService, 'additional branch coverage' do
     expect(linear.reload.workflow_tasks).to be_empty
   end
 
+  it "routes a switch node to the edge whose sourceHandle matches the winning case label" do
+    switch = automated_step(1, "switch", {
+      "field" => "status", "default_label" => "default",
+      "cases" => [
+        { "operator" => "equals", "value" => "archived", "label" => "archived_path" },
+        { "operator" => "equals", "value" => "in_review", "label" => "review_path" },
+      ]
+    })
+    linear = approval_step(2, title: "Linear Fallback")
+    targeted = approval_step(3, title: "Review Branch")
+    workflow.update!(graph_data: {
+      "edges" => [ { "source" => switch.id.to_s, "sourceHandle" => "review_path", "target" => "review-node" } ],
+    })
+    base_columns = WorkflowStep.column_names.dup
+    allow(WorkflowStep).to receive(:column_names).and_return(base_columns + [ "node_id" ])
+    allow(workflow.workflow_steps).to receive(:find_by).and_call_original
+    allow(workflow.workflow_steps).to receive(:find_by).with(node_id: "review-node").and_return(targeted)
+
+    described_class.new(instance).process_step(switch)
+
+    expect(instance.reload.current_step).to eq(targeted)
+    expect(instance.workflow_tasks.pluck(:workflow_step_id)).to eq([ targeted.id ])
+    expect(linear.reload.workflow_tasks).to be_empty
+  end
+
+  it "routes a switch node to the default handle when no case matches" do
+    switch = automated_step(1, "switch", {
+      "field" => "status", "default_label" => "no_match",
+      "cases" => [ { "operator" => "equals", "value" => "archived", "label" => "archived_path" } ]
+    })
+    default_step = approval_step(2, title: "Default Branch")
+    workflow.update!(graph_data: {
+      "edges" => [ { "source" => switch.id.to_s, "sourceHandle" => "no_match", "target" => "missing-node" } ],
+    })
+
+    described_class.new(instance).process_step(switch)
+
+    expect(instance.reload.current_step).to eq(default_step)
+  end
+
   describe "private assignee resolution" do
     subject(:service) { described_class.new(instance) }
 

@@ -9,7 +9,8 @@ import {
 } from '@mui/material';
 import {
     Close, CloudSync, RocketLaunch, ArrowBack, ArrowForward,
-    CheckCircle, AccountTree, Storage, AutoFixHigh, FolderOpen, Search
+    CheckCircle, AccountTree, Storage, AutoFixHigh, FolderOpen, Search,
+    Sync
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useNotify } from '../../../context/NotificationContext';
@@ -55,6 +56,7 @@ export default function NewMigrationDialog({ open, onClose, onSuccess }) {
         notes:           '',
         tdm_sanitation:  true,
         concurrency:     3,
+        migrate_metadata: true,
     });
 
     // Fetch active connectors when dialog opens
@@ -103,6 +105,7 @@ export default function NewMigrationDialog({ open, onClose, onSuccess }) {
                     source_type:  selectedConn.provider_type,
                     connector_id: selectedConn.id,
                     destination_folder_id: selectedFolder?.id ?? null,
+                    migrate_metadata: formData.migrate_metadata,
                 },
             };
             const res  = await fetch('/api/v1/ingestion_batches', {
@@ -326,6 +329,30 @@ export default function NewMigrationDialog({ open, onClose, onSuccess }) {
                 />
             </Box>
 
+            <Box sx={{ p: 2, bgcolor: '#f8fafc', borderRadius: 2, border: '1px solid #e2e8f0' }}>
+                <FormControlLabel
+                    control={
+                        <Switch
+                            checked={formData.migrate_metadata}
+                            onChange={e => setFormData(prev => ({ ...prev, migrate_metadata: e.target.checked }))}
+                            color="secondary"
+                            data-testid="migrate-metadata-switch"
+                        />
+                    }
+                    label={
+                        <Box>
+                            <Typography variant="subtitle2" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                <Sync fontSize="small" sx={{ color: '#0ea5e9' }} />
+                                {t('ingestion.wizard.migrateMetadata')}
+                            </Typography>
+                            <Typography variant="caption" color="textSecondary">
+                                {t('ingestion.wizard.migrateMetadataDesc')}
+                            </Typography>
+                        </Box>
+                    }
+                />
+            </Box>
+
             <TextField type="number" label={t('ingestion.wizard.concurrency')} value={formData.concurrency} onChange={e => setFormData(prev => ({
   ...prev,
   concurrency: parseInt(e.target.value, 10) || 1
@@ -356,6 +383,7 @@ export default function NewMigrationDialog({ open, onClose, onSuccess }) {
                     { label: 'Source Type',   value: selectedConn?.provider_type },
                     { label: 'Destination',   value: selectedFolder ? (selectedFolder.path || selectedFolder.name) : 'Auto — migration staging folder' },
                     { label: 'AI/TDM',        value: formData.tdm_sanitation ? 'Enabled — full metadata normalization' : 'Bypassed' },
+                    { label: 'Metadata Sync', value: formData.migrate_metadata ? t('ingestion.wizard.migrateMetadataEnabledSummary', 'Enabled — full per-asset metadata fetched') : t('ingestion.wizard.migrateMetadataDisabledSummary', 'Disabled — listing metadata only') },
                     { label: 'Concurrency',   value: `${formData.concurrency} parallel threads` },
                     ...(formData.notes ? [{ label: 'Notes', value: formData.notes }] : []),
                 ].map(({ label, value }) => (

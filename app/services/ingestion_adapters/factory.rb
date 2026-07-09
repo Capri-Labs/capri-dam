@@ -55,11 +55,10 @@ module IngestionAdapters
       creds = creds.transform_keys(&:to_s)
 
       if creds.blank? && batch.respond_to?(:connector) && batch.connector.present?
-        connector = batch.connector
-        creds = {
-          "endpoint"   => connector.endpoint,
-          "auth_token" => connector.auth_token,
-        }
+        source_path = batch.respond_to?(:source_path) ? batch.source_path : nil
+        # #credentials_for_adapter transparently refreshes a JWT-based
+        # connector's IMS access token if it's missing/expiring soon.
+        creds = batch.connector.credentials_for_adapter(source_path: source_path)
       end
 
       creds

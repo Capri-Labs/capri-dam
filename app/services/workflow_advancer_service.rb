@@ -64,18 +64,22 @@ class WorkflowAdvancerService
   end
 
   def next_step_after(step, branch = nil)
-    # For condition nodes, branch is :true_branch or :false_branch.
-    # The graph edges are stored in the workflow's graph_data JSON:
-    #   edges: [{ source: "nodeId", sourceHandle: "true"|"false", target: "nodeId" }]
-    # We attempt to follow the correct edge; if graph_data is absent we fall
-    # back to linear position advance (safe for simple non-branching workflows).
-    if branch == :true_branch || branch == :false_branch
-      handle = branch == :true_branch ? "true" : "false"
+    # Branching nodes return a source-handle id to follow. The graph edges are
+    # stored in the workflow's graph_data JSON:
+    #   edges: [{ source: "nodeId", sourceHandle: "<handle>", target: "nodeId" }]
+    #
+    #   * condition → :true_branch / :false_branch  → handle "true" / "false"
+    #   * switch / branching plugin → [:branch, "<handle>"] → that handle id
+    #
+    # We follow the matching edge; if graph_data is absent we fall back to linear
+    # position advance (safe for simple non-branching workflows).
+    handle = branch_handle(branch)
+    if handle
       graph = @workflow.graph_data || {}
       edges = Array(graph["edges"] || graph[:edges])
       edge  = edges.find { |e|
         (e["source"] == step.id.to_s || e[:source] == step.id.to_s) &&
-        (e["sourceHandle"] == handle || e[:sourceHandle] == handle)
+        (e["sourceHandle"].to_s == handle || e[:sourceHandle].to_s == handle)
       }
       if edge
         target_id = (edge["target"] || edge[:target]).to_s
@@ -90,6 +94,15 @@ class WorkflowAdvancerService
 
     # Linear advance by position
     @workflow.workflow_steps.find_by(position: step.position + 1)
+  end
+
+  # Maps a branching-node result to the canvas source-handle id to follow.
+  def branch_handle(branch)
+    case branch
+    when :true_branch  then "true"
+    when :false_branch then "false"
+    when Array         then (branch.first == :branch ? branch.last.to_s : nil)
+    end
   end
 
   def complete_instance!
