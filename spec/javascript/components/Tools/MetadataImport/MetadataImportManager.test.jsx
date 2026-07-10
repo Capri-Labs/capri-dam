@@ -72,7 +72,7 @@ describe('<MetadataImportManager /> preview flow', () => {
 
   it('renders preview results inside the dialog', async () => {
     global.fetch = createFetchMock({
-      'GET /api/v1/metadata_imports': [],
+      'GET /api/v1/metadata_imports': { imports: [], meta: { total: 0, page: 1, per_page: 25 } },
       'POST /api/v1/metadata_imports/preview': {
         dry_run: true,
         total_rows: 2,
@@ -146,7 +146,10 @@ describe('<MetadataImportManager /> preview flow', () => {
     };
 
     global.fetch = createFetchMock({
-      'GET /api/v1/metadata_imports': sequence([], [pendingImport]),
+      'GET /api/v1/metadata_imports': sequence(
+        { imports: [], meta: { total: 0, page: 1, per_page: 25 } },
+        { imports: [ pendingImport ], meta: { total: 1, page: 1, per_page: 25 } }
+      ),
       'POST /api/v1/metadata_imports': { id: 11, name: 'preview.csv', status: 'pending' },
     });
 

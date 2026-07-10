@@ -1,4 +1,4 @@
-import React, { cloneElement, useEffect, useState } from 'react';
+import React, { cloneElement, useEffect, useRef, useState } from 'react';
 import {
     Badge,
     Box,
@@ -20,6 +20,12 @@ import { MENU_GROUPS } from './MenuConfig';
 const expandedWidth = 260;
 const collapsedWidth = 80;
 
+// Every menu click navigates via a full page load (`window.location.href`),
+// which remounts the Sidebar from scratch. Without this, the nav list's
+// scroll position is lost (jumps back to top) even when the clicked item is
+// far down the list. We persist/restore the scroll offset across page loads.
+const SCROLL_STORAGE_KEY = 'dam_sidebar_scroll_top';
+
 export default function Sidebar({ activeView, onNavigate }) {
     const { t } = useTranslation();
     const [open, setOpen] = useState(() => {
@@ -28,6 +34,22 @@ export default function Sidebar({ activeView, onNavigate }) {
     });
     const [expandedMenus, setExpandedMenus] = useState({});
     const [inboxUnread, setInboxUnread] = useState(0);
+    const navScrollRef = useRef(null);
+
+    // Restore the previously-saved scroll position once the nav list (and any
+    // expanded sections from the effect above) have rendered.
+    useEffect(() => {
+        const saved = sessionStorage.getItem(SCROLL_STORAGE_KEY);
+        if (saved !== null && navScrollRef.current) {
+            navScrollRef.current.scrollTop = parseInt(saved, 10) || 0;
+        }
+    }, [expandedMenus]);
+
+    const handleNavScroll = () => {
+        if (navScrollRef.current) {
+            sessionStorage.setItem(SCROLL_STORAGE_KEY, String(navScrollRef.current.scrollTop));
+        }
+    };
 
     useEffect(() => {
         const initialExpanded = {};
@@ -184,7 +206,7 @@ export default function Sidebar({ activeView, onNavigate }) {
                 </IconButton>
             </Box>
 
-            <Box sx={{ overflowY: 'auto', overflowX: 'hidden', pb: 4 }}>
+            <Box ref={navScrollRef} onScroll={handleNavScroll} data-testid="sidebar-nav-scroll" sx={{ overflowY: 'auto', overflowX: 'hidden', pb: 4 }}>
                 {MENU_GROUPS.map(group => (
                     <Box key={group.id} sx={{ mb: 2 }}>
                         <Typography

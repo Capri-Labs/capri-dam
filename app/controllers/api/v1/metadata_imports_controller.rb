@@ -10,9 +10,19 @@ module Api
       before_action :set_import, only: [ :show, :download, :destroy ]
 
       # GET /api/v1/metadata_imports
+      # Supports ?page=1&per_page=25|50|100
       def index
-        imports = current_user.metadata_imports.not_expired.recent.limit(100)
-        render json: imports.map { |import| serialize(import) }
+        scope    = current_user.metadata_imports.not_expired.recent
+        page     = [ params[:page].to_i, 1 ].max
+        per_page = params[:per_page].to_i
+        per_page = 50 unless [ 25, 50, 100 ].include?(per_page)
+
+        imports = scope.limit(per_page).offset((page - 1) * per_page)
+
+        render json: {
+          imports: imports.map { |import| serialize(import) },
+          meta:    { total: scope.count, page: page, per_page: per_page },
+        }
       end
 
       # GET /api/v1/metadata_imports/:id

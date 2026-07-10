@@ -91,6 +91,13 @@ RSpec.describe "Bin API", type: :request do
       expect(data["items"].map { |i| i["item_type"] }.uniq).to eq([ "asset" ])
     end
 
+    it "derives a model_3d media_type for 3D model formats (GLB/GLTF/OBJ/STL/DN/USDZ)" do
+      glb_asset = create(:asset, :trashed, title: "Product Hero Model", properties: { "content_type" => "model/gltf-binary", "size" => 4.megabytes })
+      get "/api/v1/bin", params: { type: "asset" }
+      item = JSON.parse(response.body)["items"].find { |i| i["id"] == glb_asset.uuid }
+      expect(item["media_type"]).to eq("model_3d")
+    end
+
     it "paginates results" do
       get "/api/v1/bin", params: { per_page: 1, page: 1 }
       data = JSON.parse(response.body)

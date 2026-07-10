@@ -6,7 +6,8 @@ import {
 } from '@mui/material';
 import {
     FolderOutlined, InsertDriveFile, PictureAsPdf, VideoFile, AudioFile,
-    ImageOutlined, RestoreFromTrashOutlined, DeleteForeverOutlined, TimerOffOutlined
+    ImageOutlined, RestoreFromTrashOutlined, DeleteForeverOutlined, TimerOffOutlined,
+    ViewInArOutlined
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 
@@ -16,6 +17,7 @@ const getIcon = (mediaType) => {
     if (mediaType === 'video')    return <VideoFile sx={{ color: '#3b82f6', fontSize: 20 }} />;
     if (mediaType === 'audio')    return <AudioFile sx={{ color: '#8b5cf6', fontSize: 20 }} />;
     if (mediaType === 'document') return <PictureAsPdf sx={{ color: '#ef4444', fontSize: 20 }} />;
+    if (mediaType === 'model_3d') return <ViewInArOutlined sx={{ color: '#0d9488', fontSize: 20 }} />;
     return <InsertDriveFile sx={{ color: '#64748b', fontSize: 20 }} />;
 };
 

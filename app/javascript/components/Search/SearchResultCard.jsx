@@ -6,15 +6,19 @@ import {
 import {
   InsertDriveFile, Image as ImageIcon, VideoFile, AudioFile,
   Description, FolderZip, CheckCircle, Cancel, RadioButtonUnchecked,
-  AccessTime, DeleteOutlineOutlined,
+  AccessTime, DeleteOutlineOutlined, ViewInArOutlined,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { is3DModel } from '../../utils/threeDMimeTypes';
 
 const typeIcon = (contentType) => {
   if (!contentType) return <InsertDriveFile />;
   if (contentType.startsWith('image/')) return <ImageIcon sx={{ color: '#3b82f6' }} />;
   if (contentType.startsWith('video/')) return <VideoFile sx={{ color: '#8b5cf6' }} />;
   if (contentType.startsWith('audio/')) return <AudioFile sx={{ color: '#f43f5e' }} />;
+  // Checked ahead of the generic "zip" match below since USDZ
+  // (`model/vnd.usdz+zip`) would otherwise be misclassified as an archive.
+  if (is3DModel(contentType)) return <ViewInArOutlined sx={{ color: '#0d9488' }} />;
   if (contentType.includes('pdf') || contentType.includes('document') || contentType.startsWith('text/')) {
     return <Description sx={{ color: '#f59e0b' }} />;
   }

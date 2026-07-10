@@ -30,6 +30,7 @@ import {
     Link,
     Alert,
     Grid,
+    TablePagination,
 } from '@mui/material';
 import {
     UploadFileOutlined,
@@ -468,19 +469,23 @@ export default function MetadataImportManager() {
     const [imports, setImports] = useState([]);
     const [loading, setLoading] = useState(true);
     const [dialogOpen, setDialog] = useState(false);
+    const [page, setPage] = useState(0); // zero-indexed, matches MUI TablePagination
+    const [perPage, setPerPage] = useState(25);
+    const [total, setTotal] = useState(0);
     const pollRef = useRef(null);
 
     const fetchImports = useCallback(async () => {
         try {
-            const res = await fetch('/api/v1/metadata_imports');
+            const res = await fetch(`/api/v1/metadata_imports?page=${page + 1}&per_page=${perPage}`);
             const data = await res.json();
-            setImports(Array.isArray(data) ? data : []);
+            setImports(Array.isArray(data.imports) ? data.imports : []);
+            setTotal(data.meta?.total || 0);
         } catch {
             notify('Failed to load imports.', 'error');
         } finally {
             setLoading(false);
         }
-    }, [notify]);
+    }, [notify, page, perPage]);
 
     useEffect(() => {
         fetchImports();
@@ -525,7 +530,11 @@ export default function MetadataImportManager() {
                 return false;
             }
             notify('Metadata import started. You will be notified when it is complete.', 'success');
-            await fetchImports();
+            if (page === 0) {
+                await fetchImports();
+            } else {
+                setPage(0); // triggers fetchImports via the page-change effect
+            }
             return true;
         } catch {
             notify('Import failed to start.', 'error');
@@ -544,7 +553,17 @@ export default function MetadataImportManager() {
             return;
         }
         notify('Import deleted.', 'success');
-        await fetchImports();
+        if (page > 0 && imports.length === 1) {
+            setPage(page - 1); // last row on this page removed — step back a page
+        } else {
+            await fetchImports();
+        }
+    };
+
+    const handlePageChange = (_event, newPage) => setPage(newPage);
+    const handlePerPageChange = (event) => {
+        setPerPage(parseInt(event.target.value, 10));
+        setPage(0);
     };
 
     return (
@@ -749,6 +768,18 @@ export default function MetadataImportManager() {
                                 })}
                             </TableBody>
                         </Table>
+                    )}
+                    {!loading && imports.length > 0 && (
+                        <TablePagination
+                            component="div"
+                            count={total}
+                            page={page}
+                            onPageChange={handlePageChange}
+                            rowsPerPage={perPage}
+                            onRowsPerPageChange={handlePerPageChange}
+                            rowsPerPageOptions={[ 25, 50, 100 ]}
+                            labelRowsPerPage={t('common.rowsPerPage', 'Rows per page:')}
+                        />
                     )}
                 </Paper>
             </Box>

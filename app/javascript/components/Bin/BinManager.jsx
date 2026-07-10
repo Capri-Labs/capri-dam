@@ -33,6 +33,7 @@ export default function BinManager() {
 
     // ── Filters & view ────────────────────────────────────────────────────────
     const [query, setQuery]               = useState('');
+    const [debouncedQuery, setDebouncedQuery] = useState('');
     const [typeFilter, setTypeFilter]     = useState('all');
     const [sort, setSort]                 = useState({ field: 'deleted_at', direction: 'desc' });
     const [viewLayout, setViewLayout]     = useState('list');
@@ -47,6 +48,9 @@ export default function BinManager() {
     const [confirmDialog, setConfirmDialog] = useState({ open: false, variant: null, count: 0, onConfirm: null });
 
     const searchTimer = useRef(null);
+    // Guards the filter-reset effect below so it doesn't fire (and reset the
+    // page) on the very first render — only on subsequent filter changes.
+    const isFirstRender = useRef(true);
 
     // ─────────────────────────────────────────────────────────────────────────
     // DATA FETCHING
@@ -64,7 +68,7 @@ export default function BinManager() {
     const fetchItems = useCallback((page = 1) => {
         setLoading(true);
         const params = new URLSearchParams({
-            q:         query,
+            q:         debouncedQuery,
             type:      typeFilter,
             sort:      sort.field,
             direction: sort.direction,
@@ -80,25 +84,43 @@ export default function BinManager() {
             })
             .catch(() => notify(t('bin.notifications.loadError'), 'error'))
             .finally(() => setLoading(false));
-    }, [query, typeFilter, sort, perPage]);
+    }, [debouncedQuery, typeFilter, sort, perPage]);
+
+    // A single, memoized "refresh" so it doesn't force child components
+    // (e.g. BinActivePurgeBanner) to re-run their mount effects every time
+    // this component re-renders.
+    const refresh = useCallback(() => {
+        fetchStats();
+        fetchItems(currentPage);
+    }, [fetchStats, fetchItems, currentPage]);
 
     const handlePerPageChange = (value) => {
         setPerPage(value);
         setCurrentPage(1);
     };
 
-    useEffect(() => { fetchStats(); }, []);
+    useEffect(() => { fetchStats(); }, [fetchStats]);
 
+    // Debounce the raw search input into `debouncedQuery` (used for fetching).
     useEffect(() => {
         clearTimeout(searchTimer.current);
-        searchTimer.current = setTimeout(() => {
-            setCurrentPage(1);
-            fetchItems(1);
-        }, query ? 300 : 0);
+        searchTimer.current = setTimeout(() => setDebouncedQuery(query), query ? 300 : 0);
         return () => clearTimeout(searchTimer.current);
-    }, [query, typeFilter, sort, perPage]);
+    }, [query]);
 
-    useEffect(() => { fetchItems(currentPage); }, [currentPage]);
+    // Reset back to page 1 whenever a filter changes — but not on the initial
+    // mount (that would otherwise trigger a redundant extra fetch below).
+    useEffect(() => {
+        if (isFirstRender.current) return;
+        setCurrentPage(1);
+    }, [debouncedQuery, typeFilter, sort, perPage]);
+
+    // Single source of truth for fetching the item list: fires once on
+    // mount, and again whenever the page or any filter changes.
+    useEffect(() => {
+        fetchItems(currentPage);
+        isFirstRender.current = false;
+    }, [currentPage, debouncedQuery, typeFilter, sort, perPage]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // ─────────────────────────────────────────────────────────────────────────
     // SELECTION
@@ -116,8 +138,6 @@ export default function BinManager() {
     // ACTIONS
     // ─────────────────────────────────────────────────────────────────────────
 
-    const refresh = () => { fetchStats(); fetchItems(currentPage); };
-
     const openConfirm  = (variant, count, onConfirm) => setConfirmDialog({ open: true, variant, count, onConfirm });
     const closeConfirm = () => setConfirmDialog(prev => ({ ...prev, open: false }));
 
@@ -131,8 +151,12 @@ export default function BinManager() {
         closeConfirm();
         const res  = await fetch('/api/v1/bin/bulk_restore', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken() }, body: JSON.stringify({ items }) });
         const data = await res.json();
-        notify(t('bin.notifications.restored', { count: data.restored }), 'success');
-        if (data.errors?.length) notify(data.errors.join(', '), 'warning');
+        // Only show a success toast when something actually got restored —
+        // otherwise (e.g. the item was already purged) surface the error.
+        if (data.restored > 0) {
+            notify(t('bin.notifications.restored', { count: data.restored }), 'success');
+        }
+        if (data.errors?.length) notify(data.errors.join(', '), 'error');
         refresh();
     };
 
@@ -140,8 +164,10 @@ export default function BinManager() {
         closeConfirm();
         const res  = await fetch('/api/v1/bin/bulk_destroy', { method: 'DELETE', headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrfToken() }, body: JSON.stringify({ items }) });
         const data = await res.json();
-        notify(t('bin.notifications.deleted', { count: data.deleted }), 'warning');
-        if (data.errors?.length) notify(data.errors.join(', '), 'warning');
+        if (data.deleted > 0) {
+            notify(t('bin.notifications.deleted', { count: data.deleted }), 'warning');
+        }
+        if (data.errors?.length) notify(data.errors.join(', '), 'error');
         refresh();
     };
 

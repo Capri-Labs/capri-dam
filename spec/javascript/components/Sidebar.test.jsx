@@ -35,6 +35,7 @@ describe('Sidebar', () => {
 
   beforeEach(() => {
     localStorage.clear();
+    sessionStorage.clear();
     window.history.replaceState({}, '', '/');
     originalLocation = window.location;
     delete window.location;
@@ -80,5 +81,23 @@ describe('Sidebar', () => {
 
     await userEvent.click(screen.getByText('Internal'));
     expect(onNavigate).toHaveBeenCalledWith('Internal');
+  });
+
+  it('restores the saved nav scroll position after a re-mount (full page navigation)', () => {
+    sessionStorage.setItem('dam_sidebar_scroll_top', '250');
+    render(<Sidebar activeView="Standalone" onNavigate={jest.fn()} />);
+
+    const scrollable = screen.getByTestId('sidebar-nav-scroll');
+    expect(scrollable.scrollTop).toBe(250);
+  });
+
+  it('persists the nav scroll position to sessionStorage on scroll', () => {
+    render(<Sidebar activeView="Standalone" onNavigate={jest.fn()} />);
+    const scrollable = screen.getByTestId('sidebar-nav-scroll');
+
+    Object.defineProperty(scrollable, 'scrollTop', { value: 120, writable: true });
+    scrollable.dispatchEvent(new Event('scroll', { bubbles: false }));
+
+    expect(sessionStorage.getItem('dam_sidebar_scroll_top')).toBe('120');
   });
 });

@@ -20,6 +20,8 @@ import {
 import { useTranslation } from 'react-i18next';
 import ImageEditorDialog from './ImageEditorDialog';
 import { isWebRenderableImage } from '../../utils/webRenderableMimeTypes';
+import { is3DModel } from '../../utils/threeDMimeTypes';
+import Asset3DViewer from './Asset3DViewer';
 import WorkflowPanel from '../WorkflowPanel';
 import AssetTagsEditor from './AssetTagsEditor';
 import PinToCollectionDialog from './PinToCollectionDialog';
@@ -134,6 +136,7 @@ export default function AssetViewer({ asset: initialAsset, open, onClose, onAsse
     };
 
     const isImage = asset.properties?.content_type?.startsWith('image/');
+    const is3D = is3DModel(asset.properties?.content_type);
     const hasGeneratedPreview = Boolean(
         asset.properties?.preview_storage_path || asset.properties?.preview_content_type
     );
@@ -151,7 +154,9 @@ export default function AssetViewer({ asset: initialAsset, open, onClose, onAsse
         : translate('asset.status.pending', 'Pending');
 
     // Prefer a generated web preview (e.g. flattened PNG for PSD/TIFF) for
-    // display; the original URL is still used for downloads.
+    // display; the original URL is still used for downloads. 3D models are
+    // always rendered from the original file (there is no flattened preview
+    // for them — see Asset3DViewer).
     const displayImageUrl = asset.preview_url || asset.url;
     const previewSrc = displayImageUrl
         ? `${displayImageUrl}${displayImageUrl.includes('?') ? '&' : '?'}v=${asset.version || Date.now()}`
@@ -249,7 +254,13 @@ export default function AssetViewer({ asset: initialAsset, open, onClose, onAsse
                     dump). `flexShrink: 0` pins its size; `overflow: hidden`
                     stops it from ever needing to scroll itself. */}
                 <Grid sx={{ width: '65%', flexShrink: 0, bgcolor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', p: 4, borderRight: '1px solid #cbd5e1', overflow: 'hidden' }}>
-                    {canPreview && previewSrc ? (
+                    {is3D ? (
+                        <Asset3DViewer
+                            src={asset.url}
+                            contentType={asset.properties?.content_type}
+                            displayName={displayName}
+                        />
+                    ) : canPreview && previewSrc ? (
                         <Box component="img"
                              src={previewSrc}
                              alt={displayName}

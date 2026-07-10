@@ -169,6 +169,15 @@ class AssetProcessorWorker
           generate_web_preview(staging_path, asset, version, storage, extracted_meta)
         elsif mime_type.start_with?("video/")
           extracted_meta[:format] = "Video Media"
+        elsif ThreeDMimeTypes.model_3d?(mime_type)
+          # No server-side preview image is generated for 3D models — the
+          # asset viewer renders the original file live via an interactive
+          # WebGL viewer (`<model-viewer>` for glTF/GLB, three.js for
+          # OBJ/STL). USDZ and Adobe Dimension (.dn) have no in-page
+          # WebGL renderer available, so the viewer shows a "download to
+          # view" fallback for those two formats instead.
+          extracted_meta[:format] = "3D Model"
+          extracted_meta[:model_3d_renderable] = ThreeDMimeTypes.renderable?(mime_type)
         end
 
         safe_ext  = Marcel::Magic.new(mime_type)&.extensions&.first || "bin"

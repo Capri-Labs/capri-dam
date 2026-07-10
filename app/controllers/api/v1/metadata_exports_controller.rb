@@ -7,9 +7,19 @@ module Api
 
       # GET /api/v1/metadata_exports
       # Lists the current user's (non-expired) exports for the reuse table.
+      # Supports ?page=1&per_page=25|50|100
       def index
-        exports = current_user.metadata_exports.not_expired.recent.limit(100)
-        render json: exports.map { |e| serialize(e) }
+        scope    = current_user.metadata_exports.not_expired.recent
+        page     = [ params[:page].to_i, 1 ].max
+        per_page = params[:per_page].to_i
+        per_page = 50 unless [ 25, 50, 100 ].include?(per_page)
+
+        exports = scope.limit(per_page).offset((page - 1) * per_page)
+
+        render json: {
+          exports: exports.map { |e| serialize(e) },
+          meta:    { total: scope.count, page: page, per_page: per_page },
+        }
       end
 
       # GET /api/v1/metadata_exports/:id

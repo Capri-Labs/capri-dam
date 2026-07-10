@@ -105,6 +105,9 @@ include::src/22_data-health.adoc[]
 // 23. Quarantine Review
 include::src/23_quarantine.adoc[]
 
+// 24. 3D Asset Preview & Viewer
+include::src/24_3d-asset-viewer.adoc[]
+
 ifdef::backend-html5[]
 // Back-to-top button
 ++++

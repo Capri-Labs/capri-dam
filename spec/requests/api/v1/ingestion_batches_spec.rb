@@ -7,14 +7,18 @@ RSpec.describe 'Api::V1::IngestionBatches', type: :request do
   # INDEX — GET /api/v1/ingestion_batches
   # ===========================================================================
   path '/api/v1/ingestion_batches' do
-    get 'List the 50 most recent migration batches' do
+    get 'List paginated migration batches (25/50/100 per page)' do
       tags 'Ingestion & Migration'
       produces 'application/json'
       security [ Bearer: [] ]
       description <<~DESC
-        Returns summary records for the 50 most recent ingestion batches ordered
+        Returns summary records for the most recent ingestion batches ordered
         by `created_at DESC`. Use this to build the batch monitoring dashboard.
       DESC
+      parameter name: :page, in: :query, type: :integer, required: false,
+                description: 'Page number (1-indexed). Defaults to 1.'
+      parameter name: :per_page, in: :query, type: :integer, required: false,
+                description: 'Rows per page — one of 25, 50, or 100. Defaults to 50; any other value falls back to 50.'
 
       response '200', 'Batch list returned' do
         schema type: :object,

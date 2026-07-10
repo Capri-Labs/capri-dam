@@ -178,7 +178,8 @@ async function waitForImport(page, importId) {
       headers: { Accept: 'application/json' },
     });
     expect(response.ok()).toBeTruthy();
-    const items = await response.json();
+    const data = await response.json();
+    const items = data.imports || [];
     found = items.find((item) => item.id === importId) || null;
     return found?.status || 'missing';
   }, {
@@ -198,7 +199,8 @@ async function waitForExport(page, exportId) {
       headers: { Accept: 'application/json' },
     });
     expect(response.ok()).toBeTruthy();
-    const items = await response.json();
+    const data = await response.json();
+    const items = data.exports || [];
     found = items.find((item) => item.id === exportId) || null;
     return found?.status || 'missing';
   }, {

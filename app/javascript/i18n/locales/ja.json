@@ -78,7 +78,8 @@
     "back": "戻る",
     "previous": "前へ",
     "next": "次へ",
-    "pageOf": "{{pages}}ページ中{{page}}ページ目"
+    "pageOf": "{{pages}}ページ中{{page}}ページ目",
+    "rowsPerPage": "1ページあたりの行数:"
   },
   "header": {
     "myProfile": "マイプロフィール",
@@ -2277,6 +2278,16 @@
       "generatingSecureWatermarkedProxy": "セキュアな透かし付きプロキシを生成しています...",
       "downloadStarted": "ダウンロードを開始しました",
       "shareDialogComingSoon": "共有ダイアログは近日公開予定です"
+    },
+    "viewer3d": {
+      "unsupportedFormatTitle": "この形式ではインタラクティブ3Dプレビューは利用できません。",
+      "unsupportedDnHint": "Adobe Dimension（.dn）ファイルはAdobe Dimensionでのみ開くことができます。元のファイルをダウンロードして表示してください。",
+      "unsupportedUsdzHint": "USDZファイルは対応するiOSデバイスでAR Quick Lookを使用すると最もよく表示されます。元のファイルをダウンロードして表示してください。",
+      "downloadOriginal": "オリジナルをダウンロード",
+      "reset": "表示をリセット",
+      "fullscreen": "全画面",
+      "exitFullscreen": "全画面を終了",
+      "loadError": "3Dモデルの読み込みに失敗しました。"
     }
   },
   "assetMetadataPanel": {

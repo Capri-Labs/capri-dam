@@ -78,7 +78,8 @@
     "back": "Back",
     "previous": "السابق",
     "next": "التالي",
-    "pageOf": "صفحة {{page}} من {{pages}}"
+    "pageOf": "صفحة {{page}} من {{pages}}",
+    "rowsPerPage": "الصفوف لكل صفحة:"
   },
   "header": {
     "myProfile": "My Profile",
@@ -2277,6 +2278,16 @@
       "generatingSecureWatermarkedProxy": "جارٍ إنشاء وكيل آمن بعلامة مائية...",
       "downloadStarted": "بدأ التنزيل",
       "shareDialogComingSoon": "سيتم توفير نافذة المشاركة قريبًا"
+    },
+    "viewer3d": {
+      "unsupportedFormatTitle": "المعاينة التفاعلية للنموذج ثلاثي الأبعاد غير متوفرة لهذا التنسيق.",
+      "unsupportedDnHint": "يمكن فتح ملفات Adobe Dimension (.dn) فقط في Adobe Dimension. قم بتنزيل الملف الأصلي لعرضه.",
+      "unsupportedUsdzHint": "تظهر ملفات USDZ بشكل أفضل عبر AR Quick Look على جهاز iOS مدعوم. قم بتنزيل الملف الأصلي لعرضه.",
+      "downloadOriginal": "تنزيل الأصل",
+      "reset": "إعادة ضبط العرض",
+      "fullscreen": "ملء الشاشة",
+      "exitFullscreen": "الخروج من وضع ملء الشاشة",
+      "loadError": "فشل تحميل النموذج ثلاثي الأبعاد."
     }
   },
   "assetMetadataPanel": {

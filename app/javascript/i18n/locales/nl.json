@@ -78,7 +78,8 @@
     "back": "Terug",
     "previous": "Vorige",
     "next": "Volgende",
-    "pageOf": "Pagina {{page}} van {{pages}}"
+    "pageOf": "Pagina {{page}} van {{pages}}",
+    "rowsPerPage": "Rijen per pagina:"
   },
   "header": {
     "myProfile": "Mijn profiel",
@@ -2277,6 +2278,16 @@
       "generatingSecureWatermarkedProxy": "Beveiligde proxy met watermerk wordt gegenereerd...",
       "downloadStarted": "Download gestart",
       "shareDialogComingSoon": "Deeldialoog komt binnenkort"
+    },
+    "viewer3d": {
+      "unsupportedFormatTitle": "Interactieve 3D-preview is niet beschikbaar voor dit formaat.",
+      "unsupportedDnHint": "Adobe Dimension (.dn)-bestanden kunnen alleen worden geopend in Adobe Dimension. Download het origineel om het te bekijken.",
+      "unsupportedUsdzHint": "USDZ-bestanden worden het best bekeken via AR Quick Look op een ondersteund iOS-apparaat. Download het origineel om het te bekijken.",
+      "downloadOriginal": "Origineel downloaden",
+      "reset": "Weergave resetten",
+      "fullscreen": "Volledig scherm",
+      "exitFullscreen": "Volledig scherm sluiten",
+      "loadError": "Het 3D-model kon niet worden geladen."
     }
   },
   "assetMetadataPanel": {

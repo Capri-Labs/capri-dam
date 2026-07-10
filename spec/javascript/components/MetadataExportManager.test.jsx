@@ -18,7 +18,7 @@ describe('<MetadataExportManager />', () => {
 
   it('renders the header and the empty-state when there are no exports', async () => {
     global.fetch = mockFetch({
-      '/api/v1/metadata_exports': [],
+      '/api/v1/metadata_exports': { exports: [], meta: { total: 0, page: 1, per_page: 25 } },
       '/api/v1/folders': { folders: [] }
     });
 
@@ -34,23 +34,26 @@ describe('<MetadataExportManager />', () => {
 
   it('renders an export row returned by the API', async () => {
     global.fetch = mockFetch({
-      '/api/v1/metadata_exports': [
-        {
-          id: 1,
-          name: 'q3_assets',
-          status: 'completed',
-          folder_name: 'Marketing',
-          include_subfolders: true,
-          property_mode: 'all',
-          selected_properties: [],
-          total_assets: 12,
-          file_count: 1,
-          created_by: 'ashok@example.com',
-          created_at: 'Jun 23, 2026 at 10:00',
-          expires_at: 'Jul 23, 2026',
-          files: [{ id: 9, filename: 'q3_assets.csv', byte_size: 2048, download_url: '/dl/9' }]
-        }
-      ],
+      '/api/v1/metadata_exports': {
+        exports: [
+          {
+            id: 1,
+            name: 'q3_assets',
+            status: 'completed',
+            folder_name: 'Marketing',
+            include_subfolders: true,
+            property_mode: 'all',
+            selected_properties: [],
+            total_assets: 12,
+            file_count: 1,
+            created_by: 'ashok@example.com',
+            created_at: 'Jun 23, 2026 at 10:00',
+            expires_at: 'Jul 23, 2026',
+            files: [{ id: 9, filename: 'q3_assets.csv', byte_size: 2048, download_url: '/dl/9' }]
+          }
+        ],
+        meta: { total: 1, page: 1, per_page: 25 }
+      },
       '/api/v1/folders': { folders: [] }
     });
 
@@ -61,6 +64,42 @@ describe('<MetadataExportManager />', () => {
     );
     expect(screen.getByText('Marketing')).toBeInTheDocument();
     expect(screen.getByText(/CSV Download/i)).toBeInTheDocument();
+  });
+
+  it('renders pagination controls with 25/50/100 rows-per-page options', async () => {
+    global.fetch = mockFetch({
+      '/api/v1/metadata_exports': { exports: [], meta: { total: 0, page: 1, per_page: 25 } },
+      '/api/v1/folders': { folders: [] }
+    });
+
+    render(<MetadataExportManager />);
+
+    await waitFor(() =>
+      expect(screen.getByText(/no exports yet/i)).toBeInTheDocument()
+    );
+    // No pagination footer is shown while the list is empty.
+    expect(screen.queryByText(/rows per page/i)).not.toBeInTheDocument();
+  });
+
+  it('shows the pagination footer with rows-per-page options once exports exist', async () => {
+    global.fetch = mockFetch({
+      '/api/v1/metadata_exports': {
+        exports: [
+          {
+            id: 1, name: 'q3_assets', status: 'completed', folder_name: 'Marketing',
+            include_subfolders: false, property_mode: 'all', selected_properties: [],
+            total_assets: 1, file_count: 1, created_by: 'a@example.com',
+            created_at: 'Jun 23, 2026 at 10:00', expires_at: 'Jul 23, 2026', files: []
+          }
+        ],
+        meta: { total: 1, page: 1, per_page: 25 }
+      },
+      '/api/v1/folders': { folders: [] }
+    });
+
+    render(<MetadataExportManager />);
+
+    await waitFor(() => expect(screen.getByText(/rows per page/i)).toBeInTheDocument());
   });
 });
 

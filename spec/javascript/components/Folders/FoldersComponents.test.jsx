@@ -683,6 +683,41 @@ describe('Folders components', () => {
     expect(screen.getByText('No raw metadata available.')).toBeInTheDocument();
   });
 
+  it('renders the interactive Asset3DViewer (not the plain <img> preview) for a 3D model asset', () => {
+    const glbAsset = {
+      id: 14,
+      title: 'Product Hero.glb',
+      url: '/product-hero.glb',
+      preview_url: '/product-hero.glb',
+      created_at: '2024-01-01T10:00:00Z',
+      status: 'approved',
+      properties: { content_type: 'model/gltf-binary', size: 4 * 1024 * 1024 },
+    };
+
+    render(<AssetViewer asset={glbAsset} open onClose={jest.fn()} onAssetUpdated={jest.fn()} />);
+
+    expect(screen.getByTestId('asset-3d-viewer')).toBeInTheDocument();
+    expect(screen.getByTestId('asset-3d-model-viewer')).toBeInTheDocument();
+    expect(document.querySelector('img[src="/product-hero.glb"]')).not.toBeInTheDocument();
+  });
+
+  it('shows the Download Original fallback (not a broken viewer) for USDZ assets in the Asset viewer', () => {
+    const usdzAsset = {
+      id: 15,
+      title: 'AR Model.usdz',
+      url: '/ar-model.usdz',
+      preview_url: '/ar-model.usdz',
+      created_at: '2024-01-01T10:00:00Z',
+      status: 'approved',
+      properties: { content_type: 'model/vnd.usdz+zip', size: 2 * 1024 * 1024 },
+    };
+
+    render(<AssetViewer asset={usdzAsset} open onClose={jest.fn()} onAssetUpdated={jest.fn()} />);
+
+    expect(screen.getByTestId('asset-3d-viewer-download-fallback')).toBeInTheDocument();
+    expect(screen.queryByTestId('asset-3d-model-viewer')).not.toBeInTheDocument();
+  });
+
   it('enables Edit Image for web-renderable formats and disables it for PSD (relies on the backend `editable` flag)', () => {
     const jpegAsset = {
       id: 12,

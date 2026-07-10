@@ -349,4 +349,46 @@ describe('Bin components', () => {
     expect(await screen.findByRole('button', { name: /bin.restoreSelected/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /bin.deleteSelected/i })).toBeInTheDocument();
   });
+
+  it('fetches /api/v1/bin and /api/v1/bin/purge_status exactly once on initial mount (no duplicate calls)', async () => {
+    global.fetch = mockFetch({
+      'GET /api/v1/bin/stats': { total_items: 1, total_assets: 1, total_folders: 0, total_size_bytes: 1024, retention_days: 30 },
+      'GET /api/v1/bin?': { items: [item], pagination: { total: 1, page: 1, per_page: 25, pages: 1 } },
+      'GET /api/v1/bin/purge_status': { status: 'completed' },
+    });
+
+    render(<BinManager />);
+    await screen.findByText('Hero image');
+
+    // Let any stray re-render/effect cycles settle before counting calls.
+    await waitFor(() => {});
+
+    const callsTo = (path) => global.fetch.mock.calls.filter(([url]) => String(url).startsWith(path)).length;
+
+    expect(callsTo('/api/v1/bin/stats')).toBe(1);
+    expect(callsTo('/api/v1/bin/purge_status')).toBe(1);
+    expect(callsTo('/api/v1/bin?')).toBe(1);
+  });
+
+  it('does not show a success toast when bulk_restore restores 0 items (e.g. already purged), and surfaces the error instead', async () => {
+    global.fetch = mockFetch({
+      'GET /api/v1/bin/stats': { total_items: 1, total_assets: 1, total_folders: 0, total_size_bytes: 1024, retention_days: 30 },
+      'GET /api/v1/bin?': { items: [item], pagination: { total: 1, page: 1, per_page: 25, pages: 1 } },
+      'GET /api/v1/bin/purge_status': { status: 'completed' },
+      'POST /api/v1/bin/bulk_restore': {
+        restored: 0,
+        errors: ['Asset #1 not found in bin.'],
+      },
+    });
+
+    render(<BinManager />);
+    await screen.findByText('Hero image');
+
+    // Click the row's restore icon (identified by its MUI icon test id).
+    fireEvent.click(screen.getByTestId('RestoreFromTrashOutlinedIcon').closest('button'));
+    fireEvent.click(screen.getByRole('button', { name: 'bin.confirm.confirm' }));
+
+    await waitFor(() => expect(mockNotify).toHaveBeenCalledWith('Asset #1 not found in bin.', 'error'));
+    expect(mockNotify).not.toHaveBeenCalledWith(expect.anything(), 'success');
+  });
 });

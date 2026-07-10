@@ -18,6 +18,34 @@ RSpec.describe 'Api::V1::IngestionBatches coverage', type: :request do
       expect(data['meta']).to include('total' => 1, 'page' => 1, 'per_page' => 50)
       expect(data['batches'].first['name']).to eq('AEM Summer')
     end
+
+    it 'accepts a valid per_page override (25, 50, 100)' do
+      create_list(:ingestion_batch, 3)
+
+      get '/api/v1/ingestion_batches', params: { per_page: 25 }, as: :json
+      expect(JSON.parse(response.body)['meta']).to include('per_page' => 25)
+
+      get '/api/v1/ingestion_batches', params: { per_page: 100 }, as: :json
+      expect(JSON.parse(response.body)['meta']).to include('per_page' => 100)
+    end
+
+    it 'falls back to 50 for an invalid per_page value' do
+      create(:ingestion_batch)
+
+      get '/api/v1/ingestion_batches', params: { per_page: 999 }, as: :json
+
+      expect(JSON.parse(response.body)['meta']).to include('per_page' => 50)
+    end
+
+    it 'paginates results according to per_page' do
+      create_list(:ingestion_batch, 3)
+
+      get '/api/v1/ingestion_batches', params: { per_page: 25 }, as: :json
+      data = JSON.parse(response.body)
+
+      expect(data['batches'].size).to eq(3)
+      expect(data['meta']['total']).to eq(3)
+    end
   end
 
   describe 'POST /api/v1/ingestion_batches' do

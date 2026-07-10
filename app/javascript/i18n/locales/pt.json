@@ -78,7 +78,8 @@
     "back": "Voltar",
     "previous": "Anterior",
     "next": "Próximo",
-    "pageOf": "Página {{page}} de {{pages}}"
+    "pageOf": "Página {{page}} de {{pages}}",
+    "rowsPerPage": "Linhas por página:"
   },
   "header": {
     "myProfile": "Meu perfil",
@@ -2277,6 +2278,16 @@
       "generatingSecureWatermarkedProxy": "Gerando proxy seguro com marca-d’água...",
       "downloadStarted": "Download iniciado",
       "shareDialogComingSoon": "A caixa de diálogo de compartilhamento chegará em breve"
+    },
+    "viewer3d": {
+      "unsupportedFormatTitle": "A pré-visualização 3D interativa não está disponível para este formato.",
+      "unsupportedDnHint": "Os arquivos do Adobe Dimension (.dn) só podem ser abertos no Adobe Dimension. Baixe o original para visualizá-lo.",
+      "unsupportedUsdzHint": "Os arquivos USDZ são melhor visualizados via AR Quick Look em um dispositivo iOS compatível. Baixe o original para visualizá-lo.",
+      "downloadOriginal": "Baixar original",
+      "reset": "Redefinir visão",
+      "fullscreen": "Tela cheia",
+      "exitFullscreen": "Sair da tela cheia",
+      "loadError": "Falha ao carregar o modelo 3D."
     }
   },
   "assetMetadataPanel": {

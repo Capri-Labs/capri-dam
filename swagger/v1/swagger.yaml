@@ -6127,14 +6127,28 @@ paths:
                       type: string
   "/api/v1/ingestion_batches":
     get:
-      summary: List the 50 most recent migration batches
+      summary: List paginated migration batches (25/50/100 per page)
       tags:
       - Ingestion & Migration
       security:
       - Bearer: []
       description: |
-        Returns summary records for the 50 most recent ingestion batches ordered
+        Returns summary records for the most recent ingestion batches ordered
         by `created_at DESC`. Use this to build the batch monitoring dashboard.
+      parameters:
+      - name: page
+        in: query
+        required: false
+        description: Page number (1-indexed). Defaults to 1.
+        schema:
+          type: integer
+      - name: per_page
+        in: query
+        required: false
+        description: Rows per page — one of 25, 50, or 100. Defaults to 50; any other
+          value falls back to 50.
+        schema:
+          type: integer
       responses:
         '200':
           description: Batch list returned

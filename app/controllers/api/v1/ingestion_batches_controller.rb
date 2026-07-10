@@ -4,7 +4,7 @@ class Api::V1::IngestionBatchesController < ApplicationController
   before_action :set_batch, only: %i[show commit abort report destroy]
 
   # GET /api/v1/ingestion_batches
-  # Supports: ?status=committed&source_type=aem&search=Q&page=1
+  # Supports: ?status=committed&source_type=aem&search=Q&page=1&per_page=25|50|100
   def index
     scope = IngestionBatch.order(created_at: :desc)
     scope = scope.where(status: params[:status])                    if params[:status].present?
@@ -12,7 +12,8 @@ class Api::V1::IngestionBatchesController < ApplicationController
     scope = scope.search_by_name(params[:search])                   if params[:search].present?
 
     page     = [ params[:page].to_i, 1 ].max
-    per_page = 50
+    per_page = params[:per_page].to_i
+    per_page = 50 unless [ 25, 50, 100 ].include?(per_page)
     batches  = scope.limit(per_page).offset((page - 1) * per_page)
 
     render json: {

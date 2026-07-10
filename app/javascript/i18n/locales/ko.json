@@ -78,7 +78,8 @@
     "back": "뒤로",
     "previous": "이전",
     "next": "다음",
-    "pageOf": "{{pages}}페이지 중 {{page}}페이지"
+    "pageOf": "{{pages}}페이지 중 {{page}}페이지",
+    "rowsPerPage": "페이지당 행 수:"
   },
   "header": {
     "myProfile": "내 프로필",
@@ -2277,6 +2278,16 @@
       "generatingSecureWatermarkedProxy": "보안 워터마크 프록시를 생성하는 중...",
       "downloadStarted": "다운로드가 시작되었습니다",
       "shareDialogComingSoon": "공유 대화상자가 곧 제공됩니다"
+    },
+    "viewer3d": {
+      "unsupportedFormatTitle": "이 형식에는 대화형 3D 미리보기를 사용할 수 없습니다.",
+      "unsupportedDnHint": "Adobe Dimension(.dn) 파일은 Adobe Dimension에서만 열 수 있습니다. 보려면 원본을 다운로드하세요.",
+      "unsupportedUsdzHint": "USDZ 파일은 지원되는 iOS 기기의 AR Quick Look에서 가장 잘 보입니다. 보려면 원본을 다운로드하세요.",
+      "downloadOriginal": "원본 다운로드",
+      "reset": "보기 재설정",
+      "fullscreen": "전체 화면",
+      "exitFullscreen": "전체 화면 끘기",
+      "loadError": "3D 모델을 로드하지 못했습니다."
     }
   },
   "assetMetadataPanel": {

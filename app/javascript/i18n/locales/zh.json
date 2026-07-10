@@ -78,7 +78,8 @@
     "back": "返回",
     "previous": "上一页",
     "next": "下一页",
-    "pageOf": "第 {{page}} 页，共 {{pages}} 页"
+    "pageOf": "第 {{page}} 页，共 {{pages}} 页",
+    "rowsPerPage": "每页行数:"
   },
   "header": {
     "myProfile": "我的个人资料",
@@ -2277,6 +2278,16 @@
       "generatingSecureWatermarkedProxy": "正在生成安全水印代理...",
       "downloadStarted": "下载已开始",
       "shareDialogComingSoon": "分享对话框即将推出"
+    },
+    "viewer3d": {
+      "unsupportedFormatTitle": "此格式不支持交互式3D预览。",
+      "unsupportedDnHint": "Adobe Dimension（.dn）文件只能在Adobe Dimension中打开。请下载原文件以查看。",
+      "unsupportedUsdzHint": "USDZ文件在支持的iOS设备上通过AR快速查看效果最佳。请下载原文件以查看。",
+      "downloadOriginal": "下载原始文件",
+      "reset": "重置视图",
+      "fullscreen": "全屏",
+      "exitFullscreen": "退出全屏",
+      "loadError": "无法加载3D模型。"
     }
   },
   "assetMetadataPanel": {

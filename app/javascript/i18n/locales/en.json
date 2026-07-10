@@ -78,7 +78,8 @@
     "back": "Back",
     "previous": "Previous",
     "next": "Next",
-    "pageOf": "Page {{page}} of {{pages}}"
+    "pageOf": "Page {{page}} of {{pages}}",
+    "rowsPerPage": "Rows per page:"
   },
   "header": {
     "myProfile": "My Profile",
@@ -2277,6 +2278,16 @@
       "generatingSecureWatermarkedProxy": "Generating secure watermarked proxy...",
       "downloadStarted": "Download started",
       "shareDialogComingSoon": "Share dialog coming soon"
+    },
+    "viewer3d": {
+      "unsupportedFormatTitle": "Interactive 3D preview isn’t available for this format.",
+      "unsupportedDnHint": "Adobe Dimension (.dn) files can only be opened in Adobe Dimension. Download the original to view it.",
+      "unsupportedUsdzHint": "USDZ files are best viewed via AR Quick Look on a supported iOS device. Download the original to view it.",
+      "downloadOriginal": "Download Original",
+      "reset": "Reset view",
+      "fullscreen": "Fullscreen",
+      "exitFullscreen": "Exit fullscreen",
+      "loadError": "Failed to load the 3D model."
     }
   },
   "assetMetadataPanel": {

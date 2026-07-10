@@ -548,6 +548,7 @@ module Api
         return "image"    if content_type.start_with?("image/")
         return "video"    if content_type.start_with?("video/")
         return "audio"    if content_type.start_with?("audio/")
+        return "model_3d" if ThreeDMimeTypes.model_3d?(content_type)
         return "document" if content_type.include?("pdf") || content_type.include?("word") ||
                               content_type.include?("excel") || content_type.include?("spreadsheet") ||
                               content_type.include?("presentation")

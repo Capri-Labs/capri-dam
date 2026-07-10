@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     Box, Typography, Button, IconButton, Tooltip, Chip, Stack, Paper,
     Table, TableHead, TableRow, TableCell, TableBody, CircularProgress,
     Dialog, DialogTitle, DialogContent, DialogActions, TextField,
     FormControl, InputLabel, Select, MenuItem, FormControlLabel, Checkbox,
-    RadioGroup, Radio, FormLabel, Autocomplete, Divider, Menu
+    RadioGroup, Radio, FormLabel, Autocomplete, Divider, Menu, TablePagination
 } from '@mui/material';
 import {
     FileDownloadOutlined, AddOutlined, RefreshOutlined, DeleteOutlined,
@@ -193,23 +194,28 @@ function DownloadCell({ exp }) {
 // ── Main manager ────────────────────────────────────────────────────────────────
 export default function MetadataExportManager() {
     const notify = useNotify();
+    const { t } = useTranslation();
     const [exports, setExports]   = useState([]);
     const [folders, setFolders]   = useState([]);
     const [loading, setLoading]   = useState(true);
     const [dialogOpen, setDialog] = useState(false);
+    const [page, setPage]         = useState(0); // zero-indexed, matches MUI TablePagination
+    const [perPage, setPerPage]   = useState(25);
+    const [total, setTotal]       = useState(0);
     const pollRef = useRef(null);
 
     const fetchExports = useCallback(async () => {
         try {
-            const res = await fetch('/api/v1/metadata_exports');
+            const res = await fetch(`/api/v1/metadata_exports?page=${page + 1}&per_page=${perPage}`);
             const data = await res.json();
-            setExports(Array.isArray(data) ? data : []);
+            setExports(Array.isArray(data.exports) ? data.exports : []);
+            setTotal(data.meta?.total || 0);
         } catch {
             notify('Failed to load exports.', 'error');
         } finally {
             setLoading(false);
         }
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [page, perPage]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const fetchFolders = useCallback(async () => {
         try {
@@ -219,7 +225,8 @@ export default function MetadataExportManager() {
         } catch { /* non-blocking */ }
     }, []);
 
-    useEffect(() => { fetchExports(); fetchFolders(); }, [fetchExports, fetchFolders]);
+    useEffect(() => { fetchExports(); }, [fetchExports]);
+    useEffect(() => { fetchFolders(); }, [fetchFolders]);
 
     // Poll while any export is still in flight.
     useEffect(() => {
@@ -241,7 +248,11 @@ export default function MetadataExportManager() {
             const data = await res.json();
             if (!res.ok) { notify(data.errors?.join(', ') || 'Export failed to start.', 'error'); return false; }
             notify('Metadata export started. You will be notified when it is ready.', 'success');
-            await fetchExports();
+            if (page === 0) {
+                await fetchExports();
+            } else {
+                setPage(0); // triggers fetchExports via the page-change effect
+            }
             return true;
         } catch {
             notify('Export failed to start.', 'error');
@@ -257,7 +268,17 @@ export default function MetadataExportManager() {
         });
         if (!res.ok) { notify('Delete failed.', 'error'); return; }
         notify('Export deleted.', 'success');
-        await fetchExports();
+        if (page > 0 && exports.length === 1) {
+            setPage(page - 1); // last row on this page removed — step back a page
+        } else {
+            await fetchExports();
+        }
+    };
+
+    const handlePageChange = (_event, newPage) => setPage(newPage);
+    const handlePerPageChange = (event) => {
+        setPerPage(parseInt(event.target.value, 10));
+        setPage(0);
     };
 
     return (
@@ -400,6 +421,18 @@ export default function MetadataExportManager() {
                                 })}
                             </TableBody>
                         </Table>
+                    )}
+                    {!loading && exports.length > 0 && (
+                        <TablePagination
+                            component="div"
+                            count={total}
+                            page={page}
+                            onPageChange={handlePageChange}
+                            rowsPerPage={perPage}
+                            onRowsPerPageChange={handlePerPageChange}
+                            rowsPerPageOptions={[ 25, 50, 100 ]}
+                            labelRowsPerPage={t('common.rowsPerPage', 'Rows per page:')}
+                        />
                     )}
                 </Paper>
             </Box>

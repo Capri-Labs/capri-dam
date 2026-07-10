@@ -24,9 +24,11 @@ import {
   Publish,
   AudiotrackOutlined,
   HourglassTopOutlined,
-  BrokenImageOutlined
+  BrokenImageOutlined,
+  ViewInArOutlined
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { is3DModel } from '../../utils/threeDMimeTypes';
 
 const GRID_SIZE_CONFIG = {
   small: { minWidth: 140, height: 140 },
@@ -157,6 +159,7 @@ export default function AssetGrid({
         const isPdf = contentType === 'application/pdf';
         const isVideo = contentType.startsWith('video/');
         const isAudio = contentType.startsWith('audio/');
+        const is3D = is3DModel(contentType);
         const isSelected = selectedItems.assets.includes(asset.id);
         const statusConfig = getStatusConfig(asset.status, t);
         const sizeLabel = formatBytes(asset.size || metadata.size || metadata.file_size);
@@ -247,7 +250,8 @@ export default function AssetGrid({
                   {isPdf && <PictureAsPdf sx={{ fontSize: 64, color: '#ef4444' }} />}
                   {isVideo && <VideoFile sx={{ fontSize: 64, color: '#3b82f6' }} />}
                   {isAudio && <AudiotrackOutlined sx={{ fontSize: 64, color: '#8b5cf6' }} />}
-                  {!isPdf && !isVideo && !isAudio && <InsertDriveFile sx={{ fontSize: 64, color: '#64748b' }} />}
+                  {is3D && <ViewInArOutlined sx={{ fontSize: 64, color: '#0d9488' }} />}
+                  {!isPdf && !isVideo && !isAudio && !is3D && <InsertDriveFile sx={{ fontSize: 64, color: '#64748b' }} />}
                 </Box>
               )}
 

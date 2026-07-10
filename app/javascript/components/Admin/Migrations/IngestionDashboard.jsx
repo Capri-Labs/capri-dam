@@ -4,7 +4,7 @@ import {
     Button, Chip, Table, TableBody, TableCell, TableContainer,
     TableHead, TableRow, Paper, Stack, IconButton, Tooltip,
     CircularProgress, Alert, TextField, MenuItem, Badge,
-    Collapse, Divider, InputAdornment
+    Collapse, Divider, InputAdornment, TablePagination
 } from '@mui/material';
 import {
     Storage, TrendingDown, Visibility, Refresh,
@@ -157,7 +157,8 @@ export default function IngestionDashboard() {
     // Filters
     const [statusFilter, setStatusFilter]     = useState('');
     const [searchQuery, setSearchQuery]       = useState('');
-    const [page, setPage]                     = useState(1);
+    const [page, setPage]                     = useState(1); // 1-indexed, matches existing Prev/Next + API
+    const [perPage, setPerPage]               = useState(50);
 
     const pollRef   = useRef(null);
     const searchRef = useRef(null);
@@ -174,7 +175,7 @@ export default function IngestionDashboard() {
     }, []);
 
     const fetchBatches = useCallback(async () => {
-        const params = new URLSearchParams({ page });
+        const params = new URLSearchParams({ page, per_page: perPage });
         if (statusFilter) params.append('status', statusFilter);
         if (searchQuery)  params.append('search', searchQuery);
         try {
@@ -191,7 +192,7 @@ export default function IngestionDashboard() {
         } finally {
             setLoading(false);
         }
-    }, [page, statusFilter, searchQuery, notify, t]);
+    }, [page, perPage, statusFilter, searchQuery, notify, t]);
 
     const refreshAll = useCallback(() => {
         fetchBatches();
@@ -249,6 +250,12 @@ export default function IngestionDashboard() {
     // ── Derived data ──────────────────────────────────────────────────────
     const activeBatches = useMemo(() => batches.filter(b => [ ...IN_PROGRESS_STATUSES, 'review_needed' ].includes(b.status)), [batches]);
 
+    const handlePageChange = (_event, newPage) => setPage(newPage + 1); // MUI is zero-indexed
+    const handlePerPageChange = (event) => {
+        setPerPage(parseInt(event.target.value, 10));
+        setPage(1);
+    };
+
     // ── Drill-down to batch review workspace ───────────────────────────────
     if (selectedBatchId) {
         return (
@@ -258,8 +265,6 @@ export default function IngestionDashboard() {
             />
         );
     }
-
-    const totalPages = batchMeta.total ? Math.ceil(batchMeta.total / (batchMeta.per_page || 50)) : 1;
 
     return (
         <Box sx={{ p: 4, bgcolor: '#f4f7fb', minHeight: '100vh' }}>
@@ -606,18 +611,16 @@ export default function IngestionDashboard() {
                         </TableContainer>
 
                         {/* Pagination */}
-                        {totalPages > 1 && (
-                            <Stack direction="row" spacing={1} sx={{
-  mt: 2,
-  justifyContent: "center"
-}}>
-                                <Button size="small" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>← Prev</Button>
-                                <Typography variant="caption" sx={{ alignSelf: 'center', px: 1 }}>
-                                    Page {page} of {totalPages}
-                                </Typography>
-                                <Button size="small" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>Next →</Button>
-                            </Stack>
-                        )}
+                        <TablePagination
+                            component="div"
+                            count={batchMeta.total || 0}
+                            page={page - 1}
+                            onPageChange={handlePageChange}
+                            rowsPerPage={perPage}
+                            onRowsPerPageChange={handlePerPageChange}
+                            rowsPerPageOptions={[ 25, 50, 100 ]}
+                            labelRowsPerPage={t('common.rowsPerPage', 'Rows per page:')}
+                        />
                     </>
                 )}
             </Box>

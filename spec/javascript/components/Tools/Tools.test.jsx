@@ -150,7 +150,7 @@ describe('Tools components', () => {
 
   it('renders MetadataExportManager empty state', async () => {
     global.fetch = createFetchMock({
-      'GET /api/v1/metadata_exports': [],
+      'GET /api/v1/metadata_exports': { exports: [], meta: { total: 0, page: 1, per_page: 25 } },
       'GET /api/v1/folders': { folders: [] },
     });
 
@@ -182,7 +182,7 @@ describe('Tools components', () => {
     };
 
     global.fetch = createFetchMock({
-      'GET /api/v1/metadata_exports': () => apiResponse([exportRecord]),
+      'GET /api/v1/metadata_exports': () => apiResponse({ exports: [exportRecord], meta: { total: 1, page: 1, per_page: 25 } }),
       'GET /api/v1/folders': { folders: [] },
     });
 
@@ -216,7 +216,10 @@ describe('Tools components', () => {
     let postedBody;
 
     global.fetch = createFetchMock({
-      'GET /api/v1/metadata_exports': sequence([], [createdExport]),
+      'GET /api/v1/metadata_exports': sequence(
+        { exports: [], meta: { total: 0, page: 1, per_page: 25 } },
+        { exports: [createdExport], meta: { total: 1, page: 1, per_page: 25 } }
+      ),
       'GET /api/v1/folders': { folders: [{ id: 'folder-1', name: 'Marketing' }] },
       'POST /api/v1/metadata_exports': (_, options) => {
         postedBody = JSON.parse(options.body);
@@ -253,22 +256,25 @@ describe('Tools components', () => {
 
   it('renders MetadataImportManager import history', async () => {
     global.fetch = createFetchMock({
-      'GET /api/v1/metadata_imports': () => apiResponse([{
-        id: 5,
-        name: 'metadata.csv',
-        status: 'completed',
-        batch_size: 25,
-        field_separator: ',',
-        asset_path_column: 'asset_path',
-        launch_workflows: true,
-        success_count: 12,
-        failure_count: 1,
-        created_by: 'admin@example.com',
-        created_at: 'Jul 1, 2026',
-        expires_at: 'Jul 30, 2026',
-        source_file: { download_url: '/imports/input.csv' },
-        result_file: { download_url: '/imports/results.csv' },
-      }]),
+      'GET /api/v1/metadata_imports': () => apiResponse({
+        imports: [{
+          id: 5,
+          name: 'metadata.csv',
+          status: 'completed',
+          batch_size: 25,
+          field_separator: ',',
+          asset_path_column: 'asset_path',
+          launch_workflows: true,
+          success_count: 12,
+          failure_count: 1,
+          created_by: 'admin@example.com',
+          created_at: 'Jul 1, 2026',
+          expires_at: 'Jul 30, 2026',
+          source_file: { download_url: '/imports/input.csv' },
+          result_file: { download_url: '/imports/results.csv' },
+        }],
+        meta: { total: 1, page: 1, per_page: 25 },
+      }),
     });
 
     render(<MetadataImportManager />);
@@ -282,7 +288,7 @@ describe('Tools components', () => {
 
   it('validates file selection before creating a metadata import', async () => {
     global.fetch = createFetchMock({
-      'GET /api/v1/metadata_imports': [],
+      'GET /api/v1/metadata_imports': { imports: [], meta: { total: 0, page: 1, per_page: 25 } },
     });
 
     render(<MetadataImportManager />);
@@ -314,7 +320,10 @@ describe('Tools components', () => {
     };
 
     global.fetch = createFetchMock({
-      'GET /api/v1/metadata_imports': sequence([importRecord], []),
+      'GET /api/v1/metadata_imports': sequence(
+        { imports: [importRecord], meta: { total: 1, page: 1, per_page: 25 } },
+        { imports: [], meta: { total: 0, page: 1, per_page: 25 } }
+      ),
       'DELETE /api/v1/metadata_imports/6': {},
     });
 

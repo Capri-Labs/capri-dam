@@ -1,0 +1,100 @@
+[[section-3d-asset-viewer]]
+= 3D Asset Preview & Viewer
+
+Capri DAM supports the upload, delivery, and interactive preview of 3D
+assets as part of the authoring process, mirroring Adobe Experience
+Manager's documented 3D preview capability.
+
+== Supported formats
+
+[cols="1,3,3", options="header"]
+|===
+| Extension | File format | MIME type
+| GLB | Binary GL Transmission | `model/gltf-binary`
+| GLTF | GL Transmission Format | `model/gltf+json`
+| OBJ | WaveFront 3D Object File | `application/x-tgif`
+| STL | Stereolithography | `application/vnd.ms-pki.stl`
+| DN | Adobe Dimension | `model/x-adobe-dn`
+| USDZ | Universal Scene Description Zip archive | `model/vnd.usdz+zip`
+|===
+
+The canonical list lives in `lib/three_d_mime_types.rb` (backend) and is
+mirrored on the frontend in `app/javascript/utils/threeDMimeTypes.js` — the
+same "kept in sync manually" convention already used for
+`AssetProcessorWorker::WEB_RENDERABLE_MIME_TYPES` / `webRenderableMimeTypes.js`.
+
+By default DAM allows uploads of all MIME types (including these six), unless
+an admin has explicitly enabled MIME restrictions under
+*Tools → Asset Configurations → Upload Restrictions*
+(`Api::V1::UploadRestrictionsController`).
+
+== Upload & processing pipeline
+
+`AssetProcessorWorker#perform` recognises the six 3D MIME types and tags the
+asset with `format: "3D Model"` plus a `model_3d_renderable` boolean
+metadata flag. Unlike images/PDFs, **no server-side preview image is
+generated** for 3D models — the interactive viewer always renders the
+*original* file live in the browser via WebGL.
+
+`Api::V1::BinController#derive_media_type` returns the `"model_3d"` media
+type bucket for these MIME types, used for icon selection in the Recycle
+Bin grid/list (mirrored with a `ViewInArOutlined` icon in
+`AssetGrid.jsx`/`AssetList.jsx`/`SearchResultCard.jsx`/`BinGrid.jsx`/`BinList.jsx`).
+
+== Interactive viewer (`Asset3DViewer.jsx`)
+
+`AssetViewer.jsx` detects a 3D content type (`is3DModel(asset.properties.content_type)`)
+and renders `Asset3DViewer` in place of the usual `<img>` preview pane. Two
+rendering strategies are used, matching what each format actually supports
+in a browser:
+
+[cols="1,3", options="header"]
+|===
+| Formats | Renderer
+| GLB, GLTF | `<model-viewer>` (Google's web component, `@google/model-viewer`, backed
+  by three.js internally) — ships built-in orbit/pan/zoom camera controls and a
+  camera-reset API.
+| OBJ, STL | A custom lightweight three.js scene (`OrbitControls` +
+  `OBJLoader`/`STLLoader`), lazy-loaded so the main bundle only pays the
+  three.js cost when a matching asset is actually opened.
+|===
+
+USDZ and Adobe Dimension (`.dn`) are accepted for upload/storage/delivery
+like any other format, but have **no broadly-supported in-page WebGL
+renderer** — USDZ is primarily an iOS AR Quick Look format, and `.dn` is
+Adobe's closed proprietary format with no public parser. For these two,
+`Asset3DViewer` shows an explanatory message with a "Download Original" call
+to action instead of a broken or blank viewer.
+
+=== Camera controls
+
+Matches the documented AEM 3D-preview interaction model:
+
+[cols="1,2,2", options="header"]
+|===
+| Action | Mouse | Touch
+| Orbit | Left-click + drag | Single-finger press + drag
+| Pan | Right-click + drag | Two-finger press + drag
+| Zoom | Scroll wheel | Two-finger pinch
+| Recenter | Double-click | Double-tap
+|===
+
+A dedicated *Reset* button (bottom-right of the viewer) restores the camera
+to its default framing; a *Fullscreen* button toggles the browser
+Fullscreen API on the viewer container. For `<model-viewer>`, reset sets
+`cameraOrbit`/`cameraTarget`/`fieldOfView` back to `"auto"` and calls
+`jumpCameraToGoal()`. For the three.js viewer, the initial camera
+position/target computed from the model's bounding box is cached and
+restored via a `reset-3d-camera` custom event.
+
+== Testing
+
+* `spec/workers/asset_processor_worker_spec.rb` — verifies 3D MIME types are
+  tagged with `format: "3D Model"` and stored without error, and that no
+  preview image is generated.
+* `spec/javascript/components/Asset3DViewer.test.jsx` — verifies branch
+  selection (`<model-viewer>` vs three.js canvas vs unsupported-format
+  fallback) based on content type.
+* `spec/e2e/asset_3d_viewer.e2e.spec.js` — uploads a small fixture GLB file
+  and asserts the asset viewer renders an interactive `<model-viewer>`
+  element with Reset/Fullscreen controls.

@@ -1,7 +1,8 @@
 import React from 'react';
 import { TableContainer, Table, TableHead, TableRow, TableCell, TableBody, Checkbox, Box, Typography, IconButton, Paper, Tooltip, Stack, Chip } from '@mui/material';
-import { InsertPhoto, PictureAsPdf, VideoFile, InsertDriveFile, InfoOutlined, PushPinOutlined, AudioFile } from '@mui/icons-material';
+import { InsertPhoto, PictureAsPdf, VideoFile, InsertDriveFile, InfoOutlined, PushPinOutlined, AudioFile, ViewInArOutlined } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { is3DModel } from '../../utils/threeDMimeTypes';
 
 function formatBytes(bytes) {
   if (!bytes || bytes === 0) return '—';
@@ -40,6 +41,7 @@ export default function AssetList({ assets, viewMode, selectedItems, toggleSelec
     if (contentType === 'application/pdf') return <PictureAsPdf sx={{ color: '#ef4444' }} />;
     if (contentType.startsWith('video/')) return <VideoFile sx={{ color: '#3b82f6' }} />;
     if (contentType.startsWith('audio/')) return <AudioFile sx={{ color: '#a855f7' }} />;
+    if (is3DModel(contentType)) return <ViewInArOutlined sx={{ color: '#0d9488' }} />;
     return <InsertDriveFile sx={{ color: '#64748b' }} />;
   };
 

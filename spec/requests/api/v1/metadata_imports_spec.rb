@@ -17,9 +17,21 @@ RSpec.describe 'Api::V1::MetadataImports', type: :request do
       get '/api/v1/metadata_imports'
 
       expect(response).to have_http_status(:ok)
-      ids = JSON.parse(response.body).map { |import| import['id'] }
+      body = JSON.parse(response.body)
+      ids  = body['imports'].map { |import| import['id'] }
       expect(ids).to include(mine.id)
       expect(ids).not_to include(expired.id)
+      expect(body['meta']).to include('total' => 1, 'page' => 1, 'per_page' => 50)
+    end
+
+    it 'paginates with a valid per_page override and clamps invalid values to 50' do
+      create_list(:metadata_import, 3, :completed, user: user)
+
+      get '/api/v1/metadata_imports', params: { per_page: 100 }
+      expect(JSON.parse(response.body)['meta']).to include('per_page' => 100)
+
+      get '/api/v1/metadata_imports', params: { per_page: 7 }
+      expect(JSON.parse(response.body)['meta']).to include('per_page' => 50)
     end
   end
 

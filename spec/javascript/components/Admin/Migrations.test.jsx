@@ -509,6 +509,32 @@ describe('Admin Migrations components', () => {
     expect((await screen.findAllByText('Review Batch')).length).toBeGreaterThan(0);
   });
 
+  it('renders IngestionDashboard pagination with 25/50/100 rows-per-page options and fetches per_page', async () => {
+    installFetchMock((url) => {
+      if (url === '/api/v1/ingestion_batches/stats') return jsonResponse(ingestionStats);
+      if (url.startsWith('/api/v1/ingestion_batches?')) {
+        return jsonResponse({ batches: batchList, meta: { total: 2, page: 1, per_page: 50 } });
+      }
+    });
+
+    render(<IngestionDashboard />);
+
+    expect((await screen.findAllByText('Review Batch')).length).toBeGreaterThan(0);
+    expect(screen.getByText(/rows per page|common\.rowsperpage/i)).toBeInTheDocument();
+
+    await waitFor(() => expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringContaining('per_page=50')
+    ));
+
+    const comboboxes = screen.getAllByRole('combobox');
+    fireEvent.mouseDown(comboboxes[comboboxes.length - 1]);
+    fireEvent.click(await screen.findByRole('option', { name: '100' }));
+
+    await waitFor(() => expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringContaining('per_page=100')
+    ));
+  });
+
   it('renders SystemConnectors and supports lifecycle actions', async () => {
     installFetchMock((url, options) => {
       if (url === '/api/v1/system_connectors?page=1') {

@@ -90,6 +90,107 @@ RSpec.describe AssetProcessorWorker, type: :worker do
     File.delete(staging_path) if staging_path && File.exist?(staging_path)
   end
 
+  describe "3D model uploads" do
+    it "tags a GLB upload with a 3D Model format and marks it renderable, without generating a preview" do
+      staging_path = Rails.root.join("storage", "asset_processor_worker_#{SecureRandom.hex}.glb")
+      File.binwrite(staging_path, "glb bytes")
+      allow(Marcel::MimeType).to receive(:for).and_return("model/gltf-binary")
+
+      worker = described_class.new
+      allow(worker).to receive(:generate_web_preview)
+      worker.perform(version.id, staging_path.to_s)
+
+      expect(version.reload.properties).to include(
+        "content_type" => "model/gltf-binary",
+        "format" => "3D Model",
+        "model_3d_renderable" => true
+      )
+      expect(worker).not_to have_received(:generate_web_preview)
+    ensure
+      File.delete(staging_path) if staging_path && File.exist?(staging_path)
+    end
+
+    it "tags a GLTF upload the same way as GLB" do
+      staging_path = Rails.root.join("storage", "asset_processor_worker_#{SecureRandom.hex}.gltf")
+      File.binwrite(staging_path, "{}")
+      allow(Marcel::MimeType).to receive(:for).and_return("model/gltf+json")
+
+      described_class.new.perform(version.id, staging_path.to_s)
+
+      expect(version.reload.properties).to include(
+        "content_type" => "model/gltf+json",
+        "format" => "3D Model",
+        "model_3d_renderable" => true
+      )
+    ensure
+      File.delete(staging_path) if staging_path && File.exist?(staging_path)
+    end
+
+    it "tags an OBJ upload as 3D Model and renderable (three.js path)" do
+      staging_path = Rails.root.join("storage", "asset_processor_worker_#{SecureRandom.hex}.obj")
+      File.binwrite(staging_path, "v 0 0 0")
+      allow(Marcel::MimeType).to receive(:for).and_return("application/x-tgif")
+
+      described_class.new.perform(version.id, staging_path.to_s)
+
+      expect(version.reload.properties).to include(
+        "content_type" => "application/x-tgif",
+        "format" => "3D Model",
+        "model_3d_renderable" => true
+      )
+    ensure
+      File.delete(staging_path) if staging_path && File.exist?(staging_path)
+    end
+
+    it "tags an STL upload as 3D Model and renderable (three.js path)" do
+      staging_path = Rails.root.join("storage", "asset_processor_worker_#{SecureRandom.hex}.stl")
+      File.binwrite(staging_path, "solid test")
+      allow(Marcel::MimeType).to receive(:for).and_return("application/vnd.ms-pki.stl")
+
+      described_class.new.perform(version.id, staging_path.to_s)
+
+      expect(version.reload.properties).to include(
+        "content_type" => "application/vnd.ms-pki.stl",
+        "format" => "3D Model",
+        "model_3d_renderable" => true
+      )
+    ensure
+      File.delete(staging_path) if staging_path && File.exist?(staging_path)
+    end
+
+    it "tags a USDZ upload as 3D Model but not renderable (no in-page WebGL renderer)" do
+      staging_path = Rails.root.join("storage", "asset_processor_worker_#{SecureRandom.hex}.usdz")
+      File.binwrite(staging_path, "usdz bytes")
+      allow(Marcel::MimeType).to receive(:for).and_return("model/vnd.usdz+zip")
+
+      described_class.new.perform(version.id, staging_path.to_s)
+
+      expect(version.reload.properties).to include(
+        "content_type" => "model/vnd.usdz+zip",
+        "format" => "3D Model",
+        "model_3d_renderable" => false
+      )
+    ensure
+      File.delete(staging_path) if staging_path && File.exist?(staging_path)
+    end
+
+    it "tags an Adobe Dimension (.dn) upload as 3D Model but not renderable" do
+      staging_path = Rails.root.join("storage", "asset_processor_worker_#{SecureRandom.hex}.dn")
+      File.binwrite(staging_path, "dn bytes")
+      allow(Marcel::MimeType).to receive(:for).and_return("model/x-adobe-dn")
+
+      described_class.new.perform(version.id, staging_path.to_s)
+
+      expect(version.reload.properties).to include(
+        "content_type" => "model/x-adobe-dn",
+        "format" => "3D Model",
+        "model_3d_renderable" => false
+      )
+    ensure
+      File.delete(staging_path) if staging_path && File.exist?(staging_path)
+    end
+  end
+
   it "returns early when the asset version is missing" do
     expect { described_class.new.perform(0) }.not_to raise_error
     expect(storage).not_to have_received(:store)
