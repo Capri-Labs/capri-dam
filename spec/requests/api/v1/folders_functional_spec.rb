@@ -31,8 +31,15 @@ RSpec.describe 'Folders API (functional)', type: :request do
   end
 
   # ── PATCH rename + description ───────────────────────────────────────────────
+  # Uses an admin user so check_folder_permission!(@folder, :modify) is bypassed
+  # (non-admin users need an explicit folder policy grant, even for folders
+  # they created themselves — see PATCH #update (rename) specs in
+  # folders_controller_spec.rb for the permission-enforcement coverage).
   describe 'PATCH /api/v1/folders/:id' do
-    let!(:folder) { create(:folder, user: user, name: 'Old Name') }
+    let(:admin_user) { create(:user, :admin) }
+    let!(:folder) { create(:folder, user: admin_user, name: 'Old Name') }
+
+    before { sign_in admin_user }
 
     it 'renames the folder and regenerates the slug' do
       patch "/api/v1/folders/#{folder.id}",

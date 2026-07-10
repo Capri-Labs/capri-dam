@@ -19,6 +19,34 @@
     {
       "fingerprint": "96a3991d4f7f8462ca028e0cff388e696762883c26436fde63171ddd0f872b63",
       "note": "PermitAttributes High — settings_controller.rb:151. The `_id`-suffixed keys (account_id for Cloudflare R2, project_id for GCS) are storage-provider configuration strings, not ActiveRecord foreign keys. They are persisted into a Setting JSON blob (storage_config_<provider>), never mass-assigned to a model, so no privilege escalation is possible. All permitted keys mirror the storage settings form and adapter config. Accepted risk."
+    },
+    {
+      "fingerprint": "f5341466a293ce18c845dbdd59a59b9d8f2e08113d527ac05fa1a3a1a606306a",
+      "note": "CommandInjection Medium — asset_processor_worker.rb#generate_video_poster:899. Open3.capture3 is called with each argument as a separate array element, so Ruby execs ffmpeg directly without a shell — no shell metacharacter expansion is possible. `path` is a server-generated local tmp/staged file path, never a raw user-supplied string. Accepted risk (false positive: Brakeman flags any Open3 call with tainted data regardless of shell vs. exec form)."
+    },
+    {
+      "fingerprint": "4f6d29daeba85d000f9d19b88213c6f3ef9901d49c9215460374dd22c7494b83",
+      "note": "CommandInjection Medium — asset_processor_worker.rb#generate_video_poster:903. Same Open3.capture3 array-argv exec (no shell) as the sibling ffmpeg call at line 899; `path` is the same server-controlled local file path. Accepted risk."
+    },
+    {
+      "fingerprint": "4fec36bcc3dcb4693f18a1f6fcade40bedb1682e0708feb40347b48176a52861",
+      "note": "CommandInjection Medium — asset_processor_worker.rb#generate_mp4_rendition:944. Open3.capture3 array-argv exec (no shell); `source_path` and `mp4_tmp` are server-generated local tmp file paths built from Rails.root.join + SecureRandom.hex, never raw user input. Accepted risk."
+    },
+    {
+      "fingerprint": "3507ea7167c0e3d143449a5782939d4bb0142d9371e3e4a18682dfda53c2350e",
+      "note": "CommandInjection Medium — asset_processor_worker.rb#generate_mp4_rendition:956. Same Open3.capture3 array-argv exec (no shell) fallback transcode call; `source_path`/`mp4_tmp` are server-generated local paths. Accepted risk."
+    },
+    {
+      "fingerprint": "4479f1c96440620cc95f6ed2288c98a1c2b71bee239fd6d8f10b8a09061af2e6",
+      "note": "CommandInjection Medium — asset_processor_worker.rb#generate_ogg_rendition:974. Open3.capture3 array-argv exec (no shell); `source_path`/`ogg_tmp` are server-generated local paths, never raw user input. Accepted risk."
+    },
+    {
+      "fingerprint": "87d36b07036412820c9dafc24cee5cea0c5a942ba403656f6e7e5c97068e91b1",
+      "note": "CommandInjection Medium — asset_processor_worker.rb#generate_av1_rendition:1016. Open3.capture3 array-argv exec (no shell); `source_path`/`av1_tmp` are server-generated local paths, never raw user input. Accepted risk."
+    },
+    {
+      "fingerprint": "dcb7accc474541088e0d4fbbb3d9a0f596480d8009c7f0cad02218fb4adb51b3",
+      "note": "CommandInjection Medium — asset_processor_worker.rb#convert_office_document_to_preview:1143. Open3.capture3 array-argv exec (no shell) invoking LibreOffice's soffice binary; `source_path`/`convert_dir` are server-generated local paths built from Rails.root.join + SecureRandom.hex, never raw user input. Accepted risk."
     }
   ]
 }

@@ -284,7 +284,9 @@ RSpec.describe MigrationCommitWorker, type: :worker do
     worker.send(:commit_item!, batch, item)
 
     expect(adapter).to have_received(:download_and_stream).with("hero.jpg")
-    expect(Asset).to have_received(:create!).with(hash_including(title: "Hero", properties: hash_including(:original_filename)))
+    # Falls back to the literal filename (with extension) when clean_properties has no title,
+    # rather than a titleized version — see MigrationCommitWorker#commit_item!.
+    expect(Asset).to have_received(:create!).with(hash_including(title: "hero.jpg", properties: hash_including(:original_filename)))
     expect(asset_versions).to have_received(:create!)
     expect(item.reload.status).to eq("committed")
     expect(AssetProcessorWorker).to have_received(:perform_async).with(version.id, "/tmp/staged.jpg")
