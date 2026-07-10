@@ -172,7 +172,7 @@ export default function WorkflowPanel({ assetId, assetThumb, onClose, onWorkflow
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/v1/assets/${assetId}/workflow_history`);
+      const res = await fetch(`/api/v1/assets/${encodeURIComponent(assetId)}/workflow_history`);
       if (!res.ok) throw new Error('Failed to fetch data');
       const data = await res.json();
       setHistory(data);

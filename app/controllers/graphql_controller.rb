@@ -30,7 +30,10 @@
 # @see Types::QueryType
 # @see Types::MutationType
 class GraphqlController < ApplicationController
-  skip_before_action :verify_authenticity_token
+  # Only skip CSRF when the caller authenticates with a bearer token (see
+  # ApplicationController#token_authenticated_request?); cookie-session
+  # requests still require a valid CSRF token.
+  skip_before_action :verify_authenticity_token, if: -> { token_authenticated_request? }
 
   # Skip auth for schema introspection in development only.
   before_action :authenticate_hybrid!, unless: :introspection_query?

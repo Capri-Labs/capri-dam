@@ -121,7 +121,7 @@ export default function ApplySchemaDialog({
             if (targetType === 'folder') {
                 // Apply to each selected folder
                 const promises = targetIds.map(folderId =>
-                    fetch(`/api/v1/folders/${folderId}/apply_schema`, {
+                    fetch(`/api/v1/folders/${encodeURIComponent(folderId)}/apply_schema`, {
                         method:  'POST',
                         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
                         body:    JSON.stringify({ schema_id: selected.id, cascade }),
@@ -147,7 +147,7 @@ export default function ApplySchemaDialog({
             } else {
                 // Direct per-asset schema assignment via metadata endpoint
                 const promises = targetIds.map(assetId =>
-                    fetch(`/api/v1/assets/${assetId}/metadata`, {
+                    fetch(`/api/v1/assets/${encodeURIComponent(assetId)}/metadata`, {
                         method:  'PATCH',
                         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
                         body:    JSON.stringify({ schema_id: selected.id, metadata: {} }),

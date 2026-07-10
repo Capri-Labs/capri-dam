@@ -22,7 +22,10 @@
 # All actions require +authenticate_hybrid!+. Create/update/delete/copy/assign
 # actions additionally require admin privileges.
 class Api::V1::VideoProfilesController < ApplicationController
-  skip_before_action :verify_authenticity_token, if: -> { request.format.json? }
+  # Only skip CSRF when the caller authenticates with a bearer token (see
+  # ApplicationController#token_authenticated_request?); cookie-session
+  # requests still require a valid CSRF token.
+  skip_before_action :verify_authenticity_token, if: -> { token_authenticated_request? }
   before_action :authenticate_hybrid!
   before_action :require_admin!, only: %i[create update destroy copy apply_to_folder remove_from_folder]
   before_action :set_profile,    only: %i[show update destroy copy apply_to_folder remove_from_folder folders]

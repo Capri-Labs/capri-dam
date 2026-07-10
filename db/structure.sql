@@ -827,7 +827,7 @@ CREATE TABLE public.email_deliveries (
     created_at timestamp(6) without time zone NOT NULL,
     email_template_id bigint NOT NULL,
     error_log text,
-    payload jsonb DEFAULT '{}'::jsonb NOT NULL,
+    payload text DEFAULT '{}'::text NOT NULL,
     recipient_email character varying NOT NULL,
     retry_count integer DEFAULT 0 NOT NULL,
     status character varying DEFAULT 'pending'::character varying NOT NULL,
@@ -3686,13 +3686,6 @@ CREATE INDEX index_email_deliveries_on_email_template_id ON public.email_deliver
 
 
 --
--- Name: index_email_deliveries_on_payload; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX index_email_deliveries_on_payload ON public.email_deliveries USING gin (payload);
-
-
---
 -- Name: index_email_deliveries_on_recipient_email; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -5012,6 +5005,7 @@ ALTER TABLE ONLY public.email_templates
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260710120000'),
 ('20260709163140'),
 ('20260709160000'),
 ('20260709150000'),

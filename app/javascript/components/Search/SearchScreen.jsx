@@ -91,8 +91,12 @@ function parseFiltersFromURL(params) {
   });
 
   // 2. Collect any extra params as dynamic metadata filters (e.g. editor_state.filter)
+  // Query param names come straight from the URL, so an attacker-crafted
+  // link could contain "__proto__", "constructor", or "prototype" — reject
+  // those explicitly to avoid polluting Object.prototype via `filters[key]`.
+  const UNSAFE_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
   params.forEach((value, key) => {
-    if (!STATIC_FILTER_KEYS.has(key) && !RESERVED_URL_PARAMS.has(key)) {
+    if (!STATIC_FILTER_KEYS.has(key) && !RESERVED_URL_PARAMS.has(key) && !UNSAFE_KEYS.has(key)) {
       filters[key] = value;
     }
   });

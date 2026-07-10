@@ -2,7 +2,10 @@ class Api::V1::CollectionsController < ApplicationController
   include AssetUrlHelper
 
   # Ensure your API controllers skip CSRF if they are using token auth
-  skip_before_action :verify_authenticity_token, if: -> { request.format.json? }
+  # Only skip CSRF when the caller authenticates with a bearer token (see
+  # ApplicationController#token_authenticated_request?); cookie-session
+  # requests still require a valid CSRF token.
+  skip_before_action :verify_authenticity_token, if: -> { token_authenticated_request? }
 
   before_action :authenticate_hybrid!
   before_action :require_write_scope!, only: %i[create update destroy bulk_delete bulk_update add_asset remove_asset toggle_pin configure_rule create_share_link]

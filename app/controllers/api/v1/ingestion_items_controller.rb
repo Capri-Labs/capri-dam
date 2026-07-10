@@ -1,5 +1,8 @@
 class Api::V1::IngestionItemsController < ApplicationController
-  skip_before_action :verify_authenticity_token
+  # Only skip CSRF when the caller authenticates with a bearer token (see
+  # ApplicationController#token_authenticated_request?); cookie-session
+  # requests still require a valid CSRF token.
+  skip_before_action :verify_authenticity_token, if: -> { token_authenticated_request? }
   # Ingestion items are updated by the connector microservice via PAT (admin scope)
   # or by authenticated admin users.
   before_action :authenticate_hybrid!

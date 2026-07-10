@@ -279,8 +279,8 @@ module Reports
       when /^video\//    then "Video (#{mime.split("/").last.upcase})"
       when /^application\/pdf/ then "PDF Document"
       when /^application\/(zip|x-zip)/ then "ZIP Archive"
-      when /^application\/vnd.ms-excel|spreadsheet/ then "Spreadsheet"
-      when /^application\/msword|wordprocessing/ then "Word Document"
+      when /^application\/(vnd\.ms-excel|.*spreadsheet)/ then "Spreadsheet"
+      when /^application\/(msword|.*wordprocessing)/ then "Word Document"
       else mime
       end
     end

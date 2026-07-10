@@ -1,5 +1,8 @@
 class Api::V1::AssetEmbeddingsController < ApplicationController
-  skip_before_action :verify_authenticity_token
+  # Only skip CSRF when the caller authenticates with a bearer token (see
+  # ApplicationController#token_authenticated_request?); cookie-session
+  # requests still require a valid CSRF token.
+  skip_before_action :verify_authenticity_token, if: -> { token_authenticated_request? }
   # This endpoint is called by the AI microservice.
   # Accept either a PAT with admin scope OR a Doorkeeper OAuth token.
   before_action :authenticate_hybrid!

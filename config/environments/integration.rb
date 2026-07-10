@@ -7,6 +7,10 @@ Rails.application.configure do
   config.consider_all_requests_local = true
   config.cache_store = :null_store
   config.action_dispatch.show_exceptions = :rescuable
+  # Test-only environment (spec/integration, docker-compose.integration.yml)
+  # exercised solely by our own CI test suite against ephemeral DB/Redis
+  # containers — never used to serve real traffic — so disabling forgery
+  # protection here carries no production CSRF risk.
   config.action_controller.allow_forgery_protection = false
   config.active_storage.service = :local
   config.action_mailer.delivery_method = :test

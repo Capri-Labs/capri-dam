@@ -8,14 +8,19 @@
 
      <%# --- DYNAMIC SYSTEM VIEW ATTRIBUTES --- %>
      data-current-sub-view="<%= @sub_view %>"
-     data-smtp-config='<%= raw (@smtp_config || {}).to_json %>'
+     <%# NOTE: intentionally NOT wrapped in `raw` — letting ERB HTML-escape
+         the JSON string prevents stored XSS if any nested value (e.g. an
+         admin-entered SMTP host/username) contains a `'`, `<`, or `&`. The
+         browser decodes HTML entities in `dataset` values automatically, so
+         `JSON.parse(el.dataset.smtpConfig)` on the frontend is unaffected. %>
+     data-smtp-config='<%= (@smtp_config || {}).to_json %>'
 
      <%# --- NEW STORAGE ATTRIBUTES --- %>
      data-active-provider="<%= @active_provider %>"
-     data-all-configs='<%= raw @all_configs.to_json %>'
+     data-all-configs='<%= @all_configs.to_json %>'
 
      <%# Guarding map with a safe conditional in case system_apps is nil %>
-     data-system-apps='<%= raw (@system_apps || []).map { |app|
+     data-system-apps='<%= (@system_apps || []).map { |app|
           {
             id: app.id,
             name: app.name,

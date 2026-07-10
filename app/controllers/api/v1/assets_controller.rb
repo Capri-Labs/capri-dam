@@ -70,8 +70,10 @@ module Api
         "video_av1"    => { path_key: "video_av1_rendition_path", content_type_key: "video_av1_rendition_content_type", default_content_type: "video/webm" },
       }.freeze
 
-      protect_from_forgery with: :null_session,
-                           if: -> { request.format.json? || doorkeeper_token.present? }
+      # Only skip CSRF when the caller authenticates with a bearer token (see
+      # ApplicationController#token_authenticated_request?); cookie-session
+      # requests still require a valid CSRF token.
+      protect_from_forgery with: :null_session, if: -> { token_authenticated_request? }
       # Lets an unauthenticated visitor on a public collection share page
       # (see Public::CollectionSharesController) load asset thumbnails/files
       # without a session — but *only* for the exact asset(s) that belong to

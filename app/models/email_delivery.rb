@@ -1,4 +1,12 @@
 class EmailDelivery < ApplicationRecord
+  # 🚀 SECURITY BY DESIGN: `payload` can carry sensitive values (e.g. the
+  # plaintext temporary password Admin::UsersController#create generates
+  # for new users) that are needed later by EmailDispatcherWorker to render
+  # the Liquid template. Encrypting it at rest keeps that data out of the
+  # database in clear text — mirrors SystemConnector#credentials_payload.
+  attribute :payload, :json
+  encrypts :payload
+
   belongs_to :email_template
 
   validates :recipient_email, presence: true

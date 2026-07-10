@@ -27,7 +27,16 @@ class ApplicationController < ActionController::Base
   include Authorization
 
   allow_browser versions: :modern
-  protect_from_forgery with: :null_session, if: -> { request.format.json? }
+
+  # CSRF is only skipped for requests that authenticate with an explicit
+  # bearer credential (Doorkeeper OAuth token or Personal Access Token).
+  # Browsers never attach the `Authorization` header automatically on
+  # cross-site requests, so token-authenticated calls carry no CSRF risk.
+  # JSON requests relying solely on the Devise session cookie still go
+  # through +verify_authenticity_token+ — the SPA's shared fetch helper
+  # already attaches the `X-CSRF-Token` header (see
+  # app/javascript/utils/adminUtils.js), so this does not break the UI.
+  protect_from_forgery with: :null_session, if: -> { request.format.json? && token_authenticated_request? }
 
   before_action :set_current_context
 
@@ -67,6 +76,17 @@ class ApplicationController < ActionController::Base
     return if user_signed_in?
     return if authenticate_pat!
     doorkeeper_authorize!
+  end
+
+  # True when the request supplies bearer credentials (a Doorkeeper OAuth
+  # token or a Personal Access Token) rather than relying solely on the
+  # ambient session cookie. Used to decide whether it is safe to skip CSRF
+  # verification — see the +protect_from_forgery+ call above.
+  #
+  # @return [Boolean]
+  def token_authenticated_request?
+    doorkeeper_token.present? ||
+      request.headers["Authorization"].to_s.start_with?("Bearer #{PersonalAccessToken::PREFIX}")
   end
 
   # Authenticates via a Personal Access Token sent in the Authorization header.

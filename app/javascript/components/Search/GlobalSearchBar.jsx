@@ -180,8 +180,18 @@ export default function GlobalSearchBar() {
         window.location.href = `/search?q=${encodeURIComponent(searchQuery)}&mode=${searchMode}`;
     };
 
+    // Suggestions come from the search API — never trust `item.href` as a
+    // navigation target as-is. Only same-origin, root-relative paths
+    // (e.g. "/assets/123") are allowed; anything else (an absolute URL,
+    // a protocol-relative "//host" URL, or a "javascript:"/"data:" URI)
+    // falls back to the plain search results page instead of being
+    // assigned to `window.location.href` directly.
+    const isSafeInternalPath = (href) =>
+        typeof href === 'string' && /^\/(?!\/)/.test(href);
+
     const goToSuggestion = (item) => {
-        window.location.href = item.href || `/search?q=${encodeURIComponent(searchQuery)}&mode=${searchMode}`;
+        const fallback = `/search?q=${encodeURIComponent(searchQuery)}&mode=${searchMode}`;
+        window.location.href = isSafeInternalPath(item.href) ? item.href : fallback;
     };
 
     const handleSearchSubmit = (e) => {

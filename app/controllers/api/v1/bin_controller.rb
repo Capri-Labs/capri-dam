@@ -24,8 +24,10 @@ module Api
     class BinController < ApplicationController
       include AssetUrlHelper
 
-      protect_from_forgery with: :null_session,
-                           if: -> { request.format.json? || doorkeeper_token.present? }
+      # Only skip CSRF when the caller authenticates with a bearer token (see
+      # ApplicationController#token_authenticated_request?); cookie-session
+      # requests still require a valid CSRF token.
+      protect_from_forgery with: :null_session, if: -> { token_authenticated_request? }
       before_action :authenticate_hybrid!
       before_action :require_write_scope!, only: %i[bulk_restore bulk_destroy empty]
       before_action :require_admin!,       only: %i[update_retention_policy trigger_purge]

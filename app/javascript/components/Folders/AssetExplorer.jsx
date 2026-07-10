@@ -161,7 +161,7 @@ export default function AssetExplorer({ initialTargetAssetId }) {
     const sortQuery = `sort=${sort.field}&direction=${sort.direction}`;
     const endpoint = viewMode === 'bin'
       ? '/api/v1/bin'
-      : `/api/v1/folders/${currentId}?${sortQuery}`;
+      : `/api/v1/folders/${encodeURIComponent(currentId)}?${sortQuery}`;
 
     fetch(endpoint)
       .then((response) => response.json())
