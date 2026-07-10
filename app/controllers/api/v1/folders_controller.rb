@@ -73,17 +73,47 @@ module Api
         end
       end
 
-      # PATCH /api/v1/folders/:id (rename + description)
+      # PATCH /api/v1/folders/:id (rename + description; also supports moving
+      # via +parent_id+ — used by both the single-item Rename dialog and,
+      # indirectly, anything that calls this endpoint directly instead of the
+      # bulk {MoveOperationsController}).
       def update
         @folder = Folder.active.find(params[:id])
+        check_folder_permission!(@folder, :modify)
+        return if performed?
+
+        parent_id_supplied = params[:folder]&.key?(:parent_id)
+        new_parent_id = folder_params[:parent_id]
+        new_parent_id = nil if new_parent_id == "root"
+        moving = parent_id_supplied && new_parent_id.to_s != @folder.parent_id.to_s
+
+        if moving
+          destination_folder = new_parent_id.present? ? Folder.active.find_by(id: new_parent_id) : nil
+          if new_parent_id.present? && destination_folder.nil?
+            return render json: { error: "Destination folder not found" }, status: :not_found
+          end
+          if @folder.self_or_ancestor_match?(new_parent_id)
+            return render json: { error: "Cannot move a folder into itself or one of its own subfolders." },
+                          status: :unprocessable_entity
+          end
+          unless folder_permission?(@folder.parent, :delete) && folder_permission?(destination_folder, :create)
+            return render json: {
+              error: "Access denied. Moving requires 'delete' permission on the source folder and 'create' permission on the destination folder.",
+            }, status: :forbidden
+          end
+        end
+
         old_parent_id = @folder.parent_id
-        if @folder.update(folder_params)
+        attrs = folder_params
+        attrs[:parent_id] = new_parent_id if parent_id_supplied
+        if @folder.update(attrs)
           FolderContentsCache.bust([ old_parent_id, @folder.parent_id ])
           render json: {
             id:          @folder.id,
             name:        @folder.name,
             description: @folder.description,
             slug:        @folder.slug,
+            parent_id:   @folder.parent_id,
             updated_at:  @folder.updated_at,
           }
         else
@@ -335,7 +365,7 @@ module Api
 
         # Apply optional sorting (sort + direction query params)
         folders_payload = sort_folders(folders.map { |f| format_folder_payload(f, asset_counts_by_folder[f.id] || 0) })
-        assets_payload  = sort_assets(assets.map { |asset| format_asset_payload(asset) })
+        assets_payload  = sort_assets(assets.map { |asset| format_asset_payload(asset, current_folder) })
 
         {
           folders: folders_payload,
@@ -346,7 +376,12 @@ module Api
       end
 
       # Helper to standardize the asset payload structure for React
-      def format_asset_payload(asset)
+      #
+      # @param asset [Asset]
+      # @param containing_folder [Folder, nil] the already-loaded parent folder
+      #   (avoids an extra query — every asset in a single folder-contents
+      #   response shares the same parent) used to compute +can_modify+.
+      def format_asset_payload(asset, containing_folder = nil)
         active_v = asset.active_version
 
         merged_props = asset.properties.merge(active_v&.properties || {})
@@ -372,6 +407,8 @@ module Api
           video_poster_url: asset_variant_url_for(asset, "video_poster", path_property_key: "video_poster_path"),
           video_av1_rendition_url: asset_variant_url_for(asset, "video_av1", path_property_key: "video_av1_rendition_path"),
           editable: AssetProcessorWorker::WEB_RENDERABLE_MIME_TYPES.include?(merged_props["content_type"].to_s),
+          can_modify: can_modify_folder?(containing_folder),
+          can_delete: can_delete_folder?(containing_folder),
         }
       end
 
@@ -386,7 +423,38 @@ module Api
           asset_count:     asset_count,
           created_at:      folder.created_at,
           updated_at:      folder.updated_at,
+          can_modify:      can_modify_folder?(folder),
+          can_delete:      can_delete_folder?(folder),
         }
+      end
+
+      # Whether the current user can rename/modify a given folder (or an
+      # asset that lives directly inside it). Mirrors the same rule as
+      # {Authorization#check_asset_modify!}: admins bypass all checks, and a
+      # +nil+ folder (root-level items) is always modifiable since no
+      # {FolderPolicy} can apply there.
+      #
+      # @param folder [Folder, nil]
+      # @return [Boolean]
+      def can_modify_folder?(folder)
+        return true if current_user_admin?
+        return true if folder.nil?
+
+        !!current_user&.permissions_for(folder)&.dig(:modify)
+      end
+
+      # Whether the current user can remove an item from a given folder —
+      # the permission gate for the Move overlay (moving is "delete from
+      # source, create in destination"). Same nil/admin semantics as
+      # {#can_modify_folder?}.
+      #
+      # @param folder [Folder, nil]
+      # @return [Boolean]
+      def can_delete_folder?(folder)
+        return true if current_user_admin?
+        return true if folder.nil?
+
+        !!current_user&.permissions_for(folder)&.dig(:delete)
       end
 
       # ── Sorting helpers ─────────────────────────────────────────────────────

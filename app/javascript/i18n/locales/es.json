@@ -2065,6 +2065,7 @@
     "setSchemaForThisFolder": "Establecer esquema para esta carpeta",
     "newFolder": "Nueva carpeta",
     "currentFolder": "Carpeta actual",
+    "renameFolder": "Renombrar carpeta",
     "notifications": {
       "autoEnrichQueued": "Assets en cola para enriquecimiento semántico con LangChain.",
       "duplicateScanQueued": "Buscando duplicados visuales y criptográficos...",
@@ -2073,7 +2074,13 @@
       "cachePurgeQueued": "Invalidación de caché Edge en cola para los elementos seleccionados.",
       "forceSyncError": "No se pudo iniciar la sincronización de metadatos. Inténtelo de nuevo.",
       "cachePurgeError": "No se pudo poner en cola la purga de caché. Inténtelo de nuevo."
-    }
+    },
+    "renameAsset": "Renombrar activo",
+    "renameNoPermission": "No tienes permiso de modificación para este elemento",
+    "moveItems": "Mover",
+    "moveItemCount": "Mover {{count}} elemento",
+    "moveItemCount_other": "Mover {{count}} elementos",
+    "moveNoPermission": "No tienes permiso de eliminación para uno o más elementos seleccionados"
   },
   "uploadGrid": {
     "staging_area": "Área de preparación",
@@ -2125,6 +2132,37 @@
     "ai_enhancements_applied": "Mejoras de IA aplicadas.",
     "upload_sequence_complete": "Secuencia de carga completada.",
     "upload_too_large": "Carga no permitida: {{names}}. El tamaño máximo de carga es {{maxSize}}."
+  },
+  "renameDialog": {
+    "titleFolder": "Renombrar carpeta",
+    "titleAsset": "Renombrar activo",
+    "newNameLabel": "Nuevo nombre",
+    "nameRequired": "El nombre no puede estar vacío.",
+    "save": "Guardar",
+    "saving": "Guardando…",
+    "notifications": {
+      "folderRenamed": "Carpeta renombrada a \"{{name}}\".",
+      "assetRenamed": "Activo renombrado a \"{{name}}\".",
+      "error": "No se pudo renombrar. Inténtalo de nuevo."
+    }
+  },
+  "moveDialog": {
+    "title": "Mover {{count}} elemento",
+    "title_other": "Mover {{count}} elementos",
+    "selectedItemsLabel": "Elementos seleccionados",
+    "destinationLabel": "Carpeta de destino",
+    "destinationPlaceholder": "Buscar carpetas…",
+    "destinationRequired": "Por favor elige una carpeta de destino.",
+    "rootOption": "/ (Raíz)",
+    "movingTo": "Moviendo a: {{destination}}",
+    "partialFailureTitle": "Algunos elementos no se pudieron mover:",
+    "move": "Mover",
+    "moving": "Moviendo…",
+    "notifications": {
+      "moved": "Se movieron {{count}} elemento(s) a \"{{destination}}\".",
+      "error": "No se pudo mover. Inténtalo de nuevo."
+    },
+    "loadingFolders": "Cargando carpetas…"
   },
   "applySchemaDialog": {
     "title": "Aplicar esquema de metadatos",

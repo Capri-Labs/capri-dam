@@ -347,6 +347,69 @@ RSpec.describe "Api::V1::Assets coverage", type: :request do
     end
   end
 
+  # ===========================================================================
+  # Move via PATCH #update — `:delete` on source + `:create` on destination
+  # ===========================================================================
+  describe "PATCH #update — move permission gating (delete + create)" do
+    let(:user)  { create(:user) }
+    let(:group) { create(:user_group) }
+
+    before { user.user_groups << group }
+
+    it "denies the move when the user lacks :delete on the source folder" do
+      origin = create(:folder, name: "Origin")
+      destination = create(:folder, name: "Destination")
+      create(:folder_policy, folder: origin, user_group: group, read_access: true, modify_access: true) # no delete
+      create(:folder_policy, :full_access, folder: destination, user_group: group)
+
+      asset = create(:asset, user: user, folder: origin, title: "Movable")
+
+      patch "/api/v1/assets/#{asset.uuid}", params: { asset: { folder_id: destination.id } }, as: :json
+
+      expect(response).to have_http_status(:forbidden)
+      expect(json["error"]).to match(/delete.*source|create.*destination/i)
+      expect(asset.reload.folder_id).to eq(origin.id)
+    end
+
+    it "denies the move when the user lacks :create on the destination folder" do
+      origin = create(:folder, name: "Origin")
+      destination = create(:folder, name: "Destination")
+      create(:folder_policy, :full_access, folder: origin, user_group: group)
+      create(:folder_policy, folder: destination, user_group: group, read_access: true) # no create
+
+      asset = create(:asset, user: user, folder: origin, title: "Movable")
+
+      patch "/api/v1/assets/#{asset.uuid}", params: { asset: { folder_id: destination.id } }, as: :json
+
+      expect(response).to have_http_status(:forbidden)
+      expect(asset.reload.folder_id).to eq(origin.id)
+    end
+
+    it "allows the move when the user has :delete on source and :create on destination" do
+      origin = create(:folder, name: "Origin")
+      destination = create(:folder, name: "Destination")
+      create(:folder_policy, :full_access, folder: origin, user_group: group)
+      create(:folder_policy, :full_access, folder: destination, user_group: group)
+
+      asset = create(:asset, user: user, folder: origin, title: "Movable")
+
+      patch "/api/v1/assets/#{asset.uuid}", params: { asset: { folder_id: destination.id } }, as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(asset.reload.folder_id).to eq(destination.id)
+    end
+
+    it "returns 404 when the destination folder does not exist" do
+      origin = create(:folder, name: "Origin")
+      create(:folder_policy, :full_access, folder: origin, user_group: group)
+      asset = create(:asset, user: user, folder: origin, title: "Movable")
+
+      patch "/api/v1/assets/#{asset.uuid}", params: { asset: { folder_id: 999_999 } }, as: :json
+
+      expect(response).to have_http_status(:not_found)
+    end
+  end
+
   describe "folder-contents cache busting (FolderContentsCache)" do
     # Large folders (1,000-3,000+ assets) are Redis-cached (see
     # FolderContentsCache). These actions must bust that cache so the folder

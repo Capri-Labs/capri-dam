@@ -242,6 +242,9 @@ Rails.application.routes.draw do
       post "edge_operations/sync", to: "edge_operations#sync"
       post "edge_operations/purge", to: "edge_operations#purge"
 
+      # Bulk Move (folders & assets) — see MoveOperationsController
+      post "move_operations", to: "move_operations#create"
+
       #  THE FIXED ASSETS BLOCK
       resources :inbox, only: %i[index show destroy] do
         collection do

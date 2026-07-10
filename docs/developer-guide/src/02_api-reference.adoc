@@ -44,6 +44,26 @@ AI batch progress, and health callbacks.
 | `GET` | `/admin/system_accounts` | admin | Admin-only service-account management surface.
 |===
 
+|===
+
+== Folders and assets — core CRUD & rename
+
+[cols="1,2,1,3", options="header"]
+|===
+| Method | Path | Auth | Description
+
+| `GET` | `/api/v1/folders/:id` | user | Folder-contents listing (`"root"` for the top level); Redis-cached via `FolderContentsCache` (see <<section-models>>). Each folder/asset entry includes `can_modify` (gates Rename, see <<section-rename-overlay>>) and `can_delete` (gates Move, see <<section-move-overlay>>) booleans.
+| `POST` | `/api/v1/folders` | user | Create a folder.
+| `PATCH` | `/api/v1/folders/:id` | user (`modify` grant, or `delete`+`create` when moving) | Rename and/or update a folder's `description` (requires `modify`). Supplying a *changed* `parent_id` is a Move and instead requires `delete` on the current parent + `create` on the destination, plus cycle prevention (`422` if moving into self/a descendant, `404` if the destination doesn't exist) — see <<section-move-overlay>>.
+| `DELETE` | `/api/v1/folders/:id` \| `/api/v1/folders/:id/permanent` | user | Soft-delete (recycle bin) / permanent purge.
+| `POST` | `/api/v1/folders/:id/restore` | user | Restore from the recycle bin.
+| `POST` | `/api/v1/assets` | user | Upload a new asset.
+| `PATCH` | `/api/v1/assets/:id` | user (`modify` grant, or `delete`+`create` when moving) | Rename (`asset.title`) requires `modify`. Supplying a *changed* `asset.folder_id` is a Move and instead requires `delete` on the current folder + `create` on the destination — see <<section-move-overlay>>.
+| `DELETE` | `/api/v1/assets/:id` \| `/api/v1/assets/:id/permanent` | user | Soft-delete (recycle bin) / permanent purge.
+| `POST` | `/api/v1/assets/:id/restore` | user | Restore from the recycle bin.
+| `POST` | `/api/v1/move_operations` | user (per-item `delete`+`create`) | Bulk move: `{ folder_ids: [...], asset_ids: [...], destination_folder_id }` (`"root"` or a folder id). Each item is checked and validated independently — partial success is possible; the response reports `moved_folders`/`moved_assets` counts plus an `errors: [{ type, id, name, error }]` array for any items that failed permission, cycle, or existence checks. Busts `FolderContentsCache` for every source and destination folder touched. See <<section-move-overlay>>.
+|===
+
 == Collections, bin, duplicates, and delivery
 
 [cols="1,2,1,3", options="header"]

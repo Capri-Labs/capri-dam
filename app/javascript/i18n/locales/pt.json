@@ -2065,6 +2065,7 @@
     "setSchemaForThisFolder": "Definir esquema para esta pasta",
     "newFolder": "Nova pasta",
     "currentFolder": "Pasta atual",
+    "renameFolder": "Renomear pasta",
     "notifications": {
       "autoEnrichQueued": "Assets enfileirados para enriquecimento semântico com LangChain.",
       "duplicateScanQueued": "Procurando duplicatas visuais e criptográficas...",
@@ -2073,7 +2074,13 @@
       "cachePurgeQueued": "Invalidação de cache Edge enfileirada para os itens selecionados.",
       "forceSyncError": "Falha ao iniciar a sincronização de metadados. Tente novamente.",
       "cachePurgeError": "Falha ao enfileirar a purga de cache. Tente novamente."
-    }
+    },
+    "renameAsset": "Renomear ativo",
+    "renameNoPermission": "Você não tem permissão de modificação para este item",
+    "moveItems": "Mover",
+    "moveItemCount": "Mover {{count}} item",
+    "moveItemCount_other": "Mover {{count}} itens",
+    "moveNoPermission": "Você não tem permissão de exclusão para um ou mais itens selecionados"
   },
   "uploadGrid": {
     "staging_area": "Área de preparação",
@@ -2125,6 +2132,37 @@
     "ai_enhancements_applied": "Aprimoramentos de IA aplicados.",
     "upload_sequence_complete": "Sequência de upload concluída.",
     "upload_too_large": "Upload não permitido: {{names}}. O tamanho máximo de upload é {{maxSize}}."
+  },
+  "renameDialog": {
+    "titleFolder": "Renomear pasta",
+    "titleAsset": "Renomear ativo",
+    "newNameLabel": "Novo nome",
+    "nameRequired": "O nome não pode ficar em branco.",
+    "save": "Salvar",
+    "saving": "Salvando…",
+    "notifications": {
+      "folderRenamed": "Pasta renomeada para \"{{name}}\".",
+      "assetRenamed": "Ativo renomeado para \"{{name}}\".",
+      "error": "Falha ao renomear. Tente novamente."
+    }
+  },
+  "moveDialog": {
+    "title": "Mover {{count}} item",
+    "title_other": "Mover {{count}} itens",
+    "selectedItemsLabel": "Itens selecionados",
+    "destinationLabel": "Pasta de destino",
+    "destinationPlaceholder": "Pesquisar pastas…",
+    "destinationRequired": "Selecione uma pasta de destino.",
+    "rootOption": "/ (Raiz)",
+    "movingTo": "Movendo para: {{destination}}",
+    "partialFailureTitle": "Alguns itens não puderam ser movidos:",
+    "move": "Mover",
+    "moving": "Movendo…",
+    "notifications": {
+      "moved": "{{count}} item(ns) movido(s) para \"{{destination}}\".",
+      "error": "Falha ao mover. Tente novamente."
+    },
+    "loadingFolders": "Carregando pastas…"
   },
   "applySchemaDialog": {
     "title": "Aplicar esquema de metadados",

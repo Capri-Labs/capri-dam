@@ -77,7 +77,14 @@ class FolderContentsCache
   #   top-level listing.
   # @return [void]
   def self.bust(folder_id)
-    Array(folder_id).uniq.each do |id|
+    # NOTE: plain `Array(folder_id)` collapses `nil` to `[]` (Ruby's Kernel#Array
+    # treats nil as "no elements"), which silently made every top-level
+    # (root) mutation a no-op here — the root listing cache would then serve
+    # stale data for up to DEFAULT_TTL seconds after any root-level
+    # create/rename/delete/restore. Wrap explicitly so a bare `nil` (or a
+    # single non-array id) still busts exactly that one key namespace.
+    ids = folder_id.is_a?(Array) ? folder_id : [ folder_id ]
+    ids.uniq.each do |id|
       cursor = "0"
       pattern = "#{NAMESPACE}:#{normalise_id(id)}:*"
       loop do

@@ -18,7 +18,9 @@ import FolderAccessTab from '../../../../app/javascript/components/Folders/Folde
 import FolderInfoPanel from '../../../../app/javascript/components/Folders/FolderInfoPanel';
 import FoldersManager from '../../../../app/javascript/components/Folders/FoldersManager';
 import ImageEditorDialog from '../../../../app/javascript/components/Folders/ImageEditorDialog';
+import MoveDialog from '../../../../app/javascript/components/Folders/MoveDialog';
 import PinToCollectionDialog from '../../../../app/javascript/components/Folders/PinToCollectionDialog';
+import RenameDialog from '../../../../app/javascript/components/Folders/RenameDialog';
 import UploadGrid from '../../../../app/javascript/components/Folders/UploadGrid';
 import UploadSidebar from '../../../../app/javascript/components/Folders/UploadSidebar';
 import UploadWorkspace from '../../../../app/javascript/components/Folders/UploadWorkspace';
@@ -1206,6 +1208,358 @@ describe('Folders components', () => {
     expect(mockNotify).toHaveBeenCalledWith('explorerTopBar.notifications.autoEnrichQueued', 'info');
   });
 
+  it('renames a single selected folder via the Tools menu Rename overlay', async () => {
+    global.fetch = mockFetch({
+      'PATCH /api/v1/folders/13': { id: 13, name: 'Renamed Folder', slug: 'renamed-folder', updated_at: '2024-01-01' },
+    });
+    const onSchemaApplied = jest.fn();
+
+    render(
+      <ExplorerTopBar
+        currentId={12}
+        viewData={{ breadcrumbs: [{ id: 'root', name: 'Home' }, { id: 12, name: 'Catalog' }], folders: [{ id: 13, name: 'Child', can_modify: true }], assets: [] }}
+        viewMode="active"
+        setViewMode={jest.fn()}
+        handleNavigate={jest.fn()}
+        handleCopyPath={jest.fn()}
+        isAllSelected={false}
+        handleSelectAll={jest.fn()}
+        hasSelection
+        handleDeleteSelected={jest.fn()}
+        handleRestoreSelected={jest.fn()}
+        handlePermanentDelete={jest.fn()}
+        setOpenFolderDialog={jest.fn()}
+        onUploadSuccess={jest.fn()}
+        selectedItems={{ folders: [13], assets: [] }}
+        onSchemaApplied={onSchemaApplied}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'explorerTopBar.tools' }));
+    fireEvent.click(await screen.findByText('explorerTopBar.renameFolder'));
+
+    const input = await screen.findByLabelText('renameDialog.newNameLabel');
+    fireEvent.change(input, { target: { value: 'Renamed Folder' } });
+    fireEvent.click(screen.getByRole('button', { name: 'renameDialog.save' }));
+
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith(
+        '/api/v1/folders/13',
+        expect.objectContaining({
+          method: 'PATCH',
+          body: JSON.stringify({ folder: { name: 'Renamed Folder' } }),
+        }),
+      );
+    });
+    expect(onSchemaApplied).toHaveBeenCalled();
+  });
+
+  it('renames a single selected asset via the Tools menu Rename overlay', async () => {
+    global.fetch = mockFetch({
+      'PATCH /api/v1/assets/20': { id: 20, title: 'New Title' },
+    });
+
+    render(
+      <ExplorerTopBar
+        currentId={12}
+        viewData={{ breadcrumbs: [{ id: 'root', name: 'Home' }, { id: 12, name: 'Catalog' }], folders: [], assets: [{ id: 20, title: 'Old Title', can_modify: true }] }}
+        viewMode="active"
+        setViewMode={jest.fn()}
+        handleNavigate={jest.fn()}
+        handleCopyPath={jest.fn()}
+        isAllSelected={false}
+        handleSelectAll={jest.fn()}
+        hasSelection
+        handleDeleteSelected={jest.fn()}
+        handleRestoreSelected={jest.fn()}
+        handlePermanentDelete={jest.fn()}
+        setOpenFolderDialog={jest.fn()}
+        onUploadSuccess={jest.fn()}
+        selectedItems={{ folders: [], assets: [20] }}
+        onSchemaApplied={jest.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'explorerTopBar.tools' }));
+    fireEvent.click(await screen.findByText('explorerTopBar.renameAsset'));
+
+    const input = await screen.findByLabelText('renameDialog.newNameLabel');
+    fireEvent.change(input, { target: { value: 'New Title' } });
+    fireEvent.click(screen.getByRole('button', { name: 'renameDialog.save' }));
+
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith(
+        '/api/v1/assets/20',
+        expect.objectContaining({
+          method: 'PATCH',
+          body: JSON.stringify({ asset: { title: 'New Title' } }),
+        }),
+      );
+    });
+  });
+
+  it('disables Rename in the Tools menu when the selected item lacks modify rights', async () => {
+    render(
+      <ExplorerTopBar
+        currentId={12}
+        viewData={{ breadcrumbs: [{ id: 'root', name: 'Home' }, { id: 12, name: 'Catalog' }], folders: [{ id: 13, name: 'Child', can_modify: false }], assets: [] }}
+        viewMode="active"
+        setViewMode={jest.fn()}
+        handleNavigate={jest.fn()}
+        handleCopyPath={jest.fn()}
+        isAllSelected={false}
+        handleSelectAll={jest.fn()}
+        hasSelection
+        handleDeleteSelected={jest.fn()}
+        handleRestoreSelected={jest.fn()}
+        handlePermanentDelete={jest.fn()}
+        setOpenFolderDialog={jest.fn()}
+        onUploadSuccess={jest.fn()}
+        selectedItems={{ folders: [13], assets: [] }}
+        onSchemaApplied={jest.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'explorerTopBar.tools' }));
+    const renameItem = (await screen.findByText('explorerTopBar.renameFolder')).closest('li');
+    expect(renameItem).toHaveAttribute('aria-disabled', 'true');
+  });
+
+  it('hides the Rename option entirely when more than one item is selected', async () => {
+    render(
+      <ExplorerTopBar
+        currentId={12}
+        viewData={{ breadcrumbs: [{ id: 'root', name: 'Home' }, { id: 12, name: 'Catalog' }], folders: [{ id: 13, name: 'Child', can_modify: true }], assets: [{ id: 20, title: 'Asset', can_modify: true }] }}
+        viewMode="active"
+        setViewMode={jest.fn()}
+        handleNavigate={jest.fn()}
+        handleCopyPath={jest.fn()}
+        isAllSelected={false}
+        handleSelectAll={jest.fn()}
+        hasSelection
+        handleDeleteSelected={jest.fn()}
+        handleRestoreSelected={jest.fn()}
+        handlePermanentDelete={jest.fn()}
+        setOpenFolderDialog={jest.fn()}
+        onUploadSuccess={jest.fn()}
+        selectedItems={{ folders: [13], assets: [20] }}
+        onSchemaApplied={jest.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'explorerTopBar.tools' }));
+    expect(screen.queryByText('explorerTopBar.renameFolder')).not.toBeInTheDocument();
+    expect(screen.queryByText('explorerTopBar.renameAsset')).not.toBeInTheDocument();
+  });
+
+  it('moves a mixed multi-selection (folders + assets) via the Tools menu Move overlay', async () => {
+    global.fetch = mockFetch({
+      'GET /api/v1/folders': { folders: [ { id: 99, name: '/Marketing', slug: 'marketing' } ] },
+      'POST /api/v1/move_operations': { success: true, moved_folders: 1, moved_assets: 1, errors: [] },
+    });
+    const onSchemaApplied = jest.fn();
+
+    render(
+      <ExplorerTopBar
+        currentId={12}
+        viewData={{
+          breadcrumbs: [{ id: 'root', name: 'Home' }, { id: 12, name: 'Catalog' }],
+          folders: [{ id: 13, name: 'Child', can_delete: true }],
+          assets: [{ id: 20, title: 'Asset', can_delete: true }],
+        }}
+        viewMode="active"
+        setViewMode={jest.fn()}
+        handleNavigate={jest.fn()}
+        handleCopyPath={jest.fn()}
+        isAllSelected={false}
+        handleSelectAll={jest.fn()}
+        hasSelection
+        handleDeleteSelected={jest.fn()}
+        handleRestoreSelected={jest.fn()}
+        handlePermanentDelete={jest.fn()}
+        setOpenFolderDialog={jest.fn()}
+        onUploadSuccess={jest.fn()}
+        selectedItems={{ folders: [13], assets: [20] }}
+        onSchemaApplied={onSchemaApplied}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'explorerTopBar.tools' }));
+    fireEvent.click(await screen.findByText('explorerTopBar.moveItems'));
+
+    // Selected-items summary should list both the folder and the asset.
+    expect(await screen.findByText('Child')).toBeInTheDocument();
+    expect(screen.getByText('Asset')).toBeInTheDocument();
+
+    const destinationInput = await screen.findByLabelText('moveDialog.destinationLabel');
+    fireEvent.change(destinationInput, { target: { value: 'Marketing' } });
+    fireEvent.click(await screen.findByText('/Marketing'));
+
+    fireEvent.click(screen.getByRole('button', { name: 'moveDialog.move' }));
+
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith(
+        '/api/v1/move_operations',
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({ folder_ids: [ 13 ], asset_ids: [ 20 ], destination_folder_id: 99 }),
+        }),
+      );
+    });
+    await waitFor(() => expect(onSchemaApplied).toHaveBeenCalled());
+  });
+
+  it('moves an item to the root destination', async () => {
+    global.fetch = mockFetch({
+      'GET /api/v1/folders': { folders: [] },
+      'POST /api/v1/move_operations': { success: true, moved_folders: 1, moved_assets: 0, errors: [] },
+    });
+
+    render(
+      <ExplorerTopBar
+        currentId={12}
+        viewData={{
+          breadcrumbs: [{ id: 'root', name: 'Home' }, { id: 12, name: 'Catalog' }],
+          folders: [{ id: 13, name: 'Child', can_delete: true }],
+          assets: [],
+        }}
+        viewMode="active"
+        setViewMode={jest.fn()}
+        handleNavigate={jest.fn()}
+        handleCopyPath={jest.fn()}
+        isAllSelected={false}
+        handleSelectAll={jest.fn()}
+        hasSelection
+        handleDeleteSelected={jest.fn()}
+        handleRestoreSelected={jest.fn()}
+        handlePermanentDelete={jest.fn()}
+        setOpenFolderDialog={jest.fn()}
+        onUploadSuccess={jest.fn()}
+        selectedItems={{ folders: [13], assets: [] }}
+        onSchemaApplied={jest.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'explorerTopBar.tools' }));
+    fireEvent.click(await screen.findByText('explorerTopBar.moveItems'));
+
+    const destinationInput = await screen.findByLabelText('moveDialog.destinationLabel');
+    fireEvent.change(destinationInput, { target: { value: 'moveDialog.rootOption' } });
+    fireEvent.click(await screen.findByText('moveDialog.rootOption'));
+
+    fireEvent.click(screen.getByRole('button', { name: 'moveDialog.move' }));
+
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith(
+        '/api/v1/move_operations',
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({ folder_ids: [ 13 ], asset_ids: [], destination_folder_id: 'root' }),
+        }),
+      );
+    });
+  });
+
+  it('disables Move in the Tools menu when any selected item lacks delete rights', async () => {
+    render(
+      <ExplorerTopBar
+        currentId={12}
+        viewData={{
+          breadcrumbs: [{ id: 'root', name: 'Home' }, { id: 12, name: 'Catalog' }],
+          folders: [{ id: 13, name: 'Child', can_delete: false }],
+          assets: [{ id: 20, title: 'Asset', can_delete: true }],
+        }}
+        viewMode="active"
+        setViewMode={jest.fn()}
+        handleNavigate={jest.fn()}
+        handleCopyPath={jest.fn()}
+        isAllSelected={false}
+        handleSelectAll={jest.fn()}
+        hasSelection
+        handleDeleteSelected={jest.fn()}
+        handleRestoreSelected={jest.fn()}
+        handlePermanentDelete={jest.fn()}
+        setOpenFolderDialog={jest.fn()}
+        onUploadSuccess={jest.fn()}
+        selectedItems={{ folders: [13], assets: [20] }}
+        onSchemaApplied={jest.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'explorerTopBar.tools' }));
+    const moveItem = (await screen.findByText('explorerTopBar.moveItems')).closest('li');
+    expect(moveItem).toHaveAttribute('aria-disabled', 'true');
+  });
+
+  it('shows a partial-failure warning in MoveDialog when some items cannot be moved', async () => {
+    global.fetch = mockFetch({
+      'GET /api/v1/folders': { folders: [ { id: 99, name: '/Marketing', slug: 'marketing' } ] },
+      'POST /api/v1/move_operations': {
+        success: false,
+        moved_folders: 1,
+        moved_assets: 0,
+        errors: [ { type: 'asset', id: 20, name: 'Asset', error: 'You do not have permission to move this asset.' } ],
+      },
+    });
+
+    render(
+      <ExplorerTopBar
+        currentId={12}
+        viewData={{
+          breadcrumbs: [{ id: 'root', name: 'Home' }, { id: 12, name: 'Catalog' }],
+          folders: [{ id: 13, name: 'Child', can_delete: true }],
+          assets: [{ id: 20, title: 'Asset', can_delete: true }],
+        }}
+        viewMode="active"
+        setViewMode={jest.fn()}
+        handleNavigate={jest.fn()}
+        handleCopyPath={jest.fn()}
+        isAllSelected={false}
+        handleSelectAll={jest.fn()}
+        hasSelection
+        handleDeleteSelected={jest.fn()}
+        handleRestoreSelected={jest.fn()}
+        handlePermanentDelete={jest.fn()}
+        setOpenFolderDialog={jest.fn()}
+        onUploadSuccess={jest.fn()}
+        selectedItems={{ folders: [13], assets: [20] }}
+        onSchemaApplied={jest.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'explorerTopBar.tools' }));
+    fireEvent.click(await screen.findByText('explorerTopBar.moveItems'));
+
+    const destinationInput = await screen.findByLabelText('moveDialog.destinationLabel');
+    fireEvent.change(destinationInput, { target: { value: 'Marketing' } });
+    fireEvent.click(await screen.findByText('/Marketing'));
+    fireEvent.click(screen.getByRole('button', { name: 'moveDialog.move' }));
+
+    expect(await screen.findByText('moveDialog.partialFailureTitle')).toBeInTheDocument();
+    expect(await screen.findByText(/You do not have permission to move this asset\./)).toBeInTheDocument();
+  });
+
+  it('requires a destination before allowing MoveDialog submission (standalone)', async () => {
+    global.fetch = mockFetch({ 'GET /api/v1/folders': { folders: [] } });
+    const onClose = jest.fn();
+
+    render(
+      <MoveDialog
+        open
+        onClose={onClose}
+        selectedItems={{ folders: [13], assets: [] }}
+        itemNames={{ folders: { 13: 'Child' }, assets: {} }}
+        currentFolderId={12}
+      />,
+    );
+
+    const moveButton = await screen.findByRole('button', { name: 'moveDialog.move' });
+    expect(moveButton).toBeDisabled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'common.cancel' }));
+    expect(onClose).toHaveBeenCalledWith(false);
+  });
+
   it('sends the actual current selection (not a stale/incorrect reference) when forcing an Edge CDN sync', async () => {
     global.fetch = mockFetch({
       'POST /api/v1/edge_operations/sync': { success: true, message: 'Metadata sync initiated for 1 folders and 2 assets.' },
@@ -1457,6 +1811,40 @@ describe('Folders components', () => {
 
     await waitFor(() => expect(global.fetch).toHaveBeenCalledWith('/api/v1/collections/summer/assets', expect.objectContaining({ method: 'POST' })));
     expect(mockNotify).toHaveBeenCalledWith('Added to collection.', 'success');
+  });
+
+  it('shows a validation error in RenameDialog when the name is cleared and submitted', async () => {
+    const onClose = jest.fn();
+    render(<RenameDialog open onClose={onClose} targetType="folder" targetId={13} initialName="Old Name" />);
+
+    const input = screen.getByLabelText('renameDialog.newNameLabel');
+    fireEvent.change(input, { target: { value: '   ' } });
+    // Save is disabled once the field is blank/whitespace-only.
+    expect(screen.getByRole('button', { name: 'renameDialog.save' })).toBeDisabled();
+  });
+
+  it('disables Save in RenameDialog when the name is unchanged, and cancels without calling fetch', () => {
+    const onClose = jest.fn();
+    global.fetch = jest.fn();
+    render(<RenameDialog open onClose={onClose} targetType="asset" targetId={20} initialName="Same Title" />);
+
+    expect(screen.getByRole('button', { name: 'renameDialog.save' })).toBeDisabled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'common.cancel' }));
+    expect(onClose).toHaveBeenCalledWith(false);
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+
+  it('surfaces a server error in RenameDialog without closing the dialog', async () => {
+    global.fetch = jest.fn(() => Promise.resolve({ ok: false, status: 422, json: () => Promise.resolve({ errors: ['Name has already been taken'] }) }));
+    const onClose = jest.fn();
+    render(<RenameDialog open onClose={onClose} targetType="folder" targetId={13} initialName="Old Name" />);
+
+    fireEvent.change(screen.getByLabelText('renameDialog.newNameLabel'), { target: { value: 'Duplicate Name' } });
+    fireEvent.click(screen.getByRole('button', { name: 'renameDialog.save' }));
+
+    expect(await screen.findByText('Name has already been taken')).toBeInTheDocument();
+    expect(onClose).not.toHaveBeenCalledWith(true);
   });
 
   it('renders UploadGrid and triggers duplicate and AI actions', () => {

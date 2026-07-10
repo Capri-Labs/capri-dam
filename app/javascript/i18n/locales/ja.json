@@ -2065,6 +2065,7 @@
     "setSchemaForThisFolder": "このフォルダーのスキーマを設定",
     "newFolder": "新しいフォルダー",
     "currentFolder": "現在のフォルダー",
+    "renameFolder": "フォルダー名を変更",
     "notifications": {
       "autoEnrichQueued": "LangChain のセマンティック拡張用にアセットをキューに追加しました。",
       "duplicateScanQueued": "視覚的および暗号学的な重複をスキャンしています...",
@@ -2073,7 +2074,13 @@
       "cachePurgeQueued": "選択した項目の Edge キャッシュ無効化をキューに追加しました。",
       "forceSyncError": "メタデータの同期を開始できませんでした。もう一度お試しください。",
       "cachePurgeError": "キャッシュパージのキューへの追加に失敗しました。もう一度お試しください。"
-    }
+    },
+    "renameAsset": "アセット名を変更",
+    "renameNoPermission": "この項目を変更する権限がありません",
+    "moveItems": "移動",
+    "moveItemCount": "{{count}} 件のアイテムを移動",
+    "moveItemCount_other": "{{count}} 件のアイテムを移動",
+    "moveNoPermission": "選択した項目の一部またはすべてに削除権限がありません"
   },
   "uploadGrid": {
     "staging_area": "ステージングエリア",
@@ -2125,6 +2132,37 @@
     "ai_enhancements_applied": "AI 強化を適用しました。",
     "upload_sequence_complete": "アップロード シーケンスが完了しました。",
     "upload_too_large": "アップロードは許可されていません: {{names}}。最大アップロードサイズは{{maxSize}}です。"
+  },
+  "renameDialog": {
+    "titleFolder": "フォルダー名を変更",
+    "titleAsset": "アセット名を変更",
+    "newNameLabel": "新しい名前",
+    "nameRequired": "名前を空にすることはできません。",
+    "save": "保存",
+    "saving": "保存中…",
+    "notifications": {
+      "folderRenamed": "フォルダー名を「{{name}}」に変更しました。",
+      "assetRenamed": "アセット名を「{{name}}」に変更しました。",
+      "error": "名前の変更に失敗しました。もう一度お試しください。"
+    }
+  },
+  "moveDialog": {
+    "title": "{{count}} 件のアイテムを移動",
+    "title_other": "{{count}} 件のアイテムを移動",
+    "selectedItemsLabel": "選択したアイテム",
+    "destinationLabel": "移動先フォルダー",
+    "destinationPlaceholder": "フォルダーを検索…",
+    "destinationRequired": "移動先フォルダーを選択してください。",
+    "rootOption": "/ (ルート)",
+    "movingTo": "移動先: {{destination}}",
+    "partialFailureTitle": "一部のアイテムを移動できませんでした：",
+    "move": "移動",
+    "moving": "移動中…",
+    "notifications": {
+      "moved": "{{count}} 件のアイテムを「{{destination}}」に移動しました。",
+      "error": "移動に失敗しました。もう一度お試しください。"
+    },
+    "loadingFolders": "フォルダーを読み込み中…"
   },
   "applySchemaDialog": {
     "title": "メタデータスキーマを適用",

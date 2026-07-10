@@ -2065,6 +2065,7 @@
     "setSchemaForThisFolder": "تعيين المخطط لهذا المجلد",
     "newFolder": "مجلد جديد",
     "currentFolder": "المجلد الحالي",
+    "renameFolder": "إعادة تسمية المجلد",
     "notifications": {
       "autoEnrichQueued": "تمت إضافة الأصول إلى قائمة انتظار الإثراء الدلالي عبر LangChain.",
       "duplicateScanQueued": "جارٍ فحص التكرارات المرئية والتشفيرية...",
@@ -2073,7 +2074,13 @@
       "cachePurgeQueued": "تمت إضافة إبطال ذاكرة Edge المؤقتة للعناصر المحددة إلى قائمة الانتظار.",
       "forceSyncError": "فشل بدء مزامنة البيانات الوصفية. يرجى المحاولة مرة أخرى.",
       "cachePurgeError": "فشل في وضع تفريغ ذاكرة التخزين المؤقت في قائمة الانتظار. يرجى المحاولة مرة أخرى."
-    }
+    },
+    "renameAsset": "إعادة تسمية الأصل",
+    "renameNoPermission": "ليس لديك إذن التعديل لهذا العنصر",
+    "moveItems": "نقل",
+    "moveItemCount": "نقل {{count}} عنصر",
+    "moveItemCount_other": "نقل {{count}} عناصر",
+    "moveNoPermission": "ليس لديك إذن الحذف لعنصر واحد أو أكثر من العناصر المحددة"
   },
   "uploadGrid": {
     "staging_area": "منطقة التجهيز",
@@ -2125,6 +2132,37 @@
     "ai_enhancements_applied": "تم تطبيق تحسينات الذكاء الاصطناعي.",
     "upload_sequence_complete": "اكتمل تسلسل الرفع.",
     "upload_too_large": "الرفع غير مسموح به: {{names}}. الحد الأقصى لحجم الرفع هو {{maxSize}}."
+  },
+  "renameDialog": {
+    "titleFolder": "إعادة تسمية المجلد",
+    "titleAsset": "إعادة تسمية الأصل",
+    "newNameLabel": "الاسم الجديد",
+    "nameRequired": "لا يمكن أن يكون الاسم فارغًا.",
+    "save": "حفظ",
+    "saving": "جارٍ الحفظ…",
+    "notifications": {
+      "folderRenamed": "تمت إعادة تسمية المجلد إلى \"{{name}}\".",
+      "assetRenamed": "تمت إعادة تسمية الأصل إلى \"{{name}}\".",
+      "error": "فشلت إعادة التسمية. يرجى المحاولة مرة أخرى."
+    }
+  },
+  "moveDialog": {
+    "title": "نقل {{count}} عنصر",
+    "title_other": "نقل {{count}} عناصر",
+    "selectedItemsLabel": "العناصر المحددة",
+    "destinationLabel": "مجلد الوجهة",
+    "destinationPlaceholder": "ابحث عن المجلدات…",
+    "destinationRequired": "يرجى اختيار مجلد الوجهة.",
+    "rootOption": "/ (الجذر)",
+    "movingTo": "النقل إلى: {{destination}}",
+    "partialFailureTitle": "تعذر نقل بعض العناصر:",
+    "move": "نقل",
+    "moving": "جارٍ النقل…",
+    "notifications": {
+      "moved": "تم نقل {{count}} عنصر إلى \"{{destination}}\".",
+      "error": "فشل النقل. يرجى المحاولة مرة أخرى."
+    },
+    "loadingFolders": "جارٍ تحميل المجلدات…"
   },
   "applySchemaDialog": {
     "title": "تطبيق مخطط البيانات الوصفية",

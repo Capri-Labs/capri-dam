@@ -174,6 +174,71 @@ RSpec.describe 'Api::V1::Assets', type: :request do
     parameter name: :id, in: :path, type: :string, required: true,
               description: 'Asset database ID (integer primary key)'
 
+    patch 'Rename an asset and/or update its folder/tags/metadata' do
+      tags 'Assets'
+      consumes 'application/json'
+      produces 'application/json'
+      security [ Bearer: [] ]
+      description <<~DESC
+        Updates user-facing asset fields and snapshots the current version state:
+
+        * `title` — display title (rename)
+        * `folder_id` — destination folder (or `"root"`)
+        * `tags` — convenience alias stored under `properties["tags"]`
+        * `metadata` — arbitrary JSONB metadata merged into `properties`
+
+        Requires `modify` permission on the asset's parent folder (admins
+        bypass this check; root-level assets with no folder have no
+        restriction). Use `GET /api/v1/folders/{id}` and check the
+        `can_modify` flag on the asset to decide whether to offer a Rename
+        action in the UI.
+      DESC
+
+      parameter name: :payload, in: :body, schema: {
+        type: :object,
+        properties: {
+          asset: {
+            type: :object,
+            properties: {
+              title:     { type: :string, example: 'Q4 Hero Banner' },
+              folder_id: { type: :string, nullable: true, example: 'root' },
+            },
+          },
+        },
+      }
+
+      response '200', 'Asset updated successfully' do
+        schema type: :object,
+               properties: {
+                 id:           { oneOf: [ { type: :integer }, { type: :string } ] },
+                 uuid:         { type: :string, format: :uuid },
+                 title:        { type: :string },
+                 status:       { type: :string, example: 'ready' },
+                 version:      { type: :integer },
+                 properties:   { type: :object },
+                 folder_id:    { type: :string, nullable: true },
+                 url:          { type: :string, nullable: true },
+                 preview_url:  { type: :string, nullable: true },
+               }
+        run_test!
+      end
+
+      response '403', 'Modify permission denied for this asset\'s folder' do
+        schema type: :object, properties: { error: { type: :string } }
+        run_test!
+      end
+
+      response '404', 'Asset not found' do
+        schema type: :object, properties: { error: { type: :string } }
+        run_test!
+      end
+
+      response '422', 'Update failed (validation or processing error)' do
+        schema type: :object, properties: { error: { type: :string } }
+        run_test!
+      end
+    end
+
     delete 'Soft-delete an asset (move to Recycle Bin)' do
       tags 'Assets'
       produces 'application/json'

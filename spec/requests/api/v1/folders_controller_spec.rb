@@ -12,6 +12,7 @@ RSpec.describe Api::V1::FoldersController, type: :controller do
     @routes.draw do
       scope module: "api/v1" do
         get "folders/:id" => "folders#show"
+        patch "folders/:id" => "folders#update"
         get "folders/:id/profiles" => "folders#profiles"
         get "folders/:id/policies" => "folders#folder_policies"
         post "folders/:id/purge_cdn" => "folders#purge_folder_cdn"
@@ -278,6 +279,233 @@ RSpec.describe Api::V1::FoldersController, type: :controller do
       expect(response.parsed_body.fetch("inherited_policies").map { |row| row["group_id"] }).not_to include(editors.id)
       orphaned_payload = response.parsed_body.fetch("inherited_policies").find { |row| row["id"] == orphaned_policy.id }
       expect(orphaned_payload).to include("group_name" => nil, "source_folder_name" => "Parent")
+    end
+  end
+
+  # ===========================================================================
+  # RENAME — PATCH #update permission enforcement + `can_modify` flag
+  # ===========================================================================
+  describe "PATCH #update (rename)" do
+    let(:regular_user) { create(:user) }
+    let(:group)         { create(:user_group) }
+
+    it "allows an admin to rename a folder without any folder policy" do
+      folder = create(:folder, user: admin, name: "Old Name")
+
+      patch :update, params: { id: folder.id, folder: { name: "New Name" } }, format: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body["name"]).to eq("New Name")
+      expect(folder.reload.name).to eq("New Name")
+    end
+
+    it "denies rename for a regular user with no modify grant on the folder (403)" do
+      folder = create(:folder, user: admin, name: "Old Name")
+
+      sign_out admin
+      sign_in regular_user
+      request.env["devise.mapping"] = Devise.mappings[:user]
+
+      patch :update, params: { id: folder.id, folder: { name: "New Name" } }, format: :json
+
+      expect(response).to have_http_status(:forbidden)
+      expect(response.parsed_body["error"]).to match(/modify/)
+      expect(folder.reload.name).to eq("Old Name")
+    end
+
+    it "allows rename for a regular user with an explicit modify grant on the folder" do
+      folder = create(:folder, user: admin, name: "Old Name")
+      create(:folder_policy, :full_access, folder: folder, user_group: group)
+      regular_user.user_groups << group
+
+      sign_out admin
+      sign_in regular_user
+      request.env["devise.mapping"] = Devise.mappings[:user]
+
+      patch :update, params: { id: folder.id, folder: { name: "New Name" } }, format: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(folder.reload.name).to eq("New Name")
+    end
+  end
+
+  # ===========================================================================
+  # MOVE — PATCH #update with `parent_id` (delete-on-source + create-on-destination)
+  # ===========================================================================
+  describe "PATCH #update (move via parent_id)" do
+    let(:regular_user) { create(:user) }
+    let(:group)         { create(:user_group) }
+
+    it "allows an admin to move a folder to a new parent" do
+      origin      = create(:folder, user: admin, name: "Origin")
+      destination = create(:folder, user: admin, name: "Destination")
+      folder      = create(:folder, user: admin, parent: origin, name: "Movable")
+
+      patch :update, params: { id: folder.id, folder: { parent_id: destination.id } }, format: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(folder.reload.parent_id).to eq(destination.id)
+    end
+
+    it "allows moving a folder to root via parent_id: 'root'" do
+      origin = create(:folder, user: admin, name: "Origin")
+      folder = create(:folder, user: admin, parent: origin, name: "Movable")
+
+      patch :update, params: { id: folder.id, folder: { parent_id: "root" } }, format: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(folder.reload.parent_id).to be_nil
+    end
+
+    it "rejects moving a folder into itself or its own descendant (cycle)" do
+      parent = create(:folder, user: admin, name: "Parent")
+      child  = create(:folder, user: admin, parent: parent, name: "Child")
+
+      patch :update, params: { id: parent.id, folder: { parent_id: child.id } }, format: :json
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.parsed_body["error"]).to match(/itself|subfolder/)
+      expect(parent.reload.parent_id).to be_nil
+    end
+
+    it "returns 404 when the destination folder does not exist" do
+      folder = create(:folder, user: admin, name: "Movable")
+
+      patch :update, params: { id: folder.id, folder: { parent_id: 999_999 } }, format: :json
+
+      expect(response).to have_http_status(:not_found)
+    end
+
+    it "denies the move for a regular user lacking :delete on the source folder" do
+      origin      = create(:folder, user: admin, name: "Origin")
+      destination = create(:folder, user: admin, name: "Destination")
+      folder      = create(:folder, user: admin, parent: origin, name: "Movable")
+      create(:folder_policy, folder: origin, user_group: group, read_access: true, modify_access: true) # no delete
+      create(:folder_policy, :full_access, folder: destination, user_group: group)
+      create(:folder_policy, :full_access, folder: folder, user_group: group) # so :modify on folder itself passes
+      regular_user.user_groups << group
+
+      sign_out admin
+      sign_in regular_user
+      request.env["devise.mapping"] = Devise.mappings[:user]
+
+      patch :update, params: { id: folder.id, folder: { parent_id: destination.id } }, format: :json
+
+      expect(response).to have_http_status(:forbidden)
+      expect(folder.reload.parent_id).to eq(origin.id)
+    end
+
+    it "denies the move for a regular user lacking :create on the destination folder" do
+      origin      = create(:folder, user: admin, name: "Origin")
+      destination = create(:folder, user: admin, name: "Destination")
+      folder      = create(:folder, user: admin, parent: origin, name: "Movable")
+      create(:folder_policy, :full_access, folder: origin, user_group: group)
+      create(:folder_policy, folder: destination, user_group: group, read_access: true) # no create
+      create(:folder_policy, :full_access, folder: folder, user_group: group)
+      regular_user.user_groups << group
+
+      sign_out admin
+      sign_in regular_user
+      request.env["devise.mapping"] = Devise.mappings[:user]
+
+      patch :update, params: { id: folder.id, folder: { parent_id: destination.id } }, format: :json
+
+      expect(response).to have_http_status(:forbidden)
+      expect(folder.reload.parent_id).to eq(origin.id)
+    end
+
+    it "allows the move for a regular user with :delete on source and :create on destination" do
+      origin      = create(:folder, user: admin, name: "Origin")
+      destination = create(:folder, user: admin, name: "Destination")
+      folder      = create(:folder, user: admin, parent: origin, name: "Movable")
+      create(:folder_policy, :full_access, folder: origin, user_group: group)
+      create(:folder_policy, :full_access, folder: destination, user_group: group)
+      create(:folder_policy, :full_access, folder: folder, user_group: group)
+      regular_user.user_groups << group
+
+      sign_out admin
+      sign_in regular_user
+      request.env["devise.mapping"] = Devise.mappings[:user]
+
+      patch :update, params: { id: folder.id, folder: { parent_id: destination.id } }, format: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(folder.reload.parent_id).to eq(destination.id)
+    end
+  end
+
+  # ===========================================================================
+  # GET #show — `can_modify` flag surfaced for folders and assets
+  # ===========================================================================
+  describe "GET #show (can_modify flag)" do
+    let(:regular_user) { create(:user) }
+    let(:group)         { create(:user_group) }
+
+    it "marks every folder/asset can_modify: true for an admin" do
+      parent = create(:folder, user: admin, name: "Parent")
+      create(:folder, user: admin, parent: parent, name: "Child")
+      create(:asset, user: admin, folder: parent, title: "Doc")
+
+      get :show, params: { id: parent.id }, format: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body["folders"]).to all(include("can_modify" => true))
+      expect(response.parsed_body["assets"]).to all(include("can_modify" => true))
+    end
+
+    it "marks can_modify: false for a regular user without a modify grant on the current folder" do
+      parent = create(:folder, user: admin, name: "Parent")
+      create(:folder, user: admin, parent: parent, name: "Child")
+      create(:asset, user: admin, folder: parent, title: "Doc")
+      create(:folder_policy, folder: parent, user_group: group, read_access: true) # read-only, no modify
+
+      sign_out admin
+      sign_in regular_user
+      request.env["devise.mapping"] = Devise.mappings[:user]
+      regular_user.user_groups << group
+
+      get :show, params: { id: parent.id }, format: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body["folders"]).to all(include("can_modify" => false))
+      expect(response.parsed_body["assets"]).to all(include("can_modify" => false))
+    end
+
+    it "marks can_modify: true for a regular user with an explicit modify grant" do
+      # Note: `permissions_for` checks the policy on the exact folder only
+      # (no ancestor walk) — a grant on `parent` does not automatically
+      # cascade to `child`'s own `can_modify`, only to items that live
+      # directly inside `parent` (assets + the folder-rename check for
+      # `parent` itself). Grant on both so this covers both cases.
+      parent = create(:folder, user: admin, name: "Parent")
+      child = create(:folder, user: admin, parent: parent, name: "Child")
+      create(:asset, user: admin, folder: parent, title: "Doc")
+      create(:folder_policy, :full_access, folder: parent, user_group: group)
+      create(:folder_policy, :full_access, folder: child, user_group: group)
+
+      sign_out admin
+      sign_in regular_user
+      request.env["devise.mapping"] = Devise.mappings[:user]
+      regular_user.user_groups << group
+
+      get :show, params: { id: parent.id }, format: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body["folders"]).to all(include("can_modify" => true))
+      expect(response.parsed_body["assets"]).to all(include("can_modify" => true))
+    end
+
+    it "marks root-level items (no parent folder) can_modify: true for any signed-in user" do
+      create(:asset, user: admin, folder: nil, title: "Root Doc")
+
+      sign_out admin
+      sign_in regular_user
+      request.env["devise.mapping"] = Devise.mappings[:user]
+
+      get :show, params: { id: "root" }, format: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body["assets"]).to all(include("can_modify" => true))
     end
   end
 end

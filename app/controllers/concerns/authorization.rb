@@ -102,16 +102,26 @@ module Authorization
   # @param folder [Folder, nil] if nil the check is skipped (root-level access)
   # @param permission [Symbol] the permission key to check
   def check_folder_permission!(folder, permission)
-    return if folder.nil?          # root — no policy applicable
-    return if current_user_admin?  # admins bypass all folder policies
+    return if folder_permission?(folder, permission)
 
-    perms = current_user&.permissions_for(folder) || {}
+    render json: {
+      error: "Access denied. You do not have '#{permission}' permission for this folder.",
+    }, status: :forbidden
+  end
 
-    unless perms[permission]
-      render json: {
-        error: "Access denied. You do not have '#{permission}' permission for this folder.",
-      }, status: :forbidden
-    end
+  # Non-halting predicate version of {#check_folder_permission!}. Useful for
+  # bulk/batch operations (e.g. multi-item Move) that need to evaluate
+  # permission per-item and collect failures instead of aborting the whole
+  # request on the first denial.
+  #
+  # @param folder [Folder, nil] if nil the check always passes (root-level access)
+  # @param permission [Symbol] the permission key to check
+  # @return [Boolean]
+  def folder_permission?(folder, permission)
+    return true if folder.nil?          # root — no policy applicable
+    return true if current_user_admin?  # admins bypass all folder policies
+
+    !!(current_user&.permissions_for(folder) || {})[permission]
   end
 
   # Convenience wrapper — check :read on an asset's parent folder.

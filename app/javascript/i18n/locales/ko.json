@@ -2065,6 +2065,7 @@
     "setSchemaForThisFolder": "이 폴더의 스키마 설정",
     "newFolder": "새 폴더",
     "currentFolder": "현재 폴더",
+    "renameFolder": "폴더 이름 바꾸기",
     "notifications": {
       "autoEnrichQueued": "LangChain 의미론적 보강을 위해 자산이 대기열에 추가되었습니다.",
       "duplicateScanQueued": "시각적 및 암호학적 중복 항목을 검사하는 중...",
@@ -2073,7 +2074,13 @@
       "cachePurgeQueued": "선택한 항목에 대한 Edge 캐시 무효화가 대기열에 추가되었습니다.",
       "forceSyncError": "메타데이터 동기화를 시작하지 못했습니다. 다시 시도하세요.",
       "cachePurgeError": "캐시 삭제 대기열 추가에 실패했습니다. 다시 시도하세요."
-    }
+    },
+    "renameAsset": "자산 이름 바꾸기",
+    "renameNoPermission": "이 항목을 수정할 권한이 없습니다",
+    "moveItems": "이동",
+    "moveItemCount": "{{count}}개 항목 이동",
+    "moveItemCount_other": "{{count}}개 항목 이동",
+    "moveNoPermission": "선택한 항목 중 하나 이상에 대한 삭제 권한이 없습니다"
   },
   "uploadGrid": {
     "staging_area": "스테이징 영역",
@@ -2125,6 +2132,37 @@
     "ai_enhancements_applied": "AI 향상이 적용되었습니다.",
     "upload_sequence_complete": "업로드 시퀀스가 완료되었습니다.",
     "upload_too_large": "업로드가 허용되지 않습니다: {{names}}. 최대 업로드 크기는 {{maxSize}}입니다."
+  },
+  "renameDialog": {
+    "titleFolder": "폴더 이름 바꾸기",
+    "titleAsset": "자산 이름 바꾸기",
+    "newNameLabel": "새 이름",
+    "nameRequired": "이름은 비워둘 수 없습니다.",
+    "save": "저장",
+    "saving": "저장 중…",
+    "notifications": {
+      "folderRenamed": "폴더 이름이 \"{{name}}\"(으)로 변경되었습니다.",
+      "assetRenamed": "자산 이름이 \"{{name}}\"(으)로 변경되었습니다.",
+      "error": "이름 변경에 실패했습니다. 다시 시도해 주세요."
+    }
+  },
+  "moveDialog": {
+    "title": "{{count}}개 항목 이동",
+    "title_other": "{{count}}개 항목 이동",
+    "selectedItemsLabel": "선택한 항목",
+    "destinationLabel": "대상 폴더",
+    "destinationPlaceholder": "폴더 검색…",
+    "destinationRequired": "대상 폴더를 선택해 주세요.",
+    "rootOption": "/ (루트)",
+    "movingTo": "이동 위치: {{destination}}",
+    "partialFailureTitle": "일부 항목을 이동할 수 없습니다:",
+    "move": "이동",
+    "moving": "이동 중…",
+    "notifications": {
+      "moved": "{{count}}개 항목을 \"{{destination}}\"(으)로 이동했습니다.",
+      "error": "이동에 실패했습니다. 다시 시도해 주세요."
+    },
+    "loadingFolders": "폴더를 불러오는 중…"
   },
   "applySchemaDialog": {
     "title": "메타데이터 스키마 적용",

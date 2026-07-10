@@ -118,6 +118,24 @@ RSpec.describe FolderContentsCache, type: :service do
       allow(Redis).to receive(:new).and_return(fake_redis)
 
       expect { described_class.bust(nil) }.not_to raise_error
+      # Regression guard: a bare `Array(nil)` collapses to `[]` in Ruby, which
+      # previously made `bust(nil)` silently a no-op — root-level
+      # create/rename/delete/restore never invalidated the root listing
+      # cache. Assert `scan` is actually invoked for the nil case.
+      expect(fake_redis).to have_received(:scan).with("0", match: "dam:folder_contents:root:*", count: 200)
+    end
+
+    it "actually deletes the matched root-namespace key when folder_id is nil" do
+      fake_redis = instance_double(Redis)
+      allow(fake_redis).to receive(:scan)
+        .with("0", match: "dam:folder_contents:root:*", count: 200)
+        .and_return([ "0", [ "dam:folder_contents:root:abc" ] ])
+      allow(fake_redis).to receive(:del)
+      allow(Redis).to receive(:new).and_return(fake_redis)
+
+      described_class.bust(nil)
+
+      expect(fake_redis).to have_received(:del).with("dam:folder_contents:root:abc")
     end
 
     it "logs and swallows Redis errors" do

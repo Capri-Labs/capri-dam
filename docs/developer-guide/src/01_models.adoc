@@ -67,6 +67,18 @@ thumbnails, sort) for every active asset in the folder on every request.
   listing shows this folder's name/position) — not the folder's own cache,
   since a folder's own children listing is unaffected by its own name
   change.
+* **Root-level `nil` `folder_id` bug (fixed)**: `FolderContentsCache.bust`
+  used to do `Array(folder_id).uniq.each { ... }`. Ruby's `Kernel#Array`
+  collapses a bare `nil` to `[]` (not `[nil]`), so `bust(nil)` — the call
+  every root-level folder/asset create, rename, delete, and restore makes —
+  silently iterated zero times and never invalidated the root listing's
+  cache entries. The practical symptom: creating/renaming/deleting anything
+  at the top level could leave the `/folders` root view stale for up to the
+  30s TTL. Fixed by wrapping explicitly
+  (`folder_id.is_a?(Array) ? folder_id : [folder_id]`) so a bare `nil`
+  correctly busts the `root` namespace. Regression-covered in
+  `spec/services/folder_contents_cache_spec.rb` (asserts `redis.scan`/`del`
+  are actually invoked for the `nil` case, not just that no error is raised).
 * **N+1 fix**: `AssetUrlHelper#asset_url_for` used to call
   `StorageBackend.find_by(active: true)` once per asset formatted — for a
   3,000-asset folder that's 3,000+ redundant identical queries per request.

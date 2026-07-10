@@ -2065,6 +2065,7 @@
     "setSchemaForThisFolder": "Définir le schéma pour ce dossier",
     "newFolder": "Nouveau dossier",
     "currentFolder": "Dossier actuel",
+    "renameFolder": "Renommer le dossier",
     "notifications": {
       "autoEnrichQueued": "Assets mis en file d’attente pour l’enrichissement sémantique LangChain.",
       "duplicateScanQueued": "Recherche de doublons visuels et cryptographiques...",
@@ -2073,7 +2074,13 @@
       "cachePurgeQueued": "Invalidation du cache Edge mise en file d’attente pour les éléments sélectionnés.",
       "forceSyncError": "Échec du démarrage de la synchronisation des métadonnées. Veuillez réessayer.",
       "cachePurgeError": "Échec de la mise en file d'attente de la purge du cache. Veuillez réessayer."
-    }
+    },
+    "renameAsset": "Renommer la ressource",
+    "renameNoPermission": "Vous n'avez pas la permission de modifier cet élément",
+    "moveItems": "Déplacer",
+    "moveItemCount": "Déplacer {{count}} élément",
+    "moveItemCount_other": "Déplacer {{count}} éléments",
+    "moveNoPermission": "Vous n'avez pas la permission de suppression pour un ou plusieurs éléments sélectionnés"
   },
   "uploadGrid": {
     "staging_area": "Zone de préparation",
@@ -2125,6 +2132,37 @@
     "ai_enhancements_applied": "Améliorations IA appliquées.",
     "upload_sequence_complete": "Séquence d’envoi terminée.",
     "upload_too_large": "Téléversement non autorisé : {{names}}. La taille maximale de téléversement est de {{maxSize}}."
+  },
+  "renameDialog": {
+    "titleFolder": "Renommer le dossier",
+    "titleAsset": "Renommer la ressource",
+    "newNameLabel": "Nouveau nom",
+    "nameRequired": "Le nom ne peut pas être vide.",
+    "save": "Enregistrer",
+    "saving": "Enregistrement…",
+    "notifications": {
+      "folderRenamed": "Dossier renommé en \"{{name}}\".",
+      "assetRenamed": "Ressource renommée en \"{{name}}\".",
+      "error": "Échec du renommage. Veuillez réessayer."
+    }
+  },
+  "moveDialog": {
+    "title": "Déplacer {{count}} élément",
+    "title_other": "Déplacer {{count}} éléments",
+    "selectedItemsLabel": "Éléments sélectionnés",
+    "destinationLabel": "Dossier de destination",
+    "destinationPlaceholder": "Rechercher des dossiers…",
+    "destinationRequired": "Veuillez choisir un dossier de destination.",
+    "rootOption": "/ (Racine)",
+    "movingTo": "Déplacement vers : {{destination}}",
+    "partialFailureTitle": "Certains éléments n'ont pas pu être déplacés :",
+    "move": "Déplacer",
+    "moving": "Déplacement…",
+    "notifications": {
+      "moved": "{{count}} élément(s) déplacé(s) vers \"{{destination}}\".",
+      "error": "Échec du déplacement. Veuillez réessayer."
+    },
+    "loadingFolders": "Chargement des dossiers…"
   },
   "applySchemaDialog": {
     "title": "Appliquer le schéma de métadonnées",

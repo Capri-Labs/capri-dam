@@ -49,4 +49,44 @@ RSpec.describe Folder, type: :model do
       expect(Folder.active).not_to include(folder)
     end
   end
+
+  # ===========================================================================
+  # #self_or_ancestor_match? — cycle guard used by the Move feature
+  # ===========================================================================
+  describe '#self_or_ancestor_match?' do
+    it 'returns true when the candidate id is the folder itself' do
+      folder = create(:folder)
+      expect(folder.self_or_ancestor_match?(folder.id)).to be true
+    end
+
+    it 'returns true when the candidate is a descendant of the folder' do
+      user   = create(:user)
+      root   = create(:folder, user: user, name: 'Root')
+      child  = create(:folder, user: user, parent: root, name: 'Child')
+      grandchild = create(:folder, user: user, parent: child, name: 'Grandchild')
+
+      expect(root.self_or_ancestor_match?(grandchild.id)).to be true
+    end
+
+    it 'returns false when the candidate is an unrelated folder' do
+      user  = create(:user)
+      a     = create(:folder, user: user, name: 'A')
+      b     = create(:folder, user: user, name: 'B')
+
+      expect(a.self_or_ancestor_match?(b.id)).to be false
+    end
+
+    it 'returns false when the candidate is nil (root destination)' do
+      folder = create(:folder)
+      expect(folder.self_or_ancestor_match?(nil)).to be false
+    end
+
+    it 'returns false when the candidate is the folder\'s own parent (moving up is fine)' do
+      user   = create(:user)
+      parent = create(:folder, user: user, name: 'Parent')
+      child  = create(:folder, user: user, parent: parent, name: 'Child')
+
+      expect(child.self_or_ancestor_match?(parent.id)).to be false
+    end
+  end
 end

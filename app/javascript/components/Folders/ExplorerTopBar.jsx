@@ -8,7 +8,8 @@ import {
     Home, ContentCopy, DeleteOutlined, CreateNewFolder,
     CloudUpload, AutoAwesome, AccountTree,
     Psychology, Difference, Style,
-    CloudSync, Publish, DeleteSweep, BuildOutlined, SchemaOutlined, ImageOutlined, VideoFileOutlined
+    CloudSync, Publish, DeleteSweep, BuildOutlined, SchemaOutlined, ImageOutlined, VideoFileOutlined,
+    DriveFileRenameOutline, DriveFileMoveOutlined
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useNotify } from '../../context/NotificationContext';
@@ -17,6 +18,8 @@ import ApplySchemaDialog from './ApplySchemaDialog';
 import TriggerWorkflowDialog from './TriggerWorkflowDialog';
 import { ApplyImageProfileDialog } from '../Tools/AssetConfigurations/ImageProfiles';
 import { ApplyVideoProfileDialog } from '../Tools/AssetConfigurations/VideoProfiles';
+import RenameDialog from './RenameDialog';
+import MoveDialog from './MoveDialog';
 
 export default function ExplorerTopBar({
                                            currentId, viewData, viewMode, setViewMode, handleNavigate, handleCopyPath,
@@ -47,6 +50,17 @@ export default function ExplorerTopBar({
 
     // Trigger Workflow dialog
     const [triggerWorkflowOpen, setTriggerWorkflowOpen] = useState(false);
+
+    // Rename dialog — only offered when exactly one folder OR one asset is
+    // selected (renaming multiple items at once is ambiguous), and only
+    // when the backend says the current user has modify rights on it.
+    const [renameDialogOpen, setRenameDialogOpen] = useState(false);
+
+    // Move dialog — offered for any 1+ item selection (folders and/or
+    // assets). Gated by `can_delete` (moving removes the item from its
+    // source folder, which requires delete rights there; the destination's
+    // create rights are re-validated server-side when the move is submitted).
+    const [moveDialogOpen, setMoveDialogOpen] = useState(false);
 
     // AI Handlers
     const handleAiMenuClose = () => setSmartMenuAnchor(null);
@@ -115,6 +129,44 @@ export default function ExplorerTopBar({
 
     const hasFolderSelection = (selectedItems?.folders?.length ?? 0) > 0;
     const hasAssetSelection  = (selectedItems?.assets?.length  ?? 0) > 0;
+
+    // ── Rename target resolution ────────────────────────────────────────────
+    // Only offered for a single-item selection (exactly one folder XOR one
+    // asset). `can_modify` is surfaced by the folder-contents API; treat it
+    // as permissive (true) unless the backend explicitly says `false`, so
+    // older/mocked payloads that omit the field still show the option.
+    const singleFolders = selectedItems?.folders ?? [];
+    const singleAssets  = selectedItems?.assets  ?? [];
+    let renameTarget = null;
+    if (singleFolders.length === 1 && singleAssets.length === 0) {
+        const folder = (viewData.folders ?? []).find(f => f.id === singleFolders[0]);
+        if (folder) {
+            renameTarget = { type: 'folder', id: folder.id, name: folder.name, canModify: folder.can_modify !== false };
+        }
+    } else if (singleAssets.length === 1 && singleFolders.length === 0) {
+        const asset = (viewData.assets ?? []).find(a => a.id === singleAssets[0]);
+        if (asset) {
+            renameTarget = { type: 'asset', id: asset.id, name: asset.title ?? asset.name, canModify: asset.can_modify !== false };
+        }
+    }
+
+    // ── Move target resolution ──────────────────────────────────────────────
+    // Offered for any 1+ item selection (mix of folders and/or assets is
+    // fine — the bulk endpoint accepts both). `can_delete` mirrors the same
+    // permissive-default rule as `can_modify` above: treat missing/undefined
+    // as allowed, only an explicit `false` disables the option.
+    const selectedFolderObjs = (viewData.folders ?? []).filter(f => singleFolders.includes(f.id));
+    const selectedAssetObjs  = (viewData.assets ?? []).filter(a => singleAssets.includes(a.id));
+    const moveItemCount = selectedFolderObjs.length + selectedAssetObjs.length;
+    const moveCanDelete = [ ...selectedFolderObjs, ...selectedAssetObjs ].every(item => item.can_delete !== false);
+    const moveTarget = moveItemCount > 0 ? {
+        canDelete: moveCanDelete,
+        itemNames: {
+            folders: Object.fromEntries(selectedFolderObjs.map(f => [ f.id, f.name ])),
+            assets: Object.fromEntries(selectedAssetObjs.map(a => [ a.id, a.title ?? a.name ])),
+        },
+    } : null;
+
     const folderSelectionText = selectedItems.folders.length === 1
         ? t('explorerTopBar.folderSelected', { count: selectedItems.folders.length })
         : t('explorerTopBar.foldersSelected', { count: selectedItems.folders.length });
@@ -191,6 +243,37 @@ export default function ExplorerTopBar({
                             open={Boolean(toolsMenuAnchor)}
                             onClose={() => setToolsMenuAnchor(null)} slotProps={{paper: { elevation: 3, sx: { mt: 1, minWidth: 260, borderRadius: 2 } } }}
                         >
+                            {renameTarget && (
+                                <>
+                                    <MenuItem
+                                        onClick={() => { setToolsMenuAnchor(null); setRenameDialogOpen(true); }}
+                                        disabled={!renameTarget.canModify}
+                                    >
+                                        <ListItemIcon><DriveFileRenameOutline fontSize="small" sx={{ color: '#7c3aed' }} /></ListItemIcon>
+                                        <ListItemText
+                                            primary={renameTarget.type === 'folder' ? t('explorerTopBar.renameFolder') : t('explorerTopBar.renameAsset')}
+                                            secondary={renameTarget.canModify ? renameTarget.name : t('explorerTopBar.renameNoPermission')}
+                                        />
+                                    </MenuItem>
+                                    <Divider />
+                                </>
+                            )}
+                            {moveTarget && (
+                                <>
+                                    <MenuItem
+                                        data-testid="tools-menu-move"
+                                        onClick={() => { setToolsMenuAnchor(null); setMoveDialogOpen(true); }}
+                                        disabled={!moveTarget.canDelete}
+                                    >
+                                        <ListItemIcon><DriveFileMoveOutlined fontSize="small" sx={{ color: '#2563eb' }} /></ListItemIcon>
+                                        <ListItemText
+                                            primary={t('explorerTopBar.moveItems')}
+                                            secondary={moveTarget.canDelete ? t('explorerTopBar.moveItemCount', { count: moveItemCount }) : t('explorerTopBar.moveNoPermission')}
+                                        />
+                                    </MenuItem>
+                                    <Divider />
+                                </>
+                            )}
                             <MenuItem disabled sx={{ opacity: 1 }}>
                                 <Typography variant="caption" fontWeight={700} sx={{ color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.5 }}>
                                     {t('explorerTopBar.metadataSchema')}
@@ -390,6 +473,34 @@ export default function ExplorerTopBar({
                     }}
                 />
             </Dialog>
+
+            {/* ── Rename Dialog ── */}
+            {renameTarget && (
+                <RenameDialog
+                    open={renameDialogOpen}
+                    onClose={(needsRefresh) => {
+                        setRenameDialogOpen(false);
+                        if (needsRefresh && onSchemaApplied) onSchemaApplied();
+                    }}
+                    targetType={renameTarget.type}
+                    targetId={renameTarget.id}
+                    initialName={renameTarget.name}
+                />
+            )}
+
+            {/* ── Move Dialog ── */}
+            {moveTarget && (
+                <MoveDialog
+                    open={moveDialogOpen}
+                    onClose={(needsRefresh) => {
+                        setMoveDialogOpen(false);
+                        if (needsRefresh && onSchemaApplied) onSchemaApplied();
+                    }}
+                    selectedItems={selectedItems}
+                    itemNames={moveTarget.itemNames}
+                    currentFolderId={currentId}
+                />
+            )}
 
             {/* ── Apply Schema Dialog ── */}
             <ApplySchemaDialog

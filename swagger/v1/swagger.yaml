@@ -2564,6 +2564,102 @@ paths:
       description: Asset database ID (integer primary key)
       schema:
         type: string
+    patch:
+      summary: Rename an asset and/or update its folder/tags/metadata
+      tags:
+      - Assets
+      security:
+      - Bearer: []
+      description: |
+        Updates user-facing asset fields and snapshots the current version state:
+
+        * `title` — display title (rename)
+        * `folder_id` — destination folder (or `"root"`)
+        * `tags` — convenience alias stored under `properties["tags"]`
+        * `metadata` — arbitrary JSONB metadata merged into `properties`
+
+        Requires `modify` permission on the asset's parent folder (admins
+        bypass this check; root-level assets with no folder have no
+        restriction). Use `GET /api/v1/folders/{id}` and check the
+        `can_modify` flag on the asset to decide whether to offer a Rename
+        action in the UI.
+      parameters: []
+      responses:
+        '200':
+          description: Asset updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    oneOf:
+                    - type: integer
+                    - type: string
+                  uuid:
+                    type: string
+                    format: uuid
+                  title:
+                    type: string
+                  status:
+                    type: string
+                    example: ready
+                  version:
+                    type: integer
+                  properties:
+                    type: object
+                  folder_id:
+                    type: string
+                    nullable: true
+                  url:
+                    type: string
+                    nullable: true
+                  preview_url:
+                    type: string
+                    nullable: true
+        '403':
+          description: Modify permission denied for this asset's folder
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '404':
+          description: Asset not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '422':
+          description: Update failed (validation or processing error)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                asset:
+                  type: object
+                  properties:
+                    title:
+                      type: string
+                      example: Q4 Hero Banner
+                    folder_id:
+                      type: string
+                      nullable: true
+                      example: root
     delete:
       summary: Soft-delete an asset (move to Recycle Bin)
       tags:
@@ -5258,6 +5354,17 @@ paths:
                         updated_at:
                           type: string
                           format: date-time
+                        can_modify:
+                          type: boolean
+                          description: Whether the current user may rename/modify
+                            this folder (admins and users with an explicit `modify`
+                            grant on it; always true for a nil/root context)
+                        can_delete:
+                          type: boolean
+                          description: Whether the current user may remove this folder
+                            from its current location (used to gate the Move overlay
+                            — admins and users with an explicit `delete` grant on
+                            it; always true for a nil/root context)
                   assets:
                     type: array
                     items:
@@ -5303,6 +5410,17 @@ paths:
                           description: Whether the Image Editor can load this asset
                             directly (false for formats like PSD/TIFF/RAW that browsers
                             cannot render natively — see AssetProcessorWorker::WEB_RENDERABLE_MIME_TYPES)
+                        can_modify:
+                          type: boolean
+                          description: Whether the current user may rename/modify
+                            this asset (based on the `modify` grant on its parent
+                            folder; always true for root-level assets with no folder)
+                        can_delete:
+                          type: boolean
+                          description: Whether the current user may remove this asset
+                            from its current folder (used to gate the Move overlay
+                            — based on the `delete` grant on its parent folder; always
+                            true for root-level assets)
                   breadcrumbs:
                     type: array
                     items:
@@ -5331,14 +5449,28 @@ paths:
                   error:
                     type: string
     patch:
-      summary: Rename a folder and/or update its description
+      summary: Rename a folder, update its description, and/or move it (parent_id)
       tags:
       - Folders
       security:
       - Bearer: []
       description: |
-        Updates the folder `name` (rename) and/or `description`. The URL-safe
-        `slug` is regenerated automatically when the name changes.
+        Updates the folder `name` (rename), `description`, and/or `parent_id`
+        (move). The URL-safe `slug` is regenerated automatically when the name
+        changes.
+
+        Renaming/editing the description requires `modify` permission on the
+        folder (admins bypass this check). Use `GET /api/v1/folders/{id}` and
+        check the `can_modify` flag to decide whether to offer a Rename action.
+
+        Changing `parent_id` is treated as a **Move** and is gated by a
+        different rule: it requires `delete` permission on the folder's
+        *current* parent and `create` permission on the *destination* folder.
+        Set `parent_id` to `"root"` (or omit it) to move to the top level.
+        Moving a folder into itself or one of its own descendants is rejected
+        with `422`. For moving multiple folders/assets in one request, prefer
+        `POST /api/v1/move_operations` instead of calling this endpoint in a
+        loop.
       parameters: []
       responses:
         '200':
@@ -5359,11 +5491,24 @@ paths:
                   slug:
                     type: string
                     nullable: true
+                  parent_id:
+                    type: string
+                    nullable: true
                   updated_at:
                     type: string
                     format: date-time
+        '403':
+          description: Permission denied (modify on the folder, or delete/create for
+            a move)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
         '404':
-          description: Folder not found
+          description: Folder (or destination folder, for a move) not found
           content:
             application/json:
               schema:
@@ -5372,7 +5517,7 @@ paths:
                   error:
                     type: string
         '422':
-          description: Validation failed (e.g., blank name)
+          description: Validation failed (e.g., blank name, or a cyclical move)
           content:
             application/json:
               schema:
@@ -5399,6 +5544,12 @@ paths:
                     description:
                       type: string
                       example: All creative assets for the Q4 push
+                    parent_id:
+                      type: string
+                      nullable: true
+                      example: root
+                      description: New parent folder ID to move this folder, or "root"/omit
+                        to keep it or move to the top level
     delete:
       summary: Move a folder to the Recycle Bin (soft delete)
       tags:
@@ -6954,6 +7105,112 @@ paths:
                 properties:
                   error:
                     type: string
+  "/api/v1/move_operations":
+    post:
+      summary: Move one or more folders and/or assets to a destination folder
+      tags:
+      - Move
+      security:
+      - Bearer: []
+      description: |
+        Bulk "Move" endpoint backing the Explorer Tools-menu Move overlay.
+
+        Moving is modelled as removing an item from its current folder and adding
+        it to a destination folder, so it is gated by two permission checks:
+
+        * `:delete` on the item's *current* parent folder
+        * `:create` on the *destination* folder
+
+        A `nil`/`"root"` folder always passes both checks (no policy applies at
+        the root). Admins bypass all checks.
+
+        Each folder/asset is evaluated independently, so one item failing
+        permission or validation (e.g. a name collision, or a folder move that
+        would create a cycle) does not abort the rest of the batch — the
+        response reports per-item errors alongside the overall success counts.
+      parameters: []
+      responses:
+        '200':
+          description: move completed (fully or partially)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  moved_folders:
+                    type: integer
+                    example: 2
+                  moved_assets:
+                    type: integer
+                    example: 1
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        type:
+                          type: string
+                          enum:
+                          - folder
+                          - asset
+                        id:
+                          type: integer
+                        name:
+                          type: string
+                          nullable: true
+                        error:
+                          type: string
+        '404':
+          description: destination folder not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Destination folder not found.
+        '422':
+          description: no folders or assets were specified
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: No folders or assets were specified.
+        '401':
+          description: unauthenticated
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                folder_ids:
+                  type: array
+                  items:
+                    type: integer
+                  description: IDs of folders to move
+                  example:
+                  - 12
+                  - 13
+                asset_ids:
+                  type: array
+                  items:
+                    type: integer
+                  description: IDs of assets to move
+                  example:
+                  - 101
+                destination_folder_id:
+                  type: string
+                  description: Destination folder ID, or "root" (or omitted/blank)
+                    to move to the top level
+                  example: '42'
   "/api/v1/notifications":
     get:
       summary: Retrieves recent unread notifications for the current user

@@ -117,6 +117,8 @@ RSpec.describe 'Api::V1::Folders', type: :request do
                        description: { type: :string, nullable: true },
                        created_at:  { type: :string, format: 'date-time' },
                        updated_at:  { type: :string, format: 'date-time' },
+                       can_modify:  { type: :boolean, description: 'Whether the current user may rename/modify this folder (admins and users with an explicit `modify` grant on it; always true for a nil/root context)' },
+                       can_delete:  { type: :boolean, description: 'Whether the current user may remove this folder from its current location (used to gate the Move overlay — admins and users with an explicit `delete` grant on it; always true for a nil/root context)' },
                      },
                    },
                  },
@@ -138,6 +140,8 @@ RSpec.describe 'Api::V1::Folders', type: :request do
                        url:          { type: :string, nullable: true },
                        preview_url:  { type: :string, nullable: true, description: 'Web-renderable preview URL (falls back to the asset URL)' },
                        editable:     { type: :boolean, description: 'Whether the Image Editor can load this asset directly (false for formats like PSD/TIFF/RAW that browsers cannot render natively — see AssetProcessorWorker::WEB_RENDERABLE_MIME_TYPES)' },
+                       can_modify:   { type: :boolean, description: 'Whether the current user may rename/modify this asset (based on the `modify` grant on its parent folder; always true for root-level assets with no folder)' },
+                       can_delete:   { type: :boolean, description: 'Whether the current user may remove this asset from its current folder (used to gate the Move overlay — based on the `delete` grant on its parent folder; always true for root-level assets)' },
                      },
                    },
                  },
@@ -170,14 +174,28 @@ RSpec.describe 'Api::V1::Folders', type: :request do
     end
 
     # --------------------------------------------------------------------------
-    patch 'Rename a folder and/or update its description' do
+    patch 'Rename a folder, update its description, and/or move it (parent_id)' do
       tags 'Folders'
       consumes 'application/json'
       produces 'application/json'
       security [ Bearer: [] ]
       description <<~DESC
-        Updates the folder `name` (rename) and/or `description`. The URL-safe
-        `slug` is regenerated automatically when the name changes.
+        Updates the folder `name` (rename), `description`, and/or `parent_id`
+        (move). The URL-safe `slug` is regenerated automatically when the name
+        changes.
+
+        Renaming/editing the description requires `modify` permission on the
+        folder (admins bypass this check). Use `GET /api/v1/folders/{id}` and
+        check the `can_modify` flag to decide whether to offer a Rename action.
+
+        Changing `parent_id` is treated as a **Move** and is gated by a
+        different rule: it requires `delete` permission on the folder's
+        *current* parent and `create` permission on the *destination* folder.
+        Set `parent_id` to `"root"` (or omit it) to move to the top level.
+        Moving a folder into itself or one of its own descendants is rejected
+        with `422`. For moving multiple folders/assets in one request, prefer
+        `POST /api/v1/move_operations` instead of calling this endpoint in a
+        loop.
       DESC
 
       parameter name: :payload, in: :body, schema: {
@@ -189,6 +207,8 @@ RSpec.describe 'Api::V1::Folders', type: :request do
             properties: {
               name:        { type: :string, example: 'Q4 Campaigns' },
               description: { type: :string, example: 'All creative assets for the Q4 push' },
+              parent_id:   { type: :string, nullable: true, example: 'root',
+                             description: 'New parent folder ID to move this folder, or "root"/omit to keep it or move to the top level' },
             },
           },
         },
@@ -201,17 +221,23 @@ RSpec.describe 'Api::V1::Folders', type: :request do
                  name:        { type: :string },
                  description: { type: :string, nullable: true },
                  slug:        { type: :string, nullable: true },
+                 parent_id:   { type: :string, nullable: true },
                  updated_at:  { type: :string, format: 'date-time' },
                }
         run_test!
       end
 
-      response '404', 'Folder not found' do
+      response '403', 'Permission denied (modify on the folder, or delete/create for a move)' do
         schema type: :object, properties: { error: { type: :string } }
         run_test!
       end
 
-      response '422', 'Validation failed (e.g., blank name)' do
+      response '404', 'Folder (or destination folder, for a move) not found' do
+        schema type: :object, properties: { error: { type: :string } }
+        run_test!
+      end
+
+      response '422', 'Validation failed (e.g., blank name, or a cyclical move)' do
         schema type: :object, properties: { errors: { type: :array, items: { type: :string } } }
         run_test!
       end

@@ -2065,6 +2065,9 @@
     "setSchemaForThisFolder": "Set schema for this folder",
     "newFolder": "New Folder",
     "currentFolder": "Current Folder",
+    "renameFolder": "Rename Folder",
+    "renameAsset": "Rename Asset",
+    "renameNoPermission": "You don't have modify permission for this item",
     "notifications": {
       "autoEnrichQueued": "Assets queued for LangChain semantic enrichment.",
       "duplicateScanQueued": "Scanning for visual and cryptographic duplicates...",
@@ -2073,7 +2076,11 @@
       "cachePurgeQueued": "Edge cache invalidation queued for selected items.",
       "forceSyncError": "Failed to start metadata sync. Please try again.",
       "cachePurgeError": "Failed to queue cache purge. Please try again."
-    }
+    },
+    "moveItems": "Move",
+    "moveItemCount": "Move {{count}} item",
+    "moveItemCount_other": "Move {{count}} items",
+    "moveNoPermission": "You don't have delete permission for one or more selected items"
   },
   "uploadGrid": {
     "staging_area": "Staging Area",
@@ -2125,6 +2132,37 @@
     "ai_enhancements_applied": "AI enhancements applied.",
     "upload_sequence_complete": "Upload sequence complete.",
     "upload_too_large": "Upload not allowed: {{names}}. Maximum upload size is {{maxSize}}."
+  },
+  "renameDialog": {
+    "titleFolder": "Rename Folder",
+    "titleAsset": "Rename Asset",
+    "newNameLabel": "New name",
+    "nameRequired": "Name cannot be empty.",
+    "save": "Save",
+    "saving": "Saving…",
+    "notifications": {
+      "folderRenamed": "Folder renamed to \"{{name}}\".",
+      "assetRenamed": "Asset renamed to \"{{name}}\".",
+      "error": "Failed to rename. Please try again."
+    }
+  },
+  "moveDialog": {
+    "title": "Move {{count}} item",
+    "title_other": "Move {{count}} items",
+    "selectedItemsLabel": "Selected items",
+    "destinationLabel": "Destination folder",
+    "destinationPlaceholder": "Search folders…",
+    "destinationRequired": "Please choose a destination folder.",
+    "rootOption": "/ (Root)",
+    "movingTo": "Moving to: {{destination}}",
+    "partialFailureTitle": "Some items could not be moved:",
+    "move": "Move",
+    "moving": "Moving…",
+    "notifications": {
+      "moved": "Moved {{count}} item(s) to \"{{destination}}\".",
+      "error": "Failed to move. Please try again."
+    },
+    "loadingFolders": "Loading folders…"
   },
   "applySchemaDialog": {
     "title": "Apply Metadata Schema",

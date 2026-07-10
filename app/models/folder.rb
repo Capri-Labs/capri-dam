@@ -97,6 +97,25 @@ class Folder < ApplicationRecord
     UserGroup.joins(:folder_policies).where(folder_policies: { folder_id: id })
   end
 
+  # Walks up the ancestor chain from +candidate_id+ looking for +self+.
+  # Used by the Move feature to reject drops that would create a cycle
+  # (moving a folder into itself or into one of its own descendants).
+  #
+  # @param candidate_id [Integer, String, nil] the prospective destination
+  #   folder id (+nil+ means "root", which is never a descendant of self)
+  # @return [Boolean] true when +candidate_id+ is +self+ or a descendant of
+  #   +self+
+  def self_or_ancestor_match?(candidate_id)
+    return false if candidate_id.blank?
+
+    current = Folder.find_by(id: candidate_id)
+    while current
+      return true if current.id == id
+      current = current.parent
+    end
+    false
+  end
+
   private
 
   # Generates a URL-safe slug from +name+ using Rails' +parameterize+.

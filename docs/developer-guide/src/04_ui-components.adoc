@@ -87,6 +87,103 @@ side-by-side previews instead of breaking the Versions tab.
 | `Layout/ImpersonationBanner.jsx` | Warning banner rendered above the `AppBar` while an admin is impersonating another user.
 |===
 
+[[section-rename-overlay]]
+== Rename overlay (folders & assets)
+
+Single-item rename is offered from the Explorer's *Tools* menu
+(`ExplorerTopBar.jsx`) whenever the selection is exactly **one** folder XOR
+**one** asset (never both, never multiple — the menu item is entirely
+absent, not just disabled, for any other selection shape).
+
+[cols="1,3", options="header"]
+|===
+| Piece | Notes
+| `Folders/RenameDialog.jsx` | Single-target dialog (folder or asset), modeled on `ApplySchemaDialog.jsx`'s conventions. `PATCH /api/v1/folders/:id` with `{ folder: { name } }`, or `PATCH /api/v1/assets/:id` with `{ asset: { title } }`. Validates the new name is non-empty and actually changed (Save stays disabled otherwise), surfaces server-side validation/permission errors inline without closing, and notifies via `useNotify` on success.
+| `ExplorerTopBar.jsx` — `renameTarget` resolution | Computed from `selectedItems`/`viewData`: a folder is only offered when `selectedItems.folders.length === 1 && selectedItems.assets.length === 0` (and symmetrically for a single asset). `canModify` reads the `can_modify` flag returned by the folder-contents payload, treated as **permissive by default** (`item.can_modify !== false`) so older/mocked payloads without the field still show the option — consistent with the existing `editable ?? isNativelyRenderableImage` pattern used elsewhere.
+| Refresh wiring | Reuses the existing `onSchemaApplied` callback (already wired to `loadContent()` in `AssetExplorer.jsx`) for `RenameDialog`'s `onClose(needsRefresh)` — no new prop plumbing needed.
+|===
+
+=== Permission model — `can_modify`
+
+`Api::V1::FoldersController#format_folder_payload` /
+`#format_asset_payload` both include a `can_modify` boolean, backed by a new
+private `can_modify_folder?(folder)` helper that mirrors
+`Authorization#check_asset_modify!`'s semantics:
+
+* Admins: always `true`.
+* `folder.nil?` (root-level items): always `true` — no `FolderPolicy` row can
+  apply at the root, so there's nothing to deny.
+* Otherwise: `!!current_user&.permissions_for(folder)&.dig(:modify)`.
+
+`FoldersController#update` (the rename endpoint) previously had **no
+permission check at all** — any authenticated user could rename any folder.
+It now calls `check_folder_permission!(@folder, :modify)` before applying
+changes, matching `AssetsController#update`'s existing `check_asset_modify!`
+guard.
+
+CAUTION: `User#permissions_for(folder)` checks only the **exact** folder's
+`FolderPolicy` rows — it does not walk the ancestor chain. Granting
+`modify_access` on a parent folder does **not** automatically grant
+`can_modify: true` on its subfolders; each folder's flag is evaluated
+against its own `folder_id`. This is pre-existing, unchanged behaviour, but
+worth knowing when writing specs/fixtures that expect inherited access.
+
+[[section-move-overlay]]
+== Move overlay (folders & assets)
+
+Bulk move is offered from the Explorer's *Tools* menu (`ExplorerTopBar.jsx`)
+whenever the selection contains **one or more** folders and/or assets (mixed
+selections are allowed, unlike Rename).
+
+[cols="1,3", options="header"]
+|===
+| Piece | Notes
+| `Folders/MoveDialog.jsx` | Multi-target dialog. Fetches `GET /api/v1/folders` to populate a searchable MUI `Autocomplete` of every active folder (already returns full breadcrumb `name` paths), plus a synthetic root (`{ id: 'root', name: '/', isRoot: true }`) option, excluding the folder(s) being moved themselves from the candidate list client-side (the server still rejects self/descendant moves — see cycle-prevention below — for the cases the client-side filter can't catch, e.g. moving into a nested descendant). Submits the whole batch in one request: `POST /api/v1/move_operations` with `{ folder_ids, asset_ids, destination_folder_id }`. Renders a per-item error list (`itemErrors`) for partial failures without discarding the whole dialog.
+| `ExplorerTopBar.jsx` — `moveTarget` resolution | Computed whenever `selectedItems.folders.length + selectedItems.assets.length >= 1`. `canDelete` is `true` only when *every* selected item's `can_delete` flag is not explicitly `false` (`item.can_delete !== false`, permissive-by-default like `canModify`). The menu item itself is always shown for any non-empty selection but rendered `disabled` when `canDelete` is `false`, with a `moveNoPermission` helper string explaining why.
+| Refresh wiring | `MoveDialog`'s `onClose(needsRefresh)` triggers the same `loadContent()` refresh callback used by Rename/Upload.
+|===
+
+=== Permission model — Move = delete-on-source + create-on-destination
+
+Moving is modeled as *removing* an item from its current folder and
+*adding* it to another, so it is gated by **both** halves of that operation
+rather than by a single `modify`/`move` permission bit:
+
+* `folder_permission?(source_folder, :delete)` — the user must be able to
+  delete from wherever the item currently lives.
+* `folder_permission?(destination_folder, :create)` — the user must be able
+  to create/add items in the destination.
+* `folder.nil?` (root) always passes both checks — no `FolderPolicy` row can
+  apply at the root level.
+* Admins bypass both checks.
+
+This is enforced identically across three surfaces so there is exactly one
+way to move something without the right permissions being rejected:
+
+* `FoldersController#update` — when `parent_id` is present in the payload
+  *and differs* from the folder's current `parent_id` (a plain rename with an
+  unchanged `parent_id` is unaffected and still only requires `modify`).
+* `AssetsController#update` — same rule, keyed on `folder_id`.
+* `Api::V1::MoveOperationsController#create` — the new bulk endpoint; each
+  folder/asset in the batch is checked independently, so one item failing
+  permission/cycle validation doesn't abort the rest (partial success, with
+  per-item errors returned in the `errors` array).
+
+`Authorization#folder_permission?(folder, permission)` is a new non-halting
+predicate extracted from the existing `check_folder_permission!` (which now
+delegates to it and additionally renders `403` on failure) — needed because
+bulk Move must evaluate permission per-item without aborting the whole batch
+on the first denial.
+
+=== Cycle prevention
+
+`Folder#self_or_ancestor_match?(candidate_id)` walks up the ancestor chain
+starting at `candidate_id` looking for `self`, returning `false` immediately
+for a `nil` candidate (moving to root is never a cycle). Both
+`FoldersController#update` and `MoveOperationsController#create` call this
+before applying a folder move and reject with `422` when a folder would be
+moved into itself or one of its own descendants.
+
 == Upload & Enrich overlay
 
 `Folders/UploadWorkspace.jsx` is the full-screen upload dialog launched from the
@@ -118,5 +215,5 @@ view on open:
 
 NOTE: New module-specific details are documented in <<section-admin-module>>,
 <<section-collections-module>>, <<section-bin-module>>, <<section-duplicate-detection>>,
-<<section-intelligence-module>>, <<section-ingestion-migration>>, and
-<<section-image-editor>>.
+<<section-intelligence-module>>, <<section-ingestion-migration>>,
+<<section-image-editor>>, <<section-rename-overlay>>, and <<section-move-overlay>>.

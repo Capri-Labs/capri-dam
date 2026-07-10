@@ -2065,6 +2065,7 @@
     "setSchemaForThisFolder": "为此文件夹设置架构",
     "newFolder": "新建文件夹",
     "currentFolder": "当前文件夹",
+    "renameFolder": "重命名文件夹",
     "notifications": {
       "autoEnrichQueued": "资产已加入 LangChain 语义增强队列。",
       "duplicateScanQueued": "正在扫描视觉和加密重复项...",
@@ -2073,7 +2074,13 @@
       "cachePurgeQueued": "已为所选项目加入 Edge 缓存失效队列。",
       "forceSyncError": "无法启动元数据同步。请重试。",
       "cachePurgeError": "无法将缓存清除加入队列。请重试。"
-    }
+    },
+    "renameAsset": "重命名资源",
+    "renameNoPermission": "您没有此项目的修改权限",
+    "moveItems": "移动",
+    "moveItemCount": "移动 {{count}} 个项目",
+    "moveItemCount_other": "移动 {{count}} 个项目",
+    "moveNoPermission": "您没有一个或多个所选项目的删除权限"
   },
   "uploadGrid": {
     "staging_area": "暂存区",
@@ -2125,6 +2132,37 @@
     "ai_enhancements_applied": "AI 增强已应用。",
     "upload_sequence_complete": "上传序列已完成。",
     "upload_too_large": "不允许上传：{{names}}。最大上传大小为 {{maxSize}}。"
+  },
+  "renameDialog": {
+    "titleFolder": "重命名文件夹",
+    "titleAsset": "重命名资源",
+    "newNameLabel": "新名称",
+    "nameRequired": "名称不能为空。",
+    "save": "保存",
+    "saving": "保存中…",
+    "notifications": {
+      "folderRenamed": "文件夹已重命名为“{{name}}”。",
+      "assetRenamed": "资源已重命名为“{{name}}”。",
+      "error": "重命名失败，请重试。"
+    }
+  },
+  "moveDialog": {
+    "title": "移动 {{count}} 个项目",
+    "title_other": "移动 {{count}} 个项目",
+    "selectedItemsLabel": "已选项目",
+    "destinationLabel": "目标文件夹",
+    "destinationPlaceholder": "搜索文件夹…",
+    "destinationRequired": "请选择目标文件夹。",
+    "rootOption": "/（根目录）",
+    "movingTo": "移动到：{{destination}}",
+    "partialFailureTitle": "部分项目无法移动：",
+    "move": "移动",
+    "moving": "移动中…",
+    "notifications": {
+      "moved": "已将 {{count}} 个项目移动到“{{destination}}”。",
+      "error": "移动失败，请重试。"
+    },
+    "loadingFolders": "正在加载文件夹…"
   },
   "applySchemaDialog": {
     "title": "应用元数据架构",

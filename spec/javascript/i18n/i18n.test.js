@@ -838,3 +838,82 @@ describe('i18n — text document preview truncation key across all 10 locales', 
 
   afterAll(() => i18n.changeLanguage('en'));
 });
+
+describe('i18n — folder/asset Rename feature keys across all 10 locales', () => {
+  LOCALES.forEach(locale => {
+    it(`${locale} has explorerTopBar.rename* menu keys`, () => {
+      i18n.changeLanguage(locale);
+
+      ['renameFolder', 'renameAsset', 'renameNoPermission'].forEach(key => {
+        const fullKey = `explorerTopBar.${key}`;
+        expect(i18n.t(fullKey)).not.toBe(fullKey);
+      });
+    });
+
+    it(`${locale} has the full renameDialog.* string set with interpolation`, () => {
+      i18n.changeLanguage(locale);
+
+      ['titleFolder', 'titleAsset', 'newNameLabel', 'nameRequired', 'save', 'saving'].forEach(key => {
+        const fullKey = `renameDialog.${key}`;
+        expect(i18n.t(fullKey)).not.toBe(fullKey);
+      });
+
+      const folderRenamed = i18n.t('renameDialog.notifications.folderRenamed', { name: 'Q4 Campaigns' });
+      expect(folderRenamed).not.toBe('renameDialog.notifications.folderRenamed');
+      expect(folderRenamed).toContain('Q4 Campaigns');
+
+      const assetRenamed = i18n.t('renameDialog.notifications.assetRenamed', { name: 'Brand Logo' });
+      expect(assetRenamed).not.toBe('renameDialog.notifications.assetRenamed');
+      expect(assetRenamed).toContain('Brand Logo');
+
+      expect(i18n.t('renameDialog.notifications.error')).not.toBe('renameDialog.notifications.error');
+    });
+  });
+
+  afterAll(() => i18n.changeLanguage('en'));
+});
+
+describe('i18n — folder/asset Move feature keys across all 10 locales', () => {
+  LOCALES.forEach(locale => {
+    it(`${locale} has explorerTopBar.move* menu keys`, () => {
+      i18n.changeLanguage(locale);
+
+      ['moveItems', 'moveItemCount', 'moveNoPermission'].forEach(key => {
+        const fullKey = `explorerTopBar.${key}`;
+        expect(i18n.t(fullKey)).not.toBe(fullKey);
+      });
+
+      const itemCount = i18n.t('explorerTopBar.moveItemCount', { count: 3 });
+      expect(itemCount).not.toBe('explorerTopBar.moveItemCount');
+      expect(itemCount).toContain('3');
+    });
+
+    it(`${locale} has the full moveDialog.* string set with interpolation`, () => {
+      i18n.changeLanguage(locale);
+
+      [
+        'selectedItemsLabel', 'destinationLabel', 'destinationPlaceholder',
+        'destinationRequired', 'rootOption', 'partialFailureTitle', 'move', 'moving',
+      ].forEach(key => {
+        const fullKey = `moveDialog.${key}`;
+        expect(i18n.t(fullKey)).not.toBe(fullKey);
+      });
+
+      const title = i18n.t('moveDialog.title', { count: 2 });
+      expect(title).not.toBe('moveDialog.title');
+      expect(title).toContain('2');
+
+      const movingTo = i18n.t('moveDialog.movingTo', { destination: '/Marketing' });
+      expect(movingTo).not.toBe('moveDialog.movingTo');
+      expect(movingTo).toContain('/Marketing');
+
+      const moved = i18n.t('moveDialog.notifications.moved', { count: 2, destination: '/Marketing' });
+      expect(moved).not.toBe('moveDialog.notifications.moved');
+      expect(moved).toContain('/Marketing');
+
+      expect(i18n.t('moveDialog.notifications.error')).not.toBe('moveDialog.notifications.error');
+    });
+  });
+
+  afterAll(() => i18n.changeLanguage('en'));
+});

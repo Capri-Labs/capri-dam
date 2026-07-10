@@ -2065,6 +2065,7 @@
     "setSchemaForThisFolder": "Schema für diesen Ordner festlegen",
     "newFolder": "Neuer Ordner",
     "currentFolder": "Aktueller Ordner",
+    "renameFolder": "Ordner umbenennen",
     "notifications": {
       "autoEnrichQueued": "Assets zur semantischen LangChain-Anreicherung in die Warteschlange gestellt.",
       "duplicateScanQueued": "Suche nach visuellen und kryptografischen Duplikaten...",
@@ -2073,7 +2074,13 @@
       "cachePurgeQueued": "Invalidierung des Edge-Cache für ausgewählte Elemente in die Warteschlange gestellt.",
       "forceSyncError": "Metadaten-Synchronisierung konnte nicht gestartet werden. Bitte versuchen Sie es erneut.",
       "cachePurgeError": "Cache-Löschung konnte nicht in die Warteschlange gestellt werden. Bitte versuchen Sie es erneut."
-    }
+    },
+    "renameAsset": "Asset umbenennen",
+    "renameNoPermission": "Sie haben keine Änderungsberechtigung für dieses Element",
+    "moveItems": "Verschieben",
+    "moveItemCount": "{{count}} Element verschieben",
+    "moveItemCount_other": "{{count}} Elemente verschieben",
+    "moveNoPermission": "Sie haben keine Löschberechtigung für ein oder mehrere ausgewählte Elemente"
   },
   "uploadGrid": {
     "staging_area": "Bereitstellungsbereich",
@@ -2125,6 +2132,37 @@
     "ai_enhancements_applied": "KI-Optimierungen angewendet.",
     "upload_sequence_complete": "Upload-Sequenz abgeschlossen.",
     "upload_too_large": "Upload nicht erlaubt: {{names}}. Die maximale Upload-Größe beträgt {{maxSize}}."
+  },
+  "renameDialog": {
+    "titleFolder": "Ordner umbenennen",
+    "titleAsset": "Asset umbenennen",
+    "newNameLabel": "Neuer Name",
+    "nameRequired": "Der Name darf nicht leer sein.",
+    "save": "Speichern",
+    "saving": "Wird gespeichert…",
+    "notifications": {
+      "folderRenamed": "Ordner in \"{{name}}\" umbenannt.",
+      "assetRenamed": "Asset in \"{{name}}\" umbenannt.",
+      "error": "Umbenennen fehlgeschlagen. Bitte erneut versuchen."
+    }
+  },
+  "moveDialog": {
+    "title": "{{count}} Element verschieben",
+    "title_other": "{{count}} Elemente verschieben",
+    "selectedItemsLabel": "Ausgewählte Elemente",
+    "destinationLabel": "Zielordner",
+    "destinationPlaceholder": "Ordner suchen…",
+    "destinationRequired": "Bitte wählen Sie einen Zielordner.",
+    "rootOption": "/ (Stammverzeichnis)",
+    "movingTo": "Verschieben nach: {{destination}}",
+    "partialFailureTitle": "Einige Elemente konnten nicht verschoben werden:",
+    "move": "Verschieben",
+    "moving": "Wird verschoben…",
+    "notifications": {
+      "moved": "{{count}} Element(e) nach \"{{destination}}\" verschoben.",
+      "error": "Verschieben fehlgeschlagen. Bitte erneut versuchen."
+    },
+    "loadingFolders": "Ordner werden geladen…"
   },
   "applySchemaDialog": {
     "title": "Metadatenschema anwenden",

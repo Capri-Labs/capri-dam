@@ -2065,6 +2065,7 @@
     "setSchemaForThisFolder": "Schema voor deze map instellen",
     "newFolder": "Nieuwe map",
     "currentFolder": "Huidige map",
+    "renameFolder": "Map hernoemen",
     "notifications": {
       "autoEnrichQueued": "Assets in wachtrij geplaatst voor LangChain semantische verrijking.",
       "duplicateScanQueued": "Scannen op visuele en cryptografische duplicaten...",
@@ -2073,7 +2074,13 @@
       "cachePurgeQueued": "Ongeldig maken van Edge-cache in wachtrij geplaatst voor geselecteerde items.",
       "forceSyncError": "Metadata-synchronisatie kon niet worden gestart. Probeer het opnieuw.",
       "cachePurgeError": "Cache-purge kon niet in de wachtrij worden geplaatst. Probeer het opnieuw."
-    }
+    },
+    "renameAsset": "Asset hernoemen",
+    "renameNoPermission": "U heeft geen wijzigingsrechten voor dit item",
+    "moveItems": "Verplaatsen",
+    "moveItemCount": "{{count}} item verplaatsen",
+    "moveItemCount_other": "{{count}} items verplaatsen",
+    "moveNoPermission": "U heeft geen verwijderrechten voor een of meer geselecteerde items"
   },
   "uploadGrid": {
     "staging_area": "Staginggebied",
@@ -2125,6 +2132,37 @@
     "ai_enhancements_applied": "AI-verbeteringen toegepast.",
     "upload_sequence_complete": "Uploadreeks voltooid.",
     "upload_too_large": "Upload niet toegestaan: {{names}}. De maximale uploadgrootte is {{maxSize}}."
+  },
+  "renameDialog": {
+    "titleFolder": "Map hernoemen",
+    "titleAsset": "Asset hernoemen",
+    "newNameLabel": "Nieuwe naam",
+    "nameRequired": "Naam mag niet leeg zijn.",
+    "save": "Opslaan",
+    "saving": "Opslaan…",
+    "notifications": {
+      "folderRenamed": "Map hernoemd naar \"{{name}}\".",
+      "assetRenamed": "Asset hernoemd naar \"{{name}}\".",
+      "error": "Hernoemen mislukt. Probeer het opnieuw."
+    }
+  },
+  "moveDialog": {
+    "title": "{{count}} item verplaatsen",
+    "title_other": "{{count}} items verplaatsen",
+    "selectedItemsLabel": "Geselecteerde items",
+    "destinationLabel": "Doelmap",
+    "destinationPlaceholder": "Mappen zoeken…",
+    "destinationRequired": "Selecteer een doelmap.",
+    "rootOption": "/ (Basis)",
+    "movingTo": "Verplaatsen naar: {{destination}}",
+    "partialFailureTitle": "Sommige items konden niet worden verplaatst:",
+    "move": "Verplaatsen",
+    "moving": "Verplaatsen…",
+    "notifications": {
+      "moved": "{{count}} item(s) verplaatst naar \"{{destination}}\".",
+      "error": "Verplaatsen mislukt. Probeer het opnieuw."
+    },
+    "loadingFolders": "Mappen laden…"
   },
   "applySchemaDialog": {
     "title": "Metadataschema toepassen",

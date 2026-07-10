@@ -349,6 +349,23 @@ module Api
         title = params.dig(:asset, :title) || params[:title]
         old_folder_id = asset.folder_id
 
+        # Changing `folder_id` is a Move, not a plain edit: it requires
+        # `:delete` on the asset's current folder (removing it from there)
+        # and `:create` on the destination folder (adding it there) — the
+        # same rule enforced by the bulk MoveOperationsController.
+        if folder_id_supplied? && target_folder_id.to_s != old_folder_id.to_s
+          source_folder = old_folder_id ? Folder.find_by(id: old_folder_id) : nil
+          destination_folder = target_folder_id ? Folder.active.find_by(id: target_folder_id) : nil
+          if target_folder_id.present? && destination_folder.nil?
+            return render json: { error: "Destination folder not found" }, status: :not_found
+          end
+          unless folder_permission?(source_folder, :delete) && folder_permission?(destination_folder, :create)
+            return render json: {
+              error: "Access denied. Moving requires 'delete' permission on the source folder and 'create' permission on the destination folder.",
+            }, status: :forbidden
+          end
+        end
+
         ActiveRecord::Base.transaction do
           if metadata_updates.present? || title.present? || folder_id_supplied?
             new_version = asset.asset_versions.create!(
