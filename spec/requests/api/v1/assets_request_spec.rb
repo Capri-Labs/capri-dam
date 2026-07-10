@@ -200,6 +200,29 @@ RSpec.describe "Api::V1::Assets coverage", type: :request do
       expect(created.properties).to include("original_filename" => "test-image.jpg")
       expect(created.properties).not_to have_key("applied_schema_id")
     end
+
+    it "rejects uploads exceeding the configured maximum upload size with 413" do
+      Setting.set("max_upload_size_bytes", 10)
+      file = fixture_file_upload(Rails.root.join("spec/fixtures/images/test-image.jpg"), "image/jpeg")
+
+      expect do
+        post "/api/v1/assets", params: { file: file, title: "Too Big" }
+      end.not_to change(Asset, :count)
+
+      expect(response).to have_http_status(:payload_too_large)
+      expect(json["error"]).to include("exceeds the maximum upload size")
+      expect(json["max_upload_size_bytes"]).to eq(10)
+    end
+
+    it "allows uploads within the default 2GB limit when no override is configured" do
+      file = fixture_file_upload(Rails.root.join("spec/fixtures/images/test-image.jpg"), "image/jpeg")
+
+      expect do
+        post "/api/v1/assets", params: { file: file, title: "Within Default Limit" }
+      end.to change(Asset, :count).by(1)
+
+      expect(response).to have_http_status(:accepted)
+    end
   end
 
   describe "member read/update/delete endpoints" do
@@ -851,6 +874,72 @@ RSpec.describe "Api::V1::Assets coverage", type: :request do
       expect(response).to have_http_status(:ok)
       expect(json["preview_url"]).to include("variant=preview")
       expect(json["url"]).not_to include("variant=preview")
+    end
+
+    it "serves the video poster thumbnail when variant=video_poster is requested" do
+      poster_path = Rails.root.join("storage/dam/assets_controller_coverage/poster.jpg")
+      original_path = Rails.root.join("storage/dam/assets_controller_coverage/clip.mov")
+      FileUtils.mkdir_p(poster_path.dirname)
+      File.binwrite(poster_path, "JPEGPOSTER")
+      File.binwrite(original_path, "MOV-original")
+      asset = asset_with_version(title: "Clip", properties: {
+        "storage_path"                => "assets_controller_coverage/clip.mov",
+        "content_type"                => "video/quicktime",
+        "video_poster_path"           => "assets_controller_coverage/poster.jpg",
+        "video_poster_content_type"   => "image/jpeg",
+      })
+
+      get "/api/v1/assets/local/#{asset.uuid}", params: { variant: "video_poster" }
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to eq("JPEGPOSTER")
+      expect(response.headers["Content-Type"]).to include("image/jpeg")
+    ensure
+      FileUtils.rm_f(poster_path)
+      FileUtils.rm_f(original_path)
+    end
+
+    it "serves the MP4 rendition when variant=video_mp4 is requested and exposes its URL on the asset JSON" do
+      mp4_path = Rails.root.join("storage/dam/assets_controller_coverage/rendition.mp4")
+      FileUtils.mkdir_p(mp4_path.dirname)
+      File.binwrite(mp4_path, "MP4RENDITION")
+      asset = asset_with_version(title: "ClipRendition", properties: {
+        "storage_path"                     => "assets_controller_coverage/clip.mov",
+        "content_type"                      => "video/quicktime",
+        "video_mp4_rendition_path"          => "assets_controller_coverage/rendition.mp4",
+        "video_mp4_rendition_content_type"  => "video/mp4",
+      })
+
+      get "/api/v1/assets/local/#{asset.uuid}", params: { variant: "video_mp4" }
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to eq("MP4RENDITION")
+      expect(response.headers["Content-Type"]).to include("video/mp4")
+
+      get "/api/v1/assets/#{asset.uuid}", as: :json
+      expect(json["video_mp4_rendition_url"]).to include("variant=video_mp4")
+    ensure
+      FileUtils.rm_f(mp4_path)
+    end
+
+    it "serves the AV1/WebM rendition when variant=video_av1 is requested and exposes its URL on the asset JSON" do
+      av1_path = Rails.root.join("storage/dam/assets_controller_coverage/rendition.webm")
+      FileUtils.mkdir_p(av1_path.dirname)
+      File.binwrite(av1_path, "AV1RENDITION")
+      asset = asset_with_version(title: "ClipAv1Rendition", properties: {
+        "storage_path"                     => "assets_controller_coverage/clip.mov",
+        "content_type"                      => "video/quicktime",
+        "video_av1_rendition_path"          => "assets_controller_coverage/rendition.webm",
+        "video_av1_rendition_content_type"  => "video/webm",
+      })
+
+      get "/api/v1/assets/local/#{asset.uuid}", params: { variant: "video_av1" }
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to eq("AV1RENDITION")
+      expect(response.headers["Content-Type"]).to include("video/webm")
+
+      get "/api/v1/assets/#{asset.uuid}", as: :json
+      expect(json["video_av1_rendition_url"]).to include("variant=video_av1")
+    ensure
+      FileUtils.rm_f(av1_path)
     end
 
     it "marks a PSD asset as not editable (the Image Editor cannot render it natively) but a JPEG as editable" do

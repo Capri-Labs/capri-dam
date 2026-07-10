@@ -187,7 +187,9 @@
       "imageProfiles": "Beeldprofielen",
       "imageProfilesDesc": "Automatisch bijsnijden bij upload",
       "videoProfiles": "Videoprofielen",
-      "videoProfilesDesc": "Adaptieve videocodering"
+      "videoProfilesDesc": "Adaptieve videocodering",
+      "uploadLimits": "Uploadlimieten",
+      "uploadLimitsDesc": "Configureer de maximale bestandsgrootte voor asset-uploads"
     },
     "collectionSettings": {
       "title": "Collectie-instellingen",
@@ -1849,7 +1851,9 @@
       "pin_to_collection": "Aan collectie vastmaken",
       "view_details": "Details bekijken",
       "processing": "Bezig met verwerken…",
-      "previewUnavailable": "Voorbeeld niet beschikbaar"
+      "previewUnavailable": "Voorbeeld niet beschikbaar",
+      "playVideo": "Videopreview afspelen",
+      "pauseVideo": "Videopreview pauzeren"
     }
   },
   "inbox": {
@@ -2119,7 +2123,8 @@
     "ai_auto_tagging_complete": "Automatisch taggen met AI voltooid.",
     "backgrounds_removed": "Achtergronden verwijderd.",
     "ai_enhancements_applied": "AI-verbeteringen toegepast.",
-    "upload_sequence_complete": "Uploadreeks voltooid."
+    "upload_sequence_complete": "Uploadreeks voltooid.",
+    "upload_too_large": "Upload niet toegestaan: {{names}}. De maximale uploadgrootte is {{maxSize}}."
   },
   "applySchemaDialog": {
     "title": "Metadataschema toepassen",
@@ -2288,6 +2293,11 @@
       "fullscreen": "Volledig scherm",
       "exitFullscreen": "Volledig scherm sluiten",
       "loadError": "Het 3D-model kon niet worden geladen."
+    },
+    "video": {
+      "transcodingRequiredTitle": "Videopreview is nog niet beschikbaar voor dit formaat.",
+      "transcodingRequiredHint": "Deze video moet worden getranscodeerd naar een browservriendelijk formaat. Download het origineel om te bekijken, of verwerk de asset opnieuw zodra FFmpeg is geïnstalleerd.",
+      "downloadOriginal": "Origineel downloaden"
     }
   },
   "assetMetadataPanel": {
@@ -2788,5 +2798,21 @@
       "deleted": "Aangepast knooppunt verwijderd.",
       "actionFailed": "Actie voor aangepast knooppunt mislukt."
     }
+  },
+  "uploadLimits": {
+    "title": "Uploadgroottelimiet",
+    "subtitle": "Maximale bestandsgrootte toegestaan voor asset-uploads",
+    "description": "Standaard staat DAM geen uploads van assets groter dan 2 GB toe. Beheerders kunnen deze limiet hieronder overschrijven. De nieuwe limiet wordt zowel door de API als door de uploadinterface afgedwongen.",
+    "maxSizeLabel": "Maximale uploadgrootte (GB)",
+    "helperText": "Voer een waarde groter dan 0 in. Voorbeeld: 2 = 2 GB.",
+    "save": "Opslaan",
+    "saving": "Opslaan…",
+    "savedSuccess": "Uploadgroottelimiet succesvol opgeslagen.",
+    "loadError": "Het laden van de uploadgroottelimiet is mislukt.",
+    "invalidValue": "Voer een positief getal in.",
+    "unsavedChanges": "Niet-opgeslagen wijzigingen",
+    "changesSaved": "Wijzigingen opgeslagen",
+    "adminOnly": "Alleen beheerder",
+    "currentLimit": "Huidige limiet: {{size}}"
   }
 }

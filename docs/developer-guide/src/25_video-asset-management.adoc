@@ -1,0 +1,230 @@
+[[section-video-asset-management]]
+= Video Asset Management
+
+Capri DAM manages the entire lifecycle of video assets after their creation:
+upload, native-format preview, optional FFmpeg transcoding for non-native
+formats, and interactive playback in the asset viewer and Card-view grid —
+mirroring Adobe Experience Manager's documented video-management behaviour.
+
+== Native preview vs. transcoding
+
+DAM generates previews for video assets natively when the format is already
+browser-playable. If the format is not natively playable, an optional FFmpeg
+pack transcodes the asset into web-friendly renditions.
+
+[cols="1,3", options="header"]
+|===
+| MIME type | Handling
+| `video/mp4`, `video/webm`, `video/ogg` | Natively playable — the *original*
+  file is served directly to the `<video>` element, no transcoding needed.
+| Any other `video/*` MIME type (e.g. `video/quicktime`, `video/x-msvideo`,
+  `video/x-ms-wmv`, `video/x-matroska`) | Requires FFmpeg. If FFmpeg is
+  installed, `AssetProcessorWorker` transcodes the asset into MP4 (H.264/AAC)
+  and OGG (Theora/Vorbis) renditions. If FFmpeg is not installed, the asset
+  viewer shows a "transcoding required" message with a Download Original
+  action instead of a broken player.
+|===
+
+The `NATIVE_PLAYABLE_VIDEO_MIME_TYPES` constant (defined once in
+`AssetProcessorWorker` and mirrored in `AssetViewer.jsx`) is the single
+source of truth for this decision, following the same "kept in sync
+manually" convention already used for 3D MIME types.
+
+== Processing pipeline (`AssetProcessorWorker`)
+
+For any `video/*` asset, `extract_video_metadata`:
+
+1. Calls `ffprobe_available?` / `ffmpeg_available?` — memoized
+   `system("which", ...)` checks, mirroring the existing `exiftool_available?`
+   pattern. Both external tools are **optional**; every method degrades
+   gracefully (skips itself, asset is still stored) when the binary is
+   absent.
+2. If `ffprobe` is present, `extract_video_technical_metadata` parses
+   `ffprobe -show_format -show_streams -of json` output into
+   `duration`/`width`/`height`/`video_codec`/`audio_codec` properties on the
+   asset.
+3. If `ffmpeg` is present, `generate_video_poster` extracts a still frame
+   (at 1 second, falling back to the first frame for very short clips) and
+   stores it as a JPEG poster via the storage adapter.
+4. If `ffmpeg` is present **and** the source MIME type is not already in
+   `NATIVE_PLAYABLE_VIDEO_MIME_TYPES`, `generate_video_renditions` transcodes
+   the asset to MP4 (H.264/AAC, remux-first — see below) and OGG
+   (Theora/Vorbis) renditions.
+5. If `ffmpeg` is present **and** it was compiled with an AV1 encoder,
+   `generate_video_av1_rendition` additionally produces an AV1/WebM delivery
+   rendition — for *every* uploaded video, not just non-native ones (see
+   "Codec roadmap: remux-first + AV1" below).
+
+None of these steps are fatal — a video asset with no FFmpeg available is
+still uploaded, stored, and downloadable; it simply has no generated poster
+or renditions until FFmpeg is installed and the asset is reprocessed.
+
+== Codec roadmap: remux-first + AV1
+
+Long-term codec strategy for the still-imperfect formats (`.mov`, `.avi`,
+`.wmv`, `.mkv`, `.flv`) and for keeping delivery efficient as codecs evolve:
+
+=== Remux-first MP4 rendition
+
+Many "non-native" containers (especially `.mov` and `.mkv`) already contain
+an H.264 video track with AAC (or no) audio — the *pixels* don't need
+re-encoding, only the *container* does. `generate_video_renditions` now
+checks the ffprobe-derived `video_codec`/`audio_codec`:
+
+* If the source is already H.264 video + AAC/absent audio
+  (`MP4_REMUXABLE_VIDEO_CODECS` / `MP4_REMUXABLE_AUDIO_CODECS`), FFmpeg is
+  invoked with `-c copy` — a lossless, near-instant **stream copy** that just
+  repackages the existing bitstream into a new MP4 container
+  (`-movflags +faststart`).
+* Otherwise (e.g. VC-1 in old `.wmv` files, MPEG-4 Part 2 in old `.avi`
+  files), it falls back to the existing full re-encode (`libx264`/`aac`).
+
+The method actually used is recorded as `video_mp4_rendition_method`
+(`"remux"` or `"transcode"`) on the asset's properties, for observability.
+
+=== AV1 delivery rendition
+
+AV1 is now decoded natively by every major evergreen browser and is
+~30–50% smaller than H.264 at equivalent visual quality — it is the
+recommended *default delivery* codec going forward (with the existing MP4
+rendition remaining the universal compatibility fallback for older clients).
+`generate_video_av1_rendition`:
+
+* Is gated on `av1_encoder_name` — a memoized `ffmpeg -encoders` probe that
+  detects `libsvtav1` (preferred, faster) or `libaom-av1` (fallback). Many
+  distro FFmpeg builds omit AV1 encoders entirely (optional/patent-related
+  build flags), so this is entirely non-fatal: no encoder means the AV1
+  rendition is simply skipped.
+* Produces a `.webm` (AV1 video / Opus audio) file, stored as
+  `video_av1_rendition_path` / `video_av1_rendition_content_type` —
+  following the exact same pattern as the MP4/OGG renditions.
+* Runs for **every** uploaded video (native or not), since — unlike the
+  MP4/OGG renditions, which only exist to make an *unplayable* format
+  playable — the AV1 rendition is a forward-looking size/quality
+  optimisation applicable to any source.
+* Exposed via a new `video_av1` entry in `VARIANT_PROPERTY_MAP` and a
+  `video_av1_rendition_url` field on `format_asset`, following the existing
+  `video_poster`/`video_mp4`/`video_ogg` pattern exactly.
+* `AssetViewer.jsx` feature-detects AV1 support via
+  `HTMLVideoElement#canPlayType('video/webm; codecs="av01..."')` and prefers
+  `video_av1_rendition_url` over the MP4 rendition/native source when the
+  browser reports `"probably"`/`"maybe"` support, falling back gracefully
+  otherwise.
+* `VideoEncodingPreset::VALID_CODECS` was extended from `%w[h264]` to
+  `%w[h264 av1 vp9]` (and `VALID_AUDIO_CODECS` gained `opus`) so the
+  Tools → Asset Configurations → Video Profiles admin UI can define AV1/VP9
+  encoding presets going forward, not just H.264.
+
+=== Formats still requiring a fallback path (roadmap notes, not yet implemented)
+
+* **FLV** (`video/x-flv`) — no browser decodes FLV/Sorenson natively.
+  Recommended path: either transcode server-side (current MP4/AV1 rendition
+  pipeline already covers this) or, for very large libraries where
+  transcoding is too slow/expensive, use `flv.js` client-side (remuxes FLV to
+  fragmented MP4 for MSE playback without a server round-trip).
+* **WebCodecs API** — as browser support matures, this could allow
+  client-side transcoding/muxing entirely in-browser (no FFmpeg subprocess at
+  all) for lightweight formats; noted here as a future direction, not
+  implemented.
+
+== Serving variants
+
+The single hardcoded `?variant=preview` mechanism in
+`Api::V1::AssetsController#serve_local` / `AssetUrlHelper#asset_preview_url_for`
+was generalised into a `VARIANT_PROPERTY_MAP` constant plus generic
+`resolved_variant_storage_path` / `resolved_variant_content_type` /
+`asset_variant_url_for` helpers, supporting `preview`, `video_poster`,
+`video_mp4`, `video_ogg`, and `video_av1` uniformly (a reusable pattern for
+any future rendition type). `format_asset` exposes `video_poster_url`,
+`video_mp4_rendition_url`, `video_ogg_rendition_url`, and
+`video_av1_rendition_url` fields; the Folders-grid asset serializer exposes
+`video_poster_url` and `video_av1_rendition_url` as well.
+
+
+== Card-view play/pause (`AssetGrid.jsx`)
+
+Per the documented AEM behaviour, Play/Pause controls are available **only
+in Card (grid) view** — list view has no inline video control, matching
+"You can pause or play video in the card view only."
+
+`AssetVideoThumbnail` renders the poster image (or a generic `VideoFile`
+icon when no poster exists yet) with a centered Play/Pause `IconButton`
+overlay. Clicking Play swaps the poster for an inline, autoplaying, muted,
+looping `<video>` preview using the natively-playable source or the
+transcoded MP4 rendition; clicking Pause (or the video ending) reverts to
+the static poster. The toggle calls `event.stopPropagation()` so that
+clicking it never also opens the asset viewer.
+
+== Interactive playback (`AssetViewer.jsx`)
+
+The asset viewer detects `isVideo` from the content type and renders a
+native `<video controls poster src>` element in the left preview pane in
+place of the usual `<img>`:
+
+* `videoSrc` resolves to `video_av1_rendition_url` when the browser can
+  decode AV1 (feature-detected via `canPlayType`), else to the original file
+  URL when natively playable, or to `video_mp4_rendition_url` when the source
+  needed transcoding and a rendition is available.
+* `videoPoster` is `video_poster_url` when present.
+* If neither a native source nor an MP4 rendition is available yet (FFmpeg
+  not installed / not yet processed), a fallback UI is shown instead —
+  "Video preview isn't available for this format yet" plus a Download
+  Original button, mirroring the existing 3D USDZ fallback pattern.
+
+Playback uses the browser's native `<video>` element/controls — play, pause,
+volume, and fullscreen zoom are all handled by the browser, matching the
+documented AEM behaviour ("The video plays in the native video player of
+the browser.").
+
+== Upload size limit
+
+By default, DAM does not allow uploading assets larger than 2 GB. This is
+now configurable:
+
+* *Tools → Asset Configurations → Upload Limits* — a new admin-only panel
+  (`UploadLimits.jsx`) backed by `Api::V1::UploadLimitsController`
+  (`GET`/`PUT /api/v1/upload_limits`), which reads/writes the
+  `max_upload_size_bytes` `Setting`, mirroring the existing
+  `UploadRestrictionsController` pattern exactly.
+* **Server-side enforcement**: `Api::V1::AssetsController#create` checks
+  `file.size` against `max_upload_size_bytes` (default `2.gigabytes`) and
+  returns `413 Payload Too Large` with the configured limit if the upload
+  exceeds it — enforced regardless of client.
+* **Client-side enforcement**: `UploadWorkspace.jsx` fetches the current
+  limit on mount and rejects oversized files at drop time with a notify()
+  error, before any upload request is made — avoiding a wasted round trip
+  for the common case.
+
+== Testing
+
+* `spec/workers/asset_processor_worker_spec.rb` — FFmpeg available with a
+  non-native source format (poster + MP4/OGG renditions generated via
+  remux), FFmpeg available with a native MP4 source (poster only, no
+  re-encode), a non-H.264/AAC source falling back to full MP4 re-encode, AV1
+  rendition generation when the FFmpeg build has an AV1 encoder, and FFmpeg
+  unavailable (graceful skip, asset still stored).
+* `spec/requests/api/v1/assets_request_spec.rb` — rejects an oversized
+  upload with `413`, allows an upload within the default 2 GB limit, and
+  exercises `serve_local` for the `video_poster`/`video_mp4`/`video_av1`
+  variants plus their URL exposure on the asset payload.
+* `spec/models/video_encoding_preset_spec.rb` — accepts `h264`/`av1`/`vp9`
+  video codecs and `opus` audio codec, rejects unsupported codecs.
+* `spec/requests/api/v1/upload_limits_spec.rb` (swagger) and
+  `spec/requests/api/v1/upload_limits_controller_spec.rb` (functional) —
+  default value, admin override, validation, and save-confirmation message.
+* `spec/requests/authorization_spec.rb` — full auth matrix (unauthenticated,
+  regular user, admin session, PAT read-scope, PAT admin-scope) for both
+  `GET` and `PUT /api/v1/upload_limits`.
+* `spec/javascript/components/Folders/FoldersComponents.test.jsx` — native
+  `<video>` playback for MP4, playback of a non-native format via its MP4
+  rendition, the transcoding-required fallback UI, AV1 rendition preference
+  (falls back to MP4/native when the browser can't decode AV1, prefers AV1
+  when it can, via a mocked `canPlayType`), the Card-view poster + Play/Pause
+  toggle (including that clicking it does not also open the asset viewer),
+  and the generic `VideoFile` icon fallback when no poster/rendition exists
+  yet.
+* `spec/javascript/i18n/i18n.test.js` — verifies all new
+  `assetViewer.video.*`, `folders.grid.playVideo`/`pauseVideo`,
+  `tools.assetConfigurations.uploadLimits*`, `uploadLimits.*`, and
+  `uploadWorkspace.upload_too_large` keys exist and interpolate correctly
+  across all 10 locales.

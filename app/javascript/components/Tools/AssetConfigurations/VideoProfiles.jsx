@@ -141,6 +141,8 @@ function PresetRow({ preset, idx, onChange, onRemove }) {
                                         onChange={e => up('video_format_codec', e.target.value)}
                                         sx={{ fontSize: '0.82rem' }}>
                                     <MenuItem value="h264">MP4 H.264 (.mp4)</MenuItem>
+                                    <MenuItem value="av1">AV1 WebM (.webm)</MenuItem>
+                                    <MenuItem value="vp9">VP9 WebM (.webm)</MenuItem>
                                 </Select>
                             </Box>
 
@@ -186,6 +188,7 @@ function PresetRow({ preset, idx, onChange, onRemove }) {
                                         <MenuItem value="he_aac">Dolby HE-AAC</MenuItem>
                                         <MenuItem value="aac">AAC</MenuItem>
                                         <MenuItem value="mp3">MP3</MenuItem>
+                                        <MenuItem value="opus">Opus</MenuItem>
                                     </Select>
                                 </Box>
                                 <NumInput label="Audio Bitrate" value={preset.audio_bitrate_kbps} onChange={v => up('audio_bitrate_kbps', v)}

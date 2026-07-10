@@ -22,8 +22,8 @@
 #
 # @see VideoProfile
 class VideoEncodingPreset < ApplicationRecord
-  VALID_CODECS      = %w[h264].freeze
-  VALID_AUDIO_CODECS = %w[he_aac aac mp3].freeze
+  VALID_CODECS      = %w[h264 av1 vp9].freeze
+  VALID_AUDIO_CODECS = %w[he_aac aac mp3 opus].freeze
   VALID_H264_PROFILES = %w[baseline main high].freeze
 
   # ── Associations ─────────────────────────────────────────────────────────────

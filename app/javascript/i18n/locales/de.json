@@ -187,7 +187,9 @@
       "imageProfiles": "Bildprofile",
       "imageProfilesDesc": "Automatisches Zuschneiden beim Upload",
       "videoProfiles": "Videoprofile",
-      "videoProfilesDesc": "Adaptive Videocodierung"
+      "videoProfilesDesc": "Adaptive Videocodierung",
+      "uploadLimits": "Upload-Limits",
+      "uploadLimitsDesc": "Maximale Dateigröße für Asset-Uploads konfigurieren"
     },
     "collectionSettings": {
       "title": "Sammlungseinstellungen",
@@ -1849,7 +1851,9 @@
       "pin_to_collection": "An Sammlung anheften",
       "view_details": "Details anzeigen",
       "processing": "Verarbeitung…",
-      "previewUnavailable": "Vorschau nicht verfügbar"
+      "previewUnavailable": "Vorschau nicht verfügbar",
+      "playVideo": "Videovorschau abspielen",
+      "pauseVideo": "Videovorschau pausieren"
     }
   },
   "inbox": {
@@ -2119,7 +2123,8 @@
     "ai_auto_tagging_complete": "KI-Auto-Tagging abgeschlossen.",
     "backgrounds_removed": "Hintergründe entfernt.",
     "ai_enhancements_applied": "KI-Optimierungen angewendet.",
-    "upload_sequence_complete": "Upload-Sequenz abgeschlossen."
+    "upload_sequence_complete": "Upload-Sequenz abgeschlossen.",
+    "upload_too_large": "Upload nicht erlaubt: {{names}}. Die maximale Upload-Größe beträgt {{maxSize}}."
   },
   "applySchemaDialog": {
     "title": "Metadatenschema anwenden",
@@ -2288,6 +2293,11 @@
       "fullscreen": "Vollbild",
       "exitFullscreen": "Vollbild beenden",
       "loadError": "Das 3D-Modell konnte nicht geladen werden."
+    },
+    "video": {
+      "transcodingRequiredTitle": "Für dieses Format ist noch keine Videovorschau verfügbar.",
+      "transcodingRequiredHint": "Dieses Video muss in ein browserfähiges Format transkodiert werden. Laden Sie das Original herunter, um es anzuzeigen, oder verarbeiten Sie das Asset erneut, sobald FFmpeg installiert ist.",
+      "downloadOriginal": "Original herunterladen"
     }
   },
   "assetMetadataPanel": {
@@ -2788,5 +2798,21 @@
       "deleted": "Benutzerdefinierter Knoten gelöscht.",
       "actionFailed": "Aktion für benutzerdefinierten Knoten fehlgeschlagen."
     }
+  },
+  "uploadLimits": {
+    "title": "Upload-Größenlimit",
+    "subtitle": "Maximale Dateigröße für Asset-Uploads",
+    "description": "Standardmäßig erlaubt DAM keine Uploads von Assets, die größer als 2 GB sind. Administratoren können dieses Limit unten überschreiben. Das neue Limit wird sowohl von der API als auch von der Upload-Oberfläche durchgesetzt.",
+    "maxSizeLabel": "Maximale Upload-Größe (GB)",
+    "helperText": "Geben Sie einen Wert größer als 0 ein. Beispiel: 2 = 2 GB.",
+    "save": "Speichern",
+    "saving": "Speichern…",
+    "savedSuccess": "Upload-Größenlimit erfolgreich gespeichert.",
+    "loadError": "Das Upload-Größenlimit konnte nicht geladen werden.",
+    "invalidValue": "Bitte geben Sie eine positive Zahl ein.",
+    "unsavedChanges": "Nicht gespeicherte Änderungen",
+    "changesSaved": "Änderungen gespeichert",
+    "adminOnly": "Nur Admin",
+    "currentLimit": "Aktuelles Limit: {{size}}"
   }
 }

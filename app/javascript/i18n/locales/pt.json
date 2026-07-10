@@ -187,7 +187,9 @@
       "imageProfiles": "Perfis de imagem",
       "imageProfilesDesc": "Corte automático ao carregar",
       "videoProfiles": "Perfis de vídeo",
-      "videoProfilesDesc": "Codificação de vídeo adaptativa"
+      "videoProfilesDesc": "Codificação de vídeo adaptativa",
+      "uploadLimits": "Limites de upload",
+      "uploadLimitsDesc": "Configurar o tamanho máximo de arquivo permitido para uploads de ativos"
     },
     "collectionSettings": {
       "title": "Configurações de Coleção",
@@ -1849,7 +1851,9 @@
       "pin_to_collection": "Fixar na coleção",
       "view_details": "Ver detalhes",
       "processing": "Processando…",
-      "previewUnavailable": "Pré-visualização indisponível"
+      "previewUnavailable": "Pré-visualização indisponível",
+      "playVideo": "Reproduzir pré-visualização do vídeo",
+      "pauseVideo": "Pausar pré-visualização do vídeo"
     }
   },
   "inbox": {
@@ -2119,7 +2123,8 @@
     "ai_auto_tagging_complete": "Marcação automática por IA concluída.",
     "backgrounds_removed": "Fundos removidos.",
     "ai_enhancements_applied": "Aprimoramentos de IA aplicados.",
-    "upload_sequence_complete": "Sequência de upload concluída."
+    "upload_sequence_complete": "Sequência de upload concluída.",
+    "upload_too_large": "Upload não permitido: {{names}}. O tamanho máximo de upload é {{maxSize}}."
   },
   "applySchemaDialog": {
     "title": "Aplicar esquema de metadados",
@@ -2288,6 +2293,11 @@
       "fullscreen": "Tela cheia",
       "exitFullscreen": "Sair da tela cheia",
       "loadError": "Falha ao carregar o modelo 3D."
+    },
+    "video": {
+      "transcodingRequiredTitle": "A pré-visualização do vídeo ainda não está disponível para este formato.",
+      "transcodingRequiredHint": "Este vídeo precisa ser transcodificado para um formato reproduzível pelo navegador. Baixe o original para visualizá-lo, ou reprocesse o ativo após instalar o FFmpeg.",
+      "downloadOriginal": "Baixar original"
     }
   },
   "assetMetadataPanel": {
@@ -2788,5 +2798,21 @@
       "deleted": "Nó personalizado excluído.",
       "actionFailed": "Falha na ação do nó personalizado."
     }
+  },
+  "uploadLimits": {
+    "title": "Limite de tamanho de upload",
+    "subtitle": "Tamanho máximo de arquivo permitido para uploads de ativos",
+    "description": "Por padrão, o DAM não permite o upload de ativos maiores que 2 GB. Os administradores podem substituir esse limite abaixo. O novo limite é aplicado tanto pela API quanto pela interface de upload.",
+    "maxSizeLabel": "Tamanho máximo de upload (GB)",
+    "helperText": "Insira um valor maior que 0. Exemplo: 2 = 2 GB.",
+    "save": "Salvar",
+    "saving": "Salvando…",
+    "savedSuccess": "Limite de tamanho de upload salvo com sucesso.",
+    "loadError": "Falha ao carregar o limite de tamanho de upload.",
+    "invalidValue": "Insira um número positivo.",
+    "unsavedChanges": "Alterações não salvas",
+    "changesSaved": "Alterações salvas",
+    "adminOnly": "Somente admin",
+    "currentLimit": "Limite atual: {{size}}"
   }
 }

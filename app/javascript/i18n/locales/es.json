@@ -187,7 +187,9 @@
       "imageProfiles": "Perfiles de imagen",
       "imageProfilesDesc": "Recorte automático al cargar",
       "videoProfiles": "Perfiles de vídeo",
-      "videoProfilesDesc": "Codificación de vídeo adaptativa"
+      "videoProfilesDesc": "Codificación de vídeo adaptativa",
+      "uploadLimits": "Límites de carga",
+      "uploadLimitsDesc": "Configurar el tamaño máximo de archivo permitido para las cargas de recursos"
     },
     "collectionSettings": {
       "title": "Configuración de Colecciones",
@@ -1849,7 +1851,9 @@
       "pin_to_collection": "Anclar a la colección",
       "view_details": "Ver detalles",
       "processing": "Procesando…",
-      "previewUnavailable": "Vista previa no disponible"
+      "previewUnavailable": "Vista previa no disponible",
+      "playVideo": "Reproducir vista previa del video",
+      "pauseVideo": "Pausar vista previa del video"
     }
   },
   "inbox": {
@@ -2119,7 +2123,8 @@
     "ai_auto_tagging_complete": "Etiquetado automático con IA completado.",
     "backgrounds_removed": "Fondos eliminados.",
     "ai_enhancements_applied": "Mejoras de IA aplicadas.",
-    "upload_sequence_complete": "Secuencia de carga completada."
+    "upload_sequence_complete": "Secuencia de carga completada.",
+    "upload_too_large": "Carga no permitida: {{names}}. El tamaño máximo de carga es {{maxSize}}."
   },
   "applySchemaDialog": {
     "title": "Aplicar esquema de metadatos",
@@ -2288,6 +2293,11 @@
       "fullscreen": "Pantalla completa",
       "exitFullscreen": "Salir de pantalla completa",
       "loadError": "No se pudo cargar el modelo 3D."
+    },
+    "video": {
+      "transcodingRequiredTitle": "La vista previa de video aún no está disponible para este formato.",
+      "transcodingRequiredHint": "Este video debe transcodificarse a un formato reproducible por el navegador. Descargue el original para verlo, o vuelva a procesar el recurso una vez que FFmpeg esté instalado.",
+      "downloadOriginal": "Descargar original"
     }
   },
   "assetMetadataPanel": {
@@ -2788,5 +2798,21 @@
       "deleted": "Nodo personalizado eliminado.",
       "actionFailed": "Error en la acción del nodo personalizado."
     }
+  },
+  "uploadLimits": {
+    "title": "Límite de tamaño de carga",
+    "subtitle": "Tamaño máximo de archivo permitido para las cargas de recursos",
+    "description": "De forma predeterminada, DAM no permite cargar recursos de más de 2 GB. Los administradores pueden anular este límite a continuación. El nuevo límite se aplica tanto en la API como en la interfaz de carga.",
+    "maxSizeLabel": "Tamaño máximo de carga (GB)",
+    "helperText": "Ingrese un valor mayor que 0. Ejemplo: 2 = 2 GB.",
+    "save": "Guardar",
+    "saving": "Guardando…",
+    "savedSuccess": "Límite de tamaño de carga guardado correctamente.",
+    "loadError": "No se pudo cargar el límite de tamaño de carga.",
+    "invalidValue": "Ingrese un número positivo.",
+    "unsavedChanges": "Cambios sin guardar",
+    "changesSaved": "Cambios guardados",
+    "adminOnly": "Solo administrador",
+    "currentLimit": "Límite actual: {{size}}"
   }
 }

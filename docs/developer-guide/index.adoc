@@ -108,6 +108,9 @@ include::src/23_quarantine.adoc[]
 // 24. 3D Asset Preview & Viewer
 include::src/24_3d-asset-viewer.adoc[]
 
+// 25. Video Asset Management
+include::src/25_video-asset-management.adoc[]
+
 ifdef::backend-html5[]
 // Back-to-top button
 ++++

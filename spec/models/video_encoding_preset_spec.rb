@@ -30,4 +30,29 @@ RSpec.describe VideoEncodingPreset, type: :model do
       expect(preset.display_width).to eq("1920")
     end
   end
+
+  describe "video_format_codec validation" do
+    it "accepts h264, av1, and vp9" do
+      %w[h264 av1 vp9].each do |codec|
+        preset = build(:video_encoding_preset, video_format_codec: codec)
+
+        expect(preset).to be_valid
+      end
+    end
+
+    it "rejects an unsupported codec" do
+      preset = build(:video_encoding_preset, video_format_codec: "hevc")
+
+      expect(preset).not_to be_valid
+      expect(preset.errors[:video_format_codec]).to be_present
+    end
+  end
+
+  describe "audio_codec validation" do
+    it "accepts opus (used for AV1/WebM renditions) alongside the existing codecs" do
+      preset = build(:video_encoding_preset, audio_codec: "opus")
+
+      expect(preset).to be_valid
+    end
+  end
 end

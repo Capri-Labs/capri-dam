@@ -187,7 +187,9 @@
       "imageProfiles": "Profils image",
       "imageProfilesDesc": "Recadrage automatique au téléversement",
       "videoProfiles": "Profils vidéo",
-      "videoProfilesDesc": "Encodage vidéo adaptatif"
+      "videoProfilesDesc": "Encodage vidéo adaptatif",
+      "uploadLimits": "Limites de téléversement",
+      "uploadLimitsDesc": "Configurer la taille de fichier maximale autorisée pour les téléversements"
     },
     "collectionSettings": {
       "title": "Paramètres des Collections",
@@ -1849,7 +1851,9 @@
       "pin_to_collection": "Épingler à la collection",
       "view_details": "Voir les détails",
       "processing": "Traitement en cours…",
-      "previewUnavailable": "Aperçu indisponible"
+      "previewUnavailable": "Aperçu indisponible",
+      "playVideo": "Lire l'aperçu vidéo",
+      "pauseVideo": "Mettre en pause l'aperçu vidéo"
     }
   },
   "inbox": {
@@ -2119,7 +2123,8 @@
     "ai_auto_tagging_complete": "Auto-étiquetage IA terminé.",
     "backgrounds_removed": "Arrière-plans supprimés.",
     "ai_enhancements_applied": "Améliorations IA appliquées.",
-    "upload_sequence_complete": "Séquence d’envoi terminée."
+    "upload_sequence_complete": "Séquence d’envoi terminée.",
+    "upload_too_large": "Téléversement non autorisé : {{names}}. La taille maximale de téléversement est de {{maxSize}}."
   },
   "applySchemaDialog": {
     "title": "Appliquer le schéma de métadonnées",
@@ -2288,6 +2293,11 @@
       "fullscreen": "Plein écran",
       "exitFullscreen": "Quitter le plein écran",
       "loadError": "Échec du chargement du modèle 3D."
+    },
+    "video": {
+      "transcodingRequiredTitle": "L'aperçu vidéo n'est pas encore disponible pour ce format.",
+      "transcodingRequiredHint": "Cette vidéo doit être transcodée dans un format lisible par le navigateur. Téléchargez l'original pour la visualiser, ou retraitez la ressource une fois FFmpeg installé.",
+      "downloadOriginal": "Télécharger l'original"
     }
   },
   "assetMetadataPanel": {
@@ -2788,5 +2798,21 @@
       "deleted": "Nœud personnalisé supprimé.",
       "actionFailed": "Échec de l'action sur le nœud personnalisé."
     }
+  },
+  "uploadLimits": {
+    "title": "Limite de taille de téléversement",
+    "subtitle": "Taille de fichier maximale autorisée pour les téléversements de ressources",
+    "description": "Par défaut, DAM n'autorise pas le téléversement de ressources de plus de 2 Go. Les administrateurs peuvent remplacer cette limite ci-dessous. La nouvelle limite est appliquée à la fois par l'API et par l'interface de téléversement.",
+    "maxSizeLabel": "Taille maximale de téléversement (Go)",
+    "helperText": "Saisissez une valeur supérieure à 0. Exemple : 2 = 2 Go.",
+    "save": "Enregistrer",
+    "saving": "Enregistrement…",
+    "savedSuccess": "Limite de taille de téléversement enregistrée avec succès.",
+    "loadError": "Échec du chargement de la limite de taille de téléversement.",
+    "invalidValue": "Veuillez saisir un nombre positif.",
+    "unsavedChanges": "Modifications non enregistrées",
+    "changesSaved": "Modifications enregistrées",
+    "adminOnly": "Administrateur uniquement",
+    "currentLimit": "Limite actuelle : {{size}}"
   }
 }

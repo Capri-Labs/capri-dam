@@ -187,7 +187,9 @@
       "imageProfiles": "이미지 프로파일",
       "imageProfilesDesc": "업로드 시 자동 자르기",
       "videoProfiles": "비디오 프로파일",
-      "videoProfilesDesc": "적응형 비디오 인코딩"
+      "videoProfilesDesc": "적응형 비디오 인코딩",
+      "uploadLimits": "업로드 제한",
+      "uploadLimitsDesc": "자산 업로드에 허용되는 최대 파일 크기를 구성합니다"
     },
     "collectionSettings": {
       "title": "컬렉션 설정",
@@ -1849,7 +1851,9 @@
       "pin_to_collection": "컬렉션에 고정",
       "view_details": "세부 정보 보기",
       "processing": "처리 중…",
-      "previewUnavailable": "미리보기를 사용할 수 없습니다"
+      "previewUnavailable": "미리보기를 사용할 수 없습니다",
+      "playVideo": "동영상 미리보기 재생",
+      "pauseVideo": "동영상 미리보기 일시정지"
     }
   },
   "inbox": {
@@ -2119,7 +2123,8 @@
     "ai_auto_tagging_complete": "AI 자동 태깅이 완료되었습니다.",
     "backgrounds_removed": "배경이 제거되었습니다.",
     "ai_enhancements_applied": "AI 향상이 적용되었습니다.",
-    "upload_sequence_complete": "업로드 시퀀스가 완료되었습니다."
+    "upload_sequence_complete": "업로드 시퀀스가 완료되었습니다.",
+    "upload_too_large": "업로드가 허용되지 않습니다: {{names}}. 최대 업로드 크기는 {{maxSize}}입니다."
   },
   "applySchemaDialog": {
     "title": "메타데이터 스키마 적용",
@@ -2288,6 +2293,11 @@
       "fullscreen": "전체 화면",
       "exitFullscreen": "전체 화면 끘기",
       "loadError": "3D 모델을 로드하지 못했습니다."
+    },
+    "video": {
+      "transcodingRequiredTitle": "이 형식에 대한 동영상 미리보기를 아직 사용할 수 없습니다.",
+      "transcodingRequiredHint": "이 동영상은 브라우저에서 재생 가능한 형식으로 트랜스코딩해야 합니다. 원본을 다운로드하여 보거나 FFmpeg를 설치한 후 자산을 다시 처리하세요.",
+      "downloadOriginal": "원본 다운로드"
     }
   },
   "assetMetadataPanel": {
@@ -2788,5 +2798,21 @@
       "deleted": "사용자 지정 노드가 삭제되었습니다.",
       "actionFailed": "사용자 지정 노드 작업에 실패했습니다."
     }
+  },
+  "uploadLimits": {
+    "title": "업로드 크기 제한",
+    "subtitle": "자산 업로드에 허용되는 최대 파일 크기",
+    "description": "기본적으로 DAM은 2GB보다 큰 자산 업로드를 허용하지 않습니다. 관리자는 아래에서 이 제한을 재정의할 수 있습니다. 새 제한은 API와 업로드 인터페이스 모두에서 적용됩니다.",
+    "maxSizeLabel": "최대 업로드 크기(GB)",
+    "helperText": "0보다 큰 값을 입력하세요. 예: 2 = 2GB.",
+    "save": "저장",
+    "saving": "저장 중…",
+    "savedSuccess": "업로드 크기 제한이 성공적으로 저장되었습니다.",
+    "loadError": "업로드 크기 제한을 불러오지 못했습니다.",
+    "invalidValue": "양수를 입력하세요.",
+    "unsavedChanges": "저장되지 않은 변경 사항",
+    "changesSaved": "변경 사항 저장됨",
+    "adminOnly": "관리자만",
+    "currentLimit": "현재 제한: {{size}}"
   }
 }

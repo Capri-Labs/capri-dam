@@ -90,6 +90,168 @@ RSpec.describe AssetProcessorWorker, type: :worker do
     File.delete(staging_path) if staging_path && File.exist?(staging_path)
   end
 
+  describe "video uploads with FFmpeg available" do
+    it "extracts duration/resolution/codec via ffprobe and generates a poster + MP4/OGG renditions for a non-native format" do
+      staging_path = Rails.root.join("storage", "asset_processor_worker_#{SecureRandom.hex}.mov")
+      File.binwrite(staging_path, "video bytes")
+      allow(Marcel::MimeType).to receive(:for).and_return("video/quicktime")
+
+      worker = described_class.new
+      allow(worker).to receive(:ffmpeg_available?).and_return(true)
+      allow(worker).to receive(:ffprobe_available?).and_return(true)
+      allow(Open3).to receive(:capture3).with("ffprobe", any_args) do
+        ffprobe_json = {
+          format: { duration: "12.345" },
+          streams: [ { codec_type: "video", width: 1920, height: 1080, codec_name: "h264" },
+                     { codec_type: "audio", codec_name: "aac" } ],
+        }.to_json
+        [ ffprobe_json, "", instance_double(Process::Status, success?: true) ]
+      end
+      # Source is already H.264/AAC, so the MP4 rendition is produced via the
+      # remux-first fast path (`-c copy`), not a full re-encode.
+      allow(Open3).to receive(:capture3).with("ffmpeg", any_args) do |*args|
+        out_path = args.last
+        File.binwrite(out_path, "fake media bytes")
+        [ "", "", instance_double(Process::Status, success?: true) ]
+      end
+      # No AV1 encoder present in this fake FFmpeg build.
+      allow(Open3).to receive(:capture3).with("ffmpeg", "-hide_banner", "-encoders")
+        .and_return([ "", "", instance_double(Process::Status, success?: true) ])
+
+      worker.perform(version.id, staging_path.to_s)
+
+      props = version.reload.properties
+      expect(props).to include(
+        "content_type" => "video/quicktime",
+        "format" => "Video Media",
+        "video_transcoding_available" => true,
+        "video_duration_seconds" => 12.35,
+        "video_width" => 1920,
+        "video_height" => 1080,
+        "video_codec" => "h264",
+        "audio_codec" => "aac",
+        "video_poster_content_type" => "image/jpeg",
+        "video_mp4_rendition_content_type" => "video/mp4",
+        "video_mp4_rendition_method" => "remux",
+        "video_ogg_rendition_content_type" => "video/ogg"
+      )
+      expect(props["video_poster_path"]).to be_present
+      expect(props["video_mp4_rendition_path"]).to be_present
+      expect(props["video_ogg_rendition_path"]).to be_present
+      expect(props).not_to have_key("video_av1_rendition_path")
+    ensure
+      File.delete(staging_path) if staging_path && File.exist?(staging_path)
+    end
+
+    it "falls back to a full re-encode for the MP4 rendition when the source codec isn't H.264/AAC" do
+      staging_path = Rails.root.join("storage", "asset_processor_worker_#{SecureRandom.hex}.wmv")
+      File.binwrite(staging_path, "video bytes")
+      allow(Marcel::MimeType).to receive(:for).and_return("video/x-ms-wmv")
+
+      worker = described_class.new
+      allow(worker).to receive(:ffmpeg_available?).and_return(true)
+      allow(worker).to receive(:ffprobe_available?).and_return(true)
+      allow(Open3).to receive(:capture3).with("ffprobe", any_args) do
+        ffprobe_json = {
+          format: { duration: "5.0" },
+          streams: [ { codec_type: "video", width: 640, height: 360, codec_name: "vc1" },
+                     { codec_type: "audio", codec_name: "wmav2" } ],
+        }.to_json
+        [ ffprobe_json, "", instance_double(Process::Status, success?: true) ]
+      end
+      allow(Open3).to receive(:capture3).with("ffmpeg", any_args) do |*args|
+        expect(args).not_to include("copy")
+        out_path = args.last
+        File.binwrite(out_path, "fake media bytes")
+        [ "", "", instance_double(Process::Status, success?: true) ]
+      end
+      allow(Open3).to receive(:capture3).with("ffmpeg", "-hide_banner", "-encoders")
+        .and_return([ "", "", instance_double(Process::Status, success?: true) ])
+
+      worker.perform(version.id, staging_path.to_s)
+
+      props = version.reload.properties
+      expect(props["video_mp4_rendition_method"]).to eq("transcode")
+      expect(props["video_mp4_rendition_path"]).to be_present
+    ensure
+      File.delete(staging_path) if staging_path && File.exist?(staging_path)
+    end
+
+    it "generates an AV1/WebM rendition when the FFmpeg build has an AV1 encoder" do
+      staging_path = Rails.root.join("storage", "asset_processor_worker_#{SecureRandom.hex}.mp4")
+      File.binwrite(staging_path, "video bytes")
+      allow(Marcel::MimeType).to receive(:for).and_return("video/mp4")
+
+      worker = described_class.new
+      allow(worker).to receive(:ffmpeg_available?).and_return(true)
+      allow(worker).to receive(:ffprobe_available?).and_return(false)
+      allow(Open3).to receive(:capture3).with("ffmpeg", any_args) do |*args|
+        out_path = args.last
+        File.binwrite(out_path, "fake media bytes")
+        [ "", "", instance_double(Process::Status, success?: true) ]
+      end
+      allow(Open3).to receive(:capture3).with("ffmpeg", "-hide_banner", "-encoders")
+        .and_return([ "... libsvtav1 SVT-AV1 ...", "", instance_double(Process::Status, success?: true) ])
+
+      worker.perform(version.id, staging_path.to_s)
+
+      props = version.reload.properties
+      expect(props["video_av1_rendition_path"]).to be_present
+      expect(props["video_av1_rendition_content_type"]).to eq("video/webm")
+    ensure
+      File.delete(staging_path) if staging_path && File.exist?(staging_path)
+    end
+
+    it "generates a poster but skips MP4/OGG rendition generation for an already-native MP4 upload" do
+      staging_path = Rails.root.join("storage", "asset_processor_worker_#{SecureRandom.hex}.mp4")
+      File.binwrite(staging_path, "video bytes")
+      allow(Marcel::MimeType).to receive(:for).and_return("video/mp4")
+
+      worker = described_class.new
+      allow(worker).to receive(:ffmpeg_available?).and_return(true)
+      allow(worker).to receive(:ffprobe_available?).and_return(false)
+      allow(Open3).to receive(:capture3).with("ffmpeg", "-hide_banner", "-encoders")
+        .and_return([ "", "", instance_double(Process::Status, success?: true) ])
+      allow(Open3).to receive(:capture3).with("ffmpeg", any_args) do |*args|
+        out_path = args.last
+        File.binwrite(out_path, "fake poster bytes")
+        [ "", "", instance_double(Process::Status, success?: true) ]
+      end
+
+      worker.perform(version.id, staging_path.to_s)
+
+      props = version.reload.properties
+      expect(props["video_poster_path"]).to be_present
+      expect(props["video_poster_content_type"]).to eq("image/jpeg")
+      expect(props).not_to have_key("video_mp4_rendition_path")
+      expect(props).not_to have_key("video_ogg_rendition_path")
+    ensure
+      File.delete(staging_path) if staging_path && File.exist?(staging_path)
+    end
+  end
+
+  describe "video uploads with FFmpeg unavailable" do
+    it "gracefully skips technical metadata, poster, and rendition generation" do
+      staging_path = Rails.root.join("storage", "asset_processor_worker_#{SecureRandom.hex}.mp4")
+      File.binwrite(staging_path, "video bytes")
+      allow(Marcel::MimeType).to receive(:for).and_return("video/mp4")
+
+      worker = described_class.new
+      allow(worker).to receive(:ffmpeg_available?).and_return(false)
+      allow(worker).to receive(:ffprobe_available?).and_return(false)
+
+      worker.perform(version.id, staging_path.to_s)
+
+      props = version.reload.properties
+      expect(props["format"]).to eq("Video Media")
+      expect(props["video_transcoding_available"]).to be(false)
+      expect(props).not_to have_key("video_poster_path")
+      expect(props).not_to have_key("video_mp4_rendition_path")
+    ensure
+      File.delete(staging_path) if staging_path && File.exist?(staging_path)
+    end
+  end
+
   describe "3D model uploads" do
     it "tags a GLB upload with a 3D Model format and marks it renderable, without generating a preview" do
       staging_path = Rails.root.join("storage", "asset_processor_worker_#{SecureRandom.hex}.glb")

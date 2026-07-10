@@ -60,6 +60,10 @@ export default function UploadWorkspace({ folderId, onClose, onUploadComplete })
     // Allowed MIME types (empty = allow all)
     const [allowedMimes, setAllowedMimes] = useState([]);
 
+    // Maximum upload size, in bytes (admin-configurable via Tools › Asset
+    // Configurations › Upload Limits). Defaults to 2 GB until the setting loads.
+    const [maxUploadSizeBytes, setMaxUploadSizeBytes] = useState(2 * 1024 * 1024 * 1024);
+
     // Global & UI States
     const [globalMeta, setGlobalMeta] = useState({
         collection: null,
@@ -110,6 +114,23 @@ export default function UploadWorkspace({ folderId, onClose, onUploadComplete })
         loadRestrictions();
     }, []);
 
+    // Load the maximum upload size limit once
+    useEffect(() => {
+        const loadUploadLimit = async () => {
+            try {
+                const res = await fetch('/api/v1/upload_limits');
+                if (!res.ok) return;
+                const data = await res.json();
+                if (Number(data.max_upload_size_bytes) > 0) {
+                    setMaxUploadSizeBytes(Number(data.max_upload_size_bytes));
+                }
+            } catch (_) {
+                // non-blocking — default 2GB limit remains in effect
+            }
+        };
+        loadUploadLimit();
+    }, []);
+
     // Load existing collections once
     useEffect(() => {
         const loadCollections = async () => {
@@ -148,13 +169,26 @@ export default function UploadWorkspace({ folderId, onClose, onUploadComplete })
 
     const onDrop = useCallback(async (acceptedFiles) => {
         // ── MIME restriction check ──────────────────────────────────────────────
-        const rejected = acceptedFiles.filter(f => !isMimeAllowed(f.type, allowedMimes));
-        const permitted = acceptedFiles.filter(f => isMimeAllowed(f.type, allowedMimes));
+        const mimeRejected = acceptedFiles.filter(f => !isMimeAllowed(f.type, allowedMimes));
+        let permitted = acceptedFiles.filter(f => isMimeAllowed(f.type, allowedMimes));
 
-        if (rejected.length > 0) {
-            const names = rejected.map(f => `"${f.name}" (${f.type || translate('uploadWorkspace.unknown_type', 'unknown type')})`).join(', ');
+        if (mimeRejected.length > 0) {
+            const names = mimeRejected.map(f => `"${f.name}" (${f.type || translate('uploadWorkspace.unknown_type', 'unknown type')})`).join(', ');
             notify(
                 translate('uploadWorkspace.upload_not_allowed', `Upload not allowed: ${names}. Only the following MIME types are permitted: ${allowedMimes.join(', ')}.`, { names, mimeTypes: allowedMimes.join(', ') }),
+                'error'
+            );
+        }
+
+        // ── Upload size limit check ─────────────────────────────────────────────
+        const sizeRejected = permitted.filter(f => f.size > maxUploadSizeBytes);
+        permitted = permitted.filter(f => f.size <= maxUploadSizeBytes);
+
+        if (sizeRejected.length > 0) {
+            const maxSizeGb = (maxUploadSizeBytes / (1024 * 1024 * 1024)).toFixed(2);
+            const names = sizeRejected.map(f => `"${f.name}" (${(f.size / (1024 * 1024 * 1024)).toFixed(2)} GB)`).join(', ');
+            notify(
+                translate('uploadWorkspace.upload_too_large', `Upload not allowed: ${names}. Maximum upload size is ${maxSizeGb} GB.`, { names, maxSize: `${maxSizeGb} GB` }),
                 'error'
             );
         }
@@ -216,7 +250,7 @@ export default function UploadWorkspace({ folderId, onClose, onUploadComplete })
         }));
 
         checkDuplicates(hashedFiles);
-    }, [allowedMimes, findDefaultSchemaForMime, notify, t]);
+    }, [allowedMimes, maxUploadSizeBytes, findDefaultSchemaForMime, notify, t]);
 
     const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop });
 

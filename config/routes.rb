@@ -383,6 +383,7 @@ Rails.application.routes.draw do
       # Notifications
       resource :ai_configuration, only: [ :show, :update ]
       resource :upload_restrictions, only: [ :show, :update ]
+      resource :upload_limits, only: [ :show, :update ]
       resource :collection_settings, only: [ :show, :update ]
 
       # Duplicate Manager

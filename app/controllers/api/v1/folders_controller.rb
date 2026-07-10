@@ -369,6 +369,8 @@ module Api
 
           url: asset_url_for(asset),
           preview_url: asset_preview_url_for(asset),
+          video_poster_url: asset_variant_url_for(asset, "video_poster", path_property_key: "video_poster_path"),
+          video_av1_rendition_url: asset_variant_url_for(asset, "video_av1", path_property_key: "video_av1_rendition_path"),
           editable: AssetProcessorWorker::WEB_RENDERABLE_MIME_TYPES.include?(merged_props["content_type"].to_s),
         }
       end

@@ -187,7 +187,9 @@
       "imageProfiles": "图像配置文件",
       "imageProfilesDesc": "上传时自动裁剪",
       "videoProfiles": "视频配置文件",
-      "videoProfilesDesc": "自适应视频编码"
+      "videoProfilesDesc": "自适应视频编码",
+      "uploadLimits": "上传限制",
+      "uploadLimitsDesc": "配置资产上传允许的最大文件大小"
     },
     "collectionSettings": {
       "title": "集合设置",
@@ -1849,7 +1851,9 @@
       "pin_to_collection": "固定到集合",
       "view_details": "查看详情",
       "processing": "处理中…",
-      "previewUnavailable": "预览不可用"
+      "previewUnavailable": "预览不可用",
+      "playVideo": "播放视频预览",
+      "pauseVideo": "暂停视频预览"
     }
   },
   "inbox": {
@@ -2119,7 +2123,8 @@
     "ai_auto_tagging_complete": "AI 自动标记已完成。",
     "backgrounds_removed": "背景已移除。",
     "ai_enhancements_applied": "AI 增强已应用。",
-    "upload_sequence_complete": "上传序列已完成。"
+    "upload_sequence_complete": "上传序列已完成。",
+    "upload_too_large": "不允许上传：{{names}}。最大上传大小为 {{maxSize}}。"
   },
   "applySchemaDialog": {
     "title": "应用元数据架构",
@@ -2288,6 +2293,11 @@
       "fullscreen": "全屏",
       "exitFullscreen": "退出全屏",
       "loadError": "无法加载3D模型。"
+    },
+    "video": {
+      "transcodingRequiredTitle": "此格式的视频预览尚不可用。",
+      "transcodingRequiredHint": "此视频需要转码为浏览器可播放的格式。下载原始文件以查看，或在安装 FFmpeg 后重新处理该资产。",
+      "downloadOriginal": "下载原始文件"
     }
   },
   "assetMetadataPanel": {
@@ -2788,5 +2798,21 @@
       "deleted": "已删除自定义节点。",
       "actionFailed": "自定义节点操作失败。"
     }
+  },
+  "uploadLimits": {
+    "title": "上传大小限制",
+    "subtitle": "资产上传允许的最大文件大小",
+    "description": "默认情况下，DAM 不允许上传大于 2 GB 的资产。管理员可以在下方覆盖此限制。新限制将同时在 API 和上传界面中强制执行。",
+    "maxSizeLabel": "最大上传大小（GB）",
+    "helperText": "请输入大于 0 的值。示例：2 = 2 GB。",
+    "save": "保存",
+    "saving": "保存中…",
+    "savedSuccess": "上传大小限制保存成功。",
+    "loadError": "加载上传大小限制失败。",
+    "invalidValue": "请输入一个正数。",
+    "unsavedChanges": "未保存的更改",
+    "changesSaved": "更改已保存",
+    "adminOnly": "仅限管理员",
+    "currentLimit": "当前限制：{{size}}"
   }
 }

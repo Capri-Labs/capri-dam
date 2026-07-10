@@ -187,7 +187,9 @@
       "imageProfiles": "Image Profiles",
       "imageProfilesDesc": "Automatic crop & sharpening on upload",
       "videoProfiles": "Video Profiles",
-      "videoProfilesDesc": "Adaptive & progressive video encoding"
+      "videoProfilesDesc": "Adaptive & progressive video encoding",
+      "uploadLimits": "Upload Limits",
+      "uploadLimitsDesc": "Configure the maximum file size allowed for asset uploads"
     },
     "collectionSettings": {
       "title": "Collection Settings",
@@ -1849,7 +1851,9 @@
       "pin_to_collection": "Pin to Collection",
       "view_details": "View Details",
       "processing": "Processing…",
-      "previewUnavailable": "Preview unavailable"
+      "previewUnavailable": "Preview unavailable",
+      "playVideo": "Play video preview",
+      "pauseVideo": "Pause video preview"
     }
   },
   "inbox": {
@@ -2119,7 +2123,8 @@
     "ai_auto_tagging_complete": "AI Auto-tagging complete.",
     "backgrounds_removed": "Backgrounds removed.",
     "ai_enhancements_applied": "AI enhancements applied.",
-    "upload_sequence_complete": "Upload sequence complete."
+    "upload_sequence_complete": "Upload sequence complete.",
+    "upload_too_large": "Upload not allowed: {{names}}. Maximum upload size is {{maxSize}}."
   },
   "applySchemaDialog": {
     "title": "Apply Metadata Schema",
@@ -2288,6 +2293,11 @@
       "fullscreen": "Fullscreen",
       "exitFullscreen": "Exit fullscreen",
       "loadError": "Failed to load the 3D model."
+    },
+    "video": {
+      "transcodingRequiredTitle": "Video preview isn't available for this format yet.",
+      "transcodingRequiredHint": "This video needs to be transcoded to a browser-playable format. Download the original to view it, or reprocess the asset once FFmpeg is installed.",
+      "downloadOriginal": "Download Original"
     }
   },
   "assetMetadataPanel": {
@@ -2788,5 +2798,21 @@
       "deleted": "Custom node deleted.",
       "actionFailed": "Custom node action failed."
     }
+  },
+  "uploadLimits": {
+    "title": "Upload Size Limit",
+    "subtitle": "Maximum file size allowed for asset uploads",
+    "description": "By default, DAM does not allow uploading assets larger than 2 GB. Administrators can override this limit below. The new limit is enforced both by the API and the upload interface.",
+    "maxSizeLabel": "Maximum Upload Size (GB)",
+    "helperText": "Enter a value greater than 0. Example: 2 = 2 GB.",
+    "save": "Save",
+    "saving": "Saving…",
+    "savedSuccess": "Upload size limit saved successfully.",
+    "loadError": "Failed to load the upload size limit.",
+    "invalidValue": "Please enter a positive number.",
+    "unsavedChanges": "Unsaved changes",
+    "changesSaved": "Changes saved",
+    "adminOnly": "Admin only",
+    "currentLimit": "Current limit: {{size}}"
   }
 }

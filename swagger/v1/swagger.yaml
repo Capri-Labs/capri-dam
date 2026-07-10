@@ -8076,6 +8076,90 @@ paths:
                 properties:
                   error:
                     type: string
+  "/api/v1/upload_limits":
+    get:
+      summary: Retrieve the current maximum upload file size
+      tags:
+      - Tools - Upload Limits
+      security:
+      - Bearer: []
+      description: |
+        Returns the configured maximum upload file size, in bytes, enforced by
+        {Api::V1::AssetsController#create}. Defaults to 2 GB (2147483648 bytes)
+        when no admin override has been saved, matching AEM's documented
+        default asset upload size limit.
+      responses:
+        '200':
+          description: upload limit returned
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - max_upload_size_bytes
+                properties:
+                  max_upload_size_bytes:
+                    type: integer
+                    example: 2147483648
+                    description: Maximum allowed upload size in bytes.
+    put:
+      summary: Update the maximum upload file size (admin only)
+      tags:
+      - Tools - Upload Limits
+      security:
+      - Bearer: []
+      description: |
+        Persists a new maximum upload size (in bytes) to the system settings
+        store. Enforced both server-side (`413 Payload Too Large` on oversized
+        uploads) and reflected in the upload UI.
+
+        **Requires administrator privileges.**
+      parameters: []
+      responses:
+        '200':
+          description: limit saved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  max_upload_size_bytes:
+                    type: integer
+                  message:
+                    type: string
+                    example: Upload size limit saved successfully.
+        '403':
+          description: forbidden – admin privileges required
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Administrator privileges required.
+        '422':
+          description: unprocessable entity
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - max_upload_size_bytes
+              properties:
+                max_upload_size_bytes:
+                  type: integer
+                  example: 2147483648
+                  description: New maximum upload size, in bytes. Must be a positive
+                    integer.
   "/api/v1/upload_restrictions":
     get:
       summary: Retrieve the current upload MIME-type restriction list

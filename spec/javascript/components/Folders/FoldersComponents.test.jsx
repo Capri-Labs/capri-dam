@@ -306,6 +306,65 @@ describe('Folders components', () => {
     expect(onAiAnalysis).toHaveBeenCalledWith(expect.objectContaining({ id: 3 }));
   });
 
+  it('renders a video poster thumbnail with a Play toggle in AssetGrid (Card view) and plays/pauses an inline preview', () => {
+    const setSelectedAsset = jest.fn();
+    render(
+      <AssetGrid
+        assets={[{
+          id: 21,
+          title: 'Product Demo.mp4',
+          content_type: 'video/mp4',
+          url: '/product-demo.mp4',
+          video_poster_url: '/product-demo-poster.jpg',
+          status: 'published',
+          size: 4096,
+        }]}
+        viewMode="active"
+        selectedItems={{ assets: [] }}
+        toggleSelection={jest.fn()}
+        setSelectedAsset={setSelectedAsset}
+        onPinClick={jest.fn()}
+        onFindDuplicates={jest.fn()}
+        onAiAnalysis={jest.fn()}
+      />,
+    );
+
+    expect(document.querySelector('img[src="/product-demo-poster.jpg"]')).toBeInTheDocument();
+    expect(screen.queryByTestId('asset-grid-video-preview-playing')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('asset-grid-video-play-toggle'));
+    expect(screen.getByTestId('asset-grid-video-preview-playing')).toBeInTheDocument();
+
+    // Clicking the play/pause toggle must not bubble up and open the asset viewer.
+    expect(setSelectedAsset).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByTestId('asset-grid-video-play-toggle'));
+    expect(screen.queryByTestId('asset-grid-video-preview-playing')).not.toBeInTheDocument();
+  });
+
+  it('falls back to a VideoFile icon (no play toggle) in AssetGrid when a video has no poster/playable rendition', () => {
+    render(
+      <AssetGrid
+        assets={[{
+          id: 22,
+          title: 'Untranscoded.mov',
+          content_type: 'video/quicktime',
+          status: 'published',
+          size: 4096,
+        }]}
+        viewMode="active"
+        selectedItems={{ assets: [] }}
+        toggleSelection={jest.fn()}
+        setSelectedAsset={jest.fn()}
+        onPinClick={jest.fn()}
+        onFindDuplicates={jest.fn()}
+        onAiAnalysis={jest.fn()}
+      />,
+    );
+
+    expect(screen.queryByTestId('asset-grid-video-play-toggle')).not.toBeInTheDocument();
+  });
+
   it('loads schema in AssetMetadataPanel and saves changed metadata', async () => {
     const onAssetUpdated = jest.fn();
     global.fetch = mockFetch({
@@ -716,6 +775,108 @@ describe('Folders components', () => {
 
     expect(screen.getByTestId('asset-3d-viewer-download-fallback')).toBeInTheDocument();
     expect(screen.queryByTestId('asset-3d-model-viewer')).not.toBeInTheDocument();
+  });
+
+  it('renders a native <video> player (poster + controls) for an MP4 video asset', () => {
+    const mp4Asset = {
+      id: 16,
+      title: 'Product Demo.mp4',
+      url: '/product-demo.mp4',
+      preview_url: '/product-demo.mp4',
+      video_poster_url: '/product-demo-poster.jpg',
+      created_at: '2024-01-01T10:00:00Z',
+      status: 'approved',
+      properties: { content_type: 'video/mp4', size: 8 * 1024 * 1024 },
+    };
+
+    render(<AssetViewer asset={mp4Asset} open onClose={jest.fn()} onAssetUpdated={jest.fn()} />);
+
+    const player = screen.getByTestId('asset-viewer-video-player');
+    expect(player).toBeInTheDocument();
+    expect(player).toHaveAttribute('src', '/product-demo.mp4');
+    expect(player).toHaveAttribute('poster', '/product-demo-poster.jpg');
+    expect(player).toHaveAttribute('controls');
+  });
+
+  it('plays a non-native video format (QuickTime) via its transcoded MP4 rendition when available', () => {
+    const movAsset = {
+      id: 17,
+      title: 'Legacy Clip.mov',
+      url: '/legacy-clip.mov',
+      video_mp4_rendition_url: '/legacy-clip-rendition.mp4',
+      video_poster_url: '/legacy-clip-poster.jpg',
+      created_at: '2024-01-01T10:00:00Z',
+      status: 'approved',
+      properties: { content_type: 'video/quicktime', size: 8 * 1024 * 1024 },
+    };
+
+    render(<AssetViewer asset={movAsset} open onClose={jest.fn()} onAssetUpdated={jest.fn()} />);
+
+    const player = screen.getByTestId('asset-viewer-video-player');
+    expect(player).toHaveAttribute('src', '/legacy-clip-rendition.mp4');
+  });
+
+  it('shows a transcoding-required fallback (with Download Original) for a non-native video format with no MP4 rendition yet', () => {
+    const movAsset = {
+      id: 18,
+      title: 'Untranscoded Clip.mov',
+      url: '/untranscoded-clip.mov',
+      created_at: '2024-01-01T10:00:00Z',
+      status: 'approved',
+      properties: { content_type: 'video/quicktime', size: 8 * 1024 * 1024 },
+    };
+
+    render(<AssetViewer asset={movAsset} open onClose={jest.fn()} onAssetUpdated={jest.fn()} />);
+
+    expect(screen.queryByTestId('asset-viewer-video-player')).not.toBeInTheDocument();
+    expect(screen.getByText(/Video preview isn't available for this format yet/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Download Original/i })).toBeInTheDocument();
+  });
+
+  it('falls back to the native MP4 source when the browser cannot decode AV1, even if an AV1 rendition exists', () => {
+    const mp4Asset = {
+      id: 19,
+      title: 'Product Demo.mp4',
+      url: '/product-demo.mp4',
+      preview_url: '/product-demo.mp4',
+      video_poster_url: '/product-demo-poster.jpg',
+      video_av1_rendition_url: '/product-demo-rendition.webm',
+      created_at: '2024-01-01T10:00:00Z',
+      status: 'approved',
+      properties: { content_type: 'video/mp4', size: 8 * 1024 * 1024 },
+    };
+
+    render(<AssetViewer asset={mp4Asset} open onClose={jest.fn()} onAssetUpdated={jest.fn()} />);
+
+    const player = screen.getByTestId('asset-viewer-video-player');
+    expect(player).toHaveAttribute('src', '/product-demo.mp4');
+  });
+
+  it('prefers the AV1/WebM rendition over the MP4/native source when the browser can decode AV1', () => {
+    const originalCanPlayType = window.HTMLMediaElement.prototype.canPlayType;
+    window.HTMLMediaElement.prototype.canPlayType = (type) =>
+      (type && type.includes('av01') ? 'probably' : '');
+
+    try {
+      const mp4Asset = {
+        id: 20,
+        title: 'Product Demo.mp4',
+        url: '/product-demo.mp4',
+        preview_url: '/product-demo.mp4',
+        video_poster_url: '/product-demo-poster.jpg',
+        video_av1_rendition_url: '/product-demo-rendition.webm',
+        created_at: '2024-01-01T10:00:00Z',
+        status: 'approved',
+        properties: { content_type: 'video/mp4', size: 8 * 1024 * 1024 },
+      };
+
+      render(<AssetViewer asset={mp4Asset} open onClose={jest.fn()} onAssetUpdated={jest.fn()} />);
+
+      const player = screen.getByTestId('asset-viewer-video-player');
+      expect(player).toHaveAttribute('src', '/product-demo-rendition.webm');
+    } finally {
+      window.HTMLMediaElement.prototype.canPlayType = originalCanPlayType;
+    }
   });
 
   it('enables Edit Image for web-renderable formats and disables it for PSD (relies on the backend `editable` flag)', () => {

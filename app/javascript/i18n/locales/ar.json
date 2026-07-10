@@ -187,7 +187,9 @@
       "imageProfiles": "Image Profiles",
       "imageProfilesDesc": "Automatic crop & sharpening on upload",
       "videoProfiles": "Video Profiles",
-      "videoProfilesDesc": "Adaptive & progressive video encoding"
+      "videoProfilesDesc": "Adaptive & progressive video encoding",
+      "uploadLimits": "حدود الرفع",
+      "uploadLimitsDesc": "تكوين الحد الأقصى لحجم الملف المسموح به لتحميل الأصول"
     },
     "collectionSettings": {
       "title": "Collection Settings",
@@ -1849,7 +1851,9 @@
       "pin_to_collection": "تثبيت في المجموعة",
       "view_details": "عرض التفاصيل",
       "processing": "قيد المعالجة…",
-      "previewUnavailable": "المعاينة غير متاحة"
+      "previewUnavailable": "المعاينة غير متاحة",
+      "playVideo": "تشغيل معاينة الفيديو",
+      "pauseVideo": "إيقاف معاينة الفيديو مؤقتًا"
     }
   },
   "inbox": {
@@ -2119,7 +2123,8 @@
     "ai_auto_tagging_complete": "اكتمل وضع العلامات التلقائي بالذكاء الاصطناعي.",
     "backgrounds_removed": "تمت إزالة الخلفيات.",
     "ai_enhancements_applied": "تم تطبيق تحسينات الذكاء الاصطناعي.",
-    "upload_sequence_complete": "اكتمل تسلسل الرفع."
+    "upload_sequence_complete": "اكتمل تسلسل الرفع.",
+    "upload_too_large": "الرفع غير مسموح به: {{names}}. الحد الأقصى لحجم الرفع هو {{maxSize}}."
   },
   "applySchemaDialog": {
     "title": "تطبيق مخطط البيانات الوصفية",
@@ -2288,6 +2293,11 @@
       "fullscreen": "ملء الشاشة",
       "exitFullscreen": "الخروج من وضع ملء الشاشة",
       "loadError": "فشل تحميل النموذج ثلاثي الأبعاد."
+    },
+    "video": {
+      "transcodingRequiredTitle": "معاينة الفيديو غير متاحة بعد لهذا التنسيق.",
+      "transcodingRequiredHint": "يحتاج هذا الفيديو إلى إعادة الترميز إلى تنسيق قابل للتشغيل في المتصفح. قم بتنزيل الأصل لعرضه، أو أعد معالجة الأصل بمجرد تثبيت FFmpeg.",
+      "downloadOriginal": "تنزيل الأصل"
     }
   },
   "assetMetadataPanel": {
@@ -2788,5 +2798,21 @@
       "deleted": "تم حذف العقدة المخصصة.",
       "actionFailed": "فشل إجراء العقدة المخصصة."
     }
+  },
+  "uploadLimits": {
+    "title": "حد حجم الرفع",
+    "subtitle": "الحد الأقصى لحجم الملف المسموح به لتحميل الأصول",
+    "description": "بشكل افتراضي، لا يسمح DAM بتحميل أصول أكبر من 2 جيجابايت. يمكن للمسؤولين تجاوز هذا الحد أدناه. يتم فرض الحد الجديد من قبل واجهة برمجة التطبيقات وواجهة الرفع على حد سواء.",
+    "maxSizeLabel": "الحد الأقصى لحجم الرفع (جيجابايت)",
+    "helperText": "أدخل قيمة أكبر من 0. مثال: 2 = 2 جيجابايت.",
+    "save": "حفظ",
+    "saving": "جارٍ الحفظ…",
+    "savedSuccess": "تم حفظ حد حجم الرفع بنجاح.",
+    "loadError": "فشل تحميل حد حجم الرفع.",
+    "invalidValue": "الرجاء إدخال رقم موجب.",
+    "unsavedChanges": "تغييرات غير محفوظة",
+    "changesSaved": "تم حفظ التغييرات",
+    "adminOnly": "المسؤول فقط",
+    "currentLimit": "الحد الحالي: {{size}}"
   }
 }

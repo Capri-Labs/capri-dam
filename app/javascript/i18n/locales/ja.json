@@ -187,7 +187,9 @@
       "imageProfiles": "画像プロファイル",
       "imageProfilesDesc": "アップロード時の自動クロップ",
       "videoProfiles": "ビデオプロファイル",
-      "videoProfilesDesc": "アダプティブビデオエンコード"
+      "videoProfilesDesc": "アダプティブビデオエンコード",
+      "uploadLimits": "アップロード上限",
+      "uploadLimitsDesc": "アセットアップロードで許可する最大ファイルサイズを設定します"
     },
     "collectionSettings": {
       "title": "コレクション設定",
@@ -1849,7 +1851,9 @@
       "pin_to_collection": "コレクションに固定",
       "view_details": "詳細を表示",
       "processing": "処理中…",
-      "previewUnavailable": "プレビューは利用できません"
+      "previewUnavailable": "プレビューは利用できません",
+      "playVideo": "動画プレビューを再生",
+      "pauseVideo": "動画プレビューを一時停止"
     }
   },
   "inbox": {
@@ -2119,7 +2123,8 @@
     "ai_auto_tagging_complete": "AI 自動タグ付けが完了しました。",
     "backgrounds_removed": "背景を削除しました。",
     "ai_enhancements_applied": "AI 強化を適用しました。",
-    "upload_sequence_complete": "アップロード シーケンスが完了しました。"
+    "upload_sequence_complete": "アップロード シーケンスが完了しました。",
+    "upload_too_large": "アップロードは許可されていません: {{names}}。最大アップロードサイズは{{maxSize}}です。"
   },
   "applySchemaDialog": {
     "title": "メタデータスキーマを適用",
@@ -2288,6 +2293,11 @@
       "fullscreen": "全画面",
       "exitFullscreen": "全画面を終了",
       "loadError": "3Dモデルの読み込みに失敗しました。"
+    },
+    "video": {
+      "transcodingRequiredTitle": "この形式の動画プレビューはまだ利用できません。",
+      "transcodingRequiredHint": "この動画はブラウザで再生可能な形式にトランスコードする必要があります。元のファイルをダウンロードして表示するか、FFmpegをインストールしてからアセットを再処理してください。",
+      "downloadOriginal": "オリジナルをダウンロード"
     }
   },
   "assetMetadataPanel": {
@@ -2788,5 +2798,21 @@
       "deleted": "カスタムノードを削除しました。",
       "actionFailed": "カスタムノードのアクションに失敗しました。"
     }
+  },
+  "uploadLimits": {
+    "title": "アップロードサイズ制限",
+    "subtitle": "アセットアップロードで許可される最大ファイルサイズ",
+    "description": "デフォルトでは、DAMは2GBを超えるアセットのアップロードを許可しません。管理者は以下でこの制限を上書きできます。新しい制限はAPIとアップロードインターフェースの両方で適用されます。",
+    "maxSizeLabel": "最大アップロードサイズ（GB）",
+    "helperText": "0より大きい値を入力してください。例：2 = 2GB。",
+    "save": "保存",
+    "saving": "保存中…",
+    "savedSuccess": "アップロードサイズ制限が正常に保存されました。",
+    "loadError": "アップロードサイズ制限の読み込みに失敗しました。",
+    "invalidValue": "正の数を入力してください。",
+    "unsavedChanges": "未保存の変更",
+    "changesSaved": "変更が保存されました",
+    "adminOnly": "管理者のみ",
+    "currentLimit": "現在の制限: {{size}}"
   }
 }

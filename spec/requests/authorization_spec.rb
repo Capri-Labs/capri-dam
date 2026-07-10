@@ -88,6 +88,78 @@ RSpec.describe 'Authorization concern', type: :request do
   end
 
   # ---------------------------------------------------------------------------
+  # GET /api/v1/upload_limits — any authenticated user may read
+  # ---------------------------------------------------------------------------
+  describe 'GET /api/v1/upload_limits' do
+    context 'when unauthenticated' do
+      it 'returns 401 Unauthorized' do
+        get '/api/v1/upload_limits'
+        expect(response).to have_http_status(:unauthorized).or have_http_status(:redirect)
+      end
+    end
+
+    context 'when authenticated as a regular user (session)' do
+      it 'returns 200 OK' do
+        sign_in regular_user
+        get '/api/v1/upload_limits'
+        expect(response).to have_http_status(:ok)
+      end
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # PUT /api/v1/upload_limits — admin only, requires write/admin PAT
+  # ---------------------------------------------------------------------------
+  describe 'PUT /api/v1/upload_limits' do
+    let(:payload) { { max_upload_size_bytes: 5.gigabytes } }
+
+    context 'when unauthenticated' do
+      it 'returns 401 or redirect' do
+        put '/api/v1/upload_limits', params: payload, as: :json
+        expect(response.status).to be_in([ 401, 302 ])
+      end
+    end
+
+    context 'when authenticated as a regular (non-admin) user' do
+      it 'returns 403 Forbidden' do
+        sign_in regular_user
+        put '/api/v1/upload_limits', params: payload, as: :json
+        expect(response).to have_http_status(:forbidden)
+      end
+    end
+
+    context 'when authenticated as an admin user (session)' do
+      it 'returns 200 OK' do
+        sign_in admin_user
+        put '/api/v1/upload_limits', params: payload, as: :json
+        expect(response).to have_http_status(:ok)
+      end
+    end
+
+    context 'when authenticated as admin via PAT with read scope only' do
+      it 'returns 403 because the PAT lacks admin scope' do
+        _, raw = PersonalAccessToken.generate_for(admin_user, name: 'readonly', scopes: 'read')
+        put '/api/v1/upload_limits',
+            params: payload,
+            headers: { 'Authorization' => "Bearer #{raw}" },
+            as: :json
+        expect(response).to have_http_status(:forbidden)
+      end
+    end
+
+    context 'when authenticated as admin via PAT with admin scope' do
+      it 'returns 200 OK' do
+        _, raw = PersonalAccessToken.generate_for(admin_user, name: 'adminpat', scopes: 'admin')
+        put '/api/v1/upload_limits',
+            params: payload,
+            headers: { 'Authorization' => "Bearer #{raw}" },
+            as: :json
+        expect(response).to have_http_status(:ok)
+      end
+    end
+  end
+
+  # ---------------------------------------------------------------------------
   # GET /api/v1/bin/retention_policy — admin only
   # ---------------------------------------------------------------------------
   describe 'PUT /api/v1/bin/retention_policy' do

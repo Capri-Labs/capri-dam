@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Box, Typography, Chip } from '@mui/material';
-import { SettingsOutlined, SecurityOutlined, BlockOutlined, ImageOutlined, VideoFileOutlined, ContentCopyOutlined, DeleteForeverOutlined, CollectionsBookmark } from '@mui/icons-material';
+import { SettingsOutlined, SecurityOutlined, BlockOutlined, ImageOutlined, VideoFileOutlined, ContentCopyOutlined, DeleteForeverOutlined, CollectionsBookmark, CloudUploadOutlined } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import UploadRestrictionsPanel from './UploadRestrictions';
 import ImageProfilesManager from './ImageProfiles';
@@ -8,6 +8,7 @@ import VideoProfilesManager from './VideoProfiles';
 import DuplicateManagerSettings from './DuplicateManagerSettings';
 import BinPurgeSettings from './BinPurgeSettings';
 import CollectionSettingsPanel from './CollectionSettings';
+import UploadLimitsPanel from './UploadLimits';
 
 const NAV_ITEMS = [
     {
@@ -17,6 +18,15 @@ const NAV_ITEMS = [
         icon: <BlockOutlined sx={{ fontSize: 18 }} />,
         descriptionKey: 'tools.assetConfigurations.uploadRestrictionsDesc',
         descriptionFallback: 'Control which MIME types can be uploaded',
+    },
+    {
+        id: 'upload_limits',
+        labelKey: 'tools.assetConfigurations.uploadLimits',
+        labelFallback: 'Upload Limits',
+        icon: <CloudUploadOutlined sx={{ fontSize: 18 }} />,
+        descriptionKey: 'tools.assetConfigurations.uploadLimitsDesc',
+        descriptionFallback: 'Configure the maximum file size allowed for asset uploads',
+        badge: 'New',
     },
     {
         id: 'image_profiles',
@@ -137,6 +147,7 @@ export default function AssetConfigurationsManager() {
 
                 <Box sx={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
                     {activeSection === 'upload_restrictions' && <UploadRestrictionsPanel />}
+                    {activeSection === 'upload_limits'       && <UploadLimitsPanel />}
                     {activeSection === 'image_profiles'      && <ImageProfilesManager />}
                     {activeSection === 'video_profiles'      && <VideoProfilesManager />}
                     {activeSection === 'duplicate_manager'   && <DuplicateManagerSettings />}

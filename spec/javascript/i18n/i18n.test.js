@@ -759,3 +759,56 @@ describe('i18n — globalSearchBar English strings (regression guard)', () => {
   });
 });
 
+describe('i18n — video asset management keys across all 10 locales', () => {
+  LOCALES.forEach(locale => {
+    it(`${locale} has assetViewer.video.transcodingRequiredTitle/Hint and downloadOriginal`, () => {
+      i18n.changeLanguage(locale);
+
+      expect(i18n.t('assetViewer.video.transcodingRequiredTitle')).not.toBe('assetViewer.video.transcodingRequiredTitle');
+      expect(i18n.t('assetViewer.video.transcodingRequiredHint')).not.toBe('assetViewer.video.transcodingRequiredHint');
+      expect(i18n.t('assetViewer.video.downloadOriginal')).not.toBe('assetViewer.video.downloadOriginal');
+    });
+
+    it(`${locale} has folders.grid.playVideo and pauseVideo`, () => {
+      i18n.changeLanguage(locale);
+
+      expect(i18n.t('folders.grid.playVideo')).not.toBe('folders.grid.playVideo');
+      expect(i18n.t('folders.grid.pauseVideo')).not.toBe('folders.grid.pauseVideo');
+    });
+
+    it(`${locale} has tools.assetConfigurations.uploadLimits and uploadLimitsDesc`, () => {
+      i18n.changeLanguage(locale);
+
+      expect(i18n.t('tools.assetConfigurations.uploadLimits')).not.toBe('tools.assetConfigurations.uploadLimits');
+      expect(i18n.t('tools.assetConfigurations.uploadLimitsDesc')).not.toBe('tools.assetConfigurations.uploadLimitsDesc');
+    });
+
+    it(`${locale} has the full uploadLimits.* panel string set`, () => {
+      i18n.changeLanguage(locale);
+
+      [
+        'title', 'subtitle', 'description', 'maxSizeLabel', 'helperText', 'save', 'saving',
+        'savedSuccess', 'loadError', 'invalidValue', 'unsavedChanges', 'changesSaved', 'adminOnly',
+      ].forEach(key => {
+        const fullKey = `uploadLimits.${key}`;
+        expect(i18n.t(fullKey)).not.toBe(fullKey);
+      });
+
+      const currentLimit = i18n.t('uploadLimits.currentLimit', { size: '2 GB' });
+      expect(currentLimit).not.toBe('uploadLimits.currentLimit');
+      expect(currentLimit).toContain('2 GB');
+    });
+
+    it(`${locale} has uploadWorkspace.upload_too_large with names/maxSize interpolation`, () => {
+      i18n.changeLanguage(locale);
+
+      const msg = i18n.t('uploadWorkspace.upload_too_large', { names: 'big-file.mp4', maxSize: '2 GB' });
+      expect(msg).not.toBe('uploadWorkspace.upload_too_large');
+      expect(msg).toContain('big-file.mp4');
+      expect(msg).toContain('2 GB');
+    });
+  });
+
+  afterAll(() => i18n.changeLanguage('en'));
+});
+
