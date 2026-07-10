@@ -2236,7 +2236,10 @@
       "secureProxyDescription": "除去できない透かしを含みます"
     },
     "preview": {
-      "notAvailableForFileType": "このファイルタイプではプレビューを利用できません。"
+      "notAvailableForFileType": "このファイルタイプではプレビューを利用できません。",
+      "downloadToViewHint": "このファイル形式はインラインで表示できません。オリジナルをダウンロードして、対応するアプリケーションで開いてください。",
+      "downloadOriginal": "オリジナルをダウンロード",
+      "textPreviewTruncated": "プレビューは省略されています。完全なファイルを表示するには、オリジナルをダウンロードしてください。"
     },
     "tabs": {
       "info": "情報",

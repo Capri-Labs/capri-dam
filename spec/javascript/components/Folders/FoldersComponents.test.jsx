@@ -879,6 +879,197 @@ describe('Folders components', () => {
     }
   });
 
+  it('shows the download-to-view fallback (not a broken <img>) for a Camera RAW image with no server-generated preview', () => {
+    const rawAsset = {
+      id: 21,
+      title: 'DSC_0001.nef',
+      url: '/dsc_0001.nef',
+      preview_url: null,
+      created_at: '2024-01-01T10:00:00Z',
+      status: 'approved',
+      properties: { content_type: 'image/x-raw-nikon', size: 24 * 1024 * 1024 },
+    };
+
+    render(<AssetViewer asset={rawAsset} open onClose={jest.fn()} onAssetUpdated={jest.fn()} />);
+
+    expect(screen.getByText(/Preview not available for this file type/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Download Original/i })).toBeInTheDocument();
+    expect(screen.queryByRole('img', { name: 'DSC_0001.nef' })).not.toBeInTheDocument();
+  });
+
+  it('renders the flattened PNG preview (not a broken <img>) for a Camera RAW image once the backend generates one', () => {
+    const rawAssetWithPreview = {
+      id: 22,
+      title: 'DSC_0002.nef',
+      url: '/dsc_0002.nef',
+      preview_url: '/dsc_0002-preview.png',
+      created_at: '2024-01-01T10:00:00Z',
+      status: 'approved',
+      properties: {
+        content_type: 'image/x-raw-nikon',
+        preview_storage_path: 'uuid/v1_preview.png',
+        preview_content_type: 'image/png',
+        size: 24 * 1024 * 1024,
+      },
+    };
+
+    render(<AssetViewer asset={rawAssetWithPreview} open onClose={jest.fn()} onAssetUpdated={jest.fn()} />);
+
+    expect(screen.getByRole('img', { name: 'DSC_0002.nef' })).toHaveAttribute('src', expect.stringContaining('/dsc_0002-preview.png'));
+  });
+
+  it('shows the download-to-view fallback for a proprietary design-tool source file (Adobe XD/Figma/Sketch)', () => {
+    const xdAsset = {
+      id: 23,
+      title: 'Homepage.xd',
+      url: '/homepage.xd',
+      preview_url: null,
+      created_at: '2024-01-01T10:00:00Z',
+      status: 'approved',
+      properties: { content_type: 'application/vnd.adobe.xd', format: 'Design Source File', size: 4 * 1024 * 1024 },
+    };
+
+    render(<AssetViewer asset={xdAsset} open onClose={jest.fn()} onAssetUpdated={jest.fn()} />);
+
+    expect(screen.getByText(/Preview not available for this file type/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Download Original/i })).toBeInTheDocument();
+  });
+
+  it('renders the flattened PNG preview for a Word document once LibreOffice generates one', () => {
+    const docxAsset = {
+      id: 24,
+      title: 'Quarterly-Report.docx',
+      url: '/report.docx',
+      preview_url: '/report-preview.png',
+      created_at: '2024-01-01T10:00:00Z',
+      status: 'approved',
+      properties: {
+        content_type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        format: 'Office Document',
+        document_type: 'Word Document',
+        preview_storage_path: 'uuid/v1_preview.png',
+        preview_content_type: 'image/png',
+        size: 2 * 1024 * 1024,
+      },
+    };
+
+    render(<AssetViewer asset={docxAsset} open onClose={jest.fn()} onAssetUpdated={jest.fn()} />);
+
+    expect(screen.getByRole('img', { name: 'Quarterly-Report.docx' })).toHaveAttribute('src', expect.stringContaining('/report-preview.png'));
+  });
+
+  it('shows the download-to-view fallback for an Excel spreadsheet with no LibreOffice-generated preview', () => {
+    const xlsxAsset = {
+      id: 25,
+      title: 'Budget.xlsx',
+      url: '/budget.xlsx',
+      preview_url: null,
+      created_at: '2024-01-01T10:00:00Z',
+      status: 'approved',
+      properties: {
+        content_type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        format: 'Office Document',
+        document_type: 'Excel Spreadsheet',
+        document_conversion_available: false,
+        size: 512 * 1024,
+      },
+    };
+
+    render(<AssetViewer asset={xlsxAsset} open onClose={jest.fn()} onAssetUpdated={jest.fn()} />);
+
+    expect(screen.getByText(/Preview not available for this file type/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Download Original/i })).toBeInTheDocument();
+  });
+
+  it('shows the download-to-view fallback for an Apple Keynote presentation (no rasteriser available)', () => {
+    const keyAsset = {
+      id: 26,
+      title: 'Pitch-Deck.key',
+      url: '/pitch.key',
+      preview_url: null,
+      created_at: '2024-01-01T10:00:00Z',
+      status: 'approved',
+      properties: {
+        content_type: 'application/vnd.apple.keynote',
+        format: 'Apple iWork Document',
+        document_type: 'Keynote Presentation',
+        size: 8 * 1024 * 1024,
+      },
+    };
+
+    render(<AssetViewer asset={keyAsset} open onClose={jest.fn()} onAssetUpdated={jest.fn()} />);
+
+    expect(screen.getByText(/Preview not available for this file type/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Download Original/i })).toBeInTheDocument();
+  });
+
+  it('renders an inline text preview for a .txt document', () => {
+    const txtAsset = {
+      id: 27,
+      title: 'ReadMe.txt',
+      url: '/readme.txt',
+      preview_url: null,
+      created_at: '2024-01-01T10:00:00Z',
+      status: 'approved',
+      properties: {
+        content_type: 'text/plain',
+        format: 'Plain Text Document',
+        document_type: 'Plain Text Document',
+        text_preview: 'Hello world\nSecond line',
+        text_preview_truncated: false,
+        line_count: 2,
+        size: 128,
+      },
+    };
+
+    render(<AssetViewer asset={txtAsset} open onClose={jest.fn()} onAssetUpdated={jest.fn()} />);
+
+    expect(screen.getByTestId('asset-viewer-text-preview')).toHaveTextContent('Hello world');
+    expect(screen.queryByText(/Preview truncated/i)).not.toBeInTheDocument();
+  });
+
+  it('renders an inline text preview with a truncation notice for a large .csv document', () => {
+    const csvAsset = {
+      id: 28,
+      title: 'Export.csv',
+      url: '/export.csv',
+      preview_url: null,
+      created_at: '2024-01-01T10:00:00Z',
+      status: 'approved',
+      properties: {
+        content_type: 'text/csv',
+        format: 'Plain Text Document',
+        document_type: 'CSV Spreadsheet',
+        text_preview: 'name,age\nAlice,30',
+        text_preview_truncated: true,
+        line_count: 50000,
+        size: 5 * 1024 * 1024,
+      },
+    };
+
+    render(<AssetViewer asset={csvAsset} open onClose={jest.fn()} onAssetUpdated={jest.fn()} />);
+
+    expect(screen.getByTestId('asset-viewer-text-preview')).toHaveTextContent('name,age');
+    expect(screen.getByText(/Preview truncated/i)).toBeInTheDocument();
+  });
+
+  it('shows the download-to-view fallback for a plain-text document with no extracted text_preview', () => {
+    const noPreviewTxtAsset = {
+      id: 29,
+      title: 'Locked.txt',
+      url: '/locked.txt',
+      preview_url: null,
+      created_at: '2024-01-01T10:00:00Z',
+      status: 'approved',
+      properties: { content_type: 'text/plain', format: 'Plain Text Document', size: 128 },
+    };
+
+    render(<AssetViewer asset={noPreviewTxtAsset} open onClose={jest.fn()} onAssetUpdated={jest.fn()} />);
+
+    expect(screen.getByText(/Preview not available for this file type/i)).toBeInTheDocument();
+    expect(screen.queryByTestId('asset-viewer-text-preview')).not.toBeInTheDocument();
+  });
+
   it('enables Edit Image for web-renderable formats and disables it for PSD (relies on the backend `editable` flag)', () => {
     const jpegAsset = {
       id: 12,

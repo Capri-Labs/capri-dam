@@ -1,0 +1,149 @@
+[[section-image-asset-formats]]
+= Expanded Image Format Support
+
+Capri DAM's asset pipeline handles three broad classes of image assets beyond
+plain web-ready raster formats: professional design-tool source files, camera
+RAW formats, and legacy raster formats — mirroring the range of formats
+professional creative teams typically store in a DAM.
+
+== Format classes
+
+[cols="1,3,1", options="header"]
+|===
+| Class | Formats | Preview support
+| Web-renderable raster | JPEG, PNG, GIF, WebP, BMP, TIFF | Native — served
+  directly to `<img>` (see `WEB_RENDERABLE_MIME_TYPES`).
+| Vector / document media | SVG, EPS, AI (Illustrator), PSD (Photoshop), INDD
+  (InDesign), PDF | Rasterised preview generated via ImageMagick/Ghostscript
+  when a delegate is available (see `PREVIEWABLE_DOCUMENT_MIME_TYPES`).
+| Camera RAW | CR2/CR3 (Canon), NEF (Nikon), ARW (Sony), DNG (Adobe), ORF
+  (Olympus), RW2 (Panasonic) | Rasterised preview generated via ImageMagick's
+  RAW delegate (libraw/dcraw) when installed; falls back to a
+  "Download Original" prompt otherwise.
+| Design-tool source files | XD (Adobe XD), FIG (Figma), SKETCH (Sketch) |
+  No rasterisation path exists for these proprietary, ZIP-based container
+  formats — always falls back to "Download Original".
+| HEIC (Apple) | HEIC/HEIF | Rasterised preview generated via ImageMagick's
+  HEIF delegate (libheif) when installed; falls back otherwise.
+|===
+
+== MIME detection overrides (`AssetProcessorWorker`)
+
+Marcel (the MIME-sniffing gem Rails uses for `ActiveStorage`) misdetects three
+of the above formats because they are all opaque ZIP containers with no
+distinguishing magic bytes for their specific application:
+
+[cols="1,1,2", options="header"]
+|===
+| Extension | Marcel's guess | Actual/expected MIME type
+| `.xd`     | `application/octet-stream` (generic) | `application/vnd.adobe.xd`
+  (IANA-registered)
+| `.fig`    | `application/x-xfig` (unrelated legacy Xfig CAD format) |
+  `application/x-figma` (no IANA type exists; internal convention, matching
+  the precedent set by Adobe Dimension's `model/x-adobe-dn` in the 3D asset
+  viewer feature)
+| `.sketch` | `application/octet-stream` (generic) | `application/x-sketch`
+  (no IANA type exists; internal convention)
+|===
+
+`AssetProcessorWorker::DESIGN_SOURCE_EXTENSION_OVERRIDES` maps the original
+upload's file extension to the correct MIME type, applied immediately after
+Marcel's detection and before any routing/branching logic runs. This mirrors
+how the file's `original_filename` (not the staging path) is preferred when
+both are available, since the staging path may be a temp file with no
+meaningful extension.
+
+Camera RAW formats do **not** need an override — Marcel correctly reports
+distinct `image/x-raw-canon`, `image/x-canon-cr3`, `image/x-raw-nikon`,
+`image/x-raw-sony`, `image/x-raw-adobe`, `image/x-raw-olympus`, and
+`image/x-raw-panasonic` MIME types for each vendor's RAW format.
+
+A pre-existing bug was also fixed as part of this work:
+`PREVIEWABLE_DOCUMENT_MIME_TYPES` previously listed the never-actually-used
+`application/x-indesign` string instead of the real MIME type Marcel (and
+real `.indd` files) report, `application/x-adobe-indesign`. Both are now
+recognised, so `.indd` files correctly route through the preview-generation
+path instead of being silently treated as an unrecognised binary.
+
+== Processing pipeline behaviour
+
+* `extract_image_metadata` and `generate_web_preview` are both wrapped in a
+  top-level `rescue StandardError`, following the same "optional external
+  tool" pattern used for FFmpeg/ExifTool in the video feature. This means a
+  RAW file uploaded to an environment without ImageMagick's RAW delegate (or
+  a design-source file with no rasterisation path at all) still uploads,
+  stores, and reaches `status: "ready"` — it simply has no generated preview.
+* For Camera RAW uploads, `extracted_meta[:format]` is set to
+  `"Camera RAW Image"` for a friendly label in the UI.
+* For design-tool source file uploads (`DESIGN_SOURCE_MIME_TYPES`),
+  `format` is set to `"Design Source File"`, `design_preview_available` is
+  explicitly set to `false`, and `generate_web_preview` is skipped entirely
+  (since it would always fail for these formats — no point attempting it).
+
+== Asset Viewer fallback UI fix
+
+`AssetViewer.jsx` previously computed:
+
+[source,js]
+----
+const canPreview = isImage || hasGeneratedPreview;
+----
+
+This incorrectly treated **any** `image/*` MIME type as previewable, even
+when no generated preview existed and the format isn't natively
+browser-renderable — silently attempting `<img src={asset.url}>` against a
+RAW/PSD/design-source binary the browser cannot decode, producing a broken
+image icon instead of a helpful message.
+
+This is now gated on whether the MIME type is actually web-renderable:
+
+[source,js]
+----
+const isNativelyRenderableImage = isImage && isWebRenderableImage(contentType);
+const canPreview = isNativelyRenderableImage || hasGeneratedPreview;
+----
+
+When `canPreview` is false, the asset viewer shows a consistent fallback —
+title, hint text, and a "Download Original" button — matching the pattern
+already used for videos requiring transcoding and 3D formats with no
+in-browser renderer. The fallback container carries
+`data-testid="asset-preview-download-fallback"`; the positive-case preview
+`<img>` carries `data-testid="asset-viewer-preview-image"` for E2E targeting.
+
+== i18n
+
+Two new keys were added under `assetViewer.preview` in all 10 locales:
+
+* `assetViewer.preview.downloadToViewHint`
+* `assetViewer.preview.downloadOriginal`
+
+(`assetViewer.preview.notAvailableForFileType` already existed.)
+
+== Admin upload restrictions
+
+`Tools → Asset Configurations → Upload Restrictions` now includes suggestion
+chips for the new formats (BMP, HEIC, PSD, AI, INDD, EPS, Adobe XD, Figma,
+Sketch, and representative Camera RAW MIME types) for discoverability. The
+underlying allowlist mechanism is unchanged — it already supported arbitrary
+MIME types and `image/*` wildcards; no MIME types are blocked by default for
+any of these formats.
+
+== Testing
+
+* `spec/workers/asset_processor_worker_spec.rb` — camera RAW uploads (label,
+  full format coverage across all 7 vendor MIME types, graceful handling when
+  the RAW delegate is missing), design-tool source file uploads (MIME
+  override applied, preview generation skipped), and the InDesign MIME fix.
+* `spec/javascript/components/Folders/FoldersComponents.test.jsx` — RAW image
+  with no preview (fallback shown, no broken `<img>`), RAW image with a
+  preview (positive case), and design-source file (fallback shown).
+* `spec/javascript/i18n/i18n.test.js` — new `assetViewer.preview.*` keys
+  translate correctly across all 10 locales.
+* `spec/e2e/image_asset_formats.e2e.spec.js` — end-to-end coverage of the
+  three scenarios above against a running server, using mocked API
+  responses.
+
+No swagger or GraphQL changes were required: neither `swagger/v1/swagger.yaml`
+nor `app/graphql/` enumerate per-format dynamic asset fields (`format`,
+`preview_url`, `design_preview_available`, etc.) — the same was true for the
+video and 3D asset features that preceded this one.

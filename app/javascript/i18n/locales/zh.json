@@ -2236,7 +2236,10 @@
       "secureProxyDescription": "包含不可移除的水印"
     },
     "preview": {
-      "notAvailableForFileType": "此文件类型不提供预览。"
+      "notAvailableForFileType": "此文件类型不提供预览。",
+      "downloadToViewHint": "此文件格式无法内嵌显示。请下载原始文件以在其原生应用程序中打开。",
+      "downloadOriginal": "下载原始文件",
+      "textPreviewTruncated": "预览已截断——下载原始文件以查看完整内容。"
     },
     "tabs": {
       "info": "信息",

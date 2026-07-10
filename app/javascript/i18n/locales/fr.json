@@ -2236,7 +2236,10 @@
       "secureProxyDescription": "Inclut un filigrane inamovible"
     },
     "preview": {
-      "notAvailableForFileType": "Aucun aperçu disponible pour ce type de fichier."
+      "notAvailableForFileType": "Aucun aperçu disponible pour ce type de fichier.",
+      "downloadToViewHint": "Ce format de fichier ne peut pas être affiché directement. Téléchargez l'original pour l'ouvrir dans son application native.",
+      "downloadOriginal": "Télécharger l'original",
+      "textPreviewTruncated": "Aperçu tronqué — téléchargez l'original pour voir le fichier complet."
     },
     "tabs": {
       "info": "Infos",

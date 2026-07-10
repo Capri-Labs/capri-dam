@@ -55,6 +55,8 @@ By participating you agree to abide by its terms.
 | ImageMagick | 7+ | Required for image variant processing |
 | ExifTool | 12+ | Required for full EXIF/IPTC/XMP metadata extraction |
 | Java (JRE) | 11+ | Required for PlantUML in doc generation |
+| FFmpeg | 5+ | Optional but recommended — enables video transcoding/preview renditions. Feature-detected at runtime (`which ffmpeg`); without it, video assets upload fine but skip transcoded previews. `brew install ffmpeg` |
+| LibreOffice | 7+ | Optional but recommended — enables headless conversion of Office documents (doc/docx/ppt/pptx/xls/xlsx/rtf) into previews via `soffice --convert-to pdf`. Feature-detected at runtime (`which soffice`); without it, Office documents upload fine but show no preview. `brew install --cask libreoffice` |
 
 ### Local development setup
 

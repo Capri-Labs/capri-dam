@@ -1,0 +1,34 @@
+# CodeQL analysis configuration for Capri DAM.
+#
+# `ruby/setup-ruby` with `bundler-cache: true` installs gems into
+# `vendor/bundle` to enable caching between CI runs. That directory is never
+# committed to git (see .gitignore) but it *is* present on disk during the
+# CodeQL Autobuild/extraction step, so without an explicit exclusion CodeQL
+# treats every vendored gem's source as part of "our" codebase. That produced
+# dozens of "critical" alerts (rb/non-constant-kernel-open,
+# rb/code-injection, rb/kernel-open, rb/request-forgery) that all point at
+# third-party gem internals (Rails, Sidekiq, net-ssh, thor, etc.) which we
+# neither wrote nor can patch in place — they get overwritten on every
+# `bundle install` anyway.
+#
+# Excluding vendor/bundle (and other generated/non-source directories) keeps
+# the Security tab focused on findings in code we actually own and can fix.
+name: "Capri DAM CodeQL config"
+
+paths-ignore:
+  - vendor/bundle
+  - vendor/**
+  - node_modules
+  - node_modules/**
+  - tmp/**
+  - log/**
+  - coverage/**
+  - public/assets/**
+  - public/packs/**
+  - db/structure.sql
+
+paths:
+  - app
+  - lib
+  - config
+  - db/migrate

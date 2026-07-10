@@ -353,6 +353,379 @@ RSpec.describe AssetProcessorWorker, type: :worker do
     end
   end
 
+  describe "camera RAW image uploads" do
+    it "labels a Nikon NEF upload as Camera RAW Image and attempts a flattened preview" do
+      staging_path = Rails.root.join("storage", "asset_processor_worker_#{SecureRandom.hex}.nef")
+      File.binwrite(staging_path, "raw bytes")
+      allow(Marcel::MimeType).to receive(:for).and_return("image/x-raw-nikon")
+
+      worker = described_class.new
+      allow(worker).to receive(:extract_image_metadata)
+      allow(worker).to receive(:extract_text_from_image)
+      allow(worker).to receive(:generate_web_preview) do |_path, _asset, _version, _storage, meta|
+        meta[:preview_storage_path]  = "#{asset.uuid}/preview.png"
+        meta[:preview_content_type] = "image/png"
+      end
+
+      worker.perform(version.id, staging_path.to_s)
+
+      props = version.reload.properties
+      expect(props).to include(
+        "content_type" => "image/x-raw-nikon",
+        "format"       => "Camera RAW Image",
+      )
+      expect(props["preview_storage_path"]).to be_present
+      expect(worker).to have_received(:generate_web_preview)
+    ensure
+      File.delete(staging_path) if staging_path && File.exist?(staging_path)
+    end
+
+    it "recognises Canon CR3, Sony ARW, Adobe DNG, Olympus ORF, and Panasonic RW2 as Camera RAW Image too" do
+      {
+        "cr3"  => "image/x-canon-cr3",
+        "arw"  => "image/x-raw-sony",
+        "dng"  => "image/x-raw-adobe",
+        "orf"  => "image/x-raw-olympus",
+        "rw2"  => "image/x-raw-panasonic",
+      }.each do |ext, mime|
+        staging_path = Rails.root.join("storage", "asset_processor_worker_#{SecureRandom.hex}.#{ext}")
+        File.binwrite(staging_path, "raw bytes")
+        allow(Marcel::MimeType).to receive(:for).and_return(mime)
+
+        v = create(:asset_version, asset: create(:asset, status: :pending, properties: {}), version_number: 1, properties: nil)
+        worker = described_class.new
+        allow(worker).to receive(:extract_image_metadata)
+        allow(worker).to receive(:extract_text_from_image)
+        allow(worker).to receive(:generate_web_preview)
+
+        worker.perform(v.id, staging_path.to_s)
+
+        expect(v.reload.properties).to include("content_type" => mime, "format" => "Camera RAW Image")
+      ensure
+        File.delete(staging_path) if staging_path && File.exist?(staging_path)
+      end
+    end
+
+    it "gracefully stores the asset with no preview when ImageMagick lacks a RAW delegate (generate_web_preview fails non-fatally)" do
+      staging_path = Rails.root.join("storage", "asset_processor_worker_#{SecureRandom.hex}.cr2")
+      File.binwrite(staging_path, "raw bytes")
+      allow(Marcel::MimeType).to receive(:for).and_return("image/x-raw-canon")
+
+      worker = described_class.new
+      allow(worker).to receive(:extract_image_metadata)
+      allow(worker).to receive(:extract_text_from_image)
+      # Simulate MiniMagick raising because no RAW delegate is installed —
+      # generate_web_preview's own rescue should swallow this, so calling the
+      # *real* method (not stubbed) exercises that non-fatal handling.
+      allow(MiniMagick).to receive(:convert).and_raise(MiniMagick::Error, "no decode delegate for this image format")
+
+      expect { worker.perform(version.id, staging_path.to_s) }.not_to raise_error
+
+      props = version.reload.properties
+      expect(props["format"]).to eq("Camera RAW Image")
+      expect(props).not_to have_key("preview_storage_path")
+      expect(asset.reload.status).to eq("ready")
+    ensure
+      File.delete(staging_path) if staging_path && File.exist?(staging_path)
+    end
+  end
+
+  describe "proprietary design-tool source file uploads (Adobe XD / Figma / Sketch)" do
+    it "corrects Marcel's generic MIME detection for .xd via the filename extension and skips preview generation" do
+      xd_asset   = create(:asset, status: :pending, properties: { "original_filename" => "Homepage.xd" })
+      xd_version = create(:asset_version, asset: xd_asset, version_number: 1, properties: nil)
+      staging_path = Rails.root.join("storage", "asset_processor_worker_#{SecureRandom.hex}.xd")
+      File.binwrite(staging_path, "xd bytes")
+      allow(Marcel::MimeType).to receive(:for).and_return("application/octet-stream")
+
+      worker = described_class.new
+      allow(worker).to receive(:generate_web_preview)
+      worker.perform(xd_version.id, staging_path.to_s)
+
+      expect(xd_version.reload.properties).to include(
+        "content_type"              => "application/vnd.adobe.xd",
+        "format"                    => "Design Source File",
+        "design_preview_available"  => false
+      )
+      expect(worker).not_to have_received(:generate_web_preview)
+    ensure
+      File.delete(staging_path) if staging_path && File.exist?(staging_path)
+    end
+
+    it "corrects Marcel's Xfig-collision MIME detection for .fig (Figma) via the filename extension" do
+      fig_asset   = create(:asset, status: :pending, properties: { "original_filename" => "Landing.fig" })
+      fig_version = create(:asset_version, asset: fig_asset, version_number: 1, properties: nil)
+      staging_path = Rails.root.join("storage", "asset_processor_worker_#{SecureRandom.hex}.fig")
+      File.binwrite(staging_path, "fig bytes")
+      allow(Marcel::MimeType).to receive(:for).and_return("application/x-xfig")
+
+      worker = described_class.new
+      allow(worker).to receive(:generate_web_preview)
+      worker.perform(fig_version.id, staging_path.to_s)
+
+      expect(fig_version.reload.properties).to include(
+        "content_type" => "application/x-figma",
+        "format"       => "Design Source File"
+      )
+      expect(worker).not_to have_received(:generate_web_preview)
+    ensure
+      File.delete(staging_path) if staging_path && File.exist?(staging_path)
+    end
+
+    it "corrects Marcel's generic MIME detection for .sketch via the filename extension" do
+      sketch_asset   = create(:asset, status: :pending, properties: { "original_filename" => "Icons.sketch" })
+      sketch_version = create(:asset_version, asset: sketch_asset, version_number: 1, properties: nil)
+      staging_path = Rails.root.join("storage", "asset_processor_worker_#{SecureRandom.hex}.sketch")
+      File.binwrite(staging_path, "sketch bytes")
+      allow(Marcel::MimeType).to receive(:for).and_return("application/octet-stream")
+
+      worker = described_class.new
+      allow(worker).to receive(:generate_web_preview)
+      worker.perform(sketch_version.id, staging_path.to_s)
+
+      expect(sketch_version.reload.properties).to include(
+        "content_type" => "application/x-sketch",
+        "format"       => "Design Source File"
+      )
+      expect(worker).not_to have_received(:generate_web_preview)
+    ensure
+      File.delete(staging_path) if staging_path && File.exist?(staging_path)
+    end
+  end
+
+  describe "InDesign (.indd) uploads" do
+    it "generates a flattened preview for the real Marcel-reported application/x-adobe-indesign MIME type" do
+      staging_path = Rails.root.join("storage", "asset_processor_worker_#{SecureRandom.hex}.indd")
+      File.binwrite(staging_path, "indd bytes")
+      allow(Marcel::MimeType).to receive(:for).and_return("application/x-adobe-indesign")
+
+      worker = described_class.new
+      allow(worker).to receive(:generate_web_preview) do |_path, _asset, _version, _storage, meta|
+        meta[:preview_storage_path]  = "#{asset.uuid}/preview.png"
+        meta[:preview_content_type] = "image/png"
+      end
+
+      worker.perform(version.id, staging_path.to_s)
+
+      props = version.reload.properties
+      expect(props).to include("content_type" => "application/x-adobe-indesign", "format" => "Vector / Document Media")
+      expect(worker).to have_received(:generate_web_preview)
+    ensure
+      File.delete(staging_path) if staging_path && File.exist?(staging_path)
+    end
+  end
+
+  describe "Office document uploads (Word / PowerPoint / Excel / RTF)" do
+    {
+      "docx" => [ "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "Word Document" ],
+      "doc"  => [ "application/msword", "Word Document (Legacy)" ],
+      "pptx" => [ "application/vnd.openxmlformats-officedocument.presentationml.presentation", "PowerPoint Presentation" ],
+      "ppt"  => [ "application/vnd.ms-powerpoint", "PowerPoint Presentation (Legacy)" ],
+      "xlsx" => [ "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Excel Spreadsheet" ],
+      "xls"  => [ "application/vnd.ms-excel", "Excel Spreadsheet (Legacy)" ],
+      "rtf"  => [ "application/rtf", "Rich Text Document" ],
+    }.each do |ext, (mime, label)|
+      it "labels a .#{ext} upload as '#{label}' and converts it to a flattened preview when LibreOffice is available" do
+        staging_path = Rails.root.join("storage", "asset_processor_worker_#{SecureRandom.hex}.#{ext}")
+        File.binwrite(staging_path, "office bytes")
+        allow(Marcel::MimeType).to receive(:for).and_return(mime)
+
+        v = create(:asset_version, asset: create(:asset, status: :pending, properties: {}), version_number: 1, properties: nil)
+        worker = described_class.new
+        allow(worker).to receive(:soffice_available?).and_return(true)
+        allow(worker).to receive(:convert_office_document_to_preview) do |_path, _asset, _version, _storage, meta|
+          meta[:preview_storage_path]  = "some/preview.png"
+          meta[:preview_content_type] = "image/png"
+        end
+
+        worker.perform(v.id, staging_path.to_s)
+
+        props = v.reload.properties
+        expect(props).to include(
+          "content_type"                    => mime,
+          "format"                           => "Office Document",
+          "document_type"                    => label,
+          "document_conversion_available"    => true,
+        )
+        expect(props["preview_storage_path"]).to be_present
+        expect(worker).to have_received(:convert_office_document_to_preview)
+      ensure
+        File.delete(staging_path) if staging_path && File.exist?(staging_path)
+      end
+    end
+
+    it "stores the asset with no preview and document_conversion_available: false when LibreOffice is not installed" do
+      staging_path = Rails.root.join("storage", "asset_processor_worker_#{SecureRandom.hex}.docx")
+      File.binwrite(staging_path, "office bytes")
+      allow(Marcel::MimeType).to receive(:for).and_return(
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      )
+
+      worker = described_class.new
+      allow(worker).to receive(:soffice_available?).and_return(false)
+
+      expect { worker.perform(version.id, staging_path.to_s) }.not_to raise_error
+
+      props = version.reload.properties
+      expect(props["format"]).to eq("Office Document")
+      expect(props["document_conversion_available"]).to be(false)
+      expect(props).not_to have_key("preview_storage_path")
+      expect(asset.reload.status).to eq("ready")
+    ensure
+      File.delete(staging_path) if staging_path && File.exist?(staging_path)
+    end
+
+    it "converts the Office document to PDF via soffice, then flattens the resulting PDF's first page (real conversion method, mocked shell + flatten)" do
+      staging_path = Rails.root.join("storage", "asset_processor_worker_#{SecureRandom.hex}.docx")
+      File.binwrite(staging_path, "office bytes")
+      allow(Marcel::MimeType).to receive(:for).and_return(
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      )
+
+      worker = described_class.new
+      allow(worker).to receive(:soffice_available?).and_return(true)
+      allow(Open3).to receive(:capture3) do |*args|
+        # Simulate `soffice --convert-to pdf --outdir <dir> <src>` dropping a
+        # same-basename .pdf file in the requested output directory.
+        outdir = args[args.index("--outdir") + 1]
+        File.write(File.join(outdir, "converted.pdf"), "%PDF-1.4 fake")
+        [ "", "", instance_double(Process::Status, success?: true) ]
+      end
+      allow(worker).to receive(:generate_web_preview) do |_path, _asset, _version, _storage, meta|
+        meta[:preview_storage_path]  = "some/preview.png"
+        meta[:preview_content_type] = "image/png"
+      end
+
+      worker.perform(version.id, staging_path.to_s)
+
+      props = version.reload.properties
+      expect(props["preview_storage_path"]).to be_present
+      expect(worker).to have_received(:generate_web_preview)
+    ensure
+      File.delete(staging_path) if staging_path && File.exist?(staging_path)
+    end
+
+    it "logs and does not raise when the LibreOffice conversion command fails" do
+      staging_path = Rails.root.join("storage", "asset_processor_worker_#{SecureRandom.hex}.docx")
+      File.binwrite(staging_path, "office bytes")
+      allow(Marcel::MimeType).to receive(:for).and_return(
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      )
+
+      worker = described_class.new
+      allow(worker).to receive(:soffice_available?).and_return(true)
+      allow(Open3).to receive(:capture3).and_return([ "", "conversion crashed", instance_double(Process::Status, success?: false) ])
+
+      expect { worker.perform(version.id, staging_path.to_s) }.not_to raise_error
+
+      props = version.reload.properties
+      expect(props).not_to have_key("preview_storage_path")
+      expect(asset.reload.status).to eq("ready")
+    ensure
+      File.delete(staging_path) if staging_path && File.exist?(staging_path)
+    end
+  end
+
+  describe "Apple iWork document uploads (Keynote / Pages)" do
+    it "labels a .key upload as Keynote Presentation and never attempts preview generation" do
+      staging_path = Rails.root.join("storage", "asset_processor_worker_#{SecureRandom.hex}.key")
+      File.binwrite(staging_path, "keynote bytes")
+      allow(Marcel::MimeType).to receive(:for).and_return("application/vnd.apple.keynote")
+
+      worker = described_class.new
+      allow(worker).to receive(:generate_web_preview)
+      allow(worker).to receive(:convert_office_document_to_preview)
+      worker.perform(version.id, staging_path.to_s)
+
+      props = version.reload.properties
+      expect(props).to include(
+        "content_type"                  => "application/vnd.apple.keynote",
+        "format"                        => "Apple iWork Document",
+        "document_type"                 => "Keynote Presentation",
+        "document_conversion_available" => false,
+      )
+      expect(worker).not_to have_received(:generate_web_preview)
+      expect(worker).not_to have_received(:convert_office_document_to_preview)
+    ensure
+      File.delete(staging_path) if staging_path && File.exist?(staging_path)
+    end
+
+    it "labels a .pages upload as Pages Document and never attempts preview generation" do
+      staging_path = Rails.root.join("storage", "asset_processor_worker_#{SecureRandom.hex}.pages")
+      File.binwrite(staging_path, "pages bytes")
+      allow(Marcel::MimeType).to receive(:for).and_return("application/vnd.apple.pages")
+
+      worker = described_class.new
+      allow(worker).to receive(:generate_web_preview)
+      worker.perform(version.id, staging_path.to_s)
+
+      props = version.reload.properties
+      expect(props).to include(
+        "content_type"  => "application/vnd.apple.pages",
+        "format"        => "Apple iWork Document",
+        "document_type" => "Pages Document",
+      )
+      expect(worker).not_to have_received(:generate_web_preview)
+    ensure
+      File.delete(staging_path) if staging_path && File.exist?(staging_path)
+    end
+  end
+
+  describe "plain-text document uploads (.txt / .csv)" do
+    it "extracts a truncated text preview and line count for a .txt upload" do
+      staging_path = Rails.root.join("storage", "asset_processor_worker_#{SecureRandom.hex}.txt")
+      content = (1..10).map { |n| "line #{n}" }.join("\n")
+      File.write(staging_path, content)
+      allow(Marcel::MimeType).to receive(:for).and_return("text/plain")
+
+      worker = described_class.new
+      worker.perform(version.id, staging_path.to_s)
+
+      props = version.reload.properties
+      expect(props).to include(
+        "content_type"           => "text/plain",
+        "format"                 => "Plain Text Document",
+        "document_type"          => "Plain Text Document",
+        "line_count"             => 10,
+        "text_preview_truncated" => false,
+      )
+      expect(props["text_preview"]).to eq(content)
+    ensure
+      File.delete(staging_path) if staging_path && File.exist?(staging_path)
+    end
+
+    it "labels a .csv upload as CSV Spreadsheet and extracts its text preview" do
+      staging_path = Rails.root.join("storage", "asset_processor_worker_#{SecureRandom.hex}.csv")
+      File.write(staging_path, "name,age\nAlice,30\nBob,25\n")
+      allow(Marcel::MimeType).to receive(:for).and_return("text/csv")
+
+      worker = described_class.new
+      worker.perform(version.id, staging_path.to_s)
+
+      props = version.reload.properties
+      expect(props).to include("format" => "Plain Text Document", "document_type" => "CSV Spreadsheet")
+      expect(props["text_preview"]).to include("name,age")
+    ensure
+      File.delete(staging_path) if staging_path && File.exist?(staging_path)
+    end
+
+    it "truncates the stored preview and sets text_preview_truncated: true for large files" do
+      staging_path = Rails.root.join("storage", "asset_processor_worker_#{SecureRandom.hex}.txt")
+      big_content = "x" * (AssetProcessorWorker::TEXT_PREVIEW_MAX_CHARS + 500)
+      File.write(staging_path, big_content)
+      allow(Marcel::MimeType).to receive(:for).and_return("text/plain")
+
+      worker = described_class.new
+      worker.perform(version.id, staging_path.to_s)
+
+      props = version.reload.properties
+      expect(props["text_preview"].length).to eq(AssetProcessorWorker::TEXT_PREVIEW_MAX_CHARS)
+      expect(props["text_preview_truncated"]).to be(true)
+    ensure
+      File.delete(staging_path) if staging_path && File.exist?(staging_path)
+    end
+  end
+
   it "returns early when the asset version is missing" do
     expect { described_class.new.perform(0) }.not_to raise_error
     expect(storage).not_to have_received(:store)

@@ -111,6 +111,12 @@ include::src/24_3d-asset-viewer.adoc[]
 // 25. Video Asset Management
 include::src/25_video-asset-management.adoc[]
 
+// 26. Expanded Image Format Support
+include::src/26_image-asset-formats.adoc[]
+
+// 27. Expanded Document Format Support
+include::src/27_document-asset-formats.adoc[]
+
 ifdef::backend-html5[]
 // Back-to-top button
 ++++

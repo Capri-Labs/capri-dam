@@ -2236,7 +2236,10 @@
       "secureProxyDescription": "Enthält nicht entfernbares Wasserzeichen"
     },
     "preview": {
-      "notAvailableForFileType": "Für diesen Dateityp ist keine Vorschau verfügbar."
+      "notAvailableForFileType": "Für diesen Dateityp ist keine Vorschau verfügbar.",
+      "downloadToViewHint": "Dieses Dateiformat kann nicht direkt angezeigt werden. Laden Sie das Original herunter, um es in der zugehörigen Anwendung zu öffnen.",
+      "downloadOriginal": "Original herunterladen",
+      "textPreviewTruncated": "Vorschau gekürzt — laden Sie das Original herunter, um die vollständige Datei zu sehen."
     },
     "tabs": {
       "info": "Info",

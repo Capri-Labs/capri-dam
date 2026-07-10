@@ -812,3 +812,29 @@ describe('i18n — video asset management keys across all 10 locales', () => {
   afterAll(() => i18n.changeLanguage('en'));
 });
 
+
+describe('i18n — non-previewable image/design-file fallback keys across all 10 locales', () => {
+  LOCALES.forEach(locale => {
+    it(`${locale} has assetViewer.preview.downloadToViewHint and downloadOriginal`, () => {
+      i18n.changeLanguage(locale);
+
+      expect(i18n.t('assetViewer.preview.notAvailableForFileType')).not.toBe('assetViewer.preview.notAvailableForFileType');
+      expect(i18n.t('assetViewer.preview.downloadToViewHint')).not.toBe('assetViewer.preview.downloadToViewHint');
+      expect(i18n.t('assetViewer.preview.downloadOriginal')).not.toBe('assetViewer.preview.downloadOriginal');
+    });
+  });
+
+  afterAll(() => i18n.changeLanguage('en'));
+});
+
+describe('i18n — text document preview truncation key across all 10 locales', () => {
+  LOCALES.forEach(locale => {
+    it(`${locale} has assetViewer.preview.textPreviewTruncated`, () => {
+      i18n.changeLanguage(locale);
+
+      expect(i18n.t('assetViewer.preview.textPreviewTruncated')).not.toBe('assetViewer.preview.textPreviewTruncated');
+    });
+  });
+
+  afterAll(() => i18n.changeLanguage('en'));
+});

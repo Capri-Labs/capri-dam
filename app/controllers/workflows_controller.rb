@@ -163,17 +163,15 @@ class WorkflowsController < ApplicationController
         :deadline_days,
         :_destroy,
         { step_config: {} },
-      ]
+      ],
+      # `graph_data` is a JSONB column that stores the full React Flow canvas
+      # (nodes, edges, viewport). It's an intentionally free-form document, so
+      # we permit it explicitly via strong parameters (rather than reading the
+      # raw, unpermitted hash with `to_unsafe_h`) — this keeps the mass
+      # assignment restricted to the single `graph_data` attribute and avoids
+      # bypassing ActionController::Parameters filtering entirely.
+      graph_data: {}
     )
-
-    # `graph_data` is a JSONB column that stores the full React Flow canvas
-    # (nodes, edges, viewport).  Rather than using permit! we extract the raw
-    # hash directly from the unpermitted params and convert it to safe Ruby
-    # primitives — this avoids both the Brakeman MassAssignment warning and
-    # the ActionController::UnpermittedParameters error for deeply nested keys.
-    if params.dig(:workflow, :graph_data).present?
-      permitted[:graph_data] = params[:workflow][:graph_data].to_unsafe_h
-    end
 
     permitted
   end

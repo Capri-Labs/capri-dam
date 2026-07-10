@@ -1,0 +1,148 @@
+[[section-document-asset-formats]]
+= Expanded Document Format Support
+
+Capri DAM's asset pipeline handles common office productivity and text
+document formats — professional office suites (Word/PowerPoint/Excel, both
+legacy and OOXML), Apple's iWork suite, Rich Text Format, and plain
+text/CSV — mirroring the image, video, and 3D asset preview features that
+came before it.
+
+== Format classes
+
+[cols="1,3,1", options="header"]
+|===
+| Class | Formats | Preview support
+| PDF | `.pdf` | Native — first page rasterised into a PNG preview via
+  ImageMagick/Ghostscript (pre-existing).
+| Office documents | `.docx`/`.doc` (Word), `.pptx`/`.ppt` (PowerPoint),
+  `.xlsx`/`.xls` (Excel), `.rtf` (Rich Text) | Converted to PDF via
+  LibreOffice's headless CLI (`soffice --convert-to pdf`) when installed,
+  then flattened into a first-page PNG preview using the same pipeline as
+  native PDFs. Falls back to "Download Original" when LibreOffice is absent.
+| Apple iWork documents | `.key` (Keynote), `.pages` (Pages) | No preview —
+  these are proprietary, bundle-based container formats with no reliable
+  open-source rasteriser available. Always falls back to "Download Original".
+| Plain text | `.txt`, `.csv` | Inline text preview — a truncated snippet of
+  the file's actual text content, rendered directly in the asset viewer
+  (no image/PDF conversion involved at all).
+|===
+
+== Processing pipeline (`AssetProcessorWorker`)
+
+Marcel correctly detects every one of these formats by file extension — no
+MIME override table is needed (unlike the Adobe XD/Figma/Sketch design-tool
+formats, which required `DESIGN_SOURCE_EXTENSION_OVERRIDES`).
+
+=== Office documents
+
+`OFFICE_DOCUMENT_MIME_TYPES` covers Word/PowerPoint/Excel (legacy `.doc`/
+`.ppt`/`.xls` MIME types and modern OOXML `.docx`/`.pptx`/`.xlsx` MIME types)
+plus RTF. For each upload:
+
+1. `format` is set to `"Office Document"` and `document_type` to a friendly
+   label (e.g. `"Word Document"`, `"Excel Spreadsheet (Legacy)"`) via the
+   `DOCUMENT_TYPE_LABELS` lookup table.
+2. `soffice_available?` — a memoized `system("which", "soffice", ...)` check,
+   mirroring the existing `ffmpeg_available?`/`exiftool_available?` pattern —
+   determines whether LibreOffice's headless CLI is installed.
+   `document_conversion_available` is stamped on the asset either way so the
+   UI/API can distinguish "no preview because LibreOffice isn't installed"
+   from "no preview because generation failed".
+3. When LibreOffice is available, `convert_office_document_to_preview`:
+   * Runs `soffice --headless --norestore --convert-to pdf --outdir <tmp> <source>`
+     via `Open3.capture3` into a per-upload scratch directory.
+   * Reuses {generate_web_preview} — completely unchanged — against the
+     resulting PDF to flatten its first page into a PNG, exactly the same
+     preview a natively-uploaded PDF gets.
+   * Cleans up the scratch directory in an `ensure` block.
+   * Is entirely non-fatal: any LibreOffice crash, timeout, or corrupt
+     document is logged and swallowed, so the asset is still uploaded,
+     stored, and reaches `status: "ready"` without a preview.
+
+=== Apple iWork documents (Keynote / Pages)
+
+`IWORK_DOCUMENT_MIME_TYPES` covers `.key`/`.pages`. Like the Adobe XD/Figma/
+Sketch design-tool formats, no preview-generation attempt is made at all —
+LibreOffice's iWork import filters are unreliable in headless mode and there
+is no other open-source rasteriser available. `format` is set to
+`"Apple iWork Document"`, `document_type` to `"Keynote Presentation"` /
+`"Pages Document"`, and `document_conversion_available` is always `false`.
+
+=== Plain text and CSV
+
+`PLAIN_TEXT_MIME_TYPES` covers `text/plain` and `text/csv`. Rather than
+attempting any image rasterisation (which would be pointless for a text
+file), `extract_text_document_metadata` reads the file and stores:
+
+* `text_preview` — the first `TEXT_PREVIEW_MAX_CHARS` (5,000) characters of
+  the file, read with `invalid: :replace, undef: :replace` so malformed
+  encoding never raises.
+* `text_preview_truncated` — `true` when the file is longer than the
+  truncation limit.
+* `line_count` — the total number of lines in the file.
+
+Storing a truncated snippet directly on the asset (rather than fetching the
+full original file client-side) keeps the asset viewer fast even for
+multi-megabyte log/CSV files, at the cost of only showing a preview of very
+large files — the "Download Original" action is always available for the
+full content.
+
+== Asset Viewer UI
+
+* Office document previews reuse the **existing**, already-generic
+  `hasGeneratedPreview` / `canPreview` logic in `AssetViewer.jsx` (keyed off
+  `properties.preview_storage_path`) — no frontend changes were needed for
+  the positive preview case at all, since it's the same mechanism PDF/PSD
+  previews already use.
+* Apple iWork documents automatically fall through to the existing
+  "Preview not available for this file type" + Download Original fallback,
+  again with no code changes required (same generic mechanism as the Adobe
+  XD/Figma/Sketch design-source fallback).
+* Plain text/CSV documents get a **new** rendering branch: when
+  `properties.content_type` is `text/plain` or `text/csv` and
+  `properties.text_preview` is present, the left pane renders a scrollable,
+  monospace `<pre>`-style text block (`data-testid="asset-viewer-text-preview"`)
+  instead of an image. A truncation notice is shown below the text when
+  `text_preview_truncated` is `true`. If no `text_preview` was extracted (e.g.
+  a read failure), the standard download fallback is shown instead.
+
+== i18n
+
+One new key was added under `assetViewer.preview` in all 10 locales:
+
+* `assetViewer.preview.textPreviewTruncated`
+
+(`notAvailableForFileType`, `downloadToViewHint`, and `downloadOriginal`
+already existed and are reused as-is for the Office/iWork fallback cases.)
+
+== Admin upload restrictions
+
+`Tools → Asset Configurations → Upload Restrictions` now includes suggestion
+chips for the modern OOXML Office MIME types (`.docx`/`.pptx`/`.xlsx`), RTF,
+Keynote, Pages, Plain Text, and CSV, alongside the pre-existing legacy Word/
+Excel chips, for admin discoverability. No MIME types are blocked by default.
+
+== Testing
+
+* `spec/workers/asset_processor_worker_spec.rb` — Office document uploads
+  (all 7 MIME types, friendly label + `document_type` verification,
+  LibreOffice-available and LibreOffice-absent paths, and a full
+  conversion-command simulation exercising the real `Open3.capture3` call
+  and both success/failure outcomes), Apple iWork uploads (Keynote, Pages),
+  and plain-text/CSV uploads (`text_preview`, truncation, `line_count`).
+* `spec/javascript/components/Folders/FoldersComponents.test.jsx` — Word
+  document with a generated preview (positive case), Excel with no preview
+  (fallback), Keynote (fallback), plain-text with an extracted preview
+  (inline text pane), CSV with a truncated preview (truncation notice
+  shown), and plain-text with no extracted preview (fallback, not a
+  broken render).
+* `spec/javascript/i18n/i18n.test.js` — new `assetViewer.preview.textPreviewTruncated`
+  key translates correctly across all 10 locales.
+* `spec/e2e/document_asset_formats.e2e.spec.js` — end-to-end coverage of the
+  Word/Excel/Keynote/plain-text scenarios above against a running server,
+  using mocked API responses.
+
+No swagger or GraphQL changes were required: neither `swagger/v1/swagger.yaml`
+nor `app/graphql/` enumerate per-format dynamic asset fields (`document_type`,
+`text_preview`, `document_conversion_available`, etc.) — the same was true for
+the video, 3D, and image-format features that preceded this one.

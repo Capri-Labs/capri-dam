@@ -2236,7 +2236,10 @@
       "secureProxyDescription": "Inclui marca-d’água irremovível"
     },
     "preview": {
-      "notAvailableForFileType": "Prévia não disponível para este tipo de arquivo."
+      "notAvailableForFileType": "Prévia não disponível para este tipo de arquivo.",
+      "downloadToViewHint": "Este formato de arquivo não pode ser exibido diretamente. Baixe o original para abri-lo em seu aplicativo nativo.",
+      "downloadOriginal": "Baixar original",
+      "textPreviewTruncated": "Pré-visualização truncada — baixe o original para ver o arquivo completo."
     },
     "tabs": {
       "info": "Informações",

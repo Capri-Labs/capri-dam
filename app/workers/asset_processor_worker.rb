@@ -42,6 +42,7 @@
 # @see Api::V1::AssetsController#dispatch_asset_workers
 require "digest"
 require "open3"
+require "fileutils"
 
 class AssetProcessorWorker
   include Sidekiq::Worker
@@ -65,6 +66,10 @@ class AssetProcessorWorker
   # but which ImageMagick (backed by Ghostscript) can flatten into a first-page
   # PNG preview — e.g. PDF, EPS, Adobe Illustrator, InDesign.  These follow the
   # same preview pipeline as non-web-native images (PSD, TIFF, HEIC).
+  #
+  # `application/x-indesign` is kept for backward compatibility with any
+  # already-stored assets; `application/x-adobe-indesign` is the MIME type
+  # Marcel (and real-world `.indd` files) actually report.
   PREVIEWABLE_DOCUMENT_MIME_TYPES = %w[
     application/pdf
     application/postscript
@@ -73,8 +78,125 @@ class AssetProcessorWorker
     application/illustrator
     application/vnd.adobe.illustrator
     application/x-indesign
+    application/x-adobe-indesign
     application/vnd.adobe.indesign-idml-package
   ].freeze
+
+  # Camera manufacturer RAW formats (Canon CR2/CR3, Nikon NEF, Sony ARW, Adobe
+  # DNG, Olympus ORF, Panasonic RW2). Marcel/Magic correctly classifies these
+  # as distinct `image/x-raw-*` MIME types, so they already flow through the
+  # normal `image/*` metadata-extraction + preview-generation pipeline — no
+  # special-cased routing is needed. This constant exists purely so the asset
+  # gets a friendly `format` label and so RAW support is documented/testable
+  # as its own concept, mirroring the optional-tool pattern used for FFmpeg:
+  # generating a preview requires ImageMagick to be built with a RAW delegate
+  # (libraw/dcraw). When that delegate is absent, {#generate_web_preview}
+  # simply fails non-fatally (as it already does for any unsupported format)
+  # and the asset is stored with its original RAW binary but no preview —
+  # the asset viewer then shows a "download to view" fallback instead of
+  # attempting to inline the un-renderable RAW original.
+  CAMERA_RAW_MIME_TYPES = %w[
+    image/x-raw-canon
+    image/x-canon-cr3
+    image/x-raw-nikon
+    image/x-raw-sony
+    image/x-raw-adobe
+    image/x-raw-olympus
+    image/x-raw-panasonic
+  ].freeze
+
+  # Proprietary design-tool source formats (Adobe XD, Figma, Sketch) that are
+  # ZIP-based container formats with no ImageMagick/Ghostscript rasteriser —
+  # unlike PSD/AI/EPS/INDD, there is no first-page-flatten path available for
+  # these, so no preview is attempted (avoids a guaranteed-to-fail
+  # MiniMagick call on every upload). The asset viewer instead shows the
+  # standard "preview not available for this file type" fallback with a
+  # Download Original action, exactly like the pre-FFmpeg video and USDZ 3D
+  # fallbacks.
+  #
+  # None of these three have an IANA-registered MIME type; Adobe documents
+  # `application/vnd.adobe.xd` for `.xd`, and there is no vendor-published
+  # type for Figma `.fig` or Sketch `.sketch`, so `application/x-figma` /
+  # `application/x-sketch` are used as practical, internally-consistent
+  # identifiers (same approach already used for Adobe Dimension's
+  # `model/x-adobe-dn` in the 3D asset viewer feature).
+  DESIGN_SOURCE_MIME_TYPES = %w[
+    application/vnd.adobe.xd
+    application/x-figma
+    application/x-sketch
+  ].freeze
+
+  # Marcel's extension/magic-byte database misidentifies these three design
+  # tool formats (`.xd`/`.sketch` resolve to the generic
+  # `application/octet-stream`; `.fig` collides with the unrelated legacy
+  # "Xfig" CAD format's `application/x-xfig`), so the correct MIME type is
+  # forced from the file extension instead of trusting Marcel for these
+  # specific extensions. See {DESIGN_SOURCE_MIME_TYPES}.
+  DESIGN_SOURCE_EXTENSION_OVERRIDES = {
+    "xd"      => "application/vnd.adobe.xd",
+    "fig"     => "application/x-figma",
+    "sketch"  => "application/x-sketch",
+  }.freeze
+
+  # "Office" document formats (Word/PowerPoint/Excel, legacy and modern, plus
+  # Rich Text Format) that have no built-in rasteriser but *can* be flattened
+  # into a first-page PNG preview via LibreOffice's headless CLI
+  # (`soffice --headless --convert-to pdf`) when it is installed — mirroring
+  # the optional-tool pattern already used for FFmpeg (video) and the
+  # ImageMagick RAW/HEIF delegates (images). LibreOffice converts the
+  # document to a PDF first, then the existing PDF -> PNG flatten path
+  # ({#generate_web_preview}) is reused unchanged. Marcel correctly detects
+  # every one of these from the file extension, so no override table is
+  # needed (unlike {DESIGN_SOURCE_EXTENSION_OVERRIDES}).
+  OFFICE_DOCUMENT_MIME_TYPES = %w[
+    application/msword
+    application/vnd.openxmlformats-officedocument.wordprocessingml.document
+    application/vnd.ms-powerpoint
+    application/vnd.openxmlformats-officedocument.presentationml.presentation
+    application/vnd.ms-excel
+    application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+    application/rtf
+  ].freeze
+
+  # Friendly `document_type` labels keyed by MIME type, used for every
+  # PDF/Office/iWork/plain-text document so the UI shows a recognisable
+  # format name instead of a raw MIME string.
+  DOCUMENT_TYPE_LABELS = {
+    "application/pdf" => "PDF",
+    "application/msword" => "Word Document (Legacy)",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document" => "Word Document",
+    "application/vnd.ms-powerpoint" => "PowerPoint Presentation (Legacy)",
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation" => "PowerPoint Presentation",
+    "application/vnd.ms-excel" => "Excel Spreadsheet (Legacy)",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" => "Excel Spreadsheet",
+    "application/rtf" => "Rich Text Document",
+    "application/vnd.apple.keynote" => "Keynote Presentation",
+    "application/vnd.apple.pages" => "Pages Document",
+    "text/plain" => "Plain Text Document",
+    "text/csv" => "CSV Spreadsheet",
+  }.freeze
+
+  # Apple iWork document formats (Keynote, Pages). Like {DESIGN_SOURCE_MIME_TYPES},
+  # these are proprietary, bundle/ZIP-based container formats with no open-source
+  # rasteriser available (LibreOffice's iWork import filters are unreliable/absent
+  # in headless mode) — no preview is attempted, the asset viewer shows the
+  # standard "download to view" fallback instead.
+  IWORK_DOCUMENT_MIME_TYPES = %w[
+    application/vnd.apple.keynote
+    application/vnd.apple.pages
+  ].freeze
+
+  # Plain-text document formats that a browser (and this app) can render
+  # directly as text — no image preview is needed at all. A truncated text
+  # snippet is extracted and stored on the asset so the asset viewer can show
+  # an inline text preview pane without a second network round-trip for the
+  # full (potentially large) original file.
+  PLAIN_TEXT_MIME_TYPES = %w[text/plain text/csv].freeze
+
+  # Maximum number of characters read into the stored `text_preview` field.
+  # Keeps the asset's `properties` JSON column small even for huge CSV/log
+  # files while still giving the user a meaningful, useful preview.
+  TEXT_PREVIEW_MAX_CHARS = 5_000
 
   # Video MIME types every modern browser can play directly in a native
   # +<video>+ element without server-side transcoding. Anything outside this
@@ -167,15 +289,29 @@ class AssetProcessorWorker
 
         file_stream = File.open(staging_path)
         mime_type   = Marcel::MimeType.for(file_stream, name: File.basename(staging_path))
-        extracted_meta[:content_type] = mime_type
         file_stream.close
+
+        # Marcel misidentifies Adobe XD/Figma/Sketch (see
+        # DESIGN_SOURCE_EXTENSION_OVERRIDES) — trust the file extension for
+        # these three specific formats instead.
+        upload_ext = File.extname(original_name.presence || staging_path).delete_prefix(".").downcase
+        mime_type  = DESIGN_SOURCE_EXTENSION_OVERRIDES.fetch(upload_ext, mime_type)
+
+        extracted_meta[:content_type] = mime_type
 
         if mime_type.start_with?("image/")
           extract_image_metadata(staging_path, extracted_meta)
           extract_text_from_image(staging_path, extracted_meta)
+          extracted_meta[:format] = "Camera RAW Image" if CAMERA_RAW_MIME_TYPES.include?(mime_type)
 
-          # Photoshop / TIFF / HEIC and other non-web formats cannot be shown in
-          # a browser <img> tag, so render a flattened PNG preview and stage it.
+          # Photoshop / TIFF / HEIC / RAW and other non-web formats cannot be
+          # shown in a browser <img> tag, so render a flattened PNG preview
+          # and stage it. For RAW formats this additionally depends on
+          # ImageMagick being built with a RAW delegate (libraw/dcraw) —
+          # when absent, generate_web_preview simply fails non-fatally (as
+          # it already does for any unsupported format) and no preview is
+          # stored, so the asset viewer falls back to a "download to view"
+          # message instead of trying to inline the un-renderable original.
           unless WEB_RENDERABLE_MIME_TYPES.include?(mime_type)
             generate_web_preview(staging_path, asset, version, storage, extracted_meta)
           end
@@ -185,6 +321,38 @@ class AssetProcessorWorker
         elsif PREVIEWABLE_DOCUMENT_MIME_TYPES.include?(mime_type)
           extracted_meta[:format] = "Vector / Document Media"
           generate_web_preview(staging_path, asset, version, storage, extracted_meta)
+        elsif OFFICE_DOCUMENT_MIME_TYPES.include?(mime_type)
+          extracted_meta[:format] = "Office Document"
+          extracted_meta[:document_type] = DOCUMENT_TYPE_LABELS.fetch(mime_type, "Office Document")
+          extracted_meta[:document_conversion_available] = soffice_available?
+          # LibreOffice is an optional external tool (same pattern as
+          # FFmpeg for video) — when present, convert the document to a
+          # PDF first, then reuse the existing PDF -> PNG flatten path;
+          # when absent, the asset is still stored and marked ready, it
+          # just has no generated preview until LibreOffice is installed
+          # and the asset is reprocessed.
+          if soffice_available?
+            convert_office_document_to_preview(staging_path, asset, version, storage, extracted_meta)
+          end
+        elsif IWORK_DOCUMENT_MIME_TYPES.include?(mime_type)
+          # No open-source rasteriser is available for Apple's proprietary
+          # Keynote/Pages bundle formats — skip preview generation entirely,
+          # same as Adobe XD/Figma/Sketch below.
+          extracted_meta[:format] = "Apple iWork Document"
+          extracted_meta[:document_type] = DOCUMENT_TYPE_LABELS.fetch(mime_type, "Apple iWork Document")
+          extracted_meta[:document_conversion_available] = false
+        elsif PLAIN_TEXT_MIME_TYPES.include?(mime_type)
+          extracted_meta[:format] = "Plain Text Document"
+          extracted_meta[:document_type] = DOCUMENT_TYPE_LABELS.fetch(mime_type, "Plain Text Document")
+          extract_text_document_metadata(staging_path, extracted_meta)
+        elsif DESIGN_SOURCE_MIME_TYPES.include?(mime_type)
+          # No first-page rasteriser exists for these proprietary, ZIP-based
+          # design tool containers (Adobe XD, Figma, Sketch) — skip preview
+          # generation entirely rather than attempting (and always failing)
+          # a MiniMagick conversion. The asset viewer shows its standard
+          # "preview not available" + Download Original fallback instead.
+          extracted_meta[:format] = "Design Source File"
+          extracted_meta[:design_preview_available] = false
         elsif mime_type.start_with?("video/")
           extract_video_metadata(staging_path, mime_type, asset, version, storage, extracted_meta)
         elsif ThreeDMimeTypes.model_3d?(mime_type)
@@ -610,6 +778,18 @@ class AssetProcessorWorker
     @ffprobe_available = system("which", "ffprobe", out: File::NULL, err: File::NULL) || false
   end
 
+  # @return [Boolean] whether LibreOffice's headless CLI (+soffice+) is on
+  #   +PATH+. Memoised like {#ffmpeg_available?}. Treated as an optional
+  #   "pack" exactly like FFmpeg for video — Office documents (Word,
+  #   PowerPoint, Excel, RTF) are still uploaded, stored, and marked ready
+  #   without it; they simply have no generated first-page preview until
+  #   LibreOffice is installed and the asset is reprocessed.
+  def soffice_available?
+    return @soffice_available unless @soffice_available.nil?
+
+    @soffice_available = system("which", "soffice", out: File::NULL, err: File::NULL) || false
+  end
+
   # @return [Boolean] whether this FFmpeg build was compiled with an AV1
   #   encoder (`libsvtav1` preferred for speed, `libaom-av1` as a fallback —
   #   many distro FFmpeg packages omit AV1 encoders entirely since they are
@@ -939,5 +1119,62 @@ class AssetProcessorWorker
   # @return [void]
   def extract_pdf_metadata(path, meta)
     meta[:document_type] = "PDF"
+  end
+
+  # Converts an Office document (Word/PowerPoint/Excel/RTF) to a PDF using
+  # LibreOffice's headless CLI, then reuses {#generate_web_preview} to
+  # flatten that PDF's first page into a PNG — exactly the same rasterised
+  # preview an uploaded native PDF would get. Entirely non-fatal: any
+  # failure (LibreOffice crash, corrupt document, timeout) is logged and
+  # swallowed so the asset is still stored and marked ready without a
+  # preview, matching every other optional-tool code path in this worker.
+  #
+  # @param source_path [String] absolute path to the staged Office document
+  # @param asset [Asset]
+  # @param version [AssetVersion]
+  # @param storage [Object] storage adapter responding to +store+
+  # @param meta [Hash] mutable metadata hash to populate
+  # @return [void]
+  def convert_office_document_to_preview(source_path, asset, version, storage, meta)
+    convert_dir = Rails.root.join("tmp", "office_convert_#{SecureRandom.hex(8)}").to_s
+    FileUtils.mkdir_p(convert_dir)
+
+    _out, err, status = Open3.capture3(
+      "soffice", "--headless", "--norestore", "--convert-to", "pdf", "--outdir", convert_dir, source_path
+    )
+
+    unless status.success?
+      Rails.logger.error "LibreOffice conversion failed: #{err}"
+      return
+    end
+
+    converted_pdf = Dir.glob(File.join(convert_dir, "*.pdf")).first
+    return unless converted_pdf && File.exist?(converted_pdf)
+
+    generate_web_preview(converted_pdf, asset, version, storage, meta)
+  rescue StandardError => e
+    Rails.logger.error "Office document conversion failed: #{e.message}"
+  ensure
+    FileUtils.rm_rf(convert_dir) if convert_dir && File.directory?(convert_dir)
+  end
+
+  # Extracts a truncated inline preview of a plain-text/CSV document so the
+  # asset viewer can render it directly without a second network request for
+  # the (potentially large) original file. Non-fatal: any read failure (e.g.
+  # invalid encoding) is logged and skipped — the asset is still stored, it
+  # simply has no `text_preview` and falls back to the standard
+  # "download to view" UI.
+  #
+  # @param path [String] absolute path to the staged text/CSV file
+  # @param meta [Hash]   mutable metadata hash; populates +:text_preview+,
+  #   +:text_preview_truncated+, and +:line_count+
+  # @return [void]
+  def extract_text_document_metadata(path, meta)
+    full_text = File.read(path, encoding: "UTF-8", invalid: :replace, undef: :replace)
+    meta[:line_count] = full_text.each_line.count
+    meta[:text_preview] = full_text[0, TEXT_PREVIEW_MAX_CHARS]
+    meta[:text_preview_truncated] = full_text.length > TEXT_PREVIEW_MAX_CHARS
+  rescue StandardError => e
+    Rails.logger.error "Text document preview extraction failed: #{e.message}"
   end
 end

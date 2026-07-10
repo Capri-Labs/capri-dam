@@ -2236,7 +2236,10 @@
       "secureProxyDescription": "제거할 수 없는 워터마크 포함"
     },
     "preview": {
-      "notAvailableForFileType": "이 파일 형식에는 미리보기를 사용할 수 없습니다."
+      "notAvailableForFileType": "이 파일 형식에는 미리보기를 사용할 수 없습니다.",
+      "downloadToViewHint": "이 파일 형식은 인라인으로 표시할 수 없습니다. 원본을 다운로드하여 해당 애플리케이션에서 여세요.",
+      "downloadOriginal": "원본 다운로드",
+      "textPreviewTruncated": "미리보기가 잘렸습니다. 전체 파일을 보려면 원본을 다운로드하세요."
     },
     "tabs": {
       "info": "정보",

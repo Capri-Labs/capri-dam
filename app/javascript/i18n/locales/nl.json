@@ -2236,7 +2236,10 @@
       "secureProxyDescription": "Bevat een niet-verwijderbaar watermerk"
     },
     "preview": {
-      "notAvailableForFileType": "Preview niet beschikbaar voor dit bestandstype."
+      "notAvailableForFileType": "Preview niet beschikbaar voor dit bestandstype.",
+      "downloadToViewHint": "Dit bestandsformaat kan niet inline worden weergegeven. Download het origineel om het te openen in de bijbehorende toepassing.",
+      "downloadOriginal": "Origineel downloaden",
+      "textPreviewTruncated": "Voorbeeld ingekort — download het origineel om het volledige bestand te bekijken."
     },
     "tabs": {
       "info": "Info",

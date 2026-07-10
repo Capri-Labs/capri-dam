@@ -15,8 +15,21 @@ FROM docker.io/library/ruby:$RUBY_VERSION-slim AS base
 WORKDIR /rails
 
 # Install base packages
+#
+# ffmpeg                       - video transcoding/preview renditions (feature-detected at
+#                                 runtime via `which ffmpeg`; AssetProcessorWorker degrades
+#                                 gracefully without it, but previews/transcodes are silently
+#                                 skipped, so it must ship in production).
+# libreoffice-{writer,calc,impress} + libreoffice-core
+#                               - headless `soffice --convert-to pdf` used to rasterise Office
+#                                 documents (doc/docx/ppt/pptx/xls/xlsx/rtf) into previews
+#                                 (feature-detected via `which soffice`, same graceful-degrade
+#                                 pattern). Installing only the writer/calc/impress components
+#                                 (not the full `libreoffice` meta-package) keeps the image
+#                                 smaller while covering every OFFICE_DOCUMENT_MIME_TYPES entry.
 RUN apt-get update -qq && \
-    apt-get install --no-install-recommends -y curl libimage-exiftool-perl libjemalloc2 libvips postgresql-client && \
+    apt-get install --no-install-recommends -y curl libimage-exiftool-perl libjemalloc2 libvips postgresql-client \
+      ffmpeg libreoffice-core libreoffice-writer libreoffice-calc libreoffice-impress && \
     ln -s /usr/lib/$(uname -m)-linux-gnu/libjemalloc.so.2 /usr/local/lib/libjemalloc.so && \
     rm -rf /var/lib/apt/lists /var/cache/apt/archives
 

@@ -58,6 +58,10 @@ jobs:
           languages: ${{ matrix.language }}
           # Use the extended security query suite for broader coverage
           queries: security-extended
+          # Excludes vendor/bundle, node_modules, and other generated/
+          # non-source paths so third-party gem/package internals never show
+          # up as first-party findings — see file for full rationale.
+          config-file: ./.github/codeql/codeql-config.yml
 
       - name: Set up Ruby (for CodeQL Ruby extraction)
         if: matrix.language == 'ruby'

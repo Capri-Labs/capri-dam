@@ -2236,7 +2236,10 @@
       "secureProxyDescription": "Includes unremovable watermark"
     },
     "preview": {
-      "notAvailableForFileType": "Preview not available for this file type."
+      "notAvailableForFileType": "Preview not available for this file type.",
+      "downloadToViewHint": "This file format can't be displayed inline. Download the original to open it in its native application.",
+      "downloadOriginal": "Download Original",
+      "textPreviewTruncated": "Preview truncated — download the original to see the full file."
     },
     "tabs": {
       "info": "Info",
