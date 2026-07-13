@@ -13,6 +13,7 @@ jest.mock('../../../../app/javascript/context/NotificationContext', () => ({
 }));
 
 jest.mock('../../../../app/javascript/components/Admin/SystemStatus/FeatureFlagsTab', () => () => <div>Feature Flags Tab</div>);
+jest.mock('../../../../app/javascript/utils/globalutils.js', () => ({ navigateTo: jest.fn() }));
 
 import AiGatewayTab from '../../../../app/javascript/components/Admin/SystemStatus/AiGatewayTab';
 import ObservabilityTab from '../../../../app/javascript/components/Admin/SystemStatus/ObservabilityTab';
@@ -147,6 +148,19 @@ describe('SystemStatus tabs', () => {
     await act(async () => { jest.advanceTimersByTime(600); });
     expect(await screen.findByText('Infrastructure Routing')).toBeInTheDocument();
     expect(screen.getByText('Save CDN Settings')).toBeInTheDocument();
+  });
+
+  it('renders the Origin Storage sub-tab with storage backend configuration', async () => {
+    const storageProps = {
+      allConfigs: JSON.stringify({ local: {} }),
+      activeProvider: 'local',
+    };
+    await act(async () => { render(<StorageOperationsTab {...storageProps} />); });
+    await act(async () => { jest.advanceTimersByTime(600); });
+
+    fireEvent.click(screen.getByText('Origin Storage'));
+
+    expect(await screen.findByText('Storage Backend Configuration')).toBeInTheDocument();
   });
 
   it('renders AuditLogTab with fetched entries', async () => {

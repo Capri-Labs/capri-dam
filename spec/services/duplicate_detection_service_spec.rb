@@ -116,6 +116,49 @@ RSpec.describe DuplicateDetectionService, type: :service do
   end
 
   # ---------------------------------------------------------------------------
+  # Concurrency: two workers racing to create the same group must not error
+  # ---------------------------------------------------------------------------
+  context "when the group row is created concurrently by another transaction" do
+    it "rescues the unique-index race and reuses the winning group" do
+      service = described_class.new(asset: asset, checksum: checksum, user: user)
+
+      call_count = 0
+      allow(DuplicateGroup).to receive(:find_by).and_wrap_original do |method, *args|
+        call_count += 1
+        if call_count == 1
+          nil # simulate: no group exists yet
+        else
+          method.call(*args)
+        end
+      end
+      allow(DuplicateGroup).to receive(:create!).and_raise(ActiveRecord::RecordNotUnique, "duplicate key")
+
+      # Another "worker" wins the race and creates the row first.
+      winning_group = create(:duplicate_group, checksum: checksum, status: "pending")
+
+      expect(service.send(:find_or_create_group, checksum)).to eq(winning_group)
+    end
+  end
+
+  context "when member registration for the same group is serialized" do
+    let!(:existing_asset)   { create(:asset, user: user) }
+    let!(:existing_version) {
+      create(:asset_version, asset: existing_asset,
+             properties: { "checksum_sha256" => checksum })
+    }
+
+    it "locks the duplicate group row before registering members" do
+      service = described_class.new(asset: asset, checksum: checksum, user: user)
+      dup_group = create(:duplicate_group, checksum: checksum, status: "pending")
+      allow(service).to receive(:find_or_create_group).and_return(dup_group)
+
+      expect(dup_group).to receive(:lock!).and_call_original
+
+      service.send(:build_group, checksum: checksum, existing_asset_ids: [ existing_asset.id ])
+    end
+  end
+
+  # ---------------------------------------------------------------------------
   # Inbox notifications
   # ---------------------------------------------------------------------------
   context "when inbox notifications are enabled" do
@@ -175,7 +218,9 @@ RSpec.describe DuplicateDetectionService, type: :service do
     end
 
     it "returns a safe result when group creation fails for a real asset" do
-      allow(DuplicateGroup).to receive(:find_or_initialize_by).and_raise(StandardError, "boom")
+      service = described_class.new(asset: asset, checksum: checksum, user: user)
+      allow(service).to receive(:find_or_create_group).and_raise(StandardError, "boom")
+      allow(described_class).to receive(:new).and_return(service)
 
       result = described_class.call(asset: asset, checksum: checksum, user: user)
 

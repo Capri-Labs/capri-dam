@@ -11,7 +11,7 @@ import FeatureFlagsTab from './FeatureFlagsTab';
 import StorageOperationsTab from './StorageOperationsTab';
 import AuditLogTab from './AuditLogTab';
 
-export default function SystemStatus({ incomingConfigs }) {
+export default function SystemStatus({ incomingConfigs, activeProvider, allConfigs }) {
     const [currentTab, setCurrentTab] = useState(0);
     const [activeView] = useState('System');
 
@@ -41,7 +41,12 @@ export default function SystemStatus({ incomingConfigs }) {
                 {currentTab === 2 && <OperationalLoggingTab/>}
                 {currentTab === 3 && <AiGatewayTab />}
                 {currentTab === 4 && <FeatureFlagsTab />}
-                {currentTab === 5 && <StorageOperationsTab />}
+                {currentTab === 5 && (
+                    <StorageOperationsTab
+                        activeProvider={activeProvider}
+                        allConfigs={allConfigs}
+                    />
+                )}
                 {currentTab === 6 && <AuditLogTab />}
             </Box>
         </Box>

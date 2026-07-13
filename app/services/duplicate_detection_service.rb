@@ -193,8 +193,23 @@ class DuplicateDetectionService
     new_duplicates = 0
 
     group = ActiveRecord::Base.transaction do
-      dup_group = DuplicateGroup.find_or_initialize_by(checksum: checksum, status: "pending")
-      dup_group.save! if dup_group.new_record?
+      dup_group = find_or_create_group(checksum)
+
+      # Take a row-level lock on the group *before* touching its members.
+      #
+      # Without this, two uploads that both match the same group (e.g. the
+      # same file uploaded twice in quick succession by different users) can
+      # deadlock: worker A inserts (group, asset_x) then tries to insert
+      # (group, asset_y), while worker B — running the same method for
+      # asset_y — concurrently inserts (group, asset_y) then tries to insert
+      # (group, asset_x). Each transaction ends up waiting on a row the other
+      # already holds via +idx_dup_group_assets_unique+, a classic deadlock.
+      #
+      # Locking the parent +duplicate_groups+ row first serializes all
+      # member-registration work for a given group across concurrent
+      # transactions — the second worker simply blocks here until the first
+      # commits, instead of racing it at the member-table level.
+      dup_group.lock!
 
       register_member(dup_group, @asset.id)
 
@@ -211,6 +226,23 @@ class DuplicateDetectionService
     send_inbox_notification(group) if inbox_notifications_enabled?
 
     Result.new(duplicate_group: group, new_duplicates: new_duplicates, enabled: true)
+  end
+
+  # Finds the pending group for +checksum+, creating it if necessary.
+  #
+  # Uses find-then-create rather than +find_or_create_by!+ so that the
+  # (rare) race where two transactions try to create the same group
+  # simultaneously is handled explicitly: the loser's unique-index violation
+  # is rescued and resolved by re-fetching the winner's row, rather than
+  # bubbling up as an unhandled error.
+  #
+  # @param checksum [String]
+  # @return [DuplicateGroup]
+  def find_or_create_group(checksum)
+    DuplicateGroup.find_by(checksum: checksum, status: "pending") ||
+      DuplicateGroup.create!(checksum: checksum, status: "pending")
+  rescue ActiveRecord::RecordNotUnique
+    DuplicateGroup.find_by!(checksum: checksum, status: "pending")
   end
 
   # ---------------------------------------------------------------------------
