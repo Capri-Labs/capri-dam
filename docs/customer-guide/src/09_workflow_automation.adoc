@@ -1,0 +1,67 @@
+[[module-cg-workflow]]
+== Workflow Automation & Approvals
+
+=== 1. Feature Overview
+
+**What it does:** A visual, drag-and-drop designer lets anyone build asset approval
+and automation pipelines — no code required.
+
+**The business value:** Reviewers get exactly the right assets at exactly the right
+stage, automatically — no more chasing approvals over email or chat.
+
+image::workflow-automation.png[Workflow Automation & Approvals, title="Placeholder — the visual workflow designer canvas (screenshot coming soon)"]
+
+=== 2. How It Works
+
+**The trigger:** A workflow starts when its configured trigger condition is met — most
+commonly, an asset being uploaded into a scoped folder.
+
+**What the system does:** The published workflow blueprint runs step by step: approval
+tasks are assigned to the configured user or group, notifications are sent, and
+condition steps branch the flow based on true/false logic.
+
+**The output:** Task assignees see pending items in their Workflow Dashboard and
+Inbox; once every step resolves, the workflow completes and any final actions
+(e.g. auto-publish) run.
+
+=== 3. Step-by-Step Instructions
+
+. Open **Workflow Automation** from the sidebar and click **New Workflow**.
+. Set the **trigger** (e.g. On Asset Upload) and its **scope** (all folders, or
+  specific folders).
+. Drag steps from the **node toolbox** onto the canvas: Approval, Parallel/Sequential
+  Review, Send Email, In-App Alert, Slack Message, Delay, Webhook, or Condition.
+. Connect the steps in order, assign reviewers to each Approval step.
+. Click **Publish** — the designer validates your blueprint (e.g. every Approval step
+  must have an assignee) before it goes live.
+
+=== 4. Options & Configuration
+
+* **Trigger scope** — apply a workflow to all folders, or to specific folders
+  (with exclusions).
+* **Condition branching** — TRUE/FALSE branching logic for conditional steps.
+* **Workflow Dashboard** — a dedicated view of active and completed tasks, separate
+  from the designer itself.
+
+=== 5. Access & Permissions
+
+**Roles required:** Building and publishing workflows requires Manager/Admin
+permissions. Being assigned as a reviewer only requires being a valid user or member
+of the assigned group — no special role is needed to complete an assigned task.
+
+=== 6. System Limits & Technical Requirements
+
+* The canvas supports a **fixed catalogue of step types** — there is currently no
+  plugin/custom-node option for bespoke step types.
+* **Condition branching is binary** (TRUE/FALSE) only — there is no multi-way
+  switch/case branching yet.
+
+=== 7. Troubleshooting & FAQs
+
+**Why won't my workflow publish?**
+The designer validates your blueprint before publish — a common cause is an Approval
+step with no assignee. Check for a validation error message on the offending step.
+
+**An asset isn't triggering my workflow. Why?**
+Confirm the workflow is **published** (not just saved as a draft) and that the
+uploaded asset actually falls within the trigger's configured folder scope.

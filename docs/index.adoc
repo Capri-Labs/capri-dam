@@ -84,6 +84,14 @@ ifdef::backend-html5[]
     <span class="tag">Features · Roadmap</span>
   </a>
 
+  <a class="card" href="customer-guide/">
+    <div class="card-icon">💡</div>
+    <h2>Customer Guide</h2>
+    <p>Friendly, non-technical release overview and feature benefits for marketers,
+       content editors, and creative teams — plus API troubleshooting for integrators.</p>
+    <span class="tag">Getting Started · Support</span>
+  </a>
+
 </div>
 
 <div class="quick-links">
@@ -113,5 +121,6 @@ ifndef::backend-html5[]
 * link:architecture/index.adoc[Architecture (arc42)]
 * link:developer-guide/index.adoc[Developer Guide]
 * link:product-info/index.adoc[Product Info]
+* link:customer-guide/index.adoc[Customer Guide]
 endif::backend-html5[]
 

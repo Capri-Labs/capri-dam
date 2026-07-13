@@ -1,0 +1,66 @@
+[[module-cg-search]]
+== Powerful Search & Discovery
+
+=== 1. Feature Overview
+
+**What it does:** One global search bar gives you three ways to find what you need —
+keyword search, visual similarity matching, and natural-language AI chat.
+
+**The business value:** However you think about the asset you need, there's a fast way
+to find it, from any screen in the app.
+
+image::search-and-discovery.png[Powerful Search & Discovery, title="Placeholder — global search with keyword, visual, and AI modes (screenshot coming soon)"]
+
+=== 2. How It Works
+
+**The trigger:** Click the search bar (present on every page) or press
+kbd:[Cmd+K] / kbd:[Ctrl+K].
+
+**What the system does:** Depending on the selected mode, your query is matched
+against full-text metadata (Keyword mode), visual/semantic similarity (Visual Match
+mode), or interpreted by the AI Copilot into structured filters (Ask AI Agent mode).
+
+**The output:** Matching results render in a responsive grid on the `/search` page,
+with the query and mode preserved in the URL so results are shareable and
+bookmarkable.
+
+=== 3. Step-by-Step Instructions
+
+. Click the **search bar** or press kbd:[Cmd+K].
+. Choose a mode from the dropdown: **Keyword**, **Visual Match**, or **Ask AI Agent**.
+. Type your query — suggestions appear as you type.
+. Press kbd:[Enter] or click **View all results** to go to the full results page.
+. Use the **facet filters** (content type, date, tags, folder) to narrow further.
+. Optionally toggle **Include Recycle Bin** to also search soft-deleted assets.
+
+=== 4. Options & Configuration
+
+* **Results per page** — choose 25, 50, or 100 results per page (default 25).
+* **Include Recycle Bin** — off by default; enable to include soft-deleted assets,
+  clearly flagged with a "Bin" badge.
+* **Semantic cluster map** — an alternative, visual way to explore related assets
+  instead of a flat results list.
+
+=== 5. Access & Permissions
+
+**Roles required:** Available to all signed-in users. Results are automatically
+scoped to folders you have Read access to — search never reveals assets you don't
+already have permission to view.
+
+=== 6. System Limits & Technical Requirements
+
+* **Semantic search quality** depends on your organisation's configured AI embedding
+  provider; there is no automatic fallback if that provider is unreachable.
+* **Semantic cluster map** is best suited to small-to-medium result sets — very large
+  clusters (1,000+ nodes) are not yet paginated.
+
+=== 7. Troubleshooting & FAQs
+
+**Why did my search return no results?**
+Check that your query isn't overly specific — shorter, more generic terms tend to work
+best. Also confirm the content-type mode (Images vs. Files) matches what you're
+looking for.
+
+**Can I search inside the Recycle Bin?**
+Yes — enable **Include Recycle Bin** in the search bar; matching bin items are clearly
+flagged so they're never confused with active assets.

@@ -1,0 +1,63 @@
+[[module-cg-localization]]
+== Localization & Multi-Language Support
+
+=== 1. Feature Overview
+
+**What it does:** The entire interface — menus, buttons, messages, and emails — is
+available in 10 languages, switchable per user, instantly.
+
+**The business value:** Global teams work in the language they're most comfortable
+in, with no separate regional deployments required.
+
+image::localization-i18n.png[Localization & Multi-Language Support, title="Placeholder — the language switcher (screenshot coming soon)"]
+
+=== 2. How It Works
+
+**The trigger:** Choosing a language from your Profile settings (or your browser's
+detected locale on first login).
+
+**What the system does:** The interface immediately re-renders every label, button,
+and message from the selected language's translation bundle — no reload or re-login
+required.
+
+**The output:** Your language preference is remembered for future sessions and
+carries through to system emails you receive.
+
+=== 3. Step-by-Step Instructions
+
+. Open your **Profile** menu (top-right avatar).
+. Click **Preferences**.
+. Choose your language from the **Language** dropdown.
+. The interface updates immediately — no need to refresh the page.
+
+=== 4. Options & Configuration
+
+* **Per-user preference** — each person on your team can pick their own language
+  independently.
+* **Supported languages** — English, German, Spanish, French, Arabic, Japanese,
+  Korean, Dutch, Portuguese, and Chinese.
+* Right-to-left layout is applied automatically when Arabic is selected.
+
+=== 5. Access & Permissions
+
+**Roles required:** Any signed-in user can change their own language preference —
+no special role is needed.
+
+**Restrictions:** Language preference is personal — it cannot be set organisation-wide
+to force a single language on all users (each user chooses their own).
+
+=== 6. System Limits & Technical Requirements
+
+* All 10 supported locales are maintained with **full translation parity** — the
+  product does not ship a language with partial coverage.
+* Locale switching affects the interface and system emails; it does not translate the
+  content of your actual assets (e.g. filenames, metadata values you've entered).
+
+=== 7. Troubleshooting & FAQs
+
+**I changed my language, but some text is still in English. Is that a bug?**
+Please report it — the product is maintained with full translation parity across all
+10 languages, so any leftover English text is treated as a bug, not an expected gap.
+
+**Can I set a default language for my whole organisation?**
+Not currently — language is a per-user preference; each teammate selects their own.

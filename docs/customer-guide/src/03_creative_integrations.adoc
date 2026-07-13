@@ -1,0 +1,67 @@
+[[module-cg-creative-integrations]]
+== Direct Creative Integrations (Figma & Adobe CC)
+
+[IMPORTANT]
+====
+**Coming soon.** Creative-tool plugins are on our near-term roadmap and are **not yet
+available** in the current release. This chapter describes the planned experience so
+you know what's coming — nothing below reflects a shipped feature yet.
+====
+
+=== 1. Feature Overview
+
+**What it does (planned):** Dedicated plugins will bring Capri DAM's asset library
+directly into Figma, Photoshop, and InDesign.
+
+**The business value (planned):** Designers won't need to leave their creative tool,
+download a file, and re-import it — they'll search and insert approved assets without
+breaking their creative flow.
+
+image::creative-integrations.png[Direct Creative Integrations, title="Placeholder — the Capri DAM panel inside a creative tool (screenshot coming soon)"]
+
+=== 2. How It Works (Planned)
+
+**The trigger:** Opening the Capri DAM panel from within the creative tool's own
+plugin/extension menu.
+
+**What the system will do:** The plugin authenticates as the signed-in user, then
+presents the same search experience described in the
+<<module-cg-search,Search & Discovery>> chapter — keyword, visual, and AI search — but
+inside the design tool's own panel.
+
+**The output:** Selecting an asset and dragging it onto the canvas will place the
+current, approved rendition directly into the design file — never a stale local copy.
+
+=== 3. Step-by-Step Instructions (Planned)
+
+. Install the **Capri DAM plugin** for your creative tool from its plugin marketplace.
+. Open the plugin panel from within Figma, Photoshop, or InDesign.
+. **Sign in** with your Capri DAM account.
+. **Search** for the asset you need, exactly as you would in the web app.
+. **Drag and drop** the result onto your active canvas.
+
+=== 4. Options & Configuration (Planned)
+
+* Plugin-level settings (e.g. default folder scope, default search mode) are expected
+  to mirror the equivalent settings in the main web application.
+
+=== 5. Access & Permissions (Planned)
+
+**Roles required:** The plugin will honour the same folder-level permissions as the
+web application — a user will only be able to see and insert assets they already have
+Read access to.
+
+=== 6. System Limits & Technical Requirements (Planned)
+
+* Expected initial support: **Figma**, **Adobe Photoshop**, and **Adobe InDesign**.
+* No timeline has been finalised for additional creative tools beyond these three.
+
+=== 7. Troubleshooting & FAQs
+
+**When will this be available?**
+There is no confirmed release date yet. This guide will be updated the moment the
+plugins ship, and the "Coming soon" notice above will be removed.
+
+**Can I request early access or a specific tool integration?**
+Reach out to your Capri DAM administrator or account contact to register interest —
+demand for specific tools helps prioritise the roadmap.

@@ -1,0 +1,58 @@
+[[module-cg-dashboard]]
+== Command Center Dashboard
+
+=== 1. Feature Overview
+
+**What it does:** A single home screen summarises your entire library the moment you
+sign in — totals, growth trends, content mix, and pending approvals.
+
+**The business value:** You know the health of your library at a glance, without
+opening a single folder.
+
+image::command-center-dashboard.png[Command Center Dashboard, title="Placeholder — the Dashboard home screen (screenshot coming soon)"]
+
+=== 2. How It Works
+
+**The trigger:** The Dashboard loads automatically as your post-login landing page.
+
+**What the system does:** It queries your library's current statistics (asset counts,
+storage used, content-type mix) and recent workflow activity, and renders them as stat
+cards and charts.
+
+**The output:** A "Last updated" timestamp is shown alongside a manual **Refresh**
+control, so you always know how current the numbers are.
+
+=== 3. Step-by-Step Instructions
+
+. Sign in — the Dashboard is shown automatically.
+. Review the **stat cards** for a quick library snapshot.
+. Check the **Asset Growth** chart for the trailing six months.
+. Check the **Workflow Summary** for pending approvals needing attention.
+. Click **Refresh** at any time to pull the latest numbers.
+
+=== 4. Options & Configuration
+
+* The Dashboard adapts its card set and insights based on your role and permissions —
+  there are currently no user-configurable widgets to add, remove, or rearrange.
+
+=== 5. Access & Permissions
+
+**Roles required:** Available to every signed-in user; the specific cards and insights
+shown adapt to what that user's role and permissions allow them to see.
+
+=== 6. System Limits & Technical Requirements
+
+* The Asset Growth chart currently buckets by calendar month only — there is no custom
+  date-range picker yet.
+* "AI Insights" on the Dashboard is a rule-based system-health summary, not a
+  generative report — the more conversational AI Copilot lives in its own area (see
+  the Product Info guide's AI Intelligence Suite chapter).
+
+=== 7. Troubleshooting & FAQs
+
+**My stat cards look out of date. What do I do?**
+Click **Refresh** — the Dashboard shows a "Last updated" timestamp rather than
+auto-refreshing continuously, to avoid unnecessary load.
+
+**Can I customise which cards I see?**
+Not today — the card set is determined by your role, not individually configurable.

@@ -76,6 +76,36 @@ describe('UserGroupsManager', () => {
     expect(screen.queryByText('Root Group 0')).not.toBeInTheDocument();
     expect(screen.queryByText('Child Of Root 0')).not.toBeInTheDocument();
     expect(screen.getByText('Page 2 of 2')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /Previous/ }));
+
+    expect(await screen.findByText('Root Group 0')).toBeInTheDocument();
+    expect(screen.getByText('Page 1 of 2')).toBeInTheDocument();
+  });
+
+  it('uses shared i18n keys (common.previous/common.next/common.pageOf) for pagination labels', async () => {
+    const rootGroups = Array.from({ length: 11 }, (_, i) => ({
+      id: 300 + i, name: `Paged Group ${i}`, slug: `paged-${i}`, member_count: 0, is_system: false, parent_id: null,
+    }));
+    mockApiFetch.mockResolvedValue({ user_groups: rootGroups });
+
+    render(<UserGroupsManager isAdmin currentUserId={1} />);
+
+    expect(await screen.findByText('Page 1 of 2')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Previous' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Next' })).toBeInTheDocument();
+  });
+
+  it('does not show pagination controls when a single page is enough', async () => {
+    const rootGroups = Array.from({ length: 3 }, (_, i) => ({
+      id: 400 + i, name: `Small Group ${i}`, slug: `small-${i}`, member_count: 0, is_system: false, parent_id: null,
+    }));
+    mockApiFetch.mockResolvedValue({ user_groups: rootGroups });
+
+    render(<UserGroupsManager isAdmin currentUserId={1} />);
+
+    expect(await screen.findByText('Small Group 0')).toBeInTheDocument();
+    expect(screen.queryByText(/Page \d+ of \d+/)).not.toBeInTheDocument();
   });
 
   describe('bulk select & delete', () => {

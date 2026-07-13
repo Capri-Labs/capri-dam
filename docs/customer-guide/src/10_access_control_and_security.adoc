@@ -1,0 +1,70 @@
+[[module-cg-access-control]]
+== Enterprise Access Control & Security
+
+=== 1. Feature Overview
+
+**What it does:** Fine-grained, group-based permissions reach down to the individual
+folder, backed by enterprise single sign-on and a fully audited activity trail.
+
+**The business value:** Every team sees exactly what they should — no more, no less —
+and every sensitive action is recorded for accountability.
+
+image::access-control-security.png[Enterprise Access Control & Security, title="Placeholder — the group and folder permissions screen (screenshot coming soon)"]
+
+=== 2. How It Works
+
+**The trigger:** Access is evaluated automatically on every request — there's no
+manual "check permissions" step for end users.
+
+**What the system does:** Each user belongs to one or more Groups. Each Group can have
+a permission policy on any folder, covering Read, Upload, Create, Modify, Delete, and
+Replicate independently, plus an explicit "Deny All" override. Policies set on a
+parent folder are inherited by its subfolders unless explicitly overridden.
+
+**The output:** A user only ever sees folders, assets, and actions they've been
+granted — and administrators can see the effective permissions for any user or group
+at a glance.
+
+=== 3. Step-by-Step Instructions
+
+. Ask an admin to add you to the appropriate **User Group** (e.g. "Marketing Team").
+. An admin opens the target folder's **Properties → Access** tab.
+. They add your group and choose which permissions to grant (Read, Upload, Modify,
+  etc.), or apply an explicit **Deny All**.
+. Permissions apply immediately — no sign-out/sign-in required.
+
+=== 4. Options & Configuration
+
+* **Role hierarchy:** Viewer → Contributor → Manager → Admin → Super Admin.
+* **Enterprise SSO:** sign in via your organisation's identity provider instead of a
+  local password, if configured by your admin.
+* **Personal Access Tokens:** generate a long-lived token from your Profile for
+  scripts or CI integrations.
+* **Impersonation:** admins can temporarily act as another (non-admin) user for
+  support purposes; a persistent banner always marks an impersonated session.
+
+=== 5. Access & Permissions
+
+**Roles required:** Managing groups, folder policies, and impersonation requires
+Admin (or Super Admin for the most sensitive groups) permissions. Regular users only
+need to belong to the right group to inherit the correct access.
+
+**Restrictions:** An Admin cannot impersonate a Super Admin, and no user can suspend
+their own account.
+
+=== 6. System Limits & Technical Requirements
+
+* Permissions are evaluated per folder — there is no per-asset override independent
+  of its folder.
+* There is currently no time-boxed/auto-expiring impersonation session — an admin must
+  explicitly end an impersonation session.
+
+=== 7. Troubleshooting & FAQs
+
+**I can see a folder but can't upload to it. Why?**
+Your group likely has Read access but not Upload/Create access on that folder — ask an
+admin to review the folder's Access tab.
+
+**Why can't I add someone to the Administrators group?**
+Modifying the Administrators or Super Administrators group's membership requires
+Super Admin permissions, as an extra safeguard against privilege escalation.

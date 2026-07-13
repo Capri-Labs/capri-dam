@@ -1,0 +1,68 @@
+[[module-cg-recycle-bin]]
+== Recycle Bin & Data Safety
+
+=== 1. Feature Overview
+
+**What it does:** Deleting an asset or folder never destroys it immediately — it
+moves to a recoverable Recycle Bin first, with a workflow-aware safety net.
+
+**The business value:** Mistakes are never permanent, and content still under active
+review can't be accidentally destroyed.
+
+image::recycle-bin.png[Recycle Bin & Data Safety, title="Placeholder — the Recycle Bin with restore controls (screenshot coming soon)"]
+
+=== 2. How It Works
+
+**The trigger:** Deleting any asset or folder from the main library.
+
+**What the system does:** The item is soft-deleted — hidden from the main library but
+retained in the Recycle Bin for a configurable retention window (30 days by default).
+If the asset has an active workflow (e.g. mid-approval), permanent deletion is
+blocked until that workflow resolves.
+
+**The output:** The item appears in the Recycle Bin, restorable to its original
+location, until either it's restored, or the retention window elapses and it's
+permanently purged.
+
+=== 3. Step-by-Step Instructions
+
+. Open **Recycle Bin** from the sidebar.
+. Use the **type filter chips** (All / Assets / Folders) or search to find an item.
+. Select one or more items and click **Restore** to return them to their original
+  folder.
+. Alternatively, click **Empty Bin** to permanently remove everything (a confirmation
+  dialog will ask you to confirm this irreversible action).
+
+=== 4. Options & Configuration
+
+* **Retention window** — admins can configure how long items remain recoverable before
+  permanent purge, from *Tools → Asset Configurations*.
+* **Grid ↔ list view** — switch the bin's layout density to suit how you like to
+  browse.
+* **Sort & search** — free-text search plus a sort-order dropdown.
+
+=== 5. Access & Permissions
+
+**Roles required:** Deleting and restoring assets requires the same delete/modify
+permission the user has on the source folder. **Empty Bin** (permanent purge) is
+restricted to Manager/Admin roles.
+
+**Restrictions:** Viewer-role users cannot delete, restore, or purge anything.
+
+=== 6. System Limits & Technical Requirements
+
+* **Default retention window:** 30 days (admin-configurable).
+* **Restore currently returns an item to its *original* folder only** — there is no
+  "restore to a different folder" option yet.
+* Assets with an **active workflow instance** cannot be permanently purged until the
+  workflow resolves — this is enforced automatically, not just a warning.
+
+=== 7. Troubleshooting & FAQs
+
+**I tried to permanently purge an asset and it wouldn't let me. Why?**
+It likely has an active workflow instance (e.g. it's mid-approval). Wait for the
+workflow to resolve, or contact the assigned reviewer, before attempting to purge it.
+
+**Can I restore something to a different folder than where it was deleted from?**
+Not currently — restore always returns an item to its original location. Move it
+afterward if you need it elsewhere.

@@ -412,6 +412,44 @@ test.describe('Admin — User Groups', () => {
     // "everyone" should not be visible after filter
     await expect(page.getByText('everyone')).toHaveCount(0);
   });
+
+  test('paginates root-level custom groups (10 per page)', async ({ page }) => {
+    test.setTimeout(60_000);
+
+    const stamp = Date.now();
+    const created = [];
+    try {
+      // Seed enough root groups to guarantee a second pagination page
+      // (component paginates at 10 root groups per page). Prefix with "0-"
+      // so these sort alphabetically ahead of any pre-existing custom
+      // groups, keeping page-1 positions predictable.
+      for (let i = 0; i < 11; i += 1) {
+        const res = await page.request.post('/admin/user_groups.json', {
+          data: { user_group: { name: `E2E Group 0-Pagination ${stamp}-${String(i).padStart(2, '0')}` } },
+        });
+        expect(res.ok()).toBeTruthy();
+        const body = await res.json();
+        created.push(body.group);
+      }
+
+      await page.reload();
+      await page.waitForLoadState('networkidle');
+
+      // Pagination controls should now be visible with at least 2 pages.
+      await expect(page.getByText(/page 1 of \d+/i)).toBeVisible();
+      const nextButton = page.getByRole('button', { name: 'Next' });
+      await expect(nextButton).toBeEnabled();
+      await nextButton.click();
+      await expect(page.getByText(/page 2 of \d+/i)).toBeVisible();
+
+      await page.getByRole('button', { name: 'Previous' }).click();
+      await expect(page.getByText(/page 1 of \d+/i)).toBeVisible();
+    } finally {
+      for (const g of created) {
+        await page.request.delete(`/admin/user_groups/${g.id}.json`).catch(() => {});
+      }
+    }
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────

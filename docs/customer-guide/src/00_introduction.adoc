@@ -1,0 +1,57 @@
+[[module-cg-introduction]]
+== What Makes Capri DAM Different
+
+=== Overview
+
+**What it does:** Capri DAM is an intelligent partner for your creative and marketing
+teams — it automatically organises, de-duplicates, and delivers your assets, instead
+of leaving that work to you.
+
+**The business value:** Less time spent on file admin means more time spent on the
+work that actually grows your brand.
+
+Three ideas sit behind everything in this guide:
+
+[.feature-highlight]
+====
+* **Zero manual tagging** — AI does the tedious organisational work, so assets are
+  searchable the moment they land.
+* **Zero clutter** — duplicates, retouches, and re-exports are recognised and grouped
+  automatically, keeping your library clean without anyone lifting a finger.
+* **Zero wait** — assets are delivered instantly, anywhere in the world, at exactly the
+  size and format each screen needs.
+====
+
+=== Who this guide is for
+
+[cols="1,3", options="header"]
+|===
+| Role | What you'll get from this guide
+
+| Marketing Managers | A quick understanding of how content gets from upload to
+  campaign-ready, and how Collections make sharing curated sets effortless.
+| Content Editors | How Smart Search and AI tagging mean you spend less time hunting
+  for the right asset and more time using it.
+| Brand Strategists | How Access Control, Collections, and CDN delivery keep your
+  brand consistent and protected everywhere it's used.
+| Creative Designers | How direct creative-tool integrations (and the Duplicate
+  Manager) keep your working files clean and your workflow uninterrupted.
+|===
+
+=== How to read each module
+
+Every module chapter in this guide follows the same seven-part structure:
+
+[.feature-highlight]
+====
+. **Feature Overview** — the "what" and "why," in two sentences.
+. **How It Works** — the trigger, what the system does, and where the result goes.
+. **Step-by-Step Instructions** — the exact clicks, in order.
+. **Options & Configuration** — the controls you have over the feature.
+. **Access & Permissions** — who can see or use it.
+. **System Limits & Technical Requirements** — the boundaries, stated plainly.
+. **Troubleshooting & FAQs** — what to expect when something doesn't go as planned.
+====
+
+TIP: Short on time? Jump straight to <<module-cg-getting-started>> to log in and
+upload your first asset in under five minutes.

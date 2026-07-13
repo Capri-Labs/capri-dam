@@ -1,0 +1,87 @@
+[[module-cg-delivery-cdn]]
+== Instant Global Delivery (Edge CDN)
+
+=== 1. Feature Overview
+
+**What it does:** Every image and video is transformed and delivered in real time from
+a global edge network, at exactly the size, crop, and format each screen needs.
+
+**The business value:** Assets load instantly for every viewer, everywhere in the
+world — with no manual rendition management and no buffering wait.
+
+image::global-delivery-cdn.png[Instant Global Delivery (Edge CDN), title="Placeholder — the CDN delivery/rendition status view (screenshot coming soon)"]
+
+=== 2. How It Works
+
+**The trigger:** Delivery happens automatically whenever an asset's URL is requested —
+there is nothing to configure per asset.
+
+**What the system does:**
+
+* Reads the **Image Profile** or **Video Profile** assigned to the asset's folder
+  (e.g. "hero-banner," "product-thumbnail") to determine the target size, crop
+  behaviour, and output format.
+* Applies **smart, subject-aware cropping** when configured, keeping the subject of
+  the photo framed correctly instead of a naive centre-crop.
+* Serves the result from the **edge location closest to the viewer**, computing the
+  transform on the fly rather than pre-generating every possible size in advance.
+
+**The output:** A secure, signed delivery URL that resolves instantly to the correctly
+sized, cropped, and formatted asset — cached at the edge for repeat requests.
+
+=== 3. Step-by-Step Instructions
+
+. Ask your administrator to assign an **Image Profile** or **Video Profile** to the
+  folder your assets live in (from that folder's **Properties** panel).
+. Upload or select an asset within that folder as normal — no extra step is needed.
+. Copy the asset's delivery URL from its **Properties** panel, or let embedded
+  components (e.g. Collections, shared links) use it automatically.
+. If you update the image and need viewers to see the new version immediately, ask an
+  admin to **purge the cache** for that asset from its Properties panel.
+
+=== 4. Options & Configuration
+
+* **Image & Video Profiles** — named presets (e.g. width, crop mode, output format)
+  assigned per folder path; every asset uploaded under that folder inherits the
+  profile automatically.
+* **Smart crop toggle** — each Image Profile can use `none` (simple crop) or
+  `smart_crop` (subject-aware) cropping.
+* **Cache purge** — instant, per-asset or per-folder cache invalidation is available
+  to admins, for the rare case content changes and needs to bypass the cache
+  immediately.
+
+=== 5. Access & Permissions
+
+**Roles required:** Any user with Read access to a folder can use its delivery URLs.
+Assigning or editing Image/Video Profiles, and triggering a cache purge, requires
+Manager/Admin permissions on that folder.
+
+**Restrictions:** Guest/unauthenticated viewers can only access assets via an
+explicitly shared link or public Collection — direct delivery URLs still respect
+folder-level permissions.
+
+=== 6. System Limits & Technical Requirements
+
+* **Supported output formats today:** WebP, JPEG, and PNG. AVIF output is in progress
+  and not yet available.
+* **Image Profiles do not apply to:** PDF files, animated GIFs, or INDD (InDesign)
+  source files — these are delivered as-is.
+* **Delivery URLs are signed** — manually editing a delivery URL's parameters (e.g. to
+  request an arbitrary size) will not work; only profile-defined variations are
+  served.
+
+=== 7. Troubleshooting & FAQs
+
+**I updated an image, but I still see the old version. Why?**
+The edge cache may still be serving the previous version until it naturally expires,
+or until an admin triggers a manual purge for that asset or folder.
+
+**Can I request a completely custom size or crop for a one-off need?**
+Not directly from a plain URL — sizes and crops are defined by Image/Video Profiles
+assigned to a folder. Ask an admin to create or adjust a profile if you have a
+recurring custom-size need.
+
+**Why did my video not get a smaller optimised rendition?**
+Video renditions depend on the video-encoding tools being available in your
+organisation's deployment. If a rendition wasn't generated, the original file is still
+delivered — check with your administrator if this happens consistently.

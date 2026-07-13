@@ -1,0 +1,115 @@
+= Capri DAM — Customer Guide
+Ashok Pelluru <apelluru@apache.org>
+v1.0.0, 2026-07-13
+:doctype: book
+:toc: left
+:toclevels: 2
+:sectnums:
+:sectanchors:
+:sectlinks:
+:icons: font
+:experimental:
+:source-highlighter: rouge
+:rouge-style: github
+:imagesdir: images
+:lang: en
+:description: Customer-facing product guide for Capri DAM — a friendly, module-by-module tour \
+  of every feature for marketers, content editors, brand strategists, and creative designers.
+:keywords: DAM, digital asset management, customer guide, product guide, features, getting started
+:stylesdir: ../theme
+:stylesheet: capri.css
+:docinfodir: ..
+:docinfo: shared-head
+
+ifdef::backend-html5[]
+[.text-right]
+link:../[← Documentation Hub] · link:../product-info/[Product Info (Detailed)] · link:../architecture/[Architecture]
+endif::backend-html5[]
+
+[[section-welcome]]
+== Welcome to Zero-Noise Asset Management
+
+Every day, creative teams lose hours to the same frustrating ritual: hunting for the
+"final_final_v3" file, re-uploading an image someone already uploaded last month, or
+waiting on a designer to email over a logo buried three folders deep in a shared drive.
+
+**Capri DAM** was built to make that ritual disappear. We call our design philosophy
+**"Zero-Noise."** It means your asset library should be instantly available, visually
+uncluttered, and quietly intelligent — doing the tedious work of tagging, organising,
+and delivering your content so your team can spend its time on the work that actually
+matters: the creative itself.
+
+This guide is a module-by-module tour of Capri DAM for customers, evaluators, and new
+team members. Every module chapter follows the same structure so you can jump straight
+to what you need:
+
+[.feature-highlight]
+====
+**How to read each module**
+
+* **The Feature** — what it does, in plain language.
+* **Screenshot** — a real capture of the running application (placeholders are used
+  until a module's screenshot has been captured — see <<section-screenshots>>).
+* **The Benefit** — why it matters to your day-to-day work.
+* **Highlights** — the handful of things that set this capability apart.
+====
+
+[[section-screenshots]]
+=== About the screenshots
+
+Every screenshot slot in this guide will eventually hold a **real capture of the
+running application**, taken the same way as the screenshots in the
+link:../product-info/[Product Info] guide — via the Playwright driver script at
+`docs/product-info/scripts/capture_screenshots.js`.
+
+[NOTE]
+====
+This guide is brand new — screenshots have not been captured for it yet. Every image
+below is a clearly-labelled **placeholder** (`images/placeholder.png` and its
+per-module copies). Replace the relevant file in `docs/customer-guide/images/` once a
+real capture is available; no other changes are required.
+====
+
+[[section-modules]]
+== Modules
+
+include::src/00_introduction.adoc[]
+
+include::src/01_ai_smart_uploads.adoc[]
+
+include::src/02_duplicate_manager.adoc[]
+
+include::src/03_creative_integrations.adoc[]
+
+include::src/04_delivery_and_cdn.adoc[]
+
+include::src/05_command_center_dashboard.adoc[]
+
+include::src/06_search_and_discovery.adoc[]
+
+include::src/07_collections.adoc[]
+
+include::src/08_recycle_bin.adoc[]
+
+include::src/09_workflow_automation.adoc[]
+
+include::src/10_access_control_and_security.adoc[]
+
+include::src/11_email_communication.adoc[]
+
+include::src/12_ingestion_and_migration.adoc[]
+
+include::src/13_localization_i18n.adoc[]
+
+include::src/99_getting_started.adoc[]
+
+ifdef::backend-html5[]
+++++
+<button id="back-to-top" title="Back to top">&#8679;</button>
+<script>
+  const btn = document.getElementById('back-to-top');
+  window.addEventListener('scroll', () => { btn.classList.toggle('visible', window.scrollY > 400); });
+  btn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+</script>
+++++
+endif::backend-html5[]

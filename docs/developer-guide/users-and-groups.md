@@ -106,6 +106,29 @@ Every group overlay exposes:
 
 ---
 
+## Group Hierarchy UI — Pagination & Bulk Delete
+
+`/admin/user_groups` (`UserGroupsManager.jsx`) fetches the **full** group list in
+one request (`GET /admin/user_groups.json`) and paginates **client-side**:
+
+- Only **root-level custom groups** (no `parent_id`) are paginated, 10 per
+  page (`ROOT_GROUPS_PER_PAGE`). A root group's descendants always render on
+  the same page as their parent, so the tree never splits a group from its
+  children across pages.
+- System groups (`everyone`, `administrators`, `super-administrators`) are
+  shown in a separate, unpaginated section above the custom-groups tree.
+- Pagination controls ("Previous" / "Page X of Y" / "Next") only render when
+  there is more than one page, and reuse the shared `common.previous`,
+  `common.pageOf`, and `common.next` i18n keys (same convention as
+  `MetadataSchemasManager`).
+- Typing in the search box shows a flat, unpaginated list of matches instead
+  of the tree, and resets pagination to page 1.
+- Bulk-select/bulk-delete (`DELETE /admin/user_groups/bulk_delete`) only
+  operates on root-level custom groups visible on the **current page**;
+  system groups are always excluded server-side even if their ids are passed.
+
+---
+
 ## GraphQL API
 
 New queries and mutations are available at `/graphql`:

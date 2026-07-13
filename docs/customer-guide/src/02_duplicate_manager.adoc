@@ -1,0 +1,89 @@
+[[module-cg-duplicate-manager]]
+== The Intelligent Duplicate Manager
+
+=== 1. Feature Overview
+
+**What it does:** Every uploaded asset is automatically checked against your existing
+library for exact duplicates and near-identical "visual matches," and grouped
+accordingly.
+
+**The business value:** Storage never gets silently wasted on redundant copies, and
+your team always knows which version of an asset is the current one.
+
+image::duplicate-manager.png[Intelligent Duplicate Manager, title="Placeholder — the Duplicate Manager grouping matches for review (screenshot coming soon)"]
+
+=== 2. How It Works
+
+**The trigger:** Duplicate detection runs automatically as part of upload processing —
+no action is required from you.
+
+**What the system does:**
+
+* **Exact match check** — a cryptographic checksum (SHA-256) of the file's exact bytes
+  is compared against every existing asset. A match means the two files are truly
+  byte-for-byte identical.
+* **Visual similarity check** — a perceptual hash (a compact fingerprint of what the
+  image *looks like*) is compared using a similarity threshold, so the same photo
+  re-saved in a different format (e.g. `.png` vs `.jpg`) is still recognised, even
+  though its checksum is completely different.
+* **Grouping** — matching assets are grouped together as a single duplicate set for
+  review, rather than treated as unrelated files.
+
+**The output:** A new or updated **Duplicate Group** appears in the Duplicate Manager,
+and (if enabled) a notification is sent to your Inbox so you know a match was found.
+
+=== 3. Step-by-Step Instructions
+
+. Open **Duplicate Manager** from the sidebar.
+. Browse the list of duplicate groups — each shows its members side by side.
+. Click a group to open the **resolution view**.
+. For each duplicate, choose **Keep**, **Archive**, or **Delete**.
+. Use **Go to asset** or **Go to folder** to jump directly to a member's location if
+  you need more context before deciding.
+. Click **Dismiss** on a group instead if you've reviewed it and decided it isn't a
+  true duplicate — it won't be suggested again.
+
+=== 4. Options & Configuration
+
+* **Dismiss instead of resolve** — if two assets are intentionally similar (e.g. two
+  angles of the same product shot), dismiss the group rather than deleting anything.
+* **Admin toggle** — administrators can disable automatic duplicate detection
+  organisation-wide from *Tools → Duplicate Manager Settings*, if your workflow
+  intentionally keeps near-duplicate variants.
+* **Inbox notifications** — administrators can enable or disable duplicate-detection
+  alerts being sent to users' Inbox from the same settings screen.
+
+=== 5. Access & Permissions
+
+**Roles required:** Viewing the Duplicate Manager and its groups is available to
+Contributors and above. Resolving a group (keep/archive/delete) requires the same
+delete/modify permission the user would need on the affected asset's folder.
+
+**Restrictions:** Viewer-role users can see that a duplicate group exists but cannot
+resolve or dismiss it.
+
+=== 6. System Limits & Technical Requirements
+
+* **Exact-match detection** has no false positives — it only ever matches
+  byte-for-byte identical files.
+* **Visual similarity detection** uses a fixed similarity threshold tuned for re-saves,
+  format conversions, and light re-compression of the *same* source image. It is not
+  tuned for heavier edits like cropping, rotation, or watermarking, which may fall
+  outside the threshold and not be grouped.
+* **Supported for:** image assets. Perceptual (visual) matching does not apply to
+  video, audio, or document files — those are only checked via exact checksum match.
+
+=== 7. Troubleshooting & FAQs
+
+**I uploaded a file I know already exists, but no duplicate group appeared. Why?**
+Confirm your administrator has not disabled duplicate detection organisation-wide.
+Also check whether the existing copy was uploaded before duplicate detection was
+enabled — older assets may not have a stored checksum/hash to compare against.
+
+**Can duplicate detection catch a cropped or heavily edited version of a photo?**
+Not reliably today — visual similarity matching is designed for re-saves and format
+changes of the *same* image, not structural edits like cropping or rotation.
+
+**Is there an "auto-resolve" option (e.g. always keep the newest)?**
+Not currently — resolution is always a manual, reviewed decision to avoid accidentally
+discarding the wrong version.

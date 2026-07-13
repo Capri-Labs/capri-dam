@@ -431,17 +431,17 @@ export default function UserGroupsManager({
                       disabled={clampedRootPage <= 1}
                       onClick={() => setRootPage(clampedRootPage - 1)}
                     >
-                      ← Prev
+                      {t('common.previous', { defaultValue: 'Previous' })}
                     </Button>
                     <Typography variant="caption" sx={{ alignSelf: 'center', px: 1 }}>
-                      Page {clampedRootPage} of {totalRootPages}
+                      {t('common.pageOf', { page: clampedRootPage, pages: totalRootPages, defaultValue: `Page ${clampedRootPage} of ${totalRootPages}` })}
                     </Typography>
                     <Button
                       size="small"
                       disabled={clampedRootPage >= totalRootPages}
                       onClick={() => setRootPage(clampedRootPage + 1)}
                     >
-                      Next →
+                      {t('common.next', { defaultValue: 'Next' })}
                     </Button>
                   </Stack>
                 )}

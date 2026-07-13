@@ -1,0 +1,75 @@
+[[module-cg-getting-started]]
+== Getting Started
+
+You've now seen what Capri DAM can do. Here's how to get your first asset uploaded,
+organized, and shared in the next five minutes.
+
+=== 1. Feature Overview
+
+**What it does:** This section walks you through your very first login, upload, and
+share — the fastest path to your first "wow" moment.
+
+**The business value:** You'll see AI tagging, semantic search, and instant sharing
+working on your own content before you finish your first cup of coffee.
+
+=== 2. How It Works
+
+**The trigger:** Your very first sign-in to Capri DAM.
+
+**What happens:** Once you're in, uploading a file automatically kicks off the
+same AI enrichment and duplicate-detection pipeline described in
+<<module-cg-ai-smart-uploads>> and <<module-cg-duplicate-manager>> — there's no
+separate "turn on AI" step.
+
+**The output:** A fully tagged, searchable, shareable asset — ready for your team.
+
+=== 3. Step-by-Step Instructions
+
+. **Log in** using the credentials your administrator provided (or your
+  organisation's SSO button, if enabled — see <<module-cg-access-control>>).
+. From the **Dashboard** (see <<module-cg-dashboard>>), click **Upload Assets**.
+. Drag a file onto the upload zone, or click to browse.
+. Watch the progress bar reach 100%, then watch for the green **Enriched** badge —
+  that's the AI finishing its analysis.
+. Click into the asset to review its **auto-generated tags** and correct any that
+  don't fit.
+. Try the **search bar** with a plain-English description of the image (e.g. "people
+  eating in a park") to see semantic search in action.
+. Click **Share** to generate a link for a colleague — no account required on their
+  end.
+
+=== 4. Options & Configuration
+
+* Revisit your **Language** preference at any time (see <<module-cg-localization>>).
+* Ask an admin about **Workflow Automation** (<<module-cg-workflow>>) if your team
+  needs an approval step before assets go live.
+* Explore **Collections** (<<module-cg-collections>>) once you have a handful of
+  assets, to build your first shareable campaign kit.
+
+=== 5. Access & Permissions
+
+**Roles required:** Every invited user can log in, upload, and share immediately —
+no special onboarding step is gated behind an admin.
+
+**Restrictions:** What you can see and do beyond your own uploads depends on your
+group's folder permissions — see <<module-cg-access-control>> if something looks
+missing.
+
+=== 6. System Limits & Technical Requirements
+
+* Default maximum upload size is 2GB per file (your admin may adjust this).
+* AI Vision tagging applies to image formats; see <<module-cg-ai-smart-uploads>> for
+  the full supported-format list.
+
+=== 7. Troubleshooting & FAQs
+
+**I don't see an Upload button. What's wrong?**
+You may not have Contributor access on your current folder — ask your admin to check
+your group's permissions (<<module-cg-access-control>>).
+
+**Where can I get help beyond this guide?**
+See the companion link:../api-troubleshooting.md[API & Integration Troubleshooting
+Guide], or the deeper link:../product-info/index.adoc[technical Product Information
+guide] if you or your team need implementation-level detail.
+
+Welcome aboard — happy uploading!
