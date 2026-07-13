@@ -79,7 +79,10 @@
     "previous": "Vorige",
     "next": "Volgende",
     "pageOf": "Pagina {{page}} van {{pages}}",
-    "rowsPerPage": "Rijen per pagina:"
+    "rowsPerPage": "Rijen per pagina:",
+    "selectAll": "Alles selecteren",
+    "nSelected": "{{count}} geselecteerd",
+    "deleteSelected": "Selectie verwijderen ({{count}})"
   },
   "header": {
     "myProfile": "Mijn profiel",

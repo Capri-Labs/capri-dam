@@ -103,4 +103,41 @@ RSpec.describe 'Api::V1::MetadataImports docs', type: :request do
       end
     end
   end
+
+  path '/api/v1/metadata_imports/bulk_delete' do
+    delete 'Bulk delete metadata imports' do
+      tags 'Metadata Imports'
+      consumes 'application/json'
+      produces 'application/json'
+      security [ Bearer: [] ]
+      description 'Deletes multiple metadata imports (and their attached source/result files) owned by the current user.'
+
+      parameter name: :payload, in: :body, schema: {
+        type: :object,
+        properties: {
+          ids: { type: :array, items: { type: :integer }, example: [ 4, 5 ] },
+        },
+      }
+
+      response '200', 'imports deleted' do
+        let(:user)    { create(:user) }
+        let(:import1) { create(:metadata_import, user: user) }
+        let(:payload) { { ids: [ import1.id ] } }
+
+        before { sign_in user }
+
+        schema type: :object, properties: { deleted_count: { type: :integer } }
+        run_test!
+      end
+
+      response '400', 'no ids provided' do
+        let(:payload) { {} }
+
+        before { sign_in create(:user) }
+
+        schema type: :object, properties: { error: { type: :string } }
+        run_test!
+      end
+    end
+  end
 end

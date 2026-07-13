@@ -4,7 +4,7 @@ import {
     Box, Typography, CircularProgress, Button, Tooltip,
     Chip, Stack, Paper, Divider, IconButton, Alert,
     List, ListItem, ListItemButton, ListItemIcon, ListItemText,
-    Collapse
+    Collapse, Checkbox
 } from '@mui/material';
 import {
     AccountTree, AddOutlined, ContentCopyOutlined, DeleteOutlined,
@@ -18,11 +18,20 @@ import NewSchemaDialog from './NewSchemaDialog';
 const LEVEL_COLORS = { root: '#5e35b1', type: '#0288d1', subtype: '#388e3c' };
 const LEVEL_LABELS = { root: 'Root', type: 'Type', subtype: 'Subtype' };
 
+// Root schemas shown per page in the schema library tree. Only root nodes are
+// paginated/selectable for bulk delete — their children (type/subtype) always
+// render alongside them, mirroring the pattern used by Admin/UserGroupsManager.
+const ROOT_SCHEMAS_PER_PAGE = 10;
+
 // ── SchemaTreeNode ────────────────────────────────────────────────────────────
-function SchemaTreeNode({ schema, depth = 0, selected, onSelect }) {
+function SchemaTreeNode({ schema, depth = 0, selected, onSelect, canManage = false, checkedIds, onToggleCheck }) {
     const [open, setOpen] = useState(depth === 0);
     const hasChildren = schema.children && schema.children.length > 0;
     const isSelected  = selected?.id === schema.id;
+    // Bulk selection only applies to root-level, non-built-in schemas (they are
+    // the paginated/deletable unit; children always cascade-delete with their root).
+    const checkable = depth === 0 && canManage && !schema.is_builtin;
+    const isChecked  = checkable && checkedIds?.has(schema.id);
 
     return (
         <>
@@ -31,7 +40,7 @@ function SchemaTreeNode({ schema, depth = 0, selected, onSelect }) {
                     selected={isSelected}
                     onClick={() => onSelect(schema)}
                     sx={{
-                        pl: 2 + depth * 2.5,
+                        pl: checkable ? 0.5 + depth * 2.5 : 2 + depth * 2.5,
                         borderRadius: '8px',
                         mx: 0.5,
                         mb: 0.25,
@@ -40,6 +49,16 @@ function SchemaTreeNode({ schema, depth = 0, selected, onSelect }) {
                         '&:hover': { bgcolor: '#f5f3ff' },
                     }}
                 >
+                    {checkable && (
+                        <Checkbox
+                            size="small"
+                            checked={isChecked}
+                            data-testid={`schema-select-${schema.id}`}
+                            onClick={e => e.stopPropagation()}
+                            onChange={() => onToggleCheck(schema.id)}
+                            sx={{ p: 0.5, mr: 0.5 }}
+                        />
+                    )}
                     <ListItemIcon sx={{ minWidth: 28 }}>
                         {depth === 0
                             ? <AccountTree sx={{ fontSize: 18, color: LEVEL_COLORS.root }} />
@@ -80,7 +99,7 @@ function SchemaTreeNode({ schema, depth = 0, selected, onSelect }) {
                     <List disablePadding>
                         {schema.children.map(child => (
                             <SchemaTreeNode key={child.id} schema={child} depth={depth + 1}
-                                            selected={selected} onSelect={onSelect} />
+                                            selected={selected} onSelect={onSelect} canManage={canManage} />
                         ))}
                     </List>
                 </Collapse>
@@ -306,6 +325,9 @@ export default function MetadataSchemasManager({ canManageSchemas } = {}) {
     const [editorOpen,       setEditorOpen]       = useState(false);
     const [editingSchema,    setEditingSchema]    = useState(null);
     const [newDialogOpen,    setNewDialogOpen]    = useState(false);
+    const [rootPage,         setRootPage]         = useState(1);
+    const [checkedIds,       setCheckedIds]       = useState(new Set());
+    const [bulkDeleting,     setBulkDeleting]     = useState(false);
 
     const fetchSchemas = useCallback(async () => {
         setLoading(true);
@@ -377,6 +399,47 @@ export default function MetadataSchemasManager({ canManageSchemas } = {}) {
         await fetchSchemas();
     };
 
+    const handleToggleCheck = (id) => {
+        setCheckedIds(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id); else next.add(id);
+            return next;
+        });
+    };
+
+    const handleToggleSelectAll = (pageIds) => {
+        setCheckedIds(prev => {
+            const allChecked = pageIds.length > 0 && pageIds.every(id => prev.has(id));
+            if (allChecked) {
+                const next = new Set(prev);
+                pageIds.forEach(id => next.delete(id));
+                return next;
+            }
+            return new Set([ ...prev, ...pageIds ]);
+        });
+    };
+
+    const handleBulkDelete = async () => {
+        if (checkedIds.size === 0) return;
+        if (!window.confirm(`Delete ${checkedIds.size} selected schema(s)? This will also remove all child schemas.`)) return;
+        setBulkDeleting(true);
+        try {
+            const res  = await fetch('/api/v1/metadata_schemas/bulk_delete', {
+                method:  'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body:    JSON.stringify({ ids: Array.from(checkedIds) }),
+            });
+            const data = await res.json();
+            if (!res.ok) { notify(data.error ?? 'Bulk delete failed.', 'error'); return; }
+            notify(`${data.deleted_count} schema(s) deleted.`, 'success');
+            setCheckedIds(new Set());
+            setSelected(null);
+            await fetchSchemas();
+        } finally {
+            setBulkDeleting(false);
+        }
+    };
+
     const handleCreate = async (payload) => {
         const res  = await fetch('/api/v1/metadata_schemas', {
             method:  'POST',
@@ -391,6 +454,17 @@ export default function MetadataSchemasManager({ canManageSchemas } = {}) {
         setSelected(data);
         return true;
     };
+
+    // Root schemas, paginated. Children always render alongside their parent
+    // regardless of page (handled inside SchemaTreeNode's recursive render).
+    const totalRootPages = Math.max(1, Math.ceil(schemas.length / ROOT_SCHEMAS_PER_PAGE));
+    const clampedRootPage = Math.min(rootPage, totalRootPages);
+    const pagedSchemas = schemas.slice(
+        (clampedRootPage - 1) * ROOT_SCHEMAS_PER_PAGE,
+        clampedRootPage * ROOT_SCHEMAS_PER_PAGE
+    );
+    const selectablePageIds = pagedSchemas.filter(s => !s.is_builtin).map(s => s.id);
+    const allPageSelected = selectablePageIds.length > 0 && selectablePageIds.every(id => checkedIds.has(id));
 
     return (
         <Box sx={{ display: 'flex', height: '100%', bgcolor: '#f8fafc' }}>
@@ -430,6 +504,37 @@ export default function MetadataSchemasManager({ canManageSchemas } = {}) {
                     </Stack>
                 </Box>
 
+                {/* Bulk selection toolbar */}
+                {canManage && schemas.length > 0 && (
+                    <Box sx={{ px: 2, py: 1, borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Checkbox
+                            size="small"
+                            data-testid="schema-select-all"
+                            checked={allPageSelected}
+                            indeterminate={!allPageSelected && selectablePageIds.some(id => checkedIds.has(id))}
+                            disabled={selectablePageIds.length === 0}
+                            onChange={() => handleToggleSelectAll(selectablePageIds)}
+                            sx={{ p: 0.5 }}
+                        />
+                        <Typography variant="caption" sx={{ color: '#64748b', flex: 1 }}>
+                            {checkedIds.size > 0
+                                ? t('common.nSelected', { count: checkedIds.size, defaultValue: `${checkedIds.size} selected` })
+                                : t('common.selectAll', { defaultValue: 'Select all' })}
+                        </Typography>
+                        {checkedIds.size > 0 && (
+                            <Tooltip title="Delete selected schemas">
+                                <span>
+                                    <IconButton size="small" data-testid="schema-bulk-delete-button"
+                                                onClick={handleBulkDelete} disabled={bulkDeleting}
+                                                sx={{ color: '#ef4444' }}>
+                                        <DeleteOutlined fontSize="small" />
+                                    </IconButton>
+                                </span>
+                            </Tooltip>
+                        )}
+                    </Box>
+                )}
+
                 {/* Tree */}
                 <Box sx={{ flex: 1, overflow: 'auto', py: 1 }}>
                     {loading ? (
@@ -440,13 +545,38 @@ export default function MetadataSchemasManager({ canManageSchemas } = {}) {
                         <Typography variant="body2" sx={{ p: 2, color: '#94a3b8' }}>No schemas found.</Typography>
                     ) : (
                         <List disablePadding>
-                            {schemas.map(s => (
+                            {pagedSchemas.map(s => (
                                 <SchemaTreeNode key={s.id} schema={s}
-                                               selected={selected} onSelect={setSelected} />
+                                               selected={selected} onSelect={setSelected}
+                                               canManage={canManage}
+                                               checkedIds={checkedIds} onToggleCheck={handleToggleCheck} />
                             ))}
                         </List>
                     )}
                 </Box>
+
+                {/* Root-level pagination */}
+                {!loading && schemas.length > 0 && totalRootPages > 1 && (
+                    <Stack direction="row" spacing={1} sx={{ py: 1, borderTop: '1px solid #f1f5f9', justifyContent: 'center' }}>
+                        <Button
+                            size="small"
+                            disabled={clampedRootPage <= 1}
+                            onClick={() => setRootPage(clampedRootPage - 1)}
+                        >
+                            {t('common.previous', { defaultValue: 'Previous' })}
+                        </Button>
+                        <Typography variant="caption" sx={{ alignSelf: 'center', px: 1 }}>
+                            {t('common.pageOf', { page: clampedRootPage, pages: totalRootPages, defaultValue: `Page ${clampedRootPage} of ${totalRootPages}` })}
+                        </Typography>
+                        <Button
+                            size="small"
+                            disabled={clampedRootPage >= totalRootPages}
+                            onClick={() => setRootPage(clampedRootPage + 1)}
+                        >
+                            {t('common.next', { defaultValue: 'Next' })}
+                        </Button>
+                    </Stack>
+                )}
             </Box>
 
             {/* ── Right: detail panel ── */}

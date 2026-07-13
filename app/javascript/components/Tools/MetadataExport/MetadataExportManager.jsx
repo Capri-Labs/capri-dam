@@ -202,6 +202,8 @@ export default function MetadataExportManager() {
     const [page, setPage]         = useState(0); // zero-indexed, matches MUI TablePagination
     const [perPage, setPerPage]   = useState(25);
     const [total, setTotal]       = useState(0);
+    const [selectedIds, setSelectedIds] = useState(new Set());
+    const [bulkDeleting, setBulkDeleting] = useState(false);
     const pollRef = useRef(null);
 
     const fetchExports = useCallback(async () => {
@@ -227,6 +229,8 @@ export default function MetadataExportManager() {
 
     useEffect(() => { fetchExports(); }, [fetchExports]);
     useEffect(() => { fetchFolders(); }, [fetchFolders]);
+    // Selection is page-scoped — clear it whenever the underlying rows change.
+    useEffect(() => { setSelectedIds(new Set()); }, [page, perPage]);
 
     // Poll while any export is still in flight.
     useEffect(() => {
@@ -275,6 +279,46 @@ export default function MetadataExportManager() {
         }
     };
 
+    const handleToggleSelect = (id) => {
+        setSelectedIds(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id); else next.add(id);
+            return next;
+        });
+    };
+
+    const handleToggleSelectAll = () => {
+        setSelectedIds(prev => {
+            const allIds = exports.map(e => e.id);
+            const allSelected = allIds.length > 0 && allIds.every(id => prev.has(id));
+            return allSelected ? new Set() : new Set(allIds);
+        });
+    };
+
+    const handleBulkDelete = async () => {
+        if (selectedIds.size === 0) return;
+        if (!window.confirm(`Delete ${selectedIds.size} selected export(s) and their files?`)) return;
+        setBulkDeleting(true);
+        try {
+            const res = await fetch('/api/v1/metadata_exports/bulk_delete', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken() },
+                body: JSON.stringify({ ids: Array.from(selectedIds) }),
+            });
+            const data = await res.json();
+            if (!res.ok) { notify(data.error || 'Bulk delete failed.', 'error'); return; }
+            notify(`${data.deleted_count} export(s) deleted.`, 'success');
+            setSelectedIds(new Set());
+            if (page > 0 && selectedIds.size === exports.length) {
+                setPage(page - 1);
+            } else {
+                await fetchExports();
+            }
+        } finally {
+            setBulkDeleting(false);
+        }
+    };
+
     const handlePageChange = (_event, newPage) => setPage(newPage);
     const handlePerPageChange = (event) => {
         setPerPage(parseInt(event.target.value, 10));
@@ -300,6 +344,14 @@ export default function MetadataExportManager() {
                         <RefreshOutlined fontSize="small" />
                     </IconButton>
                 </Tooltip>
+                {selectedIds.size > 0 && (
+                    <Button variant="outlined" color="error" startIcon={<DeleteOutlined />}
+                        onClick={handleBulkDelete} disabled={bulkDeleting}
+                        data-testid="export-bulk-delete-button"
+                        sx={{ textTransform: 'none' }}>
+                        {t('common.deleteSelected', { count: selectedIds.size, defaultValue: `Delete Selected (${selectedIds.size})` })}
+                    </Button>
+                )}
                 <Button variant="contained" startIcon={<AddOutlined />} onClick={() => setDialog(true)}
                     sx={{ bgcolor: '#5e35b1', '&:hover': { bgcolor: '#4527a0' }, textTransform: 'none' }}>
                     New Export
@@ -333,6 +385,15 @@ export default function MetadataExportManager() {
                         <Table size="small">
                             <TableHead>
                                 <TableRow sx={{ '& th': { fontWeight: 700, color: '#475569', bgcolor: '#fff' } }}>
+                                    <TableCell padding="checkbox">
+                                        <Checkbox
+                                            size="small"
+                                            data-testid="export-select-all"
+                                            checked={exports.length > 0 && exports.every(e => selectedIds.has(e.id))}
+                                            indeterminate={exports.some(e => selectedIds.has(e.id)) && !exports.every(e => selectedIds.has(e.id))}
+                                            onChange={handleToggleSelectAll}
+                                        />
+                                    </TableCell>
                                     <TableCell>File</TableCell>
                                     <TableCell>Folder</TableCell>
                                     <TableCell>Properties</TableCell>
@@ -348,7 +409,15 @@ export default function MetadataExportManager() {
                                 {exports.map(exp => {
                                     const meta = STATUS_META[exp.status] || STATUS_META.pending;
                                     return (
-                                        <TableRow key={exp.id} hover>
+                                        <TableRow key={exp.id} hover selected={selectedIds.has(exp.id)}>
+                                            <TableCell padding="checkbox">
+                                                <Checkbox
+                                                    size="small"
+                                                    data-testid={`export-select-${exp.id}`}
+                                                    checked={selectedIds.has(exp.id)}
+                                                    onChange={() => handleToggleSelect(exp.id)}
+                                                />
+                                            </TableCell>
                                             <TableCell>
                                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                                     <DescriptionOutlined sx={{ fontSize: 18, color: '#5e35b1' }} />

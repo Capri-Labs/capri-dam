@@ -10,7 +10,7 @@ class Api::V1::MetadataSchemasController < ApplicationController
   # `index`/`show`/`folders` remain readable by any authenticated user, so
   # non-managers still see the full schema tree — just without the ability
   # to mutate it.
-  before_action :ensure_schema_manager!, only: %i[create update destroy duplicate apply_to_folder remove_from_folder]
+  before_action :ensure_schema_manager!, only: %i[create update destroy duplicate apply_to_folder remove_from_folder bulk_delete]
 
   # GET /api/v1/metadata_schemas
   # Returns all root schemas with their full child tree and folder counts.
@@ -52,6 +52,22 @@ class Api::V1::MetadataSchemasController < ApplicationController
 
     @schema.soft_delete!
     head :no_content
+  end
+
+  # DELETE /api/v1/metadata_schemas/bulk_delete?ids[]=1&ids[]=2
+  # Soft-deletes multiple root/type/subtype schemas at once. Built-in schemas
+  # are silently skipped (never deletable) and reported back so the UI can
+  # tell the user why the requested count didn't fully apply.
+  def bulk_delete
+    return render json: { error: "No IDs provided" }, status: :bad_request if params[:ids].blank?
+
+    schemas = MetadataSchema.active.where(id: params[:ids])
+    skipped_builtin_ids = schemas.where(is_builtin: true).pluck(:id)
+    deletable = schemas.where(is_builtin: false)
+    deleted_count = deletable.count
+    deletable.find_each(&:soft_delete!)
+
+    render json: { deleted_count: deleted_count, skipped_builtin_ids: skipped_builtin_ids }, status: :ok
   end
 
   # POST /api/v1/metadata_schemas/:id/duplicate

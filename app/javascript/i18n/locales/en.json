@@ -79,7 +79,10 @@
     "previous": "Previous",
     "next": "Next",
     "pageOf": "Page {{page}} of {{pages}}",
-    "rowsPerPage": "Rows per page:"
+    "rowsPerPage": "Rows per page:",
+    "selectAll": "Select all",
+    "nSelected": "{{count}} selected",
+    "deleteSelected": "Delete Selected ({{count}})"
   },
   "header": {
     "myProfile": "My Profile",

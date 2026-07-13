@@ -81,6 +81,36 @@ RSpec.describe 'Api::V1::MetadataExports', type: :request do
       expect(MetadataExport.find_by(id: export.id)).to be_nil
     end
   end
+
+  describe 'DELETE /api/v1/metadata_exports/bulk_delete' do
+    it 'destroys multiple exports owned by the current user' do
+      one = create(:metadata_export, user: user)
+      two = create(:metadata_export, user: user)
+
+      delete '/api/v1/metadata_exports/bulk_delete', params: { ids: [ one.id, two.id ] }
+
+      expect(response).to have_http_status(:ok)
+      expect(JSON.parse(response.body)['deleted_count']).to eq(2)
+      expect(MetadataExport.where(id: [ one.id, two.id ])).to be_empty
+    end
+
+    it "does not delete another user's exports" do
+      mine  = create(:metadata_export, user: user)
+      other = create(:metadata_export, user: create(:user))
+
+      delete '/api/v1/metadata_exports/bulk_delete', params: { ids: [ mine.id, other.id ] }
+
+      expect(response).to have_http_status(:ok)
+      expect(JSON.parse(response.body)['deleted_count']).to eq(1)
+      expect(MetadataExport.find_by(id: other.id)).to be_present
+    end
+
+    it 'returns bad_request when no ids are provided' do
+      delete '/api/v1/metadata_exports/bulk_delete', params: {}
+
+      expect(response).to have_http_status(:bad_request)
+    end
+  end
 end
 
 # ---- merged from metadata_exports_coverage_spec.rb ----

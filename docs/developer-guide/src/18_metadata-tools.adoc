@@ -143,7 +143,9 @@ read-only info banner) whenever that flag is `false`.
 
 `MetadataExportManager.jsx` lets admins choose a folder scope, include
 subfolders, schedule execution, and export either all properties or a selected
-subset discovered from `/api/v1/metadata_exports/properties`.
+subset discovered from `/api/v1/metadata_exports/properties`. The jobs table
+supports multi-select (header checkbox + per-row checkboxes) with a
+"Delete Selected (N)" action that calls `bulk_delete` (see below).
 
 == Import flow
 
@@ -155,7 +157,28 @@ asset-resolution, and row-level validation logic as the worker-backed import,
 but never persists `Asset` changes, never creates a `MetadataImport` row, and
 never launches workflows. Once the user is satisfied with the dry-run output,
 the existing `POST /api/v1/metadata_imports` flow still creates the async job and
-`MetadataImportWorker` performs the real write.
+`MetadataImportWorker` performs the real write. Like the export table, the
+imports table supports multi-select + bulk delete.
+
+== Pagination & bulk delete (Schemas / Exports / Imports)
+
+* **`MetadataSchemasManager.jsx`** paginates root-level schemas 10 per page
+  (`ROOT_SCHEMAS_PER_PAGE`). Pagination only applies to root nodes — child
+  schemas always render alongside their parent regardless of page. Non-builtin
+  root schemas show a checkbox (builtin schemas, e.g. `Default`/`Collection`,
+  are never selectable/deletable in bulk). A selection toolbar above the tree
+  shows a "select all" checkbox scoped to the current page and a delete icon
+  that appears once at least one schema is checked.
+* **`MetadataExportManager.jsx`** / **`MetadataImportManager.jsx`** already
+  paginated their tables via MUI `TablePagination`; both now also support
+  row selection and a "Delete Selected (N)" button in the toolbar.
+* All three bulk-delete flows hit a `DELETE .../bulk_delete` collection route
+  accepting `ids: [...]` in the request body, mirroring the existing
+  `Collections#bulk_delete` / `Api::V1::BinController#bulk_destroy` convention.
+  Schemas are soft-deleted (cascading to children, same as single-schema
+  delete); builtin schemas passed in `ids` are skipped and reported back via
+  `skipped_builtin_ids` rather than causing the whole request to fail. Exports
+  and imports are scoped to `current_user`, purge attached files, then hard-destroy.
 
 == Endpoints
 
@@ -164,12 +187,15 @@ the existing `POST /api/v1/metadata_imports` flow still creates the async job an
 | Method | Path | Description
 | `GET/POST` | `/api/v1/metadata_schemas` | List/create schemas. Write actions require `metadata_schema_manager?`.
 | `GET/PATCH/DELETE` | `/api/v1/metadata_schemas/:id` | Maintain schemas — `PATCH` accepts `name`, `inherits_from_id` (root-level only), `tabs`, etc.
+| `DELETE` | `/api/v1/metadata_schemas/bulk_delete` | Soft-delete multiple non-builtin schemas by `ids`; skips/reports any builtin ids. Requires `metadata_schema_manager?`.
 | `POST` | `/api/v1/metadata_schemas/:id/duplicate` | Duplicate a schema tree. Root-level copies link via `inherits_from_id` instead of deep-copying tabs.
 | `POST` | `/api/v1/metadata_schemas/:id/assign` | Apply schema to folder tree.
 | `GET` | `/api/v1/assets/:id/metadata_schema` | Resolve the schema for one asset (by id or UUID), pre-filled with the asset's own values.
 | `GET/POST` | `/api/v1/metadata_exports` | List/create export jobs.
+| `DELETE` | `/api/v1/metadata_exports/bulk_delete` | Purge files and destroy multiple exports (scoped to `current_user`) by `ids`.
 | `GET` | `/api/v1/metadata_exports/properties` | Discover metadata keys.
 | `GET/POST` | `/api/v1/metadata_imports` | List/create import jobs. `POST` still enqueues the async worker-backed import.
+| `DELETE` | `/api/v1/metadata_imports/bulk_delete` | Purge source/result files and destroy multiple imports (scoped to `current_user`) by `ids`.
 | `POST` | `/api/v1/metadata_imports/preview` | Run a dry-run preview synchronously and return per-row results without mutating assets or creating an import record.
 |===
 

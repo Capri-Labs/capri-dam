@@ -79,7 +79,10 @@
     "previous": "이전",
     "next": "다음",
     "pageOf": "{{pages}}페이지 중 {{page}}페이지",
-    "rowsPerPage": "페이지당 행 수:"
+    "rowsPerPage": "페이지당 행 수:",
+    "selectAll": "전체 선택",
+    "nSelected": "{{count}}개 선택됨",
+    "deleteSelected": "선택 항목 삭제 ({{count}})"
   },
   "header": {
     "myProfile": "내 프로필",

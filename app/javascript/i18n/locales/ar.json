@@ -79,7 +79,10 @@
     "previous": "السابق",
     "next": "التالي",
     "pageOf": "صفحة {{page}} من {{pages}}",
-    "rowsPerPage": "الصفوف لكل صفحة:"
+    "rowsPerPage": "الصفوف لكل صفحة:",
+    "selectAll": "تحديد الكل",
+    "nSelected": "تم تحديد {{count}}",
+    "deleteSelected": "حذف المحدد ({{count}})"
   },
   "header": {
     "myProfile": "My Profile",

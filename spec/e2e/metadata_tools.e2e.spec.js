@@ -623,6 +623,166 @@ test.describe('Metadata Tools E2E', () => {
     }
   });
 
+  test('Metadata Schemas screen paginates root schemas and supports select-all + bulk delete', async ({ page }) => {
+    test.setTimeout(60_000);
+
+    const stamp = Date.now();
+    const createdIds = [];
+
+    try {
+      // Seed enough root schemas to guarantee a second pagination page
+      // (component paginates at 10 root schemas per page).
+      // Prefix with "0-" so these sort alphabetically ahead of any
+      // pre-existing non-builtin schemas, keeping page-1 positions predictable.
+      for (let i = 0; i < 11; i += 1) {
+        const created = await createRootSchema(page, uniqueName(`0-Pagination Schema ${String(i).padStart(2, '0')}`));
+        createdIds.push(created.id);
+      }
+
+      await page.goto('/tools/metadata_schemas');
+      await page.waitForLoadState('networkidle');
+
+      // Pagination controls should now be visible with at least 2 pages.
+      await expect(page.getByText(/page 1 of \d+/i)).toBeVisible();
+      const nextButton = page.getByRole('button', { name: 'Next' });
+      await expect(nextButton).toBeEnabled();
+      await nextButton.click();
+      await expect(page.getByText(/page 2 of \d+/i)).toBeVisible();
+
+      // Go back to page 1 and select two of the newly created schemas for bulk delete.
+      await page.getByRole('button', { name: 'Previous' }).click();
+      await expect(page.getByText(/page 1 of \d+/i)).toBeVisible();
+
+      const firstCheckbox = page.getByTestId(`schema-select-${createdIds[0]}`).locator('input');
+      const secondCheckbox = page.getByTestId(`schema-select-${createdIds[1]}`).locator('input');
+      await firstCheckbox.check();
+      await secondCheckbox.check();
+
+      await expect(page.getByText('2 selected')).toBeVisible();
+
+      page.once('dialog', (dialog) => dialog.accept());
+      const [bulkDeleteResponse] = await Promise.all([
+        page.waitForResponse((res) =>
+          res.url().includes('/api/v1/metadata_schemas/bulk_delete') &&
+          res.request().method() === 'DELETE',
+        ),
+        page.getByTestId('schema-bulk-delete-button').click(),
+      ]);
+      expect(bulkDeleteResponse.ok()).toBeTruthy();
+      const body = await bulkDeleteResponse.json();
+      expect(body.deleted_count).toBe(2);
+
+      // Deleted schemas are removed from the list, remaining ones still show.
+      await expect(page.getByTestId(`schema-select-${createdIds[0]}`)).toHaveCount(0);
+      await expect(page.getByTestId(`schema-select-${createdIds[1]}`)).toHaveCount(0);
+    } finally {
+      await Promise.all(createdIds.map((id) => deleteSchema(page, id)));
+    }
+  });
+
+  test('Metadata Export screen supports select-all + bulk delete of export jobs', async ({ page }) => {
+    test.setTimeout(60_000);
+
+    const csrf = await csrfToken(page);
+    const stamp = Date.now();
+    const exportIds = [];
+
+    try {
+      for (let i = 0; i < 2; i += 1) {
+        const response = await page.request.post('/api/v1/metadata_exports', {
+          headers: { Accept: 'application/json', 'X-CSRF-Token': csrf },
+          data: { metadata_export: { name: `bulk-delete-export-e2e-${stamp}-${i}`, property_mode: 'all' } },
+        });
+        expect(response.status()).toBe(202);
+        exportIds.push((await response.json()).id);
+      }
+
+      await page.goto('/tools/metadata_exports');
+      await page.waitForLoadState('networkidle');
+
+      for (const id of exportIds) {
+        await page.getByTestId(`export-select-${id}`).locator('input').check();
+      }
+      await expect(page.getByTestId('export-bulk-delete-button')).toBeVisible();
+
+      page.once('dialog', (dialog) => dialog.accept());
+      const [bulkDeleteResponse] = await Promise.all([
+        page.waitForResponse((res) =>
+          res.url().includes('/api/v1/metadata_exports/bulk_delete') &&
+          res.request().method() === 'DELETE',
+        ),
+        page.getByTestId('export-bulk-delete-button').click(),
+      ]);
+      expect(bulkDeleteResponse.ok()).toBeTruthy();
+      const body = await bulkDeleteResponse.json();
+      expect(body.deleted_count).toBe(2);
+
+      for (const id of exportIds) {
+        await expect(page.getByTestId(`export-select-${id}`)).toHaveCount(0);
+      }
+      exportIds.length = 0;
+    } finally {
+      for (const id of exportIds) {
+        await deleteMetadataExport(page, id, csrf);
+      }
+    }
+  });
+
+  test('Metadata Import screen supports select-all + bulk delete of import jobs', async ({ page }) => {
+    test.setTimeout(60_000);
+
+    const csrf = await csrfToken(page);
+    const stamp = Date.now();
+    const importIds = [];
+    const csv = 'asset_path,title\n"/does/not/exist.png","Ignored"';
+
+    try {
+      for (let i = 0; i < 2; i += 1) {
+        const response = await page.request.post('/api/v1/metadata_imports', {
+          multipart: {
+            'metadata_import[source_file]': {
+              name: `bulk-delete-import-e2e-${stamp}-${i}.csv`,
+              mimeType: 'text/csv',
+              buffer: Buffer.from(csv, 'utf8'),
+            },
+          },
+          headers: { Accept: 'application/json', 'X-CSRF-Token': csrf },
+        });
+        expect(response.status()).toBe(202);
+        importIds.push((await response.json()).id);
+      }
+
+      await page.goto('/tools/metadata_imports');
+      await page.waitForLoadState('networkidle');
+
+      for (const id of importIds) {
+        await page.getByTestId(`import-select-${id}`).locator('input').check();
+      }
+      await expect(page.getByTestId('import-bulk-delete-button')).toBeVisible();
+
+      page.once('dialog', (dialog) => dialog.accept());
+      const [bulkDeleteResponse] = await Promise.all([
+        page.waitForResponse((res) =>
+          res.url().includes('/api/v1/metadata_imports/bulk_delete') &&
+          res.request().method() === 'DELETE',
+        ),
+        page.getByTestId('import-bulk-delete-button').click(),
+      ]);
+      expect(bulkDeleteResponse.ok()).toBeTruthy();
+      const body = await bulkDeleteResponse.json();
+      expect(body.deleted_count).toBe(2);
+
+      for (const id of importIds) {
+        await expect(page.getByTestId(`import-select-${id}`)).toHaveCount(0);
+      }
+      importIds.length = 0;
+    } finally {
+      for (const id of importIds) {
+        await deleteMetadataImport(page, id, csrf);
+      }
+    }
+  });
+
   test('asset viewer lets a user edit values for fields inherited from a system schema, but keeps explicit read_only fields locked', async ({ page }) => {
     // Mock a folder with a single asset and an asset-scoped resolved schema
     // where the "Title" field is inherited from the built-in "Default" root

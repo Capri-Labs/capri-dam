@@ -122,4 +122,58 @@ RSpec.describe "Api::V1::MetadataSchemas", type: :request do
       end
     end
   end
+
+  path "/api/v1/metadata_schemas/bulk_delete" do
+    delete "Bulk delete metadata schemas" do
+      tags "Metadata Schemas"
+      consumes "application/json"
+      produces "application/json"
+      security [ Bearer: [] ]
+      description "Soft-deletes multiple schemas at once (with their descendants). " \
+                   "Built-in schemas are silently skipped and reported in `skipped_builtin_ids`. " \
+                   "Requires metadata_schema_manager?."
+
+      parameter name: :payload, in: :body, schema: {
+        type: :object,
+        properties: {
+          ids: { type: :array, items: { type: :integer }, example: [ 12, 13 ] },
+        },
+      }
+
+      response "200", "schemas deleted (built-ins skipped)" do
+        let(:admin)   { create(:user, :admin) }
+        let(:schema1) { create(:metadata_schema, :root, name: "Deletable") }
+        let(:payload) { { ids: [ schema1.id ] } }
+
+        before { sign_in admin }
+
+        schema type: :object,
+               properties: {
+                 deleted_count:        { type: :integer },
+                 skipped_builtin_ids:  { type: :array, items: { type: :integer } },
+               }
+        run_test!
+      end
+
+      response "400", "no ids provided" do
+        let(:admin)   { create(:user, :admin) }
+        let(:payload) { {} }
+
+        before { sign_in admin }
+
+        schema type: :object, properties: { error: { type: :string } }
+        run_test!
+      end
+
+      response "403", "forbidden for users outside metadata_users" do
+        let(:regular_user) { create(:user) }
+        let(:payload)      { { ids: [ create(:metadata_schema, :root).id ] } }
+
+        before { sign_in regular_user }
+
+        schema type: :object, properties: { error: { type: :string } }
+        run_test!
+      end
+    end
+  end
 end

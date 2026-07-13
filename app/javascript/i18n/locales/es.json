@@ -79,7 +79,10 @@
     "previous": "Anterior",
     "next": "Siguiente",
     "pageOf": "Página {{page}} de {{pages}}",
-    "rowsPerPage": "Filas por página:"
+    "rowsPerPage": "Filas por página:",
+    "selectAll": "Seleccionar todo",
+    "nSelected": "{{count}} seleccionado(s)",
+    "deleteSelected": "Eliminar seleccionados ({{count}})"
   },
   "header": {
     "myProfile": "Mi perfil",

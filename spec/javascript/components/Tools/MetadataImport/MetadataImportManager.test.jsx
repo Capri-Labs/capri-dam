@@ -182,3 +182,66 @@ describe('<MetadataImportManager /> preview flow', () => {
     expect(await screen.findByText('preview.csv')).toBeInTheDocument();
   });
 });
+
+describe('<MetadataImportManager /> bulk select + delete', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    jest.spyOn(document, 'querySelector').mockImplementation((selector) => (
+      selector === 'meta[name="csrf-token"]' ? { content: 'csrf-token' } : null
+    ));
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  const importRow = (id, name) => ({
+    id, name, status: 'completed', batch_size: 50, field_separator: ',',
+    asset_path_column: 'asset_path', launch_workflows: false,
+    total_rows: 1, success_count: 1, failure_count: 0,
+    created_by: 'admin@example.com', created_at: 'Jul 9, 2026 at 09:00',
+    expires_at: null, source_file: null, result_file: null,
+  });
+
+  it('selects all imports and bulk deletes them', async () => {
+    global.fetch = createFetchMock({
+      'GET /api/v1/metadata_imports': {
+        imports: [ importRow(1, 'one.csv'), importRow(2, 'two.csv') ],
+        meta: { total: 2, page: 1, per_page: 25 },
+      },
+      'DELETE /api/v1/metadata_imports/bulk_delete': { deleted_count: 2 },
+    });
+    window.confirm = jest.fn(() => true);
+
+    render(<MetadataImportManager />);
+
+    await screen.findByText('one.csv');
+
+    const selectAll = screen.getByTestId('import-select-all').querySelector('input');
+    fireEvent.click(selectAll);
+
+    expect(await screen.findByText('Delete Selected (2)')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('import-bulk-delete-button'));
+
+    await waitFor(() =>
+      expect(global.fetch).toHaveBeenCalledWith('/api/v1/metadata_imports/bulk_delete', expect.objectContaining({
+        method: 'DELETE',
+      }))
+    );
+  });
+
+  it('does not show the Delete Selected button when nothing is checked', async () => {
+    global.fetch = createFetchMock({
+      'GET /api/v1/metadata_imports': {
+        imports: [ importRow(1, 'one.csv') ],
+        meta: { total: 1, page: 1, per_page: 25 },
+      },
+    });
+
+    render(<MetadataImportManager />);
+
+    await screen.findByText('one.csv');
+    expect(screen.queryByTestId('import-bulk-delete-button')).not.toBeInTheDocument();
+  });
+});

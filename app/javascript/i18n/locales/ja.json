@@ -79,7 +79,10 @@
     "previous": "前へ",
     "next": "次へ",
     "pageOf": "{{pages}}ページ中{{page}}ページ目",
-    "rowsPerPage": "1ページあたりの行数:"
+    "rowsPerPage": "1ページあたりの行数:",
+    "selectAll": "すべて選択",
+    "nSelected": "{{count}}件選択中",
+    "deleteSelected": "選択項目を削除 ({{count}})"
   },
   "header": {
     "myProfile": "マイプロフィール",

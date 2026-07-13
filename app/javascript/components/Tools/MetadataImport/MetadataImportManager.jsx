@@ -472,6 +472,8 @@ export default function MetadataImportManager() {
     const [page, setPage] = useState(0); // zero-indexed, matches MUI TablePagination
     const [perPage, setPerPage] = useState(25);
     const [total, setTotal] = useState(0);
+    const [selectedIds, setSelectedIds] = useState(new Set());
+    const [bulkDeleting, setBulkDeleting] = useState(false);
     const pollRef = useRef(null);
 
     const fetchImports = useCallback(async () => {
@@ -490,6 +492,9 @@ export default function MetadataImportManager() {
     useEffect(() => {
         fetchImports();
     }, [fetchImports]);
+
+    // Selection is page-scoped — clear it whenever the underlying rows change.
+    useEffect(() => { setSelectedIds(new Set()); }, [page, perPage]);
 
     useEffect(() => {
         const inFlight = imports.some((item) => item.status === 'pending' || item.status === 'processing');
@@ -560,6 +565,46 @@ export default function MetadataImportManager() {
         }
     };
 
+    const handleToggleSelect = (id) => {
+        setSelectedIds(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id); else next.add(id);
+            return next;
+        });
+    };
+
+    const handleToggleSelectAll = () => {
+        setSelectedIds(prev => {
+            const allIds = imports.map(i => i.id);
+            const allSelected = allIds.length > 0 && allIds.every(id => prev.has(id));
+            return allSelected ? new Set() : new Set(allIds);
+        });
+    };
+
+    const handleBulkDelete = async () => {
+        if (selectedIds.size === 0) return;
+        if (!window.confirm(`Delete ${selectedIds.size} selected import(s) and their files?`)) return;
+        setBulkDeleting(true);
+        try {
+            const res = await fetch('/api/v1/metadata_imports/bulk_delete', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken() },
+                body: JSON.stringify({ ids: Array.from(selectedIds) }),
+            });
+            const data = await res.json();
+            if (!res.ok) { notify(data.error || 'Bulk delete failed.', 'error'); return; }
+            notify(`${data.deleted_count} import(s) deleted.`, 'success');
+            setSelectedIds(new Set());
+            if (page > 0 && selectedIds.size === imports.length) {
+                setPage(page - 1);
+            } else {
+                await fetchImports();
+            }
+        } finally {
+            setBulkDeleting(false);
+        }
+    };
+
     const handlePageChange = (_event, newPage) => setPage(newPage);
     const handlePerPageChange = (event) => {
         setPerPage(parseInt(event.target.value, 10));
@@ -593,6 +638,19 @@ export default function MetadataImportManager() {
                         <RefreshOutlined fontSize="small" />
                     </IconButton>
                 </Tooltip>
+                {selectedIds.size > 0 && (
+                    <Button
+                        variant="outlined"
+                        color="error"
+                        startIcon={<DeleteOutlined />}
+                        onClick={handleBulkDelete}
+                        disabled={bulkDeleting}
+                        data-testid="import-bulk-delete-button"
+                        sx={{ textTransform: 'none' }}
+                    >
+                        {t('common.deleteSelected', { count: selectedIds.size, defaultValue: `Delete Selected (${selectedIds.size})` })}
+                    </Button>
+                )}
                 <Button
                     variant="contained"
                     startIcon={<AddOutlined />}
@@ -662,6 +720,15 @@ export default function MetadataImportManager() {
                         <Table size="small">
                             <TableHead>
                                 <TableRow sx={{ '& th': { fontWeight: 700, color: '#475569', bgcolor: '#fff' } }}>
+                                    <TableCell padding="checkbox">
+                                        <Checkbox
+                                            size="small"
+                                            data-testid="import-select-all"
+                                            checked={imports.length > 0 && imports.every(i => selectedIds.has(i.id))}
+                                            indeterminate={imports.some(i => selectedIds.has(i.id)) && !imports.every(i => selectedIds.has(i.id))}
+                                            onChange={handleToggleSelectAll}
+                                        />
+                                    </TableCell>
                                     <TableCell>File</TableCell>
                                     <TableCell>Status</TableCell>
                                     <TableCell>Results</TableCell>
@@ -676,7 +743,15 @@ export default function MetadataImportManager() {
                                 {imports.map((imp) => {
                                     const meta = STATUS_META[imp.status] || STATUS_META.pending;
                                     return (
-                                        <TableRow key={imp.id} hover>
+                                        <TableRow key={imp.id} hover selected={selectedIds.has(imp.id)}>
+                                            <TableCell padding="checkbox">
+                                                <Checkbox
+                                                    size="small"
+                                                    data-testid={`import-select-${imp.id}`}
+                                                    checked={selectedIds.has(imp.id)}
+                                                    onChange={() => handleToggleSelect(imp.id)}
+                                                />
+                                            </TableCell>
                                             <TableCell>
                                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                                     <DescriptionOutlined sx={{ fontSize: 18, color: '#5e35b1' }} />

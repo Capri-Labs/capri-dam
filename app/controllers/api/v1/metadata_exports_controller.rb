@@ -71,6 +71,21 @@ module Api
         redirect_to rails_blob_path(attachment.blob, disposition: "attachment"), allow_other_host: false
       end
 
+      # DELETE /api/v1/metadata_exports/bulk_delete?ids[]=1&ids[]=2
+      def bulk_delete
+        return render json: { error: "No IDs provided" }, status: :bad_request if params[:ids].blank?
+
+        exports = current_user.metadata_exports.where(id: params[:ids])
+        deleted_count = 0
+        exports.find_each do |export|
+          export.files.purge if export.files.attached?
+          export.destroy
+          deleted_count += 1
+        end
+
+        render json: { deleted_count: deleted_count }, status: :ok
+      end
+
       # DELETE /api/v1/metadata_exports/:id
       def destroy
         @export.files.purge if @export.files.attached?

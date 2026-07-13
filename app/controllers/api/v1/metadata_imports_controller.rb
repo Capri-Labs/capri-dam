@@ -6,7 +6,7 @@ module Api
       include Rails.application.routes.url_helpers
 
       before_action :authenticate_hybrid!
-      before_action :require_write_scope!, only: [ :create, :preview, :destroy ]
+      before_action :require_write_scope!, only: [ :create, :preview, :destroy, :bulk_delete ]
       before_action :set_import, only: [ :show, :download, :destroy ]
 
       # GET /api/v1/metadata_imports
@@ -86,6 +86,22 @@ module Api
         end
 
         redirect_to rails_blob_path(attachment, disposition: "attachment"), allow_other_host: false
+      end
+
+      # DELETE /api/v1/metadata_imports/bulk_delete?ids[]=1&ids[]=2
+      def bulk_delete
+        return render json: { error: "No IDs provided" }, status: :bad_request if params[:ids].blank?
+
+        imports = current_user.metadata_imports.where(id: params[:ids])
+        deleted_count = 0
+        imports.find_each do |import|
+          import.source_file.purge if import.source_file.attached?
+          import.result_file.purge if import.result_file.attached?
+          import.destroy
+          deleted_count += 1
+        end
+
+        render json: { deleted_count: deleted_count }, status: :ok
       end
 
       # DELETE /api/v1/metadata_imports/:id

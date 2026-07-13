@@ -6979,6 +6979,48 @@ paths:
               type: string
         required: true
         description: CSV file to preview
+  "/api/v1/metadata_imports/bulk_delete":
+    delete:
+      summary: Bulk delete metadata imports
+      tags:
+      - Metadata Imports
+      security:
+      - Bearer: []
+      description: Deletes multiple metadata imports (and their attached source/result
+        files) owned by the current user.
+      parameters: []
+      responses:
+        '200':
+          description: imports deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted_count:
+                    type: integer
+        '400':
+          description: no ids provided
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                ids:
+                  type: array
+                  items:
+                    type: integer
+                  example:
+                  - 4
+                  - 5
   "/api/v1/metadata_schemas/{id}":
     patch:
       summary: Update a metadata schema (rename / set Inherit From)
@@ -7105,6 +7147,62 @@ paths:
                 properties:
                   error:
                     type: string
+  "/api/v1/metadata_schemas/bulk_delete":
+    delete:
+      summary: Bulk delete metadata schemas
+      tags:
+      - Metadata Schemas
+      security:
+      - Bearer: []
+      description: Soft-deletes multiple schemas at once (with their descendants).
+        Built-in schemas are silently skipped and reported in `skipped_builtin_ids`.
+        Requires metadata_schema_manager?.
+      parameters: []
+      responses:
+        '200':
+          description: schemas deleted (built-ins skipped)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted_count:
+                    type: integer
+                  skipped_builtin_ids:
+                    type: array
+                    items:
+                      type: integer
+        '400':
+          description: no ids provided
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '403':
+          description: forbidden for users outside metadata_users
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                ids:
+                  type: array
+                  items:
+                    type: integer
+                  example:
+                  - 12
+                  - 13
   "/api/v1/move_operations":
     post:
       summary: Move one or more folders and/or assets to a destination folder

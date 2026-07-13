@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import MetadataExportManager from '../../../app/javascript/components/Tools/MetadataExport/MetadataExportManager';
 
 function mockFetch(routes) {
@@ -100,6 +100,79 @@ describe('<MetadataExportManager />', () => {
     render(<MetadataExportManager />);
 
     await waitFor(() => expect(screen.getByText(/rows per page/i)).toBeInTheDocument());
+  });
+
+  it('selects all exports and bulk deletes them', async () => {
+    const exportsPayload = {
+      exports: [
+        {
+          id: 1, name: 'export_one', status: 'completed', folder_name: 'Marketing',
+          include_subfolders: false, property_mode: 'all', selected_properties: [],
+          total_assets: 1, file_count: 1, created_by: 'a@example.com',
+          created_at: 'Jun 23, 2026 at 10:00', expires_at: 'Jul 23, 2026', files: []
+        },
+        {
+          id: 2, name: 'export_two', status: 'completed', folder_name: 'Marketing',
+          include_subfolders: false, property_mode: 'all', selected_properties: [],
+          total_assets: 1, file_count: 1, created_by: 'a@example.com',
+          created_at: 'Jun 23, 2026 at 10:00', expires_at: 'Jul 23, 2026', files: []
+        }
+      ],
+      meta: { total: 2, page: 1, per_page: 25 }
+    };
+
+    global.fetch = jest.fn((url, options = {}) => {
+      if (url.startsWith('/api/v1/metadata_exports/bulk_delete')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ deleted_count: 2 }) });
+      }
+      if (url.startsWith('/api/v1/metadata_exports')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve(exportsPayload) });
+      }
+      if (url.startsWith('/api/v1/folders')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ folders: [] }) });
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
+    });
+    window.confirm = jest.fn(() => true);
+
+    render(<MetadataExportManager />);
+
+    await waitFor(() => expect(screen.getByText('export_one.csv')).toBeInTheDocument());
+
+    const selectAllCheckbox = screen.getByTestId('export-select-all').querySelector('input');
+    fireEvent.click(selectAllCheckbox);
+
+    expect(await screen.findByText('Delete Selected (2)')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('export-bulk-delete-button'));
+
+    await waitFor(() =>
+      expect(global.fetch).toHaveBeenCalledWith('/api/v1/metadata_exports/bulk_delete', expect.objectContaining({
+        method: 'DELETE',
+      }))
+    );
+  });
+
+  it('does not show the Delete Selected button when nothing is checked', async () => {
+    global.fetch = mockFetch({
+      '/api/v1/metadata_exports': {
+        exports: [
+          {
+            id: 1, name: 'q3_assets', status: 'completed', folder_name: 'Marketing',
+            include_subfolders: false, property_mode: 'all', selected_properties: [],
+            total_assets: 1, file_count: 1, created_by: 'a@example.com',
+            created_at: 'Jun 23, 2026 at 10:00', expires_at: 'Jul 23, 2026', files: []
+          }
+        ],
+        meta: { total: 1, page: 1, per_page: 25 }
+      },
+      '/api/v1/folders': { folders: [] }
+    });
+
+    render(<MetadataExportManager />);
+
+    await waitFor(() => expect(screen.getByText('q3_assets.csv')).toBeInTheDocument());
+    expect(screen.queryByTestId('export-bulk-delete-button')).not.toBeInTheDocument();
   });
 });
 

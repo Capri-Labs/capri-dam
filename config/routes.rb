@@ -446,6 +446,9 @@ Rails.application.routes.draw do
 
       # Metadata Schemas
       resources :metadata_schemas, only: [ :index, :show, :create, :update, :destroy ] do
+        collection do
+          delete :bulk_delete
+        end
         member do
           post  :duplicate
           post  :apply_to_folder
@@ -461,6 +464,7 @@ Rails.application.routes.draw do
       resources :metadata_exports, only: [ :index, :show, :create, :destroy ] do
         collection do
           get :properties
+          delete :bulk_delete
         end
         member do
           get :download
@@ -472,6 +476,7 @@ Rails.application.routes.draw do
         collection do
           get :template
           post :preview
+          delete :bulk_delete
         end
         member do
           get :download

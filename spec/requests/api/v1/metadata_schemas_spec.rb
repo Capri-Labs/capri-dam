@@ -220,6 +220,56 @@ RSpec.describe "Api::V1::MetadataSchemas", type: :request do
     end
   end
 
+  describe "DELETE /api/v1/metadata_schemas/bulk_delete" do
+    it "soft deletes multiple non-built-in schemas" do
+      sign_in admin
+      other = create(:metadata_schema, :root, name: "Other")
+
+      delete bulk_delete_api_v1_metadata_schemas_path,
+             params: { ids: [ schema.id, other.id ] },
+             as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body["deleted_count"]).to eq(2)
+      expect(schema.reload.deleted_at).to be_present
+      expect(other.reload.deleted_at).to be_present
+    end
+
+    it "skips built-in schemas and reports them" do
+      sign_in admin
+      builtin = create(:metadata_schema, :root, :builtin)
+
+      delete bulk_delete_api_v1_metadata_schemas_path,
+             params: { ids: [ schema.id, builtin.id ] },
+             as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body["deleted_count"]).to eq(1)
+      expect(response.parsed_body["skipped_builtin_ids"]).to eq([ builtin.id ])
+      expect(schema.reload.deleted_at).to be_present
+      expect(builtin.reload.deleted_at).to be_nil
+    end
+
+    it "returns bad_request when no ids are provided" do
+      sign_in admin
+
+      delete bulk_delete_api_v1_metadata_schemas_path, params: {}, as: :json
+
+      expect(response).to have_http_status(:bad_request)
+    end
+
+    it "forbids a regular user from bulk deleting" do
+      sign_in create(:user)
+
+      delete bulk_delete_api_v1_metadata_schemas_path,
+             params: { ids: [ schema.id ] },
+             as: :json
+
+      expect(response).to have_http_status(:forbidden)
+      expect(schema.reload.deleted_at).to be_nil
+    end
+  end
+
   describe "POST /api/v1/metadata_schemas/:id/duplicate" do
     it "duplicates the schema tree" do
       sign_in admin
