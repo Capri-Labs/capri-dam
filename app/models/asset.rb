@@ -68,6 +68,15 @@ class Asset < ApplicationRecord
 
   has_many :collection_assets, dependent: :destroy
 
+  # @!attribute [r] duplicate_group_assets
+  #   @return [ActiveRecord::Associations::CollectionProxy<DuplicateGroupAsset>]
+  #     join rows linking this asset to any {DuplicateGroup}s it was flagged
+  #     in. `dependent: :destroy` is a safety net for destroy paths that
+  #     don't explicitly call {DuplicateGroupAsset.cleanup_for_asset!}
+  #     first (e.g. cascading from `Folder#destroy`) — without it, hard
+  #     deletion raises `ActiveRecord::InvalidForeignKey`.
+  has_many :duplicate_group_assets, dependent: :destroy
+
   # @!attribute [r] collections
   #   @return [ActiveRecord::Associations::CollectionProxy<Collection>]
   has_many :collections, through: :collection_assets

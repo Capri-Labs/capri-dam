@@ -324,6 +324,29 @@ RSpec.describe "Api::V1::Assets coverage", type: :request do
       expect(Asset.where(id: asset.id)).to be_empty
     end
 
+    it "permanently deletes an asset that belongs to a duplicate group without an FK violation" do
+      # Regression test: DuplicateDetectionWorker links assets into
+      # DuplicateGroup records via DuplicateGroupAsset. Before this fix,
+      # permanently deleting such an asset raised
+      # ActiveRecord::InvalidForeignKey on duplicate_group_assets.
+      asset = asset_with_version(title: "Has Duplicate")
+      other_member = asset_with_version(title: "Other Member")
+      group = create(:duplicate_group, status: "pending")
+      create(:duplicate_group_asset, duplicate_group: group, asset: asset)
+      create(:duplicate_group_asset, duplicate_group: group, asset: other_member)
+
+      asset.soft_delete
+      storage = instance_double("StorageAdapter", delete: true)
+      allow(StorageManager).to receive(:adapter_for).and_return(storage)
+
+      delete "/api/v1/assets/#{asset.uuid}/permanent", as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(Asset.where(id: asset.id)).to be_empty
+      expect(DuplicateGroupAsset.where(asset_id: asset.id)).to be_empty
+      expect(group.reload.status).to eq("resolved")
+    end
+
     context "with a non-admin user and protected folders" do
       let(:user) { create(:user) }
 

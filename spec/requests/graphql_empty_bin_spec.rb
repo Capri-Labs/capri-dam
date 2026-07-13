@@ -100,5 +100,25 @@ RSpec.describe "EmptyBin mutation", type: :request do
       expect(body.dig("data", "emptyBin", "deleted")).to be_nil
       expect(body.dig("data", "emptyBin", "errors")).to include("database unavailable")
     end
+
+    it "permanently deletes a trashed asset that belongs to a duplicate group without an FK violation" do
+      # Regression test: DuplicateDetectionWorker links assets into
+      # DuplicateGroup records via DuplicateGroupAsset. Before this fix,
+      # emptying the bin raised ActiveRecord::InvalidForeignKey for any
+      # trashed asset that had ever been flagged as a duplicate.
+      asset = create(:asset, :trashed)
+      other_member = create(:asset)
+      group = create(:duplicate_group, status: "pending")
+      create(:duplicate_group_asset, duplicate_group: group, asset: asset)
+      create(:duplicate_group_asset, duplicate_group: group, asset: other_member)
+      allow(StorageBackend).to receive(:find_by).with(active: true).and_return(nil)
+
+      body = gql(mutation)
+
+      expect(body.dig("data", "emptyBin")).to eq("deleted" => 1, "errors" => [])
+      expect { asset.reload }.to raise_error(ActiveRecord::RecordNotFound)
+      expect(DuplicateGroupAsset.where(asset_id: asset.id)).to be_empty
+      expect(group.reload.status).to eq("resolved")
+    end
   end
 end

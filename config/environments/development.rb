@@ -97,4 +97,20 @@ Rails.application.configure do
 
   # Silence OpenTelemetry export errors in local dev
   ENV["OTEL_TRACES_EXPORTER"] = "none"
+
+  # Warm up autoloading of models that declare `has_one_attached` /
+  # `has_many_attached` after every reload. Puma's dev server runs multiple
+  # threads with `config.eager_load = false`, so the *first* request to
+  # touch one of these classes triggers a Zeitwerk autoload. If two threads
+  # race to trigger that same first autoload concurrently (e.g. two
+  # simultaneous asset uploads), ActiveStorage's `attachment_reflections`
+  # class_attribute can transiently be observed as nil, raising
+  # `NoMethodError: undefined method 'attachment_reflections' for nil`.
+  # Resolving the constants here — synchronously, before any request thread
+  # can race on them — eliminates that window.
+  config.to_prepare do
+    %w[Asset AssetVersion MetadataImport MetadataExport ReportSnapshot].each do |model_name|
+      model_name.safe_constantize
+    end
+  end
 end

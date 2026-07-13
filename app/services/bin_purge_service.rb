@@ -215,21 +215,7 @@ class BinPurgeService
   # ---------------------------------------------------------------------------
 
   def cleanup_duplicate_groups!(asset)
-    DuplicateGroupAsset.where(asset_id: asset.id).find_each do |dga|
-      group = dga.duplicate_group
-      dga.destroy!
-
-      # A group with fewer than 2 remaining members is no longer a valid
-      # duplicate — resolve it automatically.
-      remaining = group.duplicate_group_assets.count
-      if remaining < 2
-        group.update!(status: :resolved)
-        Rails.logger.info("[BinPurge] Auto-resolved DuplicateGroup ##{group.id} (only #{remaining} member(s) left)")
-      end
-    rescue StandardError => e
-      # Non-fatal: log and continue with the asset deletion
-      Rails.logger.warn("[BinPurge] Could not clean up duplicate group for asset ##{asset.id}: #{e.message}")
-    end
+    DuplicateGroupAsset.cleanup_for_asset!(asset, log_prefix: "[BinPurge]")
   end
 
   # ---------------------------------------------------------------------------

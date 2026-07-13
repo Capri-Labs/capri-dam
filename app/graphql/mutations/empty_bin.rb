@@ -33,6 +33,9 @@ module Mutations
           storage&.delete(storage_path) if storage_path
           version.file.purge if version.respond_to?(:file) && version.file.attached?
         end
+        # Without this, destroying an asset that was ever flagged by duplicate
+        # detection raises ActiveRecord::InvalidForeignKey on duplicate_group_assets.
+        ::DuplicateGroupAsset.cleanup_for_asset!(asset, log_prefix: "[EmptyBin]")
         asset.update_column(:active_version_id, nil) if asset.active_version_id # rubocop:disable Rails/SkipsModelValidations
         asset.destroy
         deleted += 1

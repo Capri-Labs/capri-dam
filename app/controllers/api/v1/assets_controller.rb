@@ -305,11 +305,7 @@ module Api
 
             # Attach the file using ActiveStorage when the original upload is still present.
             if !Rails.env.test? && @version.respond_to?(:file) && File.exist?(source_path)
-              @version.file.attach(
-                io: File.open(source_path, "rb"),
-                filename: file.original_filename,
-                content_type: file.content_type
-              )
+              attach_version_file(@version, source_path, file)
             end
             @version.save!
 
@@ -769,7 +765,12 @@ module Api
           version.file.purge if version.respond_to?(:file) && version.file.attached?
         end
 
-        # 2. Destroy database record (cascades to versions)
+        # 2. Remove duplicate-group memberships. Without this, destroying an
+        #    asset that was ever flagged by duplicate detection raises
+        #    ActiveRecord::InvalidForeignKey on duplicate_group_assets.
+        ::DuplicateGroupAsset.cleanup_for_asset!(@asset, log_prefix: "[AssetsController]")
+
+        # 3. Destroy database record (cascades to versions)
         @asset.update_column(:active_version_id, nil) if @asset.active_version_id # rubocop:disable Rails/SkipsModelValidations
         folder_id = @asset.folder_id
         @asset.destroy
@@ -1280,6 +1281,38 @@ module Api
 
         # 3. Sync the latest relational metadata to the Edge KV store
         EdgeMetadataSyncWorker.perform_async(target_asset.uuid) if defined?(EdgeMetadataSyncWorker)
+      end
+
+      # Attaches the uploaded file to +version+ via ActiveStorage.
+      #
+      # In development, Zeitwerk's lazy class reloading combined with Puma's
+      # multi-threaded request handling can rarely cause the very first
+      # ActiveStorage constant resolution in a process to race across threads,
+      # surfacing as a transient +NoMethodError+ referencing
+      # +attachment_reflections+. This is retried exactly once before
+      # re-raising so a real failure still surfaces.
+      #
+      # @param version [AssetVersion] the version record to attach the file to
+      # @param source_path [Pathname, String] path to the uploaded binary on disk
+      # @param upload [ActionDispatch::Http::UploadedFile] the original upload
+      # @return [void]
+      #
+      # NOTE: +version+ is not yet persisted when this runs, so ActiveStorage
+      # defers the actual upload until +version.save!+ (a few lines below in
+      # the caller). The IO must therefore stay open beyond this method's
+      # return — do NOT wrap the +File.open+ in a block, as that would close
+      # the stream before the deferred upload happens and raise
+      # +IOError: closed stream+ on save.
+      def attach_version_file(version, source_path, upload, retried: false)
+        version.file.attach(
+          io: File.open(source_path, "rb"),
+          filename: upload.original_filename,
+          content_type: upload.content_type
+        )
+      rescue NoMethodError => e
+        raise if retried || !e.message.include?("attachment_reflections")
+
+        attach_version_file(version, source_path, upload, retried: true)
       end
 
       # Builds the editor state from request parameters with proper permission parsing.
