@@ -2858,5 +2858,54 @@
     "changesSaved": "変更が保存されました",
     "adminOnly": "管理者のみ",
     "currentLimit": "現在の制限: {{size}}"
+  },
+  "aclMatrix": {
+    "title": "フォルダーレベルACL",
+    "subtitleEdit": "チェックボックスをクリックして編集し、保存してください",
+    "subtitleView": "表示のみ",
+    "filterPlaceholder": "フォルダーを絞り込む…",
+    "adminOnlyWarning": "管理者のみがフォルダー権限を変更できます。",
+    "cascadeHint": "ここで権限を切り替えると、下に表示されているすべてのサブフォルダーにも適用されます。個別に上書きするには、サブフォルダーのチェックを外してください。",
+    "path": "パス",
+    "columns": {
+      "read": "読み取り",
+      "modify": "変更",
+      "create": "作成",
+      "delete": "削除",
+      "replicate": "複製",
+      "manage": "管理"
+    },
+    "tooltips": {
+      "read": "アセットとサブフォルダーを表示",
+      "modify": "既存のアセットメタデータを編集 / フォルダー名を変更",
+      "create": "アセットをアップロードまたはサブフォルダーを作成",
+      "delete": "アセットとフォルダーを削除",
+      "replicate": "アセットをCDNにプッシュ",
+      "manage": "管理者レベルのフォルダー設定",
+      "denyAll": "すべて拒否 — このフォルダーでのこのグループへのすべての許可を上書きします"
+    },
+    "denyAll": "すべて拒否",
+    "actions": "操作",
+    "inherited": "継承",
+    "inheritedFrom": "継承元: {{source}}",
+    "noResults": "フィルターに一致するフォルダーがありません。",
+    "expandAll": "すべて展開",
+    "collapseAll": "すべて折りたたむ",
+    "childCount": "{{count}} 件のサブフォルダー",
+    "childCount_plural": "{{count}} 件のサブフォルダー",
+    "cascadeLabel": "サブフォルダーにも保存",
+    "cascadeTooltip": "有効にすると、このルールを保存する際にすべてのサブフォルダーにも適用されます。",
+    "saveTooltip": "このフォルダーの明示的なルールを保存",
+    "saveWithCascadeTooltip": "このフォルダーの明示的なルールを保存し、すべてのサブフォルダーに連鎖適用",
+    "removeTooltip": "明示的なルールを削除（継承に戻る）",
+    "notifications": {
+      "loadFailed": "フォルダーポリシーの読み込みに失敗しました。",
+      "saved": "権限を保存しました。",
+      "savedWithCascade": "権限を保存し、サブフォルダーに適用しました。",
+      "saveFailed": "保存に失敗しました: {{errors}}",
+      "networkError": "権限の保存中にネットワークエラーが発生しました。",
+      "removed": "ポリシーを削除しました。フォルダーは継承ルールに戻ります。",
+      "removeFailed": "ポリシーの削除に失敗しました。"
+    }
   }
 }

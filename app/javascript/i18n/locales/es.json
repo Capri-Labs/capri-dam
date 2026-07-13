@@ -2858,5 +2858,54 @@
     "changesSaved": "Cambios guardados",
     "adminOnly": "Solo administrador",
     "currentLimit": "Límite actual: {{size}}"
+  },
+  "aclMatrix": {
+    "title": "ACL a nivel de carpeta",
+    "subtitleEdit": "Haz clic en las casillas para editar, luego Guardar",
+    "subtitleView": "Solo vista",
+    "filterPlaceholder": "Filtrar carpetas…",
+    "adminOnlyWarning": "Solo los administradores pueden modificar los permisos de carpeta.",
+    "cascadeHint": "Activar un permiso aquí también lo aplica a cada subcarpeta visible debajo — desmarca una subcarpeta individualmente para anularlo.",
+    "path": "Ruta",
+    "columns": {
+      "read": "Leer",
+      "modify": "Modificar",
+      "create": "Crear",
+      "delete": "Eliminar",
+      "replicate": "Replicar",
+      "manage": "Gestionar"
+    },
+    "tooltips": {
+      "read": "Ver activos y subcarpetas",
+      "modify": "Editar metadatos de activos existentes / renombrar carpetas",
+      "create": "Subir activos o crear subcarpetas",
+      "delete": "Eliminar activos y carpetas",
+      "replicate": "Enviar activos al CDN",
+      "manage": "Configuración de carpeta a nivel de administrador",
+      "denyAll": "Denegar todo — anula cualquier permiso positivo de este grupo en esta carpeta"
+    },
+    "denyAll": "Denegar todo",
+    "actions": "Acciones",
+    "inherited": "heredado",
+    "inheritedFrom": "Heredado de: {{source}}",
+    "noResults": "Ninguna carpeta coincide con tu filtro.",
+    "expandAll": "Expandir todo",
+    "collapseAll": "Contraer todo",
+    "childCount": "{{count}} subcarpeta",
+    "childCount_plural": "{{count}} subcarpetas",
+    "cascadeLabel": "Guardar también en subcarpetas",
+    "cascadeTooltip": "Si está activado, al guardar esta regla también se aplicará a cada subcarpeta.",
+    "saveTooltip": "Guardar regla explícita para esta carpeta",
+    "saveWithCascadeTooltip": "Guardar regla explícita para esta carpeta y aplicarla en cascada a todas las subcarpetas",
+    "removeTooltip": "Eliminar regla explícita (vuelve a heredado)",
+    "notifications": {
+      "loadFailed": "Error al cargar las políticas de carpeta.",
+      "saved": "Permisos guardados.",
+      "savedWithCascade": "Permisos guardados y aplicados a subcarpetas.",
+      "saveFailed": "Error al guardar: {{errors}}",
+      "networkError": "Error de red al guardar los permisos.",
+      "removed": "Política eliminada. La carpeta vuelve a las reglas heredadas.",
+      "removeFailed": "Error al eliminar la política."
+    }
   }
 }

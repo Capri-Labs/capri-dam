@@ -2858,5 +2858,54 @@
     "changesSaved": "Wijzigingen opgeslagen",
     "adminOnly": "Alleen beheerder",
     "currentLimit": "Huidige limiet: {{size}}"
+  },
+  "aclMatrix": {
+    "title": "Map-niveau ACL",
+    "subtitleEdit": "Klik op de selectievakjes om te bewerken en sla dan op",
+    "subtitleView": "Alleen weergave",
+    "filterPlaceholder": "Mappen filteren…",
+    "adminOnlyWarning": "Alleen beheerders kunnen maprechten wijzigen.",
+    "cascadeHint": "Het wisselen van een recht hier past dit ook toe op elke zichtbare submap hieronder — schakel een submap individueel uit om deze te overschrijven.",
+    "path": "Pad",
+    "columns": {
+      "read": "Lezen",
+      "modify": "Wijzigen",
+      "create": "Aanmaken",
+      "delete": "Verwijderen",
+      "replicate": "Repliceren",
+      "manage": "Beheren"
+    },
+    "tooltips": {
+      "read": "Assets en submappen bekijken",
+      "modify": "Bestaande asset-metadata bewerken / mappen hernoemen",
+      "create": "Assets uploaden of submappen aanmaken",
+      "delete": "Assets en mappen verwijderen",
+      "replicate": "Assets naar CDN pushen",
+      "manage": "Mapconfiguratie op beheerdersniveau",
+      "denyAll": "Alles weigeren — overschrijft elke positieve toekenning voor deze groep op deze map"
+    },
+    "denyAll": "Alles weigeren",
+    "actions": "Acties",
+    "inherited": "geërfd",
+    "inheritedFrom": "Geërfd van: {{source}}",
+    "noResults": "Geen mappen komen overeen met uw filter.",
+    "expandAll": "Alles uitvouwen",
+    "collapseAll": "Alles samenvouwen",
+    "childCount": "{{count}} submap",
+    "childCount_plural": "{{count}} submappen",
+    "cascadeLabel": "Ook opslaan in submappen",
+    "cascadeTooltip": "Indien ingeschakeld, wordt deze regel bij het opslaan ook toegepast op elke submap.",
+    "saveTooltip": "Expliciete regel voor deze map opslaan",
+    "saveWithCascadeTooltip": "Expliciete regel voor deze map opslaan en toepassen op alle submappen",
+    "removeTooltip": "Expliciete regel verwijderen (terug naar geërfd)",
+    "notifications": {
+      "loadFailed": "Laden van mapbeleid mislukt.",
+      "saved": "Rechten opgeslagen.",
+      "savedWithCascade": "Rechten opgeslagen en toegepast op submappen.",
+      "saveFailed": "Opslaan mislukt: {{errors}}",
+      "networkError": "Netwerkfout bij het opslaan van rechten.",
+      "removed": "Beleid verwijderd. Map keert terug naar geërfde regels.",
+      "removeFailed": "Verwijderen van beleid mislukt."
+    }
   }
 }

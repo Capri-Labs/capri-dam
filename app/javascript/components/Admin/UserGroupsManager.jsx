@@ -14,15 +14,16 @@
  *  - no one:      delete system groups
  */
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Box, Grid, Paper, Typography, Button, List, ListItem,
   ListItemButton, ListItemText, ListItemIcon, Chip, Stack,
   IconButton, Dialog, DialogTitle, DialogContent, DialogActions,
-  TextField, Divider, CssBaseline, Tooltip, Alert,
+  TextField, Divider, CssBaseline, Tooltip, Alert, Checkbox,
 } from '@mui/material';
 import {
   GroupWorkOutlined, AddCircleOutlined, SubdirectoryArrowRight,
-  Shield, SearchOutlined, AddOutlined,
+  Shield, SearchOutlined, AddOutlined, DeleteOutlined,
 } from '@mui/icons-material';
 import { useNotify }     from '../../context/NotificationContext';
 import { apiFetch, isSystemGroup, SYSTEM_SLUGS } from '../../utils/adminUtils';
@@ -42,7 +43,10 @@ function groupColor(group) {
 }
 
 // ── Tree node with hover "Create Child" button ─────────────────────────────
-function GroupTreeNode({ group, depth, selected, onClick, onCreateChild }) {
+function GroupTreeNode({
+  group, depth, selected, onClick, onCreateChild,
+  checkable = false, isChecked = false, onToggleCheck,
+}) {
   const [hovered, setHovered] = useState(false);
   const system = isSystemGroup(group);
   const color  = groupColor(group);
@@ -56,8 +60,18 @@ function GroupTreeNode({ group, depth, selected, onClick, onCreateChild }) {
       <ListItemButton
         selected={selected}
         onClick={() => onClick(group)}
-        sx={{ pl: 1.5 + depth * 2, borderRadius: 1, mb: 0.25, py: 0.6, pr: 1 }}
+        sx={{ pl: checkable ? 0.5 + depth * 2 : 1.5 + depth * 2, borderRadius: 1, mb: 0.25, py: 0.6, pr: 1 }}
       >
+        {checkable && (
+          <Checkbox
+            size="small"
+            checked={isChecked}
+            data-testid={`group-select-${group.id}`}
+            onClick={e => e.stopPropagation()}
+            onChange={() => onToggleCheck(group.id)}
+            sx={{ p: 0.5, mr: 0.5 }}
+          />
+        )}
         <ListItemIcon sx={{ minWidth: 28 }}>
           {depth > 0
             ? <SubdirectoryArrowRight sx={{ fontSize: 16 }} color="disabled" />
@@ -104,6 +118,7 @@ export default function UserGroupsManager({
   currentUserId,
 }) {
   const notify = useNotify();
+  const { t } = useTranslation();
 
   const isAdminBool      = isAdmin === true || isAdmin === 'true';
   const isSuperAdminBool = isSuperAdmin === true || isSuperAdmin === 'true';
@@ -119,6 +134,9 @@ export default function UserGroupsManager({
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [createForm, setCreateForm]             = useState({ name: '', description: '', parent_id: null });
   const [createSaving, setCreateSaving]         = useState(false);
+
+  const [checkedIds, setCheckedIds]         = useState(new Set());
+  const [bulkDeleting, setBulkDeleting]     = useState(false);
 
   useEffect(() => { fetchGroups(); }, []);
 
@@ -159,6 +177,51 @@ export default function UserGroupsManager({
     } finally { setCreateSaving(false); }
   };
 
+  const handleToggleCheck = (id) => {
+    setCheckedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const handleToggleSelectAll = (pageIds) => {
+    setCheckedIds(prev => {
+      const allChecked = pageIds.length > 0 && pageIds.every(id => prev.has(id));
+      if (allChecked) {
+        const next = new Set(prev);
+        pageIds.forEach(id => next.delete(id));
+        return next;
+      }
+      return new Set([ ...prev, ...pageIds ]);
+    });
+  };
+
+  const handleBulkDelete = async () => {
+    if (checkedIds.size === 0) return;
+    if (!window.confirm(`Delete ${checkedIds.size} selected group(s)?`)) return;
+    setBulkDeleting(true);
+    try {
+      const data = await apiFetch('/admin/user_groups/bulk_delete.json', {
+        method: 'DELETE',
+        body: JSON.stringify({ ids: Array.from(checkedIds) }),
+      });
+      if (data.success) {
+        notify(data.message || `${data.deleted_ids?.length ?? 0} group(s) deleted.`, 'success');
+        setCheckedIds(new Set());
+        if (selectedGroup && data.deleted_ids?.includes(selectedGroup.id)) {
+          setOverlayOpen(false);
+          setSelectedGroup(null);
+        }
+        fetchGroups();
+      } else {
+        notify(data.error || 'Bulk delete failed.', 'error');
+      }
+    } finally {
+      setBulkDeleting(false);
+    }
+  };
+
   // ── Tree rendering ─────────────────────────────────────────────────────
   const allSystem  = groups.filter(g => isSystemGroup(g));
   const allCustom  = groups.filter(g => !isSystemGroup(g));
@@ -191,6 +254,9 @@ export default function UserGroupsManager({
           selected={selectedGroup?.id === group.id}
           onClick={handleGroupClick}
           onCreateChild={handleOpenCreate}
+          checkable={depth === 0 && isAdminBool}
+          isChecked={checkedIds.has(group.id)}
+          onToggleCheck={handleToggleCheck}
         />
         {renderTree(group.id, depth + 1)}
       </React.Fragment>
@@ -208,6 +274,12 @@ export default function UserGroupsManager({
       .slice((clampedRootPage - 1) * ROOT_GROUPS_PER_PAGE, clampedRootPage * ROOT_GROUPS_PER_PAGE)
       .map(g => g.id)
   );
+  // Only root-level custom groups on the current page are selectable for bulk
+  // delete — mirrors the pagination unit (children cascade-delete with their root).
+  const selectablePageIds = rootCustomGroups
+    .filter(g => pagedRootIds.has(g.id))
+    .map(g => g.id);
+  const allPageSelected = selectablePageIds.length > 0 && selectablePageIds.every(id => checkedIds.has(id));
 
   const totalMembers = groups.reduce((s, g) => s + (g.member_count || 0), 0);
 
@@ -291,6 +363,38 @@ export default function UserGroupsManager({
                     </IconButton>
                   </Tooltip>
                 </Stack>
+
+                {/* Bulk selection toolbar — root-level custom groups only */}
+                {isAdminBool && !search && !loading && rootCustomGroups.length > 0 && (
+                  <Stack direction="row" spacing={1} sx={{ px: 1, py: 0.5, alignItems: 'center' }}>
+                    <Checkbox
+                      size="small"
+                      data-testid="group-select-all"
+                      checked={allPageSelected}
+                      indeterminate={!allPageSelected && selectablePageIds.some(id => checkedIds.has(id))}
+                      disabled={selectablePageIds.length === 0}
+                      onChange={() => handleToggleSelectAll(selectablePageIds)}
+                      sx={{ p: 0.5 }}
+                    />
+                    <Typography variant="caption" sx={{ color: 'text.secondary', flex: 1 }}>
+                      {checkedIds.size > 0
+                        ? t('common.nSelected', { count: checkedIds.size, defaultValue: `${checkedIds.size} selected` })
+                        : t('common.selectAll', { defaultValue: 'Select all' })}
+                    </Typography>
+                    {checkedIds.size > 0 && (
+                      <Tooltip title={t('common.deleteSelected', { defaultValue: 'Delete selected' })}>
+                        <span>
+                          <IconButton size="small" data-testid="group-bulk-delete-button"
+                                      onClick={handleBulkDelete} disabled={bulkDeleting}
+                                      sx={{ color: '#ef4444' }}>
+                            <DeleteOutlined fontSize="small" />
+                          </IconButton>
+                        </span>
+                      </Tooltip>
+                    )}
+                  </Stack>
+                )}
+
                 <List dense sx={{ pt: 0 }}>
                   {loading ? (
                     <Typography variant="body2" color="text.secondary" sx={{ px: 1 }}>Loading…</Typography>

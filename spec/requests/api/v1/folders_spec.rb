@@ -27,8 +27,13 @@ RSpec.describe 'Api::V1::Folders', type: :request do
                      type: :object,
                      required: [ 'id', 'name' ],
                      properties: {
-                       id:   { type: :integer, example: 42 },
-                       name: { type: :string,  example: '/Marketing/2026' },
+                       id:        { type: :integer, example: 42 },
+                       name:      { type: :string,  example: '/Marketing/2026' },
+                       slug:      { type: :string,  example: 'campaigns' },
+                       path:      { type: :string,  example: '/Marketing/2026' },
+                       parent_id: { type: :string, nullable: true, example: 'a1b2c3',
+                                    description: 'Immediate parent folder ID, or null for a root folder. Used by ' \
+                                                 'clients (e.g. AclMatrix) to build a collapsible folder tree.' },
                      },
                    },
                  },

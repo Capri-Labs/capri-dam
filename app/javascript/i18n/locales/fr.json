@@ -2858,5 +2858,54 @@
     "changesSaved": "Modifications enregistrées",
     "adminOnly": "Administrateur uniquement",
     "currentLimit": "Limite actuelle : {{size}}"
+  },
+  "aclMatrix": {
+    "title": "ACL au niveau du dossier",
+    "subtitleEdit": "Cliquez sur les cases à cocher, puis Enregistrer",
+    "subtitleView": "Lecture seule",
+    "filterPlaceholder": "Filtrer les dossiers…",
+    "adminOnlyWarning": "Seuls les administrateurs peuvent modifier les autorisations de dossier.",
+    "cascadeHint": "Activer une autorisation ici l'applique aussi à chaque sous-dossier visible ci-dessous — décochez un sous-dossier individuellement pour le remplacer.",
+    "path": "Chemin",
+    "columns": {
+      "read": "Lire",
+      "modify": "Modifier",
+      "create": "Créer",
+      "delete": "Supprimer",
+      "replicate": "Répliquer",
+      "manage": "Gérer"
+    },
+    "tooltips": {
+      "read": "Voir les ressources et sous-dossiers",
+      "modify": "Modifier les métadonnées des ressources / renommer les dossiers",
+      "create": "Charger des ressources ou créer des sous-dossiers",
+      "delete": "Supprimer des ressources et dossiers",
+      "replicate": "Pousser les ressources vers le CDN",
+      "manage": "Configuration de dossier niveau admin",
+      "denyAll": "Tout refuser — remplace tout octroi positif pour ce groupe sur ce dossier"
+    },
+    "denyAll": "Tout refuser",
+    "actions": "Actions",
+    "inherited": "hérité",
+    "inheritedFrom": "Hérité de : {{source}}",
+    "noResults": "Aucun dossier ne correspond à votre filtre.",
+    "expandAll": "Tout développer",
+    "collapseAll": "Tout réduire",
+    "childCount": "{{count}} sous-dossier",
+    "childCount_plural": "{{count}} sous-dossiers",
+    "cascadeLabel": "Enregistrer aussi sur les sous-dossiers",
+    "cascadeTooltip": "Si activé, l'enregistrement de cette règle l'applique aussi à chaque sous-dossier.",
+    "saveTooltip": "Enregistrer la règle explicite pour ce dossier",
+    "saveWithCascadeTooltip": "Enregistrer la règle explicite pour ce dossier et la propager à tous les sous-dossiers",
+    "removeTooltip": "Supprimer la règle explicite (revient à hérité)",
+    "notifications": {
+      "loadFailed": "Échec du chargement des politiques de dossier.",
+      "saved": "Autorisations enregistrées.",
+      "savedWithCascade": "Autorisations enregistrées et appliquées aux sous-dossiers.",
+      "saveFailed": "Échec de l'enregistrement : {{errors}}",
+      "networkError": "Erreur réseau lors de l'enregistrement des autorisations.",
+      "removed": "Politique supprimée. Le dossier revient aux règles héritées.",
+      "removeFailed": "Échec de la suppression de la politique."
+    }
   }
 }

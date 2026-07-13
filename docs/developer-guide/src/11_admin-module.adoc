@@ -16,6 +16,8 @@ screens for account lifecycle work.
 | User management | Create, edit, disable, and inspect users; assign roles and group memberships.
 | Group hierarchy | Nested `UserGroup` trees support inherited membership and permission roll-up.
 | Drawer detail | `UserDrawer.jsx` surfaces per-user metadata, memberships, and admin actions without leaving the list.
+| Group pagination | `UserGroupsManager.jsx` paginates root-level custom groups 10/page (`ROOT_GROUPS_PER_PAGE`); a group's descendants always render alongside it regardless of page, preserving tree integrity.
+| Group bulk delete | Root-level custom groups on the current page can be multi-selected and deleted via `DELETE /admin/user_groups/bulk_delete` (`ids: []`); system groups are never selectable and are skipped/reported (`skipped_system_ids`) if included.
 |===
 
 == ACL matrix and folder policy administration
@@ -34,7 +36,36 @@ screens for account lifecycle work.
 | `explicit_deny` | boolean | Hard deny that overrides permissive inheritance.
 |===
 
+=== Collapsible folder tree, cascade edit, and cascade save
+
+`AclMatrix.jsx` builds an in-memory folder tree from the `parent_id` field
+returned by `GET /api/v1/folders.json` (see
+<<section-api-reference,API reference>>). Only root folders (`parent_id ==
+null`) render by default; a folder with children shows a chevron toggle that
+reveals its immediate children in place, and "Expand all" / "Collapse all"
+icon buttons are available in the toolbar. The table body scrolls
+(`maxHeight: 520px`) so large folder trees stay compact. Searching the
+"Filter folders…" box switches to a flat, fully-matched list regardless of
+tree position.
+
+Two independent cascade behaviours exist and can be combined:
+
+* *Client-side toggle cascade* — toggling any permission (or Deny All) on a
+  folder immediately copies the new matrix onto every currently-loaded
+  descendant row, so bulk edits across a subtree are fast. Each descendant
+  remains individually editable/overridable — unchecking one afterwards
+  simply reverts that folder's local state.
+* *Server-side save cascade* — a per-folder "Also save to subfolders" switch
+  (visible only on folders with children) sends `cascade: true` in the
+  `POST /admin/folders/:folder_id/folder_policies` body. When set,
+  `Admin::FolderPoliciesController#create` enqueues
+  `PropagateAccessPolicyJob`, which recursively upserts the same permission
+  matrix onto every descendant `Folder` in the database (mirroring the
+  cascade already used by `Api::V1::FoldersController#upsert_folder_policy`
+  for the per-folder Access tab).
+
 == Operational configuration
+
 
 `SystemConfigurationsController` and the System Status UI provide runtime
 controls instead of compile-time environment switching.

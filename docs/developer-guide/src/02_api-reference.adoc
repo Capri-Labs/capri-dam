@@ -25,8 +25,9 @@ AI batch progress, and health callbacks.
 
 | `GET` | `/admin/users` | admin | HTML shell for user administration.
 | `GET/PATCH/DELETE` | `/admin/users/:id` | admin | JSON user detail, update, and soft-delete style admin actions.
-| `GET` | `/admin/user_groups` | admin | Group hierarchy management shell.
+| `GET` | `/admin/user_groups` | admin | Group hierarchy management shell (root-level custom groups paginated 10/page, with select-all + bulk delete).
 | `GET/PATCH/DELETE` | `/admin/user_groups/:id` | admin | Group editing, hierarchy maintenance, and membership changes.
+| `DELETE` | `/admin/user_groups/bulk_delete` | admin | Deletes multiple non-system root-level groups at once (`ids: []`); system groups are skipped and reported via `skipped_system_ids`.
 | `GET` | `/admin/folder_policies` | admin | ACL matrix screen for folder/group permissions.
 | `GET` | `/admin/storage_backends` | admin | Storage backend administration shell.
 | `GET` | `/admin/system_configurations` | admin | Runtime system configuration screen.
@@ -52,6 +53,7 @@ AI batch progress, and health callbacks.
 |===
 | Method | Path | Auth | Description
 
+| `GET` | `/api/v1/folders` | user | Flat, sorted list of every active folder with fully-qualified `path`/`name` plus `parent_id` (`null` for root folders). Used for folder pickers and to build the collapsible tree in `AclMatrix.jsx` (see <<section-admin-module>>).
 | `GET` | `/api/v1/folders/:id` | user | Folder-contents listing (`"root"` for the top level); Redis-cached via `FolderContentsCache` (see <<section-models>>). Each folder/asset entry includes `can_modify` (gates Rename, see <<section-rename-overlay>>) and `can_delete` (gates Move, see <<section-move-overlay>>) booleans.
 | `POST` | `/api/v1/folders` | user | Create a folder.
 | `PATCH` | `/api/v1/folders/:id` | user (`modify` grant, or `delete`+`create` when moving) | Rename and/or update a folder's `description` (requires `modify`). Supplying a *changed* `parent_id` is a Move and instead requires `delete` on the current parent + `create` on the destination, plus cycle prevention (`422` if moving into self/a descendant, `404` if the destination doesn't exist) — see <<section-move-overlay>>.

@@ -5,28 +5,39 @@
  * (a group or a user's effective permissions).  Supports edit mode that
  * saves changes back via the folder_policies API.
  *
+ * Only root folders are shown by default; each folder with children can be
+ * expanded in place via a chevron toggle, keeping the tree lightweight for
+ * large folder counts.  Toggling a permission on a folder cascades that value
+ * onto every (currently loaded) descendant row so bulk edits are fast — any
+ * descendant can still be unchecked individually afterwards.  An optional
+ * "cascade to subfolders" switch also persists the change to every
+ * descendant folder in the database when saving.
+ *
  * Columns: Read | Modify | Create | Delete | Replicate | Manage | Explicit Deny
  */
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Box, Typography, Table, TableHead, TableBody, TableRow, TableCell,
   Checkbox, Chip, Tooltip, IconButton, CircularProgress, Alert,
-  Button, Stack, TextField, InputAdornment,
+  Stack, TextField, InputAdornment, Switch, FormControlLabel,
 } from '@mui/material';
 import {
-  SaveOutlined, SearchOutlined, LockOutlined, InfoOutlined,
+  SaveOutlined, SearchOutlined, LockOutlined,
   FolderOpenOutlined, FolderOutlined,
+  ChevronRightOutlined, ExpandMoreOutlined,
+  UnfoldMoreOutlined, UnfoldLessOutlined,
 } from '@mui/icons-material';
 import { apiFetch } from '../../utils/adminUtils';
 import { useNotify } from '../../context/NotificationContext';
 
 const PERMISSION_COLS = [
-  { key: 'read',      label: 'Read',      tip: 'View assets and child folders' },
-  { key: 'modify',    label: 'Modify',    tip: 'Edit existing asset metadata / rename folders' },
-  { key: 'create',    label: 'Create',    tip: 'Upload assets or create sub-folders' },
-  { key: 'delete',    label: 'Delete',    tip: 'Delete assets and folders' },
-  { key: 'replicate', label: 'Replicate', tip: 'Push assets to CDN' },
-  { key: 'manage',    label: 'Manage',    tip: 'Admin-level folder configuration' },
+  { key: 'read',      labelKey: 'columns.read',      tipKey: 'tooltips.read' },
+  { key: 'modify',    labelKey: 'columns.modify',    tipKey: 'tooltips.modify' },
+  { key: 'create',    labelKey: 'columns.create',    tipKey: 'tooltips.create' },
+  { key: 'delete',    labelKey: 'columns.delete',    tipKey: 'tooltips.delete' },
+  { key: 'replicate', labelKey: 'columns.replicate', tipKey: 'tooltips.replicate' },
+  { key: 'manage',    labelKey: 'columns.manage',    tipKey: 'tooltips.manage' },
 ];
 
 /** Convert backend matrix keys to UI keys */
@@ -50,6 +61,8 @@ function normalizeMatrix(matrix = {}) {
  * @param {boolean}       props.isAdmin
  */
 export default function AclMatrix({ groupId, folderId, readOnly = false, isAdmin = false }) {
+  const { t } = useTranslation();
+  const tm = (key, opts) => t(`aclMatrix.${key}`, opts);
   const notify = useNotify();
   const [folders, setFolders] = useState([]);
   const [policies, setPolicies] = useState({});  // folderId → matrix
@@ -58,6 +71,7 @@ export default function AclMatrix({ groupId, folderId, readOnly = false, isAdmin
   const [saving, setSaving] = useState(null);
   const [search, setSearch] = useState('');
   const [expanded, setExpanded] = useState({});
+  const [cascadeOnSave, setCascadeOnSave] = useState({}); // folderId → bool
 
   const fetchData = useCallback(async () => {
     if (!groupId) return;
@@ -95,7 +109,7 @@ export default function AclMatrix({ groupId, folderId, readOnly = false, isAdmin
       setPolicies(newPolicies);
       setInherited(newInherited);
     } catch (e) {
-      notify('Failed to load folder policies.', 'error');
+      notify(tm('notifications.loadFailed'), 'error');
     } finally {
       setLoading(false);
     }
@@ -103,31 +117,79 @@ export default function AclMatrix({ groupId, folderId, readOnly = false, isAdmin
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  // --- Tree helpers ---------------------------------------------------------
+
+  const childrenByParent = useMemo(() => {
+    const map = {};
+    folders.forEach(f => {
+      const key = f.parent_id ?? null;
+      if (!map[key]) map[key] = [];
+      map[key].push(f);
+    });
+    return map;
+  }, [folders]);
+
+  const getDescendantIds = useCallback((fId) => {
+    const out = [];
+    const stack = [ ...(childrenByParent[fId] || []) ];
+    while (stack.length) {
+      const f = stack.pop();
+      out.push(f.id);
+      (childrenByParent[f.id] || []).forEach(c => stack.push(c));
+    }
+    return out;
+  }, [childrenByParent]);
+
+  const toggleExpand = (fId) => {
+    setExpanded(prev => ({ ...prev, [fId]: !prev[fId] }));
+  };
+
+  const expandAll = () => {
+    const all = {};
+    folders.forEach(f => { all[f.id] = true; });
+    setExpanded(all);
+  };
+
+  const collapseAll = () => setExpanded({});
+
   const handleToggle = (fId, key) => {
     if (readOnly) return;
     setPolicies(prev => {
       const current = prev[fId] || normalizeMatrix();
+      let updatedForFolder;
       // If setting explicit_deny, clear all positive perms
       if (key === 'explicit_deny') {
-        return {
-          ...prev,
-          [fId]: key === 'explicit_deny' && !current.explicit_deny
-            ? { read: false, modify: false, create: false, delete: false, replicate: false, manage: false, explicit_deny: true }
-            : { ...current, explicit_deny: false }
-        };
+        updatedForFolder = !current.explicit_deny
+          ? { read: false, modify: false, create: false, delete: false, replicate: false, manage: false, explicit_deny: true }
+          : { ...current, explicit_deny: false };
+      } else {
+        updatedForFolder = { ...current, [key]: !current[key], explicit_deny: false };
       }
-      return { ...prev, [fId]: { ...current, [key]: !current[key], explicit_deny: false } };
+
+      const next = { ...prev, [fId]: updatedForFolder };
+
+      // Cascade the same matrix onto every currently-loaded descendant so bulk
+      // edits are fast. Descendants remain individually editable/overridable.
+      if (!search) {
+        getDescendantIds(fId).forEach(descId => {
+          next[descId] = { ...updatedForFolder };
+        });
+      }
+
+      return next;
     });
   };
 
   const handleSave = async (fId) => {
     setSaving(fId);
     const matrix = policies[fId] || normalizeMatrix();
+    const cascade = !!cascadeOnSave[fId];
     try {
       const data = await apiFetch(`/admin/folders/${fId}/folder_policies.json`, {
         method: 'POST',
         body: JSON.stringify({
           group_id: groupId,
+          cascade,
           policy: {
             read_access:      matrix.read,
             modify_access:    matrix.modify,
@@ -140,12 +202,12 @@ export default function AclMatrix({ groupId, folderId, readOnly = false, isAdmin
         })
       });
       if (data.success) {
-        notify('Permissions saved.', 'success');
+        notify(cascade ? tm('notifications.savedWithCascade') : tm('notifications.saved'), 'success');
       } else {
-        notify(`Save failed: ${data.errors?.join(', ')}`, 'error');
+        notify(tm('notifications.saveFailed', { errors: data.errors?.join(', ') }), 'error');
       }
     } catch {
-      notify('Network error saving permissions.', 'error');
+      notify(tm('notifications.networkError'), 'error');
     } finally {
       setSaving(null);
     }
@@ -154,10 +216,10 @@ export default function AclMatrix({ groupId, folderId, readOnly = false, isAdmin
   const handleRemovePolicy = async (fId) => {
     try {
       await apiFetch(`/admin/folders/${fId}/folder_policies/${groupId}.json`, { method: 'DELETE' });
-      notify('Policy removed. Folder reverts to inherited rules.', 'info');
+      notify(tm('notifications.removed'), 'info');
       setPolicies(prev => { const n = { ...prev }; delete n[fId]; return n; });
     } catch {
-      notify('Failed to remove policy.', 'error');
+      notify(tm('notifications.removeFailed'), 'error');
     }
   };
 
@@ -167,54 +229,89 @@ export default function AclMatrix({ groupId, folderId, readOnly = false, isAdmin
     </Box>
   );
 
-  const visibleFolders = folders.filter(f =>
+  const matchesSearch = (f) =>
     !search || f.name?.toLowerCase().includes(search.toLowerCase()) ||
-    f.path?.toLowerCase().includes(search.toLowerCase())
-  );
+    f.path?.toLowerCase().includes(search.toLowerCase());
 
-  const hasPolicyOrInherited = (fId) => policies[fId] || inherited[fId];
-
-  const activeFolders = visibleFolders.filter(f =>
-    expanded[f.parent_id] !== false || !f.parent_id
-  );
+  // When searching, show a flat list of every match (regardless of tree
+  // position). Otherwise, show only root folders plus any folder whose
+  // ancestor chain is fully expanded — this is what keeps the screen light
+  // for large folder trees.
+  let visibleFolders;
+  let depthById = {};
+  if (search) {
+    visibleFolders = folders.filter(matchesSearch);
+  } else {
+    visibleFolders = [];
+    const walk = (parentKey, depth) => {
+      (childrenByParent[parentKey] || []).forEach(f => {
+        visibleFolders.push(f);
+        depthById[f.id] = depth;
+        if (expanded[f.id]) walk(f.id, depth + 1);
+      });
+    };
+    walk(null, 0);
+  }
 
   return (
     <Box>
-      <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+      <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between', mb: 2, flexWrap: 'wrap', gap: 1 }}>
         <Typography variant="subtitle2" color="text.secondary">
-          Folder-level ACL — {readOnly ? 'View only' : 'Click checkboxes to edit, then Save'}
+          {tm('title')} — {readOnly ? tm('subtitleView') : tm('subtitleEdit')}
         </Typography>
-        <TextField
-          size="small" placeholder="Filter folders…"
-          value={search} onChange={e => setSearch(e.target.value)} slotProps={{input: { startAdornment: <InputAdornment position="start"><SearchOutlined fontSize="small" /></InputAdornment> } }}
-          sx={{ width: 220 }}
-        />
+        <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+          {!search && (
+            <>
+              <Tooltip title={tm('expandAll')}>
+                <IconButton size="small" onClick={expandAll} data-testid="acl-expand-all">
+                  <UnfoldMoreOutlined fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title={tm('collapseAll')}>
+                <IconButton size="small" onClick={collapseAll} data-testid="acl-collapse-all">
+                  <UnfoldLessOutlined fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </>
+          )}
+          <TextField
+            size="small" placeholder={tm('filterPlaceholder')}
+            value={search} onChange={e => setSearch(e.target.value)} slotProps={{input: { startAdornment: <InputAdornment position="start"><SearchOutlined fontSize="small" /></InputAdornment> } }}
+            sx={{ width: 220 }}
+          />
+        </Stack>
       </Stack>
 
       {!isAdmin && !readOnly && (
         <Alert severity="warning" sx={{ mb: 2, borderRadius: 2 }}>
-          Only administrators can modify folder permissions.
+          {tm('adminOnlyWarning')}
         </Alert>
       )}
 
-      <Box sx={{ overflowX: 'auto' }}>
+      {!readOnly && isAdmin && (
+        <Alert severity="info" variant="outlined" sx={{ mb: 2, borderRadius: 2 }} icon={false}>
+          {tm('cascadeHint')}
+        </Alert>
+      )}
+
+      <Box sx={{ overflowX: 'auto', maxHeight: 520, overflowY: 'auto', border: '1px solid #edf1f7', borderRadius: 2 }}>
         <Table size="small" stickyHeader>
           <TableHead>
             <TableRow>
-              <TableCell sx={{ fontWeight: 700, minWidth: 200 }}>Path</TableCell>
+              <TableCell sx={{ fontWeight: 700, minWidth: 220 }}>{tm('path')}</TableCell>
               {PERMISSION_COLS.map(col => (
                 <TableCell key={col.key} align="center" sx={{ fontWeight: 700, minWidth: 80 }}>
-                  <Tooltip title={col.tip} placement="top">
-                    <span>{col.label}</span>
+                  <Tooltip title={tm(col.tipKey)} placement="top">
+                    <span>{tm(col.labelKey)}</span>
                   </Tooltip>
                 </TableCell>
               ))}
               <TableCell align="center" sx={{ fontWeight: 700, minWidth: 100, color: 'error.main' }}>
-                <Tooltip title="Deny all — overrides every positive grant for this group on this folder">
-                  <span>Deny All</span>
+                <Tooltip title={tm('tooltips.denyAll')}>
+                  <span>{tm('denyAll')}</span>
                 </Tooltip>
               </TableCell>
-              {!readOnly && isAdmin && <TableCell align="center" sx={{ minWidth: 80 }}>Actions</TableCell>}
+              {!readOnly && isAdmin && <TableCell align="center" sx={{ minWidth: 140 }}>{tm('actions')}</TableCell>}
             </TableRow>
           </TableHead>
           <TableBody>
@@ -222,12 +319,15 @@ export default function AclMatrix({ groupId, folderId, readOnly = false, isAdmin
               const matrix = policies[folder.id] || normalizeMatrix();
               const inh = inherited[folder.id];
               const hasExplicit = !!policies[folder.id];
-              const depth = (folder.path?.split('/').length - 2) || 0;
+              const depth = search ? 0 : (depthById[folder.id] ?? 0);
+              const childCount = (childrenByParent[folder.id] || []).length;
+              const isExpanded = !!expanded[folder.id];
 
               return (
                 <TableRow
                   key={folder.id}
                   hover
+                  data-testid={`acl-row-${folder.id}`}
                   sx={{
                     opacity: hasExplicit || inh ? 1 : 0.45,
                     bgcolor: hasExplicit ? 'white' : inh ? '#fafffe' : 'transparent',
@@ -236,7 +336,19 @@ export default function AclMatrix({ groupId, folderId, readOnly = false, isAdmin
                 >
                   {/* Folder name */}
                   <TableCell>
-                    <Stack direction="row" sx={{ alignItems: 'center' }} spacing={0.5} style={{ paddingLeft: `${depth * 16}px` }}>
+                    <Stack direction="row" sx={{ alignItems: 'center' }} spacing={0.5} style={{ paddingLeft: `${depth * 20}px` }}>
+                      {childCount > 0 ? (
+                        <IconButton
+                          size="small"
+                          onClick={() => toggleExpand(folder.id)}
+                          data-testid={`acl-toggle-${folder.id}`}
+                          sx={{ p: 0.25 }}
+                        >
+                          {isExpanded ? <ExpandMoreOutlined fontSize="small" /> : <ChevronRightOutlined fontSize="small" />}
+                        </IconButton>
+                      ) : (
+                        <Box sx={{ width: 28 }} />
+                      )}
                       {hasExplicit
                         ? <FolderOpenOutlined fontSize="small" color="primary" />
                         : <FolderOutlined fontSize="small" color="disabled" />
@@ -244,9 +356,16 @@ export default function AclMatrix({ groupId, folderId, readOnly = false, isAdmin
                       <Typography variant="body2" noWrap sx={{ maxWidth: 180, fontWeight: hasExplicit ? 600 : 400 }}>
                         {folder.path || folder.name}
                       </Typography>
+                      {childCount > 0 && (
+                        <Chip
+                          label={tm('childCount', { count: childCount })}
+                          size="small" variant="outlined"
+                          sx={{ fontSize: '0.65rem', height: 18 }}
+                        />
+                      )}
                       {inh && !hasExplicit && (
-                        <Tooltip title={`Inherited from: ${inh.source}`}>
-                          <Chip label="inherited" size="small" variant="outlined"
+                        <Tooltip title={tm('inheritedFrom', { source: inh.source })}>
+                          <Chip label={tm('inherited')} size="small" variant="outlined"
                             sx={{ fontSize: '0.65rem', height: 18 }} />
                         </Tooltip>
                       )}
@@ -286,11 +405,27 @@ export default function AclMatrix({ groupId, folderId, readOnly = false, isAdmin
                   {/* Save / Remove actions */}
                   {!readOnly && isAdmin && (
                     <TableCell align="center">
-                      <Stack direction="row" spacing={0.5} sx={{ justifyContent: 'center' }}>
-                        <Tooltip title="Save explicit rule for this folder">
+                      <Stack direction="row" spacing={0.5} sx={{ justifyContent: 'center', alignItems: 'center' }}>
+                        {childCount > 0 && (
+                          <Tooltip title={tm('cascadeTooltip')}>
+                            <FormControlLabel
+                              sx={{ mr: 0 }}
+                              control={
+                                <Switch
+                                  size="small"
+                                  checked={!!cascadeOnSave[folder.id]}
+                                  onChange={() => setCascadeOnSave(prev => ({ ...prev, [folder.id]: !prev[folder.id] }))}
+                                  data-testid={`acl-cascade-switch-${folder.id}`}
+                                />
+                              }
+                              label={<Typography variant="caption" sx={{ fontSize: '0.65rem' }}>{tm('cascadeLabel')}</Typography>}
+                            />
+                          </Tooltip>
+                        )}
+                        <Tooltip title={cascadeOnSave[folder.id] ? tm('saveWithCascadeTooltip') : tm('saveTooltip')}>
                           <span>
                             <IconButton size="small" color="primary" onClick={() => handleSave(folder.id)}
-                              disabled={saving === folder.id}>
+                              disabled={saving === folder.id} data-testid={`acl-save-${folder.id}`}>
                               {saving === folder.id
                                 ? <CircularProgress size={14} />
                                 : <SaveOutlined fontSize="small" />
@@ -299,7 +434,7 @@ export default function AclMatrix({ groupId, folderId, readOnly = false, isAdmin
                           </span>
                         </Tooltip>
                         {hasExplicit && (
-                          <Tooltip title="Remove explicit rule (reverts to inherited)">
+                          <Tooltip title={tm('removeTooltip')}>
                             <IconButton size="small" color="error" onClick={() => handleRemovePolicy(folder.id)}>
                               ✕
                             </IconButton>
@@ -315,7 +450,7 @@ export default function AclMatrix({ groupId, folderId, readOnly = false, isAdmin
               <TableRow>
                 <TableCell colSpan={9}>
                   <Typography variant="body2" color="text.secondary" align="center" sx={{ py: 4 }}>
-                    No folders match your filter.
+                    {tm('noResults')}
                   </Typography>
                 </TableCell>
               </TableRow>
@@ -326,4 +461,3 @@ export default function AclMatrix({ groupId, folderId, readOnly = false, isAdmin
     </Box>
   );
 }
-

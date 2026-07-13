@@ -73,6 +73,27 @@ RSpec.describe "Admin::FolderPolicies", type: :request do
       expect(response.parsed_body.dig("policy", "matrix", "modify")).to be(true)
     end
 
+    it "enqueues a cascade job to descendant folders when cascade: true" do
+      sign_in admin
+      expect(PropagateAccessPolicyJob).to receive(:perform_later).once.with(
+        folder_id:   folder.id,
+        group_id:    group.id,
+        permissions: hash_including("read_access" => true, "modify_access" => true),
+        operation:   "upsert"
+      )
+
+      post admin_folder_folder_policies_path(folder), params: params.merge(cascade: true), as: :json
+
+      expect(response).to have_http_status(:ok)
+    end
+
+    it "does not enqueue a cascade job by default" do
+      sign_in admin
+      expect(PropagateAccessPolicyJob).not_to receive(:perform_later)
+
+      post admin_folder_folder_policies_path(folder), params: params, as: :json
+    end
+
     it "returns validation errors" do
       sign_in admin
       errors = instance_double(ActiveModel::Errors, full_messages: [ "Invalid policy" ])

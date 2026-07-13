@@ -155,6 +155,39 @@ RSpec.describe 'Admin::UserGroups', type: :request do
     end
   end
 
+  path '/admin/user_groups/bulk_delete' do
+    delete 'Deletes multiple non-system groups at once' do
+      tags 'Admin - User Groups'
+      consumes 'application/json'
+      produces 'application/json'
+      security [ Bearer: [] ]
+
+      parameter name: :payload, in: :body, schema: {
+        type: :object,
+        required: [ 'ids' ],
+        properties: {
+          ids: { type: :array, items: { type: :integer }, example: [ 1, 2, 3 ] },
+        },
+      }
+
+      response '200', 'groups deleted (system groups skipped and reported)' do
+        schema type: :object,
+               properties: {
+                 success:            { type: :boolean },
+                 deleted_ids:        { type: :array, items: { type: :integer } },
+                 skipped_system_ids: { type: :array, items: { type: :integer } },
+                 message:            { type: :string },
+               }
+        run_test!
+      end
+
+      response '400', 'no ids provided' do
+        schema type: :object, properties: { error: { type: :string } }
+        run_test!
+      end
+    end
+  end
+
   # ---------------------------------------------------------------------------
   # Member management (users)
   # ---------------------------------------------------------------------------

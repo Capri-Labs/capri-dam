@@ -5,7 +5,12 @@ const mockNotify = jest.fn();
 const mockApiFetch = jest.fn();
 
 jest.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (key) => key }),
+  useTranslation: () => ({
+    t: (key, opts) => {
+      if (opts && typeof opts === 'object' && 'defaultValue' in opts) return opts.defaultValue;
+      return key;
+    },
+  }),
   Trans: ({ i18nKey }) => i18nKey,
 }));
 
@@ -71,5 +76,51 @@ describe('UserGroupsManager', () => {
     expect(screen.queryByText('Root Group 0')).not.toBeInTheDocument();
     expect(screen.queryByText('Child Of Root 0')).not.toBeInTheDocument();
     expect(screen.getByText('Page 2 of 2')).toBeInTheDocument();
+  });
+
+  describe('bulk select & delete', () => {
+    const groupA = { id: 10, name: 'Group A', slug: 'group-a', member_count: 0, is_system: false, parent_id: null };
+    const groupB = { id: 11, name: 'Group B', slug: 'group-b', member_count: 0, is_system: false, parent_id: null };
+    const everyone = { id: 1, name: 'Everyone', slug: 'everyone', member_count: 5, is_system: true, parent_id: null };
+
+    beforeEach(() => {
+      mockApiFetch.mockResolvedValue({ user_groups: [ everyone, groupA, groupB ] });
+    });
+
+    it('shows a select-all checkbox and toggles selection state for root custom groups', async () => {
+      render(<UserGroupsManager isAdmin currentUserId={1} />);
+      expect(await screen.findByText('Group A')).toBeInTheDocument();
+
+      const selectAll = screen.getByTestId('group-select-all');
+      expect(selectAll).not.toBeChecked();
+
+      fireEvent.click(selectAll.querySelector('input'));
+
+      expect(screen.getByTestId('group-select-10').querySelector('input')).toBeChecked();
+      expect(screen.getByTestId('group-select-11').querySelector('input')).toBeChecked();
+      expect(screen.getByText('2 selected')).toBeInTheDocument();
+    });
+
+    it('deletes selected groups via bulk_delete and refreshes the list', async () => {
+      mockApiFetch.mockResolvedValueOnce({ user_groups: [ everyone, groupA, groupB ] });
+      render(<UserGroupsManager isAdmin currentUserId={1} />);
+      expect(await screen.findByText('Group A')).toBeInTheDocument();
+
+      fireEvent.click(screen.getByTestId('group-select-10').querySelector('input'));
+      expect(screen.getByText('1 selected')).toBeInTheDocument();
+
+      mockApiFetch.mockResolvedValueOnce({ success: true, deleted_ids: [ 10 ], message: '1 group(s) deleted.' });
+      mockApiFetch.mockResolvedValueOnce({ user_groups: [ everyone, groupB ] });
+
+      window.confirm = jest.fn(() => true);
+      fireEvent.click(screen.getByTestId('group-bulk-delete-button'));
+
+      await screen.findByText('Group B');
+      expect(mockApiFetch).toHaveBeenCalledWith(
+        '/admin/user_groups/bulk_delete.json',
+        expect.objectContaining({ method: 'DELETE', body: JSON.stringify({ ids: [ 10 ] }) })
+      );
+      expect(mockNotify).toHaveBeenCalledWith('1 group(s) deleted.', 'success');
+    });
   });
 });

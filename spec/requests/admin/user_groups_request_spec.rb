@@ -136,6 +136,58 @@ RSpec.describe "Admin::UserGroups coverage", type: :request do
     end
   end
 
+  describe "DELETE /admin/user_groups/bulk_delete" do
+    before { sign_in admin }
+
+    it "returns a bad request when no ids are provided" do
+      delete "/admin/user_groups/bulk_delete.json", as: :json
+      expect(response).to have_http_status(:bad_request)
+      expect(response.parsed_body["error"]).to eq("No IDs provided")
+    end
+
+    it "deletes multiple regular groups" do
+      first = create(:user_group, name: "Bulk One")
+      second = create(:user_group, name: "Bulk Two")
+
+      expect do
+        delete "/admin/user_groups/bulk_delete.json", params: { ids: [ first.id, second.id ] }, as: :json
+      end.to change(UserGroup, :count).by(-2)
+
+      expect(response).to have_http_status(:ok)
+      body = response.parsed_body
+      expect(body["success"]).to be(true)
+      expect(body["deleted_ids"]).to contain_exactly(first.id, second.id)
+      expect(UserGroup.exists?(first.id)).to be(false)
+      expect(UserGroup.exists?(second.id)).to be(false)
+    end
+
+    it "skips system groups but deletes the rest, reporting skipped ids" do
+      everyone = create(:user_group, :everyone)
+      doomed = create(:user_group, name: "Doomed")
+
+      expect do
+        delete "/admin/user_groups/bulk_delete.json", params: { ids: [ everyone.id, doomed.id ] }, as: :json
+      end.to change(UserGroup, :count).by(-1)
+
+      expect(response).to have_http_status(:ok)
+      body = response.parsed_body
+      expect(body["deleted_ids"]).to contain_exactly(doomed.id)
+      expect(body["skipped_system_ids"]).to contain_exactly(everyone.id)
+      expect(UserGroup.exists?(everyone.id)).to be(true)
+      expect(UserGroup.exists?(doomed.id)).to be(false)
+    end
+
+    it "forbids non-admin users" do
+      doomed = create(:user_group, name: "Doomed")
+      sign_out admin
+      sign_in user
+
+      delete "/admin/user_groups/bulk_delete.json", params: { ids: [ doomed.id ] }, as: :json
+      expect(response).to have_http_status(:forbidden)
+      expect(UserGroup.exists?(doomed.id)).to be(true)
+    end
+  end
+
   describe "member management" do
     before { sign_in admin }
 

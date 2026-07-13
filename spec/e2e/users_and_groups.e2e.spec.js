@@ -358,6 +358,52 @@ test.describe('Admin — User Groups', () => {
     await expect(page.getByText(groupName)).toHaveCount(0);
   });
 
+  test('supports select-all + bulk delete of root-level custom groups', async ({ page }) => {
+    test.setTimeout(60_000);
+
+    const stamp = Date.now();
+    const created = [];
+    try {
+      for (let i = 0; i < 2; i += 1) {
+        const res = await page.request.post('/admin/user_groups.json', {
+          data: { user_group: { name: `Delete Me Bulk ${stamp}-${i}` } },
+        });
+        expect(res.ok()).toBeTruthy();
+        const body = await res.json();
+        created.push(body.group);
+      }
+
+      await page.reload();
+      await page.waitForLoadState('networkidle');
+
+      const firstCheckbox = page.getByTestId(`group-select-${created[0].id}`).locator('input');
+      const secondCheckbox = page.getByTestId(`group-select-${created[1].id}`).locator('input');
+      await firstCheckbox.check();
+      await secondCheckbox.check();
+
+      await expect(page.getByText('2 selected')).toBeVisible();
+
+      page.once('dialog', (dialog) => dialog.accept());
+      const [bulkDeleteResponse] = await Promise.all([
+        page.waitForResponse((res) =>
+          res.url().includes('/admin/user_groups/bulk_delete') &&
+          res.request().method() === 'DELETE',
+        ),
+        page.getByTestId('group-bulk-delete-button').click(),
+      ]);
+      expect(bulkDeleteResponse.ok()).toBeTruthy();
+      const body = await bulkDeleteResponse.json();
+      expect(body.deleted_ids.sort()).toEqual([ created[0].id, created[1].id ].sort());
+
+      await expect(page.getByTestId(`group-select-${created[0].id}`)).toHaveCount(0);
+      await expect(page.getByTestId(`group-select-${created[1].id}`)).toHaveCount(0);
+    } finally {
+      for (const g of created) {
+        await page.request.delete(`/admin/user_groups/${g.id}.json`).catch(() => {});
+      }
+    }
+  });
+
   test('can search/filter groups in tree', async ({ page }) => {
     await page.getByPlaceholder(/search groups/i).fill('admin');
     await expect(page.getByRole('button', { name: 'administrators sys 2', exact: true })).toBeVisible();
@@ -447,6 +493,52 @@ test.describe('Folder Permissions ACL', () => {
 
     await page.getByRole('tab', { name: /permissions/i }).click();
     await expect(page.getByText(/deny all/i)).toBeVisible({ timeout: 8000 });
+  });
+
+  test('shows only root folders by default; expand reveals subfolders, collapse hides them again', async ({ page }) => {
+    await page.goto('/admin/user_groups');
+    await page.waitForLoadState('networkidle');
+
+    await page.getByText('administrators').first().click();
+    await page.waitForLoadState('networkidle');
+    await page.getByRole('tab', { name: /permissions/i }).click();
+
+    // "Archive" is a seeded root folder with two subfolders (2023, 2024).
+    await expect(page.getByText('/Archive', { exact: true })).toBeVisible({ timeout: 8000 });
+    await expect(page.getByText('/Archive/2023', { exact: true })).toHaveCount(0);
+
+    await page.getByTestId('acl-expand-all').click();
+    await expect(page.getByText('/Archive/2023', { exact: true })).toBeVisible({ timeout: 8000 });
+
+    await page.getByTestId('acl-collapse-all').click();
+    await expect(page.getByText('/Archive/2023', { exact: true })).toHaveCount(0);
+  });
+
+  test('toggling a permission on a parent folder cascades to its expanded subfolders', async ({ page }) => {
+    await page.goto('/admin/user_groups');
+    await page.waitForLoadState('networkidle');
+
+    await page.getByText('administrators').first().click();
+    await page.waitForLoadState('networkidle');
+    await page.getByRole('tab', { name: /permissions/i }).click();
+
+    await page.getByTestId('acl-expand-all').click();
+    await expect(page.getByText('/Archive/2023', { exact: true })).toBeVisible({ timeout: 8000 });
+
+    const archiveRow = page.locator('tr', { has: page.getByText('/Archive', { exact: true }) });
+    const childRow = page.locator('tr', { has: page.getByText('/Archive/2023', { exact: true }) });
+
+    // "Read" is the first permission checkbox after the Path column.
+    const archiveReadCheckbox = archiveRow.getByRole('checkbox').nth(0);
+    const childReadCheckbox = childRow.getByRole('checkbox').nth(0);
+
+    await archiveReadCheckbox.check();
+    await expect(childReadCheckbox).toBeChecked();
+
+    // The admin can still override the cascaded child individually.
+    await childReadCheckbox.uncheck();
+    await expect(childReadCheckbox).not.toBeChecked();
+    await expect(archiveReadCheckbox).toBeChecked();
   });
 });
 

@@ -2858,5 +2858,54 @@
     "changesSaved": "Alterações salvas",
     "adminOnly": "Somente admin",
     "currentLimit": "Limite atual: {{size}}"
+  },
+  "aclMatrix": {
+    "title": "ACL em nível de pasta",
+    "subtitleEdit": "Clique nas caixas de seleção para editar e depois salve",
+    "subtitleView": "Somente visualização",
+    "filterPlaceholder": "Filtrar pastas…",
+    "adminOnlyWarning": "Somente administradores podem modificar permissões de pasta.",
+    "cascadeHint": "Alternar uma permissão aqui também a aplica a todas as subpastas visíveis abaixo — desmarque uma subpasta individualmente para substituí-la.",
+    "path": "Caminho",
+    "columns": {
+      "read": "Ler",
+      "modify": "Modificar",
+      "create": "Criar",
+      "delete": "Excluir",
+      "replicate": "Replicar",
+      "manage": "Gerenciar"
+    },
+    "tooltips": {
+      "read": "Ver ativos e subpastas",
+      "modify": "Editar metadados de ativos existentes / renomear pastas",
+      "create": "Carregar ativos ou criar subpastas",
+      "delete": "Excluir ativos e pastas",
+      "replicate": "Enviar ativos para o CDN",
+      "manage": "Configuração de pasta em nível de administrador",
+      "denyAll": "Negar tudo — substitui qualquer concessão positiva para este grupo nesta pasta"
+    },
+    "denyAll": "Negar tudo",
+    "actions": "Ações",
+    "inherited": "herdado",
+    "inheritedFrom": "Herdado de: {{source}}",
+    "noResults": "Nenhuma pasta corresponde ao seu filtro.",
+    "expandAll": "Expandir tudo",
+    "collapseAll": "Recolher tudo",
+    "childCount": "{{count}} subpasta",
+    "childCount_plural": "{{count}} subpastas",
+    "cascadeLabel": "Também salvar em subpastas",
+    "cascadeTooltip": "Quando ativado, salvar esta regra também a aplica a todas as subpastas.",
+    "saveTooltip": "Salvar regra explícita para esta pasta",
+    "saveWithCascadeTooltip": "Salvar regra explícita para esta pasta e propagar para todas as subpastas",
+    "removeTooltip": "Remover regra explícita (reverte para herdado)",
+    "notifications": {
+      "loadFailed": "Falha ao carregar políticas de pasta.",
+      "saved": "Permissões salvas.",
+      "savedWithCascade": "Permissões salvas e aplicadas às subpastas.",
+      "saveFailed": "Falha ao salvar: {{errors}}",
+      "networkError": "Erro de rede ao salvar as permissões.",
+      "removed": "Política removida. A pasta reverte para as regras herdadas.",
+      "removeFailed": "Falha ao remover a política."
+    }
   }
 }

@@ -486,6 +486,59 @@ paths:
                 properties:
                   error:
                     type: string
+  "/admin/user_groups/bulk_delete":
+    delete:
+      summary: Deletes multiple non-system groups at once
+      tags:
+      - Admin - User Groups
+      security:
+      - Bearer: []
+      parameters: []
+      responses:
+        '200':
+          description: groups deleted (system groups skipped and reported)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  deleted_ids:
+                    type: array
+                    items:
+                      type: integer
+                  skipped_system_ids:
+                    type: array
+                    items:
+                      type: integer
+                  message:
+                    type: string
+        '400':
+          description: no ids provided
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - ids
+              properties:
+                ids:
+                  type: array
+                  items:
+                    type: integer
+                  example:
+                  - 1
+                  - 2
+                  - 3
   "/admin/user_groups/{id}/add_member":
     parameters:
     - name: id
@@ -5237,6 +5290,19 @@ paths:
                         name:
                           type: string
                           example: "/Marketing/2026"
+                        slug:
+                          type: string
+                          example: campaigns
+                        path:
+                          type: string
+                          example: "/Marketing/2026"
+                        parent_id:
+                          type: string
+                          nullable: true
+                          example: a1b2c3
+                          description: Immediate parent folder ID, or null for a root
+                            folder. Used by clients (e.g. AclMatrix) to build a collapsible
+                            folder tree.
     post:
       summary: Create a new folder
       tags:

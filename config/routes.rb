@@ -509,6 +509,9 @@ Rails.application.routes.draw do
     resources :system_accounts, only: [ :index, :show, :new, :create, :destroy ]
 
     resources :user_groups, except: [ :new, :edit ] do
+      collection do
+        delete :bulk_delete
+      end
       member do
         # Legacy — kept for backward-compat; prefer add_member/remove_member
         post   :add_user,    to: "user_groups#add_member"

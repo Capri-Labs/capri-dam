@@ -2858,5 +2858,54 @@
     "changesSaved": "更改已保存",
     "adminOnly": "仅限管理员",
     "currentLimit": "当前限制：{{size}}"
+  },
+  "aclMatrix": {
+    "title": "文件夹级 ACL",
+    "subtitleEdit": "点击复选框进行编辑，然后保存",
+    "subtitleView": "仅查看",
+    "filterPlaceholder": "筛选文件夹…",
+    "adminOnlyWarning": "只有管理员可以修改文件夹权限。",
+    "cascadeHint": "在此切换权限也会应用到下方所有可见的子文件夹——单独取消勾选某个子文件夹即可覆盖它。",
+    "path": "路径",
+    "columns": {
+      "read": "读取",
+      "modify": "修改",
+      "create": "创建",
+      "delete": "删除",
+      "replicate": "复制",
+      "manage": "管理"
+    },
+    "tooltips": {
+      "read": "查看资产和子文件夹",
+      "modify": "编辑现有资产元数据 / 重命名文件夹",
+      "create": "上传资产或创建子文件夹",
+      "delete": "删除资产和文件夹",
+      "replicate": "将资产推送到 CDN",
+      "manage": "管理员级文件夹配置",
+      "denyAll": "全部拒绝——覆盖该组在此文件夹上的所有正向授权"
+    },
+    "denyAll": "全部拒绝",
+    "actions": "操作",
+    "inherited": "继承",
+    "inheritedFrom": "继承自：{{source}}",
+    "noResults": "没有文件夹匹配您的筛选条件。",
+    "expandAll": "全部展开",
+    "collapseAll": "全部折叠",
+    "childCount": "{{count}} 个子文件夹",
+    "childCount_plural": "{{count}} 个子文件夹",
+    "cascadeLabel": "同时保存到子文件夹",
+    "cascadeTooltip": "启用后，保存此规则时也会将其应用到每个子文件夹。",
+    "saveTooltip": "保存此文件夹的显式规则",
+    "saveWithCascadeTooltip": "保存此文件夹的显式规则并级联应用到所有子文件夹",
+    "removeTooltip": "移除显式规则（恢复为继承）",
+    "notifications": {
+      "loadFailed": "加载文件夹策略失败。",
+      "saved": "权限已保存。",
+      "savedWithCascade": "权限已保存并应用到子文件夹。",
+      "saveFailed": "保存失败：{{errors}}",
+      "networkError": "保存权限时发生网络错误。",
+      "removed": "策略已移除。文件夹恢复为继承规则。",
+      "removeFailed": "移除策略失败。"
+    }
   }
 }

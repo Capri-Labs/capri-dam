@@ -30,6 +30,7 @@ module Api
             name: "/" + path_names.join("/"), # e.g., "/Marketing/2026/Campaigns"
             slug: folder.slug,
             path: "/" + path_names.join("/"),
+            parent_id: folder.parent_id,
           }
         end
 

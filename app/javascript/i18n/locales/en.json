@@ -2858,5 +2858,54 @@
     "changesSaved": "Changes saved",
     "adminOnly": "Admin only",
     "currentLimit": "Current limit: {{size}}"
+  },
+  "aclMatrix": {
+    "title": "Folder-level ACL",
+    "subtitleEdit": "Click checkboxes to edit, then Save",
+    "subtitleView": "View only",
+    "filterPlaceholder": "Filter folders…",
+    "adminOnlyWarning": "Only administrators can modify folder permissions.",
+    "cascadeHint": "Toggling a permission here also applies it to every visible subfolder below — uncheck any subfolder individually to override it.",
+    "path": "Path",
+    "columns": {
+      "read": "Read",
+      "modify": "Modify",
+      "create": "Create",
+      "delete": "Delete",
+      "replicate": "Replicate",
+      "manage": "Manage"
+    },
+    "tooltips": {
+      "read": "View assets and child folders",
+      "modify": "Edit existing asset metadata / rename folders",
+      "create": "Upload assets or create sub-folders",
+      "delete": "Delete assets and folders",
+      "replicate": "Push assets to CDN",
+      "manage": "Admin-level folder configuration",
+      "denyAll": "Deny all — overrides every positive grant for this group on this folder"
+    },
+    "denyAll": "Deny All",
+    "actions": "Actions",
+    "inherited": "inherited",
+    "inheritedFrom": "Inherited from: {{source}}",
+    "noResults": "No folders match your filter.",
+    "expandAll": "Expand all",
+    "collapseAll": "Collapse all",
+    "childCount": "{{count}} subfolder",
+    "childCount_plural": "{{count}} subfolders",
+    "cascadeLabel": "Also save to subfolders",
+    "cascadeTooltip": "When enabled, saving this rule also applies it to every subfolder beneath this one.",
+    "saveTooltip": "Save explicit rule for this folder",
+    "saveWithCascadeTooltip": "Save explicit rule for this folder and cascade to all subfolders",
+    "removeTooltip": "Remove explicit rule (reverts to inherited)",
+    "notifications": {
+      "loadFailed": "Failed to load folder policies.",
+      "saved": "Permissions saved.",
+      "savedWithCascade": "Permissions saved and applied to subfolders.",
+      "saveFailed": "Save failed: {{errors}}",
+      "networkError": "Network error saving permissions.",
+      "removed": "Policy removed. Folder reverts to inherited rules.",
+      "removeFailed": "Failed to remove policy."
+    }
   }
 }

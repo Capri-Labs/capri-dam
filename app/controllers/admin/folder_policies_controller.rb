@@ -33,7 +33,10 @@ class Admin::FolderPoliciesController < ApplicationController
   end
 
   # POST /admin/folders/:folder_id/folder_policies
-  # Updates or creates a permission matrix for a specific group on this folder
+  # Updates or creates a permission matrix for a specific group on this folder.
+  # Optional body param:
+  #   cascade [Boolean] — also queue the same permission matrix onto every
+  #     descendant folder (see {PropagateAccessPolicyJob}).
   def create
     policy = FolderPolicy.find_or_initialize_by(
       folder_id: @folder.id,
@@ -41,6 +44,15 @@ class Admin::FolderPoliciesController < ApplicationController
     )
 
     if policy.update(policy_params)
+      if ActiveModel::Type::Boolean.new.cast(params[:cascade])
+        PropagateAccessPolicyJob.perform_later(
+          folder_id:   @folder.id,
+          group_id:    params[:group_id],
+          permissions: policy_params.to_h,
+          operation:   "upsert"
+        )
+      end
+
       render json: { success: true, policy: format_policy(policy, inherited: false) }
     else
       render json: { success: false, errors: policy.errors.full_messages }, status: :unprocessable_entity

@@ -2858,5 +2858,54 @@
     "changesSaved": "Änderungen gespeichert",
     "adminOnly": "Nur Admin",
     "currentLimit": "Aktuelles Limit: {{size}}"
+  },
+  "aclMatrix": {
+    "title": "Ordner-ACL",
+    "subtitleEdit": "Kontrollkästchen anklicken, dann speichern",
+    "subtitleView": "Nur Ansicht",
+    "filterPlaceholder": "Ordner filtern…",
+    "adminOnlyWarning": "Nur Administratoren können Ordnerberechtigungen ändern.",
+    "cascadeHint": "Das Umschalten einer Berechtigung hier wirkt sich auch auf alle sichtbaren Unterordner aus — einen Unterordner einzeln abwählen, um ihn zu überschreiben.",
+    "path": "Pfad",
+    "columns": {
+      "read": "Lesen",
+      "modify": "Ändern",
+      "create": "Erstellen",
+      "delete": "Löschen",
+      "replicate": "Replizieren",
+      "manage": "Verwalten"
+    },
+    "tooltips": {
+      "read": "Assets und Unterordner anzeigen",
+      "modify": "Asset-Metadaten bearbeiten / Ordner umbenennen",
+      "create": "Assets hochladen oder Unterordner erstellen",
+      "delete": "Assets und Ordner löschen",
+      "replicate": "Assets zum CDN übertragen",
+      "manage": "Admin-Ordnerkonfiguration",
+      "denyAll": "Alles verweigern — überschreibt jede positive Berechtigung dieser Gruppe für diesen Ordner"
+    },
+    "denyAll": "Alles verweigern",
+    "actions": "Aktionen",
+    "inherited": "geerbt",
+    "inheritedFrom": "Geerbt von: {{source}}",
+    "noResults": "Keine Ordner entsprechen Ihrem Filter.",
+    "expandAll": "Alle erweitern",
+    "collapseAll": "Alle einklappen",
+    "childCount": "{{count}} Unterordner",
+    "childCount_plural": "{{count}} Unterordner",
+    "cascadeLabel": "Auch auf Unterordner speichern",
+    "cascadeTooltip": "Wenn aktiviert, wird diese Regel beim Speichern auch auf jeden Unterordner angewendet.",
+    "saveTooltip": "Explizite Regel für diesen Ordner speichern",
+    "saveWithCascadeTooltip": "Explizite Regel speichern und auf alle Unterordner übertragen",
+    "removeTooltip": "Explizite Regel entfernen (zurück zu geerbt)",
+    "notifications": {
+      "loadFailed": "Ordnerrichtlinien konnten nicht geladen werden.",
+      "saved": "Berechtigungen gespeichert.",
+      "savedWithCascade": "Berechtigungen gespeichert und auf Unterordner angewendet.",
+      "saveFailed": "Speichern fehlgeschlagen: {{errors}}",
+      "networkError": "Netzwerkfehler beim Speichern der Berechtigungen.",
+      "removed": "Richtlinie entfernt. Ordner verwendet wieder geerbte Regeln.",
+      "removeFailed": "Richtlinie konnte nicht entfernt werden."
+    }
   }
 }

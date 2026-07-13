@@ -69,10 +69,10 @@ describe('AclMatrix', () => {
 
     render(<AclMatrix groupId={99} isAdmin />);
 
-    expect(await screen.findByText('Path')).toBeInTheDocument();
+    expect(await screen.findByText('aclMatrix.path')).toBeInTheDocument();
     expect(screen.getByText('/Root')).toBeInTheDocument();
     expect(screen.getByText('/Root/Child')).toBeInTheDocument();
-    expect(screen.getByText('inherited')).toBeInTheDocument();
+    expect(screen.getByText('aclMatrix.inherited')).toBeInTheDocument();
   });
 
   it('updates a permission toggle and saves it', async () => {
@@ -109,5 +109,109 @@ describe('AclMatrix', () => {
       group_id: 99,
       policy: expect.objectContaining({ read_access: true, modify_access: true }),
     }));
+  });
+
+  it('shows only root folders by default and reveals children on expand', async () => {
+    mockApiFetch.mockImplementation((url) => {
+      if (url === '/api/v1/folders.json') {
+        return Promise.resolve({
+          folders: [
+            { id: 1, name: 'Root', path: '/Root', parent_id: null },
+            { id: 2, name: 'Child', path: '/Root/Child', parent_id: 1 },
+          ],
+        });
+      }
+      if (url === '/admin/folders/1/folder_policies.json') {
+        return Promise.resolve({
+          explicit_policies: [{ group_id: 99, matrix: { read: true } }],
+          inherited_policies: [],
+        });
+      }
+      return Promise.resolve({ explicit_policies: [], inherited_policies: [] });
+    });
+
+    render(<AclMatrix groupId={99} isAdmin />);
+
+    expect(await screen.findByText('/Root')).toBeInTheDocument();
+    expect(screen.queryByText('/Root/Child')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('acl-toggle-1'));
+
+    expect(await screen.findByText('/Root/Child')).toBeInTheDocument();
+  });
+
+  it('cascades a toggled permission onto expanded descendant rows', async () => {
+    mockApiFetch.mockImplementation((url) => {
+      if (url === '/api/v1/folders.json') {
+        return Promise.resolve({
+          folders: [
+            { id: 1, name: 'Root', path: '/Root', parent_id: null },
+            { id: 2, name: 'Child', path: '/Root/Child', parent_id: 1 },
+          ],
+        });
+      }
+      if (url === '/admin/folders/1/folder_policies.json') {
+        return Promise.resolve({
+          explicit_policies: [{ group_id: 99, matrix: { read: true } }],
+          inherited_policies: [],
+        });
+      }
+      return Promise.resolve({ explicit_policies: [], inherited_policies: [] });
+    });
+
+    render(<AclMatrix groupId={99} isAdmin />);
+
+    await screen.findByText('/Root');
+    fireEvent.click(screen.getByTestId('acl-toggle-1'));
+    await screen.findByText('/Root/Child');
+
+    const rootRow = screen.getByTestId('acl-row-1');
+    const childRow = screen.getByTestId('acl-row-2');
+
+    // Toggle "modify" (2nd checkbox) on the root folder.
+    fireEvent.click(within(rootRow).getAllByRole('checkbox')[1]);
+
+    // The previously-unset child row should now reflect the cascaded value too.
+    expect(within(childRow).getAllByRole('checkbox')[1]).toBeChecked();
+
+    // The user can still override the child individually afterwards.
+    fireEvent.click(within(childRow).getAllByRole('checkbox')[1]);
+    expect(within(childRow).getAllByRole('checkbox')[1]).not.toBeChecked();
+  });
+
+  it('sends cascade: true when the subfolder save switch is enabled', async () => {
+    mockApiFetch.mockImplementation((url, options) => {
+      if (options?.method === 'POST') return Promise.resolve({ success: true });
+      if (url === '/api/v1/folders.json') {
+        return Promise.resolve({
+          folders: [
+            { id: 1, name: 'Root', path: '/Root', parent_id: null },
+            { id: 2, name: 'Child', path: '/Root/Child', parent_id: 1 },
+          ],
+        });
+      }
+      if (url === '/admin/folders/1/folder_policies.json') {
+        return Promise.resolve({
+          explicit_policies: [{ group_id: 99, matrix: { read: true } }],
+          inherited_policies: [],
+        });
+      }
+      return Promise.resolve({ explicit_policies: [], inherited_policies: [] });
+    });
+
+    render(<AclMatrix groupId={99} isAdmin />);
+
+    await screen.findByText('/Root');
+
+    fireEvent.click(screen.getByTestId('acl-cascade-switch-1'));
+    fireEvent.click(screen.getByTestId('acl-save-1'));
+
+    await waitFor(() => {
+      const saveCall = mockApiFetch.mock.calls.find(
+        ([url, opts]) => url === '/admin/folders/1/folder_policies.json' && opts?.method === 'POST'
+      );
+      expect(saveCall).toBeTruthy();
+      expect(JSON.parse(saveCall[1].body)).toEqual(expect.objectContaining({ cascade: true }));
+    });
   });
 });

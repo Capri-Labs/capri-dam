@@ -2858,5 +2858,54 @@
     "changesSaved": "변경 사항 저장됨",
     "adminOnly": "관리자만",
     "currentLimit": "현재 제한: {{size}}"
+  },
+  "aclMatrix": {
+    "title": "폴더 수준 ACL",
+    "subtitleEdit": "체크박스를 클릭하여 편집한 후 저장하세요",
+    "subtitleView": "보기 전용",
+    "filterPlaceholder": "폴더 필터링…",
+    "adminOnlyWarning": "관리자만 폴더 권한을 수정할 수 있습니다.",
+    "cascadeHint": "여기서 권한을 전환하면 아래에 표시된 모든 하위 폴더에도 적용됩니다 — 개별적으로 재정의하려면 하위 폴더의 선택을 해제하세요.",
+    "path": "경로",
+    "columns": {
+      "read": "읽기",
+      "modify": "수정",
+      "create": "생성",
+      "delete": "삭제",
+      "replicate": "복제",
+      "manage": "관리"
+    },
+    "tooltips": {
+      "read": "자산 및 하위 폴더 보기",
+      "modify": "기존 자산 메타데이터 편집 / 폴더 이름 변경",
+      "create": "자산 업로드 또는 하위 폴더 생성",
+      "delete": "자산 및 폴더 삭제",
+      "replicate": "자산을 CDN으로 푸시",
+      "manage": "관리자 수준 폴더 구성",
+      "denyAll": "모두 거부 — 이 폴더에서 이 그룹에 대한 모든 긍정적 권한을 재정의합니다"
+    },
+    "denyAll": "모두 거부",
+    "actions": "작업",
+    "inherited": "상속됨",
+    "inheritedFrom": "상속 출처: {{source}}",
+    "noResults": "필터와 일치하는 폴더가 없습니다.",
+    "expandAll": "모두 펼치기",
+    "collapseAll": "모두 접기",
+    "childCount": "하위 폴더 {{count}}개",
+    "childCount_plural": "하위 폴더 {{count}}개",
+    "cascadeLabel": "하위 폴더에도 저장",
+    "cascadeTooltip": "활성화하면 이 규칙을 저장할 때 모든 하위 폴더에도 적용됩니다.",
+    "saveTooltip": "이 폴더에 대한 명시적 규칙 저장",
+    "saveWithCascadeTooltip": "이 폴더에 대한 명시적 규칙을 저장하고 모든 하위 폴더에 적용",
+    "removeTooltip": "명시적 규칙 제거(상속으로 되돌림)",
+    "notifications": {
+      "loadFailed": "폴더 정책을 로드하지 못했습니다.",
+      "saved": "권한이 저장되었습니다.",
+      "savedWithCascade": "권한이 저장되어 하위 폴더에 적용되었습니다.",
+      "saveFailed": "저장 실패: {{errors}}",
+      "networkError": "권한 저장 중 네트워크 오류가 발생했습니다.",
+      "removed": "정책이 제거되었습니다. 폴더가 상속된 규칙으로 되돌아갑니다.",
+      "removeFailed": "정책 제거에 실패했습니다."
+    }
   }
 }

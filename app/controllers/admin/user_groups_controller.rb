@@ -87,6 +87,31 @@ class Admin::UserGroupsController < ApplicationController
     render json: { success: true, message: "Group deleted." }
   end
 
+  # DELETE /admin/user_groups/bulk_delete
+  # Body: { ids: [1, 2, 3] }
+  # Deletes all non-system groups among the given ids; system groups are
+  # skipped (and reported) rather than failing the whole request.
+  def bulk_delete
+    ids = Array(params[:ids]).map(&:to_i).uniq
+    if ids.empty?
+      return render json: { error: "No IDs provided" }, status: :bad_request
+    end
+
+    groups = UserGroup.where(id: ids)
+    skipped_system_ids = groups.select(&:system?).map(&:id)
+    deletable = groups.reject(&:system?)
+
+    deleted_ids = deletable.map(&:id)
+    deletable.each(&:destroy)
+
+    render json: {
+      success: true,
+      deleted_ids: deleted_ids,
+      skipped_system_ids: skipped_system_ids,
+      message: "#{deleted_ids.size} group(s) deleted.",
+    }
+  end
+
   # POST /admin/user_groups/:id/add_member
   # Adds a user to the group.  Body: { email: "..." } or { user_id: 42 }
   def add_member
