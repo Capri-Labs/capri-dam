@@ -472,6 +472,13 @@ Rails.application.routes.draw do
         end
       end
 
+      # Bulk Download (async ZIP export of folders/assets — Explorer Tools menu)
+      resources :asset_downloads, only: [ :index, :show, :create, :destroy ] do
+        member do
+          get :download
+        end
+      end
+
       # Metadata Import (async CSV import / bulk metadata update)
       resources :metadata_imports, only: [ :index, :show, :create, :destroy ] do
         collection do

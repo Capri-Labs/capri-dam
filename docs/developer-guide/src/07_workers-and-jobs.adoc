@@ -123,6 +123,14 @@ message to the AI gateway.
 | exports
 | Removes stale generated export artifacts.
 
+| `AssetDownloadWorker`
+| downloads
+| Recursively zips selected folders/assets for a bulk download request, reading file bytes via `storage_path`; throttled to 3 concurrent jobs (`Sidekiq::Throttled::Worker`). See <<section-download-overlay>>.
+
+| `AssetDownloadCleanupWorker`
+| downloads
+| Expires ZIP download artifacts past their 7-day retention period (scheduled daily at 2:30am). Mirrors `MetadataExportCleanupWorker`.
+
 | `MetadataImportWorker`
 | imports
 | Applies CSV metadata imports to assets.

@@ -13,6 +13,7 @@ import AssetTagsEditor from '../../../../app/javascript/components/Folders/Asset
 import AssetVersionsTab from '../../../../app/javascript/components/Folders/AssetVersionsTab';
 import AssetViewer from '../../../../app/javascript/components/Folders/AssetViewer';
 import CopyDialog from '../../../../app/javascript/components/Folders/CopyDialog';
+import DownloadDialog from '../../../../app/javascript/components/Folders/DownloadDialog';
 import DuplicateResolverDialog from '../../../../app/javascript/components/Folders/DuplicateResolverDialog';
 import ExplorerTopBar from '../../../../app/javascript/components/Folders/ExplorerTopBar';
 import FolderAccessTab from '../../../../app/javascript/components/Folders/FolderAccessTab';
@@ -1766,6 +1767,165 @@ describe('Folders components', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'common.cancel' }));
     expect(onClose).toHaveBeenCalledWith(false);
+  });
+
+  it('starts a download via Tools > Download and shows the ready link once complete', async () => {
+    global.fetch = mockFetch({
+      'POST /api/v1/asset_downloads': {
+        id: 501, status: 'processing', processed_items: 0, total_items: 2,
+        progress_percent: 0, queued: false, errors: [],
+      },
+      'GET /api/v1/asset_downloads/501': {
+        id: 501, status: 'completed', processed_items: 2, total_items: 2,
+        progress_percent: 100, download_url: '/api/v1/asset_downloads/501/download',
+      },
+    });
+
+    jest.useFakeTimers();
+
+    render(
+      <ExplorerTopBar
+        currentId={12}
+        viewData={{
+          breadcrumbs: [{ id: 'root', name: 'Home' }, { id: 12, name: 'Catalog' }],
+          folders: [{ id: 13, name: 'Child', can_delete: true }],
+          assets: [{ id: 20, title: 'Asset', can_delete: true }],
+        }}
+        viewMode="active"
+        setViewMode={jest.fn()}
+        handleNavigate={jest.fn()}
+        handleCopyPath={jest.fn()}
+        isAllSelected={false}
+        handleSelectAll={jest.fn()}
+        hasSelection
+        handleDeleteSelected={jest.fn()}
+        handleRestoreSelected={jest.fn()}
+        handlePermanentDelete={jest.fn()}
+        setOpenFolderDialog={jest.fn()}
+        onUploadSuccess={jest.fn()}
+        selectedItems={{ folders: [13], assets: [20] }}
+        onSchemaApplied={jest.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'explorerTopBar.tools' }));
+    fireEvent.click(await screen.findByText('explorerTopBar.downloadItems'));
+
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith(
+        '/api/v1/asset_downloads',
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({ folder_ids: [ 13 ], asset_ids: [ 20 ] }),
+        }),
+      );
+    });
+
+    // still processing — progress bar visible
+    expect(await screen.findByTestId('download-progress')).toBeInTheDocument();
+
+    await act(async () => {
+      jest.advanceTimersByTime(2000);
+    });
+
+    expect(await screen.findByTestId('download-ready-alert')).toBeInTheDocument();
+    const downloadLink = screen.getByRole('link', { name: 'downloadDialog.downloadZip' });
+    expect(downloadLink).toHaveAttribute('href', '/api/v1/asset_downloads/501/download');
+  });
+
+  it('shows a queued notice when another download is already in progress', async () => {
+    global.fetch = mockFetch({
+      'POST /api/v1/asset_downloads': {
+        id: 502, status: 'pending', processed_items: 0, total_items: 1,
+        progress_percent: 0, queued: true, errors: [],
+      },
+    });
+
+    render(
+      <ExplorerTopBar
+        currentId={12}
+        viewData={{
+          breadcrumbs: [{ id: 'root', name: 'Home' }, { id: 12, name: 'Catalog' }],
+          folders: [],
+          assets: [{ id: 21, title: 'Asset', can_delete: true }],
+        }}
+        viewMode="active"
+        setViewMode={jest.fn()}
+        handleNavigate={jest.fn()}
+        handleCopyPath={jest.fn()}
+        isAllSelected={false}
+        handleSelectAll={jest.fn()}
+        hasSelection
+        handleDeleteSelected={jest.fn()}
+        handleRestoreSelected={jest.fn()}
+        handlePermanentDelete={jest.fn()}
+        setOpenFolderDialog={jest.fn()}
+        onUploadSuccess={jest.fn()}
+        selectedItems={{ folders: [], assets: [21] }}
+        onSchemaApplied={jest.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'explorerTopBar.tools' }));
+    fireEvent.click(await screen.findByText('explorerTopBar.downloadItems'));
+
+    expect(await screen.findByTestId('download-queued-notice')).toBeInTheDocument();
+    expect(mockNotify).toHaveBeenCalledWith('downloadDialog.notifications.queued', 'info');
+  });
+
+  it('never disables Download in the Tools menu, even when a selected item lacks delete rights', async () => {
+    render(
+      <ExplorerTopBar
+        currentId={12}
+        viewData={{
+          breadcrumbs: [{ id: 'root', name: 'Home' }, { id: 12, name: 'Catalog' }],
+          folders: [{ id: 13, name: 'Child', can_delete: false }],
+          assets: [{ id: 20, title: 'Asset', can_delete: true }],
+        }}
+        viewMode="active"
+        setViewMode={jest.fn()}
+        handleNavigate={jest.fn()}
+        handleCopyPath={jest.fn()}
+        isAllSelected={false}
+        handleSelectAll={jest.fn()}
+        hasSelection
+        handleDeleteSelected={jest.fn()}
+        handleRestoreSelected={jest.fn()}
+        handlePermanentDelete={jest.fn()}
+        setOpenFolderDialog={jest.fn()}
+        onUploadSuccess={jest.fn()}
+        selectedItems={{ folders: [13], assets: [20] }}
+        onSchemaApplied={jest.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'explorerTopBar.tools' }));
+    const moveItem = (await screen.findByText('explorerTopBar.moveItems')).closest('li');
+    expect(moveItem).toHaveAttribute('aria-disabled', 'true');
+    const downloadItem = (await screen.findByText('explorerTopBar.downloadItems')).closest('li');
+    expect(downloadItem).not.toHaveAttribute('aria-disabled', 'true');
+  });
+
+  it('shows a partial-failure warning in DownloadDialog when some items cannot be included (standalone)', async () => {
+    global.fetch = mockFetch({
+      'POST /api/v1/asset_downloads': {
+        id: 503, status: 'processing', processed_items: 0, total_items: 1,
+        progress_percent: 0, queued: false,
+        errors: [ { type: 'asset', id: 22, name: 'Locked Asset', error: 'You do not have permission to read this asset.' } ],
+      },
+    });
+
+    render(
+      <DownloadDialog
+        open
+        onClose={jest.fn()}
+        selectedItems={{ folders: [], assets: [21, 22] }}
+        itemNames={{ folders: {}, assets: { 21: 'Asset', 22: 'Locked Asset' } }}
+      />,
+    );
+
+    expect(await screen.findByText('downloadDialog.partialFailureTitle')).toBeInTheDocument();
+    expect(await screen.findByText(/You do not have permission to read this asset\./)).toBeInTheDocument();
   });
 
   it('sends the actual current selection (not a stale/incorrect reference) when forcing an Edge CDN sync', async () => {

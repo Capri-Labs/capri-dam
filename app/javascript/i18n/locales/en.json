@@ -2086,7 +2086,10 @@
     "moveNoPermission": "You don't have delete permission for one or more selected items",
     "copyItems": "Copy",
     "copyItemCount": "Copy {{count}} item",
-    "copyItemCount_other": "Copy {{count}} items"
+    "copyItemCount_other": "Copy {{count}} items",
+    "downloadItems": "Download",
+    "downloadItemCount": "Download {{count}} item",
+    "downloadItemCount_other": "Download {{count}} items"
   },
   "uploadGrid": {
     "staging_area": "Staging Area",
@@ -2187,6 +2190,26 @@
       "error": "Failed to copy. Please try again."
     },
     "loadingFolders": "Loading folders…"
+  },
+  "downloadDialog": {
+    "title": "Download {{count}} item",
+    "title_other": "Download {{count}} items",
+    "selectedItemsLabel": "Selected items",
+    "queuedNotice": "You already have another download in progress — this one has been queued and will start shortly.",
+    "readyNotice": "Your ZIP is ready. We've also sent a download link to your inbox.",
+    "partialFailureTitle": "Some items could not be included:",
+    "preparing": "Preparing…",
+    "runInBackground": "Run in background",
+    "downloadZip": "Download ZIP",
+    "progress": {
+      "inProgress": "Zipping {{processed}} of {{total}} file(s)…",
+      "done": "Zipping complete"
+    },
+    "notifications": {
+      "queued": "Your download has been queued behind another in-progress download.",
+      "failed": "The download could not be generated. Please try again.",
+      "error": "Failed to start the download. Please try again."
+    }
   },
   "applySchemaDialog": {
     "title": "Apply Metadata Schema",

@@ -383,7 +383,7 @@ jobs:
             -a allow-uri-read \
             -a pdf-themesdir=docs/architecture/theme \
             -a pdf-theme=arc42 \
-            -o _site/architecture/capri-dam-architecture.pdf \
+            -o _site/architecture/headless-dam-architecture.pdf \
             docs/architecture/index.adoc
 
       # ── Developer Guide ───────────────────────────────────────────────────
@@ -442,6 +442,13 @@ jobs:
           mkdir -p _site/product-info/images
           cp -r docs/product-info/images/. _site/product-info/images/
 
+      - name: Build product info PDF
+        run: |
+          asciidoctor-pdf \
+            -a allow-uri-read \
+            -o _site/product-info/headless-dam-product-info-guide.pdf \
+            docs/product-info/index.adoc
+
       # ── Customer Guide ────────────────────────────────────────────────────
       - name: Build customer guide
         run: |
@@ -457,6 +464,13 @@ jobs:
         run: |
           mkdir -p _site/customer-guide/images
           cp -r docs/customer-guide/images/. _site/customer-guide/images/
+
+      - name: Build customer guide PDF
+        run: |
+          asciidoctor-pdf \
+            -a allow-uri-read \
+            -o _site/customer-guide/headless-dam-customer-guide.pdf \
+            docs/customer-guide/index.adoc
 
       # ── Deployment Guide ──────────────────────────────────────────────────
       - name: Build deployment guide
@@ -478,7 +492,7 @@ jobs:
             -a allow-uri-read \
             -a pdf-themesdir=docs/deployment-guide/theme \
             -a pdf-theme=arc42 \
-            -o _site/deployment-guide/capri-dam-deployment-guide.pdf \
+            -o _site/deployment-guide/headless-dam-deployment-guide.pdf \
             docs/deployment-guide/index.adoc
 
       # ── No-Jekyll (serve plain HTML) ──────────────────────────────────────

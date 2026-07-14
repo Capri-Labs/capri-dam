@@ -2086,7 +2086,10 @@
     "moveNoPermission": "ليس لديك إذن الحذف لعنصر واحد أو أكثر من العناصر المحددة",
     "copyItems": "نسخ",
     "copyItemCount": "نسخ {{count}} عنصر",
-    "copyItemCount_other": "نسخ {{count}} عناصر"
+    "copyItemCount_other": "نسخ {{count}} عناصر",
+    "downloadItems": "تنزيل",
+    "downloadItemCount": "تنزيل {{count}} عنصر",
+    "downloadItemCount_other": "تنزيل {{count}} عناصر"
   },
   "uploadGrid": {
     "staging_area": "منطقة التجهيز",
@@ -2187,6 +2190,26 @@
       "error": "فشل النسخ. يرجى المحاولة مرة أخرى."
     },
     "loadingFolders": "جارٍ تحميل المجلدات…"
+  },
+  "downloadDialog": {
+    "title": "تنزيل {{count}} عنصر",
+    "title_other": "تنزيل {{count}} عناصر",
+    "selectedItemsLabel": "العناصر المحددة",
+    "queuedNotice": "لديك بالفعل تنزيل آخر قيد التقدم — تم وضع هذا التنزيل في قائمة الانتظار وسيبدأ قريبًا.",
+    "readyNotice": "ملف ZIP الخاص بك جاهز. لقد أرسلنا أيضًا رابط التنزيل إلى صندوق الوارد الخاص بك.",
+    "partialFailureTitle": "تعذر تضمين بعض العناصر:",
+    "preparing": "جارٍ التحضير…",
+    "runInBackground": "التشغيل في الخلفية",
+    "downloadZip": "تنزيل ZIP",
+    "progress": {
+      "inProgress": "جارٍ ضغط {{processed}} من {{total}} ملف(ات)…",
+      "done": "اكتمل الضغط"
+    },
+    "notifications": {
+      "queued": "تم وضع تنزيلك في قائمة الانتظار خلف تنزيل آخر قيد التقدم.",
+      "failed": "تعذر إنشاء التنزيل. يرجى المحاولة مرة أخرى.",
+      "error": "تعذر بدء التنزيل. يرجى المحاولة مرة أخرى."
+    }
   },
   "applySchemaDialog": {
     "title": "تطبيق مخطط البيانات الوصفية",

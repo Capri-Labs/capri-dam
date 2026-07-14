@@ -34,7 +34,7 @@ storage — using a cost-efficient, _edge-first_ approach powered by **Fastly IO
 
 ifdef::backend-html5[]
 [.text-right]
-link:headless-dam-architecture.pdf[⬇ Download as PDF]
+link:headless-dam-architecture.pdf[⬇ Download as PDF] · link:../[← Documentation Hub] · link:../developer-guide/[Developer Guide]
 endif::backend-html5[]
 
 // 1. Introduction and Goals

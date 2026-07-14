@@ -16,22 +16,20 @@ skinparam defaultFontName Helvetica
 package "Capri DAM System" #EEF3FB {
     component [Admin Portal\n(React + MUI)] as GUI <<React>>
     component [Rails Application\n(API + Background Workers)] as API <<Ruby on Rails>>
-    database  [Metadata Store\n& RBAC] as DB <<PostgreSQL 14>>
-    component [Search Index] as Search <<Typesense>>
+    database  [Metadata Store\n& RBAC] as DB <<PostgreSQL 14 + pgvector>>
     component [Background Workers\n(Sidekiq)] as Workers <<Redis>>
-    component [CDN Config Service] as CDN <<Fastly Config>>
+    component [CDN Config Service] as CDN <<Pluggable Adapter>>
 }
 
-cloud "Fastly Edge\n(IO + CDN)" as Fastly #D5E8D4
-cloud "Object Storage\n(S3 / Azure / GCP)" as Storage #DAE8FC
+cloud "CDN Edge\n(Fastly / Cloudflare / Akamai)" as Fastly #D5E8D4
+cloud "Object Storage\n(S3 / Azure / GCP / Local)" as Storage #DAE8FC
 
 GUI    <--> API     : REST / JSON\nGraphQL
-API    <--> DB      : ActiveRecord\n(SQL)
-API    --> Search   : Index Update\n(async)
+API    <--> DB      : ActiveRecord\n(SQL + pgvector ANN)
 API    <--> Storage : Upload / Sign
 API    --> Workers  : Sidekiq jobs
 Workers --> DB      : Metadata updates
-CDN    <--> Fastly  : Fastly API
+CDN    <--> Fastly  : Provider API\n(Fastly / Cloudflare / Akamai)
 Fastly --> Storage  : Fetch master\nasset
 @enduml
 ....
@@ -52,14 +50,13 @@ Fastly --> Storage  : Fetch master\nasset
   signing, permission evaluation, and cloud provider handshakes.
   Built with Ruby on Rails 8.1 / Ruby 4.0.3.
 
-| **Metadata Store (PostgreSQL 14)**
+| **Metadata Store (PostgreSQL 14 + pgvector)**
 | Relational database for persistent storage of asset records, technical
   metadata, RBAC (users, groups, folder policies), workflow state, and
-  audit logs.
-
-| **Search Index (Typesense)**
-| High-performance search index for sub-second "search-as-you-type"
-  discovery across the asset library without taxing PostgreSQL.
+  audit logs. The `neighbor` gem adds pgvector-backed columns for semantic/
+  visual similarity search — there is no separate search service; both
+  lexical (`ILIKE`/JSONB) and vector (cosine ANN) queries run against this
+  same database.
 
 | **Background Workers (Sidekiq)**
 | Asynchronous queue for heavy or time-sensitive operations: media ingestion,
@@ -67,8 +64,10 @@ Fastly --> Storage  : Fetch master\nasset
   Uses Redis as the queue backend.
 
 | **CDN Config Service**
-| Manages Fastly service configuration (VCL snippets, backends, surrogate
-  key purge rules) via the Fastly API.
+| Manages edge/CDN service configuration (VCL/rules, backends, cache-purge
+  keys) via a pluggable adapter (`app/services/cdn_adapters/`): Fastly,
+  Cloudflare, and Akamai adapters are implemented today, plus a no-op
+  Null adapter for local/dev environments without a real CDN account.
 |===
 
 ---
@@ -163,9 +162,12 @@ Ingest    --> Embed   : enqueue
   or deleted, ensuring instant global cache invalidation.
 
 | **Sidekiq Workers**
-| Async job queue with strict priority weighting: `mailers → notifications →
-  default → workflow → metadata → reports → ingest`. Prevents heavy bulk
-  uploads from delaying urgent email delivery.
+| Async job queue with strict priority weighting, highest to lowest:
+  `mailers`/`notifications` (weight 5) → `default`/`duplicate_detection`/`bin_purge`
+  (weight 3) → `workflow`/`metadata`/`smartai`/`cdn_invalidation`/`edge_metadata`
+  (weight 2) → `reports`/`ingest`/`downloads`/`edge_metadata_bulk` (weight 1).
+  Prevents heavy bulk uploads, ZIP exports, and report generation from delaying
+  urgent email/notification delivery. See `config/sidekiq.yml`.
 |===
 
 ---

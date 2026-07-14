@@ -28,7 +28,14 @@
 
 | **CDN (Content Delivery Network)**
 | A geographically distributed network of edge servers that cache and serve
-  assets to end-users with low latency. In this system, provided by Fastly.
+  assets to end-users with low latency. Accessed through a pluggable adapter
+  (see **CDN Adapter** below) — Fastly is the default/reference provider.
+
+| **CDN Adapter**
+| The `CdnAdapters::BaseAdapter` interface (`app/services/cdn_adapters/`) that
+  abstracts CDN-provider-specific purge/config calls behind a common Ruby API.
+  Implemented today for Fastly, Cloudflare, and Akamai, plus a no-op `Null`
+  adapter used in local/dev/test environments without a real CDN account.
 
 | **Closure Table**
 | A database pattern used to represent hierarchical data (e.g. `UserGroup`
@@ -49,7 +56,9 @@
 | **Fastly IO (Image Optimizer)**
 | A Fastly CDN add-on that performs real-time image transformations
   (resize, crop, format conversion, WebP auto) at the edge server on first
-  request and caches the result globally.
+  request and caches the result globally. This is the default/reference
+  **CDN Adapter** implementation; Cloudflare and Akamai adapters provide
+  equivalent behaviour through their own transformation/purge APIs.
 
 | **FolderPolicy**
 | A join-table record linking a `UserGroup` to a `Folder` with the 7-column
@@ -90,6 +99,13 @@
 | Open standards for identity federation. Used to integrate with Keycloak
   (or other IdPs) for single sign-on (SSO) in enterprise deployments.
 
+| **pgvector / AssetEmbedding**
+| A PostgreSQL extension (accessed via the `neighbor` gem) that adds a vector
+  column type and approximate/exact nearest-neighbour search operators. Each
+  `Asset` has an associated `AssetEmbedding` row storing its visual/semantic
+  embedding; similarity search runs a cosine-distance nearest-neighbour SQL
+  query directly against this table — no external search service is used.
+
 | **RBAC (Role-Based Access Control)**
 | The permission model used by the DAM. Users belong to `UserGroup` s;
   groups are assigned `FolderPolicy` records that define what operations are
@@ -108,10 +124,6 @@
 | A unique tag applied to all Fastly-cached responses for a given asset.
   Sending a "Purge by Surrogate Key" request to the Fastly API instantly
   clears all renditions of that asset from every edge server.
-
-| **Typesense**
-| An open-source, typo-tolerant search engine used as a sidecar index for
-  sub-second full-text search over the asset library.
 
 | **UserGroup**
 | A named collection of users, organised in a hierarchy (parent/child) using

@@ -23,7 +23,7 @@ v3.0.0, 2026-07-07
 
 ifdef::backend-html5[]
 [.text-right]
-link:../[← Documentation Hub] · link:../architecture/[Architecture] · link:../developer-guide/[Developer Guide]
+link:headless-dam-product-info-guide.pdf[⬇ Download as PDF] · link:../[← Documentation Hub] · link:../architecture/[Architecture] · link:../developer-guide/[Developer Guide]
 endif::backend-html5[]
 
 [[section-welcome]]

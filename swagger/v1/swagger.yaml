@@ -2280,6 +2280,262 @@ paths:
                     error_message:
                       type: string
                       nullable: true
+  "/api/v1/asset_downloads":
+    post:
+      summary: Bundle one or more folders and/or assets into a ZIP for download
+      tags:
+      - Asset Downloads
+      security:
+      - Bearer: []
+      description: |
+        Bulk "Download" endpoint backing the Explorer Tools-menu Download
+        overlay — the asynchronous ZIP counterpart to individual asset/
+        rendition downloads (which already work via
+        `GET /api/v1/assets/local/:uuid`).
+
+        Building the archive can be slow for large selections, so this
+        endpoint only validates the request and enqueues
+        `AssetDownloadWorker` — it responds immediately with `202 Accepted`
+        and a `pending` record the client polls via
+        `GET /api/v1/asset_downloads/:id` to drive a progress bar.
+
+        Only `:read` on each item's folder is required (nothing is mutated).
+        Items the requesting user can't read are dropped with a per-item
+        entry in `errors`, but the request still succeeds for the rest of
+        the selection. `total_items` is the *real*, recursively-expanded
+        file count (folders are walked up front) so the progress bar has an
+        accurate denominator from the first poll.
+
+        `queued` is `true` when the user already has another pending/
+        processing download — the UI uses this to immediately tell them
+        their new request has been queued behind it, since Sidekiq
+        processes same-queue jobs roughly in order.
+
+        Once the worker finishes, the user is notified via both their
+        notification bell and inbox with a direct link to
+        `GET /api/v1/asset_downloads/:id/download`.
+      parameters: []
+      responses:
+        '202':
+          description: download queued (fully or partially)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    example: 1
+                  name:
+                    type: string
+                    example: Q3 Marketing Assets
+                  status:
+                    type: string
+                    enum:
+                    - pending
+                    - processing
+                    - completed
+                    - failed
+                    example: pending
+                  total_items:
+                    type: integer
+                    example: 3
+                  processed_items:
+                    type: integer
+                    example: 0
+                  progress_percent:
+                    type: integer
+                    example: 0
+                  file_count:
+                    type: integer
+                    example: 0
+                  byte_size:
+                    type: integer
+                    example: 0
+                  error_message:
+                    type: string
+                    nullable: true
+                  created_at:
+                    type: string
+                  expires_at:
+                    type: string
+                    nullable: true
+                  download_url:
+                    type: string
+                    nullable: true
+                  queued:
+                    type: boolean
+                    example: false
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        type:
+                          type: string
+                          enum:
+                          - folder
+                          - asset
+                        id:
+                          type: integer
+                        name:
+                          type: string
+                          nullable: true
+                        error:
+                          type: string
+        '422':
+          description: no folders or assets were specified
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: No folders or assets were specified.
+        '401':
+          description: unauthenticated
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                folder_ids:
+                  type: array
+                  items:
+                    type: integer
+                  description: IDs of folders to bundle (expanded recursively)
+                  example:
+                  - 12
+                  - 13
+                asset_ids:
+                  type: array
+                  items:
+                    type: integer
+                  description: IDs of assets to bundle
+                  example:
+                  - 101
+                name:
+                  type: string
+                  description: Display name / ZIP filename stem; auto-generated when
+                    omitted
+                  example: Q3 Marketing Assets
+    get:
+      summary: List the current user's downloads
+      tags:
+      - Asset Downloads
+      security:
+      - Bearer: []
+      description: Non-expired downloads for the current user, most recent first —
+        used by the reuse/history table.
+      parameters:
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+      - name: per_page
+        in: query
+        required: false
+        description: 10, 25, or 50 (default 25)
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: downloads listed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  downloads:
+                    type: array
+                    items:
+                      type: object
+                  meta:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                      page:
+                        type: integer
+                      per_page:
+                        type: integer
+        '401':
+          description: unauthenticated
+  "/api/v1/asset_downloads/{id}":
+    get:
+      summary: Poll a single download's progress/status
+      tags:
+      - Asset Downloads
+      security:
+      - Bearer: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: download found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  status:
+                    type: string
+        '404':
+          description: not found / not owned by the current user
+    delete:
+      summary: Delete a download and purge its ZIP
+      tags:
+      - Asset Downloads
+      security:
+      - Bearer: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+        '404':
+          description: not found / not owned by the current user
+  "/api/v1/asset_downloads/{id}/download":
+    get:
+      summary: Download the finished ZIP
+      tags:
+      - Asset Downloads
+      security:
+      - Bearer: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      description: Redirects to the attached ZIP blob. Returns 404 until the download
+        has completed.
+      responses:
+        '302':
+          description: redirects to the ZIP blob
+        '404':
+          description: not ready or file missing
   "/api/v1/assets/{asset_id}/embedding":
     put:
       summary: Upsert pgvector embedding for an asset (AI Gateway callback)

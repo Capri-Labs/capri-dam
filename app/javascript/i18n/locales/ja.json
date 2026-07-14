@@ -2086,7 +2086,10 @@
     "moveNoPermission": "選択した項目の一部またはすべてに削除権限がありません",
     "copyItems": "コピー",
     "copyItemCount": "{{count}} 件のアイテムをコピー",
-    "copyItemCount_other": "{{count}} 件のアイテムをコピー"
+    "copyItemCount_other": "{{count}} 件のアイテムをコピー",
+    "downloadItems": "ダウンロード",
+    "downloadItemCount": "{{count}} 件のアイテムをダウンロード",
+    "downloadItemCount_other": "{{count}} 件のアイテムをダウンロード"
   },
   "uploadGrid": {
     "staging_area": "ステージングエリア",
@@ -2187,6 +2190,26 @@
       "error": "コピーに失敗しました。もう一度お試しください。"
     },
     "loadingFolders": "フォルダーを読み込み中…"
+  },
+  "downloadDialog": {
+    "title": "{{count}} 件のアイテムをダウンロード",
+    "title_other": "{{count}} 件のアイテムをダウンロード",
+    "selectedItemsLabel": "選択したアイテム",
+    "queuedNotice": "他のダウンロードが進行中のため、このダウンロードは待機中です。まもなく開始されます。",
+    "readyNotice": "ZIPファイルの準備ができました。ダウンロードリンクを受信箱にも送信しました。",
+    "partialFailureTitle": "一部のアイテムを含めることができませんでした:",
+    "preparing": "準備中…",
+    "runInBackground": "バックグラウンドで実行",
+    "downloadZip": "ZIPをダウンロード",
+    "progress": {
+      "inProgress": "{{total}} 件中 {{processed}} 件のファイルを圧縮中…",
+      "done": "圧縮が完了しました"
+    },
+    "notifications": {
+      "queued": "他の進行中のダウンロードの後にキューに入れられました。",
+      "failed": "ダウンロードを生成できませんでした。もう一度お試しください。",
+      "error": "ダウンロードを開始できませんでした。もう一度お試しください。"
+    }
   },
   "applySchemaDialog": {
     "title": "メタデータスキーマを適用",

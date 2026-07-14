@@ -21,8 +21,9 @@
 | 📋 Planned | Multi-site isolation | Tenant-scoped storage and RBAC for agency use cases.
 | 📋 Planned | DAM-to-DAM federation | Cross-instance asset sharing via signed GraphQL federation.
 | 📋 Planned | AI auto-tagging | Automatic tag suggestions from a computer-vision model at upload time.
+| ✅ Done | Bulk copy (folders & assets) | "Copy to…" action mirroring the existing "Move to…" action — select any mix of folders/assets and copy them into a new destination in one request (`POST /api/v1/copy_operations`). Recursively duplicates folders, shares the source's ActiveStorage blob instead of re-uploading bytes, and auto-resolves name collisions.
+| ✅ Done | Bulk/folder ZIP download | "Download" action on a folder or any multi-asset selection streams a ZIP built asynchronously by `AssetDownloadWorker`, with a live progress bar, queue-awareness (a second download while one is running is queued, not run concurrently), and the finished ZIP link delivered to the user's Inbox and notification bell.
 | 📋 Planned | Manual static renditions | User-facing "Add/Delete rendition" action on an asset's Properties page (`renditions` table and model already exist; today renditions are worker-generated only — video MP4/OGG/AV1 — with no CRUD UI or endpoint).
-| 📋 Planned | Bulk/folder ZIP download | A "Download folder" and "download selected assets" action that streams a ZIP of the chosen assets (and, optionally, their renditions). Today only single-asset/single-rendition downloads exist (`Api::V1::Assets#serve_local`).
 | 📋 Planned | Direct Publish REST action | `POST /api/v1/assets/:id/publish` so publishing an asset doesn't require building a workflow first (exists today only as the `PublishNode` workflow step).
 | 📋 Planned | Image/video coordinate annotations | Draw shapes or drop a pin comment at a specific image coordinate or video timestamp (distinct from the existing workflow approval/rejection note field, which is the only "comment" mechanism today).
 | 📋 Planned | General asset commenting | A standalone comment thread on an asset (open to any collaborator, not tied to a workflow approval step).
@@ -52,7 +53,7 @@ for planning purposes. Genuine gaps are already reflected as
 | Browse, filter, and search assets, including similarity search | ✅ Done | Full-text + faceted REST search, pgvector cosine-similarity semantic/visual search, agentic AI Copilot search mode.
 | Add/edit Basic-tab metadata field values (except Smart Tags) | ✅ Done | Schema-driven `AssetMetadataPanel` with per-field `read_only` support; AI-generated tags are shown read-only and separated from manually-editable static tags.
 | Add and delete static renditions | ❌ Not built | `Rendition` model/table exist but are worker-generated only (video MP4/OGG/AV1); no user-facing add/delete UI or endpoint yet (tracked above).
-| Download folders, assets, and asset renditions | 🚧 Partial | Individual asset + individual rendition download work today; no bulk/folder ZIP export yet (tracked above).
+| Download folders, assets, and asset renditions | ✅ Done | Individual asset + individual rendition download; bulk folder/asset ZIP export via `AssetDownloadWorker` with progress polling, queue-awareness, and inbox/notification delivery of the finished link (`Api::V1::AssetDownloadsController`).
 | Create asset versions | ✅ Done | Full immutable version history per asset with restore-to-prior-version support.
 | Create and perform review tasks on assets | ✅ Done | Workflow approval nodes with configurable assignees/any-all logic, SLA deadlines, and a Workflow Dashboard of pending/active/completed tasks.
 | Annotate assets (coordinate/timestamp pins) | ❌ Not built | No spatial/timestamp annotation model or UI exists yet (tracked above). Only a static CONFIDENTIAL watermark overlay exists, which is unrelated.

@@ -9,7 +9,7 @@ import {
     CloudUpload, AutoAwesome, AccountTree,
     Psychology, Difference, Style,
     CloudSync, Publish, DeleteSweep, BuildOutlined, SchemaOutlined, ImageOutlined, VideoFileOutlined,
-    DriveFileRenameOutline, DriveFileMoveOutlined, ContentCopyOutlined
+    DriveFileRenameOutline, DriveFileMoveOutlined, ContentCopyOutlined, FileDownloadOutlined
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useNotify } from '../../context/NotificationContext';
@@ -21,6 +21,7 @@ import { ApplyVideoProfileDialog } from '../Tools/AssetConfigurations/VideoProfi
 import RenameDialog from './RenameDialog';
 import MoveDialog from './MoveDialog';
 import CopyDialog from './CopyDialog';
+import DownloadDialog from './DownloadDialog';
 
 export default function ExplorerTopBar({
                                            currentId, viewData, viewMode, setViewMode, handleNavigate, handleCopyPath,
@@ -69,6 +70,12 @@ export default function ExplorerTopBar({
     // (implicit — the item is already visible in this listing) plus
     // `:create` on the destination, re-validated server-side on submit.
     const [copyDialogOpen, setCopyDialogOpen] = useState(false);
+
+    // Download dialog — offered for any 1+ item selection (folders and/or
+    // assets), same as Copy, but always available (only requires `:read`,
+    // which the item already had to have to be visible in this listing).
+    // Submission happens immediately on open — see DownloadDialog.
+    const [downloadDialogOpen, setDownloadDialogOpen] = useState(false);
 
     // AI Handlers
     const handleAiMenuClose = () => setSmartMenuAnchor(null);
@@ -183,6 +190,17 @@ export default function ExplorerTopBar({
     // picked, so it's left to the server response the same way Move's
     // destination check already is.
     const copyTarget = moveItemCount > 0 ? {
+        itemNames: {
+            folders: Object.fromEntries(selectedFolderObjs.map(f => [ f.id, f.name ])),
+            assets: Object.fromEntries(selectedAssetObjs.map(a => [ a.id, a.title ?? a.name ])),
+        },
+    } : null;
+
+    // ── Download target resolution ──────────────────────────────────────────
+    // Offered for the same selection as Copy — no permission gate on the
+    // menu item itself (every listed item was already filtered by read
+    // access server-side; folders the user can't read are dropped there too).
+    const downloadTarget = moveItemCount > 0 ? {
         itemNames: {
             folders: Object.fromEntries(selectedFolderObjs.map(f => [ f.id, f.name ])),
             assets: Object.fromEntries(selectedAssetObjs.map(a => [ a.id, a.title ?? a.name ])),
@@ -306,6 +324,21 @@ export default function ExplorerTopBar({
                                         <ListItemText
                                             primary={t('explorerTopBar.copyItems')}
                                             secondary={t('explorerTopBar.copyItemCount', { count: moveItemCount })}
+                                        />
+                                    </MenuItem>
+                                    <Divider />
+                                </>
+                            )}
+                            {downloadTarget && (
+                                <>
+                                    <MenuItem
+                                        data-testid="tools-menu-download"
+                                        onClick={() => { setToolsMenuAnchor(null); setDownloadDialogOpen(true); }}
+                                    >
+                                        <ListItemIcon><FileDownloadOutlined fontSize="small" sx={{ color: '#2563eb' }} /></ListItemIcon>
+                                        <ListItemText
+                                            primary={t('explorerTopBar.downloadItems')}
+                                            secondary={t('explorerTopBar.downloadItemCount', { count: moveItemCount })}
                                         />
                                     </MenuItem>
                                     <Divider />
@@ -550,6 +583,16 @@ export default function ExplorerTopBar({
                     selectedItems={selectedItems}
                     itemNames={copyTarget.itemNames}
                     currentFolderId={currentId}
+                />
+            )}
+
+            {/* ── Download Dialog ── */}
+            {downloadTarget && (
+                <DownloadDialog
+                    open={downloadDialogOpen}
+                    onClose={() => setDownloadDialogOpen(false)}
+                    selectedItems={selectedItems}
+                    itemNames={downloadTarget.itemNames}
                 />
             )}
 

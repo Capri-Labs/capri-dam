@@ -47,6 +47,10 @@
     {
       "fingerprint": "dcb7accc474541088e0d4fbbb3d9a0f596480d8009c7f0cad02218fb4adb51b3",
       "note": "CommandInjection Medium — asset_processor_worker.rb#convert_office_document_to_preview:1143. Open3.capture3 array-argv exec (no shell) invoking LibreOffice's soffice binary; `source_path`/`convert_dir` are server-generated local paths built from Rails.root.join + SecureRandom.hex, never raw user input. Accepted risk."
+    },
+    {
+      "fingerprint": "96b26087a02766c1b91e4c4ca1c33cb5616c13ee7a3af896e9639b4fab5f0369",
+      "note": "FileAccess Weak — asset_download_worker.rb:73. `download.id` is the AssetDownload row's own auto-increment bigint primary key (fetched via AssetDownload.find_by(id: download_id) at the top of #perform, a Sidekiq job argument — not raw HTTP/user input), so it can never contain path-traversal characters. The tmp path is also always suffixed with a fresh SecureRandom.hex(8). Accepted risk."
     }
   ]
 }

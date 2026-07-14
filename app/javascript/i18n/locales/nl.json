@@ -2086,7 +2086,10 @@
     "moveNoPermission": "U heeft geen verwijderrechten voor een of meer geselecteerde items",
     "copyItems": "Kopiëren",
     "copyItemCount": "{{count}} item kopiëren",
-    "copyItemCount_other": "{{count}} items kopiëren"
+    "copyItemCount_other": "{{count}} items kopiëren",
+    "downloadItems": "Downloaden",
+    "downloadItemCount": "{{count}} item downloaden",
+    "downloadItemCount_other": "{{count}} items downloaden"
   },
   "uploadGrid": {
     "staging_area": "Staginggebied",
@@ -2187,6 +2190,26 @@
       "error": "Kopiëren mislukt. Probeer het opnieuw."
     },
     "loadingFolders": "Mappen laden…"
+  },
+  "downloadDialog": {
+    "title": "{{count}} item downloaden",
+    "title_other": "{{count}} items downloaden",
+    "selectedItemsLabel": "Geselecteerde items",
+    "queuedNotice": "Je hebt al een andere download bezig — deze is in de wachtrij geplaatst en start binnenkort.",
+    "readyNotice": "Je ZIP-bestand is klaar. We hebben ook een downloadlink naar je inbox gestuurd.",
+    "partialFailureTitle": "Sommige items konden niet worden opgenomen:",
+    "preparing": "Bezig met voorbereiden…",
+    "runInBackground": "Op de achtergrond uitvoeren",
+    "downloadZip": "ZIP downloaden",
+    "progress": {
+      "inProgress": "Bezig met zippen van {{processed}} van {{total}} bestand(en)…",
+      "done": "Zippen voltooid"
+    },
+    "notifications": {
+      "queued": "Je download is in de wachtrij geplaatst achter een andere lopende download.",
+      "failed": "De download kon niet worden gegenereerd. Probeer het opnieuw.",
+      "error": "De download kon niet worden gestart. Probeer het opnieuw."
+    }
   },
   "applySchemaDialog": {
     "title": "Metadataschema toepassen",

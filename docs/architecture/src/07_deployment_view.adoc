@@ -1,10 +1,22 @@
 [[section-deployment-view]]
 == Deployment View
 
-The Capri DAM is designed for high portability. It leverages managed services to reduce operational overhead (No-Ops) while maintaining a strict separation between the Management Plane and the Delivery Plane.
+The Capri DAM ships as a single Docker image, deployed with **Kamal 2**
+(`config/deploy.yml`) to one or more plain Linux servers (VPS or bare metal —
+no managed PaaS/serverless required). `kamal-proxy` handles TLS termination
+(automatic Let's Encrypt), zero-downtime rollouts, and load balancing. See
+link:../deployment-guide/[the Deployment Guide] for the full operational
+playbook (prerequisites, secrets, first deploy, routine deploys/rollback,
+SSL, monitoring, backups).
 
-=== Infrastructure Level 1: Global Logical Overview
-This level shows how the system is distributed between the Cloud Provider (for data and logic) and the Edge Provider (for delivery).
+=== Infrastructure Level 1: Reference Single-Host Topology
+
+The starter `config/deploy.yml` pins the `web` and `worker` roles to the
+**same host**, because the default Active Storage backend is local disk (a
+bind-mounted volume both roles need to share). Switching the active
+`StorageBackend` to S3/GCS/Azure Blob (no code changes — just an admin UI
+setting) removes that constraint and lets `web`/`worker` scale onto separate
+hosts.
 
 [plantuml, target="deployment-level-1", format="svg"]
 ....
@@ -15,91 +27,105 @@ node "End User Environment" {
     [Web/Mobile Browser] as Browser
 }
 
-node "Fastly Edge Network" {
-    [Image Optimizer (IO)] as EdgeIO
+node "CDN Edge (Fastly / Cloudflare / Akamai)" {
+    [Image/Video Transform] as EdgeIO
     [Edge Cache] as Cache
 }
 
-node "Cloud Provider (AWS/Azure/GCP)" {
-    package "Application Layer" {
-        [Admin Portal (Static)] as StaticUI
-        [Core API (Container/Serverless)] as API
+node "Linux Server(s) — Kamal-managed Docker host" {
+    package "kamal-proxy" {
+        [TLS termination\n+ zero-downtime routing] as Proxy
     }
-    package "Data Layer" {
-        database "Managed SQL" as DB
-        database "Search Service" as Search
+    package "App Containers" {
+        [web: Puma + Thruster\n(Rails app + React SPA views)] as Web
+        [worker: Sidekiq\n(no HTTP, proxy: false)] as Worker
     }
-    package "Storage Layer" {
-        [Object Storage Bucket] as S3
+    package "Accessory Containers" {
+        database "db: pgvector/pgvector:pg16" as DB
+        database "redis: redis:7-alpine" as Redis
     }
+    folder "Bind-mounted volume\n/var/lib/capri-dam/storage" as LocalDisk
 }
 
-Browser --> EdgeIO : "HTTPS Requests"
-EdgeIO --> S3 : "Fetch Master (Origin)"
-API --> S3 : "Write Master"
-API --> DB : "Persistence"
-API --> Search : "Indexing"
-StaticUI --> API : "Management"
+node "Object Storage (optional)" {
+    [S3 / GCS / Azure Blob] as CloudStorage
+}
+
+Browser  --> EdgeIO  : HTTPS requests
+EdgeIO   --> Cache
+EdgeIO   --> Proxy   : Fetch master (origin)\non cache miss
+Proxy    --> Web     : Route to Puma
+Web      --> DB      : ActiveRecord (SQL + pgvector ANN)
+Web      --> Redis   : Sidekiq enqueue,\nAction Cable, Coverband
+Worker   --> DB
+Worker   --> Redis
+Web      --> LocalDisk : Read/write master\n(local StorageAdapter)
+Web      --> CloudStorage : Read/write master\n(S3/GCS/Azure StorageAdapter)
 @enduml
 ....
 
-=== Infrastructure Level 2: Technical Detailed View (AWS Example)
-To provide depth, this level details a specific "Minimum Budget" implementation on AWS. This setup uses **Lambda** or **App Runner** for the API to ensure you only pay when someone is actually using the Admin UI.
+=== Infrastructure Level 2: Container/Accessory Detail
 
-[plantuml, target="deployment-aws-detailed", format="svg"]
+[plantuml, target="deployment-level-2", format="svg"]
 ....
 @startuml
-!define AWSPuml https://raw.githubusercontent.com/plantuml-office/plantuml-asciidoc-admonition-icons/master/dist
-
-package "Public Internet" {
-    [Fastly Global CDN] as Fastly
+node "Kamal Host" {
+  node "web role" {
+    [Puma (WEB_CONCURRENCY=2,\nRAILS_MAX_THREADS=5)] as Puma
+    [Thruster\n(bin/thrust, port 80)] as Thruster
+  }
+  node "worker role" {
+    [Sidekiq\n-C config/sidekiq.yml] as Sidekiq
+  }
+  node "db accessory" {
+    [pgvector/pgvector:pg16\n127.0.0.1:5432 (admin only)] as Postgres
+  }
+  node "redis accessory" {
+    [redis:7-alpine] as RedisNode
+  }
 }
-
-node "AWS Cloud" {
-    node "Frontend" {
-        [S3 Website Hosting / CloudFront] as Web
-    }
-
-    node "Compute" {
-        [AWS Lambda / App Runner] as LambdaAPI
-        note right: Scales to zero when not in use
-    }
-
-    node "Persistence" {
-        [RDS Aurora Serverless] as RDS
-        [Typesense Cloud / Self-Hosted] as TS
-    }
-
-    node "Storage" {
-        [S3 Bucket (Private)] as S3Private
-    }
-}
-
-Fastly --> S3Private : "Secure OAI/IAM Access"
-Web --> LambdaAPI : "API Calls"
-LambdaAPI --> RDS : "Metadata"
-LambdaAPI --> TS : "Search"
-LambdaAPI --> S3Private : "Uploads"
+Thruster -> Puma
+Puma --> Postgres : DB_HOST=capri-dam-db
+Puma --> RedisNode : REDIS_URL=redis://capri-dam-redis:6379/0
+Sidekiq --> Postgres
+Sidekiq --> RedisNode
 @enduml
 ....
-
-
 
 === Deployment Elements
 
 [cols="1,2,2", options="header"]
 |===
 | Node / Artifact | Category | Description
-| **Fastly Edge** | Edge Computing | Handles the heavy lifting of Image Optimization. Configured via VCL or Compute@Edge to point to the S3 Bucket as the 'Primary Origin'.
-| **Admin Portal** | Static Web | A React/Next.js application deployed as static files (S3 Website or Vercel). High availability at near-zero cost.
-| **Core API** | Serverless / PaaS | A containerized Node.js service. Using AWS Lambda or Google Cloud Run ensures we don't pay for idle CPU time.
-| **S3/Azure Blob** | Object Storage | The source of truth. Configured with a 'Private' access policy; only the Core API (for writes) and Fastly (for reads) have access.
-| **Managed SQL** | Database | PostgreSQL instance. For the 'Go Small' phase, a small or serverless instance is sufficient for metadata storage.
+| **kamal-proxy** | Reverse proxy | Runs on each Kamal host; terminates TLS via automatic Let's Encrypt, load-balances across app replicas, and performs zero-downtime cutover on deploy (health-checked against `GET /up`).
+| **web role** | App container | Puma (`WEB_CONCURRENCY=2`, `RAILS_MAX_THREADS=5`) behind Thruster (`bin/thrust`, listens on container port 80). Serves the Rails-rendered HTML shell + mounted React islands, REST API v1, and GraphQL.
+| **worker role** | App container | `bundle exec sidekiq -C config/sidekiq.yml`. No HTTP server — `proxy: false` in `config/deploy.yml` so kamal-proxy never routes to it. Pinned to the same host as `web` by default (shared local-disk volume); can move to its own host once storage is cloud-backed.
+| **db accessory** | Kamal accessory (Docker) | `pgvector/pgvector:pg16` image — PostgreSQL 16 with the pgvector extension preinstalled, so semantic/visual similarity search (see <<section-design-decisions>>, ADR 3) needs no extra setup. Bound to `127.0.0.1:5432` on the host (admin `psql` access only); the app reaches it via the private Docker network alias `capri-dam-db`.
+| **redis accessory** | Kamal accessory (Docker) | `redis:7-alpine`. Backs Sidekiq queues, Action Cable, and Coverband (separate DB index) via `REDIS_URL`/`COVERBAND_REDIS_URL`.
+| **Bind-mounted volume** | Host storage | `/var/lib/capri-dam/storage` on the host ↔ `/rails/storage` in every container. Used by the local `StorageAdapter`; irrelevant once a cloud `StorageBackend` (S3/GCS/Azure) is made active.
+| **Object Storage (optional)** | Cloud storage | S3 / GCS / Azure Blob, selected via the admin-configurable `StorageBackend` record — no code change or redeploy needed to switch.
+| **CDN Edge** | Edge Computing | Fastly (default), Cloudflare, or Akamai — selected via the pluggable `CdnAdapters::*` (see <<section-building-block-view>>). Handles image/video transformation and caching; falls back to a no-op `NullAdapter` when no CDN is configured (e.g. local dev).
+| **Container Registry** | GHCR | `.github/workflows/docker.yml` builds and pushes multi-arch images to `ghcr.io/capri-labs/capri-dam` on every push to `main`/`master` (tag `latest`) and on semver tags (`v*.*.*`). Kamal pulls from there by default (or builds locally with the same `RUBY_VERSION`/`NODE_VERSION` build args).
 |===
 
-=== Infrastructure Mapping
-To achieve the "Budget Alternative" goal, the following mapping is used:
+=== Scaling Path
 
-1.  **Zero-Inertia Scaling:** Using Lambda/App Runner means no billing during nights or weekends when the marketing team isn't uploading.
-2.  **Origin Shielding:** Fastly is configured with "Origin Shield" to minimize egress costs from the Cloud Provider (S3/Azure).
-3.  **Cross-Region Availability:** Since Fastly is global, the origin storage can sit in a single cheap region (e.g., US-East-1 or EU-West-1) without affecting end-user performance.
+The starter configuration favours "one small VPS, minimal moving parts" over
+premature horizontal scaling — consistent with the <<section-constraints,budget
+and small-team constraints>> — but each step below is a config change, not a
+rewrite:
+
+1. **Vertical first:** bump `WEB_CONCURRENCY`/`RAILS_MAX_THREADS` and the
+   server's CPU/RAM tier before adding hosts.
+2. **Split worker from web:** once storage is cloud-backed (S3/GCS/Azure —
+   already supported), move the `worker` role's `hosts:` to a second server
+   so heavy Sidekiq jobs (bulk downloads, ingestion, video transcode) don't
+   compete with Puma for CPU.
+3. **Scale web horizontally:** add more `web` hosts under `servers.web.hosts`
+   — `kamal-proxy` load-balances automatically; Postgres/Redis accessories
+   stay on their own host(s) as the app scales out.
+4. **Externalise Postgres/Redis:** swap the `db`/`redis` Kamal accessories
+   for a managed service (RDS/Cloud SQL + pgvector-enabled instance,
+   ElastiCache/Memorystore) once self-managed accessory operations
+   (backups, failover) become the bottleneck — no application code changes
+   required either way.

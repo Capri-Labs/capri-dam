@@ -10,7 +10,7 @@ The Capri DAM serves as the central hub for digital assets. It bridges the gap b
 | **Content Creators** | Master assets (High-res), Metadata (Tags, Focal points). | Upload status, Asset previews, Search results.
 | **Frontend Applications** | Asset IDs and required transformation parameters. | Optimized, transformed Image/Video URLs.
 | **Storage Providers** | Storage confirmation and binary retrieval. | Asset binaries (Write/Read commands).
-| **Fastly IO** | Request for original asset from origin. | Transformed versions of assets for end-users.
+| **Edge/CDN Provider** | Request for original asset from origin. | Transformed versions of assets for end-users. Pluggable adapter (see `app/services/cdn_adapters/`) — Fastly today, with Cloudflare, Akamai, and a no-op Null adapter also implemented.
 |===
 
 === Technical Context
@@ -20,9 +20,9 @@ This section describes the technical interfaces and protocols used for communica
 |===
 | Interface | Protocol / Tool | Description
 | **Management API** | REST / JSON | Used by the Admin UI to manage asset records, tags, and configurations.
-| **Binary Storage** | S3 API / Blob API | Used to store and retrieve the original "master" files from AWS, Azure, or GCP.
-| **Asset Delivery** | HTTPS (Fastly) | The path through which end-users receive transformed assets via Fastly IO.
-| **Search Index** | API (Typesense) | External indexing of metadata to provide sub-second search capabilities.
+| **Binary Storage** | S3 API / Blob API / Local disk | Used to store and retrieve the original "master" files — pluggable `StorageAdapters::*` (AWS S3, Azure Blob, GCS, or local disk for self-hosted/dev use).
+| **Asset Delivery** | HTTPS (CDN) | The path through which end-users receive transformed assets via the active CDN adapter (Fastly IO by default).
+| **Search & Similarity** | Internal (PostgreSQL) | Faceted metadata/lexical search (`ILIKE` + JSONB property filters) and pgvector cosine-similarity nearest-neighbour search over asset embeddings — both run inside the same PostgreSQL instance as the metadata store, no external search service.
 | **Cache Control** | Fastly Purge API | Programmatic invalidation of cached assets when metadata or binaries change.
 |===
 

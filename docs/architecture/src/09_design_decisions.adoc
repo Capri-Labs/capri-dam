@@ -54,29 +54,56 @@ We will store only the **Master Asset** and a set of **Metadata Instructions** (
 * **Pros:** Storage costs reduced by ~90%; total flexibility for frontend developers.
 * **Cons:** Requires a robust URL-signing strategy to prevent "denial-of-wallet" attacks via infinite resizing requests.
 
-=== ADR 3: Sidecar Search (Typesense) vs. Database Full-Text Search
-**Status:** Accepted
+=== ADR 3: PostgreSQL-Native Search (Lexical + pgvector) vs. a Dedicated Search Service
+**Status:** Accepted (supersedes an earlier plan to use a sidecar search
+service such as Typesense/Elasticsearch — no such service was ultimately
+adopted or shipped)
 
 **Background:**
-Relational databases (PostgreSQL) can perform text searches, but performance degrades as the asset library grows, and they lack "search-as-you-type" features.
+Relational databases (PostgreSQL) can perform text searches, but a naive `LIKE`/`ILIKE`
+approach doesn't scale well to "search-as-you-type" UX or to similarity-based discovery
+("find images that look like this one"). Many DAM products solve this by running a
+dedicated sidecar search/index service (e.g. Elasticsearch, Typesense, Algolia)
+alongside the primary database.
 
 **Assumptions:**
 
-* Users expect an "instant" search experience similar to modern e-commerce sites.
-* Metadata will grow to include hundreds of thousands of tags.
+* Users expect fast faceted/filtered search over structured + JSONB metadata.
+* A meaningful subset of "search" requests are actually *similarity* requests
+  ("more like this"), not keyword matches — these need vector/embedding search,
+  which a keyword-only sidecar index wouldn't solve either.
+* The team wants to avoid operating and keeping in sync a second stateful service
+  (index rebuilds, replication lag, dual writes) for a catalog size that PostgreSQL
+  itself can comfortably index.
 
 **Requirements:**
 
-* Sub-second search results.
-* Support for typo-tolerance and faceted filtering.
+* Fast faceted/filtered search results over metadata (content type, custom schema
+  fields, dates, dimensions).
+* Support for semantic/visual similarity search ("find similar assets"), not just
+  exact/substring keyword matches.
+* No dual-write consistency problem between a primary DB and a secondary index.
 
 **Decision:**
-Use **Typesense** as a dedicated search index alongside PostgreSQL.
+Run all search **directly against PostgreSQL** — no external search service was
+introduced. Lexical/faceted search (`Api::V1::SearchController`) uses `ILIKE` plus
+JSONB `properties` filters and auto-discovered schema-driven facets. Semantic/visual
+similarity search uses the **pgvector** extension (`neighbor` gem): each asset gets an
+embedding row (`AssetEmbedding`), and the `Asset.nearest_to_vector` scope runs a
+cosine-distance nearest-neighbour query (`AssetEmbedding.nearest_neighbors(:embedding,
+vector, distance: "cosine")`) directly in SQL.
 
 **Consequences:**
 
-* **Pros:** Extremely fast UI; offloads heavy query work from the primary database.
-* **Cons:** Requires a synchronization mechanism to keep the index and DB in parity.
+* **Pros:** Single source of truth — no second service to operate, monitor, or keep in
+  sync; embeddings and lexical metadata are queried transactionally consistent with the
+  rest of the asset record; one fewer moving part in deployment (see
+  <<section-deployment-view>>).
+* **Cons:** Lexical search is `ILIKE`-based, not a true inverted-index/BM25 engine —
+  acceptable at current catalog sizes, but will need revisiting (e.g. PostgreSQL
+  `tsvector`/`GIN` full-text indexes, or a real sidecar) if the library grows large
+  enough that `ILIKE` scan latency becomes noticeable. Tracked as a technical risk —
+  see <<section-technical-risks>>.
 
 === ADR 4: Closure Table for Group Hierarchy vs. Adjacency List
 **Status:** Accepted

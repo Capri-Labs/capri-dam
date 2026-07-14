@@ -2086,7 +2086,10 @@
     "moveNoPermission": "Vous n'avez pas la permission de suppression pour un ou plusieurs éléments sélectionnés",
     "copyItems": "Copier",
     "copyItemCount": "Copier {{count}} élément",
-    "copyItemCount_other": "Copier {{count}} éléments"
+    "copyItemCount_other": "Copier {{count}} éléments",
+    "downloadItems": "Télécharger",
+    "downloadItemCount": "Télécharger {{count}} élément",
+    "downloadItemCount_other": "Télécharger {{count}} éléments"
   },
   "uploadGrid": {
     "staging_area": "Zone de préparation",
@@ -2187,6 +2190,26 @@
       "error": "Échec de la copie. Veuillez réessayer."
     },
     "loadingFolders": "Chargement des dossiers…"
+  },
+  "downloadDialog": {
+    "title": "Télécharger {{count}} élément",
+    "title_other": "Télécharger {{count}} éléments",
+    "selectedItemsLabel": "Éléments sélectionnés",
+    "queuedNotice": "Vous avez déjà un autre téléchargement en cours — celui-ci a été mis en file d'attente et démarrera sous peu.",
+    "readyNotice": "Votre fichier ZIP est prêt. Nous avons également envoyé un lien de téléchargement à votre boîte de réception.",
+    "partialFailureTitle": "Certains éléments n'ont pas pu être inclus :",
+    "preparing": "Préparation…",
+    "runInBackground": "Exécuter en arrière-plan",
+    "downloadZip": "Télécharger le ZIP",
+    "progress": {
+      "inProgress": "Compression de {{processed}} sur {{total}} fichier(s)…",
+      "done": "Compression terminée"
+    },
+    "notifications": {
+      "queued": "Votre téléchargement a été mis en file d'attente derrière un autre téléchargement en cours.",
+      "failed": "Le téléchargement n'a pas pu être généré. Veuillez réessayer.",
+      "error": "Impossible de démarrer le téléchargement. Veuillez réessayer."
+    }
   },
   "applySchemaDialog": {
     "title": "Appliquer le schéma de métadonnées",

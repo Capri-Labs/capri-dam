@@ -26,7 +26,9 @@ delivery with minimal latency.
 * **Metadata Management:** Store and index technical (dimensions, EXIF/IPTC) and business (tags, focal points, schemas) metadata.
 * **Dynamic Transformation:** Real-time cropping, resizing, format conversion, and WebP delivery at the Edge via Fastly IO.
 * **Rich GUI:** Material UI-based interface for non-technical users to browse folders, upload assets, and configure image/video profiles.
-* **High-Speed Search:** Sub-second asset discovery using Typesense.
+* **High-Speed Search:** Faceted lexical search and metadata filtering directly
+  against PostgreSQL, plus pgvector-backed semantic/visual similarity search
+  (cosine distance over CLIP-style embeddings) — no external search service.
 * **Cache Management:** Instant per-asset Fastly purge via Surrogate Keys.
 * **RBAC Access Control:** Hierarchical user groups with per-folder permission policies (7-column ACL matrix).
 * **Metadata Schemas:** Configurable field schemas per folder path for structured metadata.

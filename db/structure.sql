@@ -366,6 +366,47 @@ CREATE TABLE public.ar_internal_metadata (
 
 
 --
+-- Name: asset_downloads; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.asset_downloads (
+    id bigint NOT NULL,
+    name character varying NOT NULL,
+    status integer DEFAULT 0 NOT NULL,
+    folder_ids jsonb DEFAULT '[]'::jsonb NOT NULL,
+    asset_ids jsonb DEFAULT '[]'::jsonb NOT NULL,
+    total_items integer DEFAULT 0 NOT NULL,
+    processed_items integer DEFAULT 0 NOT NULL,
+    file_count integer DEFAULT 0 NOT NULL,
+    byte_size bigint DEFAULT 0 NOT NULL,
+    user_id bigint NOT NULL,
+    error_message text,
+    expires_at timestamp(6) without time zone,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: asset_downloads_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.asset_downloads_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: asset_downloads_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.asset_downloads_id_seq OWNED BY public.asset_downloads.id;
+
+
+--
 -- Name: asset_embeddings; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -2360,6 +2401,13 @@ ALTER TABLE ONLY public.ai_model_configs ALTER COLUMN id SET DEFAULT nextval('pu
 
 
 --
+-- Name: asset_downloads id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.asset_downloads ALTER COLUMN id SET DEFAULT nextval('public.asset_downloads_id_seq'::regclass);
+
+
+--
 -- Name: asset_provenance_records id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -2744,6 +2792,14 @@ ALTER TABLE ONLY public.ai_model_configs
 
 ALTER TABLE ONLY public.ar_internal_metadata
     ADD CONSTRAINT ar_internal_metadata_pkey PRIMARY KEY (key);
+
+
+--
+-- Name: asset_downloads asset_downloads_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.asset_downloads
+    ADD CONSTRAINT asset_downloads_pkey PRIMARY KEY (id);
 
 
 --
@@ -3396,6 +3452,27 @@ CREATE INDEX index_ai_model_configs_on_provider ON public.ai_model_configs USING
 --
 
 CREATE UNIQUE INDEX index_ai_model_configs_one_default_per_capability ON public.ai_model_configs USING btree (capability, is_default) WHERE (is_default = true);
+
+
+--
+-- Name: index_asset_downloads_on_expires_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_asset_downloads_on_expires_at ON public.asset_downloads USING btree (expires_at);
+
+
+--
+-- Name: index_asset_downloads_on_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_asset_downloads_on_status ON public.asset_downloads USING btree (status);
+
+
+--
+-- Name: index_asset_downloads_on_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_asset_downloads_on_user_id ON public.asset_downloads USING btree (user_id);
 
 
 --
@@ -4719,6 +4796,14 @@ ALTER TABLE ONLY public.collection_assets
 
 
 --
+-- Name: asset_downloads fk_rails_8135eccab5; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.asset_downloads
+    ADD CONSTRAINT fk_rails_8135eccab5 FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
 -- Name: asset_provenance_records fk_rails_866ef11ca9; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -5005,6 +5090,7 @@ ALTER TABLE ONLY public.email_templates
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260714134500'),
 ('20260710120000'),
 ('20260709163140'),
 ('20260709160000'),

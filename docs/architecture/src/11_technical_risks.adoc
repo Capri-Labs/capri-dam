@@ -3,6 +3,74 @@
 
 This section identifies potential pitfalls and planned compromises. Tracking these early ensures that the "minimum budget" approach doesn't lead to long-term operational failure.
 
+=== Known Issues (audited directly from the codebase)
+
+Unlike the illustrative risk tables below, every row here was confirmed against
+real code/CI behaviour, not hypothesised. Treat this as the actionable backlog.
+
+[cols="2,2,3,1", options="header"]
+|===
+| Issue | Where | Detail | Status
+
+| **Dual, driftable storage-config sources**
+| `StorageManager.active_adapter` (`Setting["active_storage_provider"]`) vs.
+  `StorageBackend.find_by(active: true)`
+| Two independent switches decide "which storage backend is active" —
+  the Settings-driven one that `StorageManager.active_adapter` reads, and the
+  `StorageBackend` row that upload-time code (`AssetProcessorWorker`) and
+  `Assets#serve_local` actually use. They can silently drift apart (confirmed
+  in this environment: `Setting` said `"aws"`, real active `StorageBackend`
+  was `"local"`), which caused `AssetDownloadWorker` to build ZIPs with zero
+  bytes in every entry. Fixed there by reading local disk first with a
+  `StorageBackend`-based fallback (mirroring `serve_local`), but the
+  underlying two-sources-of-truth design remains — any *new* code that reads
+  previously-written asset files must follow the same pattern, or the bug
+  class will resurface elsewhere.
+| 🟡 Root cause fixed in one call site; systemic risk remains.
+
+| **OpenAPI/Pact schema type drift on `Folder#id`**
+| `swagger/v1/swagger.yaml` (`GET /api/v1/folders` response schema)
+| The documented schema still declares `folders[].id` as `type: integer`, but
+  `Folder` (like `Asset`) uses a UUID string primary key. This fails Pact
+  provider verification (`spec/pact/provider/api_v1_pact_spec.rb`) with
+  `expected integer, but received String` whenever the "list folders"
+  interaction runs against real data.
+| 🔴 Open — needs a swagger annotation fix + `make api-docs` regeneration.
+
+| **Lexical search has no index (`ILIKE` table scan)**
+| `Api::V1::SearchController`, see ADR 3 (<<section-design-decisions>>)
+| Keyword/faceted search runs `ILIKE`/JSONB containment queries with no
+  `GIN`/`tsvector` index. Fine at current catalog sizes; will need a real
+  full-text index (or reconsidering a sidecar search service) once the
+  asset library grows large enough for scan latency to matter.
+| 🟢 Acceptable today; revisit at scale.
+
+| **Uneven E2E coverage across modules**
+| `spec/e2e/**`
+| Coverage is thorough for some modules (Recycle Bin, Access Control, the
+  recently-added Move/Copy/Download overlays) and near-zero for others
+  (Delivery & CDN has **zero** E2E coverage; several System Operations
+  sub-tabs and AI features are undertested). Full breakdown maintained in
+  link:../product-info/index.html#test-coverage-roadmap[the product-info
+  test-coverage roadmap] rather than duplicated here.
+| 🟡 Tracked, prioritised list exists.
+
+| **AVIF end-to-end delivery not wired up**
+| CDN configuration API / Fastly IO pipeline
+| The admin-configurable output-format allow-list (WebP/AVIF) is implemented
+  and persisted, but the live request-time transformation/delivery pipeline
+  that actually honours it at the edge is not yet implemented.
+| 🟡 In progress — see the product roadmap in `docs/product-info`.
+
+| **No automated CDN provider failover**
+| `app/services/cdn_adapters/{fastly,cloudflare,akamai}_adapter.rb`
+| Four adapters exist behind a common interface, but switching the active
+  one is a manual admin action — there is no health-check-triggered
+  automatic failover if the configured CDN provider has an outage.
+| 🟢 Acceptable for current scale; worth revisiting before claiming
+  multi-CDN "high availability" as a selling point.
+|===
+
 === Technical Risks
 
 [cols="1,2,2", options="header"]
@@ -10,8 +78,8 @@ This section identifies potential pitfalls and planned compromises. Tracking the
 | Risk | Impact | Mitigation
 | **Fastly IO Over-usage** | Unexpected monthly bill due to high volume of unique transformations. | Implement **HMAC URL Signing** to prevent unauthorized resizing and set up **Billing Alerts** in the Fastly console.
 | **Cache Invalidation Latency** | Users see old versions of images after a metadata update. | Use **Surrogate Keys** for targeted purging and implement "Cache-Busting" versioning in URLs if necessary.
-| **Vendor Lock-in (Fastly)** | Transformation logic is heavily dependent on Fastly IO proprietary parameters. | Abstrate the "URL Generator" logic in the Core API to allow for potential migration to other edge providers (e.g., Cloudflare Images).
-| **Metadata Inconsistency** | Desync between the binary in S3 and the record in PostgreSQL. | Implement a **Background Reconciliation Worker** to verify that every DB record has a corresponding physical file.
+| **Vendor Lock-in (Fastly)** | Transformation logic is heavily dependent on Fastly IO proprietary parameters. | Already mitigated in code: the `CdnAdapters::BaseAdapter` abstraction (Fastly/Cloudflare/Akamai/Null) means migrating the *active* provider is a config change, not a rewrite — see <<section-building-block-view>>.
+| **Metadata Inconsistency** | Desync between the binary in Storage and the record in PostgreSQL. | Implement a **Background Reconciliation Worker** to verify that every DB record has a corresponding physical file. (Related to the storage-config-drift issue above — a reconciliation worker would have caught it sooner.)
 |===
 
 === Business or Domain Risks
@@ -30,8 +98,8 @@ This section identifies potential pitfalls and planned compromises. Tracking the
 |===
 | Risk | Impact | Mitigation
 | **Lack of Built-in CMS Plugins** | Frontend teams have to manually integrate the DAM API into their CMS. | Develop lightweight **SDKs and Web Components** (e.g., `<headless-dam-image>`) to simplify integration.
-| **Synchronous Tagging** | Large uploads might time out if metadata extraction is too heavy. | Move EXIF extraction and Search Indexing to an **Asynchronous Queue** (e.g., Redis or AWS SQS).
-| **Missing Image Editor** | Users cannot "manually" crop or rotate inside the UI. | Integrate an open-source client-side editor (e.g., **Pica** or **Filerobot**) to provide a visual editing experience.
+| **Synchronous Tagging** | Large uploads might time out if metadata extraction is too heavy. | Already mitigated: `AssetProcessorWorker` runs EXIF/IPTC/XMP extraction asynchronously via Sidekiq (`metadata` queue), off the request/response cycle.
+| **Missing Image Editor** | Users cannot "manually" crop or rotate inside the UI. | A client-side image editor already exists in the Admin Portal (see the product-info roadmap for current capability/limitation notes); track further enhancements there rather than here.
 |===
 
 [plantuml, target="risk-assessment-matrix", format="svg"]
@@ -45,6 +113,7 @@ rectangle "Low Impact / High Probability" as LIHP #Orange
 (Vendor Lock-in) -up-> HILP
 (Fastly Cost Spikes) -up-> HIHP
 (Metadata Desync) -up-> LIHP
-(Missing GUI Editor) -up-> LILP
+(Storage-config drift) -up-> LIHP
+(OpenAPI/Pact schema drift) -up-> LIHP
 @enduml
 ....

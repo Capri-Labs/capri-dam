@@ -247,6 +247,85 @@ with per-item errors reported in the `errors` array.
   folder into itself or one of its own descendants (`422`), identically to
   Move's cycle guard.
 
+[[section-download-overlay]]
+== Download overlay (bulk ZIP export)
+
+Bulk download sits directly below Copy in the same *Tools* menu
+(`ExplorerTopBar.jsx`), offered under the identical selection rule — **one or
+more** folders and/or assets. Unlike Move/Copy there is no destination to
+pick, so the request is submitted the instant the dialog opens rather than
+waiting on user input.
+
+[cols="1,3", options="header"]
+|===
+| Piece | Notes
+| `Folders/DownloadDialog.jsx` | No folder-picker — `POST /api/v1/asset_downloads` fires immediately on open (guarded by a `startedRef` ref so re-renders can't double-submit), then polls `GET /api/v1/asset_downloads/:id` every 2s (`POLL_INTERVAL_MS`) to drive a `LinearProgress` bar until the job reaches `completed`/`failed`. The dialog can be closed at any time without losing the job — it's a fire-and-forget background operation (see notification/inbox delivery below).
+| `ExplorerTopBar.jsx` — `downloadTarget` resolution | Computed under the same `moveItemCount > 0` condition as `copyTarget`, with the same **no client-side permission gate** reasoning as Copy — download only requires `:read`, which is already implied by the item being visible in the current listing.
+| Queue awareness | If the requesting user already has another `pending`/`processing` `AssetDownload` (`AssetDownload.active_for(current_user)`), the `create` response includes `queued: true` and the dialog shows an info alert (`data-testid="download-queued-notice"`) rather than leaving the user wondering why nothing visibly started.
+| Completion delivery | Once `status == "completed"`, the dialog shows a "Download ZIP" button linking straight to `download_url` (a redirect to the attached blob) — but the same link is also delivered via `Notification` + `InboxDeliveryService` (bell icon + `/inbox`), so closing the dialog/tab is always safe.
+|===
+
+=== Permission model — Download = read-on-source only
+
+Downloading never mutates anything, so it needs only one check per item,
+evaluated server-side in `Api::V1::AssetDownloadsController#create` (mirrors
+Copy's source-side check):
+
+* `folder_permission?(folder, :read)` for every selected folder and every
+  selected asset's containing folder.
+* `folder.nil?` (root-level items) always passes.
+* Admins bypass the check.
+* Unreadable items are dropped from the batch and reported individually in
+  the `errors` array (same partial-failure UX as Move/Copy) — a request is
+  only rejected outright (`422`) when *every* selected item is unreadable.
+
+=== `AssetDownloadWorker` — recursive ZIP build
+
+`AssetDownloadWorker` (Sidekiq, `queue: "downloads"`, throttled to 3
+concurrent jobs via `Sidekiq::Throttled::Worker` — lower than
+`IngestionWorker`'s limit of 10, since ZIP building is more memory/IO-heavy
+per job) does the actual work asynchronously:
+
+* Recursively walks every selected folder's active subtree (`collect_folder_entries`)
+  and every directly-selected asset (`collect_entries`), building a
+  zip-internal path for each file — folder-sourced assets are nested under
+  their folder's name, directly-selected assets are placed at the ZIP root.
+* Name collisions inside the ZIP are resolved the same way Copy resolves
+  destination-folder collisions — `" (2)"`, `" (3)"`, … appended before the
+  extension.
+* File bytes are read via `storage_path` (`StorageAdapters::LocalStorageAdapter::ROOT`
+  direct filesystem read for local storage, `storage.download` for other
+  adapters) — the same provider-agnostic, ActiveStorage-attachment-bypassing
+  approach used everywhere else assets are read from disk (see the Copy
+  section above for why `attached?`/blob lookups are unreliable for
+  UUID-keyed `Asset`/`AssetVersion` records). Assets with no `storage_path`
+  at all (legacy/seed data) are skipped rather than failing the whole job.
+* Progress (`processed_items`) is persisted to the `AssetDownload` row every
+  `PROGRESS_BATCH_SIZE` (5) files — frequent enough for a responsive progress
+  bar without hammering the database on every single file.
+* The eager, synchronous recursive count done by the controller at request
+  time (`count_items`/`count_folder_items`) — not a count discovered lazily
+  by the worker — is what makes `total_items` accurate from the very first
+  poll, avoiding a progress bar that starts meaningless and "jumps" once the
+  worker finishes walking the tree.
+* `AssetDownload#progress_percent` caps at 99% while `status` is still
+  `pending`/`processing` even if `processed_items == total_items`, and only
+  reports 100% once `status == "completed"` — avoiding a misleading
+  "100% but still spinning" UI flash during the brief gap between the last
+  file being zipped and the record's final status transition.
+* The finished ZIP is attached via `has_one_attached :zip_file` on
+  `AssetDownload` — a **bigint**-keyed model (deliberately, unlike
+  `Asset`/`Folder`), so the ZIP's own ActiveStorage attachment doesn't hit the
+  UUID/bigint `record_id` mismatch described above.
+* On success and on failure, `Notification.create!` + `InboxDeliveryService.deliver`
+  notify the user via `metadata: { "asset_download_id" => download.id }`
+  (not the `reference:` mechanism — `InboxMessage#reference_id` is a `uuid`
+  column, incompatible with `AssetDownload`'s bigint id).
+* `AssetDownloadCleanupWorker` (scheduled daily at 2:30am, mirrors
+  `MetadataExportCleanupWorker`) expires ZIPs after `RETENTION_PERIOD`
+  (7 days — shorter than `MetadataExport`'s 30 days, since ZIP archives are
+  typically much larger and shouldn't accumulate as long).
+
 == Upload & Enrich overlay
 
 `Folders/UploadWorkspace.jsx` is the full-screen upload dialog launched from the

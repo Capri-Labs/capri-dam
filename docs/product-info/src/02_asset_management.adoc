@@ -22,6 +22,9 @@ image::folder-access-acl.png[Folder Access tab, title="Folder Info Panel — Acc
 | Folder info panel | Drawer showing Properties, Metadata schema, Video Profiles, and Access (see <<module-access-control>>) tabs per folder.
 | Version history | Immutable version snapshot created on every asset replacement, with a diff view in the UI.
 | Metadata | Technical (EXIF/IPTC/XMP) auto-extracted on ingest; custom schema-driven fields configurable per folder; bulk CSV import/export.
+| Move | Select any mix of folders/assets and relocate them to a new destination in one request (`POST /api/v1/move_operations`); per-item success/failure reporting; cycle-prevention guards against moving a folder into its own descendant.
+| Copy | "Copy to…" action mirroring Move — duplicates the selection into a destination folder instead of relocating it (`POST /api/v1/copy_operations`). Folders are copied recursively (subfolders + assets); asset files share the source's existing ActiveStorage blob (no re-upload); destination name collisions are auto-resolved (`" (Copy)"`, `" (Copy 2)"`, …).
+| Bulk/folder download | "Download" action on a folder or a multi-asset selection streams a ZIP built asynchronously by a background worker, with a live progress bar in the dialog. A second download requested while one is already running is queued rather than run concurrently; the finished ZIP link is delivered to the user's Inbox and notification bell so they can navigate there and download whenever it's ready.
 | Quarantine | Security anomaly detection flags suspicious assets, queues them for admin review, then supports release back into the library or soft-delete into the Recycle Bin.
 | Folder-scoped search & filters | Filter by content type and status, search by name, inside any folder scope.
 |===
@@ -39,6 +42,13 @@ image::folder-access-acl.png[Folder Access tab, title="Folder Info Panel — Acc
 * **Schema-driven custom metadata** — folders can define their own structured
   metadata fields (not just free-text tags), enabling consistent, queryable
   attributes across a whole content library.
+* **Copy without re-upload** — bulk copy duplicates asset *records* and shares
+  the existing file bytes via the underlying ActiveStorage blob, so copying a
+  large folder tree doesn't re-transfer any file data.
+* **Fire-and-forget bulk download** — the Download dialog can be closed the
+  moment it's opened without losing the job; it's a background worker with
+  its own progress state, so users are free to keep browsing while a large
+  ZIP builds, then pick up the finished link later from their Inbox.
 =====
 
 
@@ -61,14 +71,29 @@ image::folder-access-acl.png[Folder Access tab, title="Folder Info Panel — Acc
 * Asset deep-link (`/assets?id=UUID`) rendering without a JS crash — `spec/e2e/asset_serving.e2e.spec.js`.
 * Quarantine review workspace (queue rendering, release flow, discard-to-bin flow)
   — `spec/e2e/quarantine.e2e.spec.js`.
+* Move — Tools menu overlay: moving a single folder into another folder, moving a
+  single asset to root, and the Move option correctly disabling when the selection
+  includes an item the user lacks delete rights on — `spec/e2e/move_folder_asset.e2e.spec.js`.
+* Copy — Tools menu overlay: copying a single folder (original left in place),
+  copying a single asset to root (original left in its folder), and the Copy option
+  staying enabled even without delete rights (copy only needs read+create) —
+  `spec/e2e/copy_folder_asset.e2e.spec.js`.
+* Bulk/folder download — Tools menu overlay: downloading a single asset with progress
+  through to a ready ZIP link, downloading a folder recursively, and the Download
+  option staying enabled without delete rights — `spec/e2e/asset_download.e2e.spec.js`.
 
 [.status-pending]#Pending / not yet covered#
 
 * Upload flow (drag-and-drop, presigned PUT, progress UI).
-* Folder create / rename / delete / move.
+* Folder create / rename / delete.
 * Metadata schema editor (add/remove custom fields on a folder).
 * Version history view and restore-a-previous-version flow.
 * Bulk CSV metadata import/export.
+* Multi-item (more than one folder/asset at once) Move/Copy/Download selections —
+  today's E2E coverage exercises single-item moves/copies/downloads only; the
+  underlying REST endpoints already accept and were manually verified against
+  multi-item batches (see <<module-roadmap>>), but no E2E spec drives a
+  multi-select batch through the UI yet.
 * Grid ↔ list view toggle and card-density switch on the asset browser itself
   (only the analogous toggle in the Recycle Bin is currently covered — see
   <<module-recycle-bin>>).

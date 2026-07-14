@@ -2086,7 +2086,10 @@
     "moveNoPermission": "Você não tem permissão de exclusão para um ou mais itens selecionados",
     "copyItems": "Copiar",
     "copyItemCount": "Copiar {{count}} item",
-    "copyItemCount_other": "Copiar {{count}} itens"
+    "copyItemCount_other": "Copiar {{count}} itens",
+    "downloadItems": "Baixar",
+    "downloadItemCount": "Baixar {{count}} item",
+    "downloadItemCount_other": "Baixar {{count}} itens"
   },
   "uploadGrid": {
     "staging_area": "Área de preparação",
@@ -2187,6 +2190,26 @@
       "error": "Falha ao copiar. Tente novamente."
     },
     "loadingFolders": "Carregando pastas…"
+  },
+  "downloadDialog": {
+    "title": "Baixar {{count}} item",
+    "title_other": "Baixar {{count}} itens",
+    "selectedItemsLabel": "Itens selecionados",
+    "queuedNotice": "Você já tem outro download em andamento — este foi colocado na fila e começará em breve.",
+    "readyNotice": "Seu arquivo ZIP está pronto. Também enviamos um link de download para sua caixa de entrada.",
+    "partialFailureTitle": "Alguns itens não puderam ser incluídos:",
+    "preparing": "Preparando…",
+    "runInBackground": "Executar em segundo plano",
+    "downloadZip": "Baixar ZIP",
+    "progress": {
+      "inProgress": "Compactando {{processed}} de {{total}} arquivo(s)…",
+      "done": "Compactação concluída"
+    },
+    "notifications": {
+      "queued": "Seu download foi colocado na fila atrás de outro download em andamento.",
+      "failed": "Não foi possível gerar o download. Tente novamente.",
+      "error": "Não foi possível iniciar o download. Tente novamente."
+    }
   },
   "applySchemaDialog": {
     "title": "Aplicar esquema de metadados",

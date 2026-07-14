@@ -2086,7 +2086,10 @@
     "moveNoPermission": "Sie haben keine Löschberechtigung für ein oder mehrere ausgewählte Elemente",
     "copyItems": "Kopieren",
     "copyItemCount": "{{count}} Element kopieren",
-    "copyItemCount_other": "{{count}} Elemente kopieren"
+    "copyItemCount_other": "{{count}} Elemente kopieren",
+    "downloadItems": "Herunterladen",
+    "downloadItemCount": "{{count}} Element herunterladen",
+    "downloadItemCount_other": "{{count}} Elemente herunterladen"
   },
   "uploadGrid": {
     "staging_area": "Bereitstellungsbereich",
@@ -2187,6 +2190,26 @@
       "error": "Kopieren fehlgeschlagen. Bitte erneut versuchen."
     },
     "loadingFolders": "Ordner werden geladen…"
+  },
+  "downloadDialog": {
+    "title": "{{count}} Element herunterladen",
+    "title_other": "{{count}} Elemente herunterladen",
+    "selectedItemsLabel": "Ausgewählte Elemente",
+    "queuedNotice": "Sie haben bereits einen anderen Download in Bearbeitung – dieser wurde eingereiht und startet in Kürze.",
+    "readyNotice": "Ihre ZIP-Datei ist fertig. Wir haben außerdem einen Download-Link an Ihren Posteingang gesendet.",
+    "partialFailureTitle": "Einige Elemente konnten nicht eingeschlossen werden:",
+    "preparing": "Wird vorbereitet…",
+    "runInBackground": "Im Hintergrund ausführen",
+    "downloadZip": "ZIP herunterladen",
+    "progress": {
+      "inProgress": "Komprimiere {{processed}} von {{total}} Datei(en)…",
+      "done": "Komprimierung abgeschlossen"
+    },
+    "notifications": {
+      "queued": "Ihr Download wurde hinter einem anderen laufenden Download eingereiht.",
+      "failed": "Der Download konnte nicht erstellt werden. Bitte versuchen Sie es erneut.",
+      "error": "Der Download konnte nicht gestartet werden. Bitte versuchen Sie es erneut."
+    }
   },
   "applySchemaDialog": {
     "title": "Metadatenschema anwenden",

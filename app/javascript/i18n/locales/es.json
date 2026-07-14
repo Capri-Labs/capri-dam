@@ -2086,7 +2086,10 @@
     "moveNoPermission": "No tienes permiso de eliminación para uno o más elementos seleccionados",
     "copyItems": "Copiar",
     "copyItemCount": "Copiar {{count}} elemento",
-    "copyItemCount_other": "Copiar {{count}} elementos"
+    "copyItemCount_other": "Copiar {{count}} elementos",
+    "downloadItems": "Descargar",
+    "downloadItemCount": "Descargar {{count}} elemento",
+    "downloadItemCount_other": "Descargar {{count}} elementos"
   },
   "uploadGrid": {
     "staging_area": "Área de preparación",
@@ -2187,6 +2190,26 @@
       "error": "No se pudo copiar. Inténtalo de nuevo."
     },
     "loadingFolders": "Cargando carpetas…"
+  },
+  "downloadDialog": {
+    "title": "Descargar {{count}} elemento",
+    "title_other": "Descargar {{count}} elementos",
+    "selectedItemsLabel": "Elementos seleccionados",
+    "queuedNotice": "Ya tienes otra descarga en curso; esta se ha puesto en cola y comenzará en breve.",
+    "readyNotice": "Tu archivo ZIP está listo. También hemos enviado un enlace de descarga a tu bandeja de entrada.",
+    "partialFailureTitle": "Algunos elementos no se pudieron incluir:",
+    "preparing": "Preparando…",
+    "runInBackground": "Ejecutar en segundo plano",
+    "downloadZip": "Descargar ZIP",
+    "progress": {
+      "inProgress": "Comprimiendo {{processed}} de {{total}} archivo(s)…",
+      "done": "Compresión completada"
+    },
+    "notifications": {
+      "queued": "Tu descarga se ha puesto en cola detrás de otra descarga en curso.",
+      "failed": "No se pudo generar la descarga. Inténtalo de nuevo.",
+      "error": "No se pudo iniciar la descarga. Inténtalo de nuevo."
+    }
   },
   "applySchemaDialog": {
     "title": "Aplicar esquema de metadatos",

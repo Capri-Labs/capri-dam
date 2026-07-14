@@ -12,6 +12,11 @@ every 1.day, at: "2:15 am" do
   runner "MetadataImportCleanupWorker.perform_async"
 end
 
+# Purge bulk asset/folder ZIP downloads older than 7 days.
+every 1.day, at: "2:30 am" do
+  runner "AssetDownloadCleanupWorker.perform_async"
+end
+
 # Enterprise Recycle Bin purge — permanently destroys expired trashed items.
 # Policy (retention_days, workflow_behavior, etc.) is configurable via
 # GET/PUT /api/v1/bin/retention_policy.

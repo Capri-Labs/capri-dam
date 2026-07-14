@@ -2086,7 +2086,10 @@
     "moveNoPermission": "您没有一个或多个所选项目的删除权限",
     "copyItems": "复制",
     "copyItemCount": "复制 {{count}} 个项目",
-    "copyItemCount_other": "复制 {{count}} 个项目"
+    "copyItemCount_other": "复制 {{count}} 个项目",
+    "downloadItems": "下载",
+    "downloadItemCount": "下载 {{count}} 个项目",
+    "downloadItemCount_other": "下载 {{count}} 个项目"
   },
   "uploadGrid": {
     "staging_area": "暂存区",
@@ -2187,6 +2190,26 @@
       "error": "复制失败，请重试。"
     },
     "loadingFolders": "正在加载文件夹…"
+  },
+  "downloadDialog": {
+    "title": "下载 {{count}} 个项目",
+    "title_other": "下载 {{count}} 个项目",
+    "selectedItemsLabel": "已选项目",
+    "queuedNotice": "您已有另一个下载正在进行——此下载已排队，稍后将开始。",
+    "readyNotice": "您的 ZIP 文件已准备就绪。我们还向您的收件箱发送了下载链接。",
+    "partialFailureTitle": "部分项目无法包含在内：",
+    "preparing": "准备中…",
+    "runInBackground": "在后台运行",
+    "downloadZip": "下载 ZIP",
+    "progress": {
+      "inProgress": "正在压缩 {{total}} 个文件中的第 {{processed}} 个…",
+      "done": "压缩完成"
+    },
+    "notifications": {
+      "queued": "您的下载已排在另一个正在进行的下载之后。",
+      "failed": "无法生成下载文件，请重试。",
+      "error": "无法启动下载，请重试。"
+    }
   },
   "applySchemaDialog": {
     "title": "应用元数据架构",

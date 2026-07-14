@@ -2086,7 +2086,10 @@
     "moveNoPermission": "선택한 항목 중 하나 이상에 대한 삭제 권한이 없습니다",
     "copyItems": "복사",
     "copyItemCount": "{{count}}개 항목 복사",
-    "copyItemCount_other": "{{count}}개 항목 복사"
+    "copyItemCount_other": "{{count}}개 항목 복사",
+    "downloadItems": "다운로드",
+    "downloadItemCount": "{{count}}개 항목 다운로드",
+    "downloadItemCount_other": "{{count}}개 항목 다운로드"
   },
   "uploadGrid": {
     "staging_area": "스테이징 영역",
@@ -2187,6 +2190,26 @@
       "error": "복사에 실패했습니다. 다시 시도해 주세요."
     },
     "loadingFolders": "폴더를 불러오는 중…"
+  },
+  "downloadDialog": {
+    "title": "{{count}}개 항목 다운로드",
+    "title_other": "{{count}}개 항목 다운로드",
+    "selectedItemsLabel": "선택한 항목",
+    "queuedNotice": "이미 다른 다운로드가 진행 중입니다. 이 다운로드는 대기열에 추가되었으며 곧 시작됩니다.",
+    "readyNotice": "ZIP 파일이 준비되었습니다. 받은편지함으로 다운로드 링크도 보내드렸습니다.",
+    "partialFailureTitle": "일부 항목을 포함할 수 없습니다:",
+    "preparing": "준비 중…",
+    "runInBackground": "백그라운드에서 실행",
+    "downloadZip": "ZIP 다운로드",
+    "progress": {
+      "inProgress": "{{total}}개 중 {{processed}}개 파일 압축 중…",
+      "done": "압축 완료"
+    },
+    "notifications": {
+      "queued": "다운로드가 다른 진행 중인 다운로드 뒤에 대기 중입니다.",
+      "failed": "다운로드를 생성할 수 없습니다. 다시 시도해 주세요.",
+      "error": "다운로드를 시작할 수 없습니다. 다시 시도해 주세요."
+    }
   },
   "applySchemaDialog": {
     "title": "메타데이터 스키마 적용",
