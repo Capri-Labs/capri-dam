@@ -80,11 +80,23 @@ RSpec.describe 'Api::V1::CopyOperations coverage', type: :request do
       expect(child.reload.parent_id).to eq(root_folder.id)
     end
 
-    it 'duplicates the active version file by attaching the same underlying blob (no re-upload)' do
-      destination = create(:folder, user: admin, name: 'Destination')
-      asset       = create(:asset, user: admin, folder: nil, title: 'WithFile')
-      version     = create(:asset_version, asset: asset, version_number: 1)
-      version.file.attach(io: StringIO.new('hello world'), filename: 'a.txt', content_type: 'text/plain')
+    it 'duplicates the active version file on disk via storage_path (the authoritative file location)' do
+      # storage_path — not the legacy ActiveStorage attachment — is how the
+      # rest of the app (AssetsController#local, AssetProcessorWorker) locates
+      # an asset's file, so Copy must duplicate the physical file at that path
+      # rather than relying on ActiveStorage's `.attach`/`.attached?`, which is
+      # unreliable for these uuid-keyed models (active_storage_attachments
+      # .record_id is a bigint column, so every attachment's record_id is
+      # coerced to 0).
+      destination  = create(:folder, user: admin, name: 'Destination')
+      asset        = create(:asset, user: admin, folder: nil, title: 'WithFile')
+      source_path  = "#{asset.uuid}/v1_original.txt"
+      StorageAdapters::LocalStorageAdapter::ROOT.call.join(source_path).tap do |full_path|
+        FileUtils.mkdir_p(full_path.dirname)
+        File.write(full_path, 'hello world')
+      end
+      version = create(:asset_version, asset: asset, version_number: 1,
+                                        properties: { 'storage_path' => source_path })
       asset.update!(active_version_id: version.id)
 
       post '/api/v1/copy_operations', params: { asset_ids: [ asset.id ], destination_folder_id: destination.id }, as: :json
@@ -93,8 +105,13 @@ RSpec.describe 'Api::V1::CopyOperations coverage', type: :request do
       new_asset = Asset.active.find_by(folder_id: destination.id, title: 'WithFile')
       expect(new_asset).to be_present
       expect(new_asset.active_version).to be_present
-      expect(new_asset.active_version.file).to be_attached
-      expect(new_asset.active_version.file.blob_id).to eq(version.file.blob_id)
+      new_storage_path = new_asset.active_version.properties['storage_path']
+      expect(new_storage_path).to be_present
+      expect(new_storage_path).not_to eq(source_path)
+      copied_full_path = StorageAdapters::LocalStorageAdapter::ROOT.call.join(new_storage_path)
+      expect(File.read(copied_full_path)).to eq('hello world')
+    ensure
+      FileUtils.rm_rf(StorageAdapters::LocalStorageAdapter::ROOT.call.join(asset.uuid)) if defined?(asset)
     end
 
     it 'appends " (Copy)" when a folder of the same name already exists in the destination, but keeps the ' \

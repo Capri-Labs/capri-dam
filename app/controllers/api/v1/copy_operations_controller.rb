@@ -143,11 +143,8 @@ module Api
         new_folder
       end
 
-      # Duplicates +asset+ — its metadata plus the active version's attached
-      # file — into +destination_id+. The file is duplicated by attaching
-      # the *same* ActiveStorage blob to a new version (blobs are
-      # content-addressable and safely shared across attachments), so no
-      # bytes are re-uploaded or re-stored.
+      # Duplicates +asset+ — its metadata plus the active version's stored
+      # file — into +destination_id+.
       #
       # @param asset [Asset] source asset
       # @param destination_id [String, Integer, nil] destination folder id
@@ -164,19 +161,50 @@ module Api
         new_asset.save!
 
         source_version = asset.active_version
-        if source_version&.file&.attached?
+        if source_version
           new_version = new_asset.asset_versions.new(
             version_number: 1,
             action_type: "copy",
             properties: source_version.properties,
             created_by: current_user,
           )
-          new_version.file.attach(source_version.file.blob)
+          copy_version_file(source_version, new_version, new_asset)
           new_version.save!
           new_asset.update!(active_version_id: new_version.id)
         end
 
         new_asset
+      end
+
+      # Duplicates the physical file backing +source_version+ onto a new
+      # path for +new_version+/+new_asset+, using whichever storage
+      # provider is currently active (local disk, S3, GCS, ...).
+      #
+      # +storage_path+ — not the legacy ActiveStorage attachment — is the
+      # authoritative location of an asset's file (see
+      # Api::V1::AssetsController and AssetProcessorWorker, which write it
+      # right after upload/processing and use it to serve every request).
+      # ActiveStorage attachments are unreliable for these uuid-keyed
+      # models: active_storage_attachments.record_id is a bigint column,
+      # so every attachment's record_id is coerced to 0 and `attached?`
+      # can return true for a *different* record's blob. Copying via
+      # +storage_path+ avoids that pitfall entirely and matches how the
+      # rest of the app treats "the file" as source of truth.
+      #
+      # Falls back to sharing the legacy ActiveStorage blob only when the
+      # source version has no +storage_path+ (e.g. old/seed data) but does
+      # have a real attachment.
+      def copy_version_file(source_version, new_version, new_asset)
+        storage_path = source_version.properties["storage_path"]
+
+        if storage_path.present?
+          ext = File.extname(storage_path)
+          dest_path = "#{new_asset.uuid}/v1_#{SecureRandom.hex(4)}#{ext}"
+          StorageManager.active_adapter.copy(storage_path, dest_path)
+          new_version.properties = new_version.properties.merge("storage_path" => dest_path)
+        elsif source_version.file&.attached?
+          new_version.file.attach(source_version.file.blob)
+        end
       end
 
       # Keeps the source name when there's no collision in the destination

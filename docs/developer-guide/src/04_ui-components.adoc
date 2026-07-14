@@ -225,10 +225,17 @@ with per-item errors reported in the `errors` array.
   every descendant subfolder and asset is duplicated alongside it — rooted
   under a single new top-level folder in the destination.
 * Copying an **asset** duplicates its metadata (`properties`, `status`) plus
-  its active version's attached file. The file itself is never re-uploaded:
-  the new `AssetVersion` attaches the *same* underlying ActiveStorage blob
-  (`action_type: "copy"`), which is safe because blobs are
-  content-addressable and already designed to be shared across attachments.
+  its active version's stored file. The new `AssetVersion`
+  (`action_type: "copy"`) gets its own physical file, copied at the
+  `storage_path` layer via `StorageManager.active_adapter.copy` — the same
+  provider-agnostic mechanism (local disk, S3, GCS, ...) the upload/processing
+  pipeline uses. `storage_path` is deliberately preferred over the legacy
+  ActiveStorage attachment: `active_storage_attachments.record_id` is a
+  `bigint` column but `Asset`/`AssetVersion` use UUID primary keys, so every
+  attachment's `record_id` is coerced to `0` and `file.attached?` can
+  spuriously match a *different* record's blob. Falls back to sharing the
+  ActiveStorage blob only when a version has no `storage_path` at all (e.g.
+  legacy/seed data).
 * All copies are owned by the requesting user (`current_user`), matching the
   fact that a copy is genuinely new content gated by the destination's
   `:create` check, not a transfer of the original's ownership.
