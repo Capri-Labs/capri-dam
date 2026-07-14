@@ -3,6 +3,7 @@ module Types
     description "The single mutation register for strict state alterations."
 
     field :update_asset_metadata, mutation: Mutations::UpdateAssetMetadata
+    field :publish_asset,         mutation: Mutations::PublishAsset
 
     field :create_collection,            mutation: Mutations::CreateCollection
     field :add_asset_to_collection,      mutation: Mutations::AddAssetToCollection

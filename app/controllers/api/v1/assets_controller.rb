@@ -16,6 +16,8 @@
 # | GET    | /api/v1/assets/:id/metadata_schema | {#metadata_schema} | Resolved schema pre-filled for this asset |
 # | POST   | /api/v1/assets/:id/restore | {#restore} | Recover a soft-deleted asset |
 # | DELETE | /api/v1/assets/:id/permanent | {#permanent_delete} | Permanently destroy asset + files |
+# | POST   | /api/v1/assets/:id/publish | {#publish} | Directly publish an asset (no workflow required) |
+# | POST   | /api/v1/assets/:id/unpublish | {#unpublish} | Revert an asset to unpublished |
 # | GET    | /api/v1/bin | {#bin} | Trashed assets & folders |
 # | GET    | /api/v1/assets/:id/workflow_history | {#workflow_history} | Workflow task history |
 # | POST   | /api/v1/assets/check_hashes | {#check_hashes} | Duplicate-detection via SHA-256 |
@@ -90,7 +92,7 @@ module Api
       # the token check bypass rather than gate it.
       before_action :authenticate_hybrid!,
                     unless: -> { action_name == "serve_local" && valid_collection_share_for_asset?(params[:uuid], params[:share_token]) }
-      before_action :require_write_scope!, only: %i[create update destroy restore permanent_delete update_metadata process_image]
+      before_action :require_write_scope!, only: %i[create update destroy restore permanent_delete update_metadata process_image publish unpublish]
 
       # Usage events the frontend is allowed to record via {#track_event}.
       # See {#track_event} docs for why these are app-observed, not CDN edge hits.
@@ -740,6 +742,50 @@ module Api
         @asset.restore
         FolderContentsCache.bust(@asset.folder_id)
         render json: { success: true, message: "Asset restored" }
+      end
+
+      # Directly publishes an asset — no workflow required.
+      #
+      # Sets {Asset#published_at} to now. Callers select one or more assets
+      # (folders are not publishable, only assets) and issue this once per
+      # asset id; see the Explorer's Publish button next to Tools.
+      #
+      # @return [void] renders +200 OK+ with the serialised asset
+      # @return [void] renders +404+ when the asset is not found
+      # Directly publishes an asset — no workflow required.
+      #
+      # Sets {Asset#published_at} to now, unless +scheduled_at+ is given as a
+      # future timestamp, in which case a {ScheduledPublishAction} is queued
+      # instead ("Publish Later") and {PublishSchedulerWorker} applies it once
+      # due. Callers select one or more assets (folders are not publishable,
+      # only assets) and issue this once per asset id; see the Explorer's
+      # "Manage Publish" menu next to Tools.
+      #
+      # @return [void] renders +200 OK+ with the serialised asset (immediate),
+      #   or +202 Accepted+ with the queued schedule ("Publish Later")
+      # @return [void] renders +404+ when the asset is not found
+      # @return [void] renders +422+ when +scheduled_at+ can't be parsed
+      def publish
+        schedule_or_apply!("publish")
+      rescue ActiveRecord::RecordNotFound
+        render json: { error: "Asset not found" }, status: :not_found
+      end
+
+      # Reverts a previously-published asset back to unpublished.
+      #
+      # Clears {Asset#published_at} immediately, unless +scheduled_at+ is a
+      # future timestamp ("Unpublish Later" — see {#publish} for the shared
+      # scheduling behaviour). Safe to call on an asset that is already
+      # unpublished (idempotent no-op).
+      #
+      # @return [void] renders +200 OK+ with the serialised asset (immediate),
+      #   or +202 Accepted+ with the queued schedule ("Unpublish Later")
+      # @return [void] renders +404+ when the asset is not found
+      # @return [void] renders +422+ when +scheduled_at+ can't be parsed
+      def unpublish
+        schedule_or_apply!("unpublish")
+      rescue ActiveRecord::RecordNotFound
+        render json: { error: "Asset not found" }, status: :not_found
       end
 
       # Permanently deletes an asset and all its physical files.
@@ -1415,6 +1461,8 @@ module Api
           title: asset.title,
           status: normalised_asset_status(asset),
           version: active_v&.version_number || 1,
+          published: asset.published?,
+          published_at: asset.published_at,
           # Merge parent properties with active version properties so React sees everything.
           # `properties:` is the canonical key consumed by AssetViewer/AssetExplorer;
           # `metadata:` is kept as a legacy alias for any other existing consumers.
@@ -1437,6 +1485,58 @@ module Api
 
       def find_asset_record(scope = Asset)
         scope.find_by(id: params[:id]) || scope.find_by!(uuid: params[:id])
+      end
+
+      # Shared implementation for {#publish}/{#unpublish}: applies the action
+      # immediately, or — when +scheduled_at+ is a parseable future timestamp
+      # — replaces any existing pending schedule of the same type with a new
+      # {ScheduledPublishAction} for {PublishSchedulerWorker} to pick up later.
+      #
+      # @param action_type ["publish", "unpublish"]
+      def schedule_or_apply!(action_type)
+        @asset = find_asset_record(Asset.active)
+        check_asset_modify!(@asset)
+        return if performed?
+
+        scheduled_at = parse_scheduled_at(params[:scheduled_at])
+        if params[:scheduled_at].present? && scheduled_at.nil?
+          return render json: { error: "Invalid scheduled_at timestamp" }, status: :unprocessable_entity
+        end
+
+        if scheduled_at && scheduled_at.future?
+          # Superseding a still-pending schedule (rather than erroring on the
+          # unique index) lets a user change their mind about the time
+          # without needing a separate "cancel" step first.
+          @asset.scheduled_publish_actions.pending.where(action_type: action_type)
+                .update_all(status: ScheduledPublishAction.statuses[:cancelled]) # rubocop:disable Rails/SkipsModelValidations
+
+          scheduled_action = @asset.scheduled_publish_actions.create!(
+            action_type: action_type,
+            scheduled_at: scheduled_at,
+            created_by: active_resource_owner,
+          )
+          render json: {
+            success: true,
+            scheduled: true,
+            id: scheduled_action.id,
+            action_type: scheduled_action.action_type,
+            scheduled_at: scheduled_action.scheduled_at,
+          }, status: :accepted
+        else
+          @asset.public_send("#{action_type}!")
+          FolderContentsCache.bust(@asset.folder_id)
+          render json: format_asset(@asset), status: :ok
+        end
+      end
+
+      # @param value [String, nil]
+      # @return [Time, nil] parsed timestamp, or +nil+ when blank/unparseable
+      def parse_scheduled_at(value)
+        return nil if value.blank?
+
+        Time.zone.parse(value.to_s)
+      rescue ArgumentError, TypeError
+        nil
       end
 
       # Resolves the metadata schema that applies to +asset+, in priority order:

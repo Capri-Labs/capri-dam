@@ -506,7 +506,8 @@ CREATE TABLE public.assets (
     title character varying NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
     user_id bigint NOT NULL,
-    uuid character varying NOT NULL
+    uuid character varying NOT NULL,
+    published_at timestamp(6) without time zone
 );
 
 
@@ -1651,6 +1652,43 @@ ALTER SEQUENCE public.report_snapshots_id_seq OWNED BY public.report_snapshots.i
 
 
 --
+-- Name: scheduled_publish_actions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.scheduled_publish_actions (
+    id bigint NOT NULL,
+    asset_id uuid NOT NULL,
+    action_type character varying NOT NULL,
+    scheduled_at timestamp(6) without time zone NOT NULL,
+    status integer DEFAULT 0 NOT NULL,
+    created_by_id bigint NOT NULL,
+    executed_at timestamp(6) without time zone,
+    error_message text,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: scheduled_publish_actions_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.scheduled_publish_actions_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: scheduled_publish_actions_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.scheduled_publish_actions_id_seq OWNED BY public.scheduled_publish_actions.id;
+
+
+--
 -- Name: schema_migrations; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -2604,6 +2642,13 @@ ALTER TABLE ONLY public.report_snapshots ALTER COLUMN id SET DEFAULT nextval('pu
 
 
 --
+-- Name: scheduled_publish_actions id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.scheduled_publish_actions ALTER COLUMN id SET DEFAULT nextval('public.scheduled_publish_actions_id_seq'::regclass);
+
+
+--
 -- Name: settings id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -3104,6 +3149,14 @@ ALTER TABLE ONLY public.report_definitions
 
 ALTER TABLE ONLY public.report_snapshots
     ADD CONSTRAINT report_snapshots_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: scheduled_publish_actions scheduled_publish_actions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.scheduled_publish_actions
+    ADD CONSTRAINT scheduled_publish_actions_pkey PRIMARY KEY (id);
 
 
 --
@@ -3613,6 +3666,13 @@ CREATE INDEX index_assets_on_properties_content_type ON public.assets USING btre
 --
 
 CREATE INDEX index_assets_on_properties_file_size ON public.assets USING btree ((((properties ->> 'file_size'::text))::bigint)) WHERE ((properties ->> 'file_size'::text) ~ '^[0-9]+$'::text);
+
+
+--
+-- Name: index_assets_on_published_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_assets_on_published_at ON public.assets USING btree (published_at);
 
 
 --
@@ -4155,6 +4215,13 @@ CREATE UNIQUE INDEX index_oauth_applications_on_uid ON public.oauth_applications
 
 
 --
+-- Name: index_one_pending_schedule_per_asset_action; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_one_pending_schedule_per_asset_action ON public.scheduled_publish_actions USING btree (asset_id, action_type) WHERE (status = 0);
+
+
+--
 -- Name: index_personal_access_tokens_on_token_digest; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -4215,6 +4282,20 @@ CREATE INDEX index_renditions_on_storage_backend_id ON public.renditions USING b
 --
 
 CREATE INDEX index_report_snapshots_on_report_definition_id ON public.report_snapshots USING btree (report_definition_id);
+
+
+--
+-- Name: index_scheduled_publish_actions_on_asset_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_scheduled_publish_actions_on_asset_id ON public.scheduled_publish_actions USING btree (asset_id);
+
+
+--
+-- Name: index_scheduled_publish_actions_on_status_and_scheduled_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_scheduled_publish_actions_on_status_and_scheduled_at ON public.scheduled_publish_actions USING btree (status, scheduled_at);
 
 
 --
@@ -4644,6 +4725,14 @@ ALTER TABLE ONLY public.assets
 
 
 --
+-- Name: scheduled_publish_actions fk_rails_3aa18beefd; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.scheduled_publish_actions
+    ADD CONSTRAINT fk_rails_3aa18beefd FOREIGN KEY (asset_id) REFERENCES public.assets(id);
+
+
+--
 -- Name: user_group_memberships fk_rails_42022c51df; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -4833,6 +4922,14 @@ ALTER TABLE ONLY public.inbox_messages
 
 ALTER TABLE ONLY public.duplicate_group_assets
     ADD CONSTRAINT fk_rails_8f767faa5d FOREIGN KEY (duplicate_group_id) REFERENCES public.duplicate_groups(id);
+
+
+--
+-- Name: scheduled_publish_actions fk_rails_935a3cb13b; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.scheduled_publish_actions
+    ADD CONSTRAINT fk_rails_935a3cb13b FOREIGN KEY (created_by_id) REFERENCES public.users(id);
 
 
 --
@@ -5090,6 +5187,8 @@ ALTER TABLE ONLY public.email_templates
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260714170000'),
+('20260714165000'),
 ('20260714134500'),
 ('20260710120000'),
 ('20260709163140'),

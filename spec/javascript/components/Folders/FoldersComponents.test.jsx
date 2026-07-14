@@ -1183,6 +1183,7 @@ describe('Folders components', () => {
     const handleCopyPath = jest.fn();
     render(
       <ExplorerTopBar
+        pageTitle="All Assets"
         currentId={12}
         viewData={{ breadcrumbs: [{ id: 'root', name: 'Home' }, { id: 12, name: 'Catalog' }], folders: [{ id: 13, name: 'Child' }], assets: [{ id: 20, title: 'Asset' }] }}
         viewMode="active"
@@ -1202,12 +1203,42 @@ describe('Folders components', () => {
       />,
     );
 
+    // The page title (e.g. "All Assets") now renders inline, directly next
+    // to the breadcrumb, instead of as a separate heading row above the
+    // whole Explorer (see FoldersManager.jsx).
+    expect(screen.getByText('All Assets')).toBeInTheDocument();
+
     fireEvent.click(iconButton('ContentCopyIcon'));
     expect(handleCopyPath).toHaveBeenCalled();
 
     fireEvent.click(screen.getByRole('button', { name: 'explorerTopBar.smartActions' }));
     fireEvent.click(await screen.findByText('explorerTopBar.autoTagEnrich'));
     expect(mockNotify).toHaveBeenCalledWith('explorerTopBar.notifications.autoEnrichQueued', 'info');
+  });
+
+  it('omits the inline page title element entirely when ExplorerTopBar is used without one (e.g. mounted directly by App.jsx/Registry.jsx)', () => {
+    render(
+      <ExplorerTopBar
+        currentId="root"
+        viewData={{ breadcrumbs: [], folders: [], assets: [] }}
+        viewMode="active"
+        setViewMode={jest.fn()}
+        handleNavigate={jest.fn()}
+        handleCopyPath={jest.fn()}
+        isAllSelected={false}
+        handleSelectAll={jest.fn()}
+        hasSelection={false}
+        handleDeleteSelected={jest.fn()}
+        handleRestoreSelected={jest.fn()}
+        handlePermanentDelete={jest.fn()}
+        setOpenFolderDialog={jest.fn()}
+        onUploadSuccess={jest.fn()}
+        selectedItems={{ folders: [], assets: [] }}
+        onSchemaApplied={jest.fn()}
+      />,
+    );
+
+    expect(screen.getByText('explorerTopBar.home')).toBeInTheDocument();
   });
 
   it('renames a single selected folder via the Tools menu Rename overlay', async () => {
@@ -1928,6 +1959,113 @@ describe('Folders components', () => {
     expect(await screen.findByText(/You do not have permission to read this asset\./)).toBeInTheDocument();
   });
 
+  it('shows the "Manage Publish" button only for an all-assets selection and fires immediate publish/unpublish', async () => {
+    const handlePublishSelected = jest.fn();
+    const handleUnpublishSelected = jest.fn();
+
+    const { rerender } = render(
+      <ExplorerTopBar
+        currentId={12}
+        viewData={{ breadcrumbs: [{ id: 'root', name: 'Home' }, { id: 12, name: 'Catalog' }], folders: [{ id: 13, name: 'Child' }], assets: [{ id: 20, title: 'Asset' }] }}
+        viewMode="active"
+        setViewMode={jest.fn()}
+        handleNavigate={jest.fn()}
+        handleCopyPath={jest.fn()}
+        isAllSelected={false}
+        handleSelectAll={jest.fn()}
+        hasSelection
+        handleDeleteSelected={jest.fn()}
+        handleRestoreSelected={jest.fn()}
+        handlePermanentDelete={jest.fn()}
+        handlePublishSelected={handlePublishSelected}
+        handleUnpublishSelected={handleUnpublishSelected}
+        setOpenFolderDialog={jest.fn()}
+        onUploadSuccess={jest.fn()}
+        selectedItems={{ folders: [ 13 ], assets: [ 20 ] }}
+        onSchemaApplied={jest.fn()}
+      />,
+    );
+
+    // A folder is part of the selection alongside the asset — Manage
+    // Publish must stay hidden ("Publish/Unpublish option should only for
+    // assets").
+    expect(screen.queryByTestId('manage-publish-button')).not.toBeInTheDocument();
+
+    rerender(
+      <ExplorerTopBar
+        currentId={12}
+        viewData={{ breadcrumbs: [{ id: 'root', name: 'Home' }, { id: 12, name: 'Catalog' }], folders: [{ id: 13, name: 'Child' }], assets: [{ id: 20, title: 'Asset' }] }}
+        viewMode="active"
+        setViewMode={jest.fn()}
+        handleNavigate={jest.fn()}
+        handleCopyPath={jest.fn()}
+        isAllSelected={false}
+        handleSelectAll={jest.fn()}
+        hasSelection
+        handleDeleteSelected={jest.fn()}
+        handleRestoreSelected={jest.fn()}
+        handlePermanentDelete={jest.fn()}
+        handlePublishSelected={handlePublishSelected}
+        handleUnpublishSelected={handleUnpublishSelected}
+        setOpenFolderDialog={jest.fn()}
+        onUploadSuccess={jest.fn()}
+        selectedItems={{ folders: [], assets: [ 20 ] }}
+        onSchemaApplied={jest.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId('manage-publish-button'));
+    fireEvent.click(await screen.findByTestId('publish-menu-publish'));
+    expect(handlePublishSelected).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByTestId('manage-publish-button'));
+    fireEvent.click(await screen.findByTestId('publish-menu-unpublish'));
+    expect(handleUnpublishSelected).toHaveBeenCalledTimes(1);
+  });
+
+  it('opens PublishDialog for "Publish Later" and schedules the selected assets', async () => {
+    global.fetch = mockFetch({
+      'POST /api/v1/assets/20/publish': { id: 20, published: false, scheduled: true },
+    });
+
+    render(
+      <ExplorerTopBar
+        currentId={12}
+        viewData={{ breadcrumbs: [{ id: 'root', name: 'Home' }, { id: 12, name: 'Catalog' }], folders: [], assets: [{ id: 20, title: 'Asset' }] }}
+        viewMode="active"
+        setViewMode={jest.fn()}
+        handleNavigate={jest.fn()}
+        handleCopyPath={jest.fn()}
+        isAllSelected={false}
+        handleSelectAll={jest.fn()}
+        hasSelection
+        handleDeleteSelected={jest.fn()}
+        handleRestoreSelected={jest.fn()}
+        handlePermanentDelete={jest.fn()}
+        handlePublishSelected={jest.fn()}
+        handleUnpublishSelected={jest.fn()}
+        setOpenFolderDialog={jest.fn()}
+        onUploadSuccess={jest.fn()}
+        selectedItems={{ folders: [], assets: [ 20 ] }}
+        onSchemaApplied={jest.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId('manage-publish-button'));
+    fireEvent.click(await screen.findByTestId('publish-menu-publish-later'));
+
+    expect(await screen.findByText('publishDialog.publishLaterTitle')).toBeInTheDocument();
+    fireEvent.change(screen.getByTestId('publish-dialog-datetime'), { target: { value: '2999-01-01T10:00' } });
+    fireEvent.click(screen.getByTestId('publish-dialog-submit'));
+
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith(
+        '/api/v1/assets/20/publish',
+        expect.objectContaining({ method: 'POST' }),
+      );
+    });
+  });
+
   it('sends the actual current selection (not a stale/incorrect reference) when forcing an Edge CDN sync', async () => {
     global.fetch = mockFetch({
       'POST /api/v1/edge_operations/sync': { success: true, message: 'Metadata sync initiated for 1 folders and 2 assets.' },
@@ -2125,11 +2263,10 @@ describe('Folders components', () => {
     await waitFor(() => expect(onFolderUpdated).toHaveBeenCalledWith({ id: 9, name: 'Updated Folder', description: 'New description' }));
   });
 
-  it('renders FoldersManager heading and mounts AssetExplorer', () => {
+  it('mounts AssetExplorer with the page title passed through as a prop (rendered inline in ExplorerTopBar\'s breadcrumb row)', () => {
     render(<FoldersManager someProp="value" />);
-    expect(screen.getByText('foldersManager.title')).toBeInTheDocument();
     expect(screen.getByTestId('asset-explorer')).toBeInTheDocument();
-    expect(mockAssetExplorer).toHaveBeenCalledWith(expect.objectContaining({ someProp: 'value' }));
+    expect(mockAssetExplorer).toHaveBeenCalledWith(expect.objectContaining({ someProp: 'value', pageTitle: 'foldersManager.title' }));
   });
 
   it('renders ImageEditorDialog and saves current adjustments', async () => {

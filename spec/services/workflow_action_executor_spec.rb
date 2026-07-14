@@ -47,7 +47,9 @@ RSpec.describe WorkflowActionExecutor do
     it 'publish sets asset status to approved' do
       step = build_step('publish', { 'cdnSync' => false })
       described_class.new(instance, step).call
-      expect(asset.reload.read_attribute_before_type_cast('status')).to eq(Asset.statuses['approved'].to_s)
+      asset.reload
+      expect(asset.read_attribute_before_type_cast('status')).to eq(Asset.statuses['approved'].to_s)
+      expect(asset.published_at).to be_present
     end
 
     it 'update_metadata writes a property with token substitution (legacy single pair)' do

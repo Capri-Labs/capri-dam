@@ -289,6 +289,136 @@ RSpec.describe 'Api::V1::Assets', type: :request do
   end
 
   # ===========================================================================
+  # PUBLISH — POST /api/v1/assets/{id}/publish
+  # ===========================================================================
+  path '/api/v1/assets/{id}/publish' do
+    parameter name: :id, in: :path, type: :string, required: true, description: 'Asset ID'
+
+    post 'Directly publish an asset (no workflow required)' do
+      tags 'Assets'
+      consumes 'application/json'
+      produces 'application/json'
+      security [ Bearer: [] ]
+      description <<~DESC
+        Sets `published_at` immediately, unless `scheduled_at` is a future ISO8601
+        timestamp — in which case a queued `ScheduledPublishAction` ("Publish Later")
+        is created instead and applied later by `PublishSchedulerWorker`.
+        Requires `modify` permission on the asset's parent folder.
+      DESC
+
+      parameter name: :payload, in: :body, required: false, schema: {
+        type: :object,
+        properties: {
+          scheduled_at: { type: :string, format: 'date-time', nullable: true,
+                          example: '2026-08-01T09:00:00Z' },
+        },
+      }
+
+      response '200', 'Asset published immediately' do
+        schema type: :object,
+               properties: {
+                 id:            { oneOf: [ { type: :integer }, { type: :string } ] },
+                 uuid:          { type: :string, format: :uuid },
+                 title:         { type: :string },
+                 status:        { type: :string },
+                 published:     { type: :boolean, example: true },
+                 published_at:  { type: :string, format: 'date-time', nullable: true },
+               }
+        run_test!
+      end
+
+      response '202', '"Publish Later" scheduled' do
+        schema type: :object,
+               properties: {
+                 success:      { type: :boolean, example: true },
+                 scheduled:    { type: :boolean, example: true },
+                 id:           { type: :integer },
+                 action_type:  { type: :string, example: 'publish' },
+                 scheduled_at: { type: :string, format: 'date-time' },
+               }
+        run_test!
+      end
+
+      response '403', 'Modify permission denied for this asset\'s folder' do
+        schema type: :object, properties: { error: { type: :string } }
+        run_test!
+      end
+
+      response '404', 'Asset not found' do
+        schema type: :object, properties: { error: { type: :string } }
+        run_test!
+      end
+
+      response '422', 'scheduled_at could not be parsed' do
+        schema type: :object, properties: { error: { type: :string } }
+        run_test!
+      end
+    end
+  end
+
+  # ===========================================================================
+  # UNPUBLISH — POST /api/v1/assets/{id}/unpublish
+  # ===========================================================================
+  path '/api/v1/assets/{id}/unpublish' do
+    parameter name: :id, in: :path, type: :string, required: true, description: 'Asset ID'
+
+    post 'Revert a published asset back to unpublished' do
+      tags 'Assets'
+      consumes 'application/json'
+      produces 'application/json'
+      security [ Bearer: [] ]
+      description <<~DESC
+        Clears `published_at` immediately, unless `scheduled_at` is a future ISO8601
+        timestamp ("Unpublish Later" — see POST .../publish for shared scheduling
+        behaviour). Idempotent — safe to call on an already-unpublished asset.
+      DESC
+
+      parameter name: :payload, in: :body, required: false, schema: {
+        type: :object,
+        properties: {
+          scheduled_at: { type: :string, format: 'date-time', nullable: true,
+                          example: '2026-08-01T09:00:00Z' },
+        },
+      }
+
+      response '200', 'Asset unpublished immediately' do
+        schema type: :object,
+               properties: {
+                 id:           { oneOf: [ { type: :integer }, { type: :string } ] },
+                 uuid:         { type: :string, format: :uuid },
+                 title:        { type: :string },
+                 status:       { type: :string },
+                 published:    { type: :boolean, example: false },
+                 published_at: { type: :string, format: 'date-time', nullable: true },
+               }
+        run_test!
+      end
+
+      response '202', '"Unpublish Later" scheduled' do
+        schema type: :object,
+               properties: {
+                 success:      { type: :boolean, example: true },
+                 scheduled:    { type: :boolean, example: true },
+                 id:           { type: :integer },
+                 action_type:  { type: :string, example: 'unpublish' },
+                 scheduled_at: { type: :string, format: 'date-time' },
+               }
+        run_test!
+      end
+
+      response '404', 'Asset not found' do
+        schema type: :object, properties: { error: { type: :string } }
+        run_test!
+      end
+
+      response '422', 'scheduled_at could not be parsed' do
+        schema type: :object, properties: { error: { type: :string } }
+        run_test!
+      end
+    end
+  end
+
+  # ===========================================================================
   # PERMANENT DELETE — DELETE /api/v1/assets/{id}/permanent
   # ===========================================================================
   path '/api/v1/assets/{id}/permanent' do
@@ -319,6 +449,7 @@ RSpec.describe 'Api::V1::Assets', type: :request do
       end
     end
   end
+
 
   # ===========================================================================
   # VERSIONS — GET /api/v1/assets/{id}/versions
@@ -1351,5 +1482,127 @@ RSpec.describe 'Image Processing Tests', type: :request do
 
   def json_headers
     { 'Content-Type' => 'application/json', 'Accept' => 'application/json' }
+  end
+end
+
+RSpec.describe 'Publish / Unpublish', type: :request do
+  let(:user) { create(:user, :admin) }
+  let(:folder) { create(:folder, user: user) }
+  let(:asset) { create(:asset, user: user, folder: folder) }
+
+  before { sign_in user }
+
+  describe 'POST /api/v1/assets/:id/publish' do
+    it 'publishes the asset immediately when no scheduled_at is given' do
+      post "/api/v1/assets/#{asset.id}/publish"
+
+      expect(response).to have_http_status(:ok)
+      json = JSON.parse(response.body)
+      expect(json['published']).to eq(true)
+      expect(json['published_at']).to be_present
+      expect(asset.reload).to be_published
+    end
+
+    it 'queues a ScheduledPublishAction ("Publish Later") for a future scheduled_at' do
+      future = 1.day.from_now.iso8601
+
+      expect {
+        post "/api/v1/assets/#{asset.id}/publish", params: { scheduled_at: future }, as: :json
+      }.to change(ScheduledPublishAction, :count).by(1)
+
+      expect(response).to have_http_status(:accepted)
+      json = JSON.parse(response.body)
+      expect(json['scheduled']).to eq(true)
+      expect(json['action_type']).to eq('publish')
+      expect(asset.reload).not_to be_published
+    end
+
+    it 'treats a past scheduled_at as an immediate publish' do
+      past = 1.day.ago.iso8601
+
+      post "/api/v1/assets/#{asset.id}/publish", params: { scheduled_at: past }, as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(asset.reload).to be_published
+    end
+
+    it 'returns 422 for an unparsable scheduled_at' do
+      post "/api/v1/assets/#{asset.id}/publish", params: { scheduled_at: 'not-a-date' }, as: :json
+
+      expect(response).to have_http_status(:unprocessable_entity)
+    end
+
+    it 'returns 404 for an unknown asset' do
+      post '/api/v1/assets/00000000-0000-0000-0000-000000000000/publish'
+
+      expect(response).to have_http_status(:not_found)
+    end
+
+    it 'replaces an existing pending schedule of the same type rather than erroring' do
+      first_time = 1.day.from_now.iso8601
+      second_time = 2.days.from_now.iso8601
+
+      post "/api/v1/assets/#{asset.id}/publish", params: { scheduled_at: first_time }, as: :json
+      expect {
+        post "/api/v1/assets/#{asset.id}/publish", params: { scheduled_at: second_time }, as: :json
+      }.to change(ScheduledPublishAction, :count).by(1)
+
+      expect(ScheduledPublishAction.where(asset: asset, action_type: 'publish').pending.count).to eq(1)
+    end
+  end
+
+  describe 'POST /api/v1/assets/:id/unpublish' do
+    it 'unpublishes an already-published asset immediately' do
+      asset.publish!
+
+      post "/api/v1/assets/#{asset.id}/unpublish"
+
+      expect(response).to have_http_status(:ok)
+      json = JSON.parse(response.body)
+      expect(json['published']).to eq(false)
+      expect(asset.reload).not_to be_published
+    end
+
+    it 'is idempotent when the asset is already unpublished' do
+      post "/api/v1/assets/#{asset.id}/unpublish"
+
+      expect(response).to have_http_status(:ok)
+      expect(asset.reload).not_to be_published
+    end
+
+    it 'queues a ScheduledPublishAction ("Unpublish Later") for a future scheduled_at' do
+      asset.publish!
+      future = 1.day.from_now.iso8601
+
+      expect {
+        post "/api/v1/assets/#{asset.id}/unpublish", params: { scheduled_at: future }, as: :json
+      }.to change(ScheduledPublishAction, :count).by(1)
+
+      expect(response).to have_http_status(:accepted)
+      json = JSON.parse(response.body)
+      expect(json['action_type']).to eq('unpublish')
+      expect(asset.reload).to be_published # not yet applied
+    end
+
+    it 'returns 404 for an unknown asset' do
+      post '/api/v1/assets/00000000-0000-0000-0000-000000000000/unpublish'
+
+      expect(response).to have_http_status(:not_found)
+    end
+  end
+
+  describe 'permission enforcement' do
+    let(:caller_user) { create(:user) }
+    let(:other_user) { create(:user) }
+    let(:restricted_folder) { create(:folder, user: other_user) }
+    let(:restricted_asset) { create(:asset, user: other_user, folder: restricted_folder) }
+
+    before { sign_in caller_user }
+
+    it 'denies publish when the caller lacks modify permission on the folder' do
+      post "/api/v1/assets/#{restricted_asset.id}/publish"
+
+      expect(response).to have_http_status(:forbidden)
+    end
   end
 end

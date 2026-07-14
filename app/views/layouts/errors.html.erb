@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<%# Minimal, standalone layout for error screens (404, etc).
+    Deliberately does NOT extend layouts/application.html.erb — that layout
+    renders the React sidebar/header which assume an authenticated session
+    and mounted app shell. Error pages must render safely for *any* request
+    (signed in or not, valid session or not), so they get their own
+    lightweight shell instead. %>
+<html lang="<%= I18n.locale %>">
+<head>
+  <title><%= content_for(:title) || t("errors.not_found.title") %></title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="icon" href="/icon.png" type="image/png">
+</head>
+<body style="margin:0;padding:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f4f7fb;font-family:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <%= yield %>
+</body>
+</html>

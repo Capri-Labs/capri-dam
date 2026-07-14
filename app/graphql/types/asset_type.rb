@@ -26,6 +26,12 @@ module Types
           description: "App-observed usage counters ({ views:, downloads:, shares: }), " \
                        "backed by AssetUsageEvent rows. See Asset#usage_stats for what " \
                        "is (and isn't) captured — CDN-served hot-link traffic is excluded."
+    field :published,      Boolean,                          null: false,
+          description: "Whether this asset has been explicitly published " \
+                       "(independent of the processing `status` lifecycle). " \
+                       "See Mutations::PublishAsset / Mutations::UnpublishAsset."
+    field :published_at,   GraphQL::Types::ISO8601DateTime,  null: true,
+          description: "When this asset was last published; null when unpublished."
 
     #  Temporarily disabled — re-enable once FolderType circular ref is resolved
     # field :parent_folder, Types::FolderType, null: true, complexity: 5
@@ -47,6 +53,10 @@ module Types
 
     def version_number
       object.active_version&.version_number
+    end
+
+    def published
+      object.published?
     end
 
     def self.authorized?(object, context)

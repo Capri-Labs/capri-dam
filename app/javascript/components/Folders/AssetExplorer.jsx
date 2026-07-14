@@ -54,7 +54,7 @@ function buildFilterUrl(folderId, { query, typeFilters, statusFilters, sort, per
   return `${window.location.pathname}${qs ? `?${qs}` : ''}`;
 }
 
-export default function AssetExplorer({ initialTargetAssetId }) {
+export default function AssetExplorer({ initialTargetAssetId, pageTitle }) {
   const notify = useNotify();
   const { t } = useTranslation();
   const [viewData, setViewData] = useState({ folders: [], assets: [], breadcrumbs: [] });
@@ -246,6 +246,47 @@ export default function AssetExplorer({ initialTargetAssetId }) {
     }
   };
 
+  // Publish/Unpublish is asset-only (see Api::V1::AssetsController#publish/
+  // #unpublish) — the "Manage Publish" menu is only offered for an
+  // all-assets selection, so `selectedItems.assets` is the whole set here.
+  // Immediate actions (as opposed to "…Later", which opens PublishDialog to
+  // pick a schedule) fire straight away, mirroring handleDeleteSelected.
+  const handlePublishSelected = async () => {
+    try {
+      const headers = requestHeaders();
+      const responses = await Promise.all(
+        selectedItems.assets.map((id) => fetch(`/api/v1/assets/${id}/publish`, { method: 'POST', headers }))
+      );
+      const failed = responses.filter((r) => !r.ok).length;
+      if (failed > 0) {
+        notify(t('publishDialog.someItemsFailed', { count: failed }), 'warning');
+      } else {
+        notify(t('publishDialog.publishedNow', { count: selectedItems.assets.length }), 'success');
+      }
+      loadContent();
+    } catch {
+      notify(t('publishDialog.scheduleError'), 'error');
+    }
+  };
+
+  const handleUnpublishSelected = async () => {
+    try {
+      const headers = requestHeaders();
+      const responses = await Promise.all(
+        selectedItems.assets.map((id) => fetch(`/api/v1/assets/${id}/unpublish`, { method: 'POST', headers }))
+      );
+      const failed = responses.filter((r) => !r.ok).length;
+      if (failed > 0) {
+        notify(t('publishDialog.someItemsFailed', { count: failed }), 'warning');
+      } else {
+        notify(t('publishDialog.unpublishedNow', { count: selectedItems.assets.length }), 'success');
+      }
+      loadContent();
+    } catch {
+      notify(t('publishDialog.scheduleError'), 'error');
+    }
+  };
+
   const toggleSelection = (type, id, event) => {
     event.stopPropagation();
     setSelectedItems((previous) => {
@@ -360,25 +401,35 @@ export default function AssetExplorer({ initialTargetAssetId }) {
   const visibleFolders = pagedItems.filter((i) => i.kind === 'folder').map((i) => i.data);
   const visibleAssets  = pagedItems.filter((i) => i.kind === 'asset').map((i) => i.data);
 
+  const isAllSelected = (visibleFolders.length > 0 || visibleAssets.length > 0)
+    && visibleFolders.every((folder) => selectedItems.folders.includes(folder.id))
+    && visibleAssets.every((asset) => selectedItems.assets.includes(asset.id));
+
+  // Toggles between select-all and deselect-all — previously this always
+  // (re-)selected everything, so unchecking "Select All" after checking it
+  // had no effect (bug: the checkbox visually unchecked but the selection
+  // itself never cleared, since nothing here read `isAllSelected`).
   const handleSelectAll = () => {
-    setSelectedItems({
-      folders: visibleFolders.map((folder) => folder.id),
-      assets: visibleAssets.map((asset) => asset.id),
-    });
+    if (isAllSelected) {
+      handleDeselectAll();
+    } else {
+      setSelectedItems({
+        folders: visibleFolders.map((folder) => folder.id),
+        assets: visibleAssets.map((asset) => asset.id),
+      });
+    }
   };
 
   const handleDeselectAll = () => {
     setSelectedItems({ folders: [], assets: [] });
   };
 
-  const isAllSelected = (visibleFolders.length > 0 || visibleAssets.length > 0)
-    && visibleFolders.every((folder) => selectedItems.folders.includes(folder.id))
-    && visibleAssets.every((asset) => selectedItems.assets.includes(asset.id));
   const hasSelection = selectedItems.folders.length > 0 || selectedItems.assets.length > 0;
 
   return (
     <Box sx={{ width: '100%', p: 4, bgcolor: '#f8fafc', minHeight: '100vh' }}>
       <ExplorerTopBar
+        pageTitle={pageTitle}
         currentId={currentId}
         viewData={viewData}
         viewMode={viewMode}
@@ -391,6 +442,8 @@ export default function AssetExplorer({ initialTargetAssetId }) {
         handleDeleteSelected={handleDeleteSelected}
         handleRestoreSelected={handleRestoreSelected}
         handlePermanentDelete={handlePermanentDelete}
+        handlePublishSelected={handlePublishSelected}
+        handleUnpublishSelected={handleUnpublishSelected}
         setOpenFolderDialog={setOpenFolderDialog}
         handleFileUpload={handleFileUpload}
         selectedItems={selectedItems}

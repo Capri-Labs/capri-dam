@@ -99,4 +99,48 @@ RSpec.describe Asset, type: :model do
       expect(Asset.nearest_to_vector(embedding)).to include(asset)
     end
   end
+
+  describe '#publish! / #unpublish! / #published?' do
+    it 'is unpublished by default' do
+      expect(create(:asset)).not_to be_published
+    end
+
+    it 'sets published_at and #published? on #publish!' do
+      asset = create(:asset)
+      asset.publish!
+      expect(asset.reload.published_at).to be_present
+      expect(asset).to be_published
+    end
+
+    it 'clears published_at on #unpublish!' do
+      asset = create(:asset)
+      asset.publish!
+      asset.unpublish!
+      expect(asset.reload.published_at).to be_nil
+      expect(asset).not_to be_published
+    end
+
+    it 'cancels a pending scheduled action of either type when publishing immediately' do
+      asset = create(:asset)
+      user = create(:user)
+      pending = asset.scheduled_publish_actions.create!(
+        action_type: 'unpublish', scheduled_at: 1.hour.from_now, created_by: user
+      )
+
+      asset.publish!
+
+      expect(pending.reload).to be_cancelled
+    end
+  end
+
+  describe '.currently_published' do
+    it 'only includes assets with published_at set' do
+      published = create(:asset)
+      published.publish!
+      unpublished = create(:asset)
+
+      expect(Asset.currently_published).to include(published)
+      expect(Asset.currently_published).not_to include(unpublished)
+    end
+  end
 end

@@ -68,6 +68,8 @@ AI batch progress, and health callbacks.
 | `GET` | `/api/v1/asset_downloads/:id` | user (owner) | Poll a single download's status/progress (`processed_items`, `total_items`, `progress_percent`, `download_url` once completed). `404` for another user's download.
 | `GET` | `/api/v1/asset_downloads/:id/download` | user (owner) | Redirects to the attached ZIP blob. `404` until `status == "completed"`.
 | `DELETE` | `/api/v1/asset_downloads/:id` | user (owner) | Purges the ZIP (if any) and destroys the record immediately, ahead of its normal 7-day retention expiry.
+| `POST` | `/api/v1/assets/:id/publish` | user (`modify` grant) | Directly publishes an asset — sets `published_at`/`published: true` — without requiring a `PublishNode` workflow step first. Optional `{ scheduled_at: <ISO8601> }` body: a *future* timestamp instead creates/replaces a pending `ScheduledPublishAction` (`202`, not applied yet); omitted/past/blank applies immediately (`200`, serialized asset). `422` for an unparsable non-blank `scheduled_at`. See <<section-manage-publish-overlay>>.
+| `POST` | `/api/v1/assets/:id/unpublish` | user (`modify` grant) | Same shape as `/publish`, in reverse — sets `published_at: nil`. See <<section-manage-publish-overlay>>.
 |===
 
 == Collections, bin, duplicates, and delivery

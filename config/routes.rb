@@ -276,6 +276,11 @@ Rails.application.routes.draw do
           get :workflow_history
           get :watermarked
 
+          # Direct publish/unpublish (single or bulk-via-multiple-calls from the UI) —
+          # no workflow required. See Api::V1::AssetsController#publish/#unpublish.
+          post :publish
+          post :unpublish
+
           # Usage statistics (views / downloads / shares)
           get :stats, to: "assets#stats"
           post :track_event, to: "assets#track_event"

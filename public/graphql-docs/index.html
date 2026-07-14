@@ -84,6 +84,7 @@
                   <li><a href="#mutation-deleteUserGroup">deleteUserGroup</a></li>
                   <li><a href="#mutation-emptyBin">emptyBin</a></li>
                   <li><a href="#mutation-markInboxMessageRead">markInboxMessageRead</a></li>
+                  <li><a href="#mutation-publishAsset">publishAsset</a></li>
                   <li><a href="#mutation-resolveDuplicateGroup">resolveDuplicateGroup</a></li>
                   <li><a href="#mutation-revokePersonalAccessToken">revokePersonalAccessToken</a></li>
                   <li><a href="#mutation-startImpersonation">startImpersonation</a></li>
@@ -150,6 +151,8 @@
               <li><a href="#definition-MarkInboxMessageReadInput">MarkInboxMessageReadInput</a></li>
               <li><a href="#definition-MarkInboxMessageReadPayload">MarkInboxMessageReadPayload</a></li>
               <li><a href="#definition-PersonalAccessToken">PersonalAccessToken</a></li>
+              <li><a href="#definition-PublishAssetInput">PublishAssetInput</a></li>
+              <li><a href="#definition-PublishAssetPayload">PublishAssetPayload</a></li>
               <li><a href="#definition-ResolveDuplicateGroupInput">ResolveDuplicateGroupInput</a></li>
               <li><a href="#definition-ResolveDuplicateGroupPayload">ResolveDuplicateGroupPayload</a></li>
               <li><a href="#definition-RevokePersonalAccessTokenInput">RevokePersonalAccessTokenInput</a></li>
@@ -2417,6 +2420,72 @@
               </div>
             </div>
           </section>
+          <section id="mutation-publishAsset" class="operation operation-mutation" data-traverse-target="mutation-publishAsset">
+            <div class="operation-group-name">
+              <a href="#group-Operations-Mutations">Mutations</a>
+            </div>
+            <h2 class="operation-heading ">
+              <code>publishAsset</code>
+            </h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Directly publish or unpublish an asset, immediately or at a future time.</p>
+                </div>
+              </div>
+            </div>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-response doc-copy-section">
+                  <h5>Response</h5>
+                  <p> Returns a <a href="#definition-PublishAssetPayload"><code>PublishAssetPayload</code></a>
+                  </p>
+                </div>
+                <div class="operation-arguments doc-copy-section">
+                  <h5>Arguments</h5>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>
+                          <span class="property-name"><code>input</code></span> - <span class="property-type"><a href="#definition-PublishAssetInput"><code>PublishAssetInput!</code></a></span>
+                        </td>
+                        <td> Parameters for PublishAsset </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <h4 class="example-heading">Example</h4>
+                <div class="example-section example-section-is-code operation-query-example">
+                  <h5>Query</h5>
+                  <pre><code class="hljs language-gql"><span class="hljs-symbol"><span class="hljs-keyword">mutation</span> publishAsset<span class="hljs-tag">(<span class="hljs-code">$input</span>:<span class="hljs-type"> PublishAssetInput!</span>)</span> <span class="hljs-tag">{
+  <span class="hljs-symbol">publishAsset<span class="hljs-tag">(input: <span class="hljs-code">$input</span>)</span> <span class="hljs-tag">{
+    <span class="hljs-symbol">asset</span>
+  }</span></span>
+}</span></span>
+</code></pre>
+                </div>
+                <div class="example-section example-section-is-code operation-variables-example">
+                  <h5>Variables</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"input"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">PublishAssetInput</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+                <div class="example-section example-section-is-code operation-response-example">
+                  <h5>Response</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"data"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-attr">"publishAsset"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-attr">"asset"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">Asset</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
           <section id="mutation-resolveDuplicateGroup" class="operation operation-mutation" data-traverse-target="mutation-resolveDuplicateGroup">
             <div class="operation-group-name">
               <a href="#group-Operations-Mutations">Mutations</a>
@@ -4534,6 +4603,67 @@
                 <div class="example-section example-section-is-code">
                   <h5>Example</h5>
                   <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="definition-PublishAssetInput" class="definition definition-input-object" data-traverse-target="definition-PublishAssetInput">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">PublishAssetInput</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Autogenerated input type of PublishAsset</p>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <div class="example-section example-section-is-code">
+                  <h5>Example</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="definition-PublishAssetPayload" class="definition definition-object" data-traverse-target="definition-PublishAssetPayload">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">PublishAssetPayload</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Autogenerated return type of PublishAsset.</p>
+                </div>
+                <div class="definition-properties doc-copy-section">
+                  <h5>Fields</h5>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Field Name</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td data-property-name=""><span class="property-name"><code>asset</code></span> - <span class="property-type"><a href="#definition-Asset"><code>Asset</code></a></span>
+                        </td>
+                        <td>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <div class="example-section example-section-is-code">
+                  <h5>Example</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"asset"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">Asset</span><span class="hljs-punctuation">}</span>
 </code></pre>
                 </div>
               </div>

@@ -394,6 +394,8 @@ module Api
           name: asset.title,
           status: asset.status || "draft",
           version: active_v&.version_number || 1,
+          published: asset.published?,
+          published_at: asset.published_at,
 
           properties: merged_props,
 

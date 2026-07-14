@@ -326,6 +326,28 @@ per job) does the actual work asynchronously:
   (7 days — shorter than `MetadataExport`'s 30 days, since ZIP archives are
   typically much larger and shouldn't accumulate as long).
 
+[[section-manage-publish-overlay]]
+== Manage Publish overlay
+
+Unlike Move/Copy/Download — which all live inside the *Tools* menu — **Manage
+Publish** is its own top-level `Button` + `Menu` rendered directly *next to*
+Tools in `ExplorerTopBar.jsx`, not nested inside it, per the explicit
+requirement that publish controls be visually distinct from the generic
+Tools grouping. It's also the only bulk action gated to a single item type:
+it only ever appears for an **all-assets** selection (`hasAssetSelection &&
+!hasFolderSelection`) — folders have no publish state, so mixing even one
+folder into the selection hides the button entirely rather than partially
+disabling it.
+
+[cols="1,3", options="header"]
+|===
+| Piece | Notes
+| `ExplorerTopBar.jsx` — `publishTarget` resolution | `null` whenever the selection contains any folder at all; otherwise `{ itemNames }` for every selected asset. The "Manage Publish" button (`data-testid="manage-publish-button"`) and its menu are only rendered when `publishTarget` is truthy.
+| Menu items | **Publish** / **Unpublish** fire `handlePublishSelected`/`handleUnpublishSelected` (in `AssetExplorer.jsx`) immediately — a bulk `Promise.all` of one `POST /api/v1/assets/:id/publish`\|`/unpublish` per selected asset, no dialog, mirroring `handleDeleteSelected`. **Publish Later** / **Unpublish Later** instead open `PublishDialog.jsx` to collect a future date/time before submitting.
+| `Folders/PublishDialog.jsx` | Only ever used for the two "…Later" menu items — immediate Publish/Unpublish never opens it. A `datetime-local` `TextField` (same pattern as `MetadataExportManager.jsx`'s scheduling field — no date-picker library dependency exists in this codebase) is converted to ISO8601 and sent as `scheduled_at` in the same bulk per-asset request the immediate actions use; the server tells the two modes apart purely by whether `scheduled_at` is a valid future timestamp (see the API reference table above).
+| Scheduling backend | `ScheduledPublishAction` (one pending row per `asset_id` + `action_type`, enforced by a partial unique index on `status = 0/pending`) + `PublishSchedulerWorker`, polled every 5 minutes via `config/schedule.rb` (`whenever` gem) rather than a per-request `perform_at`/`perform_in` — a schedule missed during app downtime is still picked up on the next poll tick instead of being silently dropped. Applying/cancelling a schedule (`ScheduledPublishAction#apply!`, `Asset#publish!`/`#unpublish!`) always supersedes any other pending schedule of the same type for that asset — an immediate action or a fresh "…Later" request wins over whatever was previously queued.
+|===
+
 == Upload & Enrich overlay
 
 `Folders/UploadWorkspace.jsx` is the full-screen upload dialog launched from the
@@ -359,4 +381,5 @@ NOTE: New module-specific details are documented in <<section-admin-module>>,
 <<section-collections-module>>, <<section-bin-module>>, <<section-duplicate-detection>>,
 <<section-intelligence-module>>, <<section-ingestion-migration>>,
 <<section-image-editor>>, <<section-rename-overlay>>, <<section-move-overlay>>,
-and <<section-copy-overlay>>.
+<<section-copy-overlay>>, <<section-download-overlay>>, and
+<<section-manage-publish-overlay>>.

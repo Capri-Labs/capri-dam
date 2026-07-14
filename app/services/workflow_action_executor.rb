@@ -234,7 +234,7 @@ class WorkflowActionExecutor
   end
 
   def publish_asset
-    @asset.update!(status: "approved")
+    @asset.update!(status: "approved", published_at: Time.current)
     # If the PublishNode configured CDN sync, fire it immediately
     cdn_sync if @config[:cdnSync] != false
     nil

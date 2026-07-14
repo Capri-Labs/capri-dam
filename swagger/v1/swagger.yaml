@@ -3037,6 +3037,206 @@ paths:
                 properties:
                   error:
                     type: string
+  "/api/v1/assets/{id}/publish":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      description: Asset ID
+      schema:
+        type: string
+    post:
+      summary: Directly publish an asset (no workflow required)
+      tags:
+      - Assets
+      security:
+      - Bearer: []
+      description: |
+        Sets `published_at` immediately, unless `scheduled_at` is a future ISO8601
+        timestamp — in which case a queued `ScheduledPublishAction` ("Publish Later")
+        is created instead and applied later by `PublishSchedulerWorker`.
+        Requires `modify` permission on the asset's parent folder.
+      parameters: []
+      responses:
+        '200':
+          description: Asset published immediately
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    oneOf:
+                    - type: integer
+                    - type: string
+                  uuid:
+                    type: string
+                    format: uuid
+                  title:
+                    type: string
+                  status:
+                    type: string
+                  published:
+                    type: boolean
+                    example: true
+                  published_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+        '202':
+          description: '"Publish Later" scheduled'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  scheduled:
+                    type: boolean
+                    example: true
+                  id:
+                    type: integer
+                  action_type:
+                    type: string
+                    example: publish
+                  scheduled_at:
+                    type: string
+                    format: date-time
+        '403':
+          description: Modify permission denied for this asset's folder
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '404':
+          description: Asset not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '422':
+          description: scheduled_at could not be parsed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                scheduled_at:
+                  type: string
+                  format: date-time
+                  nullable: true
+                  example: '2026-08-01T09:00:00Z'
+  "/api/v1/assets/{id}/unpublish":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      description: Asset ID
+      schema:
+        type: string
+    post:
+      summary: Revert a published asset back to unpublished
+      tags:
+      - Assets
+      security:
+      - Bearer: []
+      description: |
+        Clears `published_at` immediately, unless `scheduled_at` is a future ISO8601
+        timestamp ("Unpublish Later" — see POST .../publish for shared scheduling
+        behaviour). Idempotent — safe to call on an already-unpublished asset.
+      parameters: []
+      responses:
+        '200':
+          description: Asset unpublished immediately
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    oneOf:
+                    - type: integer
+                    - type: string
+                  uuid:
+                    type: string
+                    format: uuid
+                  title:
+                    type: string
+                  status:
+                    type: string
+                  published:
+                    type: boolean
+                    example: false
+                  published_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+        '202':
+          description: '"Unpublish Later" scheduled'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  scheduled:
+                    type: boolean
+                    example: true
+                  id:
+                    type: integer
+                  action_type:
+                    type: string
+                    example: unpublish
+                  scheduled_at:
+                    type: string
+                    format: date-time
+        '404':
+          description: Asset not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '422':
+          description: scheduled_at could not be parsed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                scheduled_at:
+                  type: string
+                  format: date-time
+                  nullable: true
+                  example: '2026-08-01T09:00:00Z'
   "/api/v1/assets/{id}/permanent":
     parameters:
     - name: id

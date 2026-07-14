@@ -711,6 +711,8 @@ module Api
           web_renderable: web_renderable_image?(props["content_type"]),
           folder_id: asset.folder_id,
           status: normalize_status(asset.read_attribute_before_type_cast(:status)),
+          published: asset.published?,
+          published_at: asset.published_at&.iso8601,
           # Whether this result is a soft-deleted (Recycle Bin) asset — only
           # ever true when the caller opted in via `?include_bin=true`
           # (see {#include_bin?}); used by the Search UI to render a "Bin"

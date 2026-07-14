@@ -131,6 +131,10 @@ message to the AI gateway.
 | downloads
 | Expires ZIP download artifacts past their 7-day retention period (scheduled daily at 2:30am). Mirrors `MetadataExportCleanupWorker`.
 
+| `PublishSchedulerWorker`
+| publishing
+| Polls `ScheduledPublishAction.due` (pending + `scheduled_at` in the past) every 5 minutes (`config/schedule.rb`, `whenever` gem) and calls `#apply!` on each due row, applying the queued Publish/Unpublish (`Asset#publish!`/`#unpublish!`). Per-item failures are logged and skipped without aborting the rest of the batch. Polling (rather than a per-request `perform_at`/`perform_in`) means a schedule missed during app downtime is still picked up on the next tick instead of being silently lost. See <<section-manage-publish-overlay>>.
+
 | `MetadataImportWorker`
 | imports
 | Applies CSV metadata imports to assets.

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, CssBaseline, Typography } from '@mui/material';
+import { Box, CssBaseline } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import Sidebar from '../Sidebar';
 import AssetExplorer from './AssetExplorer';
@@ -13,13 +13,11 @@ export default function FoldersManager(props) {
             <CssBaseline />
 
             <Box component="main" sx={{ flexGrow: 1 }}>
-                <Box sx={{ px: 3, pt: 3, pb: 1 }}>
-                    <Typography variant="h4" sx={{ fontWeight: 700, color: '#121926' }}>
-                        {t('foldersManager.title')}
-                    </Typography>
-                </Box>
-                {/* Mount your existing AssetExplorer here */}
-                <AssetExplorer {...props} />
+                {/* The "All Assets" page title now renders inline with the
+                    breadcrumb inside ExplorerTopBar (see `pageTitle` prop)
+                    instead of its own heading row above the Explorer, so the
+                    two no longer stack as separate lines. */}
+                <AssetExplorer {...props} pageTitle={t('foldersManager.title')} />
             </Box>
         </Box>
     );

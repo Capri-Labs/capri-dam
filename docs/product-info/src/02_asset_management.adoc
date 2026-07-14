@@ -25,6 +25,7 @@ image::folder-access-acl.png[Folder Access tab, title="Folder Info Panel — Acc
 | Move | Select any mix of folders/assets and relocate them to a new destination in one request (`POST /api/v1/move_operations`); per-item success/failure reporting; cycle-prevention guards against moving a folder into its own descendant.
 | Copy | "Copy to…" action mirroring Move — duplicates the selection into a destination folder instead of relocating it (`POST /api/v1/copy_operations`). Folders are copied recursively (subfolders + assets); asset files share the source's existing ActiveStorage blob (no re-upload); destination name collisions are auto-resolved (`" (Copy)"`, `" (Copy 2)"`, …).
 | Bulk/folder download | "Download" action on a folder or a multi-asset selection streams a ZIP built asynchronously by a background worker, with a live progress bar in the dialog. A second download requested while one is already running is queued rather than run concurrently; the finished ZIP link is delivered to the user's Inbox and notification bell so they can navigate there and download whenever it's ready.
+| Publish / Unpublish | "Manage Publish" — a dedicated button/menu next to (not inside) *Tools*, shown only for an all-assets selection. Publish/Unpublish apply immediately (`POST /api/v1/assets/:id/publish`\|`/unpublish`); Publish Later/Unpublish Later instead schedule the action for a future date/time, applied automatically by a polling background worker.
 | Quarantine | Security anomaly detection flags suspicious assets, queues them for admin review, then supports release back into the library or soft-delete into the Recycle Bin.
 | Folder-scoped search & filters | Filter by content type and status, search by name, inside any folder scope.
 |===
@@ -81,6 +82,10 @@ image::folder-access-acl.png[Folder Access tab, title="Folder Info Panel — Acc
 * Bulk/folder download — Tools menu overlay: downloading a single asset with progress
   through to a ready ZIP link, downloading a folder recursively, and the Download
   option staying enabled without delete rights — `spec/e2e/asset_download.e2e.spec.js`.
+* Manage Publish — immediate publish then unpublish of a selected asset, scheduling a
+  future "Publish Later" action without prematurely flipping the asset's published
+  state, and the button correctly hiding whenever the selection includes a folder —
+  `spec/e2e/publish_asset.e2e.spec.js`.
 
 [.status-pending]#Pending / not yet covered#
 

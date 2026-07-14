@@ -29,3 +29,10 @@ end
 every 10.minutes do
   runner "AemTokenRefreshWorker.perform_async"
 end
+
+# Applies due "Publish Later"/"Unpublish Later" requests (ScheduledPublishAction).
+# Polling (rather than perform_at/perform_in per-request) means a schedule that
+# was missed while the app was down still runs on the very next tick.
+every 5.minutes do
+  runner "PublishSchedulerWorker.perform_async"
+end

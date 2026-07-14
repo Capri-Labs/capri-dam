@@ -9,7 +9,8 @@ import {
     CloudUpload, AutoAwesome, AccountTree,
     Psychology, Difference, Style,
     CloudSync, Publish, DeleteSweep, BuildOutlined, SchemaOutlined, ImageOutlined, VideoFileOutlined,
-    DriveFileRenameOutline, DriveFileMoveOutlined, ContentCopyOutlined, FileDownloadOutlined
+    DriveFileRenameOutline, DriveFileMoveOutlined, ContentCopyOutlined, FileDownloadOutlined,
+    UnpublishedOutlined, ScheduleSendOutlined
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useNotify } from '../../context/NotificationContext';
@@ -22,11 +23,13 @@ import RenameDialog from './RenameDialog';
 import MoveDialog from './MoveDialog';
 import CopyDialog from './CopyDialog';
 import DownloadDialog from './DownloadDialog';
+import PublishDialog from './PublishDialog';
 
 export default function ExplorerTopBar({
-                                           currentId, viewData, viewMode, setViewMode, handleNavigate, handleCopyPath,
+                                           pageTitle, currentId, viewData, viewMode, setViewMode, handleNavigate, handleCopyPath,
                                            isAllSelected, handleSelectAll, hasSelection, handleDeleteSelected,
-                                           handleRestoreSelected, handlePermanentDelete, setOpenFolderDialog,
+                                           handleRestoreSelected, handlePermanentDelete,
+                                           handlePublishSelected, handleUnpublishSelected, setOpenFolderDialog,
                                            onUploadSuccess, selectedItems, onSchemaApplied
                                        }) {
     const notify = useNotify();
@@ -38,6 +41,7 @@ export default function ExplorerTopBar({
     const [smartMenuAnchor,    setSmartMenuAnchor]    = useState(null);
     const [toolsMenuAnchor,    setToolsMenuAnchor]    = useState(null);
     const [edgeMenuAnchor,     setEdgeMenuAnchor]     = useState(null);
+    const [publishMenuAnchor, setPublishMenuAnchor]   = useState(null);
 
     // Schema dialog
     const [schemaDialogOpen,  setSchemaDialogOpen]  = useState(false);
@@ -76,6 +80,13 @@ export default function ExplorerTopBar({
     // which the item already had to have to be visible in this listing).
     // Submission happens immediately on open — see DownloadDialog.
     const [downloadDialogOpen, setDownloadDialogOpen] = useState(false);
+
+    // Publish/Unpublish dialog — only ever opened for the "…Later" menu
+    // items (Publish Later / Unpublish Later); Publish/Unpublish fire
+    // immediately without a dialog (see the "Manage Publish" menu below).
+    // `publishDialogMode` selects which endpoint the dialog submits to.
+    const [publishDialogOpen, setPublishDialogOpen] = useState(false);
+    const [publishDialogMode, setPublishDialogMode] = useState('publish');
 
     // AI Handlers
     const handleAiMenuClose = () => setSmartMenuAnchor(null);
@@ -207,6 +218,16 @@ export default function ExplorerTopBar({
         },
     } : null;
 
+    // ── Manage Publish target resolution ────────────────────────────────────
+    // Publish/Unpublish are asset-only actions (see
+    // Api::V1::AssetsController#publish/#unpublish) — the button is only
+    // shown when the current selection is 100% assets (no folders at all),
+    // matching the requirement "Publish/Unpublish option should only for
+    // assets".
+    const publishTarget = (hasAssetSelection && !hasFolderSelection) ? {
+        itemNames: Object.fromEntries(selectedAssetObjs.map(a => [ a.id, a.title ?? a.name ])),
+    } : null;
+
     const folderSelectionText = selectedItems.folders.length === 1
         ? t('explorerTopBar.folderSelected', { count: selectedItems.folders.length })
         : t('explorerTopBar.foldersSelected', { count: selectedItems.folders.length });
@@ -215,26 +236,16 @@ export default function ExplorerTopBar({
         : t('explorerTopBar.assetsSelected', { count: selectedItems.assets.length });
 
     return (
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2, width: '100%', pb: 2 }}>
+        <Box sx={{ width: '100%', pb: 2 }}>
 
-            {/* Left Side: Navigation Context */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Breadcrumbs aria-label={t('explorerTopBar.breadcrumbLabel')}>
-                    <Link underline="hover" color={currentId === 'root' ? "text.primary" : "inherit"} onClick={() => handleNavigate('root')} sx={{ cursor: 'pointer', display: 'flex', alignItems: 'center', fontWeight: currentId === 'root' ? 700 : 400 }}>
-                        <Home sx={{ mr: 0.5 }} fontSize="small" /> {t('explorerTopBar.home')}
-                    </Link>
-                    {viewData.breadcrumbs && viewData.breadcrumbs.filter(c => c.id !== 'root').map((crumb, index, arr) => (
-                        <Link key={crumb.id} underline="hover" color={index === arr.length - 1 ? "text.primary" : "inherit"} onClick={() => handleNavigate(crumb.id)} sx={{ cursor: 'pointer', fontWeight: index === arr.length - 1 ? 700 : 400 }}>
-                            {crumb.name}
-                        </Link>
-                    ))}
-                </Breadcrumbs>
-                <Tooltip title={t('explorerTopBar.copyFolderLink')}>
-                    <IconButton size="small" onClick={handleCopyPath} sx={{ ml: 1, color: '#64748b' }}>
-                        <ContentCopy fontSize="small" />
-                    </IconButton>
-                </Tooltip>
-            </Box>
+            {/* Line 1: page title (e.g. "All Assets") on the left, all
+                action buttons on the right. */}
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
+                {pageTitle ? (
+                    <Typography variant="h5" sx={{ fontWeight: 700, color: '#121926', whiteSpace: 'nowrap' }}>
+                        {pageTitle}
+                    </Typography>
+                ) : <Box />}
 
             {/* Right Side: Actions */}
             <Stack direction="row" spacing={1.5} sx={{
@@ -398,6 +409,59 @@ export default function ExplorerTopBar({
                             </MenuItem>
                         </Menu>
 
+                        {/* ── Manage Publish (asset-only, sits next to Tools) ── */}
+                        {publishTarget && (
+                            <>
+                                <Button
+                                    data-testid="manage-publish-button"
+                                    variant="outlined"
+                                    onClick={(e) => setPublishMenuAnchor(e.currentTarget)}
+                                    startIcon={<Publish />}
+                                    sx={{ textTransform: 'none', borderRadius: '8px', color: '#0369a1',
+                                         borderColor: '#bae6fd', bgcolor: '#f0f9ff',
+                                         '&:hover': { bgcolor: '#e0f2fe' } }}
+                                >
+                                    {t('explorerTopBar.managePublish')}
+                                </Button>
+                                <Menu
+                                    anchorEl={publishMenuAnchor}
+                                    open={Boolean(publishMenuAnchor)}
+                                    onClose={() => setPublishMenuAnchor(null)}
+                                    slotProps={{ paper: { elevation: 3, sx: { mt: 1, minWidth: 220, borderRadius: 2 } } }}
+                                >
+                                    <MenuItem
+                                        data-testid="publish-menu-publish"
+                                        onClick={() => { setPublishMenuAnchor(null); handlePublishSelected(); }}
+                                    >
+                                        <ListItemIcon><Publish fontSize="small" sx={{ color: '#0369a1' }} /></ListItemIcon>
+                                        <ListItemText primary={t('explorerTopBar.publish')} />
+                                    </MenuItem>
+                                    <MenuItem
+                                        data-testid="publish-menu-publish-later"
+                                        onClick={() => { setPublishMenuAnchor(null); setPublishDialogMode('publish'); setPublishDialogOpen(true); }}
+                                    >
+                                        <ListItemIcon><ScheduleSendOutlined fontSize="small" sx={{ color: '#0369a1' }} /></ListItemIcon>
+                                        <ListItemText primary={t('explorerTopBar.publishLater')} />
+                                    </MenuItem>
+                                    <Divider />
+                                    <MenuItem
+                                        data-testid="publish-menu-unpublish"
+                                        onClick={() => { setPublishMenuAnchor(null); handleUnpublishSelected(); }}
+                                    >
+                                        <ListItemIcon><UnpublishedOutlined fontSize="small" sx={{ color: '#b91c1c' }} /></ListItemIcon>
+                                        <ListItemText primary={t('explorerTopBar.unpublish')} />
+                                    </MenuItem>
+                                    <MenuItem
+                                        data-testid="publish-menu-unpublish-later"
+                                        onClick={() => { setPublishMenuAnchor(null); setPublishDialogMode('unpublish'); setPublishDialogOpen(true); }}
+                                    >
+                                        <ListItemIcon><ScheduleSendOutlined fontSize="small" sx={{ color: '#b91c1c' }} /></ListItemIcon>
+                                        <ListItemText primary={t('explorerTopBar.unpublishLater')} />
+                                    </MenuItem>
+                                </Menu>
+                            </>
+                        )}
+
                         {/* Edge CDN Ops */}
                         <Button
                             variant="outlined"
@@ -532,6 +596,27 @@ export default function ExplorerTopBar({
                     </>
                 )}
             </Stack>
+            </Box>
+
+            {/* Line 2: breadcrumb + copy-folder-link icon, unchanged from
+                its original position/behavior. */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
+                <Breadcrumbs aria-label={t('explorerTopBar.breadcrumbLabel')}>
+                    <Link underline="hover" color={currentId === 'root' ? "text.primary" : "inherit"} onClick={() => handleNavigate('root')} sx={{ cursor: 'pointer', display: 'flex', alignItems: 'center', fontWeight: currentId === 'root' ? 700 : 400 }}>
+                        <Home sx={{ mr: 0.5 }} fontSize="small" /> {t('explorerTopBar.home')}
+                    </Link>
+                    {viewData.breadcrumbs && viewData.breadcrumbs.filter(c => c.id !== 'root').map((crumb, index, arr) => (
+                        <Link key={crumb.id} underline="hover" color={index === arr.length - 1 ? "text.primary" : "inherit"} onClick={() => handleNavigate(crumb.id)} sx={{ cursor: 'pointer', fontWeight: index === arr.length - 1 ? 700 : 400 }}>
+                            {crumb.name}
+                        </Link>
+                    ))}
+                </Breadcrumbs>
+                <Tooltip title={t('explorerTopBar.copyFolderLink')}>
+                    <IconButton size="small" onClick={handleCopyPath} sx={{ ml: 1, color: '#64748b' }}>
+                        <ContentCopy fontSize="small" />
+                    </IconButton>
+                </Tooltip>
+            </Box>
 
             <Dialog fullScreen open={uploadWorkspaceOpen} onClose={() => setUploadWorkspaceOpen(false)}>
                 <UploadWorkspace
@@ -593,6 +678,20 @@ export default function ExplorerTopBar({
                     onClose={() => setDownloadDialogOpen(false)}
                     selectedItems={selectedItems}
                     itemNames={downloadTarget.itemNames}
+                />
+            )}
+
+            {/* ── Publish/Unpublish Later Dialog ── */}
+            {publishTarget && (
+                <PublishDialog
+                    open={publishDialogOpen}
+                    onClose={(needsRefresh) => {
+                        setPublishDialogOpen(false);
+                        if (needsRefresh && onSchemaApplied) onSchemaApplied();
+                    }}
+                    mode={publishDialogMode}
+                    assetIds={selectedAssetObjs.map((a) => a.id)}
+                    itemNames={publishTarget.itemNames}
                 />
             )}
 

@@ -1,0 +1,34 @@
+<%# Custom 404 screen — replaces the raw Rails diagnostics / stack-trace page
+    for ActiveRecord::RecordNotFound (see ApplicationController#render_not_found)
+    and for genuinely unmatched routes (see ErrorsController, config/routes.rb
+    catch-all). Kept deliberately light-hearted per product request: "instead
+    of raw application logs, show a funny image." %>
+<% content_for :title, t("errors.not_found.title") %>
+
+<div style="max-width:560px;width:100%;padding:48px 32px;text-align:center;background:#fff;border-radius:16px;box-shadow:0 4px 24px rgba(18,25,38,0.08);margin:24px;">
+  <div style="font-size:88px;line-height:1;margin-bottom:8px;" role="img" aria-label="<%= t('errors.not_found.illustration_alt') %>">
+    🕵️‍♂️📦
+  </div>
+
+  <h1 style="font-size:28px;font-weight:700;color:#121926;margin:16px 0 8px;">
+    <%= t("errors.not_found.heading") %>
+  </h1>
+
+  <p style="font-size:16px;color:#475467;line-height:1.6;margin:0 0 8px;">
+    <%= t("errors.not_found.message") %>
+  </p>
+
+  <p style="font-size:14px;color:#98a2b3;margin:0 0 28px;">
+    <%= t("errors.not_found.hint") %>
+  </p>
+
+  <% if defined?(not_found_detail) && not_found_detail.present? %>
+    <p style="font-size:12px;color:#c4c9d4;margin:0 0 24px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;">
+      <%= not_found_detail %>
+    </p>
+  <% end %>
+
+  <a href="/" style="display:inline-block;text-decoration:none;background:#4f46e5;color:#fff;font-weight:600;font-size:15px;padding:12px 28px;border-radius:8px;">
+    <%= t("errors.not_found.back_link") %>
+  </a>
+</div>

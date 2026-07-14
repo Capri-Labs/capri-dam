@@ -68,6 +68,11 @@ class Asset < ApplicationRecord
 
   has_many :collection_assets, dependent: :destroy
 
+  # @!attribute [r] scheduled_publish_actions
+  #   @return [ActiveRecord::Associations::CollectionProxy<ScheduledPublishAction>]
+  #     pending/completed "Publish Later"/"Unpublish Later" requests for this asset
+  has_many :scheduled_publish_actions, dependent: :destroy
+
   # @!attribute [r] duplicate_group_assets
   #   @return [ActiveRecord::Associations::CollectionProxy<DuplicateGroupAsset>]
   #     join rows linking this asset to any {DuplicateGroup}s it was flagged
@@ -119,8 +124,20 @@ class Asset < ApplicationRecord
   # ---------------------------------------------------------------------------
 
   # Active (non-deleted) assets that have been fully processed and published.
+  #
+  # NOTE: this pre-dates, and is unrelated to, {#published?}/{#published_at} —
+  # it reflects the automatic *processing* pipeline reaching its terminal
+  # "ready" state, not the explicit, user-driven publish/unpublish toggle
+  # added later (see {Api::V1::AssetsController#publish}). Kept as-is (rather
+  # than renamed) to avoid touching its one existing call site
+  # ({Api::V1::CollectionsController#simulated_matches}).
   # @return [ActiveRecord::Relation]
   scope :published, -> { where(status: :ready) }
+
+  # Assets explicitly published via {#publish!} (i.e. +published_at+ is set).
+  # Independent of {.published}/+status+ — see {#published?} for details.
+  # @return [ActiveRecord::Relation]
+  scope :currently_published, -> { where.not(published_at: nil) }
 
   # Nearest-neighbour cosine search using the +neighbor+ gem and pgvector.
   #
@@ -180,6 +197,44 @@ class Asset < ApplicationRecord
       downloads: counts["download"] || 0,
       shares:    counts["share"] || 0,
     }
+  end
+
+  # Whether this asset has been explicitly published (see {#publish!}).
+  #
+  # Deliberately independent of the {#status} lifecycle: an asset can be
+  # +ready+ (fully processed) without being published, and — once this flag
+  # ships — can remain published even if a later edit reverts +status+ to
+  # +in_review+. Direct publish/unpublish is exposed via
+  # {Api::V1::AssetsController#publish}/{Api::V1::AssetsController#unpublish};
+  # the {WorkflowActionExecutor} "publish" step calls {#publish!} too, so both
+  # paths converge on the same flag.
+  #
+  # @return [Boolean]
+  def published?
+    published_at.present?
+  end
+
+  # Marks the asset as published (sets {#published_at} to now).
+  #
+  # Cancels any still-pending scheduled publish/unpublish requests for this
+  # asset — an explicit, immediate action always supersedes a queued one
+  # rather than racing against it later (see {ScheduledPublishAction}).
+  #
+  # @return [void]
+  def publish!
+    update!(published_at: Time.current)
+    scheduled_publish_actions.pending.update_all(status: ScheduledPublishAction.statuses[:cancelled]) # rubocop:disable Rails/SkipsModelValidations
+  end
+
+  # Reverts the asset to unpublished (clears {#published_at}).
+  #
+  # Cancels any still-pending scheduled publish/unpublish requests for this
+  # asset, mirroring {#publish!}.
+  #
+  # @return [void]
+  def unpublish!
+    update!(published_at: nil)
+    scheduled_publish_actions.pending.update_all(status: ScheduledPublishAction.statuses[:cancelled]) # rubocop:disable Rails/SkipsModelValidations
   end
 
   private
