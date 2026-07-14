@@ -3,7 +3,15 @@ class CdnConfiguration < ApplicationRecord
 
   # 🚀 SECURITY BY DESIGN: Encrypts the entire JSON payload at rest.
   # The database only sees ciphertext. Rails decrypts it in memory.
-  encrypts :settings, type: :json
+  #
+  # NOTE: `encrypts ..., type: :json` is NOT a valid option on this Rails
+  # version (it silently corrupts the encryption context — see
+  # ActiveRecord::Encryption::EncryptableRecord#encrypts, and the same fix
+  # already applied in SystemConnector). The correct way to get JSON
+  # semantics on an encrypted column is to declare the attribute's cast type
+  # first, then encrypt it with no extra options.
+  attribute :settings, :json
+  encrypts :settings
 
   # Ensure only one CDN is active at a time
   before_save :ensure_single_active_provider

@@ -1,7 +1,7 @@
 [[module-cg-delivery-cdn]]
-== Instant Global Delivery (Edge CDN)
+=== Instant Global Delivery (Edge CDN)
 
-=== 1. Feature Overview
+==== 1. Feature Overview
 
 **What it does:** Every image and video is transformed and delivered in real time from
 a global edge network, at exactly the size, crop, and format each screen needs.
@@ -11,7 +11,7 @@ world — with no manual rendition management and no buffering wait.
 
 image::global-delivery-cdn.png[Instant Global Delivery (Edge CDN), title="Placeholder — the CDN delivery/rendition status view (screenshot coming soon)"]
 
-=== 2. How It Works
+==== 2. How It Works
 
 **The trigger:** Delivery happens automatically whenever an asset's URL is requested —
 there is nothing to configure per asset.
@@ -29,7 +29,7 @@ there is nothing to configure per asset.
 **The output:** A secure, signed delivery URL that resolves instantly to the correctly
 sized, cropped, and formatted asset — cached at the edge for repeat requests.
 
-=== 3. Step-by-Step Instructions
+==== 3. Step-by-Step Instructions
 
 . Ask your administrator to assign an **Image Profile** or **Video Profile** to the
   folder your assets live in (from that folder's **Properties** panel).
@@ -39,7 +39,7 @@ sized, cropped, and formatted asset — cached at the edge for repeat requests.
 . If you update the image and need viewers to see the new version immediately, ask an
   admin to **purge the cache** for that asset from its Properties panel.
 
-=== 4. Options & Configuration
+==== 4. Options & Configuration
 
 * **Image & Video Profiles** — named presets (e.g. width, crop mode, output format)
   assigned per folder path; every asset uploaded under that folder inherits the
@@ -50,7 +50,7 @@ sized, cropped, and formatted asset — cached at the edge for repeat requests.
   to admins, for the rare case content changes and needs to bypass the cache
   immediately.
 
-=== 5. Access & Permissions
+==== 5. Access & Permissions
 
 **Roles required:** Any user with Read access to a folder can use its delivery URLs.
 Assigning or editing Image/Video Profiles, and triggering a cache purge, requires
@@ -60,7 +60,7 @@ Manager/Admin permissions on that folder.
 explicitly shared link or public Collection — direct delivery URLs still respect
 folder-level permissions.
 
-=== 6. System Limits & Technical Requirements
+==== 6. System Limits & Technical Requirements
 
 * **Supported output formats today:** WebP, JPEG, and PNG. AVIF output is in progress
   and not yet available.
@@ -70,7 +70,7 @@ folder-level permissions.
   request an arbitrary size) will not work; only profile-defined variations are
   served.
 
-=== 7. Troubleshooting & FAQs
+==== 7. Troubleshooting & FAQs
 
 **I updated an image, but I still see the old version. Why?**
 The edge cache may still be serving the previous version until it naturally expires,

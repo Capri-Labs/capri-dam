@@ -1,7 +1,7 @@
 [[module-cg-duplicate-manager]]
-== The Intelligent Duplicate Manager
+=== The Intelligent Duplicate Manager
 
-=== 1. Feature Overview
+==== 1. Feature Overview
 
 **What it does:** Every uploaded asset is automatically checked against your existing
 library for exact duplicates and near-identical "visual matches," and grouped
@@ -12,7 +12,7 @@ your team always knows which version of an asset is the current one.
 
 image::duplicate-manager.png[Intelligent Duplicate Manager, title="Placeholder — the Duplicate Manager grouping matches for review (screenshot coming soon)"]
 
-=== 2. How It Works
+==== 2. How It Works
 
 **The trigger:** Duplicate detection runs automatically as part of upload processing —
 no action is required from you.
@@ -32,7 +32,7 @@ no action is required from you.
 **The output:** A new or updated **Duplicate Group** appears in the Duplicate Manager,
 and (if enabled) a notification is sent to your Inbox so you know a match was found.
 
-=== 3. Step-by-Step Instructions
+==== 3. Step-by-Step Instructions
 
 . Open **Duplicate Manager** from the sidebar.
 . Browse the list of duplicate groups — each shows its members side by side.
@@ -43,7 +43,7 @@ and (if enabled) a notification is sent to your Inbox so you know a match was fo
 . Click **Dismiss** on a group instead if you've reviewed it and decided it isn't a
   true duplicate — it won't be suggested again.
 
-=== 4. Options & Configuration
+==== 4. Options & Configuration
 
 * **Dismiss instead of resolve** — if two assets are intentionally similar (e.g. two
   angles of the same product shot), dismiss the group rather than deleting anything.
@@ -53,7 +53,7 @@ and (if enabled) a notification is sent to your Inbox so you know a match was fo
 * **Inbox notifications** — administrators can enable or disable duplicate-detection
   alerts being sent to users' Inbox from the same settings screen.
 
-=== 5. Access & Permissions
+==== 5. Access & Permissions
 
 **Roles required:** Viewing the Duplicate Manager and its groups is available to
 Contributors and above. Resolving a group (keep/archive/delete) requires the same
@@ -62,7 +62,7 @@ delete/modify permission the user would need on the affected asset's folder.
 **Restrictions:** Viewer-role users can see that a duplicate group exists but cannot
 resolve or dismiss it.
 
-=== 6. System Limits & Technical Requirements
+==== 6. System Limits & Technical Requirements
 
 * **Exact-match detection** has no false positives — it only ever matches
   byte-for-byte identical files.
@@ -73,7 +73,7 @@ resolve or dismiss it.
 * **Supported for:** image assets. Perceptual (visual) matching does not apply to
   video, audio, or document files — those are only checked via exact checksum match.
 
-=== 7. Troubleshooting & FAQs
+==== 7. Troubleshooting & FAQs
 
 **I uploaded a file I know already exists, but no duplicate group appeared. Why?**
 Confirm your administrator has not disabled duplicate detection organisation-wide.

@@ -1,7 +1,7 @@
 [[module-cg-ai-smart-uploads]]
-== AI-Powered Smart Uploads & Organization
+=== AI-Powered Smart Uploads & Organization
 
-=== 1. Feature Overview
+==== 1. Feature Overview
 
 **What it does:** When you upload an image, Capri DAM automatically reads any visible
 text, extracts technical details, and generates a semantic "fingerprint" so the asset
@@ -12,7 +12,7 @@ searchable the moment it lands — no tagging backlog, ever.
 
 image::ai-smart-uploads.png[AI-Powered Smart Uploads, title="Placeholder — AI tagging and semantic search in action (screenshot coming soon)"]
 
-=== 2. How It Works
+==== 2. How It Works
 
 **The trigger:** Processing starts automatically the instant your upload reaches 100%
 — there is no separate "Process" button to click.
@@ -34,7 +34,7 @@ metadata profile immediately; the semantic fingerprint is saved a short time lat
 (typically seconds), so the asset becomes semantically searchable without you needing
 to do anything further.
 
-=== 3. Step-by-Step Instructions
+==== 3. Step-by-Step Instructions
 
 . Click **Upload** from any folder.
 . **Select your file(s)** or drag them directly onto the browser.
@@ -44,7 +44,7 @@ to do anything further.
 . Open the asset and check its **Properties** panel to see the extracted text and
   technical metadata Capri DAM found.
 
-=== 4. Options & Configuration
+==== 4. Options & Configuration
 
 * **Manual metadata edits** — open any asset's Properties panel and edit or add
   metadata fields by hand at any time; manual edits are never overwritten by the
@@ -57,7 +57,7 @@ to do anything further.
   file types organisation-wide, from *Tools → Asset Configurations → Upload
   Restrictions*.
 
-=== 5. Access & Permissions
+==== 5. Access & Permissions
 
 **Roles required:** Available to all authenticated users with upload permission on the
 destination folder (Contributor role and above).
@@ -66,7 +66,7 @@ destination folder (Contributor role and above).
 upload new assets. Editing a folder's metadata schema requires Manager/Admin
 permissions on that folder.
 
-=== 6. System Limits & Technical Requirements
+==== 6. System Limits & Technical Requirements
 
 * **Maximum file size:** 2 GB by default — admin-configurable per organisation from
   *Tools → Asset Configurations → Upload Limits*.
@@ -76,7 +76,7 @@ permissions on that folder.
   configured AI embedding provider; if no provider is configured, keyword and metadata
   search still work normally, but meaning-based search will not return results.
 
-=== 7. Troubleshooting & FAQs
+==== 7. Troubleshooting & FAQs
 
 **What happens if text recognition or metadata extraction fails?**
 The asset still uploads and becomes usable — its status becomes **Ready** regardless.

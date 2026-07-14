@@ -410,13 +410,19 @@ class AssetProcessorWorker
 
   # Regenerates a flattened PNG web preview for an *already-processed* asset whose
   # original binary is stored but whose preview is missing — e.g. non-web-native
-  # images (PSD, TIFF, HEIC) ingested before preview generation existed.
+  # images (PSD, TIFF, HEIC) ingested before preview generation existed, or Office
+  # documents (Word/PowerPoint/Excel/RTF) that were uploaded before LibreOffice was
+  # installed on the server.
   #
-  # The original is fetched from the active storage backend into a temp file, a
-  # flattened PNG is produced, stored, and +preview_storage_path+ /
-  # +preview_content_type+ are stamped onto both the {AssetVersion} and {Asset}
-  # properties.  No-op (returns +nil+) when the asset is web-renderable, already
-  # has a preview, or its original cannot be located.
+  # The original is fetched from the active storage backend into a temp file. For
+  # Office documents this is routed through {#convert_office_document_to_preview}
+  # (LibreOffice headless conversion to PDF, then flattened); every other
+  # supported type goes straight through {#generate_web_preview}. The resulting
+  # PNG is stored, and +preview_storage_path+ / +preview_content_type+ are
+  # stamped onto both the {AssetVersion} and {Asset} properties. No-op (returns
+  # +nil+) when the asset is web-renderable, already has a preview, its original
+  # cannot be located, or — for Office documents specifically — LibreOffice is
+  # still not installed.
   #
   # @param asset [Asset]
   # @return [String, nil] the new preview storage path, or +nil+ when skipped
@@ -441,6 +447,17 @@ class AssetProcessorWorker
     storage_path = version.properties&.dig("storage_path") || props["storage_path"]
     return nil if storage_path.blank?
 
+    # Office documents (Word/PowerPoint/Excel/RTF) have no ImageMagick delegate —
+    # they must be routed through LibreOffice's headless conversion first, exactly
+    # like the initial-upload path in {#process}. Without this, generate_web_preview
+    # would always fail non-fatally on the raw .docx/.xlsx binary and silently
+    # return nil, which is why previews never appeared even after LibreOffice was
+    # installed — this method is what `rake assets:backfill_previews` calls to
+    # retroactively regenerate previews for already-uploaded assets.
+    if OFFICE_DOCUMENT_MIME_TYPES.include?(content_type)
+      return nil unless soffice_available?
+    end
+
     backend = ::StorageBackend.find_by(active: true)
     storage = ::StorageManager.adapter_for(backend)
 
@@ -448,7 +465,11 @@ class AssetProcessorWorker
     return nil unless fetch_original(storage, storage_path, tmp)
 
     meta = {}
-    generate_web_preview(tmp, asset, version, storage, meta)
+    if OFFICE_DOCUMENT_MIME_TYPES.include?(content_type)
+      convert_office_document_to_preview(tmp, asset, version, storage, meta)
+    else
+      generate_web_preview(tmp, asset, version, storage, meta)
+    end
     return nil if meta[:preview_storage_path].blank?
 
     preview_meta = {

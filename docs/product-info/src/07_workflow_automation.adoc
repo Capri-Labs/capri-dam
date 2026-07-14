@@ -1,7 +1,7 @@
 [[module-workflow]]
-== Workflow Automation & Approvals
+=== Workflow Automation & Approvals
 
-=== Overview
+==== Overview
 
 A visual, drag-and-drop workflow designer lets non-developers build asset approval
 and automation pipelines: who reviews what, under which trigger conditions, and
@@ -13,7 +13,7 @@ image::workflow-designer.png[Approval Workflows list, title="Approval Workflows 
 
 image::workflow-dashboard.png[Workflow Dashboard, title="Workflow Dashboard — active and completed task tracking"]
 
-=== Key features
+==== Key features
 
 [cols="2,3", options="header"]
 |===
@@ -28,10 +28,11 @@ image::workflow-dashboard.png[Workflow Dashboard, title="Workflow Dashboard — 
 | Workflow-protected purge | Assets with active workflow instances can't be purged from the Recycle Bin (see <<module-recycle-bin>>).
 |===
 
-=== Powerful / notable capabilities
+==== Powerful / notable capabilities
 
 [.feature-highlight]
-====
+=====
+
 * **No-code DAG designer** — branching logic (Condition nodes with TRUE/FALSE
   outputs), parallel/sequential review, and multi-channel notifications are all
   assembled visually, with zero code.
@@ -40,16 +41,17 @@ image::workflow-dashboard.png[Workflow Dashboard, title="Workflow Dashboard — 
   rather than failing silently at runtime.
 * **Cross-cutting safety** — workflow state integrates with the Recycle Bin's purge
   guard, so in-review assets can't be accidentally destroyed.
-====
+=====
 
-=== Notes & known limitations
+
+==== Notes & known limitations
 
 * The canvas currently supports a fixed catalogue of node types; there is no
   plugin/custom-node SDK for teams wanting bespoke step types.
 * Condition-node branching is binary (TRUE/FALSE) only — there's no multi-way
   switch/case branching yet.
 
-=== Test coverage status
+==== Test coverage status
 
 [.status-covered]#Covered by E2E# (`spec/e2e/workflow_designer.e2e.spec.js`)
 

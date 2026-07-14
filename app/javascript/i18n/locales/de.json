@@ -2907,5 +2907,13 @@
       "removed": "Richtlinie entfernt. Ordner verwendet wieder geerbte Regeln.",
       "removeFailed": "Richtlinie konnte nicht entfernt werden."
     }
+  },
+  "cdnEdge": {
+    "imageOptimizerFormats": "Bildoptimierungs-Formate",
+    "imageOptimizerFormatsHint": "Ausgabeformate, die der Fastly Image Optimizer (Fastly IO) für Bild-Assets ausliefern darf.",
+    "formats": {
+      "webp": "WebP",
+      "avif": "AVIF"
+    }
   }
 }

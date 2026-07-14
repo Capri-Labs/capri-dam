@@ -1,7 +1,7 @@
 [[module-collections]]
-== Collections
+=== Collections
 
-=== Overview
+==== Overview
 
 Collections let users curate cross-folder sets of assets — manually, by rule, or by
 time window — and share them externally without granting access to the underlying
@@ -11,7 +11,7 @@ image::collections.png[Collections screen, title="Collections — curated, rule-
 
 image::collection-detail.png[Collection Detail workspace, title="Collection Detail — action toolbar, governance banner (collapsible), and curated assets grid"]
 
-=== Key features
+==== Key features
 
 [cols="2,3", options="header"]
 |===
@@ -24,24 +24,26 @@ image::collection-detail.png[Collection Detail workspace, title="Collection Deta
 | Slug-based routing | Collections are addressable at `/collections/*path`, supporting nested workspace-style organisation.
 |===
 
-=== Powerful / notable capabilities
+==== Powerful / notable capabilities
 
 [.feature-highlight]
-====
+=====
+
 * **Smart collections stay current with zero manual upkeep** — once a rule is
   defined, new matching assets flow in automatically via a background worker.
 * **External sharing without folder access** — a signed collection URL exposes only
   the curated set, never the source folder's full contents or permissions.
-====
+=====
 
-=== Notes & known limitations
+
+==== Notes & known limitations
 
 * Smart collection rules currently support a fixed set of predicates (content type,
   tag, folder scope, date range); there is no arbitrary boolean rule builder yet.
 * Shared collection links do not currently support password protection — only
   expiry-based access control.
 
-=== Test coverage status
+==== Test coverage status
 
 [.status-covered]#Covered by E2E# — `spec/e2e/collections_workspace.e2e.spec.js` provides
 dedicated E2E coverage:

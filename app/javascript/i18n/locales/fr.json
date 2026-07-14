@@ -2907,5 +2907,13 @@
       "removed": "Politique supprimée. Le dossier revient aux règles héritées.",
       "removeFailed": "Échec de la suppression de la politique."
     }
+  },
+  "cdnEdge": {
+    "imageOptimizerFormats": "Formats de l'optimiseur d'images",
+    "imageOptimizerFormatsHint": "Formats de sortie que l'optimiseur d'images Fastly (Fastly IO) est autorisé à diffuser pour les ressources image.",
+    "formats": {
+      "webp": "WebP",
+      "avif": "AVIF"
+    }
   }
 }

@@ -1,7 +1,7 @@
 [[module-cg-ingestion]]
-== Seamless Migration & Ingestion
+=== Seamless Migration & Ingestion
 
-=== 1. Feature Overview
+==== 1. Feature Overview
 
 **What it does:** A guided, wizard-driven migration brings your assets over from your
 existing platform — no engineering team required.
@@ -11,7 +11,7 @@ existing library comes with you, with clear visibility into progress the whole w
 
 image::ingestion-migration.png[Seamless Migration & Ingestion, title="Placeholder — the guided migration wizard (screenshot coming soon)"]
 
-=== 2. How It Works
+==== 2. How It Works
 
 **The trigger:** An administrator starts a migration batch via the **Start Migration**
 wizard.
@@ -24,7 +24,7 @@ Progress is tracked per batch, with phase and status visible throughout.
 **The output:** Migrated assets appear in your chosen destination folder just like any
 other upload — including automatic metadata extraction and duplicate detection.
 
-=== 3. Step-by-Step Instructions
+==== 3. Step-by-Step Instructions
 
 . Open the **Migration Dashboard** from the sidebar.
 . Click **Start Migration**.
@@ -33,7 +33,7 @@ other upload — including automatic metadata extraction and duplicate detection
 . Confirm and start — track progress from the batch list, which shows status chips
   per batch.
 
-=== 4. Options & Configuration
+==== 4. Options & Configuration
 
 * **Batch status filtering** — filter the batch list by status (e.g. extracting,
   transforming, completed).
@@ -41,13 +41,13 @@ other upload — including automatic metadata extraction and duplicate detection
 * **Legacy Connectors screen** — configure and store source-system credentials ahead
   of starting a migration.
 
-=== 5. Access & Permissions
+==== 5. Access & Permissions
 
 **Roles required:** Starting a migration and configuring connectors requires Admin
 permissions. Once migrated, assets follow the same folder-level permissions as any
 other asset.
 
-=== 6. System Limits & Technical Requirements
+==== 6. System Limits & Technical Requirements
 
 * **Supported source platforms:** AWS S3, Google Cloud Storage, Nuxeo, Brandfolder,
   Cloudinary, SharePoint, Bynder, Aprimo, Widen Collective, Adobe Experience Manager,
@@ -57,7 +57,7 @@ other asset.
 * The wizard currently supports choosing a **destination folder** but does not yet
   expose granular field-mapping/transformation rules in the UI itself.
 
-=== 7. Troubleshooting & FAQs
+==== 7. Troubleshooting & FAQs
 
 **My migration batch seems stuck. What should I check?**
 Very large batches can legitimately take 30–90 minutes or more. If the pending item

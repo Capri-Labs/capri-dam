@@ -1,7 +1,7 @@
 [[module-cg-email]]
-== Email Communication Engine
+=== Email Communication Engine
 
-=== 1. Feature Overview
+==== 1. Feature Overview
 
 **What it does:** Built-in, brandable email notifications — for approvals, shares, and
 workflow alerts — are designed visually, with no HTML required.
@@ -11,7 +11,7 @@ look and feel like your brand, not a generic system notification.
 
 image::email-communication.png[Email Communication Engine, title="Placeholder — the visual email template designer (screenshot coming soon)"]
 
-=== 2. How It Works
+==== 2. How It Works
 
 **The trigger:** A configured system event occurs — e.g. an asset is shared, or a
 workflow task is assigned to you.
@@ -23,7 +23,7 @@ and the relevant details of the event, then queued for delivery.
 **The output:** The recipient receives the email, and a record of the send (with
 delivery status) appears in the **Outbox** for administrators to review.
 
-=== 3. Step-by-Step Instructions (for administrators)
+==== 3. Step-by-Step Instructions (for administrators)
 
 . Open **Communication Engine** from the sidebar.
 . Click **New Template**, choose a design from the gallery, or **Start from Blank**.
@@ -33,7 +33,7 @@ delivery status) appears in the **Outbox** for administrators to review.
 . Configure **SMTP settings** and click **Test Connection** before committing, so mail
   delivery is verified up front.
 
-=== 4. Options & Configuration
+==== 4. Options & Configuration
 
 * **Branding** — logo, brand colours, and hand-editable custom CSS applied to every
   outgoing email.
@@ -41,20 +41,20 @@ delivery status) appears in the **Outbox** for administrators to review.
 * **SMTP test tools** — "Test Connection" and "Send SMTP Echo Check" verify delivery
   before it goes live.
 
-=== 5. Access & Permissions
+==== 5. Access & Permissions
 
 **Roles required:** Creating/editing templates, event mappings, and SMTP settings
 requires Admin permissions. Receiving notification emails requires no special
 permission — any user who is the subject of a mapped event will receive one.
 
-=== 6. System Limits & Technical Requirements
+==== 6. System Limits & Technical Requirements
 
 * The **Send SMTP Echo Check** test-send requires a recipient address to be provided —
   there is no default "send to me" shortcut.
 * AI Suggestions in the template editor is a content-assist surface — always review
   suggested copy before sending to customers or external partners.
 
-=== 7. Troubleshooting & FAQs
+==== 7. Troubleshooting & FAQs
 
 **My users say they aren't receiving notification emails. What should I check first?**
 Ask an admin to open **SMTP Settings** and run **Test Connection** — a broken SMTP

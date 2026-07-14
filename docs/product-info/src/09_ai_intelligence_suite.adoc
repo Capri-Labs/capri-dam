@@ -1,7 +1,7 @@
 [[module-ai-suite]]
-== AI Intelligence Suite
+=== AI Intelligence Suite
 
-=== Overview
+==== Overview
 
 A family of AI-powered modules spanning natural-language discovery, generative
 style/model governance, agent automation, and cryptographic content-provenance
@@ -14,7 +14,7 @@ image::style-model-hub.png[Style & Model Hub, title="Style & Model Hub — regis
 
 image::provenance-c2pa.png[Provenance & C2PA, title="Provenance & C2PA governance screen"]
 
-=== Key features
+==== Key features
 
 [cols="2,3", options="header"]
 |===
@@ -28,10 +28,11 @@ image::provenance-c2pa.png[Provenance & C2PA, title="Provenance & C2PA governanc
 | Provenance & C2PA | Governance screen for Content Credentials (C2PA) — asset provenance records, disclosure policy configuration, and batch signing actions — 3 tabs: Provenance Records, Policy Settings, Batch Actions.
 |===
 
-=== Powerful / notable capabilities
+==== Powerful / notable capabilities
 
 [.feature-highlight]
-====
+=====
+
 * **Governance-first AI adoption** — the Style & Model Hub and Provenance/C2PA
   screens exist specifically so organisations can register, health-check, and
   govern which AI models and content-authenticity policies are active, rather than
@@ -42,9 +43,10 @@ image::provenance-c2pa.png[Provenance & C2PA, title="Provenance & C2PA governanc
 * **Multi-provider embedding support** — semantic features are not locked to a
   single AI vendor (OpenAI, Cohere, Ollama, and Azure OpenAI are all supported
   provider options).
-====
+=====
 
-=== Notes & known limitations
+
+==== Notes & known limitations
 
 * Both the Style & Model Hub and Provenance & C2PA screens are **admin-only** —
   there is currently no delegated/read-only view for non-admin stakeholders who
@@ -53,7 +55,7 @@ image::provenance-c2pa.png[Provenance & C2PA, title="Provenance & C2PA governanc
   interaction today; there is no multi-turn conversational refinement
   ("no, only from last month") yet.
 
-=== Test coverage status
+==== Test coverage status
 
 [.status-covered]#Covered by E2E#
 

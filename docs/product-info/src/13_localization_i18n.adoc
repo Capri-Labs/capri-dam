@@ -1,7 +1,7 @@
 [[module-localization]]
-== Localization & Internationalization (i18n)
+=== Localization & Internationalization (i18n)
 
-=== Overview
+==== Overview
 
 Full UI internationalization across 10 locales, with per-user language
 preference, persisted server-side, and a parity-enforced translation pipeline
@@ -9,7 +9,7 @@ that prevents any locale from silently falling behind.
 
 image::profile-localization.png[Profile Localization tab, title="Profile → Localization tab — per-user language selector"]
 
-=== Key features
+==== Key features
 
 [cols="2,3", options="header"]
 |===
@@ -22,19 +22,21 @@ image::profile-localization.png[Profile Localization tab, title="Profile → Loc
 | Translation parity enforcement | A dedicated Jest test (`spec/javascript/i18n/i18n.test.js`) fails the build if any locale is missing a key present in the English base file.
 |===
 
-=== Powerful / notable capabilities
+==== Powerful / notable capabilities
 
 [.feature-highlight]
-====
+=====
+
 * **Parity is enforced by an automated test, not a manual checklist** — every new
   UI string added anywhere in the app must be translated into all 9 non-English
   locales before Jest goes green, which is what keeps a 10-locale product from
   silently drifting into "half-translated" territory over time.
 * **RTL-ready** — Arabic is a first-class supported locale, meaning right-to-left
   layout considerations are already part of the design baseline.
-====
+=====
 
-=== Notes & known limitations
+
+==== Notes & known limitations
 
 * Translation *quality* (naturalness/tone per locale) is not automatically
   verified — only key *parity* (every key exists in every locale) is enforced.
@@ -42,7 +44,7 @@ image::profile-localization.png[Profile Localization tab, title="Profile → Loc
 * Locale is a per-user setting only; there is currently no organisation-wide
   default-locale override for new users beyond English.
 
-=== Test coverage status
+==== Test coverage status
 
 [.status-covered]#Covered by E2E# (`spec/e2e/language_switching.e2e.spec.js`)
 

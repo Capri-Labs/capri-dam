@@ -1,7 +1,7 @@
 [[module-ingestion]]
-== Ingestion & Migration
+=== Ingestion & Migration
 
-=== Overview
+==== Overview
 
 A migration control-centre for bulk-importing assets from 14 external DAM/storage
 platforms, with a guided wizard, connector management, batch monitoring, and
@@ -9,7 +9,7 @@ health-status reporting.
 
 image::admin-ingestion-pipeline.png[Ingestion Dashboard, title="Legacy Ingestion & Migration dashboard — metric cards, migration-phase banner, and batch list"]
 
-=== Key features
+==== Key features
 
 [cols="2,3", options="header"]
 |===
@@ -23,10 +23,11 @@ image::admin-ingestion-pipeline.png[Ingestion Dashboard, title="Legacy Ingestion
 | Data health integration | Migration health surfaces into the Data Health dashboard (see <<module-system-operations>>).
 |===
 
-=== Powerful / notable capabilities
+==== Powerful / notable capabilities
 
 [.feature-highlight]
-====
+=====
+
 * **14 pre-built external-DAM connectors** — a broad out-of-the-box catalogue
   covering most major DAM/CMS/cloud-storage platforms teams migrate away from,
   rather than a bespoke one-off import script per customer.
@@ -36,9 +37,10 @@ image::admin-ingestion-pipeline.png[Ingestion Dashboard, title="Legacy Ingestion
 * **Migration-phase awareness baked into the UI** — the dashboard's info banner
   actively communicates what phase a migration effort is in, reducing the "is it
   still running?" support burden.
-====
+=====
 
-=== Notes & known limitations
+
+==== Notes & known limitations
 
 * The wizard currently supports selecting a destination folder but does not yet
   expose granular field-mapping/transformation rules inside the UI itself.
@@ -47,7 +49,7 @@ image::admin-ingestion-pipeline.png[Ingestion Dashboard, title="Legacy Ingestion
   automated tests (see below) — treat production migrations with the same
   operational care as any bulk data-movement operation.
 
-=== Test coverage status
+==== Test coverage status
 
 [.status-covered]#Covered by E2E# (`spec/e2e/ingestion_pipeline.e2e.spec.js`)
 

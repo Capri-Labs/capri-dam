@@ -1,7 +1,7 @@
 [[module-duplicates]]
-== Duplicate Manager
+=== Duplicate Manager
 
-=== Overview
+==== Overview
 
 Capri DAM automatically detects duplicate assets using two complementary
 strategies: an exact SHA-256 checksum match (true byte-for-byte duplicates)
@@ -11,7 +11,7 @@ however they were re-saved.
 
 image::duplicates.png[Duplicate Manager, title="Duplicate Manager — grouped by checksum or perceptual similarity, with resolution actions"]
 
-=== Key features
+==== Key features
 
 [cols="2,3", options="header"]
 |===
@@ -24,10 +24,11 @@ image::duplicates.png[Duplicate Manager, title="Duplicate Manager — grouped by
 | Storage-savings estimate | Storage-health tooling estimates the dollar/GB savings unlocked by resolving pending duplicate groups.
 |===
 
-=== Powerful / notable capabilities
+==== Powerful / notable capabilities
 
 [.feature-highlight]
-====
+=====
+
 * **Checksum-exact, zero false positives** — exact-match grouping is based on a
   cryptographic hash of file bytes, so there is no ambiguity about whether two
   assets sharing a checksum match are truly identical.
@@ -37,9 +38,10 @@ image::duplicates.png[Duplicate Manager, title="Duplicate Manager — grouped by
 * **Storage cost visibility** — pending duplicate groups are translated directly
   into an estimated monthly storage-cost saving, giving admins a concrete incentive
   to clean up.
-====
+=====
 
-=== Notes & known limitations
+
+==== Notes & known limitations
 
 * Perceptual matching currently covers re-saves/format conversions of the
   *same* source image; it is not tuned for heavier transformations like
@@ -48,7 +50,7 @@ image::duplicates.png[Duplicate Manager, title="Duplicate Manager — grouped by
 * Resolution actions are manual; there is no auto-resolve policy (e.g. "always
   keep the oldest / largest") yet.
 
-=== Test coverage status
+==== Test coverage status
 
 [.status-covered]#Covered by E2E# — `spec/e2e/duplicate_manager_workspace.e2e.spec.js`
 provides dedicated coverage of the Duplicate Manager screen itself:

@@ -2907,5 +2907,13 @@
       "removed": "Política eliminada. La carpeta vuelve a las reglas heredadas.",
       "removeFailed": "Error al eliminar la política."
     }
+  },
+  "cdnEdge": {
+    "imageOptimizerFormats": "Formatos del optimizador de imágenes",
+    "imageOptimizerFormatsHint": "Formatos de salida que el optimizador de imágenes de Fastly (Fastly IO) puede entregar para los activos de imagen.",
+    "formats": {
+      "webp": "WebP",
+      "avif": "AVIF"
+    }
   }
 }

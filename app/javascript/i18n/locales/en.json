@@ -2907,5 +2907,13 @@
       "removed": "Policy removed. Folder reverts to inherited rules.",
       "removeFailed": "Failed to remove policy."
     }
+  },
+  "cdnEdge": {
+    "imageOptimizerFormats": "Image Optimizer Formats",
+    "imageOptimizerFormatsHint": "Output formats Fastly's Image Optimizer (Fastly IO) is allowed to serve for image assets.",
+    "formats": {
+      "webp": "WebP",
+      "avif": "AVIF"
+    }
   }
 }

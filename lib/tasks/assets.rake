@@ -1,5 +1,7 @@
 namespace :assets do
-  desc "Backfill flattened PNG previews for non-web-native images (PSD/TIFF/HEIC) that lack one"
+  desc "Backfill flattened PNG previews for assets that lack one — non-web-native images " \
+       "(PSD/TIFF/HEIC) and Office documents (Word/PowerPoint/Excel/RTF) whose preview " \
+       "couldn't be generated at upload time (e.g. LibreOffice was installed afterwards)"
   task backfill_previews: :environment do
     scope = Asset.where(deleted_at: nil)
     total = 0

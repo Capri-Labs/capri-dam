@@ -2907,5 +2907,13 @@
       "removed": "Beleid verwijderd. Map keert terug naar geërfde regels.",
       "removeFailed": "Verwijderen van beleid mislukt."
     }
+  },
+  "cdnEdge": {
+    "imageOptimizerFormats": "Afbeeldingsoptimalisatie-indelingen",
+    "imageOptimizerFormatsHint": "Uitvoerindelingen die Fastly's Image Optimizer (Fastly IO) mag gebruiken voor afbeeldingsassets.",
+    "formats": {
+      "webp": "WebP",
+      "avif": "AVIF"
+    }
   }
 }

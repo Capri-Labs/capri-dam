@@ -1,7 +1,7 @@
 [[module-dashboard]]
-== Dashboard ("Command Center")
+=== Dashboard ("Command Center")
 
-=== Overview
+==== Overview
 
 The Dashboard is the first screen every user sees after signing in. It gives a
 real-time, at-a-glance summary of the whole asset library: totals, growth trends,
@@ -10,7 +10,7 @@ needing to open any other screen.
 
 image::dashboard.png[Capri DAM Dashboard, title="The Dashboard ('Command Center') showing library stats, asset growth trend, and workflow summary"]
 
-=== Key features
+==== Key features
 
 [cols="2,3", options="header"]
 |===
@@ -24,18 +24,20 @@ image::dashboard.png[Capri DAM Dashboard, title="The Dashboard ('Command Center'
 | Manual refresh | "Last updated" timestamp with a one-click refresh control.
 |===
 
-=== Powerful / notable capabilities
+==== Powerful / notable capabilities
 
 [.feature-highlight]
-====
+=====
+
 * **Zero-navigation situational awareness** — admins and contributors can judge the
   health of the whole library (growth, storage, pending approvals) without opening a
   single folder.
 * **Role-aware rendering** — card set and AI insights adapt based on the signed-in
   user's role and permissions.
-====
+=====
 
-=== Notes & known limitations
+
+==== Notes & known limitations
 
 * The "Asset Growth" chart currently buckets by calendar month only; there is no
   custom date-range picker yet.
@@ -43,7 +45,7 @@ image::dashboard.png[Capri DAM Dashboard, title="The Dashboard ('Command Center'
   summary — the more sophisticated AI Copilot lives in its own module (see
   <<module-ai-suite>>).
 
-=== Test coverage status
+==== Test coverage status
 
 [.status-covered]#Covered# — none of the current E2E specs target `/dashboard`
 directly; existing coverage is incidental (post-login landing-page assertions in

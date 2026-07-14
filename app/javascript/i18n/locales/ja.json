@@ -2907,5 +2907,13 @@
       "removed": "ポリシーを削除しました。フォルダーは継承ルールに戻ります。",
       "removeFailed": "ポリシーの削除に失敗しました。"
     }
+  },
+  "cdnEdge": {
+    "imageOptimizerFormats": "画像最適化フォーマット",
+    "imageOptimizerFormatsHint": "Fastly Image Optimizer(Fastly IO)が画像アセットの配信に使用できる出力フォーマット。",
+    "formats": {
+      "webp": "WebP",
+      "avif": "AVIF"
+    }
   }
 }

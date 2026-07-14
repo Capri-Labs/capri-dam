@@ -1,7 +1,7 @@
 [[module-cg-collections]]
-== Collections
+=== Collections
 
-=== 1. Feature Overview
+==== 1. Feature Overview
 
 **What it does:** Collections let you curate cross-folder sets of assets — manually,
 by rule, or by time window — and share them externally without granting access to
@@ -12,7 +12,7 @@ safely with anyone, inside or outside your organisation.
 
 image::collections.png[Collections, title="Placeholder — a curated Collection ready to share (screenshot coming soon)"]
 
-=== 2. How It Works
+==== 2. How It Works
 
 **The trigger:** Creating a Collection, or defining a Smart Collection's matching
 rule.
@@ -26,7 +26,7 @@ passes (e.g. "assets uploaded this week").
 **The output:** A shareable Collection page, addressable at its own URL, optionally
 exposed via a signed public link with no login required for the recipient.
 
-=== 3. Step-by-Step Instructions
+==== 3. Step-by-Step Instructions
 
 . Open **Collections** from the sidebar and click **New Collection**.
 . Choose **Manual**, **Smart**, or **Temporal**.
@@ -35,7 +35,7 @@ exposed via a signed public link with no login required for the recipient.
 . For a Smart Collection, define your matching rule (content type, tag, folder, date).
 . Click **Share** to generate a signed public link, and set its expiry.
 
-=== 4. Options & Configuration
+==== 4. Options & Configuration
 
 * **Rule editor** — Smart Collections support content type, tag, folder scope, and
   date-range predicates.
@@ -43,7 +43,7 @@ exposed via a signed public link with no login required for the recipient.
 * **Nested/slug-based routing** — Collections can be organised in a nested,
   workspace-style structure.
 
-=== 5. Access & Permissions
+==== 5. Access & Permissions
 
 **Roles required:** Creating and editing Collections requires Contributor role and
 above; viewing a Collection you have folder access to is available to any signed-in
@@ -53,14 +53,14 @@ user.
 and only ever see the curated Collection contents — never your source folder
 structure or permissions.
 
-=== 6. System Limits & Technical Requirements
+==== 6. System Limits & Technical Requirements
 
 * Smart Collection rules currently support a **fixed set of predicates** (content
   type, tag, folder scope, date range) — there is no arbitrary boolean rule builder.
 * Shared Collection links support **expiry-based** access control only — there is no
   password-protection option yet.
 
-=== 7. Troubleshooting & FAQs
+==== 7. Troubleshooting & FAQs
 
 **A new asset matching my Smart Collection's rule isn't showing up yet. Why?**
 Smart Collections are updated by a background process shortly after a matching asset

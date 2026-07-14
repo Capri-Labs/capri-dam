@@ -1,7 +1,7 @@
 [[module-asset-management]]
-== Asset Management (Folders & Digital Assets)
+=== Asset Management (Folders & Digital Assets)
 
-=== Overview
+==== Overview
 
 The core of Capri DAM: an N-ary folder hierarchy holding versioned digital assets,
 each with rich technical and custom metadata, access-controlled per folder.
@@ -10,7 +10,7 @@ image::folders-browser.png[Digital Assets browser, title="The 'All Assets' brows
 
 image::folder-access-acl.png[Folder Access tab, title="Folder Info Panel — Access tab with per-group ACL, cascade toggle, and explicit-deny checkbox"]
 
-=== Key features
+==== Key features
 
 [cols="2,3", options="header"]
 |===
@@ -26,10 +26,11 @@ image::folder-access-acl.png[Folder Access tab, title="Folder Info Panel — Acc
 | Folder-scoped search & filters | Filter by content type and status, search by name, inside any folder scope.
 |===
 
-=== Powerful / notable capabilities
+==== Powerful / notable capabilities
 
 [.feature-highlight]
-====
+=====
+
 * **Per-folder everything** — access policy, metadata schema, and video encoding
   profile are all scoped to a folder path and automatically inherited by its
   subfolders, so a single configuration change cascades correctly.
@@ -38,9 +39,10 @@ image::folder-access-acl.png[Folder Access tab, title="Folder Info Panel — Acc
 * **Schema-driven custom metadata** — folders can define their own structured
   metadata fields (not just free-text tags), enabling consistent, queryable
   attributes across a whole content library.
-====
+=====
 
-=== Notes & known limitations
+
+==== Notes & known limitations
 
 * Bulk metadata CSV import now supports a dry-run / preview-before-commit mode,
   returning per-row success/failure details before users launch the real import job.
@@ -48,7 +50,7 @@ image::folder-access-acl.png[Folder Access tab, title="Folder Info Panel — Acc
   saved versions, with an automatic side-by-side fallback when browser CORS
   rules block canvas diffing for CDN-hosted previews.
 
-=== Test coverage status
+==== Test coverage status
 
 [.status-covered]#Covered by E2E#
 

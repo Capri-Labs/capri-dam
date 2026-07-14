@@ -1,5 +1,5 @@
 = Capri DAM — Customer Guide
-Ashok Pelluru <apelluru@apache.org>
+Ashok Pelluru <apellurudotcom@gmail.com>
 v1.0.0, 2026-07-13
 :doctype: book
 :toc: left

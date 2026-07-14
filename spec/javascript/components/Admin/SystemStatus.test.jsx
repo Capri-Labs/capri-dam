@@ -75,6 +75,16 @@ describe('SystemStatus tabs', () => {
           filter_options: { actions: [ 'create', 'update' ], auditable_types: [ 'Folder', 'Asset' ] },
         }) });
       }
+      if (url === '/api/v1/cdn_configurations' && (!options.method || options.method === 'GET')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({
+          fastly: { is_active: true, settings: { service_id: 'svc-123', api_key: '••••••••abcd', image_optimizer_formats: [ 'webp' ] } },
+          cloudflare: { is_active: false, settings: {} },
+          akamai: { is_active: false, settings: {} },
+        }) });
+      }
+      if (url === '/api/v1/cdn_configurations' && options.method === 'PUT') {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ success: true, message: 'Fastly configuration updated.' }) });
+      }
       return Promise.resolve({ ok: true, json: () => Promise.resolve({ success: true }) });
     });
   });
@@ -161,6 +171,62 @@ describe('SystemStatus tabs', () => {
     fireEvent.click(screen.getByText('Origin Storage'));
 
     expect(await screen.findByText('Storage Backend Configuration')).toBeInTheDocument();
+  });
+
+  it('loads the real CDN configuration from the API and pre-checks the saved image optimizer formats', async () => {
+    await act(async () => { render(<StorageOperationsTab />); });
+
+    expect(await screen.findByDisplayValue('svc-123')).toBeInTheDocument();
+    expect(screen.getByLabelText('webp')).toBeChecked();
+    expect(screen.getByLabelText('avif')).not.toBeChecked();
+    expect(global.fetch).toHaveBeenCalledWith('/api/v1/cdn_configurations');
+  });
+
+  it('toggles the AVIF checkbox and saves the updated format list via a real PUT request', async () => {
+    await act(async () => { render(<StorageOperationsTab />); });
+    await screen.findByDisplayValue('svc-123');
+
+    fireEvent.click(screen.getByLabelText('avif'));
+    expect(screen.getByLabelText('avif')).toBeChecked();
+
+    fireEvent.click(screen.getByText('Save CDN Settings'));
+
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith('/api/v1/cdn_configurations', expect.objectContaining({
+        method: 'PUT',
+        headers: expect.objectContaining({ 'X-CSRF-Token': 'token' }),
+      }));
+    });
+
+    const putCall = global.fetch.mock.calls.find(([ url, opts ]) => url === '/api/v1/cdn_configurations' && opts?.method === 'PUT');
+    const body = JSON.parse(putCall[1].body);
+    expect(body.provider).toBe('fastly');
+    expect(body.settings.image_optimizer_formats).toEqual([ 'webp', 'avif' ]);
+
+    expect(await screen.findByText('Fastly configuration updated.')).toBeInTheDocument();
+  });
+
+  it('surfaces a validation error when the API rejects an unsupported format', async () => {
+    global.fetch = jest.fn((url, options = {}) => {
+      if (url === '/api/v1/cdn_configurations' && (!options.method || options.method === 'GET')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({
+          fastly: { is_active: true, settings: { service_id: 'svc-123', image_optimizer_formats: [ 'webp' ] } },
+          cloudflare: { is_active: false, settings: {} },
+          akamai: { is_active: false, settings: {} },
+        }) });
+      }
+      if (url === '/api/v1/cdn_configurations' && options.method === 'PUT') {
+        return Promise.resolve({ ok: false, status: 422, json: () => Promise.resolve({ errors: [ 'Unsupported image optimizer format(s): jxl.' ] }) });
+      }
+      return Promise.resolve({ ok: true, json: () => Promise.resolve({ success: true }) });
+    });
+
+    await act(async () => { render(<StorageOperationsTab />); });
+    await screen.findByDisplayValue('svc-123');
+
+    fireEvent.click(screen.getByText('Save CDN Settings'));
+
+    expect(await screen.findByText(/Unsupported image optimizer format/)).toBeInTheDocument();
   });
 
   it('renders AuditLogTab with fetched entries', async () => {

@@ -1,5 +1,5 @@
 [[module-introduction]]
-== What is Capri DAM?
+=== What is Capri DAM?
 
 **Capri DAM** is a modern, open-source, **headless Digital Asset Management** platform
 built for teams that need enterprise-grade dynamic media capabilities without
@@ -18,7 +18,7 @@ for any front end: web, mobile, IoT, or digital signage.
   REST, GraphQL, or signed CDN URLs.
 * **Apache 2.0 licensed** — host it yourself; no per-seat or per-GB fees.
 
-=== Who this guide is for
+==== Who this guide is for
 
 This guide documents the product **as it exists today**, module by module — what each
 screen does, what makes it worth using, what its rough edges are, and how much of it
@@ -29,7 +29,7 @@ is currently protected by automated End-to-End (E2E) tests. It is written for:
 * Product/QA stakeholders who want a single place tracking **test-coverage gaps**
   (see the <<section-coverage,Test Coverage Roadmap>> at the end of this guide).
 
-=== Use cases
+==== Use cases
 
 Creative agencies:: Upload, organise, and share brand assets with clients via
 self-expiring signed URLs. Smart collections automatically group assets by campaign
@@ -48,7 +48,7 @@ Semantic search finds related images by meaning, not just keywords.
 Enterprise / regulated industries:: Keycloak SSO, group-based RBAC, immutable audit
 logs, and workflow-guarded purge satisfy strict information-governance requirements.
 
-=== Technical requirements
+==== Technical requirements
 
 [cols="1,3", options="header"]
 |===
@@ -62,7 +62,7 @@ logs, and workflow-guarded purge satisfy strict information-governance requireme
 | CDN | Optional (required for Fastly IO image-optimization features)
 |===
 
-=== Licence
+==== Licence
 
 Capri DAM is released under the **Apache License 2.0** (see `LICENSE` in the
 repository root). You are free to use, modify, and distribute it — including for

@@ -1,5 +1,5 @@
 = Capri DAM — Architecture Documentation
-Ashok Pelluru <apelluru@apache.org>
+Ashok Pelluru <apellurudotcom@gmail.com>
 v1.0.0, 2026-06-25
 :doctype: book
 :toc: left

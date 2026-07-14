@@ -1,7 +1,7 @@
 [[module-search]]
-== Search & Discovery
+=== Search & Discovery
 
-=== Overview
+==== Overview
 
 Beyond simple keyword lookup, Capri DAM combines full-text search, faceted
 filtering, AI-powered semantic (meaning-based) search, and a natural-language
@@ -10,7 +10,7 @@ screen.
 
 image::search-results.png[Search results page, title="Search Results page — query and mode carried in the URL, results rendered in a responsive grid"]
 
-=== Key features
+==== Key features
 
 [cols="2,3", options="header"]
 |===
@@ -27,10 +27,11 @@ image::search-results.png[Search results page, title="Search Results page — qu
 | Include Recycle Bin toggle | Off by default; when enabled, soft-deleted assets are included in results and flagged with a "Bin" badge so they're clearly distinguishable from active assets.
 |===
 
-=== Powerful / notable capabilities
+==== Powerful / notable capabilities
 
 [.feature-highlight]
-====
+=====
+
 * **Meaning, not just keywords** — semantic search finds visually or conceptually
   related assets even when they share no common tags or filenames.
 * **One search bar, three search paradigms** — keyword, visual similarity, and
@@ -38,9 +39,10 @@ image::search-results.png[Search results page, title="Search Results page — qu
   separate screens.
 * **Cluster map for serendipitous discovery** — surfaces relationships between
   assets that faceted filters alone would never reveal.
-====
+=====
 
-=== Notes & known limitations
+
+==== Notes & known limitations
 
 * Semantic search quality depends entirely on the configured embedding provider;
   there is currently no built-in provider fallback/failover if the primary
@@ -48,7 +50,7 @@ image::search-results.png[Search results page, title="Search Results page — qu
 * The semantic cluster map is best-suited to small-to-medium result sets; very
   large clusters (1000+ nodes) are not yet paginated or virtualised.
 
-=== Test coverage status
+==== Test coverage status
 
 [.status-covered]#Covered by E2E# (`spec/e2e/global_search_bar.e2e.spec.js`,
 `spec/e2e/search_and_duplicates_fixes.e2e.spec.js`)

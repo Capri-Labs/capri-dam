@@ -2907,5 +2907,13 @@
       "removed": "تمت إزالة السياسة. يعود المجلد إلى القواعد الموروثة.",
       "removeFailed": "فشل إزالة السياسة."
     }
+  },
+  "cdnEdge": {
+    "imageOptimizerFormats": "صيغ محسّن الصور",
+    "imageOptimizerFormatsHint": "صيغ الإخراج المسموح لمحسّن صور Fastly (Fastly IO) بتقديمها لأصول الصور.",
+    "formats": {
+      "webp": "WebP",
+      "avif": "AVIF"
+    }
   }
 }

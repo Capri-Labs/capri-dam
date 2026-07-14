@@ -2907,5 +2907,13 @@
       "removed": "정책이 제거되었습니다. 폴더가 상속된 규칙으로 되돌아갑니다.",
       "removeFailed": "정책 제거에 실패했습니다."
     }
+  },
+  "cdnEdge": {
+    "imageOptimizerFormats": "이미지 최적화 형식",
+    "imageOptimizerFormatsHint": "Fastly Image Optimizer(Fastly IO)가 이미지 자산에 사용할 수 있는 출력 형식입니다.",
+    "formats": {
+      "webp": "WebP",
+      "avif": "AVIF"
+    }
   }
 }

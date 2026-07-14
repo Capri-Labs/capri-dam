@@ -1,7 +1,7 @@
 [[module-system-operations]]
-== System Operations & Admin
+=== System Operations & Admin
 
-=== Overview
+==== Overview
 
 The operational control-plane for running Capri DAM in production: live system
 observability, SMTP configuration, structured operational logging with an
@@ -18,7 +18,7 @@ image::data-health.png[Data Health, title="Data Health dashboard — storage com
 
 image::admin-reports.png[Reports, title="Reports — system-wide reporting dashboard"]
 
-=== Key features
+==== Key features
 
 [cols="2,3", options="header"]
 |===
@@ -35,10 +35,11 @@ image::admin-reports.png[Reports, title="Reports — system-wide reporting dashb
 | SMTP settings | See <<module-email-engine>> — same System Status hub, SMTP tab.
 |===
 
-=== Powerful / notable capabilities
+==== Powerful / notable capabilities
 
 [.feature-highlight]
-====
+=====
+
 * **Immutable audit trail, enforced at the database layer** — audit log rows are
   protected by a DB trigger that blocks `UPDATE`/`DELETE` outside of the sanctioned
   pruning job, so even a compromised application-layer credential can't quietly
@@ -50,16 +51,17 @@ image::admin-reports.png[Reports, title="Reports — system-wide reporting dashb
 * **Data Health ties migration to production storage** — the Debt Remediation tab
   surfaces concrete technical-debt flags derived from the ingestion pipeline,
   turning "we migrated stuff a while ago" into an actionable backlog.
-====
+=====
 
-=== Notes & known limitations
+
+==== Notes & known limitations
 
 * Feature flags and AI Gateway controls currently apply system-wide only; there is
   no per-tenant/per-site override yet.
 * Reports (`/reports`) exists as a dedicated screen but is not yet covered by any
   E2E test (see below) — verify manually after any reporting-pipeline change.
 
-=== Test coverage status
+==== Test coverage status
 
 [.status-covered]#Covered by E2E#
 

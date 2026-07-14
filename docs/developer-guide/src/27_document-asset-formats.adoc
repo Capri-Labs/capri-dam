@@ -59,6 +59,30 @@ plus RTF. For each upload:
      document is logged and swallowed, so the asset is still uploaded,
      stored, and reaches `status: "ready"` without a preview.
 
+==== Retroactively generating previews after installing LibreOffice
+
+Office documents uploaded *before* LibreOffice was installed on the server
+are stored successfully but permanently stamped `document_conversion_available:
+false` — installing LibreOffice afterwards does **not** automatically
+reprocess them. To generate previews for these already-uploaded assets, run:
+
+[source,bash]
+----
+bin/rails assets:backfill_previews
+----
+
+`AssetProcessorWorker#backfill_preview` (invoked by this rake task) fetches
+each qualifying asset's stored original and regenerates its preview. For
+Office documents specifically, it routes through
+`convert_office_document_to_preview` (the same LibreOffice conversion path
+used at upload time) rather than the generic `generate_web_preview` used for
+images/PDF — the generic path cannot read Office XML/binary formats at all,
+so calling it directly on a `.docx`/`.xlsx` file always fails non-fatally and
+was the original bug: even after LibreOffice was installed, previously
+uploaded Office documents never got a retroactive preview until this routing
+fix. If LibreOffice still isn't installed when the task runs, Office document
+assets are skipped (not fetched at all) rather than making a doomed attempt.
+
 === Apple iWork documents (Keynote / Pages)
 
 `IWORK_DOCUMENT_MIME_TYPES` covers `.key`/`.pages`. Like the Adobe XD/Figma/
@@ -129,7 +153,11 @@ Excel chips, for admin discoverability. No MIME types are blocked by default.
   LibreOffice-available and LibreOffice-absent paths, and a full
   conversion-command simulation exercising the real `Open3.capture3` call
   and both success/failure outcomes), Apple iWork uploads (Keynote, Pages),
-  and plain-text/CSV uploads (`text_preview`, truncation, `line_count`).
+  plain-text/CSV uploads (`text_preview`, truncation, `line_count`), and
+  `#backfill_preview` for Office documents specifically (asserts it routes
+  through `convert_office_document_to_preview` — not the generic image
+  flatten path — when LibreOffice is available, and skips entirely without
+  fetching the original when it isn't).
 * `spec/javascript/components/Folders/FoldersComponents.test.jsx` — Word
   document with a generated preview (positive case), Excel with no preview
   (fallback), Keynote (fallback), plain-text with an extracted preview

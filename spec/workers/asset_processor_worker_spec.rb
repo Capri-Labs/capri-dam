@@ -1159,6 +1159,54 @@ RSpec.describe AssetProcessorWorker, type: :worker do
       expect(fetched_path).to be_present
       expect(File.exist?(fetched_path)).to be(false)
     end
+
+    context "when the asset is an Office document" do
+      let(:docx_asset) do
+        create(
+          :asset,
+          status: :ready,
+          properties: {
+            "original_filename" => "report.docx",
+            "content_type" => "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "storage_path" => "uuid/v1_report.docx",
+          }
+        )
+      end
+      let!(:docx_version) do
+        create(:asset_version, asset: docx_asset, version_number: 1,
+                               properties: { "storage_path" => "uuid/v1_report.docx" })
+      end
+
+      it "routes through LibreOffice conversion (not the generic image flatten path) when soffice is available" do
+        worker = described_class.new
+        allow(worker).to receive(:soffice_available?).and_return(true)
+        allow(worker).to receive(:fetch_original).and_return(true)
+        allow(worker).to receive(:convert_office_document_to_preview) do |_src, _asset, _version, _storage, meta|
+          meta[:preview_storage_path] = "uuid/v1_preview_office.png"
+          meta[:preview_content_type] = "image/png"
+        end
+        expect(worker).not_to receive(:generate_web_preview)
+
+        result = worker.backfill_preview(docx_asset)
+
+        expect(result).to eq("uuid/v1_preview_office.png")
+        expect(docx_asset.reload.properties).to include(
+          "preview_storage_path" => "uuid/v1_preview_office.png",
+          "preview_content_type" => "image/png"
+        )
+        expect(docx_version.reload.properties["preview_storage_path"]).to eq("uuid/v1_preview_office.png")
+      end
+
+      it "returns nil without fetching the original when LibreOffice is not installed" do
+        worker = described_class.new
+        allow(worker).to receive(:soffice_available?).and_return(false)
+        expect(worker).not_to receive(:fetch_original)
+        expect(worker).not_to receive(:generate_web_preview)
+        expect(worker).not_to receive(:convert_office_document_to_preview)
+
+        expect(worker.backfill_preview(docx_asset)).to be_nil
+      end
+    end
   end
 
   describe "#parse_product_filename" do

@@ -1,7 +1,7 @@
 [[module-recycle-bin]]
-== Recycle Bin & Purge Policies
+=== Recycle Bin & Purge Policies
 
-=== Overview
+==== Overview
 
 Deleting an asset or folder never destroys it immediately. Capri DAM soft-deletes
 into a Recycle Bin with a configurable retention window, bulk restore, and a
@@ -9,7 +9,7 @@ workflow-aware purge guard that protects assets still under active review.
 
 image::recycle-bin.png[Recycle Bin, title="Recycle Bin — stat bar, type filters, and grid/list view toggle"]
 
-=== Key features
+==== Key features
 
 [cols="2,3", options="header"]
 |===
@@ -26,25 +26,27 @@ image::recycle-bin.png[Recycle Bin, title="Recycle Bin — stat bar, type filter
 | AI smart suggestions & cleanup report | AI-gateway-backed teaser surfacing suggested bin cleanup actions.
 |===
 
-=== Powerful / notable capabilities
+==== Powerful / notable capabilities
 
 [.feature-highlight]
-====
+=====
+
 * **Workflow-protected purge is a real safety net** — an asset can't be permanently
   destroyed while it's still mid-approval, preventing an entire class of
   "deleted-the-thing-under-review" incidents.
 * **Configurable, not hardcoded, retention** — the 30-day default is a policy, not a
   constant; admins can tune it per their compliance needs.
-====
+=====
 
-=== Notes & known limitations
+
+==== Notes & known limitations
 
 * Restore currently restores an item to its *original* folder only; there is no
   "restore to a different folder" option yet.
 * The AI smart-suggestions/cleanup-report features are a "teaser" surface today —
   full automated cleanup execution is not yet wired up.
 
-=== Test coverage status
+==== Test coverage status
 
 [.status-covered]#Covered by E2E# (`spec/e2e/bin.e2e.spec.js`) — this is the
 **most thoroughly covered module** in the product today:

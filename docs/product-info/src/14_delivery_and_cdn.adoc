@@ -1,7 +1,7 @@
 [[module-delivery-cdn]]
-== Delivery & CDN
+=== Delivery & CDN
 
-=== Overview
+==== Overview
 
 Assets are delivered through Fastly's edge network with real-time image
 transforms, focal-point-aware smart cropping, HMAC-signed URLs, instant
@@ -15,7 +15,7 @@ System Status (see <<module-system-operations>>). No standalone screenshot is
 captured for this module; see the folder configuration screens referenced in
 <<module-asset-management>> for the profile-assignment UI.
 
-=== Key features
+==== Key features
 
 [cols="2,3", options="header"]
 |===
@@ -29,10 +29,11 @@ captured for this module; see the folder configuration screens referenced in
 | Image & video profiles | Named preset bundles (e.g. "product-thumbnail", "hero-banner") assigned to folder paths, automatically applied whenever a delivery URL is generated under that folder.
 |===
 
-=== Powerful / notable capabilities
+==== Powerful / notable capabilities
 
 [.feature-highlight]
-====
+=====
+
 * **~90% rendition-storage cost reduction** — because transforms are computed at
   the edge in real time rather than pre-generated and stored for every possible
   size/format/crop combination, storage costs drop dramatically compared to a
@@ -44,17 +45,29 @@ captured for this module; see the folder configuration screens referenced in
 * **Folder-scoped profiles remove per-asset configuration toil** — assign an
   image/video profile once to a folder path, and every asset uploaded under it
   automatically inherits the right delivery behaviour.
-====
+=====
 
-=== Notes & known limitations
 
-* AVIF output format support is **in progress**, not yet shipped (see the
-  <<module-roadmap,Roadmap>>) — WebP/JPEG/PNG are available today.
+==== Notes & known limitations
+
+* AVIF output format support is **partially in progress**: an admin-configurable
+  allow-list (`image_optimizer_formats`, in the System Status → Storage & Edge
+  tab) now lets an admin declare `webp`/`avif` as permitted output formats, and
+  this is enforced and persisted via the real `/api/v1/cdn_configurations` API.
+  However, the **live, request-time image-transformation/delivery pipeline
+  itself is not yet implemented** in this repo — there is no code path today
+  that negotiates width/height/crop/format on an actual delivery URL. The
+  real-time-transform, smart-crop, and HMAC-signing capabilities described
+  above in "Key features" represent the target design; only WebP/JPEG/PNG are
+  genuinely deliverable today, and this module's stated real-time-transform
+  behaviour should be treated as **planned**, not shipped, until a
+  transformation proxy exists to read the new allow-list. See the
+  <<module-roadmap,Roadmap>> for status.
 * There is no dedicated admin UI screen purely for this module today; profile
   assignment happens inside folder settings, and cache-purge/CDN config lives
   inside the System Status → Storage & Edge tab.
 
-=== Test coverage status
+==== Test coverage status
 
 [.status-pending]#Pending / not yet covered# — **this module currently has zero
 dedicated E2E coverage**:

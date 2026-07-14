@@ -1,7 +1,7 @@
 [[module-email-engine]]
-== Email / Communication Engine
+=== Email / Communication Engine
 
-=== Overview
+==== Overview
 
 A full templated-email subsystem: a visual template designer, brand/CSS theming,
 event-driven trigger mapping, an outbox with delivery tracking, and per-site SMTP
@@ -11,7 +11,7 @@ image::admin-email-engine.png[Communication Engine, title="Communication Engine 
 
 image::inbox.png[Inbox, title="Inbox — inbound message view"]
 
-=== Key features
+==== Key features
 
 [cols="2,3", options="header"]
 |===
@@ -26,10 +26,11 @@ image::inbox.png[Inbox, title="Inbox — inbound message view"]
 | Inbox | Inbound message view, reachable from the sidebar.
 |===
 
-=== Powerful / notable capabilities
+==== Powerful / notable capabilities
 
 [.feature-highlight]
-====
+=====
+
 * **Live SMTP connection testing before commit** — admins can validate a host
   actually connects (and see a structured error message if it doesn't) *before*
   committing it as the system's live credentials, avoiding a broken-outbound-mail
@@ -39,9 +40,10 @@ image::inbox.png[Inbox, title="Inbox — inbound message view"]
   a sandboxed iframe, without hand-writing HTML/Liquid.
 * **Custom CSS branding** — email templates can be styled to match brand identity
   beyond just a logo, via editable custom CSS.
-====
+=====
 
-=== Notes & known limitations
+
+==== Notes & known limitations
 
 * The "Send SMTP Echo Check" test-send requires a recipient address to be
   provided; there's no default "send to me" shortcut yet.
@@ -49,7 +51,7 @@ image::inbox.png[Inbox, title="Inbox — inbound message view"]
   actual suggestion-generation flow is not yet covered by tests (see below), so its
   real-world reliability should be validated before heavy reliance.
 
-=== Test coverage status
+==== Test coverage status
 
 [.status-covered]#Covered by E2E# (`spec/e2e/email_engine.e2e.spec.js`,
 `spec/e2e/inbox.e2e.spec.js`, `spec/e2e/smtp_settings.e2e.spec.js`)

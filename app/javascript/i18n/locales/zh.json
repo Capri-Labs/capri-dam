@@ -2907,5 +2907,13 @@
       "removed": "策略已移除。文件夹恢复为继承规则。",
       "removeFailed": "移除策略失败。"
     }
+  },
+  "cdnEdge": {
+    "imageOptimizerFormats": "图像优化格式",
+    "imageOptimizerFormatsHint": "Fastly 图像优化器（Fastly IO）可用于交付图像资源的输出格式。",
+    "formats": {
+      "webp": "WebP",
+      "avif": "AVIF"
+    }
   }
 }

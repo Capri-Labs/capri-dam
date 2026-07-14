@@ -16,7 +16,7 @@
 | ✅ Done | pgvector semantic search | Cosine similarity + semantic cluster map.
 | ✅ Done | Audit log refactor | Immutable, DB-trigger-protected audit trail; structured operational logging.
 | ✅ Done | Rebranding | "Capri DAM" logo/icon refresh.
-| 🚧 In progress | AVIF delivery | Add AVIF to Fastly IO format options.
+| 🚧 In progress | AVIF delivery | Admin-configurable output-format allow-list (WebP/AVIF) shipped and wired to the real CDN configuration API; live request-time transformation/delivery pipeline not yet implemented.
 | 🚧 In progress | Kamal 2 deployment | Production deployment playbook via Kamal.
 | 📋 Planned | Multi-site isolation | Tenant-scoped storage and RBAC for agency use cases.
 | 📋 Planned | DAM-to-DAM federation | Cross-instance asset sharing via signed GraphQL federation.

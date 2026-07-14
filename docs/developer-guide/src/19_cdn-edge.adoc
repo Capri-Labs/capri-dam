@@ -26,8 +26,85 @@ CDN support is abstracted behind adapter classes and coordinated through
 [cols="1,2,3", options="header"]
 |===
 | Method | Path | Description
-| `GET/PATCH` | `/api/v1/cdn_configurations` | Read/update CDN settings.
+| `GET/PUT` | `/api/v1/cdn_configurations` | Read/update CDN settings.
 | `POST` | `/api/v1/edge_operations/purge` | Purge objects or surrogate keys.
 | `POST` | `/api/v1/edge_operations/sign_url` | Generate signed delivery URL.
 | `POST` | `/api/v1/edge_operations/sync_metadata` | Push metadata refresh to edge.
 |===
+
+== Image optimizer format allow-list (AVIF delivery)
+
+`Api::V1::CdnConfigurationsController` stores an admin-configurable
+`image_optimizer_formats` array on `CdnConfiguration#settings` (an encrypted
+JSON column, so no migration is required to add new keys). This lets an admin
+declare which output formats the Fastly Image Optimizer is permitted to serve
+for a given CDN configuration.
+
+* `FASTLY_IMAGE_OPTIMIZER_FORMATS = %w[webp avif]` is the current allow-list
+  constant on the controller.
+* `#update` rejects any value outside the allow-list with `422 Unprocessable
+  Entity` and a descriptive `errors` array (e.g.
+  `"Unsupported image optimizer format(s): gif. Supported: webp, avif."`).
+* `#format_config` (used by `#index`) does **not** mask
+  `image_optimizer_formats` the way it masks real secrets (API tokens, keys) —
+  it's plain configuration, not sensitive data. This is controlled via the
+  `NON_SECRET_SETTINGS_KEYS` constant.
+* The Admin → System Status → Storage & Edge tab
+  (`StorageOperationsTab.jsx`) was previously a **simulated** UI (it used a
+  `setTimeout` to fake load/save and never called a real endpoint). It now
+  performs real `GET`/`PUT` calls against `/api/v1/cdn_configurations` and
+  renders WebP/AVIF checkboxes bound to `image_optimizer_formats`.
+
+IMPORTANT: This only controls which *output formats an admin is allowed to
+request*. It does **not** implement a live image-transformation/delivery
+pipeline — no code path in this repo currently negotiates format, width,
+height, or crop at request time (see
+<<module-delivery-cdn,Delivery & CDN>> in the product guide for the honest,
+customer-facing status of real-time transforms). Treat this as the
+configuration layer a future transformation proxy would read from, not as
+AVIF delivery itself.
+
+=== Bug fix: `CdnConfiguration#settings` encryption was completely broken
+
+While wiring the Edge CDN tab to the real API, saving *any*
+`CdnConfiguration` (not just the new format field) was found to always raise:
+
+[source]
+----
+NoMethodError: undefined method 'type=' for an instance of ActiveRecord::Encryption::Context
+----
+
+Root cause: `encrypts :settings, type: :json` is **not a valid option** on
+this Rails version — `type:` silently corrupts the encryption context. This
+was already known and worked around in `SystemConnector` (see its own code
+comment), but `CdnConfiguration` still used the broken pattern, and the
+existing model/request specs all stubbed `CdnConfiguration` with
+`instance_double`/`allow(...).to receive(:save)`, so the real persistence
+path was never actually exercised — the bug shipped silently. Fixed by
+declaring the attribute's JSON cast type first, then encrypting with no
+extra options:
+
+[source,ruby]
+----
+attribute :settings, :json
+encrypts :settings
+----
+
+`spec/models/cdn_configuration_spec.rb` now includes real (non-stubbed)
+persistence tests: round-tripping a settings hash through encryption, and
+asserting the raw database column never contains plaintext.
+
+=== Tests
+
+* `spec/requests/api/v1/cdn_configurations_spec.rb` — covers accepting a valid
+  format list, rejecting an unsupported format with `422`, and confirming
+  `image_optimizer_formats` is not masked on `#index`.
+* `spec/models/cdn_configuration_spec.rb` — real (non-stubbed) persistence
+  regression tests for the encryption fix above, plus existing validation and
+  single-active-provider coverage.
+* `spec/javascript/components/Admin/SystemStatus.test.jsx` — covers loading
+  the real config (with saved formats pre-checked), toggling AVIF and saving
+  via the real `PUT` call, and surfacing a validation error returned by the
+  API.
+* `spec/javascript/i18n/i18n.test.js` — regression guard for the new
+  `cdnEdge.*` translation keys across all 10 locales.

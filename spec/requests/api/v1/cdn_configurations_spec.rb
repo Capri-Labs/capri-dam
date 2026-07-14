@@ -32,6 +32,22 @@ RSpec.describe "Api::V1::CdnConfigurations", type: :request do
 
       expect(response.parsed_body.dig("fastly", "settings", "api_key")).to eq("")
     end
+
+    it "passes image_optimizer_formats through unmasked (it is configuration, not a secret)" do
+      sign_in user
+      fastly = instance_double(
+        CdnConfiguration,
+        provider: "fastly",
+        is_active: true,
+        settings: { "api_key" => "abcdef1234", "image_optimizer_formats" => [ "webp", "avif" ] }
+      )
+      allow(CdnConfiguration).to receive(:all).and_return([ fastly ])
+
+      get api_v1_cdn_configurations_path, as: :json
+
+      expect(response.parsed_body.dig("fastly", "settings", "image_optimizer_formats")).to eq([ "webp", "avif" ])
+      expect(response.parsed_body.dig("fastly", "settings", "api_key")).to eq("••••••••1234")
+    end
   end
 
   describe "PUT /api/v1/cdn_configurations" do
@@ -96,6 +112,37 @@ RSpec.describe "Api::V1::CdnConfigurations", type: :request do
 
       expect(response).to have_http_status(:ok)
       expect(config).to have_received(:settings=).with("api_key" => "old-key")
+    end
+
+    it "accepts a valid image_optimizer_formats allow-list (webp and avif)" do
+      sign_in admin
+      config = instance_double(CdnConfiguration, settings: {}, errors: instance_double(ActiveModel::Errors, full_messages: []))
+      allow(config).to receive(:is_active=)
+      allow(config).to receive(:settings=)
+      allow(config).to receive(:save).and_return(true)
+      allow(CdnConfiguration).to receive(:find_or_initialize_by).with(provider: "fastly").and_return(config)
+
+      put api_v1_cdn_configurations_path,
+          params: { provider: "fastly", is_active: true, settings: { image_optimizer_formats: [ "webp", "avif" ] } },
+          as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(config).to have_received(:settings=).with("image_optimizer_formats" => [ "webp", "avif" ])
+    end
+
+    it "rejects an unsupported image optimizer format" do
+      sign_in admin
+      config = instance_double(CdnConfiguration, settings: {})
+      allow(config).to receive(:is_active=)
+      allow(CdnConfiguration).to receive(:find_or_initialize_by).with(provider: "fastly").and_return(config)
+      expect(config).not_to receive(:settings=)
+
+      put api_v1_cdn_configurations_path,
+          params: { provider: "fastly", is_active: true, settings: { image_optimizer_formats: [ "webp", "jxl" ] } },
+          as: :json
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.parsed_body["errors"].first).to include("jxl")
     end
   end
 end

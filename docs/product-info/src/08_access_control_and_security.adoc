@@ -1,7 +1,7 @@
 [[module-access-control]]
-== Access Control & Security
+=== Access Control & Security
 
-=== Overview
+==== Overview
 
 Group-based role hierarchy, a 7-column per-folder ACL, Keycloak SSO, OAuth2, long-lived
 Personal Access Tokens, and fully-audited admin impersonation — this is the module
@@ -11,7 +11,7 @@ image::admin-users.png[System Users, title="System Users — role, department, a
 
 image::admin-user-groups.png[User Groups, title="User Groups hierarchy tree — system groups, custom groups, and nested child groups"]
 
-=== Key features
+==== Key features
 
 [cols="2,3", options="header"]
 |===
@@ -27,10 +27,11 @@ image::admin-user-groups.png[User Groups, title="User Groups hierarchy tree — 
 | Suspend / restore | Suspend a user account without deleting it; a user cannot suspend their own account.
 |===
 
-=== Powerful / notable capabilities
+==== Powerful / notable capabilities
 
 [.feature-highlight]
-====
+=====
+
 * **7-column ACL is genuinely fine-grained** — Read, Upload, Create, Modify, Delete,
   and Replicate are independent permissions per group per folder, plus an explicit
   Deny-All override — not just a single "can edit" toggle.
@@ -41,9 +42,10 @@ image::admin-user-groups.png[User Groups, title="User Groups hierarchy tree — 
 * **Closure-table group hierarchy** — child groups can be added/removed from a
   parent's Groups tab with real-time UI feedback (disabled state for
   already-added candidates), not just a flat group list.
-====
+=====
 
-=== Notes & known limitations
+
+==== Notes & known limitations
 
 * There is currently no time-boxed / auto-expiring impersonation session — an admin
   must explicitly click "End Impersonation".
@@ -51,7 +53,7 @@ image::admin-user-groups.png[User Groups, title="User Groups hierarchy tree — 
   user to a sensitive group (e.g. Administrators) beyond the permission check
   itself.
 
-=== Test coverage status
+==== Test coverage status
 
 [.status-covered]#Covered by E2E# — this is the **best-covered area of the product**,
 spread across five spec files:

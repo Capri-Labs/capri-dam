@@ -917,3 +917,30 @@ describe('i18n — folder/asset Move feature keys across all 10 locales', () => 
 
   afterAll(() => i18n.changeLanguage('en'));
 });
+
+describe('i18n — CDN Edge (Fastly image optimizer formats) keys (regression guard)', () => {
+  beforeEach(() => i18n.changeLanguage('en'));
+  afterAll(() => i18n.changeLanguage('en'));
+
+  it('cdnEdge.imageOptimizerFormats', () => expect(i18n.t('cdnEdge.imageOptimizerFormats')).toBe('Image Optimizer Formats'));
+  it('cdnEdge.formats.webp', () => expect(i18n.t('cdnEdge.formats.webp')).toBe('WebP'));
+  it('cdnEdge.formats.avif', () => expect(i18n.t('cdnEdge.formats.avif')).toBe('AVIF'));
+
+  const LOCALES = ['en', 'de', 'es', 'fr', 'ja', 'ko', 'nl', 'pt', 'zh', 'ar'];
+  LOCALES.forEach(locale => {
+    it(`${locale} has cdnEdge.imageOptimizerFormats and cdnEdge.imageOptimizerFormatsHint`, () => {
+      i18n.changeLanguage(locale);
+      const label = i18n.t('cdnEdge.imageOptimizerFormats');
+      const hint = i18n.t('cdnEdge.imageOptimizerFormatsHint');
+      expect(label).not.toBe('cdnEdge.imageOptimizerFormats');
+      expect(label.length).toBeGreaterThan(0);
+      expect(hint).not.toBe('cdnEdge.imageOptimizerFormatsHint');
+      expect(hint.length).toBeGreaterThan(0);
+    });
+    it(`${locale} has cdnEdge.formats.webp and cdnEdge.formats.avif`, () => {
+      i18n.changeLanguage(locale);
+      expect(i18n.t('cdnEdge.formats.webp')).toBe('WebP');
+      expect(i18n.t('cdnEdge.formats.avif')).toBe('AVIF');
+    });
+  });
+});

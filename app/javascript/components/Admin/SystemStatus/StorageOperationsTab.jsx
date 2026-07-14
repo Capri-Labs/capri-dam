@@ -1,12 +1,24 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     Box, Paper, Typography, Button, Stack, TextField,
-    CircularProgress, Alert, FormControl, InputLabel, Select, MenuItem, Chip, Tabs, Tab
+    CircularProgress, Alert, FormControl, InputLabel, Select, MenuItem, Chip, Tabs, Tab,
+    FormGroup, FormControlLabel, Checkbox
 } from '@mui/material';
+import { useTranslation } from 'react-i18next';
 import { CloudQueue, Save, SettingsInputComponent, Storage } from '@mui/icons-material';
 import OriginStorageTab from './OriginStorageTab';
 
+// Output formats the Fastly Image Optimizer (Fastly IO) integration can be
+// configured to request. Mirrors Api::V1::CdnConfigurationsController::FASTLY_IMAGE_OPTIMIZER_FORMATS.
+const FASTLY_IMAGE_OPTIMIZER_FORMATS = [ 'webp', 'avif' ];
+
+function csrfToken() {
+    const meta = document.querySelector('[name="csrf-token"]');
+    return meta ? meta.content : '';
+}
+
 export default function StorageOperationsTab({ activeProvider, allConfigs: originStorageConfigs }) {
+    const { t } = useTranslation();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [notification, setNotification] = useState(null);
@@ -18,21 +30,43 @@ export default function StorageOperationsTab({ activeProvider, allConfigs: origi
 
     const [configs, setConfigs] = useState({
         cdn: {
-            fastly: { service_id: '', api_key: '' },
+            fastly: { service_id: '', api_key: '', image_optimizer_formats: [] },
             cloudflare: { zone_id: '', api_token: '', kv_namespace: '' },
             akamai: { host: '', client_token: '', client_secret: '', access_token: '', edgekv_namespace: '' }
         }
     });
 
-    useEffect(() => {
-        // In a real implementation, you'd fetch the CDN config here.
-        // The Origin Storage tab is backed by real settings data (activeProvider /
-        // allConfigs props) so it does not need this simulated fetch.
-        setTimeout(() => {
-            setDbActiveCdn('fastly');
+    const fetchCdnConfigurations = useCallback(async () => {
+        try {
+            const response = await fetch('/api/v1/cdn_configurations');
+            const data = await response.json();
+
+            setConfigs(prev => ({
+                ...prev,
+                cdn: {
+                    fastly: {
+                        ...prev.cdn.fastly,
+                        ...(data.fastly?.settings || {}),
+                        image_optimizer_formats: data.fastly?.settings?.image_optimizer_formats || [],
+                    },
+                    cloudflare: { ...prev.cdn.cloudflare, ...(data.cloudflare?.settings || {}) },
+                    akamai: { ...prev.cdn.akamai, ...(data.akamai?.settings || {}) },
+                }
+            }));
+
+            const active = [ 'fastly', 'cloudflare', 'akamai' ].find(p => data[p]?.is_active);
+            setDbActiveCdn(active || null);
+            if (active) setSelectedCdn(active);
+        } catch (e) {
+            // Non-fatal: the form still renders with blank/default values.
+        } finally {
             setLoading(false);
-        }, 600);
+        }
     }, []);
+
+    useEffect(() => {
+        fetchCdnConfigurations();
+    }, [ fetchCdnConfigurations ]);
 
     const handleConfigChange = (domain, provider, field, value) => {
         setConfigs(prev => ({
@@ -44,16 +78,42 @@ export default function StorageOperationsTab({ activeProvider, allConfigs: origi
         }));
     };
 
-    const handleSave = () => {
+    const toggleImageOptimizerFormat = (format) => {
+        setConfigs(prev => {
+            const current = prev.cdn.fastly.image_optimizer_formats || [];
+            const next = current.includes(format)
+                ? current.filter(f => f !== format)
+                : [ ...current, format ];
+            return {
+                ...prev,
+                cdn: { ...prev.cdn, fastly: { ...prev.cdn.fastly, image_optimizer_formats: next } }
+            };
+        });
+    };
+
+    const handleSave = async () => {
         setSaving(true);
-        // Only the Edge CDN tab uses this simulated save; Origin Storage has its
-        // own real save/test-connection actions wired to /settings endpoints.
-        setTimeout(() => {
+        try {
+            const settings = { ...configs.cdn[selectedCdn] };
+            const response = await fetch('/api/v1/cdn_configurations', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken() },
+                body: JSON.stringify({ provider: selectedCdn, is_active: true, settings })
+            });
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                setNotification({ type: 'success', msg: data.message || `${selectedCdn.toUpperCase()} configuration encrypted and activated.` });
+                setDbActiveCdn(selectedCdn);
+            } else {
+                setNotification({ type: 'error', msg: (data.errors || []).join(', ') || 'Failed to save CDN configuration.' });
+            }
+        } catch (e) {
+            setNotification({ type: 'error', msg: 'Failed to save CDN configuration.' });
+        } finally {
             setSaving(false);
-            setNotification({ type: 'success', msg: `${selectedCdn.toUpperCase()} configuration encrypted and activated.` });
-            setDbActiveCdn(selectedCdn);
             setTimeout(() => setNotification(null), 4000);
-        }, 1000);
+        }
     };
 
     if (loading) return <Box sx={{ p: 4, textAlign: 'center' }}><CircularProgress /></Box>;
@@ -104,6 +164,30 @@ export default function StorageOperationsTab({ activeProvider, allConfigs: origi
                                     <>
                                         <TextField label="Service ID" fullWidth size="small" variant="filled" value={configs.cdn.fastly.service_id} onChange={(e) => handleConfigChange('cdn', 'fastly', 'service_id', e.target.value)} />
                                         <TextField label="API Token" type="password" fullWidth size="small" variant="filled" value={configs.cdn.fastly.api_key} onChange={(e) => handleConfigChange('cdn', 'fastly', 'api_key', e.target.value)} />
+                                        <Box>
+                                            <Typography variant="body2" fontWeight="600" sx={{ mb: 0.5 }}>
+                                                {t('cdnEdge.imageOptimizerFormats', 'Image Optimizer Formats')}
+                                            </Typography>
+                                            <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mb: 1 }}>
+                                                {t('cdnEdge.imageOptimizerFormatsHint', "Output formats Fastly's Image Optimizer (Fastly IO) is allowed to serve for image assets.")}
+                                            </Typography>
+                                            <FormGroup row>
+                                                {FASTLY_IMAGE_OPTIMIZER_FORMATS.map((format) => (
+                                                    <FormControlLabel
+                                                        key={format}
+                                                        control={
+                                                            <Checkbox
+                                                                size="small"
+                                                                checked={(configs.cdn.fastly.image_optimizer_formats || []).includes(format)}
+                                                                onChange={() => toggleImageOptimizerFormat(format)}
+                                                                slotProps={{ input: { 'aria-label': format } }}
+                                                            />
+                                                        }
+                                                        label={t(`cdnEdge.formats.${format}`, format.toUpperCase())}
+                                                    />
+                                                ))}
+                                            </FormGroup>
+                                        </Box>
                                     </>
                                 )}
                                 {selectedCdn === 'cloudflare' && (
