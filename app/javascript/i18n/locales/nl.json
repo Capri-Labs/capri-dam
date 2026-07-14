@@ -2915,5 +2915,18 @@
       "webp": "WebP",
       "avif": "AVIF"
     }
+  },
+  "securityPolicies": {
+    "title": "Beveiligingsbeleid",
+    "subtitle": "Selecteer een groep om de matrix van maprechten te bekijken of te bewerken.",
+    "searchPlaceholder": "Groepen zoeken…",
+    "systemGroups": "Systeemgroepen",
+    "customGroups": "Aangepaste groepen",
+    "noGroups": "Geen groepen komen overeen met uw zoekopdracht.",
+    "noGroupSelected": "Selecteer links een groep om de rechten te bekijken.",
+    "matrixFor": "Rechten voor \"{{name}}\"",
+    "notifications": {
+      "loadFailed": "Groepen konden niet worden geladen."
+    }
   }
 }

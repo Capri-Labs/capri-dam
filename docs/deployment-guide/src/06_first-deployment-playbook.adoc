@@ -1,0 +1,105 @@
+[[section-first-deployment-playbook]]
+== First Deployment Playbook
+
+Follow these steps in order for the **very first** deploy to a fresh server. Assumes you've
+completed <<section-deployment-prerequisites,Prerequisites>> (server ready, DNS pointed, deploy
+user created) and <<section-secrets-and-credentials,Secrets & Credentials>> (local `.env`
+populated).
+
+=== 1. Export your deploy environment
+
+[source,bash]
+----
+cd /path/to/headless-dam
+set -a; source .env; set +a   # KAMAL_REGISTRY_USERNAME, KAMAL_REGISTRY_PASSWORD,
+                               # RAILS_MASTER_KEY, HEADLESS_DAM_DATABASE_PASSWORD,
+                               # KAMAL_WEB_HOST, KAMAL_APP_HOST
+----
+
+=== 2. Sanity-check the configuration
+
+[source,bash]
+----
+bundle exec kamal config
+----
+
+Confirm: `repository` shows `ghcr.io/capri-labs/capri-dam` (not doubled — see
+<<section-kamal-configuration,Kamal Configuration Reference>>), `hosts` shows your real server
+IP(s) (not the `203.0.113.10` placeholder), and no error is raised.
+
+=== 3. Log in to the registry & confirm the image exists
+
+If you're deploying an image already built and pushed by CI (`.github/workflows/docker.yml`, tag
+`latest` on every push to `main`/`master`), skip straight to step 4 — `kamal deploy` will pull it.
+
+To build and push locally instead:
+
+[source,bash]
+----
+bundle exec kamal registry login
+bundle exec kamal build push
+----
+
+=== 4. Bootstrap the server(s) and deploy
+
+[source,bash]
+----
+bundle exec kamal setup
+----
+
+`kamal setup` does everything needed for a first deploy in one command:
+
+1. Installs Docker on the target server(s) if not already present (`kamal server bootstrap`).
+2. Boots the `db` and `redis` accessories (see <<section-accessories,Accessories>>).
+3. Logs in to `ghcr.io` on the server.
+4. Builds (or pulls) and pushes the app image.
+5. Boots `kamal-proxy` and requests the Let's Encrypt certificate for `proxy.host`.
+6. Boots the `web` and `worker` containers, waits for the `/up` health check to pass, then cuts
+   traffic over.
+7. Runs `.kamal/hooks/pre-deploy` first and `.kamal/hooks/post-deploy` last (the latter smoke-tests
+   `https://<APP_HOST>/up` — see the hook script for details).
+
+The very first boot also needs the database schema loaded — `bin/docker-entrypoint` already runs
+`./bin/rails db:prepare` automatically on container start (see the entrypoint script), so a fresh
+`db` accessory gets migrated automatically; no separate manual migration step is required for a
+first deploy.
+
+=== 5. Verify
+
+[source,bash]
+----
+curl -I https://<your-domain>/up          # expect HTTP/2 200
+bundle exec kamal app logs -r web --lines 100
+bundle exec kamal app logs -r worker --lines 100
+bundle exec kamal details                  # container status across all roles + accessories
+----
+
+=== 6. Create the first admin user & configure storage
+
+The app boots with an empty database (aside from `db/seeds.rb`'s system groups — see
+`db/seeds.rb`). Run the standard first-run setup over `kamal app exec`:
+
+[source,bash]
+----
+bundle exec kamal app exec --interactive -- bin/rails runner '
+  User.create!(email: "admin@yourdomain.com", password: "change-me-immediately",
+               first_name: "Admin", last_name: "User", admin: true, super_admin: true)
+'
+bundle exec kamal app exec --interactive -- bin/rails db:seed
+----
+
+Then sign in and confirm the active `StorageBackend` is **Local Disk** (matches the
+`/var/lib/capri-dam/storage` volume mounted in `config/deploy.yml`) under
+`/admin/storage_backends`, or switch to S3/GCS/Azure Blob if you've provisioned one instead.
+
+=== Variant: deploy the CI-built image without a local Docker build
+
+If you'd rather never build Docker images on your laptop, pin `kamal deploy`/`kamal setup` to a
+specific CI-built tag instead of building locally:
+
+[source,bash]
+----
+bundle exec kamal deploy --version=<git-sha-or-tag-that-ci-already-pushed>
+----
+
+Kamal will skip the local build step entirely and pull that exact tag from `ghcr.io`.

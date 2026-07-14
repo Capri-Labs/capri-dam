@@ -2915,5 +2915,18 @@
       "webp": "WebP",
       "avif": "AVIF"
     }
+  },
+  "securityPolicies": {
+    "title": "سياسات الأمان",
+    "subtitle": "اختر مجموعة لعرض أو تعديل مصفوفة أذونات المجلدات الخاصة بها.",
+    "searchPlaceholder": "البحث عن المجموعات…",
+    "systemGroups": "مجموعات النظام",
+    "customGroups": "مجموعات مخصصة",
+    "noGroups": "لا توجد مجموعات تطابق بحثك.",
+    "noGroupSelected": "اختر مجموعة على اليسار لعرض أذوناتها.",
+    "matrixFor": "الأذونات لـ \"{{name}}\"",
+    "notifications": {
+      "loadFailed": "فشل تحميل المجموعات."
+    }
   }
 }

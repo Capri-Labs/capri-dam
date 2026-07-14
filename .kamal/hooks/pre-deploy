@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# ─────────────────────────────────────────────────────────────────────────────
+# Kamal pre-deploy hook.
+#
+# Runs locally (on the machine invoking `kamal deploy`) before anything is
+# built or shipped. Fails fast and loud rather than deploying an image built
+# from a dirty tree or an unverified commit.
+#
+# See docs/deployment-guide/src/06_first-deployment-playbook.adoc.
+# ─────────────────────────────────────────────────────────────────────────────
+set -euo pipefail
+
+echo "==> [pre-deploy] Verifying working tree is clean..."
+if [ -n "$(git status --porcelain)" ]; then
+  echo "==> [pre-deploy] ERROR: working tree has uncommitted changes. Commit or stash before deploying." >&2
+  git status --short >&2
+  exit 1
+fi
+
+echo "==> [pre-deploy] Verifying GitHub Actions CI is green for $(git rev-parse --short HEAD)..."
+if command -v gh >/dev/null 2>&1; then
+  status=$(gh run list --commit "$(git rev-parse HEAD)" --limit 1 --json conclusion --jq '.[0].conclusion' 2>/dev/null || echo "unknown")
+  if [ "$status" != "success" ] && [ "$status" != "unknown" ]; then
+    echo "==> [pre-deploy] ERROR: latest CI run for this commit did not succeed (conclusion: ${status})." >&2
+    exit 1
+  fi
+else
+  echo "==> [pre-deploy] gh CLI not found — skipping CI status check (verify manually)."
+fi
+
+echo "==> [pre-deploy] OK."

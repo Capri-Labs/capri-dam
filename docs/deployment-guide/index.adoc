@@ -1,0 +1,86 @@
+= Capri DAM — Deployment Guide
+Ashok Pelluru <apellurudotcom@gmail.com>
+v1.0.0, 2026-07-14
+:doctype: book
+:toc: left
+:toclevels: 4
+:sectnums:
+:sectanchors:
+:sectlinks:
+:icons: font
+:experimental:
+:source-highlighter: rouge
+:rouge-style: github
+:imagesdir: ./images
+:!prewrap:
+:lang: en
+:description: Production deployment playbooks for Capri DAM. Starts with Kamal 2 (Docker + kamal-proxy); more deployment targets will be added over time.
+:keywords: DAM, deployment, Kamal, Docker, production, playbook, runbook, DevOps
+// ── Theme ─────────────────────────────────────────────────────────────────────
+:stylesdir: theme
+:stylesheet: arc42.css
+:docinfodir: .
+:docinfo: shared
+// ── PDF theme ────────────────────────────────────────────────────────────────
+:pdf-themesdir: theme
+:pdf-theme: arc42
+// ─────────────────────────────────────────────────────────────────────────────
+
+This guide collects **operational, step-by-step deployment playbooks** for running Capri DAM in
+production. Unlike the <<section-deployment-view,architecture deployment view>> (which explains
+*why* the system is shaped the way it is), this guide is a hands-on runbook: exact commands,
+exact files, exact troubleshooting steps.
+
+Each deployment target gets its own numbered chapter so this guide can grow over time (e.g. a
+future chapter for Kubernetes/Helm, or a managed-PaaS target) without disturbing existing content.
+The first supported target is **Kamal 2** — Docker-based deployment to plain Linux servers (or a
+single VPS), using `kamal-proxy` for zero-downtime rollouts and automatic Let's Encrypt TLS.
+
+ifdef::backend-html5[]
+[.text-right]
+link:headless-dam-deployment-guide.pdf[⬇ Download as PDF] · link:../[← Documentation Hub] · link:../developer-guide/[Developer Guide]
+endif::backend-html5[]
+
+// 1. Overview
+include::src/01_overview.adoc[]
+
+// 2. Prerequisites
+include::src/02_prerequisites.adoc[]
+
+// 3. Kamal Configuration Reference
+include::src/03_kamal-configuration.adoc[]
+
+// 4. Secrets & Credentials
+include::src/04_secrets-and-credentials.adoc[]
+
+// 5. Accessories: PostgreSQL (pgvector) & Redis
+include::src/05_accessories.adoc[]
+
+// 6. First Deployment Playbook
+include::src/06_first-deployment-playbook.adoc[]
+
+// 7. Routine Deployments & Rollback
+include::src/07_routine-deployments-and-rollback.adoc[]
+
+// 8. SSL, Domains & kamal-proxy
+include::src/08_ssl-domains-and-proxy.adoc[]
+
+// 9. Monitoring & Troubleshooting
+include::src/09_monitoring-and-troubleshooting.adoc[]
+
+// 10. Backups & Disaster Recovery
+include::src/10_backup-and-disaster-recovery.adoc[]
+
+ifdef::backend-html5[]
+// Back-to-top button
+++++
+<button id="back-to-top" title="Back to top">&#8679;</button>
+<script>
+  const btn = document.getElementById('back-to-top');
+  window.addEventListener('scroll', () => {
+    btn.classList.toggle('visible', window.scrollY > 400);
+  });
+  btn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+</script>
+++++
+endif::backend-html5[]

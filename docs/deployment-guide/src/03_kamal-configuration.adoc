@@ -1,0 +1,151 @@
+[[section-kamal-configuration]]
+== Kamal Configuration Reference
+
+This chapter walks through every section of `config/deploy.yml` in the order it appears. Treat it
+as an annotated companion to the file itself — the file's own inline comments are the source of
+truth if this ever drifts.
+
+=== Service & image
+
+[source,yaml]
+----
+service: capri-dam
+image: capri-labs/capri-dam
+----
+
+`service` names the Docker network, container name prefixes, and accessory hostnames Kamal
+creates (e.g. the `db` accessory becomes reachable at `capri-dam-db` — see
+<<section-accessories,Accessories>>). `image` is deliberately **without** the `ghcr.io/` prefix —
+Kamal concatenates `registry.server` and `image` itself; duplicating the registry host here is a
+common misconfiguration (`kamal config` will show a doubled `ghcr.io/ghcr.io/...` repository if
+you get this wrong — always sanity-check with `kamal config` after editing).
+
+=== Servers & roles
+
+[source,yaml]
+----
+servers:
+  web:
+    hosts: [...]
+  worker:
+    hosts: [...]
+    cmd: bundle exec sidekiq -C config/sidekiq.yml
+    proxy: false
+----
+
+Two roles, both currently pinned to the same host (see <<section-deployment-overview,Overview>>
+for why). `worker` overrides the container's default `CMD` to run Sidekiq instead of the Rails
+server, and explicitly opts out of `kamal-proxy` registration (`proxy: false`) since it has no
+HTTP server to expose. To scale out, add more IPs to either role's `hosts:` array — Kamal deploys
+to all of them and `kamal-proxy` load-balances across every `web` host automatically.
+
+=== Proxy (`kamal-proxy`)
+
+[source,yaml]
+----
+proxy:
+  ssl: true
+  host: dam.example.com
+  app_port: 80
+  healthcheck:
+    path: /up
+    interval: 3
+    timeout: 5
+----
+
+`ssl: true` tells `kamal-proxy` to request/renew a Let's Encrypt certificate for `host`.
+`app_port: 80` matches the port Thruster (`bin/thrust`) listens on inside the container (see the
+Dockerfile's `EXPOSE 80` / `CMD`). The health check hits the existing Rails health-check route
+(`get "up" => "rails/health#show"` in `config/routes.rb`) — a new container only receives traffic
+once this returns `200`, which is what makes deploys zero-downtime. See
+<<section-ssl-domains-and-proxy,SSL, Domains & kamal-proxy>> for the full picture.
+
+=== Registry
+
+[source,yaml]
+----
+registry:
+  server: ghcr.io
+  username:
+    - KAMAL_REGISTRY_USERNAME
+  password:
+    - KAMAL_REGISTRY_PASSWORD
+----
+
+Points at GitHub Container Registry, matching `.github/workflows/docker.yml` (which already
+builds and pushes multi-arch images to `ghcr.io/capri-labs/capri-dam` on every push to
+main/master and on `v*.*.*` tags). Both values are resolved from `.kamal/secrets` at deploy time
+— see <<section-secrets-and-credentials,Secrets & Credentials>>.
+
+=== Builder
+
+[source,yaml]
+----
+builder:
+  arch: amd64
+  args:
+    RUBY_VERSION: 4.0.3
+    NODE_VERSION: 22.16.0
+----
+
+`arch` must match your server's CPU architecture (switch to `arm64` for e.g. AWS Graviton or an
+Oracle Cloud Ampere instance). The `args` mirror the `--build-arg` values passed by the CI
+workflow so a locally-built image is bit-for-bit consistent with a CI-built one. If you deploy
+exclusively via CI-built images, you can skip local builds entirely — see the "use the CI-built
+image" variant in <<section-first-deployment-playbook,First Deployment Playbook>>.
+
+=== Environment variables
+
+[source,yaml]
+----
+env:
+  clear:
+    RAILS_ENV: production
+    APP_HOST: dam.example.com
+    DB_HOST: capri-dam-db
+    REDIS_URL: redis://capri-dam-redis:6379/0
+    COVERBAND_REDIS_URL: redis://capri-dam-redis:6379/2
+    WEB_CONCURRENCY: 2
+    RAILS_MAX_THREADS: 5
+  secret:
+    - RAILS_MASTER_KEY
+    - HEADLESS_DAM_DATABASE_PASSWORD
+----
+
+`DB_HOST` / `REDIS_URL` point at the accessory containers' **Docker network aliases**, not
+`localhost` — this only works because `config/database.yml` (`host: <%= ENV.fetch("DB_HOST",
+"localhost") %>`) and `config/cable.yml`/Sidekiq/Coverband (all already `ENV.fetch("REDIS_URL",
+...)`-based) were written to be overridable this way; the `DB_HOST` override was added
+specifically to support this Kamal deployment (previously hard-coded to `localhost`, which only
+worked for co-located dev setups). `APP_HOST` feeds `config/environments/production.rb`'s mailer
+`default_url_options` so generated email links point at your real domain. `clear` values are
+visible in `kamal config` / container inspection (not secret); `secret` values are resolved from
+`.kamal/secrets` and injected without ever touching disk unencrypted on the server.
+
+=== Volumes
+
+[source,yaml]
+----
+volumes:
+  - "/var/lib/capri-dam/storage:/rails/storage"
+----
+
+Bind-mounts the host directory created in <<section-deployment-prerequisites,Prerequisites>> into
+every role's container at `/rails/storage` — the path Active Storage's local-disk service
+(`config/storage.yml`) writes to. This is what makes uploaded files, generated previews, and
+transcodes survive container replacement across deploys.
+
+=== Accessories, logging, SSH, retention, boot
+
+Covered in depth in <<section-accessories,Accessories>>,
+<<section-monitoring-and-troubleshooting,Monitoring & Troubleshooting>>, and inline comments in
+the file itself. Briefly:
+
+[cols="1,3", options="header"]
+|===
+| Key | Purpose
+| `logging.driver` / `options` | Caps container log file size/count on the host disk (`json-file`, 50 MB × 5 files) so runaway logging can't fill the disk.
+| `ssh.user` | The SSH user Kamal connects as — defaults to `deploy` (overridable via `KAMAL_SSH_USER`), matching <<section-deployment-prerequisites,Prerequisites>>' recommended dedicated user.
+| `retain_containers` | How many old versions Kamal keeps on disk for instant `kamal rollback` (see <<section-routine-deployments-and-rollback,Routine Deployments & Rollback>>).
+| `boot.limit` / `boot.wait` | Deploys to one `web` host at a time (`limit: 1`) with a short pause between hosts — only relevant once you scale beyond a single `web` host.
+|===

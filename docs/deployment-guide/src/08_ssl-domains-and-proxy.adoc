@@ -1,0 +1,65 @@
+[[section-ssl-domains-and-proxy]]
+== SSL, Domains & kamal-proxy
+
+=== How TLS termination works
+
+`kamal-proxy` is itself a small container Kamal boots on each `web` host, sitting in front of the
+app container(s) on that host. With `proxy.ssl: true` (`config/deploy.yml`), it:
+
+1. Listens on ports 80/443 on the host.
+2. Requests a Let's Encrypt certificate for `proxy.host` via the ACME HTTP-01 challenge (served
+   automatically on port 80 — no manual Certbot setup).
+3. Terminates TLS and forwards plain HTTP to the app container on `proxy.app_port` (80, matching
+   Thruster), adding `X-Forwarded-Proto: https` and related headers.
+4. Redirects any remaining plain-HTTP requests to HTTPS automatically.
+
+This is why `config/environments/production.rb` sets `config.assume_ssl = true` and
+`config.force_ssl = true` — the app itself never receives a literal HTTPS connection (that's
+`kamal-proxy`'s job), but needs to *believe* the original request was HTTPS so redirects, secure
+cookies, and `url_for(protocol: ...)` all behave correctly. Both are safe defaults specifically
+because `kamal-proxy` sits in front of every request in this topology.
+
+=== DNS requirement (recap)
+
+The ACME challenge in step 2 above only succeeds if `proxy.host`'s DNS **already** resolves to the
+server's public IP by the time `kamal setup` runs — see
+<<section-deployment-prerequisites,Prerequisites>>. If you deploy before DNS propagates, `kamal
+setup` will still boot the app over plain HTTP on port 80, but the certificate request will fail;
+re-run `bundle exec kamal proxy reboot` once DNS is confirmed (`dig +short <domain>`) to retry
+certificate issuance without a full redeploy.
+
+=== Multiple domains / apex + www
+
+`proxy.host` accepts multiple hostnames:
+
+[source,yaml]
+----
+proxy:
+  ssl: true
+  host:
+    - dam.example.com
+    - www.dam.example.com
+----
+
+Kamal-proxy will request a certificate covering all listed hosts and route traffic for any of
+them to the same app containers.
+
+=== Staging / multiple environments
+
+Kamal supports a `config/deploy.staging.yml` "destination" file that overrides only what differs
+from `config/deploy.yml` (typically `proxy.host`, `servers.*.hosts`, and a different
+`service`/image tag) — deploy it with `bundle exec kamal deploy -d staging`. Not created in this
+initial setup (no staging infrastructure provisioned yet), but the pattern is exactly the same
+file format as `config/deploy.yml` and only needs to declare the keys that differ.
+
+=== Verifying the certificate
+
+[source,bash]
+----
+bundle exec kamal proxy logs                  # cert issuance/renewal logs
+echo | openssl s_client -connect <domain>:443 -servername <domain> 2>/dev/null \
+  | openssl x509 -noout -dates -issuer        # confirm issuer=Let's Encrypt, expiry ~90 days out
+----
+
+Renewal is automatic — `kamal-proxy` renews well before the 90-day Let's Encrypt certificate
+expiry with no action needed from you.

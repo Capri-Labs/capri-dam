@@ -18,7 +18,11 @@ default: &default
   # For details on connection pooling, see Rails configuration guide
   # https://guides.rubyonrails.org/configuring.html#database-pooling
   max_connections: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
-  host: localhost
+  # Overridable so containerized deployments (e.g. Kamal) can point at an
+  # accessory/service hostname instead of localhost. Defaults preserve the
+  # existing dev/test behaviour.
+  host: <%= ENV.fetch("DB_HOST", "localhost") %>
+  port: <%= ENV.fetch("DB_PORT", 5432) %>
 
 
 development:

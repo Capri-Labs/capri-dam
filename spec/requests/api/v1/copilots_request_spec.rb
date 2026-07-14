@@ -66,7 +66,7 @@ RSpec.describe "Api::V1::Copilot coverage", type: :request do
       post "/api/v1/copilot/search", params: {}, as: :json
 
       expect(response).to have_http_status(:ok)
-      expect(JSON.parse(response.body)).to eq("results" => [], "query" => "")
+      expect(JSON.parse(response.body)).to eq("results" => [], "query" => "", "count" => 0)
     end
 
     it "returns 503 when the AI gateway times out" do

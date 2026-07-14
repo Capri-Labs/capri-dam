@@ -64,6 +64,30 @@ Two independent cascade behaviours exist and can be combined:
   cascade already used by `Api::V1::FoldersController#upsert_folder_policy`
   for the per-folder Access tab).
 
+== Security Policies screen (`/admin/policies`)
+
+`SecurityPoliciesManager.jsx` gives admins a group-first view of folder
+permissions, complementing the folder-first *Access* tab described above.
+
+[cols="1,3", options="header"]
+|===
+| Layer | Notes
+| Route | `GET /admin/policies` → `Admin::PoliciesController#index` (inherits `Admin::BaseController`; `authenticate_user!` + `ensure_admin!`).
+| View | `app/views/admin/policies/index.html.erb` — thin shell (`data-view="policies"`) mounting the React root, same pattern as `custom_nodes`.
+| Component | `app/javascript/components/Admin/SecurityPoliciesManager.jsx`, registered in `Registry.jsx` under key `policies`.
+| Backend API | None new. The group list reuses the existing `GET /admin/user_groups.json`; the permission matrix reuses `AclMatrix.jsx` as-is (same component embedded in `GroupOverlay.jsx`'s Permissions tab), which in turn talks to the existing `GET/POST /admin/folders/:folder_id/folder_policies` endpoints.
+|===
+
+The left panel lists groups (system groups pinned first, then custom groups,
+each with a member-count chip) with a client-side search box. Selecting a
+group renders `<AclMatrix groupId={...} readOnly={...} isAdmin={...} />` on
+the right, exactly as it behaves inside the Group drawer. The matrix is
+forced read-only for non-admins and for the built-in "Everyone" group,
+matching the existing `AclMatrix` read-only rules used elsewhere.
+
+Because this screen is a pure composition of already-tested pieces, it
+introduces no new Swagger/GraphQL surface — no schema changes were required.
+
 == Operational configuration
 
 

@@ -130,22 +130,28 @@ docker push ghcr.io/your-org/capri-dam:latest
 
 ## Deploying with Kamal
 
-Capri DAM deploys via [Kamal](https://kamal-deploy.org/). Ensure
-`RAILS_MASTER_KEY` and registry credentials are present in your environment.
+Capri DAM deploys via [Kamal 2](https://kamal-deploy.org/) — see
+[`docs/deployment-guide/`](docs/deployment-guide/) for the full playbook (prerequisites, secrets
+setup, first deployment, routine deploys, rollback, SSL, monitoring, and backups). Quick
+reference for a maintainer who has already completed first-time setup:
 
 ```bash
-# Deploy the freshly pushed image to all roles
-bin/kamal deploy
+# Load deploy secrets into your shell (see docs/deployment-guide/src/04_secrets-and-credentials.adoc)
+set -a; source .env; set +a
 
-# Run migrations as part of (or before) the deploy
-bin/kamal app exec 'bin/rails db:migrate'
+# Deploy the freshly pushed image to all roles (web + worker)
+bundle exec kamal deploy
+
+# Run a migration explicitly ahead of a deploy, if needed
+bundle exec kamal app exec 'bin/rails db:migrate'
 
 # Tail logs to confirm a clean boot
-bin/kamal app logs -f
+bundle exec kamal app logs -r web --follow
 ```
 
-For zero-downtime migrations, ship additive schema changes first, deploy, then
-ship the code that depends on them in the following release.
+Migrations otherwise run automatically on every deploy (`bin/docker-entrypoint` calls
+`bin/rails db:prepare` on container boot). For zero-downtime migrations, ship additive schema
+changes first, deploy, then ship the code that depends on them in the following release.
 
 ---
 
@@ -181,13 +187,15 @@ Cherry-pick the fix back to any still-supported release branches if applicable.
 
 ## Rolling back
 
-If a release is bad, roll the deployment back to the previous image:
+If a release is bad, roll the deployment back to the previous image (see
+[`docs/deployment-guide/src/07_routine-deployments-and-rollback.adoc`](docs/deployment-guide/src/07_routine-deployments-and-rollback.adoc)
+for the full explanation of what each command does):
 
 ```bash
 # Re-deploy the last known-good version
-bin/kamal rollback
+bundle exec kamal rollback
 # or pin explicitly:
-bin/kamal deploy --version v2.4.0
+bundle exec kamal deploy --version v2.4.0
 ```
 
 If a migration must be reversed, run its `down` step deliberately and document

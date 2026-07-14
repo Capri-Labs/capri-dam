@@ -2915,5 +2915,18 @@
       "webp": "WebP",
       "avif": "AVIF"
     }
+  },
+  "securityPolicies": {
+    "title": "Security Policies",
+    "subtitle": "Select a group to view or edit its folder-permission matrix.",
+    "searchPlaceholder": "Search groups…",
+    "systemGroups": "System Groups",
+    "customGroups": "Custom Groups",
+    "noGroups": "No groups match your search.",
+    "noGroupSelected": "Select a group on the left to view its permissions.",
+    "matrixFor": "Permissions for \"{{name}}\"",
+    "notifications": {
+      "loadFailed": "Failed to load groups."
+    }
   }
 }

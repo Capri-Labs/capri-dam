@@ -92,6 +92,14 @@ ifdef::backend-html5[]
     <span class="tag">Getting Started · Support</span>
   </a>
 
+  <a class="card" href="deployment-guide/">
+    <div class="card-icon">🚀</div>
+    <h2>Deployment Guide</h2>
+    <p>Hands-on production deployment playbooks. Starts with Kamal 2 (Docker + kamal-proxy) —
+       prerequisites, secrets, first deploy, rollback, SSL, monitoring, and backups.</p>
+    <span class="tag">Kamal · Docker · Ops</span>
+  </a>
+
 </div>
 
 <div class="quick-links">
@@ -106,6 +114,7 @@ ifdef::backend-html5[]
   <a href="developer-guide/workflows.html">Workflow Engine</a>
   <a href="developer-guide/search.html">Search &amp; AI</a>
   <a href="developer-guide/testing.html">Testing</a>
+  <a href="deployment-guide/">Kamal 2 Deployment</a>
 </div>
 
 <div class="footer-note">
@@ -122,5 +131,6 @@ ifndef::backend-html5[]
 * link:developer-guide/index.adoc[Developer Guide]
 * link:product-info/index.adoc[Product Info]
 * link:customer-guide/index.adoc[Customer Guide]
+* link:deployment-guide/index.adoc[Deployment Guide]
 endif::backend-html5[]
 

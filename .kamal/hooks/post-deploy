@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# ─────────────────────────────────────────────────────────────────────────────
+# Kamal post-deploy hook.
+#
+# Runs locally after the new version is live behind kamal-proxy. Performs a
+# real HTTP smoke test against the public health check endpoint so a broken
+# deploy is caught immediately instead of silently "succeeding".
+#
+# See docs/deployment-guide/src/09_monitoring-and-troubleshooting.adoc.
+# ─────────────────────────────────────────────────────────────────────────────
+set -euo pipefail
+
+app_host="${KAMAL_APP_HOST:-dam.example.com}"
+url="https://${app_host}/up"
+
+echo "==> [post-deploy] Smoke-testing ${url} ..."
+if command -v curl >/dev/null 2>&1; then
+  code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "$url" || echo "000")
+  if [ "$code" != "200" ]; then
+    echo "==> [post-deploy] WARNING: health check returned HTTP ${code} (expected 200) at ${url}." >&2
+    echo "==> [post-deploy] Deploy has already completed; investigate with 'kamal app logs' / 'kamal details'." >&2
+    exit 1
+  fi
+  echo "==> [post-deploy] OK — ${url} returned HTTP 200."
+else
+  echo "==> [post-deploy] curl not found — skipping smoke test (verify manually)."
+fi

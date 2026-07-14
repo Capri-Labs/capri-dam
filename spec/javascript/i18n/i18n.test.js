@@ -944,3 +944,30 @@ describe('i18n — CDN Edge (Fastly image optimizer formats) keys (regression gu
     });
   });
 });
+
+describe('i18n — Security Policies screen keys (regression guard)', () => {
+  beforeEach(() => i18n.changeLanguage('en'));
+  afterAll(() => i18n.changeLanguage('en'));
+
+  it('securityPolicies.title', () => expect(i18n.t('securityPolicies.title')).toBe('Security Policies'));
+  it('securityPolicies.matrixFor interpolates name', () => {
+    expect(i18n.t('securityPolicies.matrixFor', { name: 'Editors' })).toBe('Permissions for "Editors"');
+  });
+
+  const LOCALES = ['en', 'de', 'es', 'fr', 'ja', 'ko', 'nl', 'pt', 'zh', 'ar'];
+  const KEYS = [
+    'title', 'subtitle', 'searchPlaceholder', 'systemGroups', 'customGroups',
+    'noGroups', 'noGroupSelected', 'matrixFor', 'notifications.loadFailed',
+  ];
+  LOCALES.forEach(locale => {
+    it(`${locale} has all securityPolicies.* keys translated (no raw key fallback)`, () => {
+      i18n.changeLanguage(locale);
+      KEYS.forEach(key => {
+        const fullKey = `securityPolicies.${key}`;
+        const value = i18n.t(fullKey, key === 'matrixFor' ? { name: 'X' } : undefined);
+        expect(value).not.toBe(fullKey);
+        expect(value.length).toBeGreaterThan(0);
+      });
+    });
+  });
+});

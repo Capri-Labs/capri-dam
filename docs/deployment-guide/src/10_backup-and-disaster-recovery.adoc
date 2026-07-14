@@ -1,0 +1,83 @@
+[[section-backup-and-disaster-recovery]]
+== Backups & Disaster Recovery
+
+Two independent things need backing up in the current single-server topology: the **Postgres
+database** and the **local-disk Active Storage volume** (uploaded assets, generated
+previews/transcodes). Neither is backed up automatically by Kamal itself — Kamal manages
+deployment lifecycle, not backup scheduling.
+
+=== Database backups
+
+[source,bash]
+----
+# One-off dump to your local machine
+bundle exec kamal accessory exec db -- \
+  pg_dump -U headless_dam -d headless_dam_production -Fc \
+  > "capri-dam-$(date +%Y%m%d-%H%M%S).dump"
+----
+
+For scheduled backups, add a cron job on the server itself (outside Kamal's remit) that runs the
+equivalent `pg_dump` **inside** the `db` accessory container and ships the result off-host (S3,
+another region, etc.):
+
+[source,bash]
+----
+# Example cron entry on the server (as the deploy user), daily at 02:00
+0 2 * * * docker exec capri-dam-db pg_dump -U headless_dam -d headless_dam_production -Fc \
+  | gzip > /var/backups/capri-dam/db-$(date +\%Y\%m\%d).dump.gz
+----
+
+Retain at least 7 daily + 4 weekly backups off-host; the `neighbor`/pgvector embedding columns
+dump and restore like any other Postgres data (no special handling needed for `pg_dump`/
+`pg_restore` — the `vector` extension must simply exist on the restore target, which
+`pgvector/pgvector:pg16` already guarantees).
+
+=== Restoring the database
+
+[source,bash]
+----
+# Against a running db accessory (destructive — confirm target is correct!)
+cat capri-dam-20260714.dump | bundle exec kamal accessory exec db --interactive -- \
+  pg_restore -U headless_dam -d headless_dam_production --clean --if-exists
+----
+
+=== Storage volume backups
+
+The bind-mounted `/var/lib/capri-dam/storage` directory (see
+<<section-kamal-configuration,Kamal Configuration Reference>>'s `volumes:` entry) is a plain
+directory on the host filesystem — back it up with any standard tool:
+
+[source,bash]
+----
+# Simple rsync to an off-host backup target
+rsync -az --delete /var/lib/capri-dam/storage/ backup-host:/backups/capri-dam/storage/
+
+# Or a compressed snapshot
+tar -czf "capri-dam-storage-$(date +%Y%m%d).tar.gz" -C /var/lib/capri-dam storage
+----
+
+Run this on the same schedule as the database backup so a restore point is consistent
+(asset row metadata in Postgres references files on this volume by path/UUID — restoring one
+without the other leaves broken references).
+
+=== Migrating to object storage (reduces backup burden)
+
+If/when you switch the active `StorageBackend` to S3/GCS/Azure Blob via `/admin/storage_backends`
+(already supported, no code changes needed — see the Developer Guide's Storage & CDN chapter),
+the object storage provider's own durability/versioning/cross-region replication typically
+replaces the need for the `rsync`/`tar` approach above entirely; only the database backup
+strategy remains necessary.
+
+=== Full disaster-recovery drill (recommended before you rely on this in anger)
+
+1. Provision a **new** server, complete <<section-deployment-prerequisites,Prerequisites>>.
+2. Restore the latest database dump into a fresh `db` accessory
+   (`bundle exec kamal accessory boot db` then the restore command above).
+3. Restore the storage volume backup into `/var/lib/capri-dam/storage` on the new host.
+4. Point DNS at the new server's IP.
+5. `bundle exec kamal setup` against the new host.
+6. Verify `/up`, spot-check a handful of assets/previews render correctly, confirm Sidekiq
+   (`/admin/queues`) is processing.
+
+Rehearsing this at least once (e.g. against a throwaway staging server) is the only way to know
+your backups are actually restorable — an untested backup is not a backup.

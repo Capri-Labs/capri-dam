@@ -545,6 +545,11 @@ Rails.application.routes.draw do
       resources :folder_policies, only: [ :index, :create, :destroy ], param: :group_id
     end
 
+    # Security Policies — cross-group ACL management screen (pick any group,
+    # view/edit its full folder-permission matrix in one place, instead of
+    # having to open that group's overlay from User Groups first).
+    get "policies", to: "policies#index"
+
     # Communications
     resources :storage_backends, only: [ :index, :edit, :update ]
     resources :email_templates, except: [ :new, :edit ] do

@@ -2915,5 +2915,18 @@
       "webp": "WebP",
       "avif": "AVIF"
     }
+  },
+  "securityPolicies": {
+    "title": "Políticas de seguridad",
+    "subtitle": "Seleccione un grupo para ver o editar su matriz de permisos de carpetas.",
+    "searchPlaceholder": "Buscar grupos…",
+    "systemGroups": "Grupos del sistema",
+    "customGroups": "Grupos personalizados",
+    "noGroups": "Ningún grupo coincide con su búsqueda.",
+    "noGroupSelected": "Seleccione un grupo a la izquierda para ver sus permisos.",
+    "matrixFor": "Permisos para \"{{name}}\"",
+    "notifications": {
+      "loadFailed": "No se pudieron cargar los grupos."
+    }
   }
 }

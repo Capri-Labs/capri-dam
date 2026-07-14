@@ -2915,5 +2915,18 @@
       "webp": "WebP",
       "avif": "AVIF"
     }
+  },
+  "securityPolicies": {
+    "title": "セキュリティポリシー",
+    "subtitle": "グループを選択して、フォルダー権限マトリックスを表示または編集します。",
+    "searchPlaceholder": "グループを検索…",
+    "systemGroups": "システムグループ",
+    "customGroups": "カスタムグループ",
+    "noGroups": "検索に一致するグループがありません。",
+    "noGroupSelected": "左側でグループを選択すると権限が表示されます。",
+    "matrixFor": "「{{name}}」の権限",
+    "notifications": {
+      "loadFailed": "グループの読み込みに失敗しました。"
+    }
   }
 }

@@ -23,7 +23,7 @@ class Api::V1::CopilotsController < ApplicationController
   #   content_type [String]  optional  filter e.g. "image", "video", "document"
   def search
     query = params[:query].to_s.strip
-    return render json: { results: [], query: "" }, status: :ok if query.blank?
+    return render json: { results: [], query: "", count: 0 }, status: :ok if query.blank?
 
     limit        = params.fetch(:limit, DEFAULT_LIMIT).to_i.clamp(1, MAX_LIMIT)
     content_type = params[:content_type].presence

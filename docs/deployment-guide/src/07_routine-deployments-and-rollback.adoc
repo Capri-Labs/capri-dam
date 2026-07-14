@@ -1,0 +1,79 @@
+[[section-routine-deployments-and-rollback]]
+== Routine Deployments & Rollback
+
+=== Deploying a new version
+
+Once `kamal setup` has run once (<<section-first-deployment-playbook,First Deployment
+Playbook>>), every subsequent release is:
+
+[source,bash]
+----
+set -a; source .env; set +a
+bundle exec kamal deploy
+----
+
+`kamal deploy` (unlike `kamal setup`) assumes the server is already bootstrapped and accessories
+are already running — it only builds/pulls the new image, boots new `web`/`worker` containers
+alongside the currently-running ones, waits for `/up` to pass, then atomically switches
+`kamal-proxy` over and stops the old containers. Both `.kamal/hooks/pre-deploy` and
+`.kamal/hooks/post-deploy` run automatically (skip with `--skip-hooks` if you need to, e.g. while
+iterating locally against a throwaway server).
+
+If you only changed environment variables/secrets and not the code (e.g. rotated a secret in
+`.kamal/secrets`), a full rebuild isn't needed — `kamal deploy` still handles it correctly, but
+`kamal redeploy` is a faster path when you know the *servers themselves* don't need
+re-bootstrapping (it skips the accessory/registry/proxy setup steps `kamal setup` performs).
+
+=== Database migrations
+
+`bin/docker-entrypoint` runs `./bin/rails db:prepare` on every `web`/`worker` container boot,
+which runs any pending migrations (`db:migrate`) — new migrations committed alongside application
+code changes are applied automatically as part of the normal `kamal deploy` flow, no separate
+step required. For a migration you want applied *before* traffic shifts (e.g. a large data
+migration), run it explicitly ahead of the deploy instead:
+
+[source,bash]
+----
+bundle exec kamal app exec --interactive -- bin/rails db:migrate
+bundle exec kamal deploy
+----
+
+=== Rollback
+
+Every deploy leaves the previous image available (bounded by `retain_containers: 5` in
+`config/deploy.yml`). To roll back:
+
+[source,bash]
+----
+bundle exec kamal app versions        # list recently deployed versions
+bundle exec kamal rollback <version>  # re-point kamal-proxy at that version's containers
+----
+
+Rollback re-uses the already-pulled image for `<version>` — no rebuild, no registry pull — so it
+completes about as fast as a health check cycle (a few seconds). It does **not** automatically
+reverse database migrations; if the version you're rolling back from ran a destructive/irreversible
+migration, you'll need to handle that separately (write migrations to be backward-compatible
+across one release wherever feasible — a standard zero-downtime-deploy discipline, not
+Kamal-specific).
+
+=== What each command touches
+
+[cols="1,3", options="header"]
+|===
+| Command | Touches
+| `kamal deploy` | Builds/pulls image → boots new `web`+`worker` containers → waits for health check → proxies traffic → stops old containers. Runs `pre-deploy`/`post-deploy` hooks.
+| `kamal redeploy` | Same as `deploy` but skips server bootstrap/accessory/registry/proxy setup — use once a server is already fully set up and you're confident nothing but the app image changed.
+| `kamal rollback <version>` | Re-points `kamal-proxy` at an already-present older image version; no build/pull.
+| `kamal app boot` | Force-boots the app containers without the health-check gating `deploy` does — mainly useful for debugging, not routine releases.
+| `kamal accessory reboot db\|redis` | Restarts only that accessory — app containers are untouched.
+|===
+
+=== Recommended CI wiring (optional, not yet configured in this repo)
+
+`.github/workflows/docker.yml` already builds/pushes the image on every push to `main`/`master`.
+A natural follow-up (left as a deliberate future step, not implemented here, so as not to grant
+CI direct SSH access to production without an explicit decision) is a second workflow that, on
+success of the Docker workflow, runs `bundle exec kamal deploy --version=<sha>` from a
+self-hosted runner or a runner with the deploy SSH key installed, using the `KAMAL_*` /
+`HEADLESS_DAM_DATABASE_PASSWORD` secrets described in
+<<section-secrets-and-credentials,Secrets & Credentials>>.

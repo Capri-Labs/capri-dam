@@ -1925,8 +1925,9 @@ paths:
                     type: string
                     example: text-embedding-ada-002
                   monthly_budget_usd:
-                    type: number
-                    example: 200.0
+                    type: string
+                    example: '200.0'
+                    description: Decimal serialized as a string (ActiveRecord default JSON encoding).
                   system_prompt:
                     type: string
                     nullable: true
@@ -2854,7 +2855,8 @@ paths:
                       type: object
                       properties:
                         id:
-                          type: integer
+                          type: string
+                          format: uuid
                         version_number:
                           type: integer
                           example: 3
@@ -3051,7 +3053,8 @@ paths:
                 type: object
                 properties:
                   id:
-                    type: integer
+                    type: string
+                    format: uuid
                   uuid:
                     type: string
                     format: uuid
@@ -5437,7 +5440,8 @@ paths:
                       type: object
                       properties:
                         id:
-                          type: integer
+                          type: string
+                          format: uuid
                         uuid:
                           type: string
                           format: uuid
@@ -6396,6 +6400,7 @@ paths:
                         started_at:
                           type: string
                           format: date-time
+                          nullable: true
                         completed_at:
                           type: string
                           format: date-time
@@ -6616,7 +6621,8 @@ paths:
                       type: object
                       properties:
                         id:
-                          type: integer
+                          type: string
+                          format: uuid
                         original_filename:
                           type: string
                         file_hash:
@@ -8008,44 +8014,32 @@ paths:
         provider (Cloudinary, Brandfolder, Bynder, FTP, HTTP API, etc.).
       responses:
         '200':
-          description: Connectors returned
+          description: Connectors returned (bare array when no `page` param is given,
+            or a paginated `{ connectors, pagination }` shape when `page` is present)
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  type: object
+                oneOf:
+                - type: array
+                  items:
+                    "$ref": "#/components/schemas/SystemConnectorSummary"
+                - type: object
                   properties:
-                    id:
-                      type: integer
-                    name:
-                      type: string
-                      example: Cloudinary Production
-                    provider_type:
-                      type: string
-                      example: cloudinary
-                    provider_label:
-                      type: string
-                      example: Cloudinary
-                    endpoint:
-                      type: string
-                      nullable: true
-                    status:
-                      type: string
-                      example: active
-                      description: idle | active | error
-                    assets_imported:
-                      type: integer
-                      example: 0
-                    concurrency_limit:
-                      type: integer
-                      nullable: true
-                    rps_limit:
-                      type: integer
-                      nullable: true
-                    created_at:
-                      type: string
-                      format: date-time
+                    connectors:
+                      type: array
+                      items:
+                        "$ref": "#/components/schemas/SystemConnectorSummary"
+                    pagination:
+                      type: object
+                      properties:
+                        page:
+                          type: integer
+                        per_page:
+                          type: integer
+                        total:
+                          type: integer
+                        total_pages:
+                          type: integer
     post:
       summary: Create a new system connector
       tags:
@@ -9606,7 +9600,7 @@ paths:
                   queued:
                     type: integer
                   workflow_id:
-                    type: string
+                    type: integer
       requestBody:
         content:
           application/json:
@@ -9750,7 +9744,8 @@ paths:
                         step_title:
                           type: string
                         asset_id:
-                          type: integer
+                          type: string
+                          format: uuid
                         asset_name:
                           type: string
                         asset_thumb:
@@ -9771,12 +9766,14 @@ paths:
                         current_step:
                           type: string
                         asset_id:
-                          type: integer
+                          type: string
+                          format: uuid
                         asset_name:
                           type: string
                         started_at:
                           type: string
                           format: date-time
+                          nullable: true
                   completed_workflows:
                     type: array
                     items:
@@ -9787,7 +9784,8 @@ paths:
                         workflow_name:
                           type: string
                         asset_id:
-                          type: integer
+                          type: string
+                          format: uuid
                         asset_name:
                           type: string
                         status:
@@ -10340,6 +10338,76 @@ components:
       scheme: bearer
       description: Enter your OAuth 2.0 Bearer token to authenticate requests.
   schemas:
+    SystemConnectorSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+          nullable: true
+          example: Cloudinary Production
+        provider_type:
+          type: string
+          nullable: true
+          example: cloudinary
+        provider_label:
+          type: string
+          example: Cloudinary
+        endpoint:
+          type: string
+          nullable: true
+        status:
+          type: string
+          nullable: true
+          example: active
+          description: idle | active | error
+        assets_imported:
+          type: integer
+          nullable: true
+          example: 0
+        concurrency_limit:
+          type: integer
+          nullable: true
+        rps_limit:
+          type: integer
+          nullable: true
+        analysis_report:
+          type: object
+          nullable: true
+        last_sync:
+          type: string
+          format: date-time
+          nullable: true
+        tdm_sanitation:
+          type: boolean
+        webhook_secret:
+          type: string
+          nullable: true
+        credential_type:
+          type: string
+        access_token_expires_at:
+          type: string
+          format: date-time
+          nullable: true
+        token_status:
+          type: string
+        last_token_refreshed_at:
+          type: string
+          format: date-time
+          nullable: true
+        last_token_error:
+          type: string
+          nullable: true
+        default_source_path:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
     FolderPolicy:
       type: object
       properties:

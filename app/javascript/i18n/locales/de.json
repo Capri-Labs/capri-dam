@@ -2915,5 +2915,18 @@
       "webp": "WebP",
       "avif": "AVIF"
     }
+  },
+  "securityPolicies": {
+    "title": "Sicherheitsrichtlinien",
+    "subtitle": "Wählen Sie eine Gruppe aus, um deren Ordner-Berechtigungsmatrix anzuzeigen oder zu bearbeiten.",
+    "searchPlaceholder": "Gruppen suchen…",
+    "systemGroups": "Systemgruppen",
+    "customGroups": "Benutzerdefinierte Gruppen",
+    "noGroups": "Keine Gruppen entsprechen Ihrer Suche.",
+    "noGroupSelected": "Wählen Sie links eine Gruppe aus, um deren Berechtigungen anzuzeigen.",
+    "matrixFor": "Berechtigungen für \"{{name}}\"",
+    "notifications": {
+      "loadFailed": "Gruppen konnten nicht geladen werden."
+    }
   }
 }

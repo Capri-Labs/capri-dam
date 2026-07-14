@@ -2915,5 +2915,18 @@
       "webp": "WebP",
       "avif": "AVIF"
     }
+  },
+  "securityPolicies": {
+    "title": "安全策略",
+    "subtitle": "选择一个组以查看或编辑其文件夹权限矩阵。",
+    "searchPlaceholder": "搜索组…",
+    "systemGroups": "系统组",
+    "customGroups": "自定义组",
+    "noGroups": "没有与您的搜索匹配的组。",
+    "noGroupSelected": "在左侧选择一个组以查看其权限。",
+    "matrixFor": "\"{{name}}\" 的权限",
+    "notifications": {
+      "loadFailed": "加载组失败。"
+    }
   }
 }

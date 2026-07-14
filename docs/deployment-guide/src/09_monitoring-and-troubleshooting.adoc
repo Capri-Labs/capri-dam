@@ -1,0 +1,58 @@
+[[section-monitoring-and-troubleshooting]]
+== Monitoring & Troubleshooting
+
+=== Logs
+
+[source,bash]
+----
+bundle exec kamal app logs -r web                # Puma/Thruster (Rails requests)
+bundle exec kamal app logs -r worker             # Sidekiq job processing
+bundle exec kamal app logs -r web --follow        # tail -f style
+bundle exec kamal app logs -r web --since 30m     # last 30 minutes only
+bundle exec kamal accessory logs db
+bundle exec kamal accessory logs redis
+bundle exec kamal proxy logs                      # kamal-proxy itself (routing, TLS, health checks)
+----
+
+Container log growth is bounded on disk by the `logging` section of `config/deploy.yml`
+(`json-file` driver, 50 MB × 5 files per container) — see
+<<section-kamal-configuration,Kamal Configuration Reference>>.
+
+=== In-app operational surfaces
+
+Two admin screens are already part of the app and useful once deployed:
+
+* `/admin/system_status` — application/Sidekiq/Redis/database/storage-backend health, SMTP test
+  connection (see the Admin Module chapter of the Developer Guide).
+* `/admin/queues` — the mounted Sidekiq Web UI (`mount Sidekiq::Web => "/admin/queues"` in
+  `config/routes.rb`) for inspecting queue depth, retries, and dead jobs.
+
+=== Running one-off commands in production
+
+[source,bash]
+----
+bundle exec kamal app exec --interactive -- bin/rails console
+bundle exec kamal app exec --interactive -- bin/rails runner 'puts User.count'
+bundle exec kamal app exec --interactive -- bash        # a shell inside the running web container
+----
+
+=== Common failure modes
+
+[cols="1,2,3", options="header"]
+|===
+| Symptom | Likely cause | Fix
+| `kamal deploy` hangs at "Waiting for app to become healthy" | `/up` never returns 200 — often a boot-time exception (bad `RAILS_MASTER_KEY`, DB unreachable) | `kamal app logs -r web --lines 200`; check `DB_HOST`/`REDIS_URL` resolve inside the container: `kamal app exec -- getent hosts capri-dam-db`.
+| `PG::ConnectionBad` in logs | `db` accessory not running, or `HEADLESS_DAM_DATABASE_PASSWORD` / `POSTGRES_PASSWORD` mismatch | `kamal accessory logs db`; confirm both secrets resolve to the same value (see <<section-secrets-and-credentials,Secrets & Credentials>>).
+| Certificate never issues, site stuck on plain HTTP | DNS doesn't resolve to the server yet, or port 80 blocked by a firewall | `dig +short <domain>`; confirm security-group/firewall allows inbound 80/443; then `kamal proxy reboot`.
+| Uploaded files/previews disappear after a deploy | `volumes:` bind mount missing or pointing at the wrong host path | Confirm `/var/lib/capri-dam/storage` exists on the host (see <<section-deployment-prerequisites,Prerequisites>>) and matches `config/deploy.yml`'s `volumes:` entry exactly.
+| Office document / video previews never generate in production | `ffmpeg`/LibreOffice missing from the image | They're baked into the base Dockerfile stage already (see the Dockerfile's `apt-get install ... ffmpeg libreoffice-core ...` — verify with `kamal app exec -- which soffice ffmpeg`.
+| `kamal setup` fails at "Docker is not installed" | Target user lacks passwordless sudo, or an unsupported OS | Re-check <<section-deployment-prerequisites,Prerequisites>>' deploy-user setup; Kamal's bootstrap needs `sudo` without a password prompt over a non-interactive SSH session.
+|===
+
+=== Health check reference
+
+The health check hit by `kamal-proxy` (`proxy.healthcheck.path: /up`) and by
+`.kamal/hooks/post-deploy`'s smoke test is Rails' built-in health-check route
+(`get "up" => "rails/health#show"`, `config/routes.rb`), which is silenced from the request log by
+`config.silence_healthcheck_path = "/up"` in `config/environments/production.rb` — expect **no**
+log line per health check poll, that's intentional, not evidence the health check isn't running.

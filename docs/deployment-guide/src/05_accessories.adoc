@@ -1,0 +1,78 @@
+[[section-accessories]]
+== Accessories: PostgreSQL (pgvector) & Redis
+
+Kamal "accessories" are plain Docker containers that Kamal manages alongside the app (start,
+stop, logs, exec) but which aren't part of the app's own deploy/rollback lifecycle. Capri DAM uses
+two:
+
+[cols="1,2,3", options="header"]
+|===
+| Accessory | Image | Why this image specifically
+| `db` | `pgvector/pgvector:pg16` | Official Postgres image with the `vector` extension pre-built. Required because `db/structure.sql` runs `CREATE EXTENSION IF NOT EXISTS vector` and the `SmartCollectionRule`/embeddings tables (`neighbor` gem, see the Developer Guide's Search & AI Embeddings chapter) use `vector(1536)` columns for semantic search. Plain `postgres:16` does **not** include this extension.
+| `redis` | `redis:7-alpine` | Backs Sidekiq (`config/initializers/sidekiq.rb`), Action Cable (`config/cable.yml`, `adapter: redis`), and Coverband (`config/coverband.rb`). Started with `--appendonly yes` so queued/in-flight Sidekiq jobs survive a container restart.
+|===
+
+=== Network reachability
+
+Both accessories run on the **same host** as the `web`/`worker` roles (see
+<<section-deployment-overview,Overview>>). Kamal joins every container for a given `service` to a
+shared private Docker network, and each accessory gets a predictable DNS alias:
+`<service>-<accessory-name>` — i.e. `capri-dam-db` and `capri-dam-redis`. This is exactly what
+`env.clear.DB_HOST` and `env.clear.REDIS_URL` in `config/deploy.yml` point at (see
+<<section-kamal-configuration,Kamal Configuration Reference>>) — **not** `localhost`, and **not**
+the `127.0.0.1:5432:5432` / `127.0.0.1:6379:6379` published ports (those exist purely for
+maintenance access from the host itself, e.g. running `psql` directly on the server; they are
+loopback-only and never exposed to the public internet).
+
+=== First-time setup
+
+Accessories are created automatically the first time you run `kamal setup` (see
+<<section-first-deployment-playbook,First Deployment Playbook>>) — no manual `docker run` needed.
+To (re-)provision them independently later:
+
+[source,bash]
+----
+bundle exec kamal accessory boot db
+bundle exec kamal accessory boot redis
+----
+
+=== Common operations
+
+[source,bash]
+----
+# Tail logs
+bundle exec kamal accessory logs db
+bundle exec kamal accessory logs redis
+
+# Open a psql shell on the running db accessory
+bundle exec kamal accessory exec db --interactive -- psql -U headless_dam -d headless_dam_production
+
+# Open a redis-cli shell
+bundle exec kamal accessory exec redis --interactive -- redis-cli
+
+# Restart an accessory (e.g. after changing its config/env)
+bundle exec kamal accessory restart db
+
+# Rotate the Postgres password (run BEFORE updating and redeploying the app's secret —
+# otherwise the app will briefly fail to connect)
+bundle exec kamal accessory exec db --interactive -- \
+  psql -U headless_dam -d headless_dam_production -c "ALTER USER headless_dam WITH PASSWORD 'new-password-here';"
+----
+
+=== Data persistence
+
+Both accessories declare `directories:` in `config/deploy.yml`, which Kamal turns into Docker
+named volumes local to the host: Postgres data lives under `/var/lib/postgresql/data` inside its
+container (backed by a Docker volume, not the bind-mounted `/var/lib/capri-dam/storage` used for
+Active Storage), and Redis's append-only file lives under `/data`. These survive
+`kamal accessory reboot` / app redeploys, but — like the Active Storage volume — **do not**
+survive server loss. See <<section-backup-and-disaster-recovery,Backups & Disaster Recovery>> for
+the backup strategy for both.
+
+=== Scaling accessories to a dedicated host later
+
+If Postgres/Redis load outgrows sharing a host with the app, give the accessory its own `host:` in
+`config/deploy.yml` and expose the relevant port on that host's **private** network interface
+(never the public one) instead of `127.0.0.1`, then update `DB_HOST`/`REDIS_URL` in `env.clear` to
+that host's private address. This is a config-only change — no application code depends on the
+accessories being co-located.

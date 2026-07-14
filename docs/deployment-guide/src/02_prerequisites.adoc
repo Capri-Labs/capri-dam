@@ -1,0 +1,77 @@
+[[section-deployment-prerequisites]]
+== Prerequisites
+
+=== Target server(s)
+
+[cols="1,3", options="header"]
+|===
+| Requirement | Recommendation
+| OS | Ubuntu 22.04/24.04 LTS or Debian 12 (any Docker-supported Linux works; Kamal bootstraps Docker itself — see below).
+| CPU / RAM | Minimum 2 vCPU / 4 GB RAM for a small team. `ffmpeg` transcodes and LibreOffice conversions are CPU-bound — size up if you process a lot of video/Office documents.
+| Disk | 40 GB+ SSD. Local-disk Active Storage, Postgres data, and Redis AOF all live on this host in the starter config (see <<section-deployment-overview,Overview>>).
+| Architecture | `amd64` or `arm64` — must match `builder.arch` in `config/deploy.yml`.
+| Network | A public IPv4 (or IPv6) address; inbound TCP 22 (SSH), 80/443 (HTTP/HTTPS, opened automatically by `kamal-proxy`).
+|===
+
+Kamal does **not** require Docker to be pre-installed — `kamal server bootstrap` (run automatically
+by `kamal setup`) installs Docker on a fresh server for you. You do need:
+
+* A non-root SSH user with passwordless `sudo` (or root itself, though a dedicated `deploy` user is
+  recommended — see below).
+* SSH key-based auth already working (`ssh deploy@your-server` should not prompt for a password).
+
+=== DNS
+
+Point an `A`/`AAAA` record for your chosen domain (e.g. `dam.example.com`) at the server's public
+IP **before** running `kamal setup` — `kamal-proxy` requests a Let's Encrypt certificate on first
+boot and needs the domain to already resolve to the server for the ACME HTTP-01 challenge to
+succeed. See <<section-ssl-domains-and-proxy,SSL, Domains & kamal-proxy>> for details.
+
+=== Local / CI tooling
+
+Installed already if you can run `bin/setup` in this repo, but explicitly:
+
+[cols="1,3", options="header"]
+|===
+| Tool | Why
+| Docker (with Buildx) | Kamal builds the image locally by default (`builder.arch` in `config/deploy.yml`) unless you point it at CI-built images (see <<section-first-deployment-playbook,First Deployment Playbook>> for the "use the CI-built image" variant).
+| `kamal` gem | Already in the `Gemfile` (`gem "kamal", require: false`) — available as `bundle exec kamal`.
+| SSH access to the target server(s) | Kamal drives everything over SSH via SSHKit; no agent needs to run on the server beyond Docker.
+| `gh` CLI (optional) | Used by `.kamal/hooks/pre-deploy` to check that CI is green for the commit being deployed. Hook degrades gracefully (skips the check) if `gh` isn't installed.
+|===
+
+=== Create a dedicated deploy user (recommended)
+
+Rather than deploying as `root`, create a low-privilege user with Docker + sudo access on the
+target server:
+
+[source,bash]
+----
+# On the target server, as root (one-time):
+adduser --disabled-password --gecos "" deploy
+usermod -aG sudo deploy
+mkdir -p /home/deploy/.ssh
+cp ~/.ssh/authorized_keys /home/deploy/.ssh/ 2>/dev/null || \
+  ssh-copy-id -i ~/.ssh/id_ed25519.pub deploy@<server-ip>
+chown -R deploy:deploy /home/deploy/.ssh
+chmod 700 /home/deploy/.ssh && chmod 600 /home/deploy/.ssh/authorized_keys
+----
+
+`config/deploy.yml`'s `ssh.user` is already parameterised via `KAMAL_SSH_USER` (defaulting to
+`deploy`) — see <<section-kamal-configuration,Kamal Configuration Reference>>.
+
+=== Persistent host directories
+
+Create the bind-mount target directory referenced by `config/deploy.yml`'s top-level `volumes:`
+entry before the first deploy (Kamal will also create it on demand, but pre-creating it lets you
+control ownership/permissions up front):
+
+[source,bash]
+----
+sudo mkdir -p /var/lib/capri-dam/storage
+sudo chown 1000:1000 /var/lib/capri-dam/storage   # matches the "rails" user/group in Dockerfile
+----
+
+Accessory data directories (`/var/lib/postgresql/data` for Postgres, `/data` for Redis) are
+managed automatically by Kamal under Docker-managed volumes local to each accessory container —
+no manual setup needed for those.

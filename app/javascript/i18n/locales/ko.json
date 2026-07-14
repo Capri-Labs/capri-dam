@@ -2915,5 +2915,18 @@
       "webp": "WebP",
       "avif": "AVIF"
     }
+  },
+  "securityPolicies": {
+    "title": "보안 정책",
+    "subtitle": "그룹을 선택하여 폴더 권한 매트릭스를 보거나 편집하세요.",
+    "searchPlaceholder": "그룹 검색…",
+    "systemGroups": "시스템 그룹",
+    "customGroups": "사용자 지정 그룹",
+    "noGroups": "검색과 일치하는 그룹이 없습니다.",
+    "noGroupSelected": "왼쪽에서 그룹을 선택하면 권한이 표시됩니다.",
+    "matrixFor": "\"{{name}}\"의 권한",
+    "notifications": {
+      "loadFailed": "그룹을 불러오지 못했습니다."
+    }
   }
 }

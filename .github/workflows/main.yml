@@ -361,7 +361,7 @@ jobs:
             $ADOC_BASE \
             -a toclevels=4 \
             -a imagesoutdir=_site/architecture/images \
-            -a stylesdir=docs/architecture/theme \
+            -a stylesdir=theme \
             -a stylesheet=arc42.css \
             -a docinfodir=docs/architecture \
             -a docinfo=shared \
@@ -387,7 +387,7 @@ jobs:
           asciidoctor -r asciidoctor-diagram \
             $ADOC_BASE \
             -a toclevels=4 \
-            -a stylesdir=docs/developer-guide/theme \
+            -a stylesdir=theme \
             -a stylesheet=arc42.css \
             -a docinfodir=docs/developer-guide \
             -a docinfo=shared \

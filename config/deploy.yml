@@ -1,0 +1,145 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Capri DAM — Kamal 2 Deployment Configuration
+#
+# Deploys the app as a Docker container to plain Linux server(s) using Kamal 2
+# (https://kamal-deploy.org), with `kamal-proxy` handling zero-downtime
+# rollouts, load balancing, and automatic Let's Encrypt TLS.
+#
+# See docs/deployment-guide/ for the full playbook (prerequisites, secrets
+# setup, first deployment, routine deploys/rollback, SSL, monitoring, backups).
+#
+# All server/host values below are placeholders (RFC 5737 TEST-NET-1 style
+# documentation IPs / example.com). Replace them with your real infrastructure
+# before deploying — see docs/deployment-guide/src/02_prerequisites.adoc and
+# docs/deployment-guide/src/06_first-deployment-playbook.adoc.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Unique service name — used to derive container names, the Docker network,
+# and accessory hostnames (e.g. the Postgres accessory becomes reachable at
+# "capri-dam-db" on the app's private Docker network).
+service: capri-dam
+
+# Docker image — matches .github/workflows/docker.yml, which builds and
+# pushes multi-arch images to GitHub Container Registry on every push to
+# main/master (tag "latest") and on semver tags (v*.*.*). Do NOT prefix this
+# with "ghcr.io/" — that comes from `registry.server` below and Kamal
+# concatenates them itself (registry.server + "/" + image).
+image: capri-labs/capri-dam
+
+# Deploy to these servers. Web and worker roles are pinned to the SAME host
+# in this starter config because Active Storage is configured for the local
+# disk backend (see config/storage.yml / StorageBackend admin UI) — the
+# uploaded-file volume is a host bind mount, so it must be shared by every
+# role that touches it. If you outgrow a single server, switch the active
+# StorageBackend to S3/GCS/Azure Blob first (already supported, no code
+# changes needed), then split web/worker across hosts freely.
+servers:
+  web:
+    hosts:
+      - <%= ENV.fetch("KAMAL_WEB_HOST", "203.0.113.10") %>
+    labels:
+      traefik.enable: "false" # kamal-proxy handles routing; no Traefik in use.
+  worker:
+    hosts:
+      - <%= ENV.fetch("KAMAL_WEB_HOST", "203.0.113.10") %>
+    cmd: bundle exec sidekiq -C config/sidekiq.yml
+    # Sidekiq has no HTTP server of its own — never register it with the proxy.
+    proxy: false
+
+# `kamal-proxy` — automatic Let's Encrypt TLS + zero-downtime rollout.
+proxy:
+  ssl: true
+  host: <%= ENV.fetch("KAMAL_APP_HOST", "dam.example.com") %>
+  # Thruster (bin/thrust) listens on port 80 inside the container (see Dockerfile).
+  app_port: 80
+  healthcheck:
+    path: /up
+    interval: 3
+    timeout: 5
+
+# Container registry (GitHub Container Registry, matches the CI image push).
+registry:
+  server: ghcr.io
+  username:
+    - KAMAL_REGISTRY_USERNAME
+  password:
+    - KAMAL_REGISTRY_PASSWORD
+
+# Build args mirror .github/workflows/docker.yml so locally-built images
+# (`kamal deploy` without a pre-built CI image) match exactly.
+builder:
+  arch: amd64 # switch to arm64 if your server is ARM (e.g. AWS Graviton)
+  args:
+    RUBY_VERSION: 4.0.3
+    NODE_VERSION: 22.16.0
+
+# Environment variables passed into the running containers.
+env:
+  clear:
+    RAILS_ENV: production
+    RAILS_LOG_LEVEL: info
+    # Public hostname used for mailer links (see config/environments/production.rb).
+    APP_HOST: <%= ENV.fetch("KAMAL_APP_HOST", "dam.example.com") %>
+    # Accessory hostnames — resolved via the app's private Docker network,
+    # NOT localhost (see config/database.yml / config/cable.yml overrides).
+    DB_HOST: capri-dam-db
+    REDIS_URL: redis://capri-dam-redis:6379/0
+    COVERBAND_REDIS_URL: redis://capri-dam-redis:6379/2
+    # Puma tuning (see config/puma.rb) — adjust to match server CPU/RAM.
+    WEB_CONCURRENCY: 2
+    RAILS_MAX_THREADS: 5
+  secret:
+    - RAILS_MASTER_KEY
+    - HEADLESS_DAM_DATABASE_PASSWORD
+
+# Bind-mounted host directories, shared by every role above.
+volumes:
+  - "/var/lib/capri-dam/storage:/rails/storage"
+
+# PostgreSQL (with pgvector) + Redis run as Kamal accessories — plain Docker
+# containers managed alongside the app, on the same host(s) as the app roles
+# above so the private Docker network and bind mounts line up.
+accessories:
+  db:
+    image: pgvector/pgvector:pg16
+    host: <%= ENV.fetch("KAMAL_WEB_HOST", "203.0.113.10") %>
+    # Bound to loopback only — for `psql`/admin access from the server itself,
+    # not for app connectivity (the app reaches it via the "capri-dam-db"
+    # Docker network alias, never through this published port).
+    port: "127.0.0.1:5432:5432"
+    env:
+      clear:
+        POSTGRES_USER: headless_dam
+        POSTGRES_DB: headless_dam_production
+      secret:
+        - POSTGRES_PASSWORD
+    directories:
+      - data:/var/lib/postgresql/data
+  redis:
+    image: redis:7-alpine
+    host: <%= ENV.fetch("KAMAL_WEB_HOST", "203.0.113.10") %>
+    port: "127.0.0.1:6379:6379"
+    cmd: redis-server --appendonly yes
+    directories:
+      - data:/data
+
+# Keep container logs bounded on the server's disk.
+logging:
+  driver: json-file
+  options:
+    max-size: "50m"
+    max-file: "5"
+
+# SSH user Kamal connects as (create a dedicated deploy user — see
+# docs/deployment-guide/src/02_prerequisites.adoc — rather than using root).
+ssh:
+  user: <%= ENV.fetch("KAMAL_SSH_USER", "deploy") %>
+
+# Retain a few old versions for fast `kamal rollback` (see
+# docs/deployment-guide/src/07_routine-deployments-and-rollback.adoc).
+retain_containers: 5
+
+# Allow the app's own health check (30s default) plus DB migration time.
+boot:
+  limit: 1 # deploy to one server at a time (only matters with >1 web host)
+  wait: 2

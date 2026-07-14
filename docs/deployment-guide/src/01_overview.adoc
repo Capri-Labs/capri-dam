@@ -1,0 +1,57 @@
+[[section-deployment-overview]]
+== Overview
+
+=== Why Kamal 2
+
+Capri DAM ships as a single Docker image (see the repository root `Dockerfile`) that already
+contains everything the app needs at runtime: Ruby 4.0.3, the precompiled JS/CSS bundle, `ffmpeg`
+(video previews/transcodes), and headless LibreOffice (Office document previews). **Kamal 2**
+(https://kamal-deploy.org) was chosen as the first supported deployment target because it deploys
+that exact image to plain Linux servers you already control — no Kubernetes cluster, no managed
+PaaS lock-in — while still giving you:
+
+* **Zero-downtime deploys** via `kamal-proxy`, a lightweight reverse proxy that only cuts traffic
+  over to the new container once it passes its health check.
+* **Automatic TLS** — `kamal-proxy` requests and renews Let's Encrypt certificates for you.
+* **One-command rollback** to any previously-deployed image version.
+* **A single YAML file** (`config/deploy.yml`) as the source of truth for servers, environment
+  variables, accessories (Postgres, Redis), volumes, and the registry.
+
+This is deliberately the *simplest* production target for this app, appropriate for a single VPS
+or a small fixed fleet of servers. It is not mutually exclusive with other targets — a future
+chapter can document a Kubernetes/Helm or managed-PaaS deployment without touching this one.
+
+=== What gets deployed
+
+[cols="1,2,3", options="header"]
+|===
+| Role | Container | Notes
+| `web` | App image, default `CMD` | Runs Thruster (`bin/thrust`) in front of Puma, listening on port 80 inside the container. Registered with `kamal-proxy` for public HTTPS traffic.
+| `worker` | Same app image, `cmd: bundle exec sidekiq -C config/sidekiq.yml` | Processes all background jobs (metadata/AI tagging, previews/transcodes, CDN invalidation, reports, ingestion, etc — see `config/sidekiq.yml`). Never registered with the proxy (`proxy: false`) — it has no HTTP server to expose.
+| `db` (accessory) | `pgvector/pgvector:pg16` | PostgreSQL with the `vector` extension pre-installed, required by `neighbor`-backed semantic search embeddings (`db/structure.sql` creates the `vector` extension).
+| `redis` (accessory) | `redis:7-alpine` | Backs Sidekiq, Action Cable (`config/cable.yml`), and Coverband.
+|===
+
+`web` and `worker` are pinned to the **same host** in the starter `config/deploy.yml`. This is a
+deliberate constraint, not an oversight: Active Storage defaults to the local-disk backend (see
+link:../developer-guide/storage.html[Storage & CDN] in the Developer Guide, and the in-app `StorageBackend` admin
+screen), and the uploaded-files directory is a host **bind mount** — every role that reads/writes
+assets must share that same host filesystem. If you later switch the active `StorageBackend` to
+S3/GCS/Azure Blob (already supported, no code changes required), `web` and `worker` can be split
+across independent hosts.
+
+=== Guide structure
+
+[cols="1,3", options="header"]
+|===
+| Chapter | Covers
+| <<section-deployment-prerequisites,2. Prerequisites>> | Server sizing, OS, DNS, SSH access, local tooling.
+| <<section-kamal-configuration,3. Kamal Configuration Reference>> | Annotated walkthrough of every section of `config/deploy.yml`.
+| <<section-secrets-and-credentials,4. Secrets & Credentials>> | How `.kamal/secrets` works, what to put in your local/CI `.env`, `RAILS_MASTER_KEY` handling.
+| <<section-accessories,5. Accessories>> | Postgres (pgvector) and Redis accessory containers, data persistence, backups.
+| <<section-first-deployment-playbook,6. First Deployment Playbook>> | Copy-pasteable, ordered commands for the very first `kamal setup`.
+| <<section-routine-deployments-and-rollback,7. Routine Deployments & Rollback>> | Day-2 `kamal deploy`, `kamal rollback`, and what changes each command touches.
+| <<section-ssl-domains-and-proxy,8. SSL, Domains & kamal-proxy>> | DNS records, Let's Encrypt, multiple domains, `kamal-proxy` internals.
+| <<section-monitoring-and-troubleshooting,9. Monitoring & Troubleshooting>> | Logs, `kamal app exec`, common failure modes and fixes.
+| <<section-backup-and-disaster-recovery,10. Backups & Disaster Recovery>> | Database dumps, storage volume backups, restore procedure.
+|===
