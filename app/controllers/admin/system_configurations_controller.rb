@@ -33,8 +33,10 @@ class Admin::SystemConfigurationsController < ApplicationController
     new_level = params[:level].to_s.upcase
     ttl_minutes = params[:ttl_minutes].to_i
 
-    # Ensure we only accept valid Ruby Logger levels
-    valid_levels = %w[DEBUG INFO WARN ERROR FATAL]
+    # Ensure we only accept valid, UI-offered log levels (the Operational
+    # Logging tab also offers TRACE as a maximum-verbosity option, one level
+    # below DEBUG, so it must be accepted here too).
+    valid_levels = %w[TRACE DEBUG INFO WARN ERROR FATAL]
     unless valid_levels.include?(new_level)
       return render json: { success: false, error: "Invalid log level provided." }, status: :unprocessable_entity
     end

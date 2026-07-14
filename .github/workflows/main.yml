@@ -11,6 +11,8 @@
 #   https://capri-labs.github.io/capri-dam/architecture/     ← arc42 docs
 #   https://capri-labs.github.io/capri-dam/developer-guide/  ← developer guide
 #   https://capri-labs.github.io/capri-dam/product-info/     ← product info
+#   https://capri-labs.github.io/capri-dam/customer-guide/   ← customer guide
+#   https://capri-labs.github.io/capri-dam/deployment-guide/ ← deployment guide
 # ─────────────────────────────────────────────────────────────────────────────
 name: CI + Docs
 
@@ -326,6 +328,8 @@ jobs:
           mkdir -p _site/architecture/images
           mkdir -p _site/developer-guide
           mkdir -p _site/product-info
+          mkdir -p _site/customer-guide
+          mkdir -p _site/deployment-guide
           mkdir -p _site/theme
 
       # ── Shared build flags ────────────────────────────────────────────────
@@ -339,6 +343,7 @@ jobs:
           cp docs/theme/capri.css _site/theme/capri.css
           cp docs/theme/capri.css _site/developer-guide/capri.css
           cp docs/theme/capri.css _site/product-info/capri.css
+          cp docs/theme/capri.css _site/customer-guide/capri.css
           cp public/icon.png _site/icon.png 2>/dev/null || true
 
       # ── Root landing page ─────────────────────────────────────────────────
@@ -436,6 +441,45 @@ jobs:
         run: |
           mkdir -p _site/product-info/images
           cp -r docs/product-info/images/. _site/product-info/images/
+
+      # ── Customer Guide ────────────────────────────────────────────────────
+      - name: Build customer guide
+        run: |
+          asciidoctor $ADOC_BASE \
+            -a stylesdir=../theme \
+            -a stylesheet=capri.css \
+            -a docinfodir=docs \
+            -a docinfo=shared-head \
+            -D _site/customer-guide -o index.html \
+            docs/customer-guide/index.adoc
+
+      - name: Copy customer guide screenshots
+        run: |
+          mkdir -p _site/customer-guide/images
+          cp -r docs/customer-guide/images/. _site/customer-guide/images/
+
+      # ── Deployment Guide ──────────────────────────────────────────────────
+      - name: Build deployment guide
+        run: |
+          asciidoctor $ADOC_BASE \
+            -a toclevels=4 \
+            -a stylesdir=theme \
+            -a stylesheet=arc42.css \
+            -a docinfodir=docs/deployment-guide \
+            -a docinfo=shared \
+            -D _site/deployment-guide -o index.html \
+            docs/deployment-guide/index.adoc
+          mkdir -p _site/deployment-guide/theme
+          cp -r docs/deployment-guide/theme/. _site/deployment-guide/theme/
+
+      - name: Build deployment guide PDF
+        run: |
+          asciidoctor-pdf \
+            -a allow-uri-read \
+            -a pdf-themesdir=docs/deployment-guide/theme \
+            -a pdf-theme=arc42 \
+            -o _site/deployment-guide/capri-dam-deployment-guide.pdf \
+            docs/deployment-guide/index.adoc
 
       # ── No-Jekyll (serve plain HTML) ──────────────────────────────────────
       - name: Add .nojekyll

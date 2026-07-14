@@ -5288,8 +5288,9 @@ paths:
                       - name
                       properties:
                         id:
-                          type: integer
-                          example: 42
+                          type: string
+                          format: uuid
+                          example: e8b941bd-466c-4b5f-81e6-0d96d04175e7
                         name:
                           type: string
                           example: "/Marketing/2026"

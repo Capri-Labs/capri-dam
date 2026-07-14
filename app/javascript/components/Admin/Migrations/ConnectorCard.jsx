@@ -53,7 +53,8 @@ export default function ConnectorCard({ conn, onEdit, onToggleStatus, onStartMig
                     </Box>
 
                     <Tooltip title={conn.status === 'active' ? "Pause Ingestion" : "Resume Ingestion"}>
-                        <Switch size="small" checked={conn.status === 'active'} onChange={() => onToggleStatus(conn)} color="success" />
+                        <Switch size="small" checked={conn.status === 'active'} onChange={() => onToggleStatus(conn)} color="success"
+                            slotProps={{ input: { 'aria-label': conn.status === 'active' ? 'Pause Ingestion' : 'Resume Ingestion' } }} />
                     </Tooltip>
                 </Stack>
 

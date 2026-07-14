@@ -45,8 +45,6 @@ AI batch progress, and health callbacks.
 | `GET` | `/admin/system_accounts` | admin | Admin-only service-account management surface.
 |===
 
-|===
-
 == Folders and assets — core CRUD & rename
 
 [cols="1,2,1,3", options="header"]

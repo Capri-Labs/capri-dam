@@ -100,7 +100,7 @@ function ActiveBatchCard({ batch, onAudit, onAbort }) {
                         </Button>
                     )}
                     <Tooltip title="Abort migration">
-                        <IconButton size="small" color="error" onClick={() => onAbort(batch.id)}>
+                        <IconButton size="small" color="error" onClick={() => onAbort(batch.id)} aria-label="Abort migration">
                             <PauseCircle fontSize="small" />
                         </IconButton>
                     </Tooltip>
@@ -589,14 +589,14 @@ export default function IngestionDashboard() {
                                                         )}
                                                         {(isActive || batch.status === 'review_needed') && (
                                                             <Tooltip title={t('ingestion.batch.abort')}>
-                                                                <IconButton size="small" color="error" onClick={() => handleAbort(batch.id)}>
+                                                                <IconButton size="small" color="error" onClick={() => handleAbort(batch.id)} aria-label={t('ingestion.batch.abort')}>
                                                                     <PauseCircle fontSize="small" />
                                                                 </IconButton>
                                                             </Tooltip>
                                                         )}
                                                         {batch.status === 'failed' && (
                                                             <Tooltip title={t('ingestion.batch.delete')}>
-                                                                <IconButton size="small" color="error" onClick={() => handleDelete(batch.id)}>
+                                                                <IconButton size="small" color="error" onClick={() => handleDelete(batch.id)} aria-label={t('ingestion.batch.delete')}>
                                                                     <DeleteForever fontSize="small" />
                                                                 </IconButton>
                                                             </Tooltip>

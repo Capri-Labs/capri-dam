@@ -3,7 +3,7 @@ import { Box, Grid, CircularProgress, Stack, Button, Typography } from '@mui/mat
 import { useNotify } from '../../../context/NotificationContext';
 import ConnectorsTopBar from './ConnectorsTopBar';
 import ConnectorCard from './ConnectorCard';
-import ConnectorDialog from './ConnectorDialog';
+import ConnectorDialog, { DAM_PROVIDERS } from './ConnectorDialog';
 
 const DEFAULT_PAGINATION = { page: 1, per_page: 12, total: 0, total_pages: 1 };
 
@@ -183,10 +183,15 @@ export default function SystemConnectors() {
         }
     };
 
-    const isFormValid = formData.name && formData.endpoint &&
-        (formData.credential_type === 'jwt_service_account'
-            ? (formData.id || formData.integration_json)
-            : (formData.id || formData.auth_token));
+    // Required fields are driven by the selected provider's own field definitions
+    // (e.g. Cloudinary/FTP have no `endpoint` field at all), not a fixed endpoint+auth_token pair.
+    const providerDef = DAM_PROVIDERS[formData.provider_type?.toLowerCase()];
+    const isJwt = providerDef?.supportsJwt && (formData.credential_type || 'token') === 'jwt_service_account';
+    const isFormValid = Boolean(formData.name) && Boolean(providerDef) && (
+        isJwt
+            ? Boolean(formData.endpoint) && Boolean(formData.id || formData.integration_json)
+            : providerDef.fields.every(field => !field.required || Boolean(formData[field.key]) || (field.type === 'password' && formData.id))
+    );
 
     return (
         <Box sx={{ p: 4, bgcolor: '#f8fafc', minHeight: '100vh' }}>
