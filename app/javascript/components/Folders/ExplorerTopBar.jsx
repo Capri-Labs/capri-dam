@@ -9,7 +9,7 @@ import {
     CloudUpload, AutoAwesome, AccountTree,
     Psychology, Difference, Style,
     CloudSync, Publish, DeleteSweep, BuildOutlined, SchemaOutlined, ImageOutlined, VideoFileOutlined,
-    DriveFileRenameOutline, DriveFileMoveOutlined
+    DriveFileRenameOutline, DriveFileMoveOutlined, ContentCopyOutlined
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useNotify } from '../../context/NotificationContext';
@@ -20,6 +20,7 @@ import { ApplyImageProfileDialog } from '../Tools/AssetConfigurations/ImageProfi
 import { ApplyVideoProfileDialog } from '../Tools/AssetConfigurations/VideoProfiles';
 import RenameDialog from './RenameDialog';
 import MoveDialog from './MoveDialog';
+import CopyDialog from './CopyDialog';
 
 export default function ExplorerTopBar({
                                            currentId, viewData, viewMode, setViewMode, handleNavigate, handleCopyPath,
@@ -61,6 +62,13 @@ export default function ExplorerTopBar({
     // source folder, which requires delete rights there; the destination's
     // create rights are re-validated server-side when the move is submitted).
     const [moveDialogOpen, setMoveDialogOpen] = useState(false);
+
+    // Copy dialog — offered for any 1+ item selection (folders and/or
+    // assets), same as Move, but with no `can_delete` gate: copying never
+    // removes anything from the source, so it only needs `:read` there
+    // (implicit — the item is already visible in this listing) plus
+    // `:create` on the destination, re-validated server-side on submit.
+    const [copyDialogOpen, setCopyDialogOpen] = useState(false);
 
     // AI Handlers
     const handleAiMenuClose = () => setSmartMenuAnchor(null);
@@ -161,6 +169,20 @@ export default function ExplorerTopBar({
     const moveCanDelete = [ ...selectedFolderObjs, ...selectedAssetObjs ].every(item => item.can_delete !== false);
     const moveTarget = moveItemCount > 0 ? {
         canDelete: moveCanDelete,
+        itemNames: {
+            folders: Object.fromEntries(selectedFolderObjs.map(f => [ f.id, f.name ])),
+            assets: Object.fromEntries(selectedAssetObjs.map(a => [ a.id, a.title ?? a.name ])),
+        },
+    } : null;
+
+    // ── Copy target resolution ──────────────────────────────────────────────
+    // Offered for the same selection as Move (1+ folders and/or assets), but
+    // with no permission gate on the option itself — every listed item was
+    // already filtered by read access server-side, and the only other check
+    // (destination `:create`) can't be evaluated until a destination is
+    // picked, so it's left to the server response the same way Move's
+    // destination check already is.
+    const copyTarget = moveItemCount > 0 ? {
         itemNames: {
             folders: Object.fromEntries(selectedFolderObjs.map(f => [ f.id, f.name ])),
             assets: Object.fromEntries(selectedAssetObjs.map(a => [ a.id, a.title ?? a.name ])),
@@ -269,6 +291,21 @@ export default function ExplorerTopBar({
                                         <ListItemText
                                             primary={t('explorerTopBar.moveItems')}
                                             secondary={moveTarget.canDelete ? t('explorerTopBar.moveItemCount', { count: moveItemCount }) : t('explorerTopBar.moveNoPermission')}
+                                        />
+                                    </MenuItem>
+                                    <Divider />
+                                </>
+                            )}
+                            {copyTarget && (
+                                <>
+                                    <MenuItem
+                                        data-testid="tools-menu-copy"
+                                        onClick={() => { setToolsMenuAnchor(null); setCopyDialogOpen(true); }}
+                                    >
+                                        <ListItemIcon><ContentCopyOutlined fontSize="small" sx={{ color: '#2563eb' }} /></ListItemIcon>
+                                        <ListItemText
+                                            primary={t('explorerTopBar.copyItems')}
+                                            secondary={t('explorerTopBar.copyItemCount', { count: moveItemCount })}
                                         />
                                     </MenuItem>
                                     <Divider />
@@ -498,6 +535,20 @@ export default function ExplorerTopBar({
                     }}
                     selectedItems={selectedItems}
                     itemNames={moveTarget.itemNames}
+                    currentFolderId={currentId}
+                />
+            )}
+
+            {/* ── Copy Dialog ── */}
+            {copyTarget && (
+                <CopyDialog
+                    open={copyDialogOpen}
+                    onClose={(needsRefresh) => {
+                        setCopyDialogOpen(false);
+                        if (needsRefresh && onSchemaApplied) onSchemaApplied();
+                    }}
+                    selectedItems={selectedItems}
+                    itemNames={copyTarget.itemNames}
                     currentFolderId={currentId}
                 />
             )}

@@ -1925,9 +1925,8 @@ paths:
                     type: string
                     example: text-embedding-ada-002
                   monthly_budget_usd:
-                    type: string
-                    example: '200.0'
-                    description: Decimal serialized as a string (ActiveRecord default JSON encoding).
+                    type: number
+                    example: 200.0
                   system_prompt:
                     type: string
                     nullable: true
@@ -2855,8 +2854,7 @@ paths:
                       type: object
                       properties:
                         id:
-                          type: string
-                          format: uuid
+                          type: integer
                         version_number:
                           type: integer
                           example: 3
@@ -3053,8 +3051,7 @@ paths:
                 type: object
                 properties:
                   id:
-                    type: string
-                    format: uuid
+                    type: integer
                   uuid:
                     type: string
                     format: uuid
@@ -4766,6 +4763,117 @@ paths:
                   example: image
                   description: 'Optional MIME-type prefix filter: image | video |
                     document | audio'
+  "/api/v1/copy_operations":
+    post:
+      summary: Copy one or more folders and/or assets to a destination folder
+      tags:
+      - Copy
+      security:
+      - Bearer: []
+      description: |
+        Bulk "Copy" endpoint backing the Explorer Tools-menu Copy overlay.
+
+        Copying duplicates the selected folders/assets (recursing into any
+        subfolders/assets for a folder selection) into a destination folder,
+        leaving every original untouched. It is gated by two permission checks:
+
+        * `:read` on the item's *current* parent folder
+        * `:create` on the *destination* folder
+
+        A `nil`/`"root"` folder always passes both checks (no policy applies at
+        the root). Admins bypass all checks. Copies are always owned by the
+        requesting user.
+
+        Name collisions in the destination are resolved automatically by
+        appending " (Copy)", " (Copy 2)", etc., rather than failing the item.
+
+        Each folder/asset is evaluated independently, so one item failing
+        permission or validation (e.g. a folder copy that would create a
+        cycle) does not abort the rest of the batch — the response reports
+        per-item errors alongside the overall success counts.
+      parameters: []
+      responses:
+        '200':
+          description: copy completed (fully or partially)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  copied_folders:
+                    type: integer
+                    example: 2
+                  copied_assets:
+                    type: integer
+                    example: 1
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        type:
+                          type: string
+                          enum:
+                          - folder
+                          - asset
+                        id:
+                          type: integer
+                        name:
+                          type: string
+                          nullable: true
+                        error:
+                          type: string
+        '404':
+          description: destination folder not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Destination folder not found.
+        '422':
+          description: no folders or assets were specified
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: No folders or assets were specified.
+        '401':
+          description: unauthenticated
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                folder_ids:
+                  type: array
+                  items:
+                    type: integer
+                  description: IDs of folders to copy
+                  example:
+                  - 12
+                  - 13
+                asset_ids:
+                  type: array
+                  items:
+                    type: integer
+                  description: IDs of assets to copy
+                  example:
+                  - 101
+                destination_folder_id:
+                  type: string
+                  description: Destination folder ID, or "root" (or omitted/blank)
+                    to copy to the top level
+                  example: '42'
   "/api/v1/custom_node_definitions":
     get:
       summary: List custom node definitions
@@ -5288,9 +5396,8 @@ paths:
                       - name
                       properties:
                         id:
-                          type: string
-                          format: uuid
-                          example: e8b941bd-466c-4b5f-81e6-0d96d04175e7
+                          type: integer
+                          example: 42
                         name:
                           type: string
                           example: "/Marketing/2026"
@@ -5441,8 +5548,7 @@ paths:
                       type: object
                       properties:
                         id:
-                          type: string
-                          format: uuid
+                          type: integer
                         uuid:
                           type: string
                           format: uuid
@@ -6401,7 +6507,6 @@ paths:
                         started_at:
                           type: string
                           format: date-time
-                          nullable: true
                         completed_at:
                           type: string
                           format: date-time
@@ -6622,8 +6727,7 @@ paths:
                       type: object
                       properties:
                         id:
-                          type: string
-                          format: uuid
+                          type: integer
                         original_filename:
                           type: string
                         file_hash:
@@ -8015,32 +8119,44 @@ paths:
         provider (Cloudinary, Brandfolder, Bynder, FTP, HTTP API, etc.).
       responses:
         '200':
-          description: Connectors returned (bare array when no `page` param is given,
-            or a paginated `{ connectors, pagination }` shape when `page` is present)
+          description: Connectors returned
           content:
             application/json:
               schema:
-                oneOf:
-                - type: array
-                  items:
-                    "$ref": "#/components/schemas/SystemConnectorSummary"
-                - type: object
+                type: array
+                items:
+                  type: object
                   properties:
-                    connectors:
-                      type: array
-                      items:
-                        "$ref": "#/components/schemas/SystemConnectorSummary"
-                    pagination:
-                      type: object
-                      properties:
-                        page:
-                          type: integer
-                        per_page:
-                          type: integer
-                        total:
-                          type: integer
-                        total_pages:
-                          type: integer
+                    id:
+                      type: integer
+                    name:
+                      type: string
+                      example: Cloudinary Production
+                    provider_type:
+                      type: string
+                      example: cloudinary
+                    provider_label:
+                      type: string
+                      example: Cloudinary
+                    endpoint:
+                      type: string
+                      nullable: true
+                    status:
+                      type: string
+                      example: active
+                      description: idle | active | error
+                    assets_imported:
+                      type: integer
+                      example: 0
+                    concurrency_limit:
+                      type: integer
+                      nullable: true
+                    rps_limit:
+                      type: integer
+                      nullable: true
+                    created_at:
+                      type: string
+                      format: date-time
     post:
       summary: Create a new system connector
       tags:
@@ -9601,7 +9717,7 @@ paths:
                   queued:
                     type: integer
                   workflow_id:
-                    type: integer
+                    type: string
       requestBody:
         content:
           application/json:
@@ -9745,8 +9861,7 @@ paths:
                         step_title:
                           type: string
                         asset_id:
-                          type: string
-                          format: uuid
+                          type: integer
                         asset_name:
                           type: string
                         asset_thumb:
@@ -9767,14 +9882,12 @@ paths:
                         current_step:
                           type: string
                         asset_id:
-                          type: string
-                          format: uuid
+                          type: integer
                         asset_name:
                           type: string
                         started_at:
                           type: string
                           format: date-time
-                          nullable: true
                   completed_workflows:
                     type: array
                     items:
@@ -9785,8 +9898,7 @@ paths:
                         workflow_name:
                           type: string
                         asset_id:
-                          type: string
-                          format: uuid
+                          type: integer
                         asset_name:
                           type: string
                         status:
@@ -10339,76 +10451,6 @@ components:
       scheme: bearer
       description: Enter your OAuth 2.0 Bearer token to authenticate requests.
   schemas:
-    SystemConnectorSummary:
-      type: object
-      properties:
-        id:
-          type: integer
-        name:
-          type: string
-          nullable: true
-          example: Cloudinary Production
-        provider_type:
-          type: string
-          nullable: true
-          example: cloudinary
-        provider_label:
-          type: string
-          example: Cloudinary
-        endpoint:
-          type: string
-          nullable: true
-        status:
-          type: string
-          nullable: true
-          example: active
-          description: idle | active | error
-        assets_imported:
-          type: integer
-          nullable: true
-          example: 0
-        concurrency_limit:
-          type: integer
-          nullable: true
-        rps_limit:
-          type: integer
-          nullable: true
-        analysis_report:
-          type: object
-          nullable: true
-        last_sync:
-          type: string
-          format: date-time
-          nullable: true
-        tdm_sanitation:
-          type: boolean
-        webhook_secret:
-          type: string
-          nullable: true
-        credential_type:
-          type: string
-        access_token_expires_at:
-          type: string
-          format: date-time
-          nullable: true
-        token_status:
-          type: string
-        last_token_refreshed_at:
-          type: string
-          format: date-time
-          nullable: true
-        last_token_error:
-          type: string
-          nullable: true
-        default_source_path:
-          type: string
-          nullable: true
-        created_at:
-          type: string
-          format: date-time
-        updated_at:
-          type: string
-          format: date-time
     FolderPolicy:
       type: object
       properties:

@@ -2083,7 +2083,10 @@
     "moveItems": "Verschieben",
     "moveItemCount": "{{count}} Element verschieben",
     "moveItemCount_other": "{{count}} Elemente verschieben",
-    "moveNoPermission": "Sie haben keine Löschberechtigung für ein oder mehrere ausgewählte Elemente"
+    "moveNoPermission": "Sie haben keine Löschberechtigung für ein oder mehrere ausgewählte Elemente",
+    "copyItems": "Kopieren",
+    "copyItemCount": "{{count}} Element kopieren",
+    "copyItemCount_other": "{{count}} Elemente kopieren"
   },
   "uploadGrid": {
     "staging_area": "Bereitstellungsbereich",
@@ -2164,6 +2167,24 @@
     "notifications": {
       "moved": "{{count}} Element(e) nach \"{{destination}}\" verschoben.",
       "error": "Verschieben fehlgeschlagen. Bitte erneut versuchen."
+    },
+    "loadingFolders": "Ordner werden geladen…"
+  },
+  "copyDialog": {
+    "title": "{{count}} Element kopieren",
+    "title_other": "{{count}} Elemente kopieren",
+    "selectedItemsLabel": "Ausgewählte Elemente",
+    "destinationLabel": "Zielordner",
+    "destinationPlaceholder": "Ordner suchen…",
+    "destinationRequired": "Bitte wählen Sie einen Zielordner.",
+    "rootOption": "/ (Stammverzeichnis)",
+    "copyingTo": "Kopieren nach: {{destination}}",
+    "partialFailureTitle": "Einige Elemente konnten nicht kopiert werden:",
+    "copy": "Kopieren",
+    "copying": "Wird kopiert…",
+    "notifications": {
+      "copied": "{{count}} Element(e) nach \"{{destination}}\" kopiert.",
+      "error": "Kopieren fehlgeschlagen. Bitte erneut versuchen."
     },
     "loadingFolders": "Ordner werden geladen…"
   },

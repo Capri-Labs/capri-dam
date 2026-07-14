@@ -244,6 +244,7 @@ Rails.application.routes.draw do
 
       # Bulk Move (folders & assets) — see MoveOperationsController
       post "move_operations", to: "move_operations#create"
+      post "copy_operations", to: "copy_operations#create"
 
       #  THE FIXED ASSETS BLOCK
       resources :inbox, only: %i[index show destroy] do

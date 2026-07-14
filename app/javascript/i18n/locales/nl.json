@@ -2083,7 +2083,10 @@
     "moveItems": "Verplaatsen",
     "moveItemCount": "{{count}} item verplaatsen",
     "moveItemCount_other": "{{count}} items verplaatsen",
-    "moveNoPermission": "U heeft geen verwijderrechten voor een of meer geselecteerde items"
+    "moveNoPermission": "U heeft geen verwijderrechten voor een of meer geselecteerde items",
+    "copyItems": "Kopiëren",
+    "copyItemCount": "{{count}} item kopiëren",
+    "copyItemCount_other": "{{count}} items kopiëren"
   },
   "uploadGrid": {
     "staging_area": "Staginggebied",
@@ -2164,6 +2167,24 @@
     "notifications": {
       "moved": "{{count}} item(s) verplaatst naar \"{{destination}}\".",
       "error": "Verplaatsen mislukt. Probeer het opnieuw."
+    },
+    "loadingFolders": "Mappen laden…"
+  },
+  "copyDialog": {
+    "title": "{{count}} item kopiëren",
+    "title_other": "{{count}} items kopiëren",
+    "selectedItemsLabel": "Geselecteerde items",
+    "destinationLabel": "Doelmap",
+    "destinationPlaceholder": "Mappen zoeken…",
+    "destinationRequired": "Selecteer een doelmap.",
+    "rootOption": "/ (Basis)",
+    "copyingTo": "Kopiëren naar: {{destination}}",
+    "partialFailureTitle": "Sommige items konden niet worden gekopieerd:",
+    "copy": "Kopiëren",
+    "copying": "Kopiëren…",
+    "notifications": {
+      "copied": "{{count}} item(s) gekopieerd naar \"{{destination}}\".",
+      "error": "Kopiëren mislukt. Probeer het opnieuw."
     },
     "loadingFolders": "Mappen laden…"
   },

@@ -2083,7 +2083,10 @@
     "moveItems": "Déplacer",
     "moveItemCount": "Déplacer {{count}} élément",
     "moveItemCount_other": "Déplacer {{count}} éléments",
-    "moveNoPermission": "Vous n'avez pas la permission de suppression pour un ou plusieurs éléments sélectionnés"
+    "moveNoPermission": "Vous n'avez pas la permission de suppression pour un ou plusieurs éléments sélectionnés",
+    "copyItems": "Copier",
+    "copyItemCount": "Copier {{count}} élément",
+    "copyItemCount_other": "Copier {{count}} éléments"
   },
   "uploadGrid": {
     "staging_area": "Zone de préparation",
@@ -2164,6 +2167,24 @@
     "notifications": {
       "moved": "{{count}} élément(s) déplacé(s) vers \"{{destination}}\".",
       "error": "Échec du déplacement. Veuillez réessayer."
+    },
+    "loadingFolders": "Chargement des dossiers…"
+  },
+  "copyDialog": {
+    "title": "Copier {{count}} élément",
+    "title_other": "Copier {{count}} éléments",
+    "selectedItemsLabel": "Éléments sélectionnés",
+    "destinationLabel": "Dossier de destination",
+    "destinationPlaceholder": "Rechercher des dossiers…",
+    "destinationRequired": "Veuillez choisir un dossier de destination.",
+    "rootOption": "/ (Racine)",
+    "copyingTo": "Copie vers : {{destination}}",
+    "partialFailureTitle": "Certains éléments n'ont pas pu être copiés :",
+    "copy": "Copier",
+    "copying": "Copie en cours…",
+    "notifications": {
+      "copied": "{{count}} élément(s) copié(s) vers \"{{destination}}\".",
+      "error": "Échec de la copie. Veuillez réessayer."
     },
     "loadingFolders": "Chargement des dossiers…"
   },

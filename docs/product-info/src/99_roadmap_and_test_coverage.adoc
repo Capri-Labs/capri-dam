@@ -21,6 +21,54 @@
 | 📋 Planned | Multi-site isolation | Tenant-scoped storage and RBAC for agency use cases.
 | 📋 Planned | DAM-to-DAM federation | Cross-instance asset sharing via signed GraphQL federation.
 | 📋 Planned | AI auto-tagging | Automatic tag suggestions from a computer-vision model at upload time.
+| 📋 Planned | Manual static renditions | User-facing "Add/Delete rendition" action on an asset's Properties page (`renditions` table and model already exist; today renditions are worker-generated only — video MP4/OGG/AV1 — with no CRUD UI or endpoint).
+| 📋 Planned | Bulk/folder ZIP download | A "Download folder" and "download selected assets" action that streams a ZIP of the chosen assets (and, optionally, their renditions). Today only single-asset/single-rendition downloads exist (`Api::V1::Assets#serve_local`).
+| 📋 Planned | Direct Publish REST action | `POST /api/v1/assets/:id/publish` so publishing an asset doesn't require building a workflow first (exists today only as the `PublishNode` workflow step).
+| 📋 Planned | Image/video coordinate annotations | Draw shapes or drop a pin comment at a specific image coordinate or video timestamp (distinct from the existing workflow approval/rejection note field, which is the only "comment" mechanism today).
+| 📋 Planned | General asset commenting | A standalone comment thread on an asset (open to any collaborator, not tied to a workflow approval step).
+| 📋 Planned | UI extension/plugin framework | A documented hook/widget API so third parties can add custom panels, dashboard widgets, or Properties-page tabs without forking the React source (custom *metadata fields* are already fully supported via Metadata Schemas — this item is about extending the *UI itself*, e.g. new widget types beyond the single built-in `BarChartWidget`).
+| 📋 Planned | Distribution portal for external stakeholders | Expand today's signed, time-expiring Collection share links into a full-fledged branded portal with per-asset (not just per-collection) permissions and download tracking for external reviewers/partners.
+| 📋 Planned | Rights & licensing enforcement | Turn today's rights *metadata* (`usage_terms`, `license_expires_at` on Asset; compliance-violation checks on Collections) into enforced behaviour — e.g. blocking download/export of an expired-license or internal-only asset, plus a licensing-terms management UI.
+|===
+
+[[aem-parity-checklist]]
+=== Capability parity checklist (vs. a typical enterprise DAM suite)
+
+The table below was produced by directly auditing this codebase (models,
+controllers, GraphQL schema, and React components — not assumptions) against
+a checklist of capabilities commonly expected of an enterprise DAM/Assets
+product. It is meant to answer "is X implemented, partial, or not built yet"
+for planning purposes. Genuine gaps are already reflected as
+📋 Planned rows in the <<module-roadmap,product roadmap>> above.
+
+[cols="3,1,5", options="header"]
+|===
+| Capability | Status | Notes / evidence
+
+| Create folders to organize assets | ✅ Done | Hierarchical `Folder` model (self-referential nesting), full CRUD, breadcrumbs, soft-delete.
+| Upload assets | ✅ Done | Single + bulk drag-drop upload, duplicate detection, schema assignment at upload time.
+| Publish assets | 🚧 Partial | `Asset#status` enum includes `ready`/`approved` ("published") states, settable via a workflow `PublishNode`; no direct one-click "Publish" REST action outside a workflow yet (tracked above).
+| Edit, move, and copy assets | ✅ Done | Edit, move, and copy are all full REST actions (`Api::V1::Assets#update`, `Api::V1::MoveOperations#create`, `Api::V1::CopyOperations#create`). Copy recursively duplicates folders (subfolders + assets), shares the underlying ActiveStorage blob rather than re-uploading file bytes, and auto-resolves destination name collisions.
+| Browse, filter, and search assets, including similarity search | ✅ Done | Full-text + faceted REST search, pgvector cosine-similarity semantic/visual search, agentic AI Copilot search mode.
+| Add/edit Basic-tab metadata field values (except Smart Tags) | ✅ Done | Schema-driven `AssetMetadataPanel` with per-field `read_only` support; AI-generated tags are shown read-only and separated from manually-editable static tags.
+| Add and delete static renditions | ❌ Not built | `Rendition` model/table exist but are worker-generated only (video MP4/OGG/AV1); no user-facing add/delete UI or endpoint yet (tracked above).
+| Download folders, assets, and asset renditions | 🚧 Partial | Individual asset + individual rendition download work today; no bulk/folder ZIP export yet (tracked above).
+| Create asset versions | ✅ Done | Full immutable version history per asset with restore-to-prior-version support.
+| Create and perform review tasks on assets | ✅ Done | Workflow approval nodes with configurable assignees/any-all logic, SLA deadlines, and a Workflow Dashboard of pending/active/completed tasks.
+| Annotate assets (coordinate/timestamp pins) | ❌ Not built | No spatial/timestamp annotation model or UI exists yet (tracked above). Only a static CONFIDENTIAL watermark overlay exists, which is unrelated.
+| HTTP REST and GraphQL APIs (for assets/folders generally) | ✅ Done | ~44 REST controllers plus a full GraphQL schema (queries, 33+ mutations) covering assets, folders, collections, and search. (The Content-Fragments-specific variant of this API doesn't apply — see above.)
+| Marketing Cloud integration | ➖ N/A | Adobe Experience/Marketing Cloud–specific. No Salesforce Marketing Cloud or Adobe Experience Cloud connector exists, and none is currently planned — Capri DAM's integration surface is its own REST/GraphQL API plus the 13 ingestion connectors below.
+| Customize and extend the asset management UI | 🚧 Partial | Custom **metadata fields** are fully supported (Metadata Schemas admin tool). A general UI plugin/widget-extension framework (custom dashboard widgets, custom Properties tabs) does not exist yet (tracked above).
+| Query Builder API to extend search | 🚧 Partial | REST search accepts arbitrary metadata/property query params, and GraphQL `searchAssets` accepts a `metadataFilters` map — but there's no graphical query-builder UI and no complex nested boolean-query support.
+| Create static tags | ✅ Done | Manual tag editor (`AssetTagsEditor`) with autocomplete, kept separate from AI-suggested tags; workflow nodes can also add/remove tags automatically.
+| Author projects and tasks | ✅ Done | `Collection` model serves as the project/campaign workspace (manual or rule-based "smart" membership, group ACLs, expiry); Workflow Tasks provide the task layer.
+| Activity stream (timeline) | ✅ Done | Immutable, DB-trigger-protected `AuditLog` plus per-asset usage-event tracking (views/downloads/shares), surfaced in the asset's Audit tab.
+| Comments and annotations | 🚧 Partial | The only "comment" mechanism today is the approve/reject note on a workflow task — there's no standalone, general-purpose comment thread on an asset, and no spatial annotation (tracked above, same gap as "Annotate assets").
+| Doorkeeper OAuth2 / API auth for integrations | ✅ Done | Full OAuth2 (Doorkeeper) plus GraphQL-managed Personal Access Tokens for third-party API clients.
+| Third-party ingestion/migration connectors | ✅ Done | 13 source connectors (AEM, Aprimo, Brandfolder, Bynder, Canto, Cloudinary, Extensis, FTP, Media Valet, Nuxeo, S3, SharePoint, Widen) with encrypted credentials.
+| Distribution portal for external stakeholders ("Content Hub") | 🚧 Partial | Collections can be shared externally via signed, time-expiring links today; a full branded, per-asset-permission portal is not built yet (tracked above).
+| Dynamic Media (image/video transformation & delivery) | ✅ Done | Real-time edge CDN delivery, smart subject-aware cropping, multi-codec video encoding (H.264/AV1/VP9), HLS/DASH streaming, signed URLs, per-folder delivery profiles. (AVIF output format is the one piece still 🚧 in progress — see the roadmap above.)
+| Rights management / licensing | 🚧 Partial | Assets store usage-terms and license-expiry metadata, and Collections flag compliance violations — but nothing is *enforced* yet (e.g. an expired-license asset can still be downloaded), and there's no licensing-terms management UI (tracked above).
 |===
 
 [[test-coverage-roadmap]]
@@ -46,7 +94,7 @@ single backlog, to help prioritise future E2E test-writing.
 | AI Intelligence Suite | AI Copilot chat interaction; Agent Automations; Batch Processing; Prompt Playground; creating a model endpoint/style preset; C2PA record signing.
 | Email / Communication Engine | Real email send/receive round-trip; event-mapping creation; AI Suggestions generation; Outbox filtering.
 | Ingestion & Migration | Completing the migration wizard against a real connector; Legacy Connectors screen; batch execution monitoring; per-source-platform behaviour.
-| System Operations & Admin | Observability tab; Operational Logging save flow; AI Gateway controls; Feature Flags toggling; Storage & Edge save flow; Reports screen (zero coverage today).
+| System Operations & Admin | ✅ Now covered: Observability tab (vitals + restart flow), Operational Logging save flow (incl. TRACE level), AI Gateway controls (simulated UI), Feature Flags placeholder, Reports screen (Analytics Dashboard, Download Center, Report Types, Create Export drawer). Remaining gap: Storage & Edge save flow is covered only for the Fastly provider — Cloudflare/Akamai provider switch is still untested.
 | Localization / i18n | E2E coverage for the remaining 7 non-German locales; RTL layout verification for Arabic.
 | Delivery & CDN | **Zero E2E coverage today** — transform correctness, smart-crop, HMAC signing, cache purge, video encoding, profile assignment.
 |===
@@ -54,9 +102,9 @@ single backlog, to help prioritise future E2E test-writing.
 [.feature-highlight]
 ====
 **Suggested priority order** for closing these gaps: (1) Delivery & CDN — zero
-coverage on a customer-facing, revenue-relevant capability; (2) System
-Operations Reports screen — zero coverage; (3) Workflow execution end-to-end —
-high business criticality, currently only the *designer* is tested, not
-*execution*; (4) AI Copilot interaction — flagship feature, currently untested
-beyond page load.
+coverage on a customer-facing, revenue-relevant capability; (2) Workflow
+execution end-to-end — high business criticality, currently only the
+*designer* is tested, not *execution*; (3) AI Copilot interaction — flagship
+feature, currently untested beyond page load; (4) Ingestion & Migration real
+connector/batch-execution flows.
 ====

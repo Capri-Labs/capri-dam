@@ -184,6 +184,62 @@ for a `nil` candidate (moving to root is never a cycle). Both
 before applying a folder move and reject with `422` when a folder would be
 moved into itself or one of its own descendants.
 
+[[section-copy-overlay]]
+== Copy overlay (folders & assets)
+
+Bulk copy sits directly below Move in the same *Tools* menu
+(`ExplorerTopBar.jsx`), offered under the identical selection rule — **one or
+more** folders and/or assets, mixed selections allowed.
+
+[cols="1,3", options="header"]
+|===
+| Piece | Notes
+| `Folders/CopyDialog.jsx` | Near-identical sibling of `MoveDialog.jsx` — same folder-picker `Autocomplete` (fed by `GET /api/v1/folders`), same synthetic root option, same per-item `itemErrors` rendering for partial failures. Submits `POST /api/v1/copy_operations` with `{ folder_ids, asset_ids, destination_folder_id }` in one request.
+| `ExplorerTopBar.jsx` — `copyTarget` resolution | Computed under the same `moveItemCount > 0` condition as `moveTarget`, but with **no client-side permission gate** — copying never removes anything from the source, so unlike Move there is no `can_delete`-equivalent flag to check before opening the dialog; the only real gate (destination `:create`) can't be evaluated until a destination folder is picked, so it is left entirely to the server response, exactly like Move's own destination check already is.
+| Refresh wiring | `CopyDialog`'s `onClose(needsRefresh)` triggers the same `loadContent()` refresh callback used by Move/Rename/Upload.
+|===
+
+=== Permission model — Copy = read-on-source + create-on-destination
+
+Copying duplicates an item rather than relocating it, so it needs one fewer
+check than Move — nothing is ever removed from the source:
+
+* `folder_permission?(source_folder, :read)` — the user must be able to view
+  wherever the item currently lives (in practice this is already implied by
+  the item being visible in the Explorer listing the user is copying from).
+* `folder_permission?(destination_folder, :create)` — the user must be able
+  to create/add items in the destination.
+* `folder.nil?` (root) always passes both checks.
+* Admins bypass both checks.
+
+`Api::V1::CopyOperationsController#create` is the sole surface for bulk copy
+(there is no "implicit copy" analogous to Move's `parent_id`/`folder_id`
+change on `FoldersController#update`/`AssetsController#update` — copying is
+only ever an explicit, additive operation). Each folder/asset in the batch is
+evaluated independently, exactly like Move, so partial success is possible
+with per-item errors reported in the `errors` array.
+
+=== Recursive duplication & name-collision handling
+
+* Copying a **folder** recursively duplicates its entire active subtree —
+  every descendant subfolder and asset is duplicated alongside it — rooted
+  under a single new top-level folder in the destination.
+* Copying an **asset** duplicates its metadata (`properties`, `status`) plus
+  its active version's attached file. The file itself is never re-uploaded:
+  the new `AssetVersion` attaches the *same* underlying ActiveStorage blob
+  (`action_type: "copy"`), which is safe because blobs are
+  content-addressable and already designed to be shared across attachments.
+* All copies are owned by the requesting user (`current_user`), matching the
+  fact that a copy is genuinely new content gated by the destination's
+  `:create` check, not a transfer of the original's ownership.
+* Name collisions in the destination are resolved automatically —
+  `" (Copy)"`, `" (Copy 2)"`, … — rather than failing the request. The
+  original name is preserved untouched when there's no collision (copying to
+  a different folder), matching familiar OS file-manager behaviour.
+* `Folder#self_or_ancestor_match?` is reused unchanged to reject copying a
+  folder into itself or one of its own descendants (`422`), identically to
+  Move's cycle guard.
+
 == Upload & Enrich overlay
 
 `Folders/UploadWorkspace.jsx` is the full-screen upload dialog launched from the
@@ -216,4 +272,5 @@ view on open:
 NOTE: New module-specific details are documented in <<section-admin-module>>,
 <<section-collections-module>>, <<section-bin-module>>, <<section-duplicate-detection>>,
 <<section-intelligence-module>>, <<section-ingestion-migration>>,
-<<section-image-editor>>, <<section-rename-overlay>>, and <<section-move-overlay>>.
+<<section-image-editor>>, <<section-rename-overlay>>, <<section-move-overlay>>,
+and <<section-copy-overlay>>.

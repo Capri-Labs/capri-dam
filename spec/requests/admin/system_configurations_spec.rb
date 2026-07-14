@@ -93,6 +93,20 @@ RSpec.describe "Admin::SystemConfigurations", type: :request do
       expect(config.fallback_value).to be_nil
     end
 
+    it "accepts TRACE (the maximum-verbosity level the frontend offers, previously missing from the backend allow-list)" do
+      sign_in admin
+
+      post admin_system_configurations_logging_path,
+           params: { level: "trace", ttl_minutes: 15 },
+           as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body["success"]).to be(true)
+
+      config = SystemConfiguration.find_by!(key: "global_log_level")
+      expect(config.value).to eq("TRACE")
+    end
+
     it "allows nil updated_by_id when current_user is unavailable after admin authorization" do
       sign_in admin
       allow_any_instance_of(Admin::SystemConfigurationsController).to receive(:current_user_admin?).and_return(true) # rubocop:disable RSpec/AnyInstance

@@ -2083,7 +2083,10 @@
     "moveItems": "移動",
     "moveItemCount": "{{count}} 件のアイテムを移動",
     "moveItemCount_other": "{{count}} 件のアイテムを移動",
-    "moveNoPermission": "選択した項目の一部またはすべてに削除権限がありません"
+    "moveNoPermission": "選択した項目の一部またはすべてに削除権限がありません",
+    "copyItems": "コピー",
+    "copyItemCount": "{{count}} 件のアイテムをコピー",
+    "copyItemCount_other": "{{count}} 件のアイテムをコピー"
   },
   "uploadGrid": {
     "staging_area": "ステージングエリア",
@@ -2164,6 +2167,24 @@
     "notifications": {
       "moved": "{{count}} 件のアイテムを「{{destination}}」に移動しました。",
       "error": "移動に失敗しました。もう一度お試しください。"
+    },
+    "loadingFolders": "フォルダーを読み込み中…"
+  },
+  "copyDialog": {
+    "title": "{{count}} 件のアイテムをコピー",
+    "title_other": "{{count}} 件のアイテムをコピー",
+    "selectedItemsLabel": "選択したアイテム",
+    "destinationLabel": "移動先フォルダー",
+    "destinationPlaceholder": "フォルダーを検索…",
+    "destinationRequired": "移動先フォルダーを選択してください。",
+    "rootOption": "/ (ルート)",
+    "copyingTo": "コピー先: {{destination}}",
+    "partialFailureTitle": "一部のアイテムをコピーできませんでした：",
+    "copy": "コピー",
+    "copying": "コピー中…",
+    "notifications": {
+      "copied": "{{count}} 件のアイテムを「{{destination}}」にコピーしました。",
+      "error": "コピーに失敗しました。もう一度お試しください。"
     },
     "loadingFolders": "フォルダーを読み込み中…"
   },

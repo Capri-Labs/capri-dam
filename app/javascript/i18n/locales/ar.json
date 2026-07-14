@@ -2083,7 +2083,10 @@
     "moveItems": "نقل",
     "moveItemCount": "نقل {{count}} عنصر",
     "moveItemCount_other": "نقل {{count}} عناصر",
-    "moveNoPermission": "ليس لديك إذن الحذف لعنصر واحد أو أكثر من العناصر المحددة"
+    "moveNoPermission": "ليس لديك إذن الحذف لعنصر واحد أو أكثر من العناصر المحددة",
+    "copyItems": "نسخ",
+    "copyItemCount": "نسخ {{count}} عنصر",
+    "copyItemCount_other": "نسخ {{count}} عناصر"
   },
   "uploadGrid": {
     "staging_area": "منطقة التجهيز",
@@ -2164,6 +2167,24 @@
     "notifications": {
       "moved": "تم نقل {{count}} عنصر إلى \"{{destination}}\".",
       "error": "فشل النقل. يرجى المحاولة مرة أخرى."
+    },
+    "loadingFolders": "جارٍ تحميل المجلدات…"
+  },
+  "copyDialog": {
+    "title": "نسخ {{count}} عنصر",
+    "title_other": "نسخ {{count}} عناصر",
+    "selectedItemsLabel": "العناصر المحددة",
+    "destinationLabel": "مجلد الوجهة",
+    "destinationPlaceholder": "ابحث عن المجلدات…",
+    "destinationRequired": "يرجى اختيار مجلد الوجهة.",
+    "rootOption": "/ (الجذر)",
+    "copyingTo": "النسخ إلى: {{destination}}",
+    "partialFailureTitle": "تعذر نسخ بعض العناصر:",
+    "copy": "نسخ",
+    "copying": "جارٍ النسخ…",
+    "notifications": {
+      "copied": "تم نسخ {{count}} عنصر إلى \"{{destination}}\".",
+      "error": "فشل النسخ. يرجى المحاولة مرة أخرى."
     },
     "loadingFolders": "جارٍ تحميل المجلدات…"
   },

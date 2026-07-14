@@ -2083,7 +2083,10 @@
     "moveItems": "Mover",
     "moveItemCount": "Mover {{count}} elemento",
     "moveItemCount_other": "Mover {{count}} elementos",
-    "moveNoPermission": "No tienes permiso de eliminación para uno o más elementos seleccionados"
+    "moveNoPermission": "No tienes permiso de eliminación para uno o más elementos seleccionados",
+    "copyItems": "Copiar",
+    "copyItemCount": "Copiar {{count}} elemento",
+    "copyItemCount_other": "Copiar {{count}} elementos"
   },
   "uploadGrid": {
     "staging_area": "Área de preparación",
@@ -2164,6 +2167,24 @@
     "notifications": {
       "moved": "Se movieron {{count}} elemento(s) a \"{{destination}}\".",
       "error": "No se pudo mover. Inténtalo de nuevo."
+    },
+    "loadingFolders": "Cargando carpetas…"
+  },
+  "copyDialog": {
+    "title": "Copiar {{count}} elemento",
+    "title_other": "Copiar {{count}} elementos",
+    "selectedItemsLabel": "Elementos seleccionados",
+    "destinationLabel": "Carpeta de destino",
+    "destinationPlaceholder": "Buscar carpetas…",
+    "destinationRequired": "Por favor elige una carpeta de destino.",
+    "rootOption": "/ (Raíz)",
+    "copyingTo": "Copiando a: {{destination}}",
+    "partialFailureTitle": "Algunos elementos no se pudieron copiar:",
+    "copy": "Copiar",
+    "copying": "Copiando…",
+    "notifications": {
+      "copied": "Se copiaron {{count}} elemento(s) a \"{{destination}}\".",
+      "error": "No se pudo copiar. Inténtalo de nuevo."
     },
     "loadingFolders": "Cargando carpetas…"
   },

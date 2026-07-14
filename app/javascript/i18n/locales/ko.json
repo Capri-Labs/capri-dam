@@ -2083,7 +2083,10 @@
     "moveItems": "이동",
     "moveItemCount": "{{count}}개 항목 이동",
     "moveItemCount_other": "{{count}}개 항목 이동",
-    "moveNoPermission": "선택한 항목 중 하나 이상에 대한 삭제 권한이 없습니다"
+    "moveNoPermission": "선택한 항목 중 하나 이상에 대한 삭제 권한이 없습니다",
+    "copyItems": "복사",
+    "copyItemCount": "{{count}}개 항목 복사",
+    "copyItemCount_other": "{{count}}개 항목 복사"
   },
   "uploadGrid": {
     "staging_area": "스테이징 영역",
@@ -2164,6 +2167,24 @@
     "notifications": {
       "moved": "{{count}}개 항목을 \"{{destination}}\"(으)로 이동했습니다.",
       "error": "이동에 실패했습니다. 다시 시도해 주세요."
+    },
+    "loadingFolders": "폴더를 불러오는 중…"
+  },
+  "copyDialog": {
+    "title": "{{count}}개 항목 복사",
+    "title_other": "{{count}}개 항목 복사",
+    "selectedItemsLabel": "선택한 항목",
+    "destinationLabel": "대상 폴더",
+    "destinationPlaceholder": "폴더 검색…",
+    "destinationRequired": "대상 폴더를 선택해 주세요.",
+    "rootOption": "/ (루트)",
+    "copyingTo": "복사 위치: {{destination}}",
+    "partialFailureTitle": "일부 항목을 복사할 수 없습니다:",
+    "copy": "복사",
+    "copying": "복사 중…",
+    "notifications": {
+      "copied": "{{count}}개 항목을 \"{{destination}}\"(으)로 복사했습니다.",
+      "error": "복사에 실패했습니다. 다시 시도해 주세요."
     },
     "loadingFolders": "폴더를 불러오는 중…"
   },

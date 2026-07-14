@@ -62,6 +62,7 @@ AI batch progress, and health callbacks.
 | `DELETE` | `/api/v1/assets/:id` \| `/api/v1/assets/:id/permanent` | user | Soft-delete (recycle bin) / permanent purge.
 | `POST` | `/api/v1/assets/:id/restore` | user | Restore from the recycle bin.
 | `POST` | `/api/v1/move_operations` | user (per-item `delete`+`create`) | Bulk move: `{ folder_ids: [...], asset_ids: [...], destination_folder_id }` (`"root"` or a folder id). Each item is checked and validated independently — partial success is possible; the response reports `moved_folders`/`moved_assets` counts plus an `errors: [{ type, id, name, error }]` array for any items that failed permission, cycle, or existence checks. Busts `FolderContentsCache` for every source and destination folder touched. See <<section-move-overlay>>.
+| `POST` | `/api/v1/copy_operations` | user (per-item `read`+`create`) | Bulk copy: same request/response shape as `move_operations` (`{ folder_ids, asset_ids, destination_folder_id }` → `{ success, copied_folders, copied_assets, errors }`), but duplicates rather than relocates — originals are left untouched, folders are copied recursively (subfolders + assets), asset files are duplicated by attaching the source's existing ActiveStorage blob (no re-upload), and destination name collisions are resolved automatically (`" (Copy)"`, `" (Copy 2)"`, …) instead of failing. See <<section-copy-overlay>>.
 |===
 
 == Collections, bin, duplicates, and delivery

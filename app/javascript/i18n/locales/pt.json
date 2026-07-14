@@ -2083,7 +2083,10 @@
     "moveItems": "Mover",
     "moveItemCount": "Mover {{count}} item",
     "moveItemCount_other": "Mover {{count}} itens",
-    "moveNoPermission": "Você não tem permissão de exclusão para um ou mais itens selecionados"
+    "moveNoPermission": "Você não tem permissão de exclusão para um ou mais itens selecionados",
+    "copyItems": "Copiar",
+    "copyItemCount": "Copiar {{count}} item",
+    "copyItemCount_other": "Copiar {{count}} itens"
   },
   "uploadGrid": {
     "staging_area": "Área de preparação",
@@ -2164,6 +2167,24 @@
     "notifications": {
       "moved": "{{count}} item(ns) movido(s) para \"{{destination}}\".",
       "error": "Falha ao mover. Tente novamente."
+    },
+    "loadingFolders": "Carregando pastas…"
+  },
+  "copyDialog": {
+    "title": "Copiar {{count}} item",
+    "title_other": "Copiar {{count}} itens",
+    "selectedItemsLabel": "Itens selecionados",
+    "destinationLabel": "Pasta de destino",
+    "destinationPlaceholder": "Pesquisar pastas…",
+    "destinationRequired": "Selecione uma pasta de destino.",
+    "rootOption": "/ (Raiz)",
+    "copyingTo": "Copiando para: {{destination}}",
+    "partialFailureTitle": "Alguns itens não puderam ser copiados:",
+    "copy": "Copiar",
+    "copying": "Copiando…",
+    "notifications": {
+      "copied": "{{count}} item(ns) copiado(s) para \"{{destination}}\".",
+      "error": "Falha ao copiar. Tente novamente."
     },
     "loadingFolders": "Carregando pastas…"
   },

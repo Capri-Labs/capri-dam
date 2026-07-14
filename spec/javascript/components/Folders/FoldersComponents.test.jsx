@@ -12,6 +12,7 @@ import AssetStatsPopover from '../../../../app/javascript/components/Folders/Ass
 import AssetTagsEditor from '../../../../app/javascript/components/Folders/AssetTagsEditor';
 import AssetVersionsTab from '../../../../app/javascript/components/Folders/AssetVersionsTab';
 import AssetViewer from '../../../../app/javascript/components/Folders/AssetViewer';
+import CopyDialog from '../../../../app/javascript/components/Folders/CopyDialog';
 import DuplicateResolverDialog from '../../../../app/javascript/components/Folders/DuplicateResolverDialog';
 import ExplorerTopBar from '../../../../app/javascript/components/Folders/ExplorerTopBar';
 import FolderAccessTab from '../../../../app/javascript/components/Folders/FolderAccessTab';
@@ -1555,6 +1556,213 @@ describe('Folders components', () => {
 
     const moveButton = await screen.findByRole('button', { name: 'moveDialog.move' });
     expect(moveButton).toBeDisabled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'common.cancel' }));
+    expect(onClose).toHaveBeenCalledWith(false);
+  });
+
+  it('copies folders and assets to a destination via Tools > Copy', async () => {
+    global.fetch = mockFetch({
+      'GET /api/v1/folders': { folders: [ { id: 99, name: '/Marketing', slug: 'marketing' } ] },
+      'POST /api/v1/copy_operations': { success: true, copied_folders: 1, copied_assets: 1, errors: [] },
+    });
+    const onSchemaApplied = jest.fn();
+
+    render(
+      <ExplorerTopBar
+        currentId={12}
+        viewData={{
+          breadcrumbs: [{ id: 'root', name: 'Home' }, { id: 12, name: 'Catalog' }],
+          folders: [{ id: 13, name: 'Child', can_delete: true }],
+          assets: [{ id: 20, title: 'Asset', can_delete: true }],
+        }}
+        viewMode="active"
+        setViewMode={jest.fn()}
+        handleNavigate={jest.fn()}
+        handleCopyPath={jest.fn()}
+        isAllSelected={false}
+        handleSelectAll={jest.fn()}
+        hasSelection
+        handleDeleteSelected={jest.fn()}
+        handleRestoreSelected={jest.fn()}
+        handlePermanentDelete={jest.fn()}
+        setOpenFolderDialog={jest.fn()}
+        onUploadSuccess={jest.fn()}
+        selectedItems={{ folders: [13], assets: [20] }}
+        onSchemaApplied={onSchemaApplied}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'explorerTopBar.tools' }));
+    fireEvent.click(await screen.findByText('explorerTopBar.copyItems'));
+
+    const destinationInput = await screen.findByLabelText('copyDialog.destinationLabel');
+    fireEvent.change(destinationInput, { target: { value: 'Marketing' } });
+    fireEvent.click(await screen.findByText('/Marketing'));
+    fireEvent.click(screen.getByRole('button', { name: 'copyDialog.copy' }));
+
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith(
+        '/api/v1/copy_operations',
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({ folder_ids: [ 13 ], asset_ids: [ 20 ], destination_folder_id: 99 }),
+        }),
+      );
+    });
+    await waitFor(() => expect(onSchemaApplied).toHaveBeenCalled());
+  });
+
+  it('copies an item to the root destination', async () => {
+    global.fetch = mockFetch({
+      'GET /api/v1/folders': { folders: [] },
+      'POST /api/v1/copy_operations': { success: true, copied_folders: 1, copied_assets: 0, errors: [] },
+    });
+
+    render(
+      <ExplorerTopBar
+        currentId={12}
+        viewData={{
+          breadcrumbs: [{ id: 'root', name: 'Home' }, { id: 12, name: 'Catalog' }],
+          folders: [{ id: 13, name: 'Child', can_delete: true }],
+          assets: [],
+        }}
+        viewMode="active"
+        setViewMode={jest.fn()}
+        handleNavigate={jest.fn()}
+        handleCopyPath={jest.fn()}
+        isAllSelected={false}
+        handleSelectAll={jest.fn()}
+        hasSelection
+        handleDeleteSelected={jest.fn()}
+        handleRestoreSelected={jest.fn()}
+        handlePermanentDelete={jest.fn()}
+        setOpenFolderDialog={jest.fn()}
+        onUploadSuccess={jest.fn()}
+        selectedItems={{ folders: [13], assets: [] }}
+        onSchemaApplied={jest.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'explorerTopBar.tools' }));
+    fireEvent.click(await screen.findByText('explorerTopBar.copyItems'));
+
+    const destinationInput = await screen.findByLabelText('copyDialog.destinationLabel');
+    fireEvent.change(destinationInput, { target: { value: 'copyDialog.rootOption' } });
+    fireEvent.click(await screen.findByText('copyDialog.rootOption'));
+
+    fireEvent.click(screen.getByRole('button', { name: 'copyDialog.copy' }));
+
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith(
+        '/api/v1/copy_operations',
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({ folder_ids: [ 13 ], asset_ids: [], destination_folder_id: 'root' }),
+        }),
+      );
+    });
+  });
+
+  it('never disables Copy in the Tools menu, even when a selected item lacks delete rights (unlike Move)', async () => {
+    render(
+      <ExplorerTopBar
+        currentId={12}
+        viewData={{
+          breadcrumbs: [{ id: 'root', name: 'Home' }, { id: 12, name: 'Catalog' }],
+          folders: [{ id: 13, name: 'Child', can_delete: false }],
+          assets: [{ id: 20, title: 'Asset', can_delete: true }],
+        }}
+        viewMode="active"
+        setViewMode={jest.fn()}
+        handleNavigate={jest.fn()}
+        handleCopyPath={jest.fn()}
+        isAllSelected={false}
+        handleSelectAll={jest.fn()}
+        hasSelection
+        handleDeleteSelected={jest.fn()}
+        handleRestoreSelected={jest.fn()}
+        handlePermanentDelete={jest.fn()}
+        setOpenFolderDialog={jest.fn()}
+        onUploadSuccess={jest.fn()}
+        selectedItems={{ folders: [13], assets: [20] }}
+        onSchemaApplied={jest.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'explorerTopBar.tools' }));
+    // Move is disabled (no delete rights on the folder)...
+    const moveItem = (await screen.findByText('explorerTopBar.moveItems')).closest('li');
+    expect(moveItem).toHaveAttribute('aria-disabled', 'true');
+    // ...but Copy never removes anything from the source, so it stays enabled.
+    const copyItem = (await screen.findByText('explorerTopBar.copyItems')).closest('li');
+    expect(copyItem).not.toHaveAttribute('aria-disabled', 'true');
+  });
+
+  it('shows a partial-failure warning in CopyDialog when some items cannot be copied', async () => {
+    global.fetch = mockFetch({
+      'GET /api/v1/folders': { folders: [ { id: 99, name: '/Marketing', slug: 'marketing' } ] },
+      'POST /api/v1/copy_operations': {
+        success: false,
+        copied_folders: 1,
+        copied_assets: 0,
+        errors: [ { type: 'asset', id: 20, name: 'Asset', error: 'You do not have permission to copy this asset.' } ],
+      },
+    });
+
+    render(
+      <ExplorerTopBar
+        currentId={12}
+        viewData={{
+          breadcrumbs: [{ id: 'root', name: 'Home' }, { id: 12, name: 'Catalog' }],
+          folders: [{ id: 13, name: 'Child', can_delete: true }],
+          assets: [{ id: 20, title: 'Asset', can_delete: true }],
+        }}
+        viewMode="active"
+        setViewMode={jest.fn()}
+        handleNavigate={jest.fn()}
+        handleCopyPath={jest.fn()}
+        isAllSelected={false}
+        handleSelectAll={jest.fn()}
+        hasSelection
+        handleDeleteSelected={jest.fn()}
+        handleRestoreSelected={jest.fn()}
+        handlePermanentDelete={jest.fn()}
+        setOpenFolderDialog={jest.fn()}
+        onUploadSuccess={jest.fn()}
+        selectedItems={{ folders: [13], assets: [20] }}
+        onSchemaApplied={jest.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'explorerTopBar.tools' }));
+    fireEvent.click(await screen.findByText('explorerTopBar.copyItems'));
+
+    const destinationInput = await screen.findByLabelText('copyDialog.destinationLabel');
+    fireEvent.change(destinationInput, { target: { value: 'Marketing' } });
+    fireEvent.click(await screen.findByText('/Marketing'));
+    fireEvent.click(screen.getByRole('button', { name: 'copyDialog.copy' }));
+
+    expect(await screen.findByText('copyDialog.partialFailureTitle')).toBeInTheDocument();
+    expect(await screen.findByText(/You do not have permission to copy this asset\./)).toBeInTheDocument();
+  });
+
+  it('requires a destination before allowing CopyDialog submission (standalone)', async () => {
+    global.fetch = mockFetch({ 'GET /api/v1/folders': { folders: [] } });
+    const onClose = jest.fn();
+
+    render(
+      <CopyDialog
+        open
+        onClose={onClose}
+        selectedItems={{ folders: [13], assets: [] }}
+        itemNames={{ folders: { 13: 'Child' }, assets: {} }}
+        currentFolderId={12}
+      />,
+    );
+
+    const copyButton = await screen.findByRole('button', { name: 'copyDialog.copy' });
+    expect(copyButton).toBeDisabled();
 
     fireEvent.click(screen.getByRole('button', { name: 'common.cancel' }));
     expect(onClose).toHaveBeenCalledWith(false);

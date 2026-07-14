@@ -2083,7 +2083,10 @@
     "moveItems": "Move",
     "moveItemCount": "Move {{count}} item",
     "moveItemCount_other": "Move {{count}} items",
-    "moveNoPermission": "You don't have delete permission for one or more selected items"
+    "moveNoPermission": "You don't have delete permission for one or more selected items",
+    "copyItems": "Copy",
+    "copyItemCount": "Copy {{count}} item",
+    "copyItemCount_other": "Copy {{count}} items"
   },
   "uploadGrid": {
     "staging_area": "Staging Area",
@@ -2164,6 +2167,24 @@
     "notifications": {
       "moved": "Moved {{count}} item(s) to \"{{destination}}\".",
       "error": "Failed to move. Please try again."
+    },
+    "loadingFolders": "Loading folders…"
+  },
+  "copyDialog": {
+    "title": "Copy {{count}} item",
+    "title_other": "Copy {{count}} items",
+    "selectedItemsLabel": "Selected items",
+    "destinationLabel": "Destination folder",
+    "destinationPlaceholder": "Search folders…",
+    "destinationRequired": "Please choose a destination folder.",
+    "rootOption": "/ (Root)",
+    "copyingTo": "Copying to: {{destination}}",
+    "partialFailureTitle": "Some items could not be copied:",
+    "copy": "Copy",
+    "copying": "Copying…",
+    "notifications": {
+      "copied": "Copied {{count}} item(s) to \"{{destination}}\".",
+      "error": "Failed to copy. Please try again."
     },
     "loadingFolders": "Loading folders…"
   },
