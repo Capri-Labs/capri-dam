@@ -2419,13 +2419,15 @@
       "readOnlyField": "Dit veld is alleen-lezen",
       "inheritedFromSchema": "Overgenomen van schema {{schema}}",
       "selectPlaceholder": "— selecteren —",
+      "cascadeSelectParentFirst": "Selecteer eerst {{parent}}",
       "tagsHelperSuffix": " — druk op Enter om toe te voegen"
     },
     "notifications": {
       "metadataSavedSuccessfully": "Metadata succesvol opgeslagen."
     },
     "errors": {
-      "saveFailed": "Opslaan mislukt"
+      "saveFailed": "Opslaan mislukt",
+      "missingRequiredFields": "Vul de verplichte velden in: {{fields}}"
     },
     "noSchema": {
       "line1": "Er is nog geen metadataschema op dit asset toegepast.",

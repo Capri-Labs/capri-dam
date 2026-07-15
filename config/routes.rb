@@ -606,4 +606,22 @@ Rails.application.routes.draw do
       get :download, on: :member
     end
   end
+
+  # ==========================================
+  # LAST: CATCH-ALL FOR UNMATCHED ROUTES
+  # ==========================================
+  # Must stay the final route in this file — anything above matches first.
+  # Renders the same custom "funny 404" screen used for
+  # ActiveRecord::RecordNotFound (see ApplicationController#render_not_found)
+  # so a mistyped/stale URL never surfaces a raw framework error page.
+  #
+  # IMPORTANT: Rails mounts engine routes (Active Storage's blob/disk/direct-
+  # upload routes, Action Mailbox's conductor, etc.) *after* this file's own
+  # routes are drawn, so a bare wildcard here would shadow every one of them —
+  # e.g. a signed `/rails/active_storage/blobs/redirect/...` download link
+  # would 404 via this catch-all instead of ever reaching Active Storage's own
+  # controller. Excluding the `/rails/*` prefix lets those framework-internal
+  # routes resolve normally while still catching genuinely unmatched app URLs.
+  match "*unmatched_route", to: "errors#not_found", via: :all,
+        constraints: ->(request) { !request.path.start_with?("/rails/") }
 end

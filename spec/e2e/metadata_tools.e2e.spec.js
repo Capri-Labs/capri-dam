@@ -561,6 +561,164 @@ test.describe('Metadata Tools E2E', () => {
     }
   });
 
+  test('admin can configure a cascading dropdown between two select fields and it persists', async ({ page }) => {
+    const schemaName = uniqueName('Cascade Schema');
+    const created = await createRootSchema(page, schemaName);
+    const tabName = uniqueName('Cascade Tab');
+
+    try {
+      await page.goto('/tools/metadata_schemas');
+      await page.getByText(schemaName, { exact: true }).first().click();
+      await page.getByRole('button', { name: /^edit$/i }).click();
+      await page.getByTestId('schema-editor-add-tab').click();
+      await page.getByPlaceholder(/tab name/i).fill(tabName);
+      await page.getByRole('button', { name: /^add$/i }).click();
+
+      const editor = page.getByTestId('field-editor-column');
+      const selectByLabel = (labelText) =>
+        editor.locator('.MuiFormControl-root', { hasText: labelText }).getByRole('combobox');
+
+      // Field 1: Asset Type (parent select)
+      await page.getByTestId('schema-editor-add-field').click();
+      let fieldRow = page.locator('[data-testid^="schema-editor-field-"]').last();
+      await fieldRow.click();
+      await selectByLabel('Field Type').click();
+      await page.getByRole('option', { name: 'Dropdown (select)' }).click();
+      await editor.getByLabel(/field label/i).fill('Asset Type');
+      await editor.getByLabel(/map to property/i).fill('mamAssetType');
+      await editor.getByRole('button', { name: /add option/i }).click();
+      await editor.getByPlaceholder('Value').fill('Product');
+      await editor.getByPlaceholder('Label').fill('Product');
+
+      // Field 2: Asset Sub-Type (cascades from Asset Type)
+      await page.getByTestId('schema-editor-add-field').click();
+      fieldRow = page.locator('[data-testid^="schema-editor-field-"]').last();
+      await fieldRow.click();
+      await selectByLabel('Field Type').click();
+      await page.getByRole('option', { name: 'Dropdown (select)' }).click();
+      await editor.getByLabel(/field label/i).fill('Asset Sub-Type');
+      await editor.getByLabel(/map to property/i).fill('mamAssetSubType');
+      await editor.getByRole('button', { name: /add option/i }).click();
+      await editor.getByPlaceholder('Value').fill('In Pack');
+      await editor.getByPlaceholder('Label').fill('In Pack');
+
+      await editor.getByTestId('cascade-parent-select').getByRole('combobox').click();
+      await page.getByRole('option', { name: 'Asset Type' }).click();
+      await editor.getByTestId('cascade-option-Product-In Pack').click();
+
+      const [saveResponse] = await Promise.all([
+        page.waitForResponse((res) =>
+          res.url().includes(`/api/v1/metadata_schemas/${created.id}`) &&
+          res.request().method() === 'PATCH',
+        ),
+        page.getByRole('button', { name: /save schema/i }).click(),
+      ]);
+      expect(saveResponse.ok()).toBe(true);
+      await expect(page.getByTestId('schema-editor-name')).toHaveCount(0, { timeout: 10_000 });
+
+      const schemaBody = await fetchSchema(page, created.id);
+      const allFields = (schemaBody.tabs || []).flatMap((tab) => tab.fields || []);
+      const parentField = allFields.find((f) => f.label === 'Asset Type');
+      const childField = allFields.find((f) => f.label === 'Asset Sub-Type');
+      expect(childField.rules?.cascade?.parent_field_id).toBe(parentField.id);
+      expect(childField.rules?.cascade?.map?.Product).toEqual([ 'In Pack' ]);
+    } finally {
+      await deleteSchema(page, created.id);
+    }
+  });
+
+  test('admin can configure a dynamic Requirement rule and a Visibility rule, and both persist', async ({ page }) => {
+    const schemaName = uniqueName('Rules Schema');
+    const created = await createRootSchema(page, schemaName);
+    const tabName = uniqueName('Rules Tab');
+
+    try {
+      await page.goto('/tools/metadata_schemas');
+      await page.getByText(schemaName, { exact: true }).first().click();
+      await page.getByRole('button', { name: /^edit$/i }).click();
+      await page.getByTestId('schema-editor-add-tab').click();
+      await page.getByPlaceholder(/tab name/i).fill(tabName);
+      await page.getByRole('button', { name: /^add$/i }).click();
+
+      const editor = page.getByTestId('field-editor-column');
+      const selectByLabel = (labelText) =>
+        editor.locator('.MuiFormControl-root', { hasText: labelText }).getByRole('combobox');
+
+      // Field 1: License Requirements (select, parent for the Requirement rule)
+      await page.getByTestId('schema-editor-add-field').click();
+      let fieldRow = page.locator('[data-testid^="schema-editor-field-"]').last();
+      await fieldRow.click();
+      await selectByLabel('Field Type').click();
+      await page.getByRole('option', { name: 'Dropdown (select)' }).click();
+      await editor.getByLabel(/field label/i).fill('License Requirements');
+      await editor.getByLabel(/map to property/i).fill('license');
+      await editor.getByRole('button', { name: /add option/i }).click();
+      await editor.getByPlaceholder('Value').fill('Licensed');
+      await editor.getByPlaceholder('Label').fill('Licensed');
+
+      // Field 2: Copyright Owner (text, required only when License = Licensed)
+      await page.getByTestId('schema-editor-add-field').click();
+      fieldRow = page.locator('[data-testid^="schema-editor-field-"]').last();
+      await fieldRow.click();
+      await editor.getByLabel(/field label/i).fill('Copyright Owner');
+      await editor.getByLabel(/map to property/i).fill('copyrightOwner');
+      await editor.getByTestId('requirement-parent-select').getByRole('combobox').click();
+      await page.getByRole('option', { name: 'License Requirements' }).click();
+      await editor.getByTestId('requirement-value-Licensed').click();
+
+      // Field 3: Country (select, parent for the Visibility rule)
+      await page.getByTestId('schema-editor-add-field').click();
+      fieldRow = page.locator('[data-testid^="schema-editor-field-"]').last();
+      await fieldRow.click();
+      await selectByLabel('Field Type').click();
+      await page.getByRole('option', { name: 'Dropdown (select)' }).click();
+      await editor.getByLabel(/field label/i).fill('Country');
+      await editor.getByLabel(/map to property/i).fill('country');
+      await editor.getByRole('button', { name: /add option/i }).click();
+      await editor.getByPlaceholder('Value').fill('United States');
+      await editor.getByPlaceholder('Label').fill('United States');
+
+      // Field 4: State (select, only visible when Country = United States)
+      await page.getByTestId('schema-editor-add-field').click();
+      fieldRow = page.locator('[data-testid^="schema-editor-field-"]').last();
+      await fieldRow.click();
+      await selectByLabel('Field Type').click();
+      await page.getByRole('option', { name: 'Dropdown (select)' }).click();
+      await editor.getByLabel(/field label/i).fill('State');
+      await editor.getByLabel(/map to property/i).fill('state');
+      await editor.getByRole('button', { name: /add option/i }).click();
+      await editor.getByPlaceholder('Value').fill('California');
+      await editor.getByPlaceholder('Label').fill('California');
+      await editor.getByTestId('visibility-parent-select').getByRole('combobox').click();
+      await page.getByRole('option', { name: 'Country' }).click();
+      await editor.getByTestId('visibility-value-United States').click();
+
+      const [saveResponse] = await Promise.all([
+        page.waitForResponse((res) =>
+          res.url().includes(`/api/v1/metadata_schemas/${created.id}`) &&
+          res.request().method() === 'PATCH',
+        ),
+        page.getByRole('button', { name: /save schema/i }).click(),
+      ]);
+      expect(saveResponse.ok()).toBe(true);
+      await expect(page.getByTestId('schema-editor-name')).toHaveCount(0, { timeout: 10_000 });
+
+      const schemaBody = await fetchSchema(page, created.id);
+      const allFields = (schemaBody.tabs || []).flatMap((tab) => tab.fields || []);
+      const licenseField   = allFields.find((f) => f.label === 'License Requirements');
+      const copyrightField = allFields.find((f) => f.label === 'Copyright Owner');
+      const countryField   = allFields.find((f) => f.label === 'Country');
+      const stateField     = allFields.find((f) => f.label === 'State');
+
+      expect(copyrightField.rules?.requirement?.parent_field_id).toBe(licenseField.id);
+      expect(copyrightField.rules?.requirement?.values).toEqual([ 'Licensed' ]);
+      expect(stateField.rules?.visibility?.parent_field_id).toBe(countryField.id);
+      expect(stateField.rules?.visibility?.values).toEqual([ 'United States' ]);
+    } finally {
+      await deleteSchema(page, created.id);
+    }
+  });
+
   test('admin can remove a custom field in the schema editor and verify it is gone', async ({ page }) => {
     const schemaName = uniqueName('Schema Editor Remove');
     const created = await createRootSchema(page, schemaName);

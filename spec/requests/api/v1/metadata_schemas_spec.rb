@@ -163,6 +163,105 @@ RSpec.describe "Api::V1::MetadataSchemas", type: :request do
       expect(response.parsed_body["errors"]).to include("Name can't be blank")
     end
 
+    it "persists select-field cascading rules (rules.cascade) through nested tabs/fields params" do
+      sign_in admin
+
+      patch api_v1_metadata_schema_path(schema),
+            params: {
+              metadata_schema: {
+                tabs: [
+                  {
+                    id: "tab-1", name: "General", position: 0,
+                    fields: [
+                      {
+                        id: "field-type", field_type: "select", label: "Asset Type",
+                        map_to_property: "mamAssetType", position: 0,
+                        options: [ { value: "Product", label: "Product" }, { value: "Lifestyle", label: "Lifestyle" } ]
+                      },
+                      {
+                        id: "field-subtype", field_type: "select", label: "Asset Sub-Type",
+                        map_to_property: "mamAssetSubType", position: 1,
+                        options: [ { value: "In Pack", label: "In Pack" }, { value: "Motion", label: "Motion" } ],
+                        rules: {
+                          cascade: {
+                            parent_field_id: "field-type",
+                            map: { "Product" => [ "In Pack" ], "Lifestyle" => [ "Motion" ] },
+                          },
+                        }
+                      },
+                    ]
+                  },
+                ],
+              },
+            },
+            as: :json
+
+      expect(response).to have_http_status(:ok)
+      persisted_field = schema.reload.tabs.first["fields"].second
+      expect(persisted_field["rules"]["cascade"]).to eq(
+        "parent_field_id" => "field-type",
+        "map"             => { "Product" => [ "In Pack" ], "Lifestyle" => [ "Motion" ] }
+      )
+    end
+
+    it "persists dynamic Requirement and Visibility rules (rules.requirement / rules.visibility) through nested tabs/fields params" do
+      sign_in admin
+
+      patch api_v1_metadata_schema_path(schema),
+            params: {
+              metadata_schema: {
+                tabs: [
+                  {
+                    id: "tab-1", name: "Basic", position: 0,
+                    fields: [
+                      {
+                        id: "field-license", field_type: "select", label: "License Requirements",
+                        map_to_property: "license", position: 0,
+                        options: [ { value: "Licensed", label: "Licensed" }, { value: "Unlicensed", label: "Unlicensed" } ]
+                      },
+                      {
+                        id: "field-copyright", field_type: "text", label: "Copyright Owner",
+                        map_to_property: "copyrightOwner", position: 1,
+                        rules: {
+                          requirement: { parent_field_id: "field-license", values: [ "Licensed" ] },
+                        }
+                      },
+                      {
+                        id: "field-country", field_type: "select", label: "Country",
+                        map_to_property: "country", position: 2,
+                        options: [ { value: "United States", label: "United States" }, { value: "Canada", label: "Canada" } ]
+                      },
+                      {
+                        id: "field-state", field_type: "select", label: "State",
+                        map_to_property: "state", position: 3,
+                        options: [ { value: "California", label: "California" }, { value: "Florida", label: "Florida" } ],
+                        rules: {
+                          visibility: { parent_field_id: "field-country", values: [ "United States" ] },
+                        }
+                      },
+                    ]
+                  },
+                ],
+              },
+            },
+            as: :json
+
+      expect(response).to have_http_status(:ok)
+      fields = schema.reload.tabs.first["fields"]
+
+      copyright_field = fields.find { |f| f["id"] == "field-copyright" }
+      expect(copyright_field["rules"]["requirement"]).to eq(
+        "parent_field_id" => "field-license",
+        "values"          => [ "Licensed" ]
+      )
+
+      state_field = fields.find { |f| f["id"] == "field-state" }
+      expect(state_field["rules"]["visibility"]).to eq(
+        "parent_field_id" => "field-country",
+        "values"          => [ "United States" ]
+      )
+    end
+
     it "renames a schema" do
       sign_in admin
 

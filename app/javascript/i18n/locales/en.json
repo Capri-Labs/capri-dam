@@ -2419,13 +2419,15 @@
       "readOnlyField": "This field is read-only",
       "inheritedFromSchema": "Inherited from {{schema}} schema",
       "selectPlaceholder": "— select —",
+      "cascadeSelectParentFirst": "Select {{parent}} first",
       "tagsHelperSuffix": " — press Enter to add"
     },
     "notifications": {
       "metadataSavedSuccessfully": "Metadata saved successfully."
     },
     "errors": {
-      "saveFailed": "Save failed"
+      "saveFailed": "Save failed",
+      "missingRequiredFields": "Please fill in required fields: {{fields}}"
     },
     "noSchema": {
       "line1": "No metadata schema applied to this asset yet.",

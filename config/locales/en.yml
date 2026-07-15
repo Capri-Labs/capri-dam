@@ -52,6 +52,14 @@ en:
       too_short: "is too short (minimum is %{count} characters)"
       too_long: "is too long (maximum is %{count} characters)"
       wrong_length: "is the wrong length (should be %{count} characters)"
+    not_found:
+      title: "404 — Not Found | Capri DAM"
+      illustration_alt: "A detective looking through an empty box"
+      heading: "Well, this is embarrassing."
+      message: "The asset, folder, or page you're looking for seems to have wandered off — or never existed to begin with."
+      hint: "It may have been moved, renamed, deleted, or the link you followed is out of date."
+      back_link: "Back to Dashboard"
+      json_message: "Resource not found."
   
   activerecord:
     errors:

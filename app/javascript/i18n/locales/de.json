@@ -2419,13 +2419,15 @@
       "readOnlyField": "Dieses Feld ist schreibgeschützt",
       "inheritedFromSchema": "Geerbt vom Schema {{schema}}",
       "selectPlaceholder": "— auswählen —",
+      "cascadeSelectParentFirst": "Zuerst {{parent}} auswählen",
       "tagsHelperSuffix": " — Eingabetaste zum Hinzufügen drücken"
     },
     "notifications": {
       "metadataSavedSuccessfully": "Metadaten erfolgreich gespeichert."
     },
     "errors": {
-      "saveFailed": "Speichern fehlgeschlagen"
+      "saveFailed": "Speichern fehlgeschlagen",
+      "missingRequiredFields": "Bitte füllen Sie die erforderlichen Felder aus: {{fields}}"
     },
     "noSchema": {
       "line1": "Auf dieses Asset wurde noch kein Metadatenschema angewendet.",

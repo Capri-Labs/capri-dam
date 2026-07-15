@@ -473,6 +473,183 @@ describe('Folders components', () => {
     expect(checksumField).toBeDisabled();
   });
 
+  it('narrows a cascading dropdown to the options allowed by its parent field, and clears the child when the parent changes', async () => {
+    global.fetch = mockFetch({
+      'GET /api/v1/assets/7/metadata_schema': {
+        id: 8,
+        name: 'MAM Global',
+        applied_schema_id: 8,
+        resolved_tabs: [
+          {
+            id: 'general',
+            name: 'General',
+            fields: [
+              {
+                id: 'field-type', label: 'Asset Type', field_type: 'select', map_to_property: 'mamAssetType',
+                options: [{ value: 'Product', label: 'Product' }, { value: 'Lifestyle', label: 'Lifestyle' }],
+              },
+              {
+                id: 'field-subtype', label: 'Asset Sub-Type', field_type: 'select', map_to_property: 'mamAssetSubType',
+                options: [
+                  { value: 'In Pack', label: 'In Pack' },
+                  { value: 'Motion', label: 'Motion' },
+                ],
+                rules: {
+                  cascade: {
+                    parent_field_id: 'field-type',
+                    map: { Product: [ 'In Pack' ], Lifestyle: [ 'Motion' ] },
+                  },
+                },
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    render(
+      <AssetMetadataPanel
+        asset={{ id: 7, folder_id: 9, properties: { applied_schema_id: 8 } }}
+        onAssetUpdated={jest.fn()}
+      />
+    );
+
+    expect(await screen.findByText('MAM Global')).toBeInTheDocument();
+
+    const comboboxFor = (labelText) => within(screen.getByText(labelText).closest('.MuiFormControl-root')).getByRole('combobox');
+
+    // Before a parent value is chosen, the dependent field is locked with a hint.
+    expect(comboboxFor('Asset Sub-Type')).toHaveAttribute('aria-disabled', 'true');
+    expect(screen.getByText('Select Asset Type first')).toBeInTheDocument();
+
+    // Choosing "Product" unlocks Asset Sub-Type, narrowed to just "In Pack".
+    fireEvent.mouseDown(comboboxFor('Asset Type'));
+    fireEvent.click(await screen.findByRole('option', { name: 'Product' }));
+
+    expect(comboboxFor('Asset Sub-Type')).not.toHaveAttribute('aria-disabled');
+
+    fireEvent.mouseDown(comboboxFor('Asset Sub-Type'));
+    expect(screen.queryByRole('option', { name: 'Motion' })).not.toBeInTheDocument();
+    fireEvent.click(await screen.findByRole('option', { name: 'In Pack' }));
+    expect(comboboxFor('Asset Sub-Type')).toHaveTextContent('In Pack');
+
+    // Switching the parent to "Lifestyle" clears the now-invalid child value.
+    fireEvent.mouseDown(comboboxFor('Asset Type'));
+    fireEvent.click(await screen.findByRole('option', { name: 'Lifestyle' }));
+
+    expect(comboboxFor('Asset Sub-Type')).not.toHaveTextContent('In Pack');
+  });
+
+  it('hides a field until its Visibility rule parent has the configured value, then reveals it', async () => {
+    global.fetch = mockFetch({
+      'GET /api/v1/assets/11/metadata_schema': {
+        id: 12,
+        name: 'IPTC Geo',
+        applied_schema_id: 12,
+        resolved_tabs: [
+          {
+            id: 'iptc',
+            name: 'IPTC',
+            fields: [
+              {
+                id: 'field-country', label: 'Country', field_type: 'select', map_to_property: 'country',
+                options: [{ value: 'United States', label: 'United States' }, { value: 'Canada', label: 'Canada' }],
+              },
+              {
+                id: 'field-state', label: 'State', field_type: 'select', map_to_property: 'state',
+                options: [{ value: 'California', label: 'California' }, { value: 'Florida', label: 'Florida' }],
+                rules: { visibility: { parent_field_id: 'field-country', values: [ 'United States' ] } },
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    render(
+      <AssetMetadataPanel
+        asset={{ id: 11, folder_id: 9, properties: { applied_schema_id: 12 } }}
+        onAssetUpdated={jest.fn()}
+      />
+    );
+
+    expect(await screen.findByText('IPTC Geo')).toBeInTheDocument();
+
+    // State is hidden until Country = United States.
+    expect(screen.queryByText('State')).not.toBeInTheDocument();
+
+    const comboboxFor = (labelText) => within(screen.getByText(labelText).closest('.MuiFormControl-root')).getByRole('combobox');
+    fireEvent.mouseDown(comboboxFor('Country'));
+    fireEvent.click(await screen.findByRole('option', { name: 'United States' }));
+
+    expect(await screen.findByText('State')).toBeInTheDocument();
+
+    // Switching to Canada (not in the visibility rule's values) hides it again.
+    fireEvent.mouseDown(comboboxFor('Country'));
+    fireEvent.click(await screen.findByRole('option', { name: 'Canada' }));
+
+    expect(screen.queryByText('State')).not.toBeInTheDocument();
+  });
+
+  it('blocks saving and notifies when a dynamically-Required field (via a Requirement rule) is left empty', async () => {
+    global.fetch = mockFetch({
+      'GET /api/v1/assets/13/metadata_schema': {
+        id: 14,
+        name: 'Licensing',
+        applied_schema_id: 14,
+        resolved_tabs: [
+          {
+            id: 'basic',
+            name: 'Basic',
+            fields: [
+              {
+                id: 'field-license', label: 'License Requirements', field_type: 'select', map_to_property: 'license',
+                options: [{ value: 'Licensed', label: 'Licensed' }, { value: 'Unlicensed', label: 'Unlicensed' }],
+              },
+              {
+                id: 'field-copyright', label: 'Copyright Owner', field_type: 'text', map_to_property: 'copyrightOwner',
+                rules: { requirement: { parent_field_id: 'field-license', values: [ 'Licensed' ] } },
+              },
+            ],
+          },
+        ],
+      },
+      'PATCH /api/v1/assets/13/metadata': { id: 13, properties: { license: 'Licensed' } },
+    });
+
+    render(
+      <AssetMetadataPanel
+        asset={{ id: 13, folder_id: 9, properties: { applied_schema_id: 14 } }}
+        onAssetUpdated={jest.fn()}
+      />
+    );
+
+    expect(await screen.findByText('Licensing')).toBeInTheDocument();
+
+    const comboboxFor = (labelText) => within(screen.getByText(labelText).closest('.MuiFormControl-root')).getByRole('combobox');
+    fireEvent.mouseDown(comboboxFor('License Requirements'));
+    fireEvent.click(await screen.findByRole('option', { name: 'Licensed' }));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save Changes' }));
+
+    await waitFor(() => {
+      expect(mockNotify).toHaveBeenCalledWith(
+        expect.stringContaining('Copyright Owner'),
+        'error',
+      );
+    });
+    // No PATCH request should have been made since validation blocked the save.
+    expect(global.fetch.mock.calls.some(([url]) => String(url) === '/api/v1/assets/13/metadata')).toBe(false);
+
+    // Filling in Copyright Owner and saving again now succeeds.
+    fireEvent.change(screen.getByLabelText(/Copyright Owner/), { target: { value: 'Acme Corp' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save Changes' }));
+
+    await waitFor(() => {
+      expect(global.fetch.mock.calls.some(([url]) => String(url) === '/api/v1/assets/13/metadata')).toBe(true);
+    });
+  });
+
   it('falls back to client-side embedded mapping when the asset endpoint is unavailable', async () => {
     global.fetch = mockFetch({
       'GET /api/v1/assets/3/metadata_schema': { ok: false, json: () => Promise.resolve({}) },

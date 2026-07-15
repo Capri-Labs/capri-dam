@@ -83,6 +83,62 @@ Below the tab bar, the field area is split into three side-by-side columns:
   panel for whichever custom field is selected in the middle column; shows
   "Select a field to edit its settings" when nothing is selected.
 
+=== Contextual metadata rules (`field.rules`)
+
+Every field carries a free-form `rules` JSON hash (permitted via `rules: {}`
+in `Api::V1::MetadataSchemasController` strong params — no migration needed
+for new rule shapes). The `FieldEditor` panel exposes three independent,
+composable rule types, all configured entirely through the schema editor UI
+(no code changes required to add a new dependent-field relationship):
+
+[cols="1,3,4"]
+|===
+|Rule |JSON shape (`field.rules.*`) |Behavior
+
+|**Choices**
+|`cascade: { parent_field_id, map: { parentValue: [childValue, ...] } }`
+|Only applies when *this* field is a `select`. Narrows this field's `options`
+to whatever the `map` lists for the *parent* field's current value. The field
+is disabled ("Select `<Parent>` first") until the parent has a value. If the
+parent's value changes and the child's current value is no longer in the
+allowed list, the child's value is cleared automatically
+(`AssetMetadataPanel#handleChange`).
+
+|**Requirement**
+|`requirement: { parent_field_id, values: [parentValue, ...] }`
+|Any field type may depend on a parent `select`. The field becomes required
+(in addition to — not instead of — its static `required` flag) whenever the
+parent's current value is one of `values`. Effective requiredness is computed
+per-render by `resolveFieldRules()`.
+
+|**Visibility**
+|`visibility: { parent_field_id, values: [parentValue, ...] }`
+|Any field type may depend on a parent `select`. The field is hidden entirely
+from `AssetMetadataPanel` unless the parent's current value is one of
+`values`. Fields with no `visibility` rule are always visible (default,
+unchanged behavior).
+|===
+
+In all three cases, `parent_field_id` may reference a field on **any tab** of
+the schema (fields are flattened across tabs before rule resolution), and only
+`select`-type fields may act as the *parent* of a rule — a rule's dependent
+field can be any type (`text`, `select`, `date`, etc.).
+
+`AssetMetadataPanel.jsx`'s `resolveFieldRules(field, allFields, values)` is
+the single place all three rule types are resolved against the live form
+`values` for rendering. `validateRequiredFields()` re-walks every tab's fields
+(not just the active tab) before `handleSave` submits, so a required field
+hidden on another tab still blocks the save with a
+"Please fill in required fields: ..." notification and jumps the active tab to
+the first offending field.
+
+`FieldEditor` (in `SchemaEditorDialog.jsx`) surfaces each rule as: a "Parent
+Field" `select` (`data-testid="cascade-parent-select"` /
+`"requirement-parent-select"` / `"visibility-parent-select"`) restricted to
+sibling `select` fields, followed by a chip picker for the trigger value(s)
+(`data-testid="cascade-option-<parentValue>-<childValue>"` /
+`"requirement-value-<value>"` / `"visibility-value-<value>"`).
+
 === Root-to-root inheritance (`inherits_from_id`)
 
 In addition to the type/subtype `parent_id` hierarchy (MIME resolution),

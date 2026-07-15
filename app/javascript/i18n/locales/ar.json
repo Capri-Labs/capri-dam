@@ -2419,13 +2419,15 @@
       "readOnlyField": "هذا الحقل للقراءة فقط",
       "inheritedFromSchema": "موروث من مخطط {{schema}}",
       "selectPlaceholder": "— تحديد —",
+      "cascadeSelectParentFirst": "اختر {{parent}} أولاً",
       "tagsHelperSuffix": " — اضغط Enter للإضافة"
     },
     "notifications": {
       "metadataSavedSuccessfully": "تم حفظ البيانات الوصفية بنجاح."
     },
     "errors": {
-      "saveFailed": "فشل الحفظ"
+      "saveFailed": "فشل الحفظ",
+      "missingRequiredFields": "يرجى ملء الحقول المطلوبة: {{fields}}"
     },
     "noSchema": {
       "line1": "لم يتم تطبيق أي مخطط بيانات وصفية على هذا الأصل بعد.",

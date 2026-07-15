@@ -2419,13 +2419,15 @@
       "readOnlyField": "이 필드는 읽기 전용입니다",
       "inheritedFromSchema": "{{schema}} 스키마에서 상속됨",
       "selectPlaceholder": "— 선택 —",
+      "cascadeSelectParentFirst": "먼저 {{parent}}을(를) 선택하세요",
       "tagsHelperSuffix": " — Enter 키를 눌러 추가"
     },
     "notifications": {
       "metadataSavedSuccessfully": "메타데이터가 성공적으로 저장되었습니다."
     },
     "errors": {
-      "saveFailed": "저장 실패"
+      "saveFailed": "저장 실패",
+      "missingRequiredFields": "필수 항목을 입력하세요: {{fields}}"
     },
     "noSchema": {
       "line1": "이 에셋에는 아직 메타데이터 스키마가 적용되지 않았습니다.",

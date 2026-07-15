@@ -47,7 +47,7 @@ function newField() {
 // ─────────────────────────────────────────────────────────────────────────────
 // FieldEditor – right-hand panel that edits one field
 // ─────────────────────────────────────────────────────────────────────────────
-function FieldEditor({ field, onChange }) {
+function FieldEditor({ field, onChange, allFields = [] }) {
     if (!field) {
         return (
             <Box sx={{ p: 3, color: '#94a3b8', textAlign: 'center' }}>
@@ -58,6 +58,100 @@ function FieldEditor({ field, onChange }) {
     }
 
     const update = (key, value) => onChange({ ...field, [key]: value });
+
+    // ── Cascading options (this field's choices narrowed by another select's value) ──
+    const cascade          = field.rules?.cascade ?? null;
+    const cascadeParentId  = cascade?.parent_field_id ?? '';
+    const cascadeMap       = cascade?.map ?? {};
+    const cascadeCandidates = allFields.filter(f => f.field_type === 'select' && f.id !== field.id);
+    const cascadeParent    = cascadeCandidates.find(f => f.id === cascadeParentId) ?? null;
+
+    const setCascadeParent = (parentFieldId) => {
+        if (!parentFieldId) {
+            const rules = { ...(field.rules ?? {}) };
+            delete rules.cascade;
+            update('rules', rules);
+            return;
+        }
+        const rules = { ...(field.rules ?? {}) };
+        rules.cascade = {
+            parent_field_id: parentFieldId,
+            // Reset the map when switching to a different parent field.
+            map: parentFieldId === cascadeParentId ? cascadeMap : {},
+        };
+        update('rules', rules);
+    };
+
+    const toggleCascadeOption = (parentValue, childValue) => {
+        const nextMap = { ...cascadeMap };
+        const current = new Set(nextMap[parentValue] ?? []);
+        if (current.has(childValue)) current.delete(childValue); else current.add(childValue);
+        nextMap[parentValue] = Array.from(current);
+        const rules = { ...(field.rules ?? {}) };
+        rules.cascade = { parent_field_id: cascadeParentId, map: nextMap };
+        update('rules', rules);
+    };
+
+    // ── Dynamic Requirement rule (field becomes required when a parent select's
+    // value is one of a chosen set) ──────────────────────────────────────────
+    const requirement         = field.rules?.requirement ?? null;
+    const requirementParentId = requirement?.parent_field_id ?? '';
+    const requirementValues   = new Set(requirement?.values ?? []);
+    // Any select field may act as the parent for a Requirement/Visibility rule —
+    // unlike Choices, the dependent field here can be of any type.
+    const dependentCandidates = allFields.filter(f => f.field_type === 'select' && f.id !== field.id);
+    const requirementParent   = dependentCandidates.find(f => f.id === requirementParentId) ?? null;
+
+    const setRequirementParent = (parentFieldId) => {
+        const rules = { ...(field.rules ?? {}) };
+        if (!parentFieldId) {
+            delete rules.requirement;
+            update('rules', rules);
+            return;
+        }
+        rules.requirement = {
+            parent_field_id: parentFieldId,
+            values: parentFieldId === requirementParentId ? Array.from(requirementValues) : [],
+        };
+        update('rules', rules);
+    };
+
+    const toggleRequirementValue = (parentValue) => {
+        const next = new Set(requirementValues);
+        if (next.has(parentValue)) next.delete(parentValue); else next.add(parentValue);
+        const rules = { ...(field.rules ?? {}) };
+        rules.requirement = { parent_field_id: requirementParentId, values: Array.from(next) };
+        update('rules', rules);
+    };
+
+    // ── Dynamic Visibility rule (field is only shown when a parent select's
+    // value is one of a chosen set; always visible when no rule is set) ─────
+    const visibility         = field.rules?.visibility ?? null;
+    const visibilityParentId = visibility?.parent_field_id ?? '';
+    const visibilityValues   = new Set(visibility?.values ?? []);
+    const visibilityParent   = dependentCandidates.find(f => f.id === visibilityParentId) ?? null;
+
+    const setVisibilityParent = (parentFieldId) => {
+        const rules = { ...(field.rules ?? {}) };
+        if (!parentFieldId) {
+            delete rules.visibility;
+            update('rules', rules);
+            return;
+        }
+        rules.visibility = {
+            parent_field_id: parentFieldId,
+            values: parentFieldId === visibilityParentId ? Array.from(visibilityValues) : [],
+        };
+        update('rules', rules);
+    };
+
+    const toggleVisibilityValue = (parentValue) => {
+        const next = new Set(visibilityValues);
+        if (next.has(parentValue)) next.delete(parentValue); else next.add(parentValue);
+        const rules = { ...(field.rules ?? {}) };
+        rules.visibility = { parent_field_id: visibilityParentId, values: Array.from(next) };
+        update('rules', rules);
+    };
 
     return (
         <Box sx={{ p: 2, overflow: 'auto', height: '100%' }}>
@@ -133,6 +227,55 @@ function FieldEditor({ field, onChange }) {
                     </Box>
                 )}
 
+                {/* Cascading (dependent dropdown) — for select fields only */}
+                {field.field_type === 'select' && !field.inherited && (
+                    <Box>
+                        <Typography variant="caption" fontWeight={600} sx={{ mb: 0.5, display: 'block', color: '#475569' }}>
+                            Cascades From
+                        </Typography>
+                        <FormControl fullWidth size="small">
+                            <InputLabel>Parent Field</InputLabel>
+                            <Select value={cascadeParentId} label="Parent Field"
+                                    data-testid="cascade-parent-select"
+                                    onChange={e => setCascadeParent(e.target.value)}>
+                                <MenuItem value="">None</MenuItem>
+                                {cascadeCandidates.map(f => (
+                                    <MenuItem key={f.id} value={f.id}>{f.label || '(untitled field)'}</MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+
+                        {cascadeParent && (
+                            <Box sx={{ mt: 1.5 }}>
+                                <Typography variant="caption" sx={{ display: 'block', mb: 1, color: '#64748b' }}>
+                                    For each “{cascadeParent.label}” value, choose which of this field's options should appear:
+                                </Typography>
+                                {(cascadeParent.options ?? []).map(popt => (
+                                    <Box key={popt.value} sx={{ mb: 1.25 }}>
+                                        <Typography variant="caption" fontWeight={700} sx={{ display: 'block', color: '#334155' }}>
+                                            {popt.label || popt.value}
+                                        </Typography>
+                                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
+                                            {(field.options ?? []).map(copt => {
+                                                const active = (cascadeMap[popt.value] ?? []).includes(copt.value);
+                                                return (
+                                                    <Chip key={copt.value}
+                                                          data-testid={`cascade-option-${popt.value}-${copt.value}`}
+                                                          label={copt.label || copt.value} size="small"
+                                                          color={active ? 'primary' : 'default'}
+                                                          variant={active ? 'filled' : 'outlined'}
+                                                          onClick={() => toggleCascadeOption(popt.value, copt.value)}
+                                                          sx={{ cursor: 'pointer' }} />
+                                                );
+                                            })}
+                                        </Box>
+                                    </Box>
+                                ))}
+                            </Box>
+                        )}
+                    </Box>
+                )}
+
                 <Divider />
                 <Typography variant="caption" fontWeight={700} sx={{ color: '#475569' }}>Rules</Typography>
 
@@ -142,11 +285,99 @@ function FieldEditor({ field, onChange }) {
                                      onChange={e => update('required', e.target.checked)} />}
                     label={<Typography variant="body2">Required</Typography>} />
 
+                {/* Dynamic Requirement rule — required only when a parent select's
+                    value is one of a chosen set. Combines with (does not replace)
+                    the static Required switch above. */}
+                {!field.inherited && (
+                    <Box>
+                        <Typography variant="caption" fontWeight={600} sx={{ mb: 0.5, display: 'block', color: '#475569' }}>
+                            Required When (dynamic)
+                        </Typography>
+                        <FormControl fullWidth size="small">
+                            <InputLabel>Parent Field</InputLabel>
+                            <Select value={requirementParentId} label="Parent Field"
+                                    data-testid="requirement-parent-select"
+                                    onChange={e => setRequirementParent(e.target.value)}>
+                                <MenuItem value="">None (use static Required toggle only)</MenuItem>
+                                {dependentCandidates.map(f => (
+                                    <MenuItem key={f.id} value={f.id}>{f.label || '(untitled field)'}</MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+
+                        {requirementParent && (
+                            <Box sx={{ mt: 1 }}>
+                                <Typography variant="caption" sx={{ display: 'block', mb: 0.5, color: '#64748b' }}>
+                                    This field becomes required when “{requirementParent.label}” is:
+                                </Typography>
+                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                    {(requirementParent.options ?? []).map(opt => {
+                                        const active = requirementValues.has(opt.value);
+                                        return (
+                                            <Chip key={opt.value}
+                                                  data-testid={`requirement-value-${opt.value}`}
+                                                  label={opt.label || opt.value} size="small"
+                                                  color={active ? 'primary' : 'default'}
+                                                  variant={active ? 'filled' : 'outlined'}
+                                                  onClick={() => toggleRequirementValue(opt.value)}
+                                                  sx={{ cursor: 'pointer' }} />
+                                        );
+                                    })}
+                                </Box>
+                            </Box>
+                        )}
+                    </Box>
+                )}
+
                 <FormControlLabel
                     disabled={field.inherited}
                     control={<Switch checked={!!field.read_only} size="small"
                                      onChange={e => update('read_only', e.target.checked)} />}
                     label={<Typography variant="body2">Read Only</Typography>} />
+
+                {/* Dynamic Visibility rule — field is only shown when a parent
+                    select's value is one of a chosen set. Always visible when
+                    no rule is configured. */}
+                {!field.inherited && (
+                    <Box>
+                        <Typography variant="caption" fontWeight={600} sx={{ mb: 0.5, display: 'block', color: '#475569' }}>
+                            Visible When (dynamic)
+                        </Typography>
+                        <FormControl fullWidth size="small">
+                            <InputLabel>Parent Field</InputLabel>
+                            <Select value={visibilityParentId} label="Parent Field"
+                                    data-testid="visibility-parent-select"
+                                    onChange={e => setVisibilityParent(e.target.value)}>
+                                <MenuItem value="">None (always visible)</MenuItem>
+                                {dependentCandidates.map(f => (
+                                    <MenuItem key={f.id} value={f.id}>{f.label || '(untitled field)'}</MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+
+                        {visibilityParent && (
+                            <Box sx={{ mt: 1 }}>
+                                <Typography variant="caption" sx={{ display: 'block', mb: 0.5, color: '#64748b' }}>
+                                    This field is only shown when “{visibilityParent.label}” is:
+                                </Typography>
+                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                    {(visibilityParent.options ?? []).map(opt => {
+                                        const active = visibilityValues.has(opt.value);
+                                        return (
+                                            <Chip key={opt.value}
+                                                  data-testid={`visibility-value-${opt.value}`}
+                                                  label={opt.label || opt.value} size="small"
+                                                  color={active ? 'primary' : 'default'}
+                                                  variant={active ? 'filled' : 'outlined'}
+                                                  onClick={() => toggleVisibilityValue(opt.value)}
+                                                  sx={{ cursor: 'pointer' }} />
+                                        );
+                                    })}
+                                </Box>
+                            </Box>
+                        )}
+                    </Box>
+                )}
             </Stack>
         </Box>
     );
@@ -499,6 +730,7 @@ export default function SchemaEditorDialog({ schema, onClose, onSave, rootSchema
                         <FieldEditor
                             field={selectedField}
                             onChange={updateField}
+                            allFields={tabs.flatMap(t => t.fields ?? [])}
                         />
                     </Box>
                 </Box>

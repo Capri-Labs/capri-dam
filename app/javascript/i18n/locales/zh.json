@@ -2419,13 +2419,15 @@
       "readOnlyField": "此字段为只读",
       "inheritedFromSchema": "继承自 {{schema}} 架构",
       "selectPlaceholder": "— 选择 —",
+      "cascadeSelectParentFirst": "请先选择{{parent}}",
       "tagsHelperSuffix": " — 按 Enter 添加"
     },
     "notifications": {
       "metadataSavedSuccessfully": "元数据保存成功。"
     },
     "errors": {
-      "saveFailed": "保存失败"
+      "saveFailed": "保存失败",
+      "missingRequiredFields": "请填写必填字段：{{fields}}"
     },
     "noSchema": {
       "line1": "此资产尚未应用元数据架构。",

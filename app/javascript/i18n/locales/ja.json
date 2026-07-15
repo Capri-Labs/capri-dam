@@ -2419,13 +2419,15 @@
       "readOnlyField": "このフィールドは読み取り専用です",
       "inheritedFromSchema": "{{schema}} スキーマから継承",
       "selectPlaceholder": "— 選択 —",
+      "cascadeSelectParentFirst": "先に{{parent}}を選択してください",
       "tagsHelperSuffix": " — Enterキーで追加"
     },
     "notifications": {
       "metadataSavedSuccessfully": "メタデータを正常に保存しました。"
     },
     "errors": {
-      "saveFailed": "保存に失敗しました"
+      "saveFailed": "保存に失敗しました",
+      "missingRequiredFields": "必須項目を入力してください: {{fields}}"
     },
     "noSchema": {
       "line1": "このアセットにはまだメタデータスキーマが適用されていません。",

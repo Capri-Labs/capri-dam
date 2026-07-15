@@ -331,3 +331,65 @@ credentials via "Commit System Credentials".
 app), but because `SystemEmailConfig#apply!` mutates `ActionMailer::Base`
 globally, registration/password-reset emails automatically inherit the same
 validated SMTP transport as every other mailer.
+
+== Error handling conventions ("funny 404" page)
+
+`ApplicationController` registers a shared
+`rescue_from ActiveRecord::RecordNotFound, with: :render_not_found`. This
+replaces the raw Rails diagnostics/stack-trace page (which would otherwise
+appear whenever a scoped `find` misses — e.g.
+`current_user.asset_downloads.find(params[:id])` for a download that
+belongs to someone else, was purged, or was reached via a stale inbox/email
+link) with a small, lighthearted illustrated page instead.
+
+**Two triggers, one handler:**
+
+* `ActiveRecord::RecordNotFound` raised *inside* a matched controller action
+  → caught by the `rescue_from` in `ApplicationController`.
+* A request that matches *no route at all* → the catch-all
+  `match "*unmatched_route", to: "errors#not_found", via: :all` at the very
+  bottom of `config/routes.rb` routes to `ErrorsController#not_found`, which
+  calls the same shared `render_not_found`.
+
+**Response shape is format-aware** (`ApplicationController#render_not_found`):
+
+[source,ruby]
+----
+def render_not_found(exception = nil)
+  respond_to do |format|
+    format.html { render "errors/not_found", layout: "errors", status: :not_found }
+    format.json { render json: { error: t("errors.not_found.json_message") }, status: :not_found }
+    format.any  { head :not_found }
+  end
+end
+----
+
+* Browser navigation (`Accept: text/html`) → the illustrated
+  `app/views/errors/not_found.html.erb` page (own standalone
+  `layouts/errors` layout — deliberately does *not* extend
+  `layouts/application`, since that assumes an authenticated session with
+  the React sidebar mounted, which may not hold for an arbitrary broken
+  link).
+* API/fetch clients (`Accept: application/json`) → unchanged, small
+  structured `{ "error": "Resource not found." }` body — the SPA's existing
+  fetch error handling needed no changes.
+* Any other format → bare `404` with no body.
+
+**Per-controller overrides still win.** Several controllers already define
+their own `rescue_from ActiveRecord::RecordNotFound` (e.g.
+`WorkflowsController`, several `Api::V1::*` controllers with local
+`rescue ActiveRecord::RecordNotFound` blocks inside individual actions) —
+Rails resolves `rescue_from` from the most specific (subclass-defined)
+handler first, so those continue to take precedence unchanged. The shared
+handler only fires where no more-specific handler exists.
+
+Copy is localized via `errors.not_found.*` in `config/locales/en.yml`
+(server-side, non-JS locale file — distinct from the React SPA's
+`app/javascript/i18n/locales/*.json`).
+
+**Tests**: `spec/requests/errors_spec.rb` (both trigger paths, both response
+formats, and a regression check that a controller with its own
+`rescue_from` still uses its own handler) and
+`spec/e2e/custom_404_page.e2e.spec.js` (illustrated page renders for a
+stale download link and for a totally unknown URL; JSON 404 shape for API
+fetches).

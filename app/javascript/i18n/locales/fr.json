@@ -2419,13 +2419,15 @@
       "readOnlyField": "Ce champ est en lecture seule",
       "inheritedFromSchema": "Hérité du schéma {{schema}}",
       "selectPlaceholder": "— sélectionner —",
+      "cascadeSelectParentFirst": "Sélectionnez d'abord {{parent}}",
       "tagsHelperSuffix": " — appuyez sur Entrée pour ajouter"
     },
     "notifications": {
       "metadataSavedSuccessfully": "Métadonnées enregistrées avec succès."
     },
     "errors": {
-      "saveFailed": "Échec de l’enregistrement"
+      "saveFailed": "Échec de l’enregistrement",
+      "missingRequiredFields": "Veuillez remplir les champs obligatoires : {{fields}}"
     },
     "noSchema": {
       "line1": "Aucun schéma de métadonnées n’est encore appliqué à cet asset.",

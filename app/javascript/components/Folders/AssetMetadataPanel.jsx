@@ -78,13 +78,17 @@ function MetadataField({ field, value, onChange, t }) {
                         {label}
                     </Box>
                     <Select value={value ?? ''} onChange={e => onChange(e.target.value)}
-                            displayEmpty size="small" disabled={isLocked}>
-                        <MenuItem value=""><em>{t('assetMetadataPanel.field.selectPlaceholder')}</em></MenuItem>
+                            displayEmpty size="small" disabled={isLocked || field.cascade_locked}>
+                        <MenuItem value=""><em>{t('assetMetadataPanel.field.selectPlaceholder', '— select —')}</em></MenuItem>
                         {(field.options ?? []).map(opt => (
                             <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
                         ))}
                     </Select>
-                    <Typography variant="caption" sx={{ color: '#94a3b8', mt: 0.25 }}>{field.map_to_property}</Typography>
+                    <Typography variant="caption" sx={{ color: field.cascade_locked ? '#f59e0b' : '#94a3b8', mt: 0.25 }}>
+                        {field.cascade_locked
+                            ? t('assetMetadataPanel.field.cascadeSelectParentFirst', 'Select {{parent}} first', { parent: field.cascade_parent_label })
+                            : field.map_to_property}
+                    </Typography>
                 </FormControl>
             );
 
@@ -136,6 +140,77 @@ function extractSchemaValues(schema, asset) {
         }
     }
     return base;
+}
+
+// Flattens every field across every tab of a schema — used to resolve
+// cascading dropdowns' parent fields, which may live on a different tab.
+function flattenFields(schema) {
+    const tabs = schema?.resolved_tabs ?? schema?.tabs ?? [];
+    return tabs.flatMap(tab => tab.fields ?? []);
+}
+
+// Resolves all three contextual metadata rule types set by the Metadata
+// Schema editor (`field.rules`) against the current form `values`:
+//
+//  - Choices  (`rules.cascade`)     — narrows a `select` field's `options` to
+//                                     those mapped from the parent's value.
+//  - Requirement (`rules.requirement`) — marks the field required (in
+//                                     addition to its static `required` flag)
+//                                     when the parent's value is one of a
+//                                     configured set.
+//  - Visibility (`rules.visibility`)  — hides the field entirely unless the
+//                                     parent's value is one of a configured
+//                                     set; fields with no visibility rule are
+//                                     always visible.
+//
+// Returns the field annotated with: `options`, `cascade_locked`,
+// `cascade_parent_label` (Choices); `required`, `dynamic_required`
+// (Requirement); `visible`, `visibility_parent_label` (Visibility).
+function resolveFieldRules(field, allFields, values) {
+    let resolved = { ...field, visible: true };
+
+    const cascade = field.rules?.cascade;
+    if (field.field_type === 'select' && cascade?.parent_field_id) {
+        const parentField = allFields.find(f => f.id === cascade.parent_field_id);
+        const parentValue  = parentField ? values[parentField.map_to_property] : undefined;
+        const allowed      = parentValue ? (cascade.map?.[parentValue] ?? []) : [];
+        resolved = {
+            ...resolved,
+            options:              (field.options ?? []).filter(o => allowed.includes(o.value)),
+            cascade_locked:       !parentValue,
+            cascade_parent_label: parentField?.label,
+        };
+    }
+
+    const requirement = field.rules?.requirement;
+    if (requirement?.parent_field_id) {
+        const parentField     = allFields.find(f => f.id === requirement.parent_field_id);
+        const parentValue     = parentField ? values[parentField.map_to_property] : undefined;
+        const dynamicRequired = (requirement.values ?? []).includes(parentValue);
+        resolved = {
+            ...resolved,
+            required:         !!resolved.required || dynamicRequired,
+            dynamic_required: dynamicRequired,
+        };
+    }
+
+    const visibility = field.rules?.visibility;
+    if (visibility?.parent_field_id) {
+        const parentField = allFields.find(f => f.id === visibility.parent_field_id);
+        const parentValue  = parentField ? values[parentField.map_to_property] : undefined;
+        resolved = {
+            ...resolved,
+            visible:                  (visibility.values ?? []).includes(parentValue),
+            visibility_parent_label:  parentField?.label,
+        };
+    }
+
+    return resolved;
+}
+
+// Empty-value check shared by required-field validation.
+function isEmptyValue(v) {
+    return v === undefined || v === null || v === '' || (Array.isArray(v) && v.length === 0);
 }
 
 export default function AssetMetadataPanel({ asset, onAssetUpdated }) {
@@ -223,12 +298,59 @@ export default function AssetMetadataPanel({ asset, onAssetUpdated }) {
         setActiveTab(0);
     }, [asset?.id]);
 
-    const handleChange = (property, newValue) => {
-        setValues(prev => ({ ...prev, [property]: newValue }));
+    const handleChange = (field, newValue) => {
+        setValues(prev => {
+            const next = { ...prev, [field.map_to_property]: newValue };
+            // Clear any dependent (Choices-cascading) child fields whose current
+            // value is no longer among the allowed options for the new parent value.
+            const allFields = flattenFields(schema);
+            allFields.forEach(f => {
+                const cascade = f.rules?.cascade;
+                if (!cascade || cascade.parent_field_id !== field.id || !f.map_to_property) return;
+                const allowed = cascade.map?.[newValue] ?? [];
+                const currentChildValue = next[f.map_to_property];
+                if (currentChildValue && !allowed.includes(currentChildValue)) {
+                    next[f.map_to_property] = Array.isArray(currentChildValue) ? [] : '';
+                }
+            });
+            return next;
+        });
         setDirty(true);
     };
 
+    // Validates required fields (static `required` plus any dynamic
+    // Requirement rule) across every visible field in every tab — not just
+    // the active tab — so a hidden required field on another tab still
+    // blocks save. Returns the list of `{ field, tabIndex }` still missing a
+    // value; empty array means the form is valid to save.
+    const validateRequiredFields = (currentSchema, currentValues) => {
+        const allTabs   = currentSchema?.resolved_tabs ?? currentSchema?.tabs ?? [];
+        const allFields = allTabs.flatMap(tab => tab.fields ?? []);
+        const missing   = [];
+        allTabs.forEach((tab, tabIndex) => {
+            (tab.fields ?? []).forEach(field => {
+                const resolved = resolveFieldRules(field, allFields, currentValues);
+                if (!resolved.visible || !resolved.required) return;
+                if (isEmptyValue(currentValues[field.map_to_property])) {
+                    missing.push({ field: resolved, tabIndex });
+                }
+            });
+        });
+        return missing;
+    };
+
     const handleSave = async () => {
+        const missing = validateRequiredFields(schema, values);
+        if (missing.length > 0) {
+            const fieldLabels = missing.map(m => m.field.label).join(', ');
+            notify(
+                translate('assetMetadataPanel.errors.missingRequiredFields',
+                          'Please fill in required fields: {{fields}}', { fields: fieldLabels }),
+                'error'
+            );
+            setActiveTab(missing[0].tabIndex);
+            return;
+        }
         setSaving(true);
         try {
             const res  = await fetch(`/api/v1/assets/${asset.id}/metadata`, {
@@ -271,6 +393,7 @@ export default function AssetMetadataPanel({ asset, onAssetUpdated }) {
     }
 
     const tabs = schema.resolved_tabs ?? schema.tabs ?? [];
+    const allFields = tabs.flatMap(t => t.fields ?? []);
     // Tabs marked `conditional` (Camera/EXIF, XMP, Photoshop, ICC Profile) only
     // render when the asset actually has at least one resolved value for one of
     // their fields — i.e. the embedded metadata of that kind genuinely exists.
@@ -347,15 +470,18 @@ export default function AssetMetadataPanel({ asset, onAssetUpdated }) {
 
             {/* Fields for current tab */}
             <Box>
-                {activeTabs[activeTab] && (activeTabs[activeTab].fields ?? []).map(field => (
-                    <MetadataField
-                        key={field.id}
-                        field={field}
-                        value={values[field.map_to_property]}
-                        onChange={val => handleChange(field.map_to_property, val)}
-                        t={translate}
-                    />
-                ))}
+                {activeTabs[activeTab] && (activeTabs[activeTab].fields ?? [])
+                    .map(field => resolveFieldRules(field, allFields, values))
+                    .filter(field => field.visible)
+                    .map(field => (
+                        <MetadataField
+                            key={field.id}
+                            field={field}
+                            value={values[field.map_to_property]}
+                            onChange={val => handleChange(field, val)}
+                            t={translate}
+                        />
+                    ))}
                 {(!activeTabs[activeTab]?.fields?.length) && (
                     <Typography variant="caption" sx={{ color: '#94a3b8' }}>
                         {translate('assetMetadataPanel.noFieldsDefined', 'No fields defined for this tab.')}

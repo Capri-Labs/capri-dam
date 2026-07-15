@@ -615,6 +615,167 @@ describe('Tools components', () => {
     expect(screen.getByRole('button', { name: /save schema/i })).toBeDisabled();
   });
 
+  it('lets SchemaEditorDialog configure a cascading dropdown between two select fields', async () => {
+    const onSave = jest.fn().mockResolvedValue(true);
+    const fields = [
+      {
+        id: 'field-asset-type', label: 'Asset Type', field_type: 'select', map_to_property: 'mamAssetType',
+        options: [{ value: 'Product', label: 'Product' }, { value: 'Lifestyle', label: 'Lifestyle' }],
+      },
+      {
+        id: 'field-asset-subtype', label: 'Asset Sub-Type', field_type: 'select', map_to_property: 'mamAssetSubType',
+        options: [{ value: 'In Pack', label: 'In Pack' }, { value: 'Motion', label: 'Motion' }],
+      },
+    ];
+    const schema = makeSchema({
+      id: 42,
+      tabs: [ { id: 'tab-1', name: 'General', fields } ],
+      resolved_tabs: [ { id: 'tab-1', name: 'General', fields } ],
+    });
+
+    render(
+      <SchemaEditorDialog schema={schema} onClose={jest.fn()} onSave={onSave} />,
+    );
+
+    fireEvent.click(screen.getByTestId('schema-editor-field-field-asset-subtype'));
+    fireEvent.mouseDown(within(screen.getByTestId('cascade-parent-select')).getByRole('combobox'));
+    fireEvent.click(await screen.findByRole('option', { name: 'Asset Type' }));
+
+    expect(await screen.findByText(/For each “Asset Type” value/)).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('cascade-option-Product-In Pack'));
+
+    fireEvent.click(screen.getByRole('button', { name: /save schema/i }));
+
+    await waitFor(() => {
+      expect(onSave).toHaveBeenCalledWith(
+        42,
+        expect.objectContaining({
+          tabs: [
+            expect.objectContaining({
+              fields: [
+                expect.objectContaining({ id: 'field-asset-type' }),
+                expect.objectContaining({
+                  id: 'field-asset-subtype',
+                  rules: expect.objectContaining({
+                    cascade: {
+                      parent_field_id: 'field-asset-type',
+                      map: { Product: [ 'In Pack' ] },
+                    },
+                  }),
+                }),
+              ],
+            }),
+          ],
+        }),
+      );
+    });
+  });
+
+  it('lets SchemaEditorDialog configure a dynamic Requirement rule (field required when a parent select has a chosen value)', async () => {
+    const onSave = jest.fn().mockResolvedValue(true);
+    const fields = [
+      {
+        id: 'field-license', label: 'License Requirements', field_type: 'select', map_to_property: 'license',
+        options: [{ value: 'Licensed', label: 'Licensed' }, { value: 'Unlicensed', label: 'Unlicensed' }],
+      },
+      {
+        id: 'field-copyright', label: 'Copyright Owner', field_type: 'text', map_to_property: 'copyrightOwner',
+      },
+    ];
+    const schema = makeSchema({
+      id: 43,
+      tabs: [ { id: 'tab-1', name: 'General', fields } ],
+      resolved_tabs: [ { id: 'tab-1', name: 'General', fields } ],
+    });
+
+    render(
+      <SchemaEditorDialog schema={schema} onClose={jest.fn()} onSave={onSave} />,
+    );
+
+    fireEvent.click(screen.getByTestId('schema-editor-field-field-copyright'));
+    fireEvent.mouseDown(within(screen.getByTestId('requirement-parent-select')).getByRole('combobox'));
+    fireEvent.click(await screen.findByRole('option', { name: 'License Requirements' }));
+
+    expect(await screen.findByText(/becomes required when “License Requirements” is/)).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('requirement-value-Licensed'));
+
+    fireEvent.click(screen.getByRole('button', { name: /save schema/i }));
+
+    await waitFor(() => {
+      expect(onSave).toHaveBeenCalledWith(
+        43,
+        expect.objectContaining({
+          tabs: [
+            expect.objectContaining({
+              fields: [
+                expect.objectContaining({ id: 'field-license' }),
+                expect.objectContaining({
+                  id: 'field-copyright',
+                  rules: expect.objectContaining({
+                    requirement: { parent_field_id: 'field-license', values: [ 'Licensed' ] },
+                  }),
+                }),
+              ],
+            }),
+          ],
+        }),
+      );
+    });
+  });
+
+  it('lets SchemaEditorDialog configure a dynamic Visibility rule (field shown only when a parent select has a chosen value)', async () => {
+    const onSave = jest.fn().mockResolvedValue(true);
+    const fields = [
+      {
+        id: 'field-country', label: 'Country', field_type: 'select', map_to_property: 'country',
+        options: [{ value: 'United States', label: 'United States' }, { value: 'Canada', label: 'Canada' }],
+      },
+      {
+        id: 'field-state', label: 'State', field_type: 'select', map_to_property: 'state',
+        options: [{ value: 'California', label: 'California' }, { value: 'Florida', label: 'Florida' }],
+      },
+    ];
+    const schema = makeSchema({
+      id: 44,
+      tabs: [ { id: 'tab-1', name: 'IPTC', fields } ],
+      resolved_tabs: [ { id: 'tab-1', name: 'IPTC', fields } ],
+    });
+
+    render(
+      <SchemaEditorDialog schema={schema} onClose={jest.fn()} onSave={onSave} />,
+    );
+
+    fireEvent.click(screen.getByTestId('schema-editor-field-field-state'));
+    fireEvent.mouseDown(within(screen.getByTestId('visibility-parent-select')).getByRole('combobox'));
+    fireEvent.click(await screen.findByRole('option', { name: 'Country' }));
+
+    expect(await screen.findByText(/only shown when “Country” is/)).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('visibility-value-United States'));
+
+    fireEvent.click(screen.getByRole('button', { name: /save schema/i }));
+
+    await waitFor(() => {
+      expect(onSave).toHaveBeenCalledWith(
+        44,
+        expect.objectContaining({
+          tabs: [
+            expect.objectContaining({
+              fields: [
+                expect.objectContaining({ id: 'field-country' }),
+                expect.objectContaining({
+                  id: 'field-state',
+                  rules: expect.objectContaining({
+                    visibility: { parent_field_id: 'field-country', values: [ 'United States' ] },
+                  }),
+                }),
+              ],
+            }),
+          ],
+        }),
+      );
+    });
+  });
+
   it('sends inherits_from_id when creating a root schema via NewSchemaDialog', async () => {
     const onCreate = jest.fn().mockResolvedValue(true);
     const otherRoot = makeSchema({ id: 'root-1', name: 'Root Schema', level: 'root', children: [] });

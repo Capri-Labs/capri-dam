@@ -40,6 +40,21 @@ class ApplicationController < ActionController::Base
 
   before_action :set_current_context
 
+  # Renders a friendly custom 404 (HTML) / structured error (JSON) instead of
+  # leaking a raw stack trace whenever a record lookup misses — e.g.
+  # `current_user.asset_downloads.find(params[:id])` for an id that belongs
+  # to someone else or no longer exists. `rescue_from` intercepts the
+  # exception *inside* the controller action, before it ever reaches the
+  # `DebugExceptions` middleware — so this takes effect in every environment,
+  # including development (where `consider_all_requests_local = true` would
+  # otherwise always show the interactive backtrace page).
+  #
+  # Individual controllers may still define their own `rescue_from
+  # ActiveRecord::RecordNotFound` (several already do, e.g.
+  # {WorkflowsController}) — those take precedence over this one and are
+  # left untouched.
+  rescue_from ActiveRecord::RecordNotFound, with: :render_not_found
+
   # ---------------------------------------------------------------------------
   # Authentication helpers
   # ---------------------------------------------------------------------------
@@ -119,5 +134,23 @@ class ApplicationController < ActionController::Base
   # The raw Devise/warden user — bypasses impersonation logic.
   def warden_user
     @warden_user ||= warden.user
+  end
+
+  # Shared handler for {ActiveRecord::RecordNotFound} (and reused by
+  # {ErrorsController} for genuinely unmatched routes). Responds per format:
+  # a lighthearted illustrated HTML page for browser navigation (e.g. a
+  # stale inbox/email link to a download that has since expired), or a
+  # small structured JSON body for API/fetch clients so the SPA's existing
+  # error handling keeps working unchanged.
+  #
+  # @param exception [Exception, nil] the rescued exception, if any
+  def render_not_found(exception = nil)
+    Rails.logger.info("[404] #{exception.class}: #{exception.message}") if exception
+
+    respond_to do |format|
+      format.html { render "errors/not_found", layout: "errors", status: :not_found }
+      format.json { render json: { error: t("errors.not_found.json_message") }, status: :not_found }
+      format.any  { head :not_found }
+    end
   end
 end
