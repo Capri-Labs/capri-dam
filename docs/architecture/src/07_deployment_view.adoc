@@ -5,9 +5,12 @@ The Capri DAM ships as a single Docker image, deployed with **Kamal 2**
 (`config/deploy.yml`) to one or more plain Linux servers (VPS or bare metal —
 no managed PaaS/serverless required). `kamal-proxy` handles TLS termination
 (automatic Let's Encrypt), zero-downtime rollouts, and load balancing. See
-link:../deployment-guide/[the Deployment Guide] for the full operational
-playbook (prerequisites, secrets, first deploy, routine deploys/rollback,
-SSL, monitoring, backups).
+link:../deployment-guide-kamal/[the Kamal Deployment Guide] for the full
+operational playbook (prerequisites, secrets, first deploy, routine
+deploys/rollback, SSL, monitoring, backups). Two managed-infrastructure
+alternatives are also documented: link:../deployment-guide-aws/[AWS (ECS
+Fargate)] and link:../deployment-guide-azure-kubernetes/[Azure Kubernetes
+Service (AKS)].
 
 === Infrastructure Level 1: Reference Single-Host Topology
 

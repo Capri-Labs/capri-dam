@@ -3000,5 +3000,26 @@
     "notifications": {
       "loadFailed": "加载组失败。"
     }
+  },
+  "reportsFolderFilter": {
+    "label": "按文件夹筛选",
+    "placeholder": "搜索文件夹…",
+    "noOptions": "未找到文件夹",
+    "loading": "正在加载文件夹…"
+  },
+  "collectionProperties": {
+    "accessPolicies": {
+      "title": "群组访问策略",
+      "description": "为用户群组授予对此收藏的分级访问权限。一旦存在任何策略，只有拥有明确策略的群组（以及系统/超级管理员）才能查看、编辑或管理此收藏。",
+      "addGroup": "添加群组",
+      "add": "添加",
+      "empty": "未配置群组策略 — 此工作区使用上方的旧版允许/拒绝列表访问方式。",
+      "group": "群组",
+      "viewer": "查看者",
+      "editor": "编辑者",
+      "admin": "收藏管理员",
+      "deny": "拒绝",
+      "remove": "移除策略"
+    }
   }
 }

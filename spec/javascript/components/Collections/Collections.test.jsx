@@ -159,6 +159,39 @@ describe('Collections components', () => {
     await waitFor(() => expect(updateCollection).toHaveBeenCalledWith('spring-launch', expect.objectContaining({ name: 'Updated Workspace' })));
   });
 
+  it('manages group-scoped access policies from CollectionPropertiesDialog', async () => {
+    jest.spyOn(CollectionContextModule, 'useCollections').mockReturnValue({
+      updateCollection: jest.fn(),
+      bulkUpdateCollections: jest.fn(),
+    });
+    const group = { id: 7, name: 'EMEA Marketing', slug: 'emea-marketing', is_system: false };
+    const policy = { id: 1, group_id: 7, group_name: 'EMEA Marketing', view_access: true, edit_access: false, admin_access: false, explicit_deny: false };
+
+    global.fetch = mockFetch({
+      'GET /api/v1/user_groups': [group],
+      'GET /api/v1/collections/spring-launch/policies': { policies: [] },
+      'POST /api/v1/collections/spring-launch/policies': () => Promise.resolve({ ok: true, json: () => Promise.resolve({ success: true, policy }) }),
+      'DELETE /api/v1/collections/spring-launch/policies/7': () => Promise.resolve({ ok: true, json: () => Promise.resolve({ message: 'removed' }) }),
+    });
+
+    render(<CollectionPropertiesDialog open onClose={jest.fn()} selectedCollections={[collection]} />);
+
+    expect(await screen.findByText('collectionProperties.accessPolicies.empty')).toBeInTheDocument();
+
+    // Add the group via the autocomplete + Add button
+    const addInput = screen.getByLabelText('collectionProperties.accessPolicies.addGroup');
+    fireEvent.change(addInput, { target: { value: 'EMEA' } });
+    fireEvent.click(await screen.findByText('EMEA Marketing'));
+    fireEvent.click(screen.getByRole('button', { name: 'collectionProperties.accessPolicies.add' }));
+
+    expect(await screen.findByTestId('policy-row-7')).toBeInTheDocument();
+
+    // Remove the policy
+    fireEvent.click(screen.getByRole('button', { name: 'collectionProperties.accessPolicies.remove' }));
+
+    await waitFor(() => expect(screen.queryByTestId('policy-row-7')).not.toBeInTheDocument());
+  });
+
   it('bulk updates selected collections from CollectionPropertiesDialog', async () => {
     const bulkUpdateCollections = jest.fn().mockResolvedValue(true);
     jest.spyOn(CollectionContextModule, 'useCollections').mockReturnValue({
@@ -222,6 +255,45 @@ describe('Collections components', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Ask AI about this Collection' }));
     act(() => jest.advanceTimersByTime(1600));
     expect(await screen.findByText('Semantic Summary')).toBeInTheDocument();
+  });
+
+  it('configures a metadata-only smart rule and runs a real dry-run simulation', async () => {
+    const updateSmartRule = jest.fn().mockResolvedValue(collection);
+    const simulateSmartRule = jest.fn().mockResolvedValue([{ id: 99, title: 'Matched Asset' }]);
+    jest.spyOn(CollectionContextModule, 'useCollections').mockReturnValue({
+      updateSmartRule,
+      toggleAssetPin: jest.fn().mockResolvedValue(true),
+      simulateSmartRule,
+      temporalDate: '',
+    });
+    global.fetch = mockFetch({
+      'GET /api/v1/collections/spring-launch': collection,
+      'GET /api/v1/collections/spring-launch/cluster_map': { nodes: [] },
+    });
+
+    render(<CollectionDetail slug="spring-launch" onBack={jest.fn()} />);
+
+    expect(await screen.findByText('Spring Launch')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Configure Rules' }));
+
+    // Switch to metadata match mode
+    fireEvent.click(screen.getByRole('button', { name: 'Metadata / Tags' }));
+
+    fireEvent.change(screen.getByLabelText('Property key'), { target: { value: 'status' } });
+    fireEvent.change(screen.getByLabelText('Value(s), comma separated'), { target: { value: 'approved' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Add' }));
+
+    expect(screen.getByText('status: approved')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Run Dry-Run Simulation' }));
+    await waitFor(() => expect(simulateSmartRule).toHaveBeenCalledWith({ metadata_filters: { status: 'approved' } }));
+    expect(await screen.findByText('Matched Asset')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Activate Rule in Production' }));
+    await waitFor(() => expect(updateSmartRule).toHaveBeenCalledWith(
+      'spring-launch',
+      expect.objectContaining({ match_mode: 'metadata', metadata_filters: { status: 'approved' } })
+    ));
   });
 
   it('renders the Governance & Usage Violations banner collapsed by default and expands on click', async () => {

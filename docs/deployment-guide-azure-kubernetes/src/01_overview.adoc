@@ -1,0 +1,59 @@
+[[section-deployment-overview-azure-k8s]]
+== Overview
+
+=== Why AKS
+
+Capri DAM ships as a single Docker image (see the repository root `Dockerfile`) containing everything
+the app needs: Ruby 4.0.3, the precompiled JS/CSS bundle, `ffmpeg`, and headless LibreOffice. That same
+image runs unmodified on **Azure Kubernetes Service** as two Kubernetes `Deployment` workloads (`web`
+and `worker`), giving you:
+
+* **Declarative, version-controlled infrastructure** — every manifest in this guide (`Deployment`,
+  `Service`, `Ingress`, `ConfigMap`, `Secret`, `HorizontalPodAutoscaler`) can be committed to Git and
+  applied via `kubectl apply -f` or packaged as a Helm chart.
+* **Rolling, zero-downtime deploys** via Kubernetes' native `RollingUpdate` strategy — no extra
+  tooling required beyond what ships with any AKS cluster.
+* **Horizontal autoscaling** (`HorizontalPodAutoscaler`) reacting to CPU/memory or custom metrics,
+  scaling `web` pod count with traffic independently of `worker`.
+* **Portability** — if you ever need to move off Azure, the same manifests apply almost unchanged to
+  any other managed Kubernetes (EKS, GKE, or self-hosted) — only the managed-service integrations
+  (Blob Storage, Azure Cache for Redis, Flexible Server) would need swapping.
+
+This is **not** mutually exclusive with the other guides — see link:../deployment-guide-kamal/[Kamal]
+for a plain-VPS target and link:../deployment-guide-aws/[AWS/ECS] for a non-Kubernetes managed-container
+target. All three deploy the exact same Docker image and Rails application; only the surrounding
+infrastructure differs.
+
+=== What gets deployed
+
+[cols="1,2,3", options="header"]
+|===
+| Role | Kubernetes/Azure resource | Notes
+| `web` | `Deployment` `capri-dam-web` + `Service` (ClusterIP) + `Ingress` | Runs Thruster (`bin/thrust`) in front of Puma on container port 80. Ingress terminates TLS (via cert-manager) and routes to the `Service`.
+| `worker` | `Deployment` `capri-dam-worker` (same image, `command` override) | `bundle exec sidekiq -C config/sidekiq.yml`. No `Service`/`Ingress` — it exposes no HTTP endpoint.
+| Database | **Azure Database for PostgreSQL — Flexible Server** (PostgreSQL 16, pgvector extension) | Replaces the Kamal `pgvector/pgvector:pg16` accessory. Flexible Server supports the `azure.extensions` allow-list mechanism to enable `VECTOR`.
+| Cache/Queue | **Azure Cache for Redis** | Backs Sidekiq, Action Cable (`config/cable.yml`), and Coverband — same role as the Kamal `redis` accessory.
+| File storage | **Azure Blob Storage** | Replaces the local-disk Active Storage bind mount. Capri DAM's in-app `StorageBackend` admin screen already ships an `azure` provider (`StorageAdapters::AzureAdapter`) — no code changes required.
+| Image registry | **Azure Container Registry (ACR)** | Private registry for the built image; AKS pulls from here (via `az aks update --attach-acr`).
+| Ingress/TLS | **NGINX Ingress Controller + cert-manager** (Let's Encrypt) or **Application Gateway Ingress Controller (AGIC)** | Public HTTPS entrypoint; this guide uses ingress-nginx + cert-manager for portability, with AGIC noted as an Azure-native alternative.
+| Secrets | **Azure Key Vault** via the **Secrets Store CSI Driver** (or plain Kubernetes `Secret` objects) | `RAILS_MASTER_KEY` and connection strings.
+|===
+
+Like the AWS/ECS target, Kubernetes pods are ephemeral and **not** guaranteed to share a filesystem
+across replicas — this is why Blob Storage (not local disk) is the storage backend for this guide.
+
+=== Guide structure
+
+[cols="1,3", options="header"]
+|===
+| Chapter | Covers
+| <<section-azure-k8s-prerequisites,2. Prerequisites>> | Azure subscription, `az` CLI, `kubectl`, `helm`, DNS delegation.
+| <<section-azure-k8s-cluster-and-manifests,3. AKS Cluster & Kubernetes Manifests>> | Cluster creation, `Deployment`/`Service`/`Ingress`/`HPA` manifests, ACR integration.
+| <<section-azure-k8s-secrets-and-credentials,4. Secrets & Credentials>> | Azure Key Vault, Secrets Store CSI Driver, `RAILS_MASTER_KEY`, workload identity.
+| <<section-azure-k8s-managed-data-services,5. Managed Data Services>> | Azure DB for PostgreSQL Flexible Server (pgvector), Azure Cache for Redis, Blob Storage + the in-app `StorageBackend` switch.
+| <<section-azure-k8s-first-deployment-playbook,6. First Deployment Playbook>> | Copy-pasteable, ordered commands for the very first deploy.
+| <<section-azure-k8s-routine-deployments-and-rollback,7. Routine Deployments & Rollback>> | `kubectl rollout` workflow, image tag bumps, rollback.
+| <<section-azure-k8s-ssl-domains-and-ingress,8. SSL, Domains & Ingress>> | cert-manager, `Ingress` host rules, DNS, multiple domains.
+| <<section-azure-k8s-monitoring-and-troubleshooting,9. Monitoring & Troubleshooting>> | Azure Monitor/Container Insights, `kubectl logs`/`exec`, common failure modes.
+| <<section-azure-k8s-backup-and-disaster-recovery,10. Backups & Disaster Recovery>> | Flexible Server automated backups, Blob geo-redundancy, restore procedure.
+|===

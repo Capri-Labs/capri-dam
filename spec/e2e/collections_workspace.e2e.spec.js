@@ -315,6 +315,105 @@ test.describe('Collections workspace E2E', () => {
     });
 
     // ------------------------------------------------------------------
+    // 6. Metadata/tag-based smart collection rule (Feature 1).
+    // ------------------------------------------------------------------
+    test('configures a metadata-only smart rule and shows the real dry-run match count', async ({ page }) => {
+        const metaCollection = {
+            ...baseCollection,
+            slug: 'metadata-rule-e2e',
+            name: 'Metadata Rule E2E',
+            collection_type: 'smart',
+            collection_rule: null,
+        };
+
+        await page.route(`**/api/v1/collections/${metaCollection.slug}*`, (route) => {
+            if (route.request().method() !== 'GET') return route.continue();
+            route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(metaCollection) });
+        });
+        await page.route('**/api/v1/collections/simulate_rule', (route) => {
+            if (route.request().method() !== 'POST') return route.continue();
+            route.fulfill({
+                status: 200,
+                contentType: 'application/json',
+                body: JSON.stringify({
+                    matches: [ { id: 9020, title: 'Approved Asset', properties: { status: 'approved' } } ],
+                    count: 1,
+                    message: 'Simulation complete.',
+                }),
+            });
+        });
+        await page.route(`**/api/v1/collections/${metaCollection.slug}/rule`, (route) => {
+            if (route.request().method() !== 'POST') return route.continue();
+            route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ collection: metaCollection }) });
+        });
+
+        await page.goto(`/collections/${metaCollection.slug}`);
+        await expect(page.getByText('Metadata Rule E2E')).toBeVisible();
+
+        await page.getByRole('button', { name: /Configure Rules/i }).click();
+        await page.getByRole('button', { name: 'Metadata / Tags' }).click();
+
+        await page.getByLabel('Property key').fill('status');
+        await page.getByLabel('Value(s), comma separated').fill('approved');
+        await page.getByRole('button', { name: 'Add' }).click();
+
+        await expect(page.getByText('status: approved')).toBeVisible();
+
+        await page.getByRole('button', { name: 'Run Dry-Run Simulation' }).click();
+        await expect(page.getByText('Approved Asset')).toBeVisible();
+        await expect(page.getByText('1 theoretical matches')).toBeVisible();
+
+        await page.getByRole('button', { name: 'Activate Rule in Production' }).click();
+    });
+
+    // ------------------------------------------------------------------
+    // 7. Group-scoped Access Governance (Feature 2) — replaces dummy data
+    //    with real user-group policies via the Workspace Properties dialog.
+    // ------------------------------------------------------------------
+    test('adds a group access policy from Workspace Properties and reflects it in the matrix', async ({ page }) => {
+        await mockCollectionsIndex(page, [ baseCollection ]);
+        await page.route('**/api/v1/user_groups*', (route) => {
+            route.fulfill({
+                status: 200,
+                contentType: 'application/json',
+                body: JSON.stringify([ { id: 42, name: 'EMEA Marketing', slug: 'emea-marketing', is_system: false } ]),
+            });
+        });
+        await page.route(`**/api/v1/collections/${baseCollection.slug}/policies`, (route) => {
+            const method = route.request().method();
+            if (method === 'GET') {
+                return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ policies: [] }) });
+            }
+            if (method === 'POST') {
+                return route.fulfill({
+                    status: 200,
+                    contentType: 'application/json',
+                    body: JSON.stringify({
+                        success: true,
+                        policy: { id: 1, group_id: 42, group_name: 'EMEA Marketing', view_access: true, edit_access: false, admin_access: false, explicit_deny: false },
+                    }),
+                });
+            }
+            return route.continue();
+        });
+
+        await page.goto('/collections');
+        await expect(page.getByText('Spring Launch E2E')).toBeVisible();
+
+        await page.getByTestId('MoreVertIcon').click();
+        await page.getByText('Edit Properties & Access').click();
+
+        await expect(page.getByText('collectionProperties.accessPolicies.empty').or(page.getByText('Group Access Policies'))).toBeAttached();
+        await page.getByText('Group Access Policies').scrollIntoViewIfNeeded();
+
+        await page.getByLabel(/Add group/i).fill('EMEA');
+        await page.getByText('EMEA Marketing').click();
+        await page.getByRole('button', { name: /^Add$/i }).click();
+
+        await expect(page.getByText('EMEA Marketing')).toBeVisible();
+    });
+
+    // ------------------------------------------------------------------
     // 5. Collection slug-based nested routing (/collections/*path).
     // ------------------------------------------------------------------
     test('supports slug-based deep-link routing to a collection detail page', async ({ page }) => {

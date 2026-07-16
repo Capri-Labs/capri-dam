@@ -60,6 +60,113 @@ RSpec.describe Collection, type: :model do
       expect(col.accessible_by?(user)).to be(true)
       expect(col.accessible_by?(outsider)).to be(false)
     end
+
+    context 'when a CollectionPolicy exists (group-governed mode)' do
+      it 'grants access to a group with any access tier and ignores legacy allow/deny lists' do
+        group = create(:user_group)
+        user = create(:user, admin: false)
+        user.user_groups << group
+        col = create(:collection, allowed_groups: [ 'Someone Else' ])
+        create(:collection_policy, :viewer, collection: col, user_group: group)
+
+        expect(col.accessible_by?(user)).to be(true)
+      end
+
+      it 'denies access to users with no matching policy' do
+        group = create(:user_group)
+        other_group = create(:user_group)
+        user = create(:user, admin: false)
+        user.user_groups << other_group
+        col = create(:collection)
+        create(:collection_policy, :viewer, collection: col, user_group: group)
+
+        expect(col.accessible_by?(user)).to be(false)
+      end
+
+      it 'lets explicit_deny override any other granted access' do
+        group = create(:user_group)
+        user = create(:user, admin: false)
+        user.user_groups << group
+        col = create(:collection)
+        create(:collection_policy, :explicit_deny, collection: col, user_group: group)
+
+        expect(col.accessible_by?(user)).to be(false)
+      end
+    end
+  end
+
+  describe '#editable_by?' do
+    it 'grants access to admins unconditionally' do
+      admin = create(:user, admin: true)
+      col = create(:collection)
+      expect(col.editable_by?(admin)).to be(true)
+    end
+
+    it 'grants access to the creator when no policies have been configured yet' do
+      owner = create(:user, admin: false)
+      col = create(:collection, user: owner)
+      expect(col.editable_by?(owner)).to be(true)
+    end
+
+    it 'revokes creator bootstrap access once an explicit policy exists' do
+      owner = create(:user, admin: false)
+      group = create(:user_group)
+      col = create(:collection, user: owner)
+      create(:collection_policy, :viewer, collection: col, user_group: group)
+
+      expect(col.editable_by?(owner)).to be(false)
+    end
+
+    it 'grants access to a group with edit_access or admin_access' do
+      group = create(:user_group)
+      user = create(:user, admin: false)
+      user.user_groups << group
+      col = create(:collection)
+      create(:collection_policy, :editor, collection: col, user_group: group)
+
+      expect(col.editable_by?(user)).to be(true)
+    end
+
+    it 'denies access to a group with only view_access' do
+      group = create(:user_group)
+      user = create(:user, admin: false)
+      user.user_groups << group
+      col = create(:collection)
+      create(:collection_policy, :viewer, collection: col, user_group: group)
+
+      expect(col.editable_by?(user)).to be(false)
+    end
+  end
+
+  describe '#manageable_by? / #deletable_by?' do
+    it 'grants access to admins unconditionally' do
+      admin = create(:user, admin: true)
+      col = create(:collection)
+      expect(col.manageable_by?(admin)).to be(true)
+      expect(col.deletable_by?(admin)).to be(true)
+    end
+
+    it 'denies a group with only edit_access' do
+      group = create(:user_group)
+      user = create(:user, admin: false)
+      user.user_groups << group
+      col = create(:collection)
+      create(:collection_policy, :editor, collection: col, user_group: group)
+
+      expect(col.manageable_by?(user)).to be(false)
+      expect(col.deletable_by?(user)).to be(false)
+    end
+
+    it 'grants a group with admin_access' do
+      group = create(:user_group)
+      user = create(:user, admin: false)
+      user.user_groups << group
+      col = create(:collection)
+      create(:collection_policy, :collection_admin, collection: col, user_group: group)
+
+      expect(col.manageable_by?(user)).to be(true)
+      expect(col.deletable_by?(user)).to be(true)
+    end
   end
 
   describe '#compliance_violations' do

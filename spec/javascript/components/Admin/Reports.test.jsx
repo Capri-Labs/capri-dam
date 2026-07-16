@@ -108,6 +108,26 @@ describe('Admin Reports components', () => {
     expect(onCreateExport).toHaveBeenCalled();
   });
 
+  it('AnalyticsDashboard folder filter re-fetches analytics scoped to the selected folder', async () => {
+    await act(async () => { render(<AnalyticsDashboard onCreateExport={jest.fn()} />); });
+    expect(await screen.findByText('System Analytics')).toBeInTheDocument();
+
+    global.fetch.mockClear();
+
+    const folderInput = await screen.findByTestId('report-folder-filter');
+    const input = folderInput.querySelector('input');
+    fireEvent.mouseDown(input);
+    fireEvent.change(input, { target: { value: 'Marketing' } });
+
+    const option = await screen.findByTestId('report-folder-option-1');
+    await act(async () => { fireEvent.click(option); });
+
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringContaining('/admin/reports/analytics?range=last_30_days&folder_ids=1'),
+      expect.anything()
+    );
+  });
+
   it('DownloadCenter renders a file list', async () => {
     await act(async () => { render(<DownloadCenter refreshTrigger={0} />); });
     expect(await screen.findByText('Asset Audit')).toBeInTheDocument();

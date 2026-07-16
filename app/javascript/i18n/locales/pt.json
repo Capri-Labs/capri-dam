@@ -3000,5 +3000,26 @@
     "notifications": {
       "loadFailed": "Falha ao carregar grupos."
     }
+  },
+  "reportsFolderFilter": {
+    "label": "Filtrar por pasta",
+    "placeholder": "Pesquisar pastas…",
+    "noOptions": "Nenhuma pasta encontrada",
+    "loading": "Carregando pastas…"
+  },
+  "collectionProperties": {
+    "accessPolicies": {
+      "title": "Políticas de acesso por grupo",
+      "description": "Conceda aos grupos de usuários acesso escalonado a esta coleção. Assim que existir uma política, somente grupos com uma política explícita (e administradores de sistema/super administradores) poderão visualizar, editar ou gerenciar esta coleção.",
+      "addGroup": "Adicionar grupo",
+      "add": "Adicionar",
+      "empty": "Nenhuma política de grupo configurada — este espaço de trabalho usa o acesso legado de lista de permissões/negações acima.",
+      "group": "Grupo",
+      "viewer": "Visualizador",
+      "editor": "Editor",
+      "admin": "Administrador da coleção",
+      "deny": "Negar",
+      "remove": "Remover política"
+    }
   }
 }

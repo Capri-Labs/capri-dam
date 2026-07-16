@@ -89,4 +89,50 @@ RSpec.describe Folder, type: :model do
       expect(child.self_or_ancestor_match?(parent.id)).to be false
     end
   end
+
+  # ===========================================================================
+  # .expand_ids_with_descendants — used by the Reports folder filter to
+  # implicitly include sub-folders when a parent folder is selected.
+  # ===========================================================================
+  describe '.expand_ids_with_descendants' do
+    it 'includes the folder itself plus every descendant' do
+      user       = create(:user)
+      root       = create(:folder, user: user, name: 'Root')
+      child      = create(:folder, user: user, parent: root, name: 'Child')
+      grandchild = create(:folder, user: user, parent: child, name: 'Grandchild')
+      unrelated  = create(:folder, user: user, name: 'Unrelated')
+
+      result = Folder.expand_ids_with_descendants([ root.id ])
+
+      expect(result).to include(root.id.to_s, child.id.to_s, grandchild.id.to_s)
+      expect(result).not_to include(unrelated.id.to_s)
+    end
+
+    it 'handles multiple starting ids without duplicates' do
+      user  = create(:user)
+      a     = create(:folder, user: user, name: 'A')
+      a_kid = create(:folder, user: user, parent: a, name: 'AKid')
+      b     = create(:folder, user: user, name: 'B')
+
+      result = Folder.expand_ids_with_descendants([ a.id, b.id, a.id ])
+
+      expect(result.tally.values).to all(eq(1))
+      expect(result).to match_array([ a.id.to_s, a_kid.id.to_s, b.id.to_s ])
+    end
+
+    it 'returns an empty array for blank input' do
+      expect(Folder.expand_ids_with_descendants(nil)).to eq([])
+      expect(Folder.expand_ids_with_descendants([])).to eq([])
+    end
+
+    it 'ignores soft-deleted descendant folders' do
+      user    = create(:user)
+      root    = create(:folder, user: user, name: 'Root2')
+      trashed = create(:folder, user: user, parent: root, name: 'Trashed', deleted_at: Time.current)
+
+      result = Folder.expand_ids_with_descendants([ root.id ])
+
+      expect(result).not_to include(trashed.id.to_s)
+    end
+  end
 end

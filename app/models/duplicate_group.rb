@@ -89,6 +89,37 @@ class DuplicateGroup < ApplicationRecord
     )
   end
 
+  # Recomputes membership after a member {Asset} is soft-deleted (moved to
+  # the Trash Bin) or restored, keeping the Duplicate Manager in sync
+  # without a full rescan:
+  #
+  # * If fewer than 2 *active* (non-trashed) members remain, the group is
+  #   auto-resolved (+status+ "resolved", +resolution_action+ left +nil+ so
+  #   it's distinguishable from a user-driven resolution) and disappears
+  #   from the pending list.
+  # * If a previously auto-resolved group regains 2+ active members (an
+  #   asset was restored from the bin), it is reopened to +pending+ so the
+  #   user can review it again.
+  #
+  # Called from {Asset}'s +after_commit+ hook whenever +deleted_at+ changes.
+  # Hard deletion is handled separately by {DuplicateGroupAsset#auto_resolve_group_if_depleted}.
+  #
+  # @return [void]
+  def recalculate_active_membership!
+    return if status == "dismissed"
+
+    active_count = assets.merge(Asset.active).count
+
+    if status == "pending"
+      update!(total_count: active_count)
+      if active_count < 2
+        update!(status: "resolved", resolution_action: nil, resolved_at: Time.current)
+      end
+    elsif status == "resolved" && resolution_action.nil? && active_count >= 2
+      update!(status: "pending", total_count: active_count, resolved_at: nil, resolved_by_id: nil)
+    end
+  end
+
   # Human-readable summary for notifications.
   #
   # @return [String]

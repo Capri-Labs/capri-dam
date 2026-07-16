@@ -8,6 +8,7 @@ module Types
     field :create_collection,            mutation: Mutations::CreateCollection
     field :add_asset_to_collection,      mutation: Mutations::AddAssetToCollection
     field :remove_asset_from_collection, mutation: Mutations::RemoveAssetFromCollection
+    field :configure_collection_rule,    mutation: Mutations::ConfigureCollectionRule
 
     # Image Profiles
     field :create_image_profile, mutation: Mutations::CreateImageProfile

@@ -1,0 +1,82 @@
+[[section-azure-k8s-first-deployment-playbook]]
+== First Deployment Playbook
+
+Ordered, copy-pasteable commands for standing up the very first environment, assuming
+<<section-azure-k8s-cluster-and-manifests>>, <<section-azure-k8s-secrets-and-credentials>>, and
+<<section-azure-k8s-managed-data-services>> resources already exist.
+
+. **Build and push the image**
++
+[source,bash]
+----
+docker build -t capri-dam .
+az acr login --name capridamacr
+docker tag capri-dam:latest capridamacr.azurecr.io/capri-dam:latest
+docker push capridamacr.azurecr.io/capri-dam:latest
+----
+
+. **Apply the `ConfigMap` and `Secret`** from <<section-azure-k8s-secrets-and-credentials>>.
+
+. **Run the database setup as a one-off `Job`** (not via the long-running `worker` `Deployment` — this
+  only needs to run once):
++
+[source,yaml]
+----
+apiVersion: batch/v1
+kind: Job
+metadata: { name: capri-dam-db-prepare, namespace: capri-dam }
+spec:
+  backoffLimit: 0
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: db-prepare
+          image: capridamacr.azurecr.io/capri-dam:latest
+          command: ["bin/rails", "db:prepare"]
+          envFrom: [{ configMapRef: { name: capri-dam-config } }]
+          env:
+            - name: RAILS_MASTER_KEY
+              valueFrom: { secretKeyRef: { name: capri-dam-secrets, key: rails-master-key } }
+            - name: DATABASE_URL
+              valueFrom: { secretKeyRef: { name: capri-dam-secrets, key: database-url } }
+----
++
+[source,bash]
+----
+kubectl apply -f db-prepare-job.yaml
+kubectl wait --for=condition=complete --timeout=300s job/capri-dam-db-prepare -n capri-dam
+----
+
+. **Apply the `Deployment`, `Service`, `Ingress`, and `HorizontalPodAutoscaler` manifests** from
+  <<section-azure-k8s-cluster-and-manifests>>:
++
+[source,bash]
+----
+kubectl apply -f web-deployment.yaml -f worker-deployment.yaml \
+  -f web-service.yaml -f web-ingress.yaml -f web-hpa.yaml -n capri-dam
+----
+
+. **Wait for rollout to complete**:
++
+[source,bash]
+----
+kubectl rollout status deployment/capri-dam-web -n capri-dam
+kubectl rollout status deployment/capri-dam-worker -n capri-dam
+----
+
+. **Point DNS at the ingress controller's public IP** (see
+  <<section-azure-k8s-ssl-domains-and-ingress>> for the full cert-manager + DNS walkthrough) and
+  confirm:
++
+[source,bash]
+----
+curl -I https://dam.example.com/up
+----
++
+A `200 OK` confirms the web deployment is live end-to-end (Ingress → Service → pod → Rails health
+check).
+
+. **Create the first admin user** — same one-off `Job` pattern as step 3, overriding the command to
+  `bin/rails runner "..."` or a dedicated rake task, exactly as documented in the
+  link:../developer-guide/[Developer Guide]'s initial-setup section.

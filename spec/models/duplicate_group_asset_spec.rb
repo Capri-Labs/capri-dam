@@ -73,4 +73,48 @@ RSpec.describe DuplicateGroupAsset, type: :model do
       expect { asset.destroy! }.not_to raise_error
     end
   end
+
+  # ---------------------------------------------------------------------------
+  # after_destroy safety net — covers destroy paths that bypass
+  # {.cleanup_for_asset!} entirely (e.g. `Asset#destroy!`'s own
+  # `dependent: :destroy` cascade), which would otherwise leave a stale
+  # single-member "pending" group visible in the Duplicate Manager.
+  # ---------------------------------------------------------------------------
+  describe "after_destroy callback (hard-destroy safety net)" do
+    it "auto-resolves the parent group when a plain destroy drops membership below 2" do
+      asset = create(:asset)
+      group = create(:duplicate_group, status: "pending")
+      dga = create(:duplicate_group_asset, duplicate_group: group, asset: asset)
+      create(:duplicate_group_asset, duplicate_group: group) # only 1 other member
+
+      dga.destroy!
+
+      expect(group.reload.status).to eq("resolved")
+    end
+
+    it "auto-resolves when Asset#destroy! cascades via dependent: :destroy, bypassing cleanup_for_asset!" do
+      asset = create(:asset)
+      group = create(:duplicate_group, status: "pending")
+      create(:duplicate_group_asset, duplicate_group: group, asset: asset)
+      create(:duplicate_group_asset, duplicate_group: group)
+
+      # Deliberately skip DuplicateGroupAsset.cleanup_for_asset! to prove the
+      # model-level callback is a real safety net, not just a duplicate of
+      # the explicit cleanup path.
+      asset.destroy!
+
+      expect(group.reload.status).to eq("resolved")
+    end
+
+    it "leaves the group pending when 2+ members remain after the destroy" do
+      asset = create(:asset)
+      group = create(:duplicate_group, status: "pending")
+      dga = create(:duplicate_group_asset, duplicate_group: group, asset: asset)
+      create_list(:duplicate_group_asset, 2, duplicate_group: group)
+
+      dga.destroy!
+
+      expect(group.reload.status).to eq("pending")
+    end
+  end
 end

@@ -30,12 +30,17 @@ real code/CI behaviour, not hypothesised. Treat this as the actionable backlog.
 
 | **OpenAPI/Pact schema type drift on `Folder#id`**
 | `swagger/v1/swagger.yaml` (`GET /api/v1/folders` response schema)
-| The documented schema still declares `folders[].id` as `type: integer`, but
-  `Folder` (like `Asset`) uses a UUID string primary key. This fails Pact
-  provider verification (`spec/pact/provider/api_v1_pact_spec.rb`) with
-  `expected integer, but received String` whenever the "list folders"
-  interaction runs against real data.
-| 🔴 Open — needs a swagger annotation fix + `make api-docs` regeneration.
+| The documented schema declared `folders[].id` as `type: integer`, but
+  `Folder` (like `Asset`) uses a UUID string primary key. Fixed by correcting
+  the rswag annotation in `spec/requests/api/v1/folders_spec.rb` — both the
+  index `folders[].id` field and the same-file `GET /api/v1/folders/{id}`
+  nested `assets[].id` field (identical bug class — `Asset.id` is also a
+  UUID) now declare `type: string, format: uuid`, and `swagger/v1/swagger.yaml`
+  was regenerated via `make swagger-docs`. Verified with the committee-based
+  OpenAPI contract validator (`spec/requests/api/v1/folders_request_spec.rb`,
+  `OPENAPI_CONTRACT=1`, 17/17 passing, no schema-mismatch warnings) and the
+  Pact provider spec (`spec/pact/provider/api_v1_pact_spec.rb`, 8/8 passing).
+| 🟢 Resolved.
 
 | **Lexical search has no index (`ILIKE` table scan)**
 | `Api::V1::SearchController`, see ADR 3 (<<section-design-decisions>>)
@@ -43,7 +48,15 @@ real code/CI behaviour, not hypothesised. Treat this as the actionable backlog.
   `GIN`/`tsvector` index. Fine at current catalog sizes; will need a real
   full-text index (or reconsidering a sidecar search service) once the
   asset library grows large enough for scan latency to matter.
-| 🟢 Acceptable today; revisit at scale.
+| 🟢 **Resolved** — `pg_trgm` GIN indexes added (migration
+  `20260716113000_add_trigram_search_indexes_for_lexical_search`) on
+  `assets.title`, `properties->>'original_filename'`, `properties::text`,
+  `properties->>'content_type'`, and `folders.name`. Verified via `EXPLAIN`
+  that the planner uses a `Bitmap Index Scan` for every `ILIKE` pattern the
+  controller runs (substring/prefix/suffix), with **no change** to existing
+  substring-match search semantics. A full `tsvector`-based engine (with
+  ranking/stemming) remains a candidate upgrade if faceted relevance ranking
+  is ever needed, but the immediate "unindexed scan" risk is closed.
 
 | **Uneven E2E coverage across modules**
 | `spec/e2e/**`

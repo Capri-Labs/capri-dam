@@ -1,0 +1,63 @@
+[[section-aws-ssl-domains-and-routing]]
+== SSL, Domains & ALB Routing
+
+=== Requesting a certificate (ACM)
+
+[source,bash]
+----
+aws acm request-certificate --domain-name dam.example.com \
+  --validation-method DNS --subject-alternative-names "*.dam.example.com"
+----
+
+Add the returned CNAME validation record to your DNS zone (Route 53 or your existing registrar).
+Once ACM shows `ISSUED`, the certificate is ready to attach to the ALB listener.
+
+=== HTTPS listener + HTTP→HTTPS redirect
+
+[source,bash]
+----
+aws elbv2 create-listener --load-balancer-arn "$ALB_ARN" --protocol HTTPS --port 443 \
+  --certificates CertificateArn="$ACM_CERT_ARN" \
+  --default-actions Type=forward,TargetGroupArn="$WEB_TG_ARN"
+
+aws elbv2 create-listener --load-balancer-arn "$ALB_ARN" --protocol HTTP --port 80 \
+  --default-actions Type=redirect,RedirectConfig='{Protocol=HTTPS,Port=443,StatusCode=HTTP_301}'
+----
+
+This mirrors the Kamal guide's Traefik/kamal-proxy-managed automatic HTTPS — here ACM + the ALB
+listener perform the equivalent role, with AWS handling certificate renewal automatically (no
+`certbot` cron job to maintain).
+
+=== DNS: pointing your domain at the ALB
+
+If using Route 53 for the zone, create an **ALIAS** record (not a plain CNAME — ALIAS records can
+target an apex/root domain and resolve without an extra DNS lookup):
+
+[source,bash]
+----
+aws route53 change-resource-record-sets --hosted-zone-id "$ZONE_ID" --change-batch '{
+  "Changes": [{
+    "Action": "UPSERT",
+    "ResourceRecordSet": {
+      "Name": "dam.example.com",
+      "Type": "A",
+      "AliasTarget": { "HostedZoneId": "'"$ALB_HOSTED_ZONE_ID"'", "DNSName": "'"$ALB_DNS_NAME"'", "EvaluateTargetHealth": true }
+    }
+  }]
+}'
+----
+
+If your DNS is hosted elsewhere, add a `CNAME dam.example.com → <alb-dns-name>` instead (apex domains
+can't use CNAME — use your registrar's ALIAS/ANAME equivalent, or move the zone to Route 53).
+
+=== Multiple domains / environments
+
+Add additional ALB listener rules (host-header conditions) to route e.g. `staging.dam.example.com` to
+a separate target group/service on the same ALB, avoiding a second load balancer per environment:
+
+[source,bash]
+----
+aws elbv2 create-rule --listener-arn "$HTTPS_LISTENER_ARN" --priority 10 \
+  --conditions Field=host-header,Values=staging.dam.example.com \
+  --actions Type=forward,TargetGroupArn="$STAGING_WEB_TG_ARN"
+----

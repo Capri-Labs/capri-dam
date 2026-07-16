@@ -3000,5 +3000,26 @@
     "notifications": {
       "loadFailed": "그룹을 불러오지 못했습니다."
     }
+  },
+  "reportsFolderFilter": {
+    "label": "폴더별 필터링",
+    "placeholder": "폴더 검색…",
+    "noOptions": "폴더를 찾을 수 없습니다",
+    "loading": "폴더 불러오는 중…"
+  },
+  "collectionProperties": {
+    "accessPolicies": {
+      "title": "그룹 액세스 정책",
+      "description": "사용자 그룹에 이 컬렉션에 대한 계층별 액세스 권한을 부여합니다. 정책이 하나라도 존재하면 명시적 정책이 있는 그룹(및 시스템/슈퍼 관리자)만 이 컬렉션을 보고, 편집하고, 관리할 수 있습니다.",
+      "addGroup": "그룹 추가",
+      "add": "추가",
+      "empty": "구성된 그룹 정책이 없습니다 — 이 작업 영역은 위의 레거시 허용/거부 목록 액세스를 사용합니다.",
+      "group": "그룹",
+      "viewer": "뷰어",
+      "editor": "편집자",
+      "admin": "컬렉션 관리자",
+      "deny": "거부",
+      "remove": "정책 제거"
+    }
   }
 }

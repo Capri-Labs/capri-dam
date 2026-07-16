@@ -10,6 +10,7 @@ import {
     ExpandMore, ExpandLess, Lightbulb, Warning, EmojiObjects
 } from '@mui/icons-material';
 import StatCard from './StatCard';
+import ReportFolderFilter from './ReportFolderFilter';
 import AssetTrendChart from './charts/AssetTrendChart';
 import ContentTypeDonut from './charts/ContentTypeDonut';
 import StatusBreakdownChart from './charts/StatusBreakdownChart';
@@ -35,14 +36,18 @@ export default function AnalyticsDashboard({ onCreateExport }) {
     const [analytics, setAnalytics] = useState(null);
     const [loading, setLoading]     = useState(true);
     const [insightsOpen, setInsightsOpen] = useState(true);
+    const [folderIds, setFolderIds] = useState([]);
     const lastRangeRef = useRef(null);
 
-    const fetchAnalytics = useCallback(async (rangeKey = range) => {
+    const fetchAnalytics = useCallback(async (rangeKey = range, folderIdsOverride = folderIds) => {
         setLoading(true);
         try {
             let url = `/admin/reports/analytics?range=${rangeKey}`;
             if (rangeKey === 'custom' && customFrom) {
                 url += `&from=${customFrom}&to=${customTo || new Date().toISOString().split('T')[0]}`;
+            }
+            if (folderIdsOverride.length > 0) {
+                url += `&folder_ids=${folderIdsOverride.join(',')}`;
             }
             const res  = await fetch(url, { headers: { Accept: 'application/json' } });
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -54,7 +59,7 @@ export default function AnalyticsDashboard({ onCreateExport }) {
         } finally {
             setLoading(false);
         }
-    }, [range, customFrom, customTo, notify]);
+    }, [range, customFrom, customTo, folderIds, notify]);
 
     useEffect(() => { fetchAnalytics(); }, []);
 
@@ -64,6 +69,11 @@ export default function AnalyticsDashboard({ onCreateExport }) {
     };
 
     const handleCustomApply = () => fetchAnalytics('custom');
+
+    const handleFolderFilterChange = (newFolderIds) => {
+        setFolderIds(newFolderIds);
+        fetchAnalytics(range, newFolderIds);
+    };
 
     const s    = analytics?.stats || {};
     const ts   = analytics?.time_series?.combined || [];
@@ -93,6 +103,9 @@ export default function AnalyticsDashboard({ onCreateExport }) {
                             ))}
                         </Select>
                     </FormControl>
+
+                    {/* Folder filter */}
+                    <ReportFolderFilter value={folderIds} onChange={handleFolderFilterChange} />
 
                     {range === 'custom' && (
                         <>

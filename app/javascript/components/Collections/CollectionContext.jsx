@@ -174,16 +174,13 @@ export function CollectionProvider({ children }) {
         }
     };
 
-    const simulateSmartRule = async (prompt, threshold) => {
+    const simulateSmartRule = async (options) => {
         try {
             const csrfToken = document.querySelector('[name="csrf-token"]').content;
             const res = await fetch('/api/v1/collections/simulate_rule', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
-                body: JSON.stringify({
-                    semantic_prompt: prompt,
-                    similarity_threshold: threshold
-                })
+                body: JSON.stringify(options)
             });
             const data = await res.json();
             if (res.ok) {

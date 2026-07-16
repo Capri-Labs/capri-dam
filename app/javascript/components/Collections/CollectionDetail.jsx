@@ -3,7 +3,7 @@ import {
     Box, Typography, Button, Grid, Card, CardContent,
     IconButton, Chip, Stack, CircularProgress, Menu, MenuItem, Paper,
     Dialog, DialogTitle, DialogContent, DialogActions, TextField, Slider, Divider, ImageListItemBar, ImageListItem,
-    ImageList, Tooltip, Collapse
+    ImageList, Tooltip, Collapse, ToggleButton, ToggleButtonGroup
 } from '@mui/material';
 import {
     ArrowBack, Share, MoreVert, SettingsSuggest,
@@ -26,7 +26,9 @@ export default function CollectionDetail({ slug, onBack }) {
     const [loading, setLoading] = useState(true);
 
     const [openRuleDialog, setOpenRuleDialog] = useState(false);
-    const [ruleForm, setRuleForm] = useState({ semantic_prompt: '', similarity_threshold: 0.8 });
+    const [ruleForm, setRuleForm] = useState({ match_mode: 'semantic', semantic_prompt: '', similarity_threshold: 0.8, metadata_filters: {} });
+    const [filterKeyDraft, setFilterKeyDraft] = useState('');
+    const [filterValueDraft, setFilterValueDraft] = useState('');
 
     const [simulating, setSimulating] = useState(false);
     const [simulationResults, setSimulationResults] = useState(null);
@@ -131,17 +133,48 @@ export default function CollectionDetail({ slug, onBack }) {
 
     const openConfigurator = () => {
         setRuleForm({
+            match_mode: collection.collection_rule?.match_mode || 'semantic',
             semantic_prompt: collection.collection_rule?.semantic_prompt || '',
-            similarity_threshold: parseFloat(collection.collection_rule?.similarity_threshold) || 0.8
+            similarity_threshold: parseFloat(collection.collection_rule?.similarity_threshold) || 0.8,
+            metadata_filters: collection.collection_rule?.metadata_filters || {}
         });
+        setFilterKeyDraft('');
+        setFilterValueDraft('');
         setSimulationResults(null); // Reset sandbox on open
         setOpenRuleDialog(true);
     };
 
+    const addMetadataFilter = () => {
+        if (!filterKeyDraft.trim()) return;
+        const values = filterValueDraft.split(',').map((v) => v.trim()).filter(Boolean);
+        setRuleForm((prev) => ({
+            ...prev,
+            metadata_filters: { ...prev.metadata_filters, [filterKeyDraft.trim()]: values.length > 1 ? values : (values[0] ?? '') }
+        }));
+        setFilterKeyDraft('');
+        setFilterValueDraft('');
+    };
+
+    const removeMetadataFilter = (key) => {
+        setRuleForm((prev) => {
+            const next = { ...prev.metadata_filters };
+            delete next[key];
+            return { ...prev, metadata_filters: next };
+        });
+    };
+
+    const usesMetadata = ruleForm.match_mode === 'metadata' || ruleForm.match_mode === 'hybrid';
+    const usesSemantic = ruleForm.match_mode === 'semantic' || ruleForm.match_mode === 'hybrid';
+
     const handleSimulate = async () => {
+        if (usesMetadata && Object.keys(ruleForm.metadata_filters || {}).length > 0) {
+            const results = await simulateSmartRule({ metadata_filters: ruleForm.metadata_filters });
+            setSimulationResults(results || []);
+            return;
+        }
         if (!ruleForm.semantic_prompt) return;
         setSimulating(true);
-        const results = await simulateSmartRule(ruleForm.semantic_prompt, ruleForm.similarity_threshold);
+        const results = await simulateSmartRule({ semantic_prompt: ruleForm.semantic_prompt, similarity_threshold: ruleForm.similarity_threshold });
         setSimulationResults(results || []);
         setSimulating(false);
     };
@@ -240,10 +273,19 @@ export default function CollectionDetail({ slug, onBack }) {
                         )}
                         {isSmart && collection.collection_rule && (
                             <Box sx={{ p: 1.5, bgcolor: '#f8fafc', borderRadius: 2, border: '1px dashed #cbd5e1', display: 'inline-block', textAlign: 'left' }}>
-                                <Typography variant="caption" sx={{ fontWeight: 700, color: '#475569', display: 'block' }}>Active Routing Rule:</Typography>
-                                <Typography variant="body2" sx={{ color: '#0f172a', fontStyle: 'italic' }}>
-                                    "{collection.collection_rule.semantic_prompt}" (Threshold: {collection.collection_rule.similarity_threshold})
+                                <Typography variant="caption" sx={{ fontWeight: 700, color: '#475569', display: 'block' }}>
+                                    Active Routing Rule ({collection.collection_rule.match_mode || 'semantic'}):
                                 </Typography>
+                                {(collection.collection_rule.match_mode !== 'metadata') && collection.collection_rule.semantic_prompt && (
+                                    <Typography variant="body2" sx={{ color: '#0f172a', fontStyle: 'italic' }}>
+                                        "{collection.collection_rule.semantic_prompt}" (Threshold: {collection.collection_rule.similarity_threshold})
+                                    </Typography>
+                                )}
+                                {(collection.collection_rule.match_mode === 'metadata' || collection.collection_rule.match_mode === 'hybrid') && collection.collection_rule.metadata_filters && Object.keys(collection.collection_rule.metadata_filters).length > 0 && (
+                                    <Typography variant="body2" sx={{ color: '#0f172a' }}>
+                                        {Object.entries(collection.collection_rule.metadata_filters).map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(' or ') : v}`).join(', ')}
+                                    </Typography>
+                                )}
                             </Box>
                         )}
                     </Box>
@@ -431,38 +473,94 @@ export default function CollectionDetail({ slug, onBack }) {
 
                         {/* LEFT COLUMN: The Configurator */}
                         <Grid size={{ xs: 12, md: 5 }} sx={{ p: 3, borderRight: { md: '1px solid #e2e8f0' }, bgcolor: '#f8fafc' }}>
-                            <Typography variant="body2" color="textSecondary" sx={{ mb: 3 }}>
-                                Define semantic boundaries. Assets meeting the Cosine Similarity threshold will be autonomously routed here.
-                            </Typography>
+                            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>Match Mode</Typography>
+                            <ToggleButtonGroup
+                                exclusive
+                                fullWidth
+                                size="small"
+                                value={ruleForm.match_mode}
+                                onChange={(e, val) => val && setRuleForm({ ...ruleForm, match_mode: val })}
+                                sx={{ mb: 3, bgcolor: '#fff' }}
+                            >
+                                <ToggleButton value="semantic">Semantic (AI)</ToggleButton>
+                                <ToggleButton value="metadata">Metadata / Tags</ToggleButton>
+                                <ToggleButton value="hybrid">Hybrid</ToggleButton>
+                            </ToggleButtonGroup>
 
-                            <TextField
-                                fullWidth multiline rows={4} label="Semantic AI Prompt"
-                                placeholder="e.g., High resolution outdoor lifestyle shots involving snow"
-                                value={ruleForm.semantic_prompt}
-                                onChange={(e) => setRuleForm({...ruleForm, semantic_prompt: e.target.value})}
-                                sx={{ mb: 4, bgcolor: '#fff' }}
-                            />
+                            {usesSemantic && (
+                                <>
+                                    <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
+                                        Define semantic boundaries. Assets meeting the Cosine Similarity threshold will be autonomously routed here.
+                                    </Typography>
 
-                            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>Cosine Similarity Threshold</Typography>
-                            <Box sx={{ px: 2, mb: 2 }}>
-                                <Slider
-                                    value={Number(ruleForm.similarity_threshold) || 0.8}
-                                    min={0.5} max={0.99} step={0.01}
-                                    valueLabelDisplay="auto"
-                                    onChange={(e, val) => setRuleForm({...ruleForm, similarity_threshold: val})}
-                                    sx={{ color: '#5e35b1' }}
-                                />
-                            </Box>
-                            <Typography variant="caption" color="textSecondary">
-                                Currently set to <strong>{ruleForm.similarity_threshold}</strong>. Higher values require stricter semantic matching.
-                            </Typography>
+                                    <TextField
+                                        fullWidth multiline rows={4} label="Semantic AI Prompt"
+                                        placeholder="e.g., High resolution outdoor lifestyle shots involving snow"
+                                        value={ruleForm.semantic_prompt}
+                                        onChange={(e) => setRuleForm({...ruleForm, semantic_prompt: e.target.value})}
+                                        sx={{ mb: 4, bgcolor: '#fff' }}
+                                    />
+
+                                    <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>Cosine Similarity Threshold</Typography>
+                                    <Box sx={{ px: 2, mb: 2 }}>
+                                        <Slider
+                                            value={Number(ruleForm.similarity_threshold) || 0.8}
+                                            min={0.5} max={0.99} step={0.01}
+                                            valueLabelDisplay="auto"
+                                            onChange={(e, val) => setRuleForm({...ruleForm, similarity_threshold: val})}
+                                            sx={{ color: '#5e35b1' }}
+                                        />
+                                    </Box>
+                                    <Typography variant="caption" color="textSecondary">
+                                        Currently set to <strong>{ruleForm.similarity_threshold}</strong>. Higher values require stricter semantic matching.
+                                    </Typography>
+                                </>
+                            )}
+
+                            {usesMetadata && (
+                                <Box sx={{ mt: usesSemantic ? 4 : 0 }}>
+                                    <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
+                                        Route assets whose properties/tags match these filters — no AI involved, applies instantly.
+                                        Array values (e.g. multiple tags) match "any of" the listed options.
+                                    </Typography>
+
+                                    <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
+                                        <TextField
+                                            label="Property key" placeholder="tags"
+                                            value={filterKeyDraft}
+                                            onChange={(e) => setFilterKeyDraft(e.target.value)}
+                                            sx={{ bgcolor: '#fff', flex: 1 }}
+                                        />
+                                        <TextField
+                                            label="Value(s), comma separated" placeholder="Q3 Campaign, Social Media"
+                                            value={filterValueDraft}
+                                            onChange={(e) => setFilterValueDraft(e.target.value)}
+                                            sx={{ bgcolor: '#fff', flex: 1 }}
+                                        />
+                                        <Button variant="outlined" onClick={addMetadataFilter} disabled={!filterKeyDraft.trim()}>
+                                            Add
+                                        </Button>
+                                    </Stack>
+
+                                    <Stack direction="row" flexWrap="wrap" gap={1}>
+                                        {Object.entries(ruleForm.metadata_filters || {}).map(([key, value]) => (
+                                            <Chip
+                                                key={key}
+                                                label={`${key}: ${Array.isArray(value) ? value.join(' or ') : value}`}
+                                                onDelete={() => removeMetadataFilter(key)}
+                                                sx={{ bgcolor: '#f3e5f5', color: '#8e24aa' }}
+                                            />
+                                        ))}
+                                    </Stack>
+                                </Box>
+                            )}
 
                             <Button
                                 fullWidth
                                 variant="outlined"
                                 startIcon={simulating ? <CircularProgress size={16} /> : <PlayArrow />}
                                 onClick={handleSimulate}
-                                disabled={!ruleForm.semantic_prompt || simulating}
+                                disabled={(usesSemantic && !ruleForm.semantic_prompt && !usesMetadata) || (usesMetadata && !usesSemantic && Object.keys(ruleForm.metadata_filters || {}).length === 0) || simulating}
                                 sx={{ mt: 4, borderColor: '#5e35b1', color: '#5e35b1', bgcolor: '#fff' }}
                             >
                                 {simulating ? 'Vectorizing...' : 'Run Dry-Run Simulation'}

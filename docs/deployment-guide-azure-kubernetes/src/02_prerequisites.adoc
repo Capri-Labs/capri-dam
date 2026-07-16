@@ -1,0 +1,61 @@
+[[section-azure-k8s-prerequisites]]
+== Prerequisites
+
+=== Azure subscription & access
+
+[cols="1,3", options="header"]
+|===
+| Requirement | Recommendation
+| Azure subscription | A dedicated subscription (or resource group under a shared subscription) for this workload — keeps cost tracking and RBAC scoping clean.
+| RBAC role | An account with `Contributor` on the resource group (or a tighter custom role covering AKS, ACR, Azure Database for PostgreSQL, Azure Cache for Redis, Storage, and Key Vault).
+| Region | Pick one Azure region for all resources (examples use `eastus`); keep everything co-located to minimize latency and avoid cross-region egress cost.
+| Resource group | `az group create --name capri-dam-rg --location eastus` — every resource in this guide lives in this one group for easy cleanup/cost tracking.
+|===
+
+=== Local / CI tooling
+
+[cols="1,3", options="header"]
+|===
+| Tool | Why
+| `az` CLI | Drives Azure resource creation (AKS, ACR, Flexible Server, Cache, Storage, Key Vault).
+| `kubectl` | Drives all in-cluster resources (`Deployment`, `Service`, `Ingress`, `Secret`, …).
+| `helm` (optional) | Simplifies installing `ingress-nginx` and `cert-manager`; also a reasonable choice for packaging Capri DAM's own manifests as a chart if you prefer that over plain YAML.
+| Docker (with Buildx) | Builds the same image used by the Kamal/AWS guides — `docker build -t capri-dam .` from the repository root.
+|===
+
+Verify you're authenticated to the right subscription before continuing:
+
+[source,bash]
+----
+az account show --query "{name:name, id:id}" -o table
+----
+
+=== DNS
+
+You need a domain (or subdomain, e.g. `dam.example.com`) whose zone you can edit — either delegate it
+to **Azure DNS** (recommended, simplifies cert-manager DNS-01 validation if you choose that over
+HTTP-01) or keep it at your existing registrar and add an A/CNAME record later pointing at the
+ingress controller's public IP. See <<section-azure-k8s-ssl-domains-and-ingress>> for the exact
+records.
+
+=== Networking decision
+
+This guide provisions AKS with **Azure CNI** networking and a dedicated virtual network so Flexible
+Server and Azure Cache for Redis can be reached over private endpoints rather than public internet.
+If you already have a VNet, reuse its subnets and skip the VNet-creation step in
+<<section-azure-k8s-cluster-and-manifests>>.
+
+[cols="1,3", options="header"]
+|===
+| Subnet | Purpose
+| `aks-subnet` | AKS node pool + pods (Azure CNI).
+| `data-subnet` | Private endpoints for Flexible Server and Azure Cache for Redis.
+|===
+
+=== Cost note
+
+For a staging/demo environment, use a **single-node system node pool** (`--node-count 1`,
+`--node-vm-size Standard_B2s`), a **Burstable-tier Flexible Server**
+(`--tier Burstable --sku-name Standard_B1ms`), and the **Basic** Azure Cache for Redis tier — all
+called out inline in <<section-azure-k8s-cluster-and-manifests>> and
+<<section-azure-k8s-managed-data-services>>. Scale each up independently for production.

@@ -99,11 +99,15 @@ vector, distance: "cosine")`) directly in SQL.
   sync; embeddings and lexical metadata are queried transactionally consistent with the
   rest of the asset record; one fewer moving part in deployment (see
   <<section-deployment-view>>).
-* **Cons:** Lexical search is `ILIKE`-based, not a true inverted-index/BM25 engine —
-  acceptable at current catalog sizes, but will need revisiting (e.g. PostgreSQL
-  `tsvector`/`GIN` full-text indexes, or a real sidecar) if the library grows large
-  enough that `ILIKE` scan latency becomes noticeable. Tracked as a technical risk —
-  see <<section-technical-risks>>.
+* **Cons:** Lexical search is `ILIKE`-based, not a true inverted-index/BM25 engine.
+  As of migration `20260716113000_add_trigram_search_indexes_for_lexical_search`,
+  the `ILIKE` queries **are** index-backed via `pg_trgm` GIN indexes (on
+  `assets.title`, `properties->>'original_filename'`, `properties::text`,
+  `properties->>'content_type'`, and `folders.name`) — this closes the
+  "sequential scan on every request" risk without changing substring-match
+  semantics. A `tsvector`/full-text engine (or a real sidecar) remains a
+  future option if ranked relevance scoring is ever required. See
+  <<section-technical-risks>>.
 
 === ADR 4: Closure Table for Group Hierarchy vs. Adjacency List
 **Status:** Accepted

@@ -213,6 +213,43 @@ Redis is unavailable. Caching is skipped entirely in the test environment
 per-example. Call `SearchCache.flush_all` after a bulk import if you need to
 force-bust every cached search result immediately.
 
+=== Index-backed lexical search (`pg_trgm`)
+
+The lexical pipeline's `ILIKE` queries (title/filename/full-metadata substring
+matching, plus content-type prefix filters) are backed by PostgreSQL trigram
+(`pg_trgm`) GIN indexes rather than running as sequential scans — see
+migration `db/migrate/20260716113000_add_trigram_search_indexes_for_lexical_search.rb`:
+
+[cols="1,3", options="header"]
+|===
+| Index | Backs
+| `index_assets_on_title_trgm` | `title ILIKE '%...%'`
+| `index_assets_on_properties_original_filename_trgm` | `properties->>'original_filename' ILIKE '%...%'`
+| `index_assets_on_properties_text_trgm` | `properties::text ILIKE '%...%'` (the "search anywhere in metadata" fallback — the most expensive of the three pre-index, since it cast the whole JSONB blob to text per row)
+| `index_assets_on_properties_content_type_trgm` | `properties->>'content_type' ILIKE 'image/%'` and similar prefix patterns (`apply_mode_filter`/`apply_mime_group`)
+| `index_folders_on_name_trgm` | `Folder#name ILIKE '%...%'` (folder-mode search + suggestions)
+|===
+
+A trigram GIN index (`gin_trgm_ops`) was chosen over rewriting these queries
+against a `tsvector` column because it accelerates `ILIKE` **without changing
+matching semantics** — substring matches like `"dup1"` inside
+`Brand_Guidelines_dup1.jpg` (exercised by
+`spec/requests/api/v1/search_spec.rb`) keep working exactly as before, just
+via an index scan instead of a sequential scan. Confirmed with `EXPLAIN`
+(`SET enable_seqscan = off`) that Postgres produces a `Bitmap Index Scan`
+plan for every `ILIKE` pattern the controller issues. A `tsvector`-based
+full-text engine (with ranking/stemming) remains a candidate future upgrade
+if ranked relevance scoring is ever needed — see ADR 3 in
+link:../../architecture/index.html#section-design-decisions[the architecture design
+decisions] and the corresponding entry in
+link:../../architecture/index.html#section-technical-risks[technical risks].
+
+The pre-existing `index_assets_on_properties` GIN index (`jsonb_ops`) is
+unaffected and continues to serve any `@>`/`?`/`?|`/`?&` containment queries
+elsewhere in the codebase — it does not, and cannot, accelerate `->>` text
+extraction combined with `ILIKE`, which is why the dedicated trigram indexes
+above were necessary.
+
 
 
 === Embedding generation

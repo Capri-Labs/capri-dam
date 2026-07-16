@@ -1,0 +1,89 @@
+= Capri DAM — Deployment Guide (AWS)
+Ashok Pelluru <apellurudotcom@gmail.com>
+v1.0.0, 2026-07-16
+:doctype: book
+:toc: left
+:toclevels: 4
+:sectnums:
+:sectanchors:
+:sectlinks:
+:icons: font
+:experimental:
+:source-highlighter: rouge
+:rouge-style: github
+:imagesdir: ./images
+:!prewrap:
+:lang: en
+:description: Production deployment playbook for Capri DAM on AWS — ECS Fargate, Aurora PostgreSQL (pgvector), ElastiCache Redis, S3, ALB/ACM, CloudWatch.
+:keywords: DAM, deployment, AWS, ECS, Fargate, Aurora, RDS, ElastiCache, S3, CloudWatch, production, playbook, runbook, DevOps
+// ── Theme ─────────────────────────────────────────────────────────────────────
+:stylesdir: theme
+:stylesheet: arc42.css
+:docinfodir: .
+:docinfo: shared
+// ── PDF theme ────────────────────────────────────────────────────────────────
+:pdf-themesdir: theme
+:pdf-theme: arc42
+// ─────────────────────────────────────────────────────────────────────────────
+
+This guide collects **operational, step-by-step deployment playbooks** for running Capri DAM in
+production on **Amazon Web Services**, using managed services in place of the self-hosted
+Postgres/Redis containers used by the <<section-deployment-view,architecture deployment view>>'s
+Kamal baseline. It targets **ECS on Fargate** (serverless containers, no EC2 fleet to patch) fronted
+by an **Application Load Balancer**, with **Aurora PostgreSQL** (pgvector-compatible),
+**ElastiCache for Redis**, and **S3** replacing the Kamal accessories and local-disk storage.
+
+This is a sibling guide, not a replacement — see link:../deployment-guide-kamal/[the Kamal Deployment
+Guide] for the plain-Linux-server/VPS target, and
+link:../deployment-guide-azure-kubernetes/[the Azure/Kubernetes Deployment Guide] for AKS. Pick
+whichever matches your team's existing cloud footprint and operational preferences; the application
+code and Docker image are identical across all three.
+
+ifdef::backend-html5[]
+[.text-right]
+link:headless-dam-deployment-guide-aws.pdf[⬇ Download as PDF] · link:../[← Documentation Hub] · link:../developer-guide/[Developer Guide] · link:../deployment-guide-kamal/[Kamal Guide] · link:../deployment-guide-azure-kubernetes/[Azure/K8s Guide]
+endif::backend-html5[]
+
+// 1. Overview
+include::src/01_overview.adoc[]
+
+// 2. Prerequisites
+include::src/02_prerequisites.adoc[]
+
+// 3. Infrastructure Reference (VPC, ECS, ALB, ECR)
+include::src/03_infrastructure-reference.adoc[]
+
+// 4. Secrets & Credentials
+include::src/04_secrets-and-credentials.adoc[]
+
+// 5. Managed Data Services (Aurora PostgreSQL, ElastiCache, S3)
+include::src/05_managed-data-services.adoc[]
+
+// 6. First Deployment Playbook
+include::src/06_first-deployment-playbook.adoc[]
+
+// 7. Routine Deployments & Rollback
+include::src/07_routine-deployments-and-rollback.adoc[]
+
+// 8. SSL, Domains & ALB Routing
+include::src/08_ssl-domains-and-routing.adoc[]
+
+// 9. Monitoring & Troubleshooting
+include::src/09_monitoring-and-troubleshooting.adoc[]
+
+// 10. Backup & Disaster Recovery
+include::src/10_backup-and-disaster-recovery.adoc[]
+
+ifdef::backend-html5[]
+// Back-to-top button
+++++
+<button id="back-to-top" title="Back to top">&#8679;</button>
+<script>
+  const btn = document.getElementById('back-to-top');
+  window.addEventListener('scroll', () => {
+    btn.classList.toggle('visible', window.scrollY > 400);
+  });
+  btn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+</script>
+++++
+endif::backend-html5[]

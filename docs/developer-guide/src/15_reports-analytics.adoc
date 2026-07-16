@@ -40,17 +40,59 @@ Reports::GenerationJob
 `AnalyticsDashboard.jsx` renders:
 
 * date-range switching, including custom ranges
+* a folder search/multi-select filter (`ReportFolderFilter.jsx`) next to the
+  date picker, scoping every KPI/chart to one or more selected folders
 * KPI cards for assets, workflows, storage, AI coverage, and duplicates
 * charts for trends, content types, workflow funnel, top folders, and top uploaders
 * heuristic “AI insights” generated from threshold logic in
   `Reports::AnalyticsService`
+
+=== Folder filter
+
+`ReportFolderFilter.jsx` is an MUI `Autocomplete` (`multiple`) fed by the
+existing `GET /api/v1/folders` endpoint (same data source as the Explorer's
+Move/Copy dialogs). Selecting one or more folders adds a
+`folder_ids=<id1>,<id2>` query param to the `GET /admin/reports/analytics`
+request.
+
+On the backend, `Admin::ReportsController#analytics` parses `folder_ids`
+(accepts either a comma-separated string or an array param) via
+`parse_folder_ids` and passes it to `Reports::AnalyticsService.new` as the
+`folder_ids:` keyword argument. `Reports::AnalyticsService` then:
+
+* expands the selected ids to include all descendant folders via
+  `Folder.expand_ids_with_descendants` (in-memory BFS over
+  `Folder.active.pluck(:id, :parent_id)`), so selecting a parent folder
+  automatically scopes to everything nested under it
+* threads the (expanded) folder filter through every stat/breakdown/
+  time-series query — either via AR `.where(folder_id: ids)` /
+  `.joins(:asset).where(assets: { folder_id: ids })` chains, or via the
+  `folder_sql_clause` helper for raw-SQL aggregate queries (ids are
+  individually quoted with `ActiveRecord::Base.connection.quote`, and the
+  resulting fragment is only ever concatenated into strings that are
+  subsequently passed through `ActiveRecord::Base.sanitize_sql_array` —
+  never interpolated directly into a `connection.select_*` call — to keep
+  Brakeman's SQL-injection check clean)
+* includes the resolved filter state in the response as
+  `folder_filter: { active: Boolean, folder_ids: Array<String> }`
+* incorporates the (sorted) folder id list into the response cache key, so
+  filtered and unfiltered results never collide
+
+`WorkflowInstance` and `AssetEmbedding` have no direct `folder_id` column, so
+folder-filtering those is done via `.joins(:asset).where(assets: { folder_id: ids })`.
+`IngestionBatch` (used for "duplicates blocked" stats) is filtered on its own
+`destination_folder_id` as a best-effort attribution.
+
+This feature has no GraphQL or Swagger footprint: `/admin/reports/**` is a
+server-rendered admin surface entirely outside both the GraphQL schema and
+the rswag/swagger documentation pipeline (which only covers `/api/v1/**`).
 
 == Endpoints
 
 [cols="1,2,3", options="header"]
 |===
 | Method | Path | Description
-| `GET` | `/admin/reports/analytics` | JSON payload for dashboard charts and KPI cards.
+| `GET` | `/admin/reports/analytics` | JSON payload for dashboard charts and KPI cards. Accepts optional `folder_ids` (comma-separated or array) to scope results to one or more folders (and their descendants).
 | `GET` | `/admin/reports` | Reports shell.
 | `GET` | `/admin/report_snapshots` | Snapshot history shell.
 |===

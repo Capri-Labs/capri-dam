@@ -1,0 +1,68 @@
+[[section-azure-k8s-monitoring-and-troubleshooting]]
+== Monitoring & Troubleshooting
+
+=== Azure Monitor / Container Insights
+
+Enable Container Insights on the AKS cluster for cluster/node/pod-level metrics and log aggregation
+into a Log Analytics workspace:
+
+[source,bash]
+----
+az aks enable-addons --resource-group capri-dam-rg --name capri-dam-aks \
+  --addons monitoring --workspace-resource-id "$LOG_ANALYTICS_WORKSPACE_ID"
+----
+
+Rails is already configured for `RAILS_LOG_TO_STDOUT=true`, so container stdout/stderr is captured by
+Container Insights automatically — no in-container log file management is needed. Query logs via
+Kusto (KQL) in the Log Analytics workspace, e.g.:
+
+[source,kusto]
+----
+ContainerLogV2
+| where PodNamespace == "capri-dam" and ContainerName == "web"
+| order by TimeGenerated desc
+| take 200
+----
+
+Or tail directly via `kubectl`:
+
+[source,bash]
+----
+kubectl logs -f deployment/capri-dam-web -n capri-dam
+----
+
+=== Alerts
+
+[cols="1,3", options="header"]
+|===
+| Alert | Trigger
+| AKS `kube_pod_status_ready` | Web/worker pods not Ready for > 5 min — a rollout is stuck or crash-looping.
+| Ingress 5xx rate (via ingress-nginx metrics/Prometheus) | Sustained 5xx responses — application errors, not just infra.
+| Node/pod `CPUUtilization` / `MemoryUtilization` | Sustained > 80% — HPA should already be reacting (see <<section-azure-k8s-cluster-and-manifests>>); if it isn't scaling far enough, raise `maxReplicas` or node pool size.
+| Azure Cache for Redis `CPU`/`Server Load`/`Used Memory Percentage` | Approaching capacity — consider a bigger `--vm-size` or `Standard`/`Premium` tier.
+| Flexible Server `cpu_percent`/`memory_percent`/`active_connections` | Approaching capacity — consider a bigger SKU or a read replica.
+|===
+
+Wire these to Azure Monitor Action Groups (email/Slack/PagerDuty) via `az monitor metrics alert create`.
+
+=== Interactive shell into a running pod
+
+[source,bash]
+----
+kubectl exec -it deployment/capri-dam-web -n capri-dam -- bin/rails console
+----
+
+This is the Kubernetes equivalent of `bin/kamal app exec -i "bin/rails console"` from the Kamal guide
+and ECS Exec from the AWS guide — useful for one-off debugging without redeploying.
+
+=== Common failure modes
+
+[cols="1,3", options="header"]
+|===
+| Symptom | Likely cause / fix
+| Pods stuck `CrashLoopBackOff` | `kubectl logs` (or `kubectl logs --previous` for the crashed instance) usually shows a missing/incorrect secret, a Key Vault CSI mount failure, or a database connectivity error — check the `SecretProviderClass` status and the `data-subnet` network security group.
+| `ImagePullBackOff` | ACR attach didn't complete, or the image tag doesn't exist — re-run `az aks update --attach-acr` and confirm the tag was actually pushed.
+| Ingress returns 502/504 with no healthy pods | Readiness probe (`/up`) failing — check `kubectl describe pod` events; confirm the app boots fast enough for `initialDelaySeconds`, or increase it.
+| `db-prepare` `Job` fails | Check `kubectl logs job/capri-dam-db-prepare -n capri-dam` for the exact migration error; confirm the `data-subnet` network security group allows AKS pod traffic to Flexible Server, and that `azure.extensions` includes `VECTOR`.
+| Sidekiq worker not processing jobs | Confirm the worker `Deployment`'s `REDIS_URL` matches the web `Deployment`'s; check `kubectl get pods -n capri-dam` for a crash-looping worker pod.
+|===

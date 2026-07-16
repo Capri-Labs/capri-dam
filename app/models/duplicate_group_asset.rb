@@ -26,6 +26,19 @@ class DuplicateGroupAsset < ApplicationRecord
                           message: "is already a member of this duplicate group" }
 
   # ---------------------------------------------------------------------------
+  # Callbacks
+  # ---------------------------------------------------------------------------
+
+  # Safety net: whenever a membership row is destroyed by *any* code path —
+  # {.cleanup_for_asset!}, a cascading `dependent: :destroy` from `Asset#destroy`
+  # (e.g. `Folder#destroy`), or anything else — make sure the parent group
+  # never keeps showing as "pending" with fewer than 2 members. Without this
+  # callback, a caller that hard-destroys an asset without going through
+  # {.cleanup_for_asset!} would silently leave a stale single-member group
+  # visible in the Duplicate Manager (see AGENTS.md bug report).
+  after_destroy :auto_resolve_group_if_depleted
+
+  # ---------------------------------------------------------------------------
   # Cleanup
   # ---------------------------------------------------------------------------
 
@@ -43,19 +56,30 @@ class DuplicateGroupAsset < ApplicationRecord
   # @return [void]
   def self.cleanup_for_asset!(asset, log_prefix: "[DuplicateGroupAsset]")
     where(asset_id: asset.id).find_each do |dga|
-      group = dga.duplicate_group
       dga.destroy!
-
-      # A group with fewer than 2 remaining members is no longer a valid
-      # duplicate — resolve it automatically.
-      remaining = group.duplicate_group_assets.count
-      if remaining < 2
-        group.update!(status: :resolved)
-        Rails.logger.info("#{log_prefix} Auto-resolved DuplicateGroup ##{group.id} (only #{remaining} member(s) left)")
-      end
+      # Resolution now happens in the `after_destroy` callback below, but we
+      # keep this rescue here since callers historically relied on cleanup
+      # being non-fatal for the asset-deletion flow it's embedded in.
     rescue StandardError => e
       # Non-fatal: log and continue with the asset deletion
       Rails.logger.warn("#{log_prefix} Could not clean up duplicate group for asset ##{asset.id}: #{e.message}")
     end
+  end
+
+  private
+
+  # @return [void]
+  def auto_resolve_group_if_depleted
+    group = duplicate_group
+    return unless group
+    return unless group.status == "pending"
+
+    remaining = group.duplicate_group_assets.count
+    return if remaining >= 2
+
+    group.update!(status: "resolved", total_count: remaining)
+    Rails.logger.info("[DuplicateGroupAsset] Auto-resolved DuplicateGroup ##{group.id} (only #{remaining} member(s) left)")
+  rescue StandardError => e
+    Rails.logger.warn("[DuplicateGroupAsset] Could not auto-resolve DuplicateGroup ##{group&.id}: #{e.message}")
   end
 end

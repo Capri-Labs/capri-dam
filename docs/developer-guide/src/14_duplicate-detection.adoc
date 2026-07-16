@@ -37,6 +37,33 @@ perceptually.
 | `dismissed` | False positive or intentionally ignored.
 |===
 
+A group must have **2+ active (non-trashed) members** to remain meaningfully
+"pending" — falling below that threshold auto-resolves it so the Duplicate
+Manager never shows a stale "1 asset found" group. This is enforced
+automatically from two independent code paths so no caller has to remember
+to do it manually:
+
+* **Soft-delete / restore** (moved to or recovered from the Trash Bin) —
+  `Asset` has an `after_commit :sync_duplicate_groups_membership, if: :saved_change_to_deleted_at?`
+  hook that calls `DuplicateGroup#recalculate_active_membership!` for every
+  group the asset belongs to. This recomputes `total_count` from
+  `Asset.active` members and:
+** auto-resolves the group (`status: "resolved"`, `resolution_action: nil` —
+   distinguishing it from a user-driven resolution) once fewer than 2 active
+   members remain;
+** reopens a previously *auto*-resolved group back to `pending` if a restore
+   brings the active member count back to 2+ (a group resolved by explicit
+   user action, i.e. `resolution_action` present, is never silently reopened).
+* **Hard/permanent deletion** — `DuplicateGroupAsset` has an
+  `after_destroy :auto_resolve_group_if_depleted` callback that fires
+  whenever a membership row is destroyed by *any* means: the explicit
+  `DuplicateGroupAsset.cleanup_for_asset!` helper (called from
+  `Api::V1::AssetsController#permanent_delete`, `BinPurgeService`, and
+  `EmptyBin`), or an incidental `dependent: :destroy` cascade from
+  `Asset#destroy!` (e.g. via `Folder#destroy`). This is a safety net that
+  guarantees correctness even if a future code path hard-deletes an asset
+  without remembering to call `cleanup_for_asset!` first.
+
 == APIs
 
 [cols="1,2,3", options="header"]

@@ -1,0 +1,166 @@
+[[section-azure-k8s-cluster-and-manifests]]
+== AKS Cluster & Kubernetes Manifests
+
+=== Create the AKS cluster
+
+[source,bash]
+----
+az network vnet create --resource-group capri-dam-rg --name capri-dam-vnet \
+  --address-prefix 10.30.0.0/16 \
+  --subnet-name aks-subnet --subnet-prefix 10.30.0.0/20
+
+az network vnet subnet create --resource-group capri-dam-rg --vnet-name capri-dam-vnet \
+  --name data-subnet --address-prefix 10.30.16.0/24
+
+az aks create --resource-group capri-dam-rg --name capri-dam-aks \
+  --network-plugin azure --vnet-subnet-id "$AKS_SUBNET_ID" \
+  --node-count 2 --node-vm-size Standard_D2s_v5 \
+  --enable-managed-identity --generate-ssh-keys
+
+az aks get-credentials --resource-group capri-dam-rg --name capri-dam-aks
+----
+
+=== Attach ACR
+
+[source,bash]
+----
+az acr create --resource-group capri-dam-rg --name capridamacr --sku Basic
+az aks update --resource-group capri-dam-rg --name capri-dam-aks --attach-acr capridamacr
+
+docker build -t capri-dam .
+az acr login --name capridamacr
+docker tag capri-dam:latest capridamacr.azurecr.io/capri-dam:latest
+docker push capridamacr.azurecr.io/capri-dam:latest
+----
+
+`--attach-acr` grants the AKS kubelet identity `AcrPull` on the registry — no image-pull secret needs
+to be created/rotated manually.
+
+=== Namespace
+
+[source,bash]
+----
+kubectl create namespace capri-dam
+----
+
+=== `Deployment` manifests
+
+[source,yaml]
+----
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: capri-dam-web
+  namespace: capri-dam
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate: { maxUnavailable: 0, maxSurge: 1 }
+  selector:
+    matchLabels: { app: capri-dam, role: web }
+  template:
+    metadata:
+      labels: { app: capri-dam, role: web }
+    spec:
+      containers:
+        - name: web
+          image: capridamacr.azurecr.io/capri-dam:latest
+          ports: [{ containerPort: 80 }]
+          envFrom:
+            - configMapRef: { name: capri-dam-config }
+          env:
+            - name: RAILS_MASTER_KEY
+              valueFrom: { secretKeyRef: { name: capri-dam-secrets, key: rails-master-key } }
+            - name: DATABASE_URL
+              valueFrom: { secretKeyRef: { name: capri-dam-secrets, key: database-url } }
+            - name: REDIS_URL
+              valueFrom: { secretKeyRef: { name: capri-dam-secrets, key: redis-url } }
+          readinessProbe: { httpGet: { path: /up, port: 80 }, initialDelaySeconds: 10 }
+          livenessProbe: { httpGet: { path: /up, port: 80 }, initialDelaySeconds: 30 }
+          resources:
+            requests: { cpu: "500m", memory: "1Gi" }
+            limits: { cpu: "1", memory: "2Gi" }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: capri-dam-worker
+  namespace: capri-dam
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: capri-dam, role: worker }
+  template:
+    metadata:
+      labels: { app: capri-dam, role: worker }
+    spec:
+      containers:
+        - name: worker
+          image: capridamacr.azurecr.io/capri-dam:latest
+          command: ["bundle", "exec", "sidekiq", "-C", "config/sidekiq.yml"]
+          envFrom:
+            - configMapRef: { name: capri-dam-config }
+          env:
+            - name: RAILS_MASTER_KEY
+              valueFrom: { secretKeyRef: { name: capri-dam-secrets, key: rails-master-key } }
+            - name: DATABASE_URL
+              valueFrom: { secretKeyRef: { name: capri-dam-secrets, key: database-url } }
+            - name: REDIS_URL
+              valueFrom: { secretKeyRef: { name: capri-dam-secrets, key: redis-url } }
+          resources:
+            requests: { cpu: "250m", memory: "512Mi" }
+            limits: { cpu: "1", memory: "1Gi" }
+----
+
+=== `Service` + `Ingress` (web only)
+
+[source,yaml]
+----
+apiVersion: v1
+kind: Service
+metadata: { name: capri-dam-web, namespace: capri-dam }
+spec:
+  selector: { app: capri-dam, role: web }
+  ports: [{ port: 80, targetPort: 80 }]
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: capri-dam-web
+  namespace: capri-dam
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts: [dam.example.com]
+      secretName: capri-dam-tls
+  rules:
+    - host: dam.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend: { service: { name: capri-dam-web, port: { number: 80 } } }
+----
+
+The worker `Deployment` deliberately has no `Service`/`Ingress` — it exposes no HTTP endpoint and only
+needs outbound connectivity to Redis/Postgres.
+
+=== Horizontal Pod Autoscaler (web only)
+
+[source,yaml]
+----
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata: { name: capri-dam-web, namespace: capri-dam }
+spec:
+  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: capri-dam-web }
+  minReplicas: 2
+  maxReplicas: 6
+  metrics:
+    - type: Resource
+      resource: { name: cpu, target: { type: Utilization, averageUtilization: 70 } }
+----

@@ -1,6 +1,6 @@
-= Capri DAM — Deployment Guide
+= Capri DAM — Deployment Guide (Azure/Kubernetes)
 Ashok Pelluru <apellurudotcom@gmail.com>
-v1.0.0, 2026-07-14
+v1.0.0, 2026-07-16
 :doctype: book
 :toc: left
 :toclevels: 4
@@ -14,8 +14,8 @@ v1.0.0, 2026-07-14
 :imagesdir: ./images
 :!prewrap:
 :lang: en
-:description: Production deployment playbooks for Capri DAM. Starts with Kamal 2 (Docker + kamal-proxy); more deployment targets will be added over time.
-:keywords: DAM, deployment, Kamal, Docker, production, playbook, runbook, DevOps
+:description: Production deployment playbook for Capri DAM on Azure Kubernetes Service (AKS) — Azure Database for PostgreSQL (pgvector), Azure Cache for Redis, Blob Storage, ACR.
+:keywords: DAM, deployment, Azure, Kubernetes, AKS, PostgreSQL, Flexible Server, Redis, Blob Storage, ACR, production, playbook, runbook, DevOps
 // ── Theme ─────────────────────────────────────────────────────────────────────
 :stylesdir: theme
 :stylesheet: arc42.css
@@ -26,19 +26,21 @@ v1.0.0, 2026-07-14
 :pdf-theme: arc42
 // ─────────────────────────────────────────────────────────────────────────────
 
-This guide collects **operational, step-by-step deployment playbooks** for running Capri DAM in
-production. Unlike the <<section-deployment-view,architecture deployment view>> (which explains
-*why* the system is shaped the way it is), this guide is a hands-on runbook: exact commands,
-exact files, exact troubleshooting steps.
+This guide collects **operational, step-by-step deployment playbooks** for running Capri DAM on
+**Microsoft Azure using Kubernetes** — specifically **Azure Kubernetes Service (AKS)** — as an
+alternative to the self-hosted single-VM Kamal target and the AWS ECS target. It replaces the Kamal
+guide's self-hosted Postgres/Redis containers with **Azure Database for PostgreSQL — Flexible Server**
+(pgvector-compatible), **Azure Cache for Redis**, and **Azure Blob Storage**, deploying the app as
+standard Kubernetes `Deployment`/`Service`/`Ingress` manifests (or an equivalent Helm chart).
 
-Each deployment target gets its own numbered chapter so this guide can grow over time (e.g. a
-future chapter for Kubernetes/Helm, or a managed-PaaS target) without disturbing existing content.
-The first supported target is **Kamal 2** — Docker-based deployment to plain Linux servers (or a
-single VPS), using `kamal-proxy` for zero-downtime rollouts and automatic Let's Encrypt TLS.
+This is a sibling guide, not a replacement — see link:../deployment-guide-kamal/[the Kamal Deployment
+Guide] for the plain-Linux-server/VPS target, and link:../deployment-guide-aws/[the AWS Deployment
+Guide] for ECS/Fargate. Pick whichever matches your team's existing cloud footprint and Kubernetes
+familiarity; the application code and Docker image are identical across all three.
 
 ifdef::backend-html5[]
 [.text-right]
-link:headless-dam-deployment-guide.pdf[⬇ Download as PDF] · link:../[← Documentation Hub] · link:../developer-guide/[Developer Guide]
+link:headless-dam-deployment-guide-azure-kubernetes.pdf[⬇ Download as PDF] · link:../[← Documentation Hub] · link:../developer-guide/[Developer Guide] · link:../deployment-guide-kamal/[Kamal Guide] · link:../deployment-guide-aws/[AWS Guide]
 endif::backend-html5[]
 
 // 1. Overview
@@ -47,14 +49,14 @@ include::src/01_overview.adoc[]
 // 2. Prerequisites
 include::src/02_prerequisites.adoc[]
 
-// 3. Kamal Configuration Reference
-include::src/03_kamal-configuration.adoc[]
+// 3. AKS Cluster & Kubernetes Manifests
+include::src/03_aks-cluster-and-manifests.adoc[]
 
 // 4. Secrets & Credentials
 include::src/04_secrets-and-credentials.adoc[]
 
-// 5. Accessories: PostgreSQL (pgvector) & Redis
-include::src/05_accessories.adoc[]
+// 5. Managed Data Services (Azure DB for PostgreSQL, Azure Cache for Redis, Blob Storage)
+include::src/05_managed-data-services.adoc[]
 
 // 6. First Deployment Playbook
 include::src/06_first-deployment-playbook.adoc[]
@@ -62,13 +64,13 @@ include::src/06_first-deployment-playbook.adoc[]
 // 7. Routine Deployments & Rollback
 include::src/07_routine-deployments-and-rollback.adoc[]
 
-// 8. SSL, Domains & kamal-proxy
-include::src/08_ssl-domains-and-proxy.adoc[]
+// 8. SSL, Domains & Ingress
+include::src/08_ssl-domains-and-ingress.adoc[]
 
 // 9. Monitoring & Troubleshooting
 include::src/09_monitoring-and-troubleshooting.adoc[]
 
-// 10. Backups & Disaster Recovery
+// 10. Backup & Disaster Recovery
 include::src/10_backup-and-disaster-recovery.adoc[]
 
 ifdef::backend-html5[]

@@ -11,6 +11,13 @@ module Types
     field :properties, GraphQL::Types::JSON, null: true
     field :created_at, GraphQL::Types::ISO8601DateTime, null: false
 
+    # Smart-collection auto-routing rule (nil for plain manual collections)
+    field :collection_rule, Types::CollectionRuleType, null: true, description: "Auto-routing rule, if this is a smart collection"
+
+    # Group-scoped access-governance policies (empty when the collection is
+    # still on legacy allowed_groups/denied_groups access — see Collection#accessible_by?)
+    field :policies, [ Types::CollectionPolicyType ], null: false, description: "Group-scoped access policies configured for this workspace"
+
     # The relational mapping: Returns the assets inside this collection
     field :assets, [ Types::AssetType ], null: false, description: "Assets attached to this collection"
 
@@ -18,6 +25,10 @@ module Types
     def assets
       # In an enterprise production app, you would use GraphQL::Batch here or standard eager loading
       object.assets
+    end
+
+    def policies
+      object.collection_policies
     end
   end
 end

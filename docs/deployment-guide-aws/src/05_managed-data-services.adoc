@@ -1,0 +1,98 @@
+[[section-aws-managed-data-services]]
+== Managed Data Services
+
+=== Aurora PostgreSQL (pgvector)
+
+Capri DAM's semantic search relies on the `vector` extension (via the `neighbor` gem) — **Aurora
+PostgreSQL 15.3+/16** supports `pgvector` natively, no custom parameter group patching required beyond
+enabling the extension.
+
+[source,bash]
+----
+aws rds create-db-subnet-group --db-subnet-group-name capri-dam-db-subnets \
+  --subnet-ids "$PRIVATE_SUBNET_1A" "$PRIVATE_SUBNET_1B"
+
+aws rds create-db-cluster --db-cluster-identifier capri-dam-aurora \
+  --engine aurora-postgresql --engine-version 16.4 \
+  --master-username capri_dam --manage-master-user-password \
+  --db-subnet-group-name capri-dam-db-subnets \
+  --vpc-security-group-ids "$DB_SG"
+
+aws rds create-db-instance --db-instance-identifier capri-dam-aurora-writer \
+  --db-cluster-identifier capri-dam-aurora --engine aurora-postgresql \
+  --db-instance-class db.r6g.large
+----
+
+For a low-traffic staging/demo environment, use **Aurora Serverless v2** instead
+(`--serverless-v2-scaling-configuration MinCapacity=0.5,MaxCapacity=4` on the cluster, and
+`--db-instance-class db.serverless` on the instance) — it scales capacity (and cost) down to near-zero
+during idle periods.
+
+Enable the extension once (via a one-off task, `bin/rails db:migrate`, or `psql` against the writer
+endpoint — Capri DAM's migrations already call `enable_extension "vector"`, so a normal
+`RAILS_ENV=production bin/rails db:prepare` run against the new cluster is sufficient):
+
+[source,sql]
+----
+CREATE EXTENSION IF NOT EXISTS vector;
+----
+
+Build the `DATABASE_URL` secret (see <<section-aws-secrets-and-credentials>>) from the cluster's writer
+endpoint: `postgres://capri_dam:<password>@<writer-endpoint>:5432/capri_dam_production`.
+
+=== ElastiCache for Redis
+
+Backs Sidekiq queues, Action Cable pub/sub, and Coverband — equivalent to the Kamal `redis` accessory.
+
+[source,bash]
+----
+aws elasticache create-cache-subnet-group --cache-subnet-group-name capri-dam-cache-subnets \
+  --subnet-ids "$PRIVATE_SUBNET_1A" "$PRIVATE_SUBNET_1B"
+
+aws elasticache create-replication-group \
+  --replication-group-id capri-dam-redis \
+  --replication-group-description "Capri DAM Sidekiq/ActionCable/Coverband" \
+  --engine redis --cache-node-type cache.t4g.small \
+  --num-cache-clusters 2 --automatic-failover-enabled \
+  --cache-subnet-group-name capri-dam-cache-subnets \
+  --security-group-ids "$CACHE_SG"
+----
+
+`--num-cache-clusters 2 --automatic-failover-enabled` gives you a primary + replica with automatic
+promotion on failure; drop to a single node for a non-critical staging environment. Set the
+`REDIS_URL` secret to `redis://<primary-endpoint>:6379/0` (Coverband can use a different logical DB
+index on the same endpoint, e.g. `/1`).
+
+=== S3 for asset storage
+
+Create a dedicated, private bucket (never public — the app serves assets through signed
+Active-Storage URLs, not direct public bucket access):
+
+[source,bash]
+----
+aws s3api create-bucket --bucket capri-dam-assets-prod --region us-east-1
+aws s3api put-bucket-versioning --bucket capri-dam-assets-prod \
+  --versioning-configuration Status=Enabled
+aws s3api put-public-access-block --bucket capri-dam-assets-prod \
+  --public-access-block-configuration BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true
+----
+
+Versioning (`put-bucket-versioning`) protects against accidental overwrite/delete and feeds into
+<<section-aws-backup-and-disaster-recovery>>.
+
+Once the bucket exists, **no code change is required** — switch the active storage backend from the
+in-app Settings UI (`/admin/settings` → Storage Backend) to **AWS S3**, supplying the bucket name,
+region, and the task role's implicit credentials (the `aws` `StorageAdapters::S3Adapter` uses the
+AWS SDK's default credential chain, which resolves automatically to the ECS task role — no access
+keys need to be entered in the UI when running on ECS).
+
+=== Post-deploy verification
+
+[source,bash]
+----
+# Confirm pgvector is enabled
+psql "$DATABASE_URL" -c "SELECT extname, extversion FROM pg_extension WHERE extname = 'vector';"
+
+# Confirm Redis reachability from a one-off ECS Exec shell (see chapter 9)
+redis-cli -u "$REDIS_URL" PING
+----

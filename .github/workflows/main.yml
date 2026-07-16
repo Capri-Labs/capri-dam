@@ -12,7 +12,9 @@
 #   https://capri-labs.github.io/capri-dam/developer-guide/  ← developer guide
 #   https://capri-labs.github.io/capri-dam/product-info/     ← product info
 #   https://capri-labs.github.io/capri-dam/customer-guide/   ← customer guide
-#   https://capri-labs.github.io/capri-dam/deployment-guide/ ← deployment guide
+#   https://capri-labs.github.io/capri-dam/deployment-guide-kamal/            ← deployment guide (Kamal)
+#   https://capri-labs.github.io/capri-dam/deployment-guide-aws/              ← deployment guide (AWS)
+#   https://capri-labs.github.io/capri-dam/deployment-guide-azure-kubernetes/ ← deployment guide (Azure/K8s)
 # ─────────────────────────────────────────────────────────────────────────────
 name: CI + Docs
 
@@ -329,7 +331,9 @@ jobs:
           mkdir -p _site/developer-guide
           mkdir -p _site/product-info
           mkdir -p _site/customer-guide
-          mkdir -p _site/deployment-guide
+          mkdir -p _site/deployment-guide-kamal
+          mkdir -p _site/deployment-guide-aws
+          mkdir -p _site/deployment-guide-azure-kubernetes
           mkdir -p _site/theme
 
       # ── Shared build flags ────────────────────────────────────────────────
@@ -472,28 +476,74 @@ jobs:
             -o _site/customer-guide/headless-dam-customer-guide.pdf \
             docs/customer-guide/index.adoc
 
-      # ── Deployment Guide ──────────────────────────────────────────────────
-      - name: Build deployment guide
+      # ── Deployment Guide (Kamal) ───────────────────────────────────────────
+      - name: Build deployment guide (Kamal)
         run: |
           asciidoctor $ADOC_BASE \
             -a toclevels=4 \
             -a stylesdir=theme \
             -a stylesheet=arc42.css \
-            -a docinfodir=docs/deployment-guide \
+            -a docinfodir=docs/deployment-guide-kamal \
             -a docinfo=shared \
-            -D _site/deployment-guide -o index.html \
-            docs/deployment-guide/index.adoc
-          mkdir -p _site/deployment-guide/theme
-          cp -r docs/deployment-guide/theme/. _site/deployment-guide/theme/
+            -D _site/deployment-guide-kamal -o index.html \
+            docs/deployment-guide-kamal/index.adoc
+          mkdir -p _site/deployment-guide-kamal/theme
+          cp -r docs/deployment-guide-kamal/theme/. _site/deployment-guide-kamal/theme/
 
-      - name: Build deployment guide PDF
+      - name: Build deployment guide PDF (Kamal)
         run: |
           asciidoctor-pdf \
             -a allow-uri-read \
-            -a pdf-themesdir=docs/deployment-guide/theme \
+            -a pdf-themesdir=docs/deployment-guide-kamal/theme \
             -a pdf-theme=arc42 \
-            -o _site/deployment-guide/headless-dam-deployment-guide.pdf \
-            docs/deployment-guide/index.adoc
+            -o _site/deployment-guide-kamal/headless-dam-deployment-guide-kamal.pdf \
+            docs/deployment-guide-kamal/index.adoc
+
+      # ── Deployment Guide (AWS) ─────────────────────────────────────────────
+      - name: Build deployment guide (AWS)
+        run: |
+          asciidoctor $ADOC_BASE \
+            -a toclevels=4 \
+            -a stylesdir=theme \
+            -a stylesheet=arc42.css \
+            -a docinfodir=docs/deployment-guide-aws \
+            -a docinfo=shared \
+            -D _site/deployment-guide-aws -o index.html \
+            docs/deployment-guide-aws/index.adoc
+          mkdir -p _site/deployment-guide-aws/theme
+          cp -r docs/deployment-guide-aws/theme/. _site/deployment-guide-aws/theme/
+
+      - name: Build deployment guide PDF (AWS)
+        run: |
+          asciidoctor-pdf \
+            -a allow-uri-read \
+            -a pdf-themesdir=docs/deployment-guide-aws/theme \
+            -a pdf-theme=arc42 \
+            -o _site/deployment-guide-aws/headless-dam-deployment-guide-aws.pdf \
+            docs/deployment-guide-aws/index.adoc
+
+      # ── Deployment Guide (Azure/Kubernetes) ────────────────────────────────
+      - name: Build deployment guide (Azure/Kubernetes)
+        run: |
+          asciidoctor $ADOC_BASE \
+            -a toclevels=4 \
+            -a stylesdir=theme \
+            -a stylesheet=arc42.css \
+            -a docinfodir=docs/deployment-guide-azure-kubernetes \
+            -a docinfo=shared \
+            -D _site/deployment-guide-azure-kubernetes -o index.html \
+            docs/deployment-guide-azure-kubernetes/index.adoc
+          mkdir -p _site/deployment-guide-azure-kubernetes/theme
+          cp -r docs/deployment-guide-azure-kubernetes/theme/. _site/deployment-guide-azure-kubernetes/theme/
+
+      - name: Build deployment guide PDF (Azure/Kubernetes)
+        run: |
+          asciidoctor-pdf \
+            -a allow-uri-read \
+            -a pdf-themesdir=docs/deployment-guide-azure-kubernetes/theme \
+            -a pdf-theme=arc42 \
+            -o _site/deployment-guide-azure-kubernetes/headless-dam-deployment-guide-azure-kubernetes.pdf \
+            docs/deployment-guide-azure-kubernetes/index.adoc
 
       # ── No-Jekyll (serve plain HTML) ──────────────────────────────────────
       - name: Add .nojekyll

@@ -3000,5 +3000,26 @@
     "notifications": {
       "loadFailed": "Groepen konden niet worden geladen."
     }
+  },
+  "reportsFolderFilter": {
+    "label": "Filteren op map",
+    "placeholder": "Mappen zoeken…",
+    "noOptions": "Geen mappen gevonden",
+    "loading": "Mappen laden…"
+  },
+  "collectionProperties": {
+    "accessPolicies": {
+      "title": "Groepstoegangsbeleid",
+      "description": "Verleen gebruikersgroepen gelaagde toegang tot deze collectie. Zodra er een beleid bestaat, kunnen alleen groepen met een expliciet beleid (en systeem-/superbeheerders) deze collectie bekijken, bewerken of beheren.",
+      "addGroup": "Groep toevoegen",
+      "add": "Toevoegen",
+      "empty": "Geen groepsbeleid geconfigureerd — deze werkruimte gebruikt de bovenstaande verouderde toestaan/weigeren-lijsttoegang.",
+      "group": "Groep",
+      "viewer": "Kijker",
+      "editor": "Bewerker",
+      "admin": "Collectiebeheerder",
+      "deny": "Weigeren",
+      "remove": "Beleid verwijderen"
+    }
   }
 }

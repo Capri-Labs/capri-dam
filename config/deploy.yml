@@ -5,13 +5,13 @@
 # (https://kamal-deploy.org), with `kamal-proxy` handling zero-downtime
 # rollouts, load balancing, and automatic Let's Encrypt TLS.
 #
-# See docs/deployment-guide/ for the full playbook (prerequisites, secrets
+# See docs/deployment-guide-kamal/ for the full playbook (prerequisites, secrets
 # setup, first deployment, routine deploys/rollback, SSL, monitoring, backups).
 #
 # All server/host values below are placeholders (RFC 5737 TEST-NET-1 style
 # documentation IPs / example.com). Replace them with your real infrastructure
-# before deploying — see docs/deployment-guide/src/02_prerequisites.adoc and
-# docs/deployment-guide/src/06_first-deployment-playbook.adoc.
+# before deploying — see docs/deployment-guide-kamal/src/02_prerequisites.adoc and
+# docs/deployment-guide-kamal/src/06_first-deployment-playbook.adoc.
 # ─────────────────────────────────────────────────────────────────────────────
 
 # Unique service name — used to derive container names, the Docker network,
@@ -131,12 +131,12 @@ logging:
     max-file: "5"
 
 # SSH user Kamal connects as (create a dedicated deploy user — see
-# docs/deployment-guide/src/02_prerequisites.adoc — rather than using root).
+# docs/deployment-guide-kamal/src/02_prerequisites.adoc — rather than using root).
 ssh:
   user: <%= ENV.fetch("KAMAL_SSH_USER", "deploy") %>
 
 # Retain a few old versions for fast `kamal rollback` (see
-# docs/deployment-guide/src/07_routine-deployments-and-rollback.adoc).
+# docs/deployment-guide-kamal/src/07_routine-deployments-and-rollback.adoc).
 retain_containers: 5
 
 # Allow the app's own health check (30s default) plus DB migration time.

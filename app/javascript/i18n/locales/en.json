@@ -3000,5 +3000,26 @@
     "notifications": {
       "loadFailed": "Failed to load groups."
     }
+  },
+  "reportsFolderFilter": {
+    "label": "Filter by folder",
+    "placeholder": "Search folders…",
+    "noOptions": "No folders found",
+    "loading": "Loading folders…"
+  },
+  "collectionProperties": {
+    "accessPolicies": {
+      "title": "Group Access Policies",
+      "description": "Grant user groups tiered access to this collection. Once any policy exists, only groups with an explicit policy (and system/super admins) can view, edit, or manage this collection.",
+      "addGroup": "Add group",
+      "add": "Add",
+      "empty": "No group policies configured — this workspace uses legacy allow/deny-list access above.",
+      "group": "Group",
+      "viewer": "Viewer",
+      "editor": "Editor",
+      "admin": "Collection Admin",
+      "deny": "Deny",
+      "remove": "Remove policy"
+    }
   }
 }

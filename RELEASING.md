@@ -131,12 +131,12 @@ docker push ghcr.io/your-org/capri-dam:latest
 ## Deploying with Kamal
 
 Capri DAM deploys via [Kamal 2](https://kamal-deploy.org/) — see
-[`docs/deployment-guide/`](docs/deployment-guide/) for the full playbook (prerequisites, secrets
+[`docs/deployment-guide-kamal/`](docs/deployment-guide-kamal/) for the full playbook (prerequisites, secrets
 setup, first deployment, routine deploys, rollback, SSL, monitoring, and backups). Quick
 reference for a maintainer who has already completed first-time setup:
 
 ```bash
-# Load deploy secrets into your shell (see docs/deployment-guide/src/04_secrets-and-credentials.adoc)
+# Load deploy secrets into your shell (see docs/deployment-guide-kamal/src/04_secrets-and-credentials.adoc)
 set -a; source .env; set +a
 
 # Deploy the freshly pushed image to all roles (web + worker)
@@ -188,7 +188,7 @@ Cherry-pick the fix back to any still-supported release branches if applicable.
 ## Rolling back
 
 If a release is bad, roll the deployment back to the previous image (see
-[`docs/deployment-guide/src/07_routine-deployments-and-rollback.adoc`](docs/deployment-guide/src/07_routine-deployments-and-rollback.adoc)
+[`docs/deployment-guide-kamal/src/07_routine-deployments-and-rollback.adoc`](docs/deployment-guide-kamal/src/07_routine-deployments-and-rollback.adoc)
 for the full explanation of what each command does):
 
 ```bash

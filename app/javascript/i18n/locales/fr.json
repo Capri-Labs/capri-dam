@@ -3000,5 +3000,26 @@
     "notifications": {
       "loadFailed": "Échec du chargement des groupes."
     }
+  },
+  "reportsFolderFilter": {
+    "label": "Filtrer par dossier",
+    "placeholder": "Rechercher des dossiers…",
+    "noOptions": "Aucun dossier trouvé",
+    "loading": "Chargement des dossiers…"
+  },
+  "collectionProperties": {
+    "accessPolicies": {
+      "title": "Politiques d'accès par groupe",
+      "description": "Accordez aux groupes d'utilisateurs un accès hiérarchisé à cette collection. Dès qu'une politique existe, seuls les groupes disposant d'une politique explicite (et les administrateurs système/super administrateurs) peuvent consulter, modifier ou gérer cette collection.",
+      "addGroup": "Ajouter un groupe",
+      "add": "Ajouter",
+      "empty": "Aucune politique de groupe configurée — cet espace de travail utilise l'accès hérité par liste d'autorisation/refus ci-dessus.",
+      "group": "Groupe",
+      "viewer": "Lecteur",
+      "editor": "Éditeur",
+      "admin": "Administrateur de la collection",
+      "deny": "Refuser",
+      "remove": "Supprimer la politique"
+    }
   }
 }

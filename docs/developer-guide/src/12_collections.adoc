@@ -11,7 +11,7 @@ visualisation tooling.
 |===
 | Type | Behaviour
 | `manual` | Membership is managed explicitly through `CollectionAsset` join rows.
-| `smart` | Membership is derived from `CollectionRule` semantic prompts and similarity thresholds.
+| `smart` | Membership is derived from a `CollectionRule` — semantic AI prompts, metadata/tag filters, or both.
 |===
 
 `Collection.active` excludes soft-deleted and expired rows; `expires_at` is used
@@ -19,27 +19,68 @@ for TTL-style visibility.
 
 == Access model
 
-ABAC-style access data is stored in `Collection#properties`.
+Two access layers coexist, and the **existence of any `CollectionPolicy` row
+switches the collection into strict, opt-in governance mode**:
 
 [cols="1,3", options="header"]
 |===
-| Property key | Meaning
-| `allowed_groups` | Only these groups are allowed when populated.
-| `denied_groups` | Explicit blocklist for workspace access.
+| Layer | Meaning
+| Legacy ABAC (`Collection#properties`) | `allowed_groups`/`denied_groups` — simple allow/deny lists, still used when no `CollectionPolicy` exists for a collection.
+| `CollectionPolicy` (group-scoped roles) | One row per `(collection, group)` pair, storing `view_access`, `edit_access`, `admin_access` booleans. Once at least one policy row exists for a collection, membership in a group with **no** policy row no longer grants access — only groups with an explicit policy, plus system/super admins, can view/edit/manage.
 |===
+
+`Collection` exposes the following authorization predicates (all take a
+`user`):
+
+[cols="1,3", options="header"]
+|===
+| Method | Meaning
+| `accessible_by?(user)` | Can view. Checks policies first (if any exist), else falls back to legacy `allowed_groups`/`denied_groups`.
+| `editable_by?(user)` | Can modify metadata/rules/assets. Requires `edit_access` or `admin_access` on a matching policy (or owner bootstrap / system admin).
+| `manageable_by?(user)` | Can manage policies/config. Requires `admin_access` specifically (the "Collection Admin" tier).
+| `deletable_by?(user)` | Can delete the collection. Same `admin_access` requirement as `manageable_by?`.
+|===
+
+The collection **owner** retains full bootstrap access only until the *first*
+`CollectionPolicy` is created for that collection (`owner_bootstrap?` checks
+`!collection_policies.exists?`) — this lets an owner configure governance
+without locking themselves out, but once policies are defined, the owner must
+also hold an `admin_access` policy (or be a system/super admin) to keep
+managing it.
 
 == Smart routing
 
-`SmartCollectionRouterWorker` reevaluates semantic prompts against stored
-embeddings. The REST controller also supports simulation before a rule is saved.
+`SmartCollectionRouterWorker` reevaluates each `CollectionRule` against
+`Asset` records whenever a rule is saved (`configure_rule` triggers
+`CollectionRuleBackfillWorker`) or an asset changes
+(`Asset#trigger_smart_routing` `after_commit` hook). A rule's `match_mode`
+determines how it evaluates candidates:
+
+[cols="1,3", options="header"]
+|===
+| `match_mode` | Behaviour
+| `semantic` (default) | Cosine-similarity match between `semantic_prompt`'s embedding and each asset's `AssetEmbedding#embedding`, gated by `similarity_threshold`.
+| `metadata` | Array-intersection ("any of") matching between `metadata_filters` (a hash of `{property_key => value_or_array}`) and each asset's tags/properties. No AI/embeddings involved — instant and deterministic.
+| `hybrid` | Both conditions must pass — asset must satisfy the metadata filters *and* clear the semantic similarity threshold.
+|===
 
 [source,ruby]
 ----
-{
-  semantic_prompt: "winter lifestyle campaign",
-  similarity_threshold: 0.82
-}
+# semantic
+{ match_mode: "semantic", semantic_prompt: "winter lifestyle campaign", similarity_threshold: 0.82 }
+
+# metadata / tag based
+{ match_mode: "metadata", metadata_filters: { "tags" => ["Q3 Campaign", "Social Media"], "status" => "approved" } }
+
+# hybrid
+{ match_mode: "hybrid", semantic_prompt: "winter lifestyle campaign", similarity_threshold: 0.82,
+  metadata_filters: { "tags" => ["Q3 Campaign"] } }
 ----
+
+The REST controller also supports a dry-run simulation before a rule is
+saved — `simulate_rule` short-circuits to real (non-mocked)
+`simulate_metadata_matches` matching for `metadata`/`hybrid` rules, and keeps
+the existing mocked semantic preview for `semantic` rules.
 
 == REST and GraphQL surface
 
@@ -47,12 +88,18 @@ embeddings. The REST controller also supports simulation before a rule is saved.
 |===
 | Interface | Operation | Notes
 | REST | `GET /api/v1/collections/:slug/cluster_map` | Returns semantic node positions for `SemanticClusterMap.jsx`.
-| REST | `POST /api/v1/collections/:slug/configure_rule` | Upserts smart-routing rule.
-| REST | `POST /api/v1/collections/:slug/simulate_rule` | Dry-run semantic membership.
+| REST | `POST /api/v1/collections/:slug/configure_rule` | Upserts smart-routing rule (`match_mode`, `semantic_prompt`, `similarity_threshold`, `metadata_filters`); triggers an async backfill sweep.
+| REST | `POST /api/v1/collections/:slug/simulate_rule` | Dry-run rule membership — real metadata matching for `metadata`/`hybrid`, mocked preview for `semantic`.
+| REST | `GET /api/v1/collections/:slug/policies` | List group access policies for a collection.
+| REST | `PUT /api/v1/collections/:slug/policies/:group_id` | Upsert (create or update) a group's `view_access`/`edit_access`/`admin_access` policy. Requires `manageable_by?`.
+| REST | `DELETE /api/v1/collections/:slug/policies/:group_id` | Remove a group's policy. Requires `manageable_by?`.
 | REST | `POST /api/v1/collections/:slug/assets` | Attach an existing asset to a collection (used by the Add Assets picker and drag-drop upload flow).
 | REST | `POST /api/v1/collections/:slug/share_link` | Mint a signed, expiring public share link (see below). REST-only by design, consistent with other operational actions (`purge_cdn`, `simulate_rule`) that are not exposed via GraphQL.
 | GraphQL | `createCollection` | Create collection record.
 | GraphQL | `addAssetToCollection`, `removeAssetFromCollection` | Manual membership changes.
+| GraphQL | `configureCollectionRule` | Upserts a `CollectionRule` (mirrors the REST `configure_rule` action); returns the `Collection` with its `collectionRule` field populated.
+| GraphQL | `Collection.collectionRule` | Exposes the associated `CollectionRule` (`matchMode`, `semanticPrompt`, `similarityThreshold`, `metadataFilters`).
+| GraphQL | `Collection.policies` | Exposes the collection's `CollectionPolicy` rows (group, `viewAccess`, `editAccess`, `adminAccess`).
 |===
 
 == Public share links
@@ -106,7 +153,8 @@ endpoint — no new backend endpoint was required for this feature.
 |===
 | Component | Notes
 | `CollectionsBoard.jsx` | Board/list of workspaces with bulk actions, link copying, and property editing.
-| `CollectionDetail.jsx` | Detail screen for rule tuning, asset pinning, governance warnings, AI analysis hooks, sharing, and adding assets.
+| `CollectionDetail.jsx` | Detail screen for rule tuning (match_mode toggle, semantic prompt/threshold, metadata filter builder), asset pinning, governance warnings, AI analysis hooks, sharing, and adding assets.
+| `CollectionPropertiesDialog.jsx` | Workspace Properties dialog — legacy name/description/allow-deny fields plus the **Group Access Policies** matrix (per-group Viewer/Editor/Collection Admin/Deny, backed by `CollectionPolicy` CRUD endpoints).
 | `SemanticClusterMap.jsx` | 2D semantic scatterplot of embedding-derived clusters.
 | `ShareCollectionDialog.jsx` | Mints and displays a copyable public share link.
 | `AddAssetsToCollectionDialog.jsx` | Search-and-attach or drag-drop-upload-and-attach flow for populating a collection.

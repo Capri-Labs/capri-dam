@@ -1,0 +1,67 @@
+[[section-aws-monitoring-and-troubleshooting]]
+== Monitoring & Troubleshooting
+
+=== Logs
+
+Configure the task definition's `logConfiguration` to ship container stdout/stderr straight to
+**CloudWatch Logs** (Rails is already configured for `RAILS_LOG_TO_STDOUT=true`, so no in-container
+log file management is needed):
+
+[source,json]
+----
+{
+  "logConfiguration": {
+    "logDriver": "awslogs",
+    "options": {
+      "awslogs-group": "/ecs/capri-dam",
+      "awslogs-region": "us-east-1",
+      "awslogs-stream-prefix": "web"
+    }
+  }
+}
+----
+
+Tail logs live:
+
+[source,bash]
+----
+aws logs tail /ecs/capri-dam --follow --filter-pattern "web"
+----
+
+=== Alarms
+
+[cols="1,3", options="header"]
+|===
+| Alarm | Trigger
+| ALB `UnHealthyHostCount` | > 0 for the web target group — a task is failing its `/up` health check.
+| ALB `HTTPCode_Target_5XX_Count` | Sustained 5xx responses — application errors, not just infra.
+| ECS `CPUUtilization` / `MemoryUtilization` | Sustained > 80% — consider bumping task size or `desired-count`.
+| ElastiCache `EngineCPUUtilization` / `DatabaseMemoryUsagePercentage` | Approaching capacity — consider a bigger node type.
+| Aurora `CPUUtilization` / `FreeableMemory` / `DatabaseConnections` | Approaching capacity — consider a bigger instance class or read replica.
+|===
+
+Wire these to an SNS topic subscribed by email/Slack/PagerDuty via `aws cloudwatch put-metric-alarm`.
+
+=== ECS Exec (interactive shell into a running task)
+
+Enable once per service (`--enable-execute-command` on `create-service`/`update-service`), then:
+
+[source,bash]
+----
+aws ecs execute-command --cluster capri-dam --task "$TASK_ID" --container web \
+  --interactive --command "bin/rails console"
+----
+
+This is the ECS equivalent of `bin/kamal app exec -i "bin/rails console"` from the Kamal guide —
+useful for one-off debugging without redeploying.
+
+=== Common failure modes
+
+[cols="1,3", options="header"]
+|===
+| Symptom | Likely cause / fix
+| Tasks stuck `PENDING` then `STOPPED` immediately | Check `stoppedReason` via `describe-tasks` — usually a missing/incorrect secret ARN, a security-group rule blocking the DB/Redis connection, or insufficient Fargate CPU/memory quota in the region.
+| ALB returns 503 with 0 healthy targets | Task isn't listening on the expected container port, or the `/up` health-check path/timeout is misconfigured relative to Rails boot time — increase `HealthCheckGracePeriodSeconds` on the service if boot is slow.
+| `db:prepare` one-off task exits non-zero | Check CloudWatch Logs for the exact migration error; confirm the DB security group allows the ECS task's security group, and that the `vector` extension is available on the chosen Aurora engine version.
+| Sidekiq worker not processing jobs | Confirm the worker service's `REDIS_URL` secret matches the web service's (jobs enqueued by web must land in the same Redis the worker polls); check `aws ecs describe-services` for a crash-looping worker task.
+|===

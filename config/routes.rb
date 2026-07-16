@@ -330,6 +330,11 @@ Rails.application.routes.draw do
           post "purge_cdn", to: "collections#purge_cdn"
           post "share_link", to: "collections#create_share_link"
 
+          # Access Governance — group-scoped view/edit/admin policies
+          get    :policies,             to: "collections#policies"
+          post   :policies,             to: "collections#upsert_policy"
+          delete "policies/:group_id",  to: "collections#remove_policy", as: :collection_policy
+
           # Asset Join Table Operations
           post "assets", to: "collections#add_asset"
           post "assets/:asset_id", to: "collections#add_asset"

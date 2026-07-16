@@ -1,5 +1,7 @@
 require 'rails_helper'
 
+REAL_ASSET_EMBEDDING_CLASS = AssetEmbedding
+
 RSpec.describe Reports::AnalyticsService, type: :service do
   include ActiveSupport::Testing::TimeHelpers
   subject(:service) { described_class.new('last_30_days', custom_from: 30.days.ago.beginning_of_day, custom_to: Time.current) }
@@ -27,6 +29,69 @@ RSpec.describe Reports::AnalyticsService, type: :service do
       expect(first).to eq(second)
       expect(first).to include(:stats, :time_series, :breakdowns, :ai_insights)
       expect(service).to have_received(:stats).once
+    end
+  end
+
+  # ===========================================================================
+  # Folder filter — new "search box + overlay" feature on the Reports page
+  # lets users scope every KPI/chart to one or more selected folders (and
+  # their sub-folders). These exercise the real DB end-to-end (no mocks) since
+  # the filter touches every private method via raw SQL and AR joins.
+  # ===========================================================================
+  describe 'folder_ids filter', :aggregate_failures do
+    before { stub_const('AssetEmbedding', REAL_ASSET_EMBEDDING_CLASS) }
+
+    let(:owner) { create(:user) }
+    let!(:folder_a) { create(:folder, user: owner, name: 'Folder A') }
+    let!(:folder_b) { create(:folder, user: owner, name: 'Folder B') }
+    let!(:asset_in_a) { create(:asset, user: owner, folder: folder_a, status: :ready, properties: { "content_type" => "image/jpeg", "size" => "1000" }) }
+    let!(:asset_in_b) { create(:asset, user: owner, folder: folder_b, status: :ready, properties: { "content_type" => "video/mp4", "size" => "2000" }) }
+
+    it 'scopes stats to only the selected folder' do
+      scoped = described_class.new('last_30_days', folder_ids: [ folder_a.id ]).call
+
+      expect(scoped[:stats][:total_assets]).to eq(1)
+      expect(scoped[:folder_filter]).to eq(active: true, folder_ids: [ folder_a.id.to_s ])
+    end
+
+    it 'includes descendant folders automatically when a parent folder is selected' do
+      child = create(:folder, user: owner, parent: folder_a, name: 'Folder A Child')
+      create(:asset, user: owner, folder: child, status: :ready, properties: { "content_type" => "image/png", "size" => "500" })
+
+      scoped = described_class.new('last_30_days', folder_ids: [ folder_a.id ]).call
+
+      expect(scoped[:stats][:total_assets]).to eq(2)
+    end
+
+    it 'returns all assets when no folder filter is given' do
+      unscoped = described_class.new('last_30_days').call
+
+      expect(unscoped[:stats][:total_assets]).to eq(2)
+      expect(unscoped[:folder_filter]).to eq(active: false, folder_ids: [])
+    end
+
+    it 'scopes the content-type and top-folder breakdowns to the selected folder' do
+      scoped = described_class.new('last_30_days', folder_ids: [ folder_a.id ]).call
+
+      expect(scoped[:breakdowns][:by_content_type]).to eq([ { type: 'Image (JPEG)', count: 1 } ])
+      expect(scoped[:breakdowns][:top_folders]).to eq([ { name: 'Folder A', count: 1 } ])
+    end
+
+    it 'scopes the asset time series to the selected folder' do
+      scoped = described_class.new('last_30_days', folder_ids: [ folder_a.id ]).call
+      today = Date.current.to_s
+
+      expect(scoped[:time_series][:assets]).to eq([ { date: today, count: 1 } ])
+    end
+
+    it 'produces distinct cache entries for different folder filters' do
+      cache_store = ActiveSupport::Cache::MemoryStore.new
+      allow(Rails).to receive(:cache).and_return(cache_store)
+
+      unscoped = described_class.new('last_30_days').call
+      scoped   = described_class.new('last_30_days', folder_ids: [ folder_a.id ]).call
+
+      expect(unscoped[:stats][:total_assets]).not_to eq(scoped[:stats][:total_assets])
     end
   end
 
@@ -132,6 +197,30 @@ RSpec.describe Reports::AnalyticsService, type: :service do
       expect(service.send(:stats)).to eq({})
       expect(Rails.logger).to have_received(:error).with(/stats failed: boom/)
     end
+
+    # Regression test: `:from` was previously a raw named-bind placeholder
+    # embedded in a `.select(...)` SQL fragment with a no-op `.where("1=1")`
+    # that never actually bound it — Postgres raised `PG::SyntaxError` on
+    # every single request, silently swallowed by the rescue, and the whole
+    # Reports page KPI/stats section rendered blank. This exercises the real
+    # DB (no mocks) to guard against that regression.
+    it 'aggregates real statistics without raising a SQL syntax error (regression)', :aggregate_failures do
+      create(:asset, user: create(:user), status: :ready, properties: { "content_type" => "image/jpeg", "size" => "500" })
+      embedding_relation = instance_double('EmbeddingRelation')
+      allow(AssetEmbedding).to receive(:select).and_return(embedding_relation)
+      allow(embedding_relation).to receive(:limit).with(1).and_return(
+        instance_double('EmbeddingLimit', to_a: [ instance_double('EmbeddingCounts', attributes: { 'with_embedding' => '0' }) ])
+      )
+
+      result = nil
+      expect(Rails.logger).not_to receive(:error)
+      expect { result = service.send(:stats) }.not_to raise_error
+
+      expect(result).not_to eq({})
+      expect(result[:total_assets]).to be_a(Integer)
+      expect(result[:new_in_range]).to be_a(Integer)
+      expect(result[:storage_used_gb]).to be_a(Numeric)
+    end
   end
 
   describe '#time_series' do
@@ -202,6 +291,28 @@ RSpec.describe Reports::AnalyticsService, type: :service do
       allow(ActiveRecord::Base.connection).to receive(:select_all).and_raise(StandardError, 'boom')
 
       expect(service.send(:breakdowns)).to eq({})
+    end
+
+    # Regression test: content-type bucketing previously grouped/limited by
+    # the *raw* mime type in SQL before simplifying to a friendly label,
+    # so e.g. "application/msword" and "...wordprocessingml.document" showed
+    # up as two separate "Word Document" pie/bar entries instead of merging.
+    it 'merges distinct raw content types into a single bucket entry (regression)' do
+      user = create(:user)
+      create(:asset, user: user, status: :ready, properties: { "content_type" => "application/msword" })
+      create(:asset, user: user, status: :ready,
+                     properties: { "content_type" => "application/vnd.openxmlformats-officedocument.wordprocessingml.document" })
+      allow(Asset).to receive_message_chain(:unscoped, :where, :group, :count).and_return({})
+      allow(Folder).to receive_message_chain(:active, :left_joins, :where, :group, :order, :limit, :pluck).and_return([])
+      allow(WorkflowInstance).to receive(:count).and_return(0)
+      allow(WorkflowInstance).to receive(:where).and_return(instance_double(ActiveRecord::Relation, count: 0))
+      allow(ActiveRecord::Base.connection).to receive(:select_all).and_call_original
+
+      result = service.send(:breakdowns)
+      word_rows = result[:by_content_type].select { |row| row[:type] == 'Word Document' }
+
+      expect(word_rows.length).to eq(1)
+      expect(word_rows.first[:count]).to eq(2)
     end
   end
 

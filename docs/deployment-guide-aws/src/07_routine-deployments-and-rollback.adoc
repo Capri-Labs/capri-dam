@@ -1,0 +1,64 @@
+[[section-aws-routine-deployments-and-rollback]]
+== Routine Deployments & Rollback
+
+=== Deploying a new version
+
+Every deploy after the first follows the same four steps — build, push, register a new task
+definition **revision**, then tell each service to use it:
+
+[source,bash]
+----
+docker build -t capri-dam .
+docker tag capri-dam:latest "$ECR_REGISTRY"/capri-dam:"$(git rev-parse --short HEAD)"
+docker push "$ECR_REGISTRY"/capri-dam:"$(git rev-parse --short HEAD)"
+
+# Register a new revision of each task definition pointing at the new image tag
+NEW_WEB_REVISION=$(aws ecs register-task-definition --cli-input-json file://web-task-def.json \
+  --query 'taskDefinition.taskDefinitionArn' --output text)
+NEW_WORKER_REVISION=$(aws ecs register-task-definition --cli-input-json file://worker-task-def.json \
+  --query 'taskDefinition.taskDefinitionArn' --output text)
+
+aws ecs update-service --cluster capri-dam --service capri-dam-web \
+  --task-definition "$NEW_WEB_REVISION" --force-new-deployment
+aws ecs update-service --cluster capri-dam --service capri-dam-worker \
+  --task-definition "$NEW_WORKER_REVISION" --force-new-deployment
+
+aws ecs wait services-stable --cluster capri-dam --services capri-dam-web capri-dam-worker
+----
+
+If a migration is needed, run it as a one-off `run-task` (same pattern as the first-deployment
+playbook's `db:prepare` step) **before** updating the services, so new-code tasks never start against
+an un-migrated schema.
+
+=== Zero-downtime rolling deploy
+
+ECS's default deployment configuration (`minimumHealthyPercent: 100`, `maximumPercent: 200`) starts new
+tasks with the new task definition revision, waits for them to pass the ALB health check, then drains
+and stops old tasks — no traffic is ever routed to a task before it's healthy. No extra configuration
+is required beyond what's in <<section-aws-infrastructure-reference>>.
+
+=== Rollback
+
+Every previously-registered task definition revision remains available indefinitely (ECS never
+deletes them automatically). To roll back, point the service at the prior revision ARN:
+
+[source,bash]
+----
+aws ecs list-task-definitions --family-prefix capri-dam-web --sort DESC
+# pick the revision ARN just before the bad one, then:
+aws ecs update-service --cluster capri-dam --service capri-dam-web \
+  --task-definition "arn:aws:ecs:...:task-definition/capri-dam-web:<previous-revision>" \
+  --force-new-deployment
+----
+
+This is equivalent in effect to Kamal's `bin/kamal rollback` — a fast, image-tag-only revert with no
+new build required, since the previous image is still in ECR and the previous task definition still
+references it.
+
+=== CI/CD wiring (optional)
+
+The steps above map directly onto a GitHub Actions job: build/push in one step, `register-task-definition`
++ `update-service` in the next, using the scoped IAM CI principal from
+<<section-aws-secrets-and-credentials>>. Gate the job on the existing RSpec/Jest/Rubocop/Brakeman CI
+checks already required for merges to `main` (see `CONTRIBUTING.md`), so nothing broken ever reaches
+`register-task-definition`.

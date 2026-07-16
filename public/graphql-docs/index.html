@@ -75,6 +75,7 @@
                 <ul class="nav-group-section-items">
                   <li><a href="#mutation-archiveInboxMessage">archiveInboxMessage</a></li>
                   <li><a href="#mutation-bulkRestoreFromBin">bulkRestoreFromBin</a></li>
+                  <li><a href="#mutation-configureCollectionRule">configureCollectionRule</a></li>
                   <li><a href="#mutation-createAiModelConfig">createAiModelConfig</a></li>
                   <li><a href="#mutation-createPersonalAccessToken">createPersonalAccessToken</a></li>
                   <li><a href="#mutation-createStylePreset">createStylePreset</a></li>
@@ -123,6 +124,10 @@
               <li><a href="#definition-BulkRestoreFromBinPayload">BulkRestoreFromBinPayload</a></li>
               <li><a href="#definition-C2paConfiguration">C2paConfiguration</a></li>
               <li><a href="#definition-Collection">Collection</a></li>
+              <li><a href="#definition-CollectionPolicy">CollectionPolicy</a></li>
+              <li><a href="#definition-CollectionRule">CollectionRule</a></li>
+              <li><a href="#definition-ConfigureCollectionRuleInput">ConfigureCollectionRuleInput</a></li>
+              <li><a href="#definition-ConfigureCollectionRulePayload">ConfigureCollectionRulePayload</a></li>
               <li><a href="#definition-CreateAiModelConfigInput">CreateAiModelConfigInput</a></li>
               <li><a href="#definition-CreateAiModelConfigPayload">CreateAiModelConfigPayload</a></li>
               <li><a href="#definition-CreatePersonalAccessTokenInput">CreatePersonalAccessTokenInput</a></li>
@@ -832,6 +837,10 @@
                   <pre><code class="hljs language-gql"><span class="hljs-symbol"><span class="hljs-keyword">query</span> collection <span class="hljs-tag">{
   <span class="hljs-symbol">collection <span class="hljs-tag">{
     <span class="hljs-symbol">assets</span>
+    <span class="hljs-symbol">collectionRule <span class="hljs-tag">{
+      <span class="hljs-type">...CollectionRuleFragment</span>
+    }</span></span>
+    <span class="hljs-symbol">policies</span>
     <span class="hljs-symbol">properties</span>
   }</span></span>
 }</span></span>
@@ -841,7 +850,12 @@
                   <h5>Response</h5>
                   <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span>
   <span class="hljs-attr">"data"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
-    <span class="hljs-attr">"collection"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-attr">"assets"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-string">Asset</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">"properties"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span>
+    <span class="hljs-attr">"collection"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+      <span class="hljs-attr">"assets"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-string">Asset</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span>
+      <span class="hljs-attr">"collectionRule"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">CollectionRule</span><span class="hljs-punctuation">,</span>
+      <span class="hljs-attr">"policies"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-string">CollectionPolicy</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span>
+      <span class="hljs-attr">"properties"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span>
+    <span class="hljs-punctuation">}</span>
   <span class="hljs-punctuation">}</span>
 <span class="hljs-punctuation">}</span>
 </code></pre>
@@ -879,6 +893,10 @@
                   <pre><code class="hljs language-gql"><span class="hljs-symbol"><span class="hljs-keyword">query</span> collections <span class="hljs-tag">{
   <span class="hljs-symbol">collections <span class="hljs-tag">{
     <span class="hljs-symbol">assets</span>
+    <span class="hljs-symbol">collectionRule <span class="hljs-tag">{
+      <span class="hljs-type">...CollectionRuleFragment</span>
+    }</span></span>
+    <span class="hljs-symbol">policies</span>
     <span class="hljs-symbol">properties</span>
   }</span></span>
 }</span></span>
@@ -888,7 +906,14 @@
                   <h5>Response</h5>
                   <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span>
   <span class="hljs-attr">"data"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
-    <span class="hljs-attr">"collections"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-punctuation">{</span><span class="hljs-attr">"assets"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-string">Asset</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">"properties"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">]</span>
+    <span class="hljs-attr">"collections"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span>
+      <span class="hljs-punctuation">{</span>
+        <span class="hljs-attr">"assets"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-string">Asset</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"collectionRule"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">CollectionRule</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"policies"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-string">CollectionPolicy</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">"properties"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span>
+      <span class="hljs-punctuation">}</span>
+    <span class="hljs-punctuation">]</span>
   <span class="hljs-punctuation">}</span>
 <span class="hljs-punctuation">}</span>
 </code></pre>
@@ -1809,6 +1834,78 @@
                 <div class="example-section example-section-is-code operation-response-example">
                   <h5>Response</h5>
                   <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"data"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-attr">"bulkRestoreFromBin"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="mutation-configureCollectionRule" class="operation operation-mutation" data-traverse-target="mutation-configureCollectionRule">
+            <div class="operation-group-name">
+              <a href="#group-Operations-Mutations">Mutations</a>
+            </div>
+            <h2 class="operation-heading ">
+              <code>configureCollectionRule</code>
+            </h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Creates or updates a smart collection&#39;s auto-routing rule (semantic, metadata, or hybrid matching).</p>
+                </div>
+              </div>
+            </div>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-response doc-copy-section">
+                  <h5>Response</h5>
+                  <p> Returns a <a href="#definition-ConfigureCollectionRulePayload"><code>ConfigureCollectionRulePayload</code></a>
+                  </p>
+                </div>
+                <div class="operation-arguments doc-copy-section">
+                  <h5>Arguments</h5>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>
+                          <span class="property-name"><code>input</code></span> - <span class="property-type"><a href="#definition-ConfigureCollectionRuleInput"><code>ConfigureCollectionRuleInput!</code></a></span>
+                        </td>
+                        <td> Parameters for ConfigureCollectionRule </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <h4 class="example-heading">Example</h4>
+                <div class="example-section example-section-is-code operation-query-example">
+                  <h5>Query</h5>
+                  <pre><code class="hljs language-gql"><span class="hljs-symbol"><span class="hljs-keyword">mutation</span> configureCollectionRule<span class="hljs-tag">(<span class="hljs-code">$input</span>:<span class="hljs-type"> ConfigureCollectionRuleInput!</span>)</span> <span class="hljs-tag">{
+  <span class="hljs-symbol">configureCollectionRule<span class="hljs-tag">(input: <span class="hljs-code">$input</span>)</span> <span class="hljs-tag">{
+    <span class="hljs-symbol">collection <span class="hljs-tag">{
+      <span class="hljs-type">...CollectionFragment</span>
+    }</span></span>
+  }</span></span>
+}</span></span>
+</code></pre>
+                </div>
+                <div class="example-section example-section-is-code operation-variables-example">
+                  <h5>Variables</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"input"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">ConfigureCollectionRuleInput</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+                <div class="example-section example-section-is-code operation-response-example">
+                  <h5>Response</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">"data"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span>
+    <span class="hljs-attr">"configureCollectionRule"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-attr">"collection"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">Collection</span><span class="hljs-punctuation">}</span>
+  <span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span>
 </code></pre>
                 </div>
               </div>
@@ -3745,6 +3842,16 @@
                         <td> Assets attached to this collection </td>
                       </tr>
                       <tr>
+                        <td data-property-name=""><span class="property-name"><code>collectionRule</code></span> - <span class="property-type"><a href="#definition-CollectionRule"><code>CollectionRule</code></a></span>
+                        </td>
+                        <td> Auto-routing rule, if this is a smart collection </td>
+                      </tr>
+                      <tr>
+                        <td data-property-name=""><span class="property-name"><code>policies</code></span> - <span class="property-type"><a href="#definition-CollectionPolicy"><code>[CollectionPolicy!]!</code></a></span>
+                        </td>
+                        <td> Group-scoped access policies configured for this workspace </td>
+                      </tr>
+                      <tr>
                         <td data-property-name=""><span class="property-name"><code>properties</code></span> - <span class="property-type"><a href="#definition-JSON"><code>JSON</code></a></span>
                         </td>
                         <td>
@@ -3757,7 +3864,154 @@
               <div class="doc-examples">
                 <div class="example-section example-section-is-code">
                   <h5>Example</h5>
-                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"assets"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-string">Asset</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">"properties"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span>
+  <span class="hljs-attr">"assets"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-string">Asset</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">"collectionRule"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">CollectionRule</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">"policies"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-string">CollectionPolicy</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">"properties"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span>
+<span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="definition-CollectionPolicy" class="definition definition-object" data-traverse-target="definition-CollectionPolicy">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">CollectionPolicy</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Access-control entry linking a user group to a collection (viewer/editor/collection-admin tiers)</p>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <div class="example-section example-section-is-code">
+                  <h5>Example</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="definition-CollectionRule" class="definition definition-object" data-traverse-target="definition-CollectionRule">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">CollectionRule</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Auto-routing rule for a smart collection (semantic, metadata, or hybrid matching)</p>
+                </div>
+                <div class="definition-properties doc-copy-section">
+                  <h5>Fields</h5>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Field Name</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td data-property-name=""><span class="property-name"><code>metadataFilters</code></span> - <span class="property-type"><a href="#definition-JSON"><code>JSON</code></a></span>
+                        </td>
+                        <td>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <div class="example-section example-section-is-code">
+                  <h5>Example</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"metadataFilters"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="definition-ConfigureCollectionRuleInput" class="definition definition-input-object" data-traverse-target="definition-ConfigureCollectionRuleInput">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">ConfigureCollectionRuleInput</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Autogenerated input type of ConfigureCollectionRule</p>
+                </div>
+                <div class="definition-properties doc-copy-section">
+                  <h5>Fields</h5>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Input Field</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>
+                          <span class="property-name"><code>metadataFilters</code></span> - <span class="property-type"><a href="#definition-JSON"><code>JSON</code></a></span>
+                        </td>
+                        <td>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <div class="example-section example-section-is-code">
+                  <h5>Example</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"metadataFilters"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="definition-ConfigureCollectionRulePayload" class="definition definition-object" data-traverse-target="definition-ConfigureCollectionRulePayload">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">ConfigureCollectionRulePayload</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Autogenerated return type of ConfigureCollectionRule.</p>
+                </div>
+                <div class="definition-properties doc-copy-section">
+                  <h5>Fields</h5>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Field Name</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td data-property-name=""><span class="property-name"><code>collection</code></span> - <span class="property-type"><a href="#definition-Collection"><code>Collection</code></a></span>
+                        </td>
+                        <td>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <div class="example-section example-section-is-code">
+                  <h5>Example</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"collection"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">Collection</span><span class="hljs-punctuation">}</span>
 </code></pre>
                 </div>
               </div>

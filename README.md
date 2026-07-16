@@ -171,7 +171,7 @@ API/GraphQL changes that ship without regenerated docs.
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) — setup, style guides, and the testing matrix
 - [`ARCHITECTURE.md`](ARCHITECTURE.md) — pointer to the full arc42 doc set in
   [`docs/architecture/`](docs/architecture/)
-- [`docs/deployment-guide/`](docs/deployment-guide/) — production deployment playbooks
+- [`docs/deployment-guide-kamal/`](docs/deployment-guide-kamal/) — production deployment playbooks
   (starting with Kamal 2 / Docker + kamal-proxy)
 - [`CLAUDE.md`](CLAUDE.md) / [`AGENTS.md`](AGENTS.md) — operating rules for AI coding assistants
 - [`RELEASING.md`](RELEASING.md) — release and deployment process

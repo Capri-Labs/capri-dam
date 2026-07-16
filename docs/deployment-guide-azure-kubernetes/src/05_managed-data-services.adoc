@@ -1,0 +1,93 @@
+[[section-azure-k8s-managed-data-services]]
+== Managed Data Services
+
+=== Azure Database for PostgreSQL — Flexible Server (pgvector)
+
+Capri DAM's semantic search relies on the `vector` extension (via the `neighbor` gem) — **Flexible
+Server** supports `pgvector` through its extension allow-list mechanism.
+
+[source,bash]
+----
+az postgres flexible-server create \
+  --resource-group capri-dam-rg --name capri-dam-pg \
+  --location eastus --sku-name Standard_D2ds_v5 --tier GeneralPurpose \
+  --storage-size 64 --version 16 \
+  --vnet capri-dam-vnet --subnet data-subnet \
+  --admin-user capri_dam --admin-password "$(openssl rand -base64 24)"
+
+# Allow pgvector on this server, then enable it in the database
+az postgres flexible-server parameter set \
+  --resource-group capri-dam-rg --server-name capri-dam-pg \
+  --name azure.extensions --value VECTOR
+----
+
+For a low-traffic staging environment, use `--tier Burstable --sku-name Standard_B1ms` instead of
+`GeneralPurpose` to reduce cost.
+
+Enable the extension in the database itself (Capri DAM's migrations already call
+`enable_extension "vector"`, so a normal `RAILS_ENV=production bin/rails db:prepare` run against the
+new server is sufficient once the server-level allow-list above is set):
+
+[source,sql]
+----
+CREATE EXTENSION IF NOT EXISTS vector;
+----
+
+Build the `DATABASE_URL` secret (see <<section-azure-k8s-secrets-and-credentials>>) from the server's
+FQDN: `postgres://capri_dam:<password>@capri-dam-pg.postgres.database.azure.com:5432/capri_dam_production?sslmode=require`.
+
+=== Azure Cache for Redis
+
+Backs Sidekiq queues, Action Cable pub/sub, and Coverband — equivalent to the Kamal `redis` accessory.
+
+[source,bash]
+----
+az redis create --resource-group capri-dam-rg --name capri-dam-redis \
+  --location eastus --sku Basic --vm-size c1
+----
+
+Use `--sku Standard --vm-size c1` (or higher) for production to get a replicated, zone-redundant
+instance with an SLA. Retrieve the primary connection details:
+
+[source,bash]
+----
+az redis show --resource-group capri-dam-rg --name capri-dam-redis --query hostName -o tsv
+az redis list-keys --resource-group capri-dam-rg --name capri-dam-redis --query primaryKey -o tsv
+----
+
+Set `REDIS_URL` to `rediss://:<primary-key>@capri-dam-redis.redis.cache.windows.net:6380/0`
+(note `rediss://` — Azure Cache for Redis requires TLS on port 6380 by default).
+
+=== Azure Blob Storage
+
+[source,bash]
+----
+az storage account create --resource-group capri-dam-rg --name capridamassets \
+  --location eastus --sku Standard_LRS --kind StorageV2 \
+  --min-tls-version TLS1_2 --allow-blob-public-access false
+
+az storage container create --account-name capridamassets --name assets --auth-mode login
+----
+
+`--allow-blob-public-access false` keeps the account private — the app serves assets through signed
+Active-Storage URLs, never direct public blob access. Use `Standard_RAGRS` instead of `Standard_LRS`
+if you want geo-redundant replication for disaster recovery (see
+<<section-azure-k8s-backup-and-disaster-recovery>>).
+
+Once the storage account and container exist, **no code change is required** — switch the active
+storage backend from the in-app Settings UI (`/admin/settings` → Storage Backend) to **Azure Blob
+Storage**, supplying the account name/container. If workload identity is configured (see
+<<section-azure-k8s-secrets-and-credentials>>), the `azure` `StorageAdapters::AzureAdapter` resolves
+credentials automatically via the Azure SDK's default credential chain — no account key needs to be
+entered in the UI.
+
+=== Post-deploy verification
+
+[source,bash]
+----
+# Confirm pgvector is enabled
+psql "$DATABASE_URL" -c "SELECT extname, extversion FROM pg_extension WHERE extname = 'vector';"
+
+# Confirm Redis reachability from a one-off pod (see chapter 9 for kubectl exec)
+redis-cli -u "$REDIS_URL" PING
+----

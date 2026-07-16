@@ -1,0 +1,105 @@
+[[section-aws-infrastructure-reference]]
+== Infrastructure Reference
+
+This chapter defines every AWS resource the deployment depends on. Commands are shown with the `aws`
+CLI for transparency; feel free to translate them 1:1 into Terraform/CDK/CloudFormation.
+
+=== VPC & subnets
+
+[source,bash]
+----
+aws ec2 create-vpc --cidr-block 10.20.0.0/16 --tag-specifications \
+  'ResourceType=vpc,Tags=[{Key=Name,Value=capri-dam-vpc}]'
+
+# Two public subnets (ALB) + two private subnets (ECS/Aurora/ElastiCache), one pair per AZ
+aws ec2 create-subnet --vpc-id "$VPC_ID" --cidr-block 10.20.0.0/24 --availability-zone us-east-1a \
+  --tag-specifications 'ResourceType=subnet,Tags=[{Key=Name,Value=capri-dam-public-1a}]'
+aws ec2 create-subnet --vpc-id "$VPC_ID" --cidr-block 10.20.1.0/24 --availability-zone us-east-1b \
+  --tag-specifications 'ResourceType=subnet,Tags=[{Key=Name,Value=capri-dam-public-1b}]'
+aws ec2 create-subnet --vpc-id "$VPC_ID" --cidr-block 10.20.10.0/24 --availability-zone us-east-1a \
+  --tag-specifications 'ResourceType=subnet,Tags=[{Key=Name,Value=capri-dam-private-1a}]'
+aws ec2 create-subnet --vpc-id "$VPC_ID" --cidr-block 10.20.11.0/24 --availability-zone us-east-1b \
+  --tag-specifications 'ResourceType=subnet,Tags=[{Key=Name,Value=capri-dam-private-1b}]'
+----
+
+Attach an Internet Gateway to the public subnets and a NAT Gateway (in one public subnet) with a
+private-subnet route table pointing `0.0.0.0/0` at it — standard two-tier VPC layout, omitted here for
+brevity (see the AWS VPC user guide for the exact `create-internet-gateway` /
+`create-nat-gateway` / `create-route-table` sequence).
+
+=== Security groups
+
+[cols="1,3", options="header"]
+|===
+| Security group | Ingress
+| `capri-dam-alb-sg` | `443/tcp` (and `80/tcp` redirect) from `0.0.0.0/0`.
+| `capri-dam-ecs-sg` | `80/tcp` from `capri-dam-alb-sg` only (web tasks). Worker tasks need no inbound rule at all.
+| `capri-dam-db-sg` | `5432/tcp` from `capri-dam-ecs-sg` only.
+| `capri-dam-cache-sg` | `6379/tcp` from `capri-dam-ecs-sg` only.
+|===
+
+=== ECR repository
+
+[source,bash]
+----
+aws ecr create-repository --repository-name capri-dam
+docker build -t capri-dam .
+aws ecr get-login-password | docker login --username AWS --password-stdin "$ECR_REGISTRY"
+docker tag capri-dam:latest "$ECR_REGISTRY"/capri-dam:latest
+docker push "$ECR_REGISTRY"/capri-dam:latest
+----
+
+=== ECS cluster
+
+[source,bash]
+----
+aws ecs create-cluster --cluster-name capri-dam --capacity-providers FARGATE FARGATE_SPOT
+----
+
+`FARGATE_SPOT` is optional — useful for the `worker` service to cut cost, since Sidekiq jobs can
+tolerate task interruption/retry; keep `web` on standard `FARGATE` for stability.
+
+=== Task definitions
+
+Two task definitions share the same image but differ in `command` and whether they're attached to a
+target group. Both mount the app's secrets via `secrets` (see
+<<section-aws-secrets-and-credentials>>) rather than baking them into the image.
+
+[cols="1,1,1,3", options="header"]
+|===
+| Task def | vCPU / Memory | Container command | Notes
+| `capri-dam-web` | 1 vCPU / 2 GB (tune per traffic) | (default `CMD` — Thruster/Puma) | Registered in the ALB target group on container port 80, health check path `/up`.
+| `capri-dam-worker` | 1 vCPU / 2 GB (tune per queue depth) | `bundle exec sidekiq -C config/sidekiq.yml` | No load balancer attachment.
+|===
+
+Register with:
+
+[source,bash]
+----
+aws ecs register-task-definition --cli-input-json file://web-task-def.json
+aws ecs register-task-definition --cli-input-json file://worker-task-def.json
+----
+
+=== ECS services + Application Load Balancer
+
+[source,bash]
+----
+aws elbv2 create-load-balancer --name capri-dam-alb --type application \
+  --subnets "$PUBLIC_SUBNET_1A" "$PUBLIC_SUBNET_1B" --security-groups "$ALB_SG"
+
+aws elbv2 create-target-group --name capri-dam-web-tg --protocol HTTP --port 80 \
+  --vpc-id "$VPC_ID" --target-type ip --health-check-path /up
+
+aws ecs create-service --cluster capri-dam --service-name capri-dam-web \
+  --task-definition capri-dam-web --desired-count 2 --launch-type FARGATE \
+  --load-balancers targetGroupArn="$WEB_TG_ARN",containerName=web,containerPort=80 \
+  --network-configuration "awsvpcConfiguration={subnets=[$PRIVATE_SUBNET_1A,$PRIVATE_SUBNET_1B],securityGroups=[$ECS_SG],assignPublicIp=DISABLED}"
+
+aws ecs create-service --cluster capri-dam --service-name capri-dam-worker \
+  --task-definition capri-dam-worker --desired-count 1 --launch-type FARGATE \
+  --network-configuration "awsvpcConfiguration={subnets=[$PRIVATE_SUBNET_1A,$PRIVATE_SUBNET_1B],securityGroups=[$ECS_SG],assignPublicIp=DISABLED}"
+----
+
+`desired-count 2` for `web` gives you rolling, zero-downtime deploys (ECS keeps
+`minimumHealthyPercent` of tasks running while replacing the rest) — see
+<<section-aws-routine-deployments-and-rollback>>.

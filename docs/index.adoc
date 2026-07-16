@@ -47,6 +47,11 @@ ifdef::backend-html5[]
   .quick-links a:hover { text-decoration:underline; }
   .footer-note { text-align:center; color:#888; font-size:0.82rem; margin-top:3rem; padding-top:1rem;
     border-top:1px solid #eee; }
+  .compare-table { width:100%; border-collapse:collapse; margin:1rem 0 0.5rem; font-size:0.88rem; }
+  .compare-table caption { text-align:left; font-weight:600; color:#27408B; margin-bottom:0.5rem; }
+  .compare-table th, .compare-table td { border:1px solid #D0D7DE; padding:0.55rem 0.8rem; text-align:left; vertical-align:top; }
+  .compare-table th { background:#EEF3FB; color:#27408B; }
+  .compare-table tr:nth-child(even) td { background:#FAFBFD; }
 </style>
 
 <div class="hero">
@@ -92,15 +97,105 @@ ifdef::backend-html5[]
     <span class="tag">Getting Started · Support</span>
   </a>
 
-  <a class="card" href="deployment-guide/">
+  <a class="card" href="deployment-guide-kamal/">
     <div class="card-icon">🚀</div>
-    <h2>Deployment Guide</h2>
-    <p>Hands-on production deployment playbooks. Starts with Kamal 2 (Docker + kamal-proxy) —
+    <h2>Deployment Guide — Kamal</h2>
+    <p>Hands-on production deployment playbook for Kamal 2 (Docker + kamal-proxy) —
        prerequisites, secrets, first deploy, rollback, SSL, monitoring, and backups.</p>
     <span class="tag">Kamal · Docker · Ops</span>
   </a>
 
+  <a class="card" href="deployment-guide-aws/">
+    <div class="card-icon">☁️</div>
+    <h2>Deployment Guide — AWS</h2>
+    <p>Production playbook for AWS: ECS Fargate, Aurora PostgreSQL (pgvector), ElastiCache
+       Redis, S3, ALB/ACM, CloudWatch, and backup/DR.</p>
+    <span class="tag">AWS · ECS · Fargate</span>
+  </a>
+
+  <a class="card" href="deployment-guide-azure-kubernetes/">
+    <div class="card-icon">⎈</div>
+    <h2>Deployment Guide — Azure &amp; Kubernetes</h2>
+    <p>Production playbook for Azure Kubernetes Service (AKS): Azure Database for
+       PostgreSQL (pgvector), Azure Cache for Redis, Blob Storage, ingress/cert-manager,
+       and backup/DR.</p>
+    <span class="tag">Azure · AKS · Kubernetes</span>
+  </a>
+
 </div>
+
+<table class="compare-table">
+  <caption>🧭 Choosing a deployment target</caption>
+  <thead>
+    <tr>
+      <th>Criteria</th>
+      <th>Kamal (VPS/bare metal)</th>
+      <th>AWS (ECS Fargate)</th>
+      <th>Azure (AKS)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Ops complexity</td>
+      <td>Lowest — one/few servers, no orchestrator to learn</td>
+      <td>Medium — no servers to patch, but ECS/ALB/IAM concepts to learn</td>
+      <td>Highest — full Kubernetes (manifests, Helm, RBAC) to operate</td>
+    </tr>
+    <tr>
+      <td>Team skill fit</td>
+      <td>Best if the team is comfortable with plain Linux servers &amp; Docker</td>
+      <td>Best if the team is AWS-native but doesn't want to run Kubernetes</td>
+      <td>Best if the team already runs/knows Kubernetes elsewhere (portability matters)</td>
+    </tr>
+    <tr>
+      <td>Scaling model</td>
+      <td>Manual — add servers/roles as needed</td>
+      <td>Automatic — ECS service desired-count + Fargate capacity</td>
+      <td>Automatic — <code>HorizontalPodAutoscaler</code> + cluster autoscaler</td>
+    </tr>
+    <tr>
+      <td>Managed Postgres/Redis</td>
+      <td>No — self-hosted as Kamal accessories (you manage backups/patching)</td>
+      <td>Yes — Aurora PostgreSQL + ElastiCache (pgvector-compatible)</td>
+      <td>Yes — Flexible Server + Azure Cache for Redis (pgvector-compatible)</td>
+    </tr>
+    <tr>
+      <td>Object storage</td>
+      <td>Local disk by default (bind mount), or switch to S3/Blob in-app</td>
+      <td>S3 (in-app <code>StorageBackend</code> switch, no code change)</td>
+      <td>Azure Blob (in-app <code>StorageBackend</code> switch, no code change)</td>
+    </tr>
+    <tr>
+      <td>Relative baseline cost</td>
+      <td>Lowest fixed cost (one small/medium VPS)</td>
+      <td>Medium (Fargate vCPU-seconds + NAT Gateway + Aurora/ElastiCache)</td>
+      <td>Medium–higher (AKS node pool + NAT + Flexible Server + Azure Cache)</td>
+    </tr>
+    <tr>
+      <td>Deploy/rollback mechanism</td>
+      <td><code>bin/kamal deploy</code> / <code>bin/kamal rollback</code></td>
+      <td><code>register-task-definition</code> + <code>update-service</code> / prior revision ARN</td>
+      <td><code>kubectl set image</code> / <code>kubectl rollout undo</code></td>
+    </tr>
+    <tr>
+      <td>Portability if you leave the cloud</td>
+      <td>N/A — already provider-agnostic (any VPS)</td>
+      <td>Low — ECS/Fargate resources are AWS-specific</td>
+      <td>High — the same Kubernetes manifests run on EKS/GKE/any managed K8s with minimal changes</td>
+    </tr>
+    <tr>
+      <td>Full guide</td>
+      <td><a href="deployment-guide-kamal/">Kamal Deployment Guide</a></td>
+      <td><a href="deployment-guide-aws/">AWS Deployment Guide</a></td>
+      <td><a href="deployment-guide-azure-kubernetes/">Azure/Kubernetes Deployment Guide</a></td>
+    </tr>
+  </tbody>
+</table>
+<p style="font-size:0.85rem;color:#595959;margin:0.5rem 0 0;">
+  All three guides deploy the exact same Docker image and Rails application — only the surrounding
+  infrastructure differs, and switching between them later does not require any application code
+  changes.
+</p>
 
 <div class="quick-links">
   <h3>⚡ Quick links</h3>
@@ -114,7 +209,10 @@ ifdef::backend-html5[]
   <a href="developer-guide/workflows.html">Workflow Engine</a>
   <a href="developer-guide/search.html">Search &amp; AI</a>
   <a href="developer-guide/testing.html">Testing</a>
-  <a href="deployment-guide/">Kamal 2 Deployment</a>
+  <a href="developer-guide/environment-variables.html">Environment Variables Reference</a>
+  <a href="deployment-guide-kamal/">Kamal 2 Deployment</a>
+  <a href="deployment-guide-aws/">AWS Deployment</a>
+  <a href="deployment-guide-azure-kubernetes/">Azure/Kubernetes Deployment</a>
 </div>
 
 <div class="footer-note">
@@ -131,6 +229,8 @@ ifndef::backend-html5[]
 * link:developer-guide/index.adoc[Developer Guide]
 * link:product-info/index.adoc[Product Info]
 * link:customer-guide/index.adoc[Customer Guide]
-* link:deployment-guide/index.adoc[Deployment Guide]
+* link:deployment-guide-kamal/index.adoc[Deployment Guide — Kamal]
+* link:deployment-guide-aws/index.adoc[Deployment Guide — AWS]
+* link:deployment-guide-azure-kubernetes/index.adoc[Deployment Guide — Azure & Kubernetes]
 endif::backend-html5[]
 

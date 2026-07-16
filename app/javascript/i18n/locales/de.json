@@ -3000,5 +3000,26 @@
     "notifications": {
       "loadFailed": "Gruppen konnten nicht geladen werden."
     }
+  },
+  "reportsFolderFilter": {
+    "label": "Nach Ordner filtern",
+    "placeholder": "Ordner suchen…",
+    "noOptions": "Keine Ordner gefunden",
+    "loading": "Ordner werden geladen…"
+  },
+  "collectionProperties": {
+    "accessPolicies": {
+      "title": "Gruppenzugriffsrichtlinien",
+      "description": "Gewähren Sie Benutzergruppen gestuften Zugriff auf diese Sammlung. Sobald eine Richtlinie existiert, können nur Gruppen mit einer expliziten Richtlinie (sowie System-/Super-Admins) diese Sammlung ansehen, bearbeiten oder verwalten.",
+      "addGroup": "Gruppe hinzufügen",
+      "add": "Hinzufügen",
+      "empty": "Keine Gruppenrichtlinien konfiguriert — dieser Arbeitsbereich verwendet den oben stehenden klassischen Zulassungs-/Sperrlisten-Zugriff.",
+      "group": "Gruppe",
+      "viewer": "Betrachter",
+      "editor": "Bearbeiter",
+      "admin": "Sammlungsadministrator",
+      "deny": "Verweigern",
+      "remove": "Richtlinie entfernen"
+    }
   }
 }

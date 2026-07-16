@@ -8,7 +8,7 @@ class Api::V1::CollectionsController < ApplicationController
   skip_before_action :verify_authenticity_token, if: -> { token_authenticated_request? }
 
   before_action :authenticate_hybrid!
-  before_action :require_write_scope!, only: %i[create update destroy bulk_delete bulk_update add_asset remove_asset toggle_pin configure_rule create_share_link]
+  before_action :require_write_scope!, only: %i[create update destroy bulk_delete bulk_update add_asset remove_asset toggle_pin configure_rule create_share_link upsert_policy remove_policy]
   before_action :set_collection, only: [
     :show,
     :update,
@@ -20,7 +20,13 @@ class Api::V1::CollectionsController < ApplicationController
     :cluster_map,
     :purge_cdn,
     :create_share_link,
+    :policies,
+    :upsert_policy,
+    :remove_policy,
   ]
+  before_action :ensure_editable!, only: [ :update, :add_asset, :remove_asset, :toggle_pin ]
+  before_action :ensure_manageable!, only: [ :configure_rule, :purge_cdn, :policies, :upsert_policy, :remove_policy ]
+  before_action :ensure_deletable!, only: [ :destroy ]
 
   # GET /api/v1/collections
   def index
@@ -91,7 +97,7 @@ class Api::V1::CollectionsController < ApplicationController
       methods: [ :compliance_violations ],
       include: {
         collection_rule: {
-          only: [ :semantic_prompt, :similarity_threshold, :metadata_filters, :active ],
+          only: [ :semantic_prompt, :similarity_threshold, :metadata_filters, :active, :match_mode ],
         },
         collection_assets: {
           # Only show assets that were in the collection as of this date
@@ -187,12 +193,17 @@ class Api::V1::CollectionsController < ApplicationController
     rule = @collection.collection_rule || @collection.build_collection_rule
 
     # Assign the new parameters
-    rule.semantic_prompt = params[:semantic_prompt]
+    rule.match_mode = params[:match_mode] if params[:match_mode].present?
+    rule.semantic_prompt = params[:semantic_prompt] if params.key?(:semantic_prompt)
     rule.similarity_threshold = params[:similarity_threshold] || 0.800
     rule.metadata_filters = params[:metadata_filters] || {}
     rule.active = params[:active].nil? ? true : params[:active]
 
     if rule.save
+      # Immediately sweep the existing asset library so a (re)configured
+      # rule doesn't only apply to assets created/updated from now on.
+      CollectionRuleBackfillWorker.perform_async(rule.id)
+
       render json: {
         message: "Smart routing rules updated successfully.",
         collection: @collection.as_json(include: :collection_rule),
@@ -264,27 +275,87 @@ class Api::V1::CollectionsController < ApplicationController
     }, status: :ok
   end
 
+  # GET /api/v1/collections/:slug/policies
+  #
+  # Lists every group-scoped access policy configured for this collection's
+  # "Access Governance" tab. An empty array means the collection is still on
+  # legacy open/allow-list access (see {Collection#accessible_by?}).
+  def policies
+    policies = @collection.collection_policies.includes(:user_group).map { |p| serialize_collection_policy(p) }
+
+    render json: { policies: policies }, status: :ok
+  end
+
+  # POST /api/v1/collections/:slug/policies
+  #
+  # Upserts a group's access tier (viewer/editor/collection-admin) for this
+  # workspace. Requires +admin_access+ (or system admin) on the collection.
+  # Body params:
+  #   group_id [Integer]
+  #   view_access, edit_access, admin_access, explicit_deny [Boolean]
+  def upsert_policy
+    group = UserGroup.find_by(id: params[:group_id])
+    return render json: { error: "Group not found" }, status: :not_found unless group
+
+    policy = @collection.collection_policies.find_or_initialize_by(user_group_id: group.id)
+    policy.assign_attributes(collection_policy_params)
+
+    if policy.save
+      render json: { success: true, policy: serialize_collection_policy(policy) }, status: :ok
+    else
+      render json: { errors: policy.errors.full_messages }, status: :unprocessable_entity
+    end
+  end
+
+  # DELETE /api/v1/collections/:slug/policies/:group_id
+  #
+  # Removes a group's explicit access policy. Once the last policy for a
+  # collection is removed, access governance reverts to the legacy
+  # allow/deny-list behavior.
+  def remove_policy
+    policy = @collection.collection_policies.find_by(user_group_id: params[:group_id])
+    return render json: { error: "Policy not found" }, status: :not_found unless policy
+
+    policy.destroy!
+    render json: { message: "Access policy removed." }, status: :ok
+  end
+
   # POST /api/v1/collections/simulate_rule
+  #
+  # Dry-run preview for the smart rule configurator. Accepts either (or
+  # both) of:
+  #   semantic_prompt        [String]  — mocked semantic similarity preview (no real AI gateway wired up yet)
+  #   metadata_filters       [Hash]    — REAL preview: matches actual asset properties, no mocking involved
   def simulate_rule
-    prompt = params.require(:semantic_prompt)
-    threshold = params[:similarity_threshold].to_f
+    metadata_filters = params[:metadata_filters].presence
+    semantic_prompt  = params[:semantic_prompt].presence
 
-    # --- ENTERPRISE VECTOR LOGIC ---
-    # 1. Fetch the vector embedding for the human prompt from your AI Gateway
-    # prompt_vector = AiGatewayClient.get_embedding(prompt)
+    if metadata_filters.blank? && semantic_prompt.blank?
+      return render json: { error: "param is missing or the value is empty: semantic_prompt" }, status: :bad_request
+    end
 
-    # 2. Perform the Cosine Similarity search using pgvector
-    # simulated_matches = Asset.joins(:asset_embedding)
-    #                          .where("1 - (asset_embeddings.embedding <=> ?) >= ?", prompt_vector, threshold)
-    #                          .order(Arel.sql("asset_embeddings.embedding <=> '#{prompt_vector}'"))
-    #                          .limit(20)
+    if metadata_filters.present?
+      simulated_matches = simulate_metadata_matches(metadata_filters)
+    else
+      threshold = params[:similarity_threshold].to_f
 
-    # --- DEVELOPMENT MOCK (Replace with logic above in Production) ---
-    # Simulates finding 4 to 12 assets with random match scores above the threshold
-    simulated_matches = Asset.published.order(Arel.sql("RANDOM()")).limit(rand(4..12)).map do |asset|
-      asset.as_json(only: [ :id, :title, :properties ]).merge(
-        mock_match_score: (threshold + rand(0.01..(1.0 - threshold))).round(3)
-      )
+      # --- ENTERPRISE VECTOR LOGIC ---
+      # 1. Fetch the vector embedding for the human prompt from your AI Gateway
+      # prompt_vector = AiGatewayClient.get_embedding(prompt)
+
+      # 2. Perform the Cosine Similarity search using pgvector
+      # simulated_matches = Asset.joins(:asset_embedding)
+      #                          .where("1 - (asset_embeddings.embedding <=> ?) >= ?", prompt_vector, threshold)
+      #                          .order(Arel.sql("asset_embeddings.embedding <=> '#{prompt_vector}'"))
+      #                          .limit(20)
+
+      # --- DEVELOPMENT MOCK (Replace with logic above in Production) ---
+      # Simulates finding 4 to 12 assets with random match scores above the threshold
+      simulated_matches = Asset.published.order(Arel.sql("RANDOM()")).limit(rand(4..12)).map do |asset|
+        asset.as_json(only: [ :id, :title, :properties ]).merge(
+          mock_match_score: (threshold + rand(0.01..(1.0 - threshold))).round(3)
+        )
+      end
     end
 
     render json: {
@@ -309,6 +380,55 @@ class Api::V1::CollectionsController < ApplicationController
     render json: { error: "Collection not found" }, status: :not_found
   end
 
+  # @api private
+  # Guards content/property-mutating actions (add/remove/pin assets, edit
+  # name/description) — see {Collection#editable_by?}.
+  def ensure_editable!
+    return if performed? || @collection.nil?
+
+    unless @collection.editable_by?(current_user)
+      render json: { error: "You do not have edit access to this workspace." }, status: :forbidden
+    end
+  end
+
+  # @api private
+  # Guards governance-level actions (smart rule config, CDN purge, access
+  # policy CRUD) — restricted to the "Collection Admin" tier, see
+  # {Collection#manageable_by?}.
+  def ensure_manageable!
+    return if performed? || @collection.nil?
+
+    unless @collection.manageable_by?(current_user)
+      render json: { error: "You do not have administrative access to this workspace." }, status: :forbidden
+    end
+  end
+
+  # @api private
+  # Guards archival/deletion — see {Collection#deletable_by?}.
+  def ensure_deletable!
+    return if performed? || @collection.nil?
+
+    unless @collection.deletable_by?(current_user)
+      render json: { error: "You do not have permission to delete this workspace." }, status: :forbidden
+    end
+  end
+
+  def collection_policy_params
+    params.permit(:view_access, :edit_access, :admin_access, :explicit_deny)
+  end
+
+  def serialize_collection_policy(policy)
+    {
+      id: policy.id,
+      group_id: policy.user_group_id,
+      group_name: policy.user_group&.name,
+      view_access: policy.view_access,
+      edit_access: policy.edit_access,
+      admin_access: policy.admin_access,
+      explicit_deny: policy.explicit_deny,
+    }
+  end
+
   # Assets are addressable by either their primary key (+id+) or their public
   # +uuid+ column (the value returned by search/suggestion endpoints), so any
   # asset_id param coming from the client may be either.
@@ -316,6 +436,19 @@ class Api::V1::CollectionsController < ApplicationController
     return nil if asset_id.blank?
 
     Asset.find_by(id: asset_id) || Asset.find_by(uuid: asset_id)
+  end
+
+  # REAL (non-mocked) metadata-rule preview: applies the exact same
+  # array-intersection matching {SmartCollectionRouterWorker} uses in
+  # production, against the real asset library, capped at 20 results.
+  def simulate_metadata_matches(metadata_filters)
+    filters = metadata_filters.respond_to?(:to_unsafe_h) ? metadata_filters.to_unsafe_h : metadata_filters
+
+    Asset.active.find_each.filter_map do |asset|
+      next unless filters.all? { |key, required| (Array(asset.properties[key.to_s]) & Array(required)).any? }
+
+      asset.as_json(only: [ :id, :title, :properties ])
+    end.first(20)
   end
 
   def collection_params

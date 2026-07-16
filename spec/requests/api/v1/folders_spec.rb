@@ -27,7 +27,7 @@ RSpec.describe 'Api::V1::Folders', type: :request do
                      type: :object,
                      required: [ 'id', 'name' ],
                      properties: {
-                       id:        { type: :integer, example: 42 },
+                       id:        { type: :string, format: :uuid, example: 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d' },
                        name:      { type: :string,  example: '/Marketing/2026' },
                        slug:      { type: :string,  example: 'campaigns' },
                        path:      { type: :string,  example: '/Marketing/2026' },
@@ -132,7 +132,7 @@ RSpec.describe 'Api::V1::Folders', type: :request do
                    items: {
                      type: :object,
                      properties: {
-                       id:           { type: :integer },
+                       id:           { type: :string, format: :uuid },
                        uuid:         { type: :string, format: :uuid },
                        title:        { type: :string },
                        status:       { type: :string, example: 'ready' },

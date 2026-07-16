@@ -1,0 +1,64 @@
+[[section-aws-first-deployment-playbook]]
+== First Deployment Playbook
+
+Ordered, copy-pasteable commands for standing up the very first environment, assuming
+<<section-aws-infrastructure-reference>>, <<section-aws-secrets-and-credentials>>, and
+<<section-aws-managed-data-services>> resources already exist.
+
+. **Build and push the image**
++
+[source,bash]
+----
+docker build -t capri-dam .
+aws ecr get-login-password | docker login --username AWS --password-stdin "$ECR_REGISTRY"
+docker tag capri-dam:latest "$ECR_REGISTRY"/capri-dam:latest
+docker push "$ECR_REGISTRY"/capri-dam:latest
+----
+
+. **Register the task definitions** (web + worker), referencing the pushed image tag and the
+  secrets/roles from <<section-aws-secrets-and-credentials>>:
++
+[source,bash]
+----
+aws ecs register-task-definition --cli-input-json file://web-task-def.json
+aws ecs register-task-definition --cli-input-json file://worker-task-def.json
+----
+
+. **Run the database setup as a one-off task** (not via `create-service` — this only needs to run
+  once, so use `run-task` directly against the `worker` task definition with a command override):
++
+[source,bash]
+----
+aws ecs run-task --cluster capri-dam --task-definition capri-dam-worker \
+  --launch-type FARGATE \
+  --overrides '{"containerOverrides":[{"name":"worker","command":["bin/rails","db:prepare"]}]}' \
+  --network-configuration "awsvpcConfiguration={subnets=[$PRIVATE_SUBNET_1A],securityGroups=[$ECS_SG],assignPublicIp=DISABLED}"
+----
++
+Wait for the task to reach `STOPPED` with exit code `0` before continuing (check via
+`aws ecs describe-tasks`).
+
+. **Create the ECS services** (web attached to the ALB target group, worker standalone) — see the
+  exact commands in <<section-aws-infrastructure-reference>>.
+
+. **Wait for the service to stabilize**:
++
+[source,bash]
+----
+aws ecs wait services-stable --cluster capri-dam --services capri-dam-web capri-dam-worker
+----
+
+. **Point DNS at the ALB** (see <<section-aws-ssl-domains-and-routing>> for the full ACM + Route 53
+  walkthrough) and confirm:
++
+[source,bash]
+----
+curl -I https://dam.example.com/up
+----
++
+A `200 OK` from the `/up` health check endpoint confirms the web service is live end-to-end (ALB →
+target group → task → Rails health check).
+
+. **Create the first admin user** — same one-off `run-task` pattern as step 3, overriding the command
+  to `bin/rails runner "..."` or a dedicated rake task, exactly as documented in the
+  link:../developer-guide/[Developer Guide]'s initial-setup section.

@@ -49,6 +49,11 @@ class Collection < ApplicationRecord
   #   @return [CollectionRule, nil] the smart-routing rule for auto-population
   has_one :collection_rule, dependent: :destroy
 
+  # @!attribute [r] collection_policies
+  #   @return [ActiveRecord::Associations::CollectionProxy<CollectionPolicy>]
+  #   Group-scoped access grants — see {#accessible_by?}/{#editable_by?}/{#manageable_by?}.
+  has_many :collection_policies, dependent: :destroy
+
   # @!attribute [r] assets
   #   @return [ActiveRecord::Associations::CollectionProxy<Asset>]
   has_many :assets, through: :collection_assets
@@ -127,14 +132,26 @@ class Collection < ApplicationRecord
   #
   # Evaluation order:
   # 1. Admin or owner → +true+.
-  # 2. User belongs to a denied group → +false+.
-  # 3. Whitelist exists and user is in it → +true+.
-  # 4. No constraints → +true+.
+  # 2. Any {CollectionPolicy} row exists for this collection → access is
+  #    governed *exclusively* by group policies from here on (an explicit
+  #    +explicit_deny+ always wins; otherwise the user needs +view_access+,
+  #    +edit_access+, or +admin_access+ via at least one of their groups).
+  # 3. Otherwise, falls back to the legacy +allowed_groups+/+denied_groups+
+  #    JSONB whitelist/blacklist (unchanged behavior for collections that
+  #    haven't adopted the newer group-policy model yet).
+  # 4. No constraints anywhere → +true+.
   #
   # @param user [User]
   # @return [Boolean]
   def accessible_by?(user)
     return true if user.admin? || user.id == self.user_id
+
+    if collection_policies.exists?
+      policies = collection_policies.where(user_group_id: user.effective_group_ids)
+      return false if policies.any?(&:explicit_deny)
+
+      return policies.any? { |p| p.view_access? || p.edit_access? || p.admin_access? }
+    end
 
     user_group_names = user.user_groups.pluck(:name)
 
@@ -147,6 +164,57 @@ class Collection < ApplicationRecord
     end
 
     true
+  end
+
+  # Determines whether the given user may modify this workspace's contents
+  # or properties (add/remove/pin assets, edit name/description/tags).
+  #
+  # Granted to: system admins/super-admins, the collection's own creator
+  # (as long as no explicit group policy has been configured yet — see
+  # class docs), and any user in a group with +edit_access+ or
+  # +admin_access+ (unless explicitly denied).
+  #
+  # @param user [User]
+  # @return [Boolean]
+  def editable_by?(user)
+    return true if system_admin?(user)
+    return true if owner_bootstrap?(user)
+
+    policies = collection_policies.where(user_group_id: user.effective_group_ids)
+    return false if policies.any?(&:explicit_deny)
+
+    policies.any? { |p| p.edit_access? || p.admin_access? }
+  end
+
+  # Determines whether the given user may manage this workspace's
+  # governance-level configuration: smart rules, access policies, CDN purge.
+  #
+  # This is the "Collection Admin" tier — narrower than {#editable_by?} and
+  # deliberately restricted to system admins/super-admins and users in a
+  # group with +admin_access+ (the collection's creator retains this right
+  # too, but only until an explicit {CollectionPolicy} has been configured —
+  # see class docs).
+  #
+  # @param user [User]
+  # @return [Boolean]
+  def manageable_by?(user)
+    return true if system_admin?(user)
+    return true if owner_bootstrap?(user)
+
+    policies = collection_policies.where(user_group_id: user.effective_group_ids)
+    return false if policies.any?(&:explicit_deny)
+
+    policies.any?(&:admin_access?)
+  end
+
+  # Archiving/deleting a workspace requires the same "Collection Admin" tier
+  # as {#manageable_by?} — system admins, super-admins, and group-based
+  # collection-admins (or the creator, until explicit policies exist).
+  #
+  # @param user [User]
+  # @return [Boolean]
+  def deletable_by?(user)
+    manageable_by?(user)
   end
 
   # Returns the number of assets currently in this collection.
@@ -196,6 +264,22 @@ class Collection < ApplicationRecord
   end
 
   private
+
+  # @api private
+  # System-level admins (regular or super) always bypass collection-level
+  # governance entirely.
+  def system_admin?(user)
+    user.admin? || user.super_admin?
+  end
+
+  # @api private
+  # The collection's creator retains full editable/manageable rights until
+  # the workspace has been explicitly locked down with at least one
+  # {CollectionPolicy} — at that point access is governed solely by group
+  # policies, even for the original owner.
+  def owner_bootstrap?(user)
+    user.id == self.user_id && !collection_policies.exists?
+  end
 
   # @api private
   def set_default_properties

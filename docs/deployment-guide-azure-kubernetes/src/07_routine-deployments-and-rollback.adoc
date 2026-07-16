@@ -1,0 +1,61 @@
+[[section-azure-k8s-routine-deployments-and-rollback]]
+== Routine Deployments & Rollback
+
+=== Deploying a new version
+
+Every deploy after the first follows the same pattern — build, push a uniquely-tagged image, then tell
+Kubernetes to roll it out:
+
+[source,bash]
+----
+IMAGE_TAG=$(git rev-parse --short HEAD)
+docker build -t capridamacr.azurecr.io/capri-dam:"$IMAGE_TAG" .
+az acr login --name capridamacr
+docker push capridamacr.azurecr.io/capri-dam:"$IMAGE_TAG"
+
+kubectl set image deployment/capri-dam-web web=capridamacr.azurecr.io/capri-dam:"$IMAGE_TAG" -n capri-dam
+kubectl set image deployment/capri-dam-worker worker=capridamacr.azurecr.io/capri-dam:"$IMAGE_TAG" -n capri-dam
+
+kubectl rollout status deployment/capri-dam-web -n capri-dam
+kubectl rollout status deployment/capri-dam-worker -n capri-dam
+----
+
+Always use an immutable, unique tag (commit SHA) rather than `latest` — `kubectl set image` only
+triggers a rollout when the image reference actually changes, and `latest` makes rollback/audit
+ambiguous.
+
+If a migration is needed, run it as a one-off `Job` (same pattern as the first-deployment playbook's
+`db:prepare` step) **before** updating the deployments, so new-code pods never start against an
+un-migrated schema.
+
+=== Zero-downtime rolling deploy
+
+The `Deployment`'s `strategy.rollingUpdate` (`maxUnavailable: 0, maxSurge: 1`, set in
+<<section-azure-k8s-cluster-and-manifests>>) starts one new pod, waits for its `readinessProbe`
+(`/up`) to pass, then terminates one old pod — repeating until fully rolled out. No traffic is ever
+routed to a pod before its readiness probe succeeds, and at least the original replica count stays
+available throughout.
+
+=== Rollback
+
+Kubernetes retains a `Deployment`'s rollout history automatically:
+
+[source,bash]
+----
+kubectl rollout history deployment/capri-dam-web -n capri-dam
+kubectl rollout undo deployment/capri-dam-web -n capri-dam
+# or roll back to a specific revision:
+kubectl rollout undo deployment/capri-dam-web -n capri-dam --to-revision=3
+----
+
+This is equivalent in effect to Kamal's `bin/kamal rollback` — a fast revert to a previous image with
+no new build required, since the previous image is still in ACR and the previous `ReplicaSet` spec is
+retained by Kubernetes.
+
+=== CI/CD wiring (optional)
+
+The steps above map directly onto a GitHub Actions job: build/push to ACR in one step, `kubectl set
+image` + `kubectl rollout status` in the next (using a scoped kubeconfig / OIDC federated credential
+for the CI runner rather than a long-lived service principal secret). Gate the job on the existing
+RSpec/Jest/Rubocop/Brakeman CI checks already required for merges to `main` (see `CONTRIBUTING.md`), so
+nothing broken ever reaches `kubectl set image`.

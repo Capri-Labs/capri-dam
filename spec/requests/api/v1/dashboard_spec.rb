@@ -69,9 +69,9 @@ RSpec.describe "Api::V1::Dashboard coverage", type: :request do
   before { sign_in user }
 
   it "categorizes mime types, storage, workflows and AI insights" do
-    create(:asset, user: user, title: "Video", status: :draft, properties: { "content_type" => "video/mp4", "file_size" => "1048576" })
-    create(:asset, user: user, status: :ready, properties: { "content_type" => "audio/mpeg", "file_size" => "0", "image_analysis_status" => "failed" })
-    create(:asset, user: user, status: :ready, properties: { "content_type" => "application/pdf", "file_size" => "2048", "applied_schema_name" => "Core" })
+    create(:asset, user: user, title: "Video", status: :draft, properties: { "content_type" => "video/mp4", "size" => "1048576" })
+    create(:asset, user: user, status: :ready, properties: { "content_type" => "audio/mpeg", "size" => "0", "image_analysis_status" => "failed" })
+    create(:asset, user: user, status: :ready, properties: { "content_type" => "application/pdf", "size" => "2048", "applied_schema_name" => "Core" })
     create(:asset, user: user, status: :ready, properties: { "content_type" => "application/vnd.openxmlformats-officedocument.wordprocessingml.document" })
 
     get "/api/v1/dashboard/overview", as: :json
@@ -87,6 +87,37 @@ RSpec.describe "Api::V1::Dashboard coverage", type: :request do
     expect(controller.send(:simplify_mime, "text/plain")).to eq("Other")
   end
 
+  it "merges distinct raw content types into a single bucket entry (regression: duplicate pie slices)" do
+    create(:asset, user: user, status: :ready, properties: { "content_type" => "image/jpeg" })
+    create(:asset, user: user, status: :ready, properties: { "content_type" => "image/png" })
+    create(:asset, user: user, status: :ready,
+                   properties: { "content_type" => "application/vnd.openxmlformats-officedocument.wordprocessingml.document" })
+    create(:asset, user: user, status: :ready, properties: { "content_type" => "application/msword" })
+
+    get "/api/v1/dashboard/overview", as: :json
+    by_type = response.parsed_body["assets_by_type"]
+
+    images_rows = by_type.select { |row| row["type"] == "Images" }
+    documents_rows = by_type.select { |row| row["type"] == "Documents" }
+
+    expect(images_rows.length).to eq(1)
+    expect(images_rows.first["count"]).to eq(2)
+    expect(documents_rows.length).to eq(1)
+    expect(documents_rows.first["count"]).to eq(2)
+  end
+
+  it "sums the `size` property (not the unused `file_size` key) for storage and recent-asset sizes" do
+    create(:asset, user: user, status: :ready, properties: { "content_type" => "image/jpeg", "size" => "1000" })
+    create(:asset, user: user, status: :ready, properties: { "content_type" => "image/png", "size" => "2000" })
+
+    get "/api/v1/dashboard/overview", as: :json
+    body = response.parsed_body
+
+    expect(body["storage"]["total_bytes"]).to eq(3000)
+    expect(body["storage"]["total_human"]).not_to eq("0 B")
+    expect(body["recent_assets"].map { |a| a["file_size"] }).to include(1000, 2000)
+  end
+
   it "falls back to zero storage when the aggregate query returns no rows" do
     allow(ActiveRecord::Base.connection).to receive(:execute).and_return([])
 
@@ -99,7 +130,7 @@ RSpec.describe "Api::V1::Dashboard coverage", type: :request do
       id: 1,
       uuid: "uuid-1",
       title: nil,
-      properties: { "original_filename" => "cover.png", "content_type" => "image/png", "file_size" => "12" },
+      properties: { "original_filename" => "cover.png", "content_type" => "image/png", "size" => "12" },
       created_at: Time.zone.parse("2026-07-03 10:00:00"),
       status: "ready"
     )

@@ -3000,5 +3000,26 @@
     "notifications": {
       "loadFailed": "No se pudieron cargar los grupos."
     }
+  },
+  "reportsFolderFilter": {
+    "label": "Filtrar por carpeta",
+    "placeholder": "Buscar carpetas…",
+    "noOptions": "No se encontraron carpetas",
+    "loading": "Cargando carpetas…"
+  },
+  "collectionProperties": {
+    "accessPolicies": {
+      "title": "Políticas de acceso por grupo",
+      "description": "Otorgue a los grupos de usuarios acceso escalonado a esta colección. En cuanto exista una política, solo los grupos con una política explícita (y los administradores del sistema/super administradores) podrán ver, editar o gestionar esta colección.",
+      "addGroup": "Añadir grupo",
+      "add": "Añadir",
+      "empty": "No hay políticas de grupo configuradas — este espacio de trabajo usa el acceso heredado de listas de permitidos/denegados anterior.",
+      "group": "Grupo",
+      "viewer": "Visualizador",
+      "editor": "Editor",
+      "admin": "Administrador de la colección",
+      "deny": "Denegar",
+      "remove": "Eliminar política"
+    }
   }
 }

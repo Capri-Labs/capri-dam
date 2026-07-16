@@ -4605,9 +4605,12 @@ paths:
       security:
       - Bearer: []
       description: |
-        Runs a pgvector cosine-similarity search against a semantic prompt and
-        returns matching assets with mock match scores. Use this to preview the
-        results of a smart-collection rule **before** committing it.
+        Runs either a real metadata-filter match (against actual asset
+        `properties`) or a mocked pgvector cosine-similarity search against a
+        semantic prompt, and returns matching assets with match scores. Use
+        this to preview the results of a smart-collection rule **before**
+        committing it. Provide `metadata_filters` for a real (non-mocked)
+        preview, or `semantic_prompt` for the AI-gateway mock.
       parameters: []
       responses:
         '200':
@@ -4637,7 +4640,7 @@ paths:
                     type: string
                     example: Simulation complete.
         '400':
-          description: Missing required `semantic_prompt` parameter
+          description: Missing both `semantic_prompt` and `metadata_filters` parameters
           content:
             application/json:
               schema:
@@ -4650,8 +4653,6 @@ paths:
           application/json:
             schema:
               type: object
-              required:
-              - semantic_prompt
               properties:
                 semantic_prompt:
                   type: string
@@ -4660,6 +4661,12 @@ paths:
                   type: number
                   example: 0.8
                   description: Cosine similarity floor (0.0–1.0)
+                metadata_filters:
+                  type: object
+                  example:
+                    status: approved
+                  description: Real (non-mocked) property match preview; matches assets
+                    whose properties intersect these values
   "/api/v1/collections/{slug}":
     parameters:
     - name: slug
@@ -4906,9 +4913,15 @@ paths:
       - Bearer: []
       description: |
         Upserts the `CollectionRule` for this workspace. Setting `active: true`
-        causes the system to automatically route assets that match the semantic
-        prompt and metadata filters into this collection. Also marks the
-        collection as `collection_type: smart`.
+        causes the system to automatically route assets that match the
+        configured rule into this collection. Also marks the collection as
+        `collection_type: smart`. Requires administrative (collection-admin)
+        access to the workspace.
+
+        `match_mode` selects the routing strategy:
+        - `semantic` (default) — AI cosine-similarity match against `semantic_prompt`
+        - `metadata` — pure property/tag match against `metadata_filters`, no AI involved
+        - `hybrid` — both must pass
       parameters: []
       responses:
         '200':
@@ -4922,6 +4935,15 @@ paths:
                     type: string
                   collection:
                     type: object
+        '403':
+          description: Caller lacks administrative access to this workspace
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
         '422':
           description: Rule validation failed
           content:
@@ -4939,6 +4961,13 @@ paths:
             schema:
               type: object
               properties:
+                match_mode:
+                  type: string
+                  enum:
+                  - semantic
+                  - metadata
+                  - hybrid
+                  example: semantic
                 semantic_prompt:
                   type: string
                   example: outdoor lifestyle photography
@@ -4952,6 +4981,180 @@ paths:
                 active:
                   type: boolean
                   example: true
+  "/api/v1/collections/{slug}/policies":
+    parameters:
+    - name: slug
+      in: path
+      required: true
+      description: Collection slug
+      schema:
+        type: string
+    get:
+      summary: List group-scoped access policies for a collection
+      tags:
+      - Collections
+      security:
+      - Bearer: []
+      description: |
+        Returns every `CollectionPolicy` configured for this workspace's
+        "Access Governance" tab. An empty array means the collection is still
+        on legacy open/allow-list access (`allowed_groups`/`denied_groups`).
+      responses:
+        '200':
+          description: Policies returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  policies:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        group_id:
+                          type: integer
+                        group_name:
+                          type: string
+                        view_access:
+                          type: boolean
+                        edit_access:
+                          type: boolean
+                        admin_access:
+                          type: boolean
+                        explicit_deny:
+                          type: boolean
+    post:
+      summary: Upsert a group's access tier (viewer/editor/collection-admin) for this
+        workspace
+      tags:
+      - Collections
+      security:
+      - Bearer: []
+      description: |
+        Creates or updates the `CollectionPolicy` for a group on this
+        collection. Requires administrative (collection-admin) access.
+        Creating even one policy switches the collection from legacy
+        open/allow-list access to strict group-governed access.
+      parameters: []
+      responses:
+        '200':
+          description: Policy upserted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  policy:
+                    type: object
+        '403':
+          description: Caller lacks administrative access to this workspace
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '404':
+          description: Group not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '422':
+          description: Policy validation failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - group_id
+              properties:
+                group_id:
+                  type: integer
+                  example: 42
+                view_access:
+                  type: boolean
+                  example: true
+                edit_access:
+                  type: boolean
+                  example: false
+                admin_access:
+                  type: boolean
+                  example: false
+                explicit_deny:
+                  type: boolean
+                  example: false
+  "/api/v1/collections/{slug}/policies/{group_id}":
+    parameters:
+    - name: slug
+      in: path
+      required: true
+      description: Collection slug
+      schema:
+        type: string
+    - name: group_id
+      in: path
+      required: true
+      description: UserGroup ID
+      schema:
+        type: integer
+    delete:
+      summary: Remove a group's explicit access policy for this workspace
+      tags:
+      - Collections
+      security:
+      - Bearer: []
+      description: |
+        Removes the `CollectionPolicy` for a group. Once the last policy for
+        a collection is removed, access governance reverts to legacy
+        allow/deny-list behavior. Requires administrative access.
+      responses:
+        '200':
+          description: Policy removed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '403':
+          description: Caller lacks administrative access to this workspace
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '404':
+          description: Policy not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
   "/api/v1/collections/{slug}/purge_cdn":
     parameters:
     - name: slug
@@ -5852,8 +6055,9 @@ paths:
                       - name
                       properties:
                         id:
-                          type: integer
-                          example: 42
+                          type: string
+                          format: uuid
+                          example: a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d
                         name:
                           type: string
                           example: "/Marketing/2026"
@@ -6004,7 +6208,8 @@ paths:
                       type: object
                       properties:
                         id:
-                          type: integer
+                          type: string
+                          format: uuid
                         uuid:
                           type: string
                           format: uuid

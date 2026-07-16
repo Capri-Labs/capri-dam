@@ -116,6 +116,36 @@ class Folder < ApplicationRecord
     false
   end
 
+  # Expands a list of folder ids to include every descendant folder id
+  # (recursive), so filters like "assets in these folders" naturally include
+  # sub-folders. Computed with a single in-memory pass over all active
+  # folders' (id, parent_id) pairs rather than a recursive SQL CTE — the
+  # folder tree is small enough that this is simpler and just as fast.
+  #
+  # @param ids [Array<String, Integer>] one or more starting folder ids
+  # @return [Array<String>] +ids+ plus every descendant id, as strings
+  def self.expand_ids_with_descendants(ids)
+    ids = Array(ids).compact.map(&:to_s)
+    return [] if ids.empty?
+
+    children_by_parent = Folder.active.pluck(:id, :parent_id)
+                                .group_by { |(_id, parent_id)| parent_id.to_s }
+
+    result = Set.new(ids)
+    queue = ids.dup
+    until queue.empty?
+      current_id = queue.shift
+      (children_by_parent[current_id] || []).each do |(child_id, _parent_id)|
+        child_id = child_id.to_s
+        next if result.include?(child_id)
+
+        result << child_id
+        queue << child_id
+      end
+    end
+    result.to_a
+  end
+
   private
 
   # Generates a URL-safe slug from +name+ using Rails' +parameterize+.

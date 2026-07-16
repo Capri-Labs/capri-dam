@@ -179,18 +179,22 @@ RSpec.describe 'Api::V1::Collections', type: :request do
       produces 'application/json'
       security [ Bearer: [] ]
       description <<~DESC
-        Runs a pgvector cosine-similarity search against a semantic prompt and
-        returns matching assets with mock match scores. Use this to preview the
-        results of a smart-collection rule **before** committing it.
+        Runs either a real metadata-filter match (against actual asset
+        `properties`) or a mocked pgvector cosine-similarity search against a
+        semantic prompt, and returns matching assets with match scores. Use
+        this to preview the results of a smart-collection rule **before**
+        committing it. Provide `metadata_filters` for a real (non-mocked)
+        preview, or `semantic_prompt` for the AI-gateway mock.
       DESC
 
       parameter name: :payload, in: :body, schema: {
         type: :object,
-        required: [ 'semantic_prompt' ],
         properties: {
           semantic_prompt:      { type: :string,  example: 'outdoor lifestyle photography autumn' },
           similarity_threshold: { type: :number,  example: 0.80,
                                   description: 'Cosine similarity floor (0.0–1.0)' },
+          metadata_filters:     { type: :object, example: { status: 'approved' },
+                                  description: 'Real (non-mocked) property match preview; matches assets whose properties intersect these values' },
         },
       }
 
@@ -215,7 +219,7 @@ RSpec.describe 'Api::V1::Collections', type: :request do
         run_test!
       end
 
-      response '400', 'Missing required `semantic_prompt` parameter' do
+      response '400', 'Missing both `semantic_prompt` and `metadata_filters` parameters' do
         schema type: :object, properties: { error: { type: :string } }
         run_test!
       end
@@ -411,14 +415,21 @@ RSpec.describe 'Api::V1::Collections', type: :request do
       security [ Bearer: [] ]
       description <<~DESC
         Upserts the `CollectionRule` for this workspace. Setting `active: true`
-        causes the system to automatically route assets that match the semantic
-        prompt and metadata filters into this collection. Also marks the
-        collection as `collection_type: smart`.
+        causes the system to automatically route assets that match the
+        configured rule into this collection. Also marks the collection as
+        `collection_type: smart`. Requires administrative (collection-admin)
+        access to the workspace.
+
+        `match_mode` selects the routing strategy:
+        - `semantic` (default) — AI cosine-similarity match against `semantic_prompt`
+        - `metadata` — pure property/tag match against `metadata_filters`, no AI involved
+        - `hybrid` — both must pass
       DESC
 
       parameter name: :payload, in: :body, schema: {
         type: :object,
         properties: {
+          match_mode:           { type: :string, enum: %w[semantic metadata hybrid], example: 'semantic' },
           semantic_prompt:      { type: :string, example: 'outdoor lifestyle photography' },
           similarity_threshold: { type: :number, example: 0.80 },
           metadata_filters:     { type: :object, example: { region: 'EMEA' } },
@@ -435,9 +446,138 @@ RSpec.describe 'Api::V1::Collections', type: :request do
         run_test!
       end
 
+      response '403', 'Caller lacks administrative access to this workspace' do
+        schema type: :object, properties: { error: { type: :string } }
+        run_test!
+      end
+
       response '422', 'Rule validation failed' do
         schema type: :object,
                properties: { errors: { type: :array, items: { type: :string } } }
+        run_test!
+      end
+    end
+  end
+
+  # ===========================================================================
+  # ACCESS GOVERNANCE POLICIES — /api/v1/collections/{slug}/policies
+  # ===========================================================================
+  path '/api/v1/collections/{slug}/policies' do
+    parameter name: :slug, in: :path, type: :string, required: true,
+              description: 'Collection slug'
+
+    get 'List group-scoped access policies for a collection' do
+      tags 'Collections'
+      produces 'application/json'
+      security [ Bearer: [] ]
+      description <<~DESC
+        Returns every `CollectionPolicy` configured for this workspace's
+        "Access Governance" tab. An empty array means the collection is still
+        on legacy open/allow-list access (`allowed_groups`/`denied_groups`).
+      DESC
+
+      response '200', 'Policies returned' do
+        schema type: :object,
+               properties: {
+                 policies: {
+                   type: :array,
+                   items: {
+                     type: :object,
+                     properties: {
+                       id:            { type: :integer },
+                       group_id:      { type: :integer },
+                       group_name:    { type: :string },
+                       view_access:   { type: :boolean },
+                       edit_access:   { type: :boolean },
+                       admin_access:  { type: :boolean },
+                       explicit_deny: { type: :boolean },
+                     },
+                   },
+                 },
+               }
+        run_test!
+      end
+    end
+
+    post "Upsert a group's access tier (viewer/editor/collection-admin) for this workspace" do
+      tags 'Collections'
+      consumes 'application/json'
+      produces 'application/json'
+      security [ Bearer: [] ]
+      description <<~DESC
+        Creates or updates the `CollectionPolicy` for a group on this
+        collection. Requires administrative (collection-admin) access.
+        Creating even one policy switches the collection from legacy
+        open/allow-list access to strict group-governed access.
+      DESC
+
+      parameter name: :payload, in: :body, schema: {
+        type: :object,
+        required: [ 'group_id' ],
+        properties: {
+          group_id:      { type: :integer, example: 42 },
+          view_access:   { type: :boolean, example: true },
+          edit_access:   { type: :boolean, example: false },
+          admin_access:  { type: :boolean, example: false },
+          explicit_deny: { type: :boolean, example: false },
+        },
+      }
+
+      response '200', 'Policy upserted' do
+        schema type: :object,
+               properties: {
+                 success: { type: :boolean },
+                 policy:  { type: :object },
+               }
+        run_test!
+      end
+
+      response '403', 'Caller lacks administrative access to this workspace' do
+        schema type: :object, properties: { error: { type: :string } }
+        run_test!
+      end
+
+      response '404', 'Group not found' do
+        schema type: :object, properties: { error: { type: :string } }
+        run_test!
+      end
+
+      response '422', 'Policy validation failed' do
+        schema type: :object,
+               properties: { errors: { type: :array, items: { type: :string } } }
+        run_test!
+      end
+    end
+  end
+
+  path '/api/v1/collections/{slug}/policies/{group_id}' do
+    parameter name: :slug, in: :path, type: :string, required: true,
+              description: 'Collection slug'
+    parameter name: :group_id, in: :path, type: :integer, required: true,
+              description: 'UserGroup ID'
+
+    delete "Remove a group's explicit access policy for this workspace" do
+      tags 'Collections'
+      produces 'application/json'
+      security [ Bearer: [] ]
+      description <<~DESC
+        Removes the `CollectionPolicy` for a group. Once the last policy for
+        a collection is removed, access governance reverts to legacy
+        allow/deny-list behavior. Requires administrative access.
+      DESC
+
+      response '200', 'Policy removed' do
+        schema type: :object, properties: { message: { type: :string } }
+        run_test!
+      end
+
+      response '403', 'Caller lacks administrative access to this workspace' do
+        schema type: :object, properties: { error: { type: :string } }
+        run_test!
+      end
+
+      response '404', 'Policy not found' do
+        schema type: :object, properties: { error: { type: :string } }
         run_test!
       end
     end

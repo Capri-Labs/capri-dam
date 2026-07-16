@@ -125,4 +125,112 @@ RSpec.describe DuplicateGroup, type: :model do
       expect(group.summary).to include("abc123def4")
     end
   end
+
+  # ---------------------------------------------------------------------------
+  # #recalculate_active_membership! — keeps the Duplicate Manager in sync when
+  # a member asset is soft-deleted (moved to bin) or restored.
+  # ---------------------------------------------------------------------------
+  describe "#recalculate_active_membership!" do
+    let(:group) { create(:duplicate_group, status: "pending", total_count: 2) }
+    let(:asset_a) { create(:asset) }
+    let(:asset_b) { create(:asset) }
+
+    before do
+      create(:duplicate_group_asset, duplicate_group: group, asset: asset_a, is_original: true)
+      create(:duplicate_group_asset, duplicate_group: group, asset: asset_b)
+    end
+
+    context "when a member is soft-deleted, leaving fewer than 2 active members" do
+      it "auto-resolves the group without a user-attributed resolution_action" do
+        asset_b.soft_delete
+        group.recalculate_active_membership!
+
+        expect(group.reload.status).to eq("resolved")
+        expect(group.resolution_action).to be_nil
+        expect(group.total_count).to eq(1)
+      end
+    end
+
+    context "when both members remain active" do
+      it "leaves the group pending and total_count unchanged" do
+        group.recalculate_active_membership!
+
+        expect(group.reload.status).to eq("pending")
+        expect(group.total_count).to eq(2)
+      end
+    end
+
+    context "when a previously auto-resolved group regains 2+ active members (asset restored)" do
+      before do
+        asset_b.soft_delete
+        group.recalculate_active_membership!
+        expect(group.reload.status).to eq("resolved") # sanity check on the setup
+      end
+
+      it "reopens the group to pending" do
+        asset_b.restore
+        group.recalculate_active_membership!
+
+        expect(group.reload.status).to eq("pending")
+        expect(group.total_count).to eq(2)
+      end
+    end
+
+    context "when the group was explicitly resolved by a user (resolution_action present)" do
+      let(:user) { create(:user) }
+
+      it "does not reopen it even if members become active again" do
+        asset_b.soft_delete
+        group.resolve!(action: "kept_all", user: user)
+
+        asset_b.restore
+        group.recalculate_active_membership!
+
+        expect(group.reload.status).to eq("resolved")
+      end
+    end
+
+    context "when the group has been dismissed" do
+      it "leaves dismissed groups untouched" do
+        group.dismiss!(user: create(:user))
+        asset_b.soft_delete
+
+        group.recalculate_active_membership!
+
+        expect(group.reload.status).to eq("dismissed")
+      end
+    end
+  end
+
+  # ---------------------------------------------------------------------------
+  # Integration: Asset soft-delete/restore triggers group sync automatically
+  # via the `after_commit` hook on Asset.
+  # ---------------------------------------------------------------------------
+  describe "auto-sync via Asset soft_delete/restore" do
+    let(:group) { create(:duplicate_group, status: "pending", total_count: 2) }
+    let(:asset_a) { create(:asset) }
+    let(:asset_b) { create(:asset) }
+
+    before do
+      create(:duplicate_group_asset, duplicate_group: group, asset: asset_a, is_original: true)
+      create(:duplicate_group_asset, duplicate_group: group, asset: asset_b)
+    end
+
+    it "auto-resolves the group when a member is soft-deleted, without requiring a manual call" do
+      asset_b.soft_delete
+
+      expect(group.reload.status).to eq("resolved")
+      expect(group.total_count).to eq(1)
+    end
+
+    it "reopens the group when the soft-deleted member is restored" do
+      asset_b.soft_delete
+      expect(group.reload.status).to eq("resolved")
+
+      asset_b.restore
+
+      expect(group.reload.status).to eq("pending")
+      expect(group.total_count).to eq(2)
+    end
+  end
 end

@@ -59,10 +59,18 @@ module Api
           Arel.sql(
             "SELECT COALESCE(properties->>'content_type', 'unknown') as ctype, COUNT(*) as cnt\n" \
             "FROM assets WHERE deleted_at IS NULL\n" \
-            "GROUP BY ctype ORDER BY cnt DESC LIMIT 10"
+            "GROUP BY ctype"
           )
         )
-        rows.map { |row| { type: simplify_mime(row["ctype"]), count: row["cnt"].to_i } }
+
+        # `simplify_mime` collapses many raw content types (e.g. .doc/.docx/.ppt)
+        # into the same friendly bucket ("Documents"), so the aggregation by
+        # bucket must happen *after* fetching all raw counts — grouping/limiting
+        # in SQL by the raw `ctype` first (as before) produced multiple pie
+        # slices with the same label instead of one merged, correctly-sized slice.
+        grouped = Hash.new(0)
+        rows.each { |row| grouped[simplify_mime(row["ctype"])] += row["cnt"].to_i }
+        grouped.sort_by { |_type, count| -count }.first(10).map { |type, count| { type: type, count: count } }
       end
 
       def simplify_mime(mime)
@@ -79,10 +87,13 @@ module Api
       end
 
       def build_storage
+        # Assets store their byte size under the `size` property key (set by
+        # the upload/ingestion pipeline), not `file_size` — that key was never
+        # populated, so this always summed to 0.
         result = ActiveRecord::Base.connection.execute(
           Arel.sql(
-            "SELECT SUM((properties->>'file_size')::bigint) as total FROM assets " \
-            "WHERE deleted_at IS NULL AND properties->>'file_size' IS NOT NULL"
+            "SELECT SUM((properties->>'size')::bigint) as total FROM assets " \
+            "WHERE deleted_at IS NULL AND properties->>'size' IS NOT NULL"
           )
         )
         total_bytes = result.first&.dig("total").to_i
@@ -105,7 +116,7 @@ module Api
             uuid: asset.uuid,
             title: asset.title || asset.properties&.dig("original_filename") || "Untitled",
             content_type: asset.properties&.dig("content_type") || "unknown",
-            file_size: asset.properties&.dig("file_size").to_i,
+            file_size: asset.properties&.dig("size").to_i,
             created_at: asset.created_at.iso8601,
             status: asset.status || "draft",
           }

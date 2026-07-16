@@ -288,7 +288,7 @@ RSpec.describe "Admin::Reports coverage additions", type: :request do
 
     it "returns analytics service data with parsed dates" do
       service = instance_double(Reports::AnalyticsService, call: { "totals" => { "reports" => 3 } })
-      expect(Reports::AnalyticsService).to receive(:new).with("custom", custom_from: be_present, custom_to: be_nil).and_return(service)
+      expect(Reports::AnalyticsService).to receive(:new).with("custom", custom_from: be_present, custom_to: be_nil, folder_ids: nil).and_return(service)
 
       get "/admin/reports/analytics.json", params: { range: "custom", from: "2026-01-01", to: "not-a-date" }, as: :json
 
@@ -304,6 +304,39 @@ RSpec.describe "Admin::Reports coverage additions", type: :request do
 
       expect(response).to have_http_status(:service_unavailable)
       expect(response.parsed_body["error"]).to include("temporarily unavailable")
+    end
+
+    it "parses a comma-separated folder_ids param into an array" do
+      service = instance_double(Reports::AnalyticsService, call: { "ok" => true })
+      expect(Reports::AnalyticsService).to receive(:new)
+        .with("last_30_days", custom_from: nil, custom_to: nil, folder_ids: %w[11 22])
+        .and_return(service)
+
+      get "/admin/reports/analytics.json", params: { folder_ids: "11,22" }, as: :json
+
+      expect(response).to have_http_status(:ok)
+    end
+
+    it "parses an array-style folder_ids param" do
+      service = instance_double(Reports::AnalyticsService, call: { "ok" => true })
+      expect(Reports::AnalyticsService).to receive(:new)
+        .with("last_30_days", custom_from: nil, custom_to: nil, folder_ids: %w[11 22])
+        .and_return(service)
+
+      get "/admin/reports/analytics.json", params: { folder_ids: %w[11 22] }, as: :json
+
+      expect(response).to have_http_status(:ok)
+    end
+
+    it "treats a blank folder_ids param as no filter" do
+      service = instance_double(Reports::AnalyticsService, call: { "ok" => true })
+      expect(Reports::AnalyticsService).to receive(:new)
+        .with("last_30_days", custom_from: nil, custom_to: nil, folder_ids: nil)
+        .and_return(service)
+
+      get "/admin/reports/analytics.json", params: { folder_ids: "" }, as: :json
+
+      expect(response).to have_http_status(:ok)
     end
   end
 end

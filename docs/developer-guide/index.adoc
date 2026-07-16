@@ -117,6 +117,9 @@ include::src/26_image-asset-formats.adoc[]
 // 27. Expanded Document Format Support
 include::src/27_document-asset-formats.adoc[]
 
+// 28. Environment Variables Reference
+include::src/28_environment-variables.adoc[]
+
 ifdef::backend-html5[]
 // Back-to-top button
 ++++

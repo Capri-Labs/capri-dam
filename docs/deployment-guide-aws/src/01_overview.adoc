@@ -1,0 +1,62 @@
+[[section-deployment-overview-aws]]
+== Overview
+
+=== Why ECS on Fargate
+
+Capri DAM ships as a single Docker image (see the repository root `Dockerfile`) that already
+contains everything the app needs at runtime: Ruby 4.0.3, the precompiled JS/CSS bundle, `ffmpeg`
+(video previews/transcodes), and headless LibreOffice (Office document previews). That same image
+runs unmodified on **Amazon ECS with the Fargate launch type** — no EC2 instances to patch or size,
+AWS manages the underlying compute. This guide pairs ECS/Fargate with fully-managed data services so
+the only infrastructure you operate directly is the app's own containers:
+
+* **Zero-downtime deploys** via ECS's built-in rolling deployment (`minimumHealthyPercent` /
+  `maximumPercent`), with the Application Load Balancer only routing traffic to tasks that pass
+  their health check.
+* **Managed TLS** — AWS Certificate Manager (ACM) issues and auto-renews the certificate; the ALB
+  terminates TLS, so the app container never handles certificates itself.
+* **One-command rollback** to any previously-registered task definition revision.
+* **Infrastructure as code** — every resource in this guide (VPC, ECS cluster/service, ALB, Aurora,
+  ElastiCache, S3) is expressed as plain `aws` CLI commands here for clarity, but maps 1:1 onto
+  Terraform/CloudFormation/CDK resources if you prefer to codify it (see
+  <<section-aws-infrastructure-reference>>).
+
+This is **not** mutually exclusive with the other guides — see
+link:../deployment-guide-kamal/[Kamal] for a plain-VPS target and
+link:../deployment-guide-azure-kubernetes/[Azure/AKS] for a Kubernetes target. All three deploy the
+exact same Docker image and Rails application; only the surrounding infrastructure differs.
+
+=== What gets deployed
+
+[cols="1,2,3", options="header"]
+|===
+| Role | AWS resource | Notes
+| `web` | ECS service `capri-dam-web` (Fargate task) | Runs Thruster (`bin/thrust`) in front of Puma, listening on container port 80. Registered as an ALB target group; the ALB terminates TLS and forwards HTTP internally.
+| `worker` | ECS service `capri-dam-worker` (Fargate task, same image) | `command` override: `bundle exec sidekiq -C config/sidekiq.yml`. Not attached to any load balancer/target group — it has no HTTP server to expose.
+| Database | **Amazon Aurora PostgreSQL** (Aurora PostgreSQL 16, pgvector extension) | Replaces the Kamal `pgvector/pgvector:pg16` accessory. Aurora PostgreSQL ships the `vector` extension (enable with `CREATE EXTENSION vector;`, already run by `db/structure.sql`/migrations).
+| Cache/Queue | **Amazon ElastiCache for Redis** (single-node or replication group) | Backs Sidekiq, Action Cable (`config/cable.yml`), and Coverband — same role as the Kamal `redis` accessory.
+| File storage | **Amazon S3** | Replaces the local-disk Active Storage bind mount. Capri DAM's in-app `StorageBackend` admin screen already ships an `aws` provider (`StorageAdapters::S3Adapter`) — no code changes required, just configure it post-deploy (see <<section-aws-managed-data-services>>).
+| Image registry | **Amazon ECR** | Private registry for the built image; ECS pulls from here.
+| Routing/TLS | **Application Load Balancer + ACM** | Public HTTPS entrypoint; forwards to the `web` target group.
+|===
+
+Unlike the Kamal baseline (where `web` and `worker` share a host filesystem via a bind mount),
+**ECS tasks are stateless and ephemeral by design** — this is why S3 (not local disk) is the storage
+backend for this guide. Once S3 is configured, `web` and `worker` tasks can scale independently and
+be scheduled onto any Fargate capacity, with no shared-filesystem constraint at all.
+
+=== Guide structure
+
+[cols="1,3", options="header"]
+|===
+| Chapter | Covers
+| <<section-aws-prerequisites,2. Prerequisites>> | AWS account setup, IAM, `aws` CLI, Docker, DNS delegation.
+| <<section-aws-infrastructure-reference,3. Infrastructure Reference>> | VPC/subnets/security groups, ECR, ECS cluster, task definitions, ALB/target groups.
+| <<section-aws-secrets-and-credentials,4. Secrets & Credentials>> | AWS Secrets Manager, `RAILS_MASTER_KEY`, task execution IAM roles.
+| <<section-aws-managed-data-services,5. Managed Data Services>> | Aurora PostgreSQL (pgvector), ElastiCache Redis, S3 + the in-app `StorageBackend` switch.
+| <<section-aws-first-deployment-playbook,6. First Deployment Playbook>> | Copy-pasteable, ordered commands for the very first deploy.
+| <<section-aws-routine-deployments-and-rollback,7. Routine Deployments & Rollback>> | New task definition revisions, `update-service`, and rollback.
+| <<section-aws-ssl-domains-and-routing,8. SSL, Domains & ALB Routing>> | Route 53, ACM certificates, ALB listener rules, multiple domains.
+| <<section-aws-monitoring-and-troubleshooting,9. Monitoring & Troubleshooting>> | CloudWatch Logs/alarms, ECS Exec, common failure modes.
+| <<section-aws-backup-and-disaster-recovery,10. Backups & Disaster Recovery>> | Aurora automated backups/snapshots, S3 versioning, Multi-AZ, restore procedure.
+|===

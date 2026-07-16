@@ -326,6 +326,11 @@ module Api
       def apply_text_search(scope)
         return scope if params[:q].blank?
 
+        # Index-backed via pg_trgm GIN indexes — see migration
+        # 20260716113000_add_trigram_search_indexes_for_lexical_search and
+        # the Developer Guide's Search chapter ("Index-backed lexical
+        # search") for the query-plan verification. Semantics are unchanged
+        # (plain substring ILIKE); only the physical scan strategy differs.
         scope.where(
           "title ILIKE :q OR properties->>'original_filename' ILIKE :q OR properties::text ILIKE :q",
           q: "%#{params[:q]}%"

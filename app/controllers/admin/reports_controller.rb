@@ -94,7 +94,8 @@ module Admin
       data = Reports::AnalyticsService.new(
         range,
         custom_from: parse_date(params[:from]),
-        custom_to:   parse_date(params[:to])
+        custom_to:   parse_date(params[:to]),
+        folder_ids:  parse_folder_ids(params[:folder_ids])
       ).call
 
       render json: data
@@ -198,6 +199,14 @@ module Admin
       Time.zone.parse(val)
     rescue ArgumentError
       nil
+    end
+
+    # Accepts either a comma-separated string ("id1,id2") or an array param
+    # (folder_ids[]=id1&folder_ids[]=id2) and normalizes to a plain array.
+    def parse_folder_ids(val)
+      return nil if val.blank?
+
+      Array(val).flat_map { |v| v.to_s.split(",") }.map(&:strip).reject(&:blank?)
     end
 
     def serialize_report(r)

@@ -10,6 +10,20 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 --
+-- Name: pg_trgm; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION pg_trgm; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION pg_trgm IS 'text similarity measurement and index searching based on trigrams';
+
+
+--
 -- Name: pgcrypto; Type: EXTENSION; Schema: -; Owner: -
 --
 
@@ -660,6 +674,42 @@ ALTER SEQUENCE public.collection_assets_id_seq OWNED BY public.collection_assets
 
 
 --
+-- Name: collection_policies; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.collection_policies (
+    id bigint NOT NULL,
+    collection_id bigint NOT NULL,
+    user_group_id bigint NOT NULL,
+    view_access boolean DEFAULT false NOT NULL,
+    edit_access boolean DEFAULT false NOT NULL,
+    admin_access boolean DEFAULT false NOT NULL,
+    explicit_deny boolean DEFAULT false NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: collection_policies_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.collection_policies_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: collection_policies_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.collection_policies_id_seq OWNED BY public.collection_policies.id;
+
+
+--
 -- Name: collection_rules; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -669,9 +719,11 @@ CREATE TABLE public.collection_rules (
     collection_id bigint NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
     metadata_filters jsonb DEFAULT '{}'::jsonb,
-    semantic_prompt text NOT NULL,
+    semantic_prompt text,
     similarity_threshold numeric(4,3) DEFAULT 0.8,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    match_mode character varying DEFAULT 'semantic'::character varying NOT NULL,
+    prompt_vector jsonb
 );
 
 
@@ -2481,6 +2533,13 @@ ALTER TABLE ONLY public.collection_assets ALTER COLUMN id SET DEFAULT nextval('p
 
 
 --
+-- Name: collection_policies id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.collection_policies ALTER COLUMN id SET DEFAULT nextval('public.collection_policies_id_seq'::regclass);
+
+
+--
 -- Name: collection_rules id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -2917,6 +2976,14 @@ ALTER TABLE ONLY public.cdn_configurations
 
 ALTER TABLE ONLY public.collection_assets
     ADD CONSTRAINT collection_assets_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: collection_policies collection_policies_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.collection_policies
+    ADD CONSTRAINT collection_policies_pkey PRIMARY KEY (id);
 
 
 --
@@ -3662,6 +3729,13 @@ CREATE INDEX index_assets_on_properties_content_type ON public.assets USING btre
 
 
 --
+-- Name: index_assets_on_properties_content_type_trgm; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_assets_on_properties_content_type_trgm ON public.assets USING gin (((properties ->> 'content_type'::text)) public.gin_trgm_ops);
+
+
+--
 -- Name: index_assets_on_properties_file_size; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -3669,10 +3743,31 @@ CREATE INDEX index_assets_on_properties_file_size ON public.assets USING btree (
 
 
 --
+-- Name: index_assets_on_properties_original_filename_trgm; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_assets_on_properties_original_filename_trgm ON public.assets USING gin (((properties ->> 'original_filename'::text)) public.gin_trgm_ops);
+
+
+--
+-- Name: index_assets_on_properties_text_trgm; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_assets_on_properties_text_trgm ON public.assets USING gin (((properties)::text) public.gin_trgm_ops);
+
+
+--
 -- Name: index_assets_on_published_at; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_assets_on_published_at ON public.assets USING btree (published_at);
+
+
+--
+-- Name: index_assets_on_title_trgm; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_assets_on_title_trgm ON public.assets USING gin (title public.gin_trgm_ops);
 
 
 --
@@ -3729,6 +3824,27 @@ CREATE UNIQUE INDEX index_collection_assets_on_collection_id_and_asset_id ON pub
 --
 
 CREATE INDEX index_collection_assets_on_collection_rule_id ON public.collection_assets USING btree (collection_rule_id);
+
+
+--
+-- Name: index_collection_policies_on_collection_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_collection_policies_on_collection_id ON public.collection_policies USING btree (collection_id);
+
+
+--
+-- Name: index_collection_policies_on_collection_id_and_user_group_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_collection_policies_on_collection_id_and_user_group_id ON public.collection_policies USING btree (collection_id, user_group_id);
+
+
+--
+-- Name: index_collection_policies_on_user_group_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_collection_policies_on_user_group_id ON public.collection_policies USING btree (user_group_id);
 
 
 --
@@ -3883,6 +3999,13 @@ CREATE INDEX index_folder_policies_on_user_group_id ON public.folder_policies US
 --
 
 CREATE INDEX index_folders_on_deleted_at ON public.folders USING btree (deleted_at);
+
+
+--
+-- Name: index_folders_on_name_trgm; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_folders_on_name_trgm ON public.folders USING gin (name public.gin_trgm_ops);
 
 
 --
@@ -4901,6 +5024,14 @@ ALTER TABLE ONLY public.asset_provenance_records
 
 
 --
+-- Name: collection_policies fk_rails_87c732e561; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.collection_policies
+    ADD CONSTRAINT fk_rails_87c732e561 FOREIGN KEY (user_group_id) REFERENCES public.user_groups(id);
+
+
+--
 -- Name: asset_versions fk_rails_8bf75f0f47; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -4922,6 +5053,14 @@ ALTER TABLE ONLY public.inbox_messages
 
 ALTER TABLE ONLY public.duplicate_group_assets
     ADD CONSTRAINT fk_rails_8f767faa5d FOREIGN KEY (duplicate_group_id) REFERENCES public.duplicate_groups(id);
+
+
+--
+-- Name: collection_policies fk_rails_8ff19ceb42; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.collection_policies
+    ADD CONSTRAINT fk_rails_8ff19ceb42 FOREIGN KEY (collection_id) REFERENCES public.collections(id);
 
 
 --
@@ -5187,6 +5326,9 @@ ALTER TABLE ONLY public.email_templates
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260716113000'),
+('20260716080552'),
+('20260716080551'),
 ('20260714170000'),
 ('20260714165000'),
 ('20260714134500'),

@@ -236,4 +236,120 @@ RSpec.describe "Api::V1::Collections coverage", type: :request do
 
     expect(response).to have_http_status(:unauthorized)
   end
+
+  it "configures metadata and hybrid smart rules alongside the legacy semantic mode" do
+    collection = create(:collection, user: user)
+
+    post "/api/v1/collections/#{collection.slug}/rule",
+         params: { match_mode: "metadata", metadata_filters: { "status" => "approved" }, active: true }, as: :json
+    expect(response).to have_http_status(:ok)
+    expect(collection.reload.collection_rule.match_mode).to eq("metadata")
+    expect(collection.collection_rule.metadata_filters).to eq({ "status" => "approved" })
+
+    # Reconfiguring with only metadata_filters (no semantic_prompt key sent at
+    # all) must NOT null out anything since match_mode stays metadata-only.
+    patch_params = { metadata_filters: { "status" => "rejected" } }
+    post "/api/v1/collections/#{collection.slug}/rule", params: patch_params, as: :json
+    expect(response).to have_http_status(:ok)
+    expect(collection.reload.collection_rule.metadata_filters).to eq({ "status" => "rejected" })
+  end
+
+  it "runs a real (non-mocked) metadata dry-run preview via simulate_rule" do
+    matching = create(:asset, user: user, properties: { "status" => "approved" })
+    create(:asset, user: user, properties: { "status" => "rejected" })
+
+    post "/api/v1/collections/simulate_rule", params: { metadata_filters: { status: "approved" } }, as: :json
+
+    expect(response).to have_http_status(:ok)
+    expect(json["matches"].map { |m| m["id"] }).to include(matching.id)
+    expect(json["matches"].map { |m| m["id"] }).not_to include(be_nil)
+  end
+
+  describe "access governance policies" do
+    it "lists, upserts and removes group-scoped access policies" do
+      collection = create(:collection, user: user)
+      group = create(:user_group)
+
+      get "/api/v1/collections/#{collection.slug}/policies", as: :json
+      expect(response).to have_http_status(:ok)
+      expect(json["policies"]).to eq([])
+
+      post "/api/v1/collections/#{collection.slug}/policies",
+           params: { group_id: group.id, view_access: true, edit_access: true }, as: :json
+      expect(response).to have_http_status(:ok)
+      expect(json["policy"]["group_id"]).to eq(group.id)
+      expect(json["policy"]["edit_access"]).to be(true)
+
+      get "/api/v1/collections/#{collection.slug}/policies", as: :json
+      expect(json["policies"].size).to eq(1)
+
+      delete "/api/v1/collections/#{collection.slug}/policies/#{group.id}", as: :json
+      expect(response).to have_http_status(:ok)
+      expect(collection.collection_policies.count).to eq(0)
+    end
+
+    it "returns not_found for an unknown group or policy" do
+      collection = create(:collection, user: user)
+
+      post "/api/v1/collections/#{collection.slug}/policies", params: { group_id: 0 }, as: :json
+      expect(response).to have_http_status(:not_found)
+
+      delete "/api/v1/collections/#{collection.slug}/policies/0", as: :json
+      expect(response).to have_http_status(:not_found)
+    end
+
+    it "restricts non-owner, non-admin, non-collection-admin users from managing/deleting a workspace once policies exist" do
+      owner = create(:user, admin: false)
+      viewer_group = create(:user_group)
+      viewer = create(:user, admin: false)
+      viewer.user_groups << viewer_group
+
+      collection = create(:collection, user: owner)
+      create(:collection_policy, :viewer, collection: collection, user_group: viewer_group)
+
+      sign_in viewer
+
+      post "/api/v1/collections/#{collection.slug}/rule", params: { semantic_prompt: "x" }, as: :json
+      expect(response).to have_http_status(:forbidden)
+
+      delete "/api/v1/collections/#{collection.slug}", as: :json
+      expect(response).to have_http_status(:forbidden)
+    end
+
+    it "allows a collection-admin (via group admin_access) to configure rules and delete the workspace" do
+      owner = create(:user, admin: false)
+      admin_group = create(:user_group)
+      collection_admin = create(:user, admin: false)
+      collection_admin.user_groups << admin_group
+
+      collection = create(:collection, user: owner)
+      create(:collection_policy, :collection_admin, collection: collection, user_group: admin_group)
+
+      sign_in collection_admin
+
+      post "/api/v1/collections/#{collection.slug}/rule", params: { semantic_prompt: "x" }, as: :json
+      expect(response).to have_http_status(:ok)
+
+      delete "/api/v1/collections/#{collection.slug}", as: :json
+      expect(response).to have_http_status(:ok)
+    end
+
+    it "allows an editor (via group edit_access) to update the workspace but not delete it or configure rules" do
+      owner = create(:user, admin: false)
+      editor_group = create(:user_group)
+      editor = create(:user, admin: false)
+      editor.user_groups << editor_group
+
+      collection = create(:collection, user: owner)
+      create(:collection_policy, :editor, collection: collection, user_group: editor_group)
+
+      sign_in editor
+
+      patch "/api/v1/collections/#{collection.slug}", params: { collection: { description: "Edited" } }, as: :json
+      expect(response).to have_http_status(:ok)
+
+      delete "/api/v1/collections/#{collection.slug}", as: :json
+      expect(response).to have_http_status(:forbidden)
+    end
+  end
 end

@@ -1,0 +1,76 @@
+[[section-azure-k8s-backup-and-disaster-recovery]]
+== Backup & Disaster Recovery
+
+=== Flexible Server automated backups
+
+Flexible Server takes automated backups continuously once created (7–35 day retention, configurable);
+no separate `pg_dump` cron job is required for point-in-time recovery:
+
+[source,bash]
+----
+az postgres flexible-server update --resource-group capri-dam-rg --name capri-dam-pg \
+  --backup-retention 14
+----
+
+For a manual checkpoint before a risky migration/upgrade, take an on-demand backup via the portal/CLI
+or simply rely on the continuous backup stream plus a documented point-in-time target.
+
+=== Point-in-time restore
+
+[source,bash]
+----
+az postgres flexible-server restore \
+  --resource-group capri-dam-rg --name capri-dam-pg-restored \
+  --source-server capri-dam-pg --restore-time "2026-07-15T09:00:00Z"
+----
+
+This restores into a **new** server (Flexible Server never restores in-place) — verify data on the
+restored server, then repoint `DATABASE_URL` (see <<section-azure-k8s-secrets-and-credentials>>) and
+redeploy via `kubectl rollout restart` once satisfied.
+
+=== High availability
+
+Enable **zone-redundant HA** on the Flexible Server for automatic failover to a synchronously-
+replicated standby in a second Availability Zone:
+
+[source,bash]
+----
+az postgres flexible-server update --resource-group capri-dam-rg --name capri-dam-pg \
+  --high-availability ZoneRedundant
+----
+
+Failover is automatic and the server's DNS name doesn't change, so no application-side reconfiguration
+is needed after a failover event.
+
+=== Blob Storage redundancy & soft delete
+
+Enable **soft delete** and **versioning** on the storage account to protect against accidental
+overwrite/delete of asset blobs (comparable to S3 versioning in the AWS guide):
+
+[source,bash]
+----
+az storage account blob-service-properties update --account-name capridamassets \
+  --enable-delete-retention true --delete-retention-days 30 \
+  --enable-versioning true
+----
+
+For disaster recovery against a full region outage, recreate the storage account with
+`--sku Standard_RAGRS` (read-access geo-redundant storage) instead of `Standard_LRS` — this keeps a
+continuously-replicated, readable copy in a paired Azure region.
+
+=== Azure Cache for Redis
+
+Redis here holds only ephemeral job queue / cache / cable data (no durable business data). The
+`Standard`/`Premium` tiers replicate to a secondary node automatically; a `Basic`-tier cache has no
+redundancy, which is an acceptable tradeoff for staging but not recommended for production.
+
+=== Restore drill checklist
+
+. Restore Flexible Server from the continuous backup stream to a chosen point in time into a new
+  server (as above).
+. Point at the existing (or a freshly-provisioned) Azure Cache for Redis instance — cache data is
+  disposable and doesn't need restoring.
+. Repoint `DATABASE_URL`/`REDIS_URL` secrets (Key Vault or plain `Secret`) and run
+  `kubectl rollout restart deployment/capri-dam-web deployment/capri-dam-worker -n capri-dam`.
+. Confirm `/up` returns `200` and spot-check a handful of assets resolve correctly from Blob Storage.
+. Document the actual time-to-recovery achieved and compare against your target RTO/RPO.

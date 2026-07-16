@@ -1,0 +1,83 @@
+[[section-aws-backup-and-disaster-recovery]]
+== Backup & Disaster Recovery
+
+=== Aurora PostgreSQL automated backups
+
+Aurora takes continuous, incremental backups automatically once `--backup-retention-period` is set
+(1–35 days); no separate `pg_dump` cron job is required for point-in-time recovery:
+
+[source,bash]
+----
+aws rds modify-db-cluster --db-cluster-identifier capri-dam-aurora \
+  --backup-retention-period 14 --preferred-backup-window "03:00-04:00" --apply-immediately
+----
+
+For a manual, named snapshot before a risky migration/upgrade:
+
+[source,bash]
+----
+aws rds create-db-cluster-snapshot --db-cluster-identifier capri-dam-aurora \
+  --db-cluster-snapshot-identifier capri-dam-pre-migration-"$(date +%Y%m%d)"
+----
+
+=== Point-in-time restore
+
+[source,bash]
+----
+aws rds restore-db-cluster-to-point-in-time \
+  --source-db-cluster-identifier capri-dam-aurora \
+  --db-cluster-identifier capri-dam-aurora-restored \
+  --restore-to-time 2026-07-15T09:00:00Z
+----
+
+This restores into a **new** cluster (Aurora never restores in-place) — verify data on the restored
+cluster, then repoint `DATABASE_URL` (see <<section-aws-secrets-and-credentials>>) and redeploy the
+services once satisfied.
+
+=== Multi-AZ / high availability
+
+An Aurora cluster with at least one reader instance in a second AZ (`create-db-instance` with a second
+`--availability-zone`) gives automatic failover on writer failure — Aurora promotes a reader to writer
+within seconds, and the cluster's writer endpoint DNS re-resolves transparently, requiring no
+application-side change.
+
+=== S3 versioning & lifecycle
+
+Versioning was enabled in <<section-aws-managed-data-services>> — this protects against accidental
+overwrite/delete of asset objects. Add a lifecycle rule to expire old (non-current) versions after a
+retention window, balancing recovery window against storage cost:
+
+[source,bash]
+----
+aws s3api put-bucket-lifecycle-configuration --bucket capri-dam-assets-prod --lifecycle-configuration '{
+  "Rules": [{
+    "ID": "expire-old-versions",
+    "Status": "Enabled",
+    "NoncurrentVersionExpiration": { "NoncurrentDays": 90 }
+  }]
+}'
+----
+
+For true disaster recovery (region-level outage), enable **Cross-Region Replication** on the bucket to
+a bucket in a second region.
+
+=== ElastiCache backup
+
+[source,bash]
+----
+aws elasticache create-snapshot --replication-group-id capri-dam-redis \
+  --snapshot-name capri-dam-redis-"$(date +%Y%m%d)"
+----
+
+Redis here holds only ephemeral job queue / cache / cable data (no durable business data), so daily
+automatic snapshots (`--snapshot-retention-limit`) are usually sufficient rather than a strict RPO
+requirement.
+
+=== Restore drill checklist
+
+. Restore Aurora from a recent automated backup or snapshot into a new cluster (as above).
+. Restore/point at an ElastiCache snapshot, or simply provision a fresh empty replication group (cache
+  data is disposable — Sidekiq/Action Cable/Coverband all tolerate a cold cache).
+. Repoint `DATABASE_URL`/`REDIS_URL` secrets and redeploy `web`/`worker` services.
+. Confirm `/up` returns `200` and spot-check a handful of assets resolve correctly from S3.
+. Document the actual time-to-recovery achieved and compare against your target RTO/RPO.

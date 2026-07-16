@@ -158,6 +158,18 @@ class Asset < ApplicationRecord
   # Publishes an embedding-request event to Redis after every create/update.
   after_commit :broadcast_for_embedding, on: [ :create, :update ]
 
+  # Evaluates active smart-collection rules against this asset immediately
+  # after every create/update — metadata-only rules (see
+  # {CollectionRule#metadata_only?}) don't need to wait for the async AI
+  # embedding pipeline, so they route as soon as properties are saved.
+  after_commit :trigger_smart_routing, on: [ :create, :update ]
+
+  # Keeps the Duplicate Manager in sync whenever this asset is moved to (or
+  # restored from) the Trash Bin — see {DuplicateGroup#recalculate_active_membership!}.
+  # Hard deletion is handled separately via {DuplicateGroupAsset.cleanup_for_asset!}
+  # and its own `after_destroy` safety net.
+  after_commit :sync_duplicate_groups_membership, on: :update, if: :saved_change_to_deleted_at?
+
   after_initialize :set_property_defaults, if: :new_record?
 
   # ---------------------------------------------------------------------------
@@ -243,6 +255,19 @@ class Asset < ApplicationRecord
   # @api private
   def trigger_smart_routing
     SmartCollectionRouterWorker.perform_async(self.id)
+  end
+
+  # Recomputes membership for any pending {DuplicateGroup}s this asset
+  # belongs to after it is soft-deleted or restored — see
+  # {DuplicateGroup#recalculate_active_membership!}. Best-effort: a failure
+  # here must never roll back or block the actual delete/restore.
+  # @api private
+  def sync_duplicate_groups_membership
+    duplicate_group_assets.includes(:duplicate_group).find_each do |dga|
+      dga.duplicate_group&.recalculate_active_membership!
+    end
+  rescue StandardError => e
+    Rails.logger.warn("[Asset] Could not sync duplicate groups for asset ##{id}: #{e.message}")
   end
 
   # Publishes an +asset.needs_embedding+ event over the Redis pub/sub channel

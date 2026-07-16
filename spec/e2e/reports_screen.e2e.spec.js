@@ -125,6 +125,35 @@ test.describe('Reports screen — Analytics Dashboard', () => {
     await page.getByRole('button', { name: /\+ create export/i }).click();
     await expect(page.getByRole('heading', { name: 'Create Export' })).toBeVisible();
   });
+
+  test('folder filter narrows analytics to the selected folder and clears back to unfiltered', async ({ page }) => {
+    const folderFilter = page.getByTestId('report-folder-filter');
+    await expect(folderFilter).toBeVisible();
+
+    await folderFilter.locator('input').click();
+    await folderFilter.locator('input').fill('a');
+    await page.waitForTimeout(300); // debounce-free client-side filter, just let the dropdown render
+
+    const firstOption = page.locator('[data-testid^="report-folder-option-"]').first();
+    await expect(firstOption).toBeVisible({ timeout: 10_000 });
+    const optionTestId = await firstOption.getAttribute('data-testid');
+    const folderId = optionTestId.replace('report-folder-option-', '');
+
+    const [filteredResponse] = await Promise.all([
+      page.waitForResponse((res) => res.url().includes('/admin/reports/analytics') && res.url().includes(`folder_ids=${folderId}`)),
+      firstOption.click(),
+    ]);
+    expect(filteredResponse.ok()).toBeTruthy();
+
+    // Clearing the selection (via the Autocomplete's clear "x" button) should
+    // re-fetch with no folder_ids param at all.
+    const clearButton = folderFilter.getByLabel(/clear/i);
+    const [unfilteredResponse] = await Promise.all([
+      page.waitForResponse((res) => res.url().includes('/admin/reports/analytics') && !res.url().includes('folder_ids')),
+      clearButton.click(),
+    ]);
+    expect(unfilteredResponse.ok()).toBeTruthy();
+  });
 });
 
 test.describe('Reports screen — Download Center', () => {
