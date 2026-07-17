@@ -140,11 +140,26 @@ class Api::V1::VideoProfilesController < ApplicationController
   end
 
   def profile_params
+    # `smart_crop_ratios` may arrive either as a real array of hashes (regular
+    # JS clients) or as a JSON-encoded string (older/manual API callers), so
+    # it's parsed ahead of `.permit` — but the parsed elements are still
+    # unpermitted `ActionController::Parameters`/hashes at that point. Each
+    # element must be explicitly permitted to plain hashes before assignment,
+    # otherwise ActiveRecord's JSON-column serialization raises
+    # `ActionController::UnfilteredParameters` ("unable to convert unpermitted
+    # parameters to hash") when it calls `#to_json`/`#as_json` on them.
     parsed_smart_crops = begin
       raw = params.dig(:video_profile, :smart_crop_ratios)
       raw.is_a?(Array) ? raw : (raw.present? ? JSON.parse(raw) : [])
     rescue JSON::ParserError
       []
+    end
+    parsed_smart_crops = parsed_smart_crops.map do |ratio|
+      if ratio.is_a?(ActionController::Parameters)
+        ratio.permit(:name, :crop_ratio).to_h.symbolize_keys
+      else
+        ratio.to_h.symbolize_keys.slice(:name, :crop_ratio)
+      end
     end
 
     permitted = params.require(:video_profile).permit(

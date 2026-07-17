@@ -133,10 +133,15 @@ RSpec.describe IngestionWorker, type: :worker do
     expect(asset.asset_embedding.model_name).to eq("ingestion-worker")
     expect(connector.reload.assets_imported).to eq(1)
     expect(connector.last_sync).to be_present
-    expect(SmartCollectionRouterWorker).to have_received(:perform_async).with(asset.id)
+    # Routing is triggered twice by design: once via Asset's own
+    # after_commit (so metadata-only smart-collection rules route
+    # immediately, without waiting on the embedding), and once via
+    # AssetEmbedding's after_commit (so semantic/hybrid rules route once a
+    # real vector exists) — see SmartCollectionRouterWorker's class comment.
+    expect(SmartCollectionRouterWorker).to have_received(:perform_async).with(asset.id).twice
   end
 
-  it "creates a clean asset without routing when vector generation fails" do
+  it "creates a clean asset and still routes (metadata-only) when vector generation fails" do
     create(:user)
     allow_any_instance_of(described_class).to receive(:fetch_vector_embedding).and_return(nil)
 
@@ -145,7 +150,10 @@ RSpec.describe IngestionWorker, type: :worker do
     asset = Asset.last
     expect(asset.title).to eq("plain.txt")
     expect(asset.asset_embedding).to be_nil
-    expect(SmartCollectionRouterWorker).not_to have_received(:perform_async)
+    # No AssetEmbedding is created, so only the Asset-level after_commit
+    # fires — metadata-only smart-collection rules must still be evaluated
+    # even when the (separate, async) embedding pipeline fails.
+    expect(SmartCollectionRouterWorker).to have_received(:perform_async).with(asset.id).once
   end
 
   it "raises when no asset owner can be resolved" do

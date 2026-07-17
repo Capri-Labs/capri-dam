@@ -76,12 +76,25 @@ spread across five spec files:
   Keycloak SSO button POST target.
 * **Folder ACL editing UI** (`folder_access_tab.e2e.spec.js`) — see
   <<module-asset-management>>.
+* **OAuth2 (Doorkeeper) token issuance & 7-column ACL server-side enforcement**
+  (`access_control_security.e2e.spec.js`): real System Accounts UI flow
+  (create → view credentials → real `POST /oauth/token` client_credentials
+  grant → bearer token used against a real protected endpoint), invalid-secret
+  rejection, and a bearer-token-with-no-session rejection; real `FolderPolicy`
+  seeding (read-only, full-access, and explicit_deny-overrides-a-granted-read
+  combinations) exercised against real signed-in users and real API responses
+  (200/403) for read, create, and delete actions. This work also **found and
+  fixed two real access-control bugs**: `DELETE /api/v1/folders/:id` and
+  `POST /api/v1/folders` (subfolder creation) had no folder-permission check
+  at all — see the CHANGELOG "Fixed" entries for both.
 
 [.status-pending]#Pending / not yet covered#
 
-* OAuth2 (Doorkeeper) external-application token issuance flow end-to-end.
-* Actual enforcement testing of the 7-column ACL against real API/UI actions
-  (today's tests confirm the *matrix UI* renders all columns, not that each
-  permission is enforced server-side per action).
-* Keycloak SSO full round-trip (only the redirect POST target is covered; there is
-  no live IdP in the E2E environment to complete the OIDC handshake).
+* Keycloak SSO full round-trip (only the redirect POST target is covered via
+  real E2E; there is no live IdP in this environment to complete the OIDC
+  handshake). The closest achievable equivalent — `Users::OmniauthCallbacksController`
+  exercised via OmniAuth's official `test_mode`/`mock_auth` pattern, covering
+  new-user provisioning, existing-user field sync, and redirect behaviour — is
+  already comprehensively covered at the RSpec level in
+  `spec/requests/omniauth_callbacks_spec.rb` and is treated as the closing
+  evidence for this item.

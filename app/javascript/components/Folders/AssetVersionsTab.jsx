@@ -43,9 +43,24 @@ const renderSourceCanvas = (targetCanvas, sourceCanvas) => {
     context.drawImage(sourceCanvas, 0, 0);
 };
 
+const isCrossOriginUrl = (url) => {
+    try {
+        return new URL(url, window.location.origin).origin !== window.location.origin;
+    } catch {
+        return false;
+    }
+};
+
 const loadImage = (url) => new Promise((resolve, reject) => {
     const image = new Image();
-    if (url && !url.startsWith('data:')) {
+    // Only mark the image as CORS-mode for genuinely cross-origin URLs (e.g.
+    // a production CDN preview URL). Setting `crossOrigin` unconditionally —
+    // including for same-origin, cookie-authenticated preview URLs like
+    // `/api/v1/assets/local/:uuid` — makes the browser omit session cookies
+    // from the request, so it 401s/redirects to the sign-in page and the
+    // image silently fails to load, breaking the diff view for every real
+    // signed-in user in development/self-hosted deployments without a CDN.
+    if (url && !url.startsWith('data:') && isCrossOriginUrl(url)) {
         image.crossOrigin = 'anonymous';
     }
     image.onload = () => resolve(image);

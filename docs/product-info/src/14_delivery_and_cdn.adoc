@@ -69,18 +69,37 @@ captured for this module; see the folder configuration screens referenced in
 
 ==== Test coverage status
 
-[.status-pending]#Pending / not yet covered# — **this module currently has zero
-dedicated E2E coverage**:
+[.status-covered]#Covered# — the config/data-model layer (the only part of
+this module that is actually implemented today):
+
+* Image Profile CRUD, including Smart Crop `crop_type` and responsive crop
+  definitions.
+* Video Profile CRUD, including adaptive-streaming presets, Smart Crop
+  aspect ratios, and the "Copy Profile" action.
+* Image/Video Profile assignment to a folder (and removal) via the Folder
+  Info Panel, verified against the real `/api/v1/{image,video}_profiles`
+  API (not just local UI state).
+* Explorer "Edge CDN Ops" menu — "Sync Metadata to CDN" and "Purge Edge
+  Cache" dispatching real `202 Accepted` requests to
+  `Api::V1::EdgeOperationsController#sync`/`#purge`, including a check on the
+  `{ folders:, assets: }` request payload shape.
+* CDN provider switch (Fastly/Cloudflare/Akamai) credential fields + save +
+  reload persistence (see the System Operations & Admin section and
+  `spec/e2e/delivery_cdn_provider_switch.e2e.spec.js`).
++
+See `spec/e2e/delivery_cdn_image_video_profiles.e2e.spec.js` and
+`spec/e2e/delivery_cdn_cache_purge.e2e.spec.js`.
+
+[.status-pending]#Pending / not yet covered# — genuinely untestable until the
+live request-time transform pipeline exists (see "Notes & limitations" above):
 
 * Real-time image transform correctness (requesting a specific width/height/crop/
   format and validating the returned asset).
 * Smart-crop focal-point behaviour.
 * HMAC URL-signing validation (rejecting a tampered/unsigned transform request).
-* Surrogate-key cache purge (triggering a purge and confirming the CDN serves a
-  fresh copy).
-* Video-encoding preset execution end-to-end.
-* Image/video profile assignment to a folder path and confirming delivery URLs
-  reflect it.
+* Video-encoding preset execution end-to-end (actual FFmpeg output, not just
+  preset persistence).
 
-This is one of the highest-priority gaps for future E2E test-writing — see the
+This remaining gap is now blocked on implementing the live transform/encoding
+pipeline itself, rather than on missing test-writing effort — see the
 <<module-roadmap,consolidated Test Coverage Roadmap>> at the end of this guide.

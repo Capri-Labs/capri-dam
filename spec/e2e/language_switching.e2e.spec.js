@@ -9,6 +9,16 @@
  *     on the next navigation (verifying DB persistence).
  *  4. Switching back to English restores all English labels.
  *  5. The HTML lang attribute is updated.
+ *  6. Each of the remaining 7 non-German locales (Spanish, French, Japanese,
+ *     Korean, Dutch, Portuguese, Chinese) switches + persists correctly
+ *     (closes the "E2E coverage for the remaining 7 non-German locales" gap
+ *     from docs/product-info/src/99_roadmap_and_test_coverage.adoc).
+ *  7. Arabic: same switch/persist behavior, PLUS `<html dir="rtl">` is
+ *     applied (closes "RTL layout verification for Arabic" — see
+ *     docs/product-info/src/13_localization_i18n.adoc "Notes & known
+ *     limitations"). Note: only base RTL text-direction is verified here;
+ *     full MUI-component-level RTL layout mirroring is not implemented (see
+ *     that doc's "Test coverage status" for the exact scope).
  */
 
 const { test, expect } = require('./fixtures');
@@ -42,18 +52,28 @@ async function login(page) {
   }
 }
 
-async function resetToEnglish(page) {
+async function openLocalizationTab(page) {
   await page.goto(`${BASE_URL}/profile`);
-  await page.locator('[role="tab"]').filter({ hasText: /Localiz|Lokalis/i }).click();
+  await page.getByTestId('profile-tab-localization').click();
   await page.waitForTimeout(300);
+}
 
-  // The Localization tabpanel contains two comboboxes: Theme (index 0) then
-  // Language (index 1). Must target the Language one, not Theme.
-  const localizationPanel = page.locator('[role="tabpanel"]').first();
-  await localizationPanel.locator('[role="combobox"]').nth(1).click();
-  await page.locator('[role="listbox"] [role="option"]').filter({ hasText: 'English' }).click();
-  await page.locator('button').filter({ hasText: /Save Preferences|Einstellungen speichern|Enregistrer/i }).click();
-  await page.waitForTimeout(500);
+// The Localization tabpanel contains two comboboxes: Theme (index 0) then
+// Language (index 1). Must target the Language one, not Theme.
+function languageDropdown(page) {
+  return page.locator('[role="tabpanel"]').first().locator('[role="combobox"]').nth(1);
+}
+
+async function selectLanguageAndSave(page, label) {
+  await languageDropdown(page).click();
+  await page.locator('[role="listbox"] [role="option"]').filter({ hasText: label }).click();
+  await page.getByTestId('save-preferences-button').click();
+  await page.waitForTimeout(800);
+}
+
+async function resetToEnglish(page) {
+  await openLocalizationTab(page);
+  await selectLanguageAndSave(page, 'English');
 }
 
 test.describe('Language Switching — Profile Localization Tab', () => {
@@ -76,18 +96,16 @@ test.describe('Language Switching — Profile Localization Tab', () => {
     ).toBeVisible({ timeout: 5_000 });
   });
 
-  test('Language dropdown shows all 9 supported languages', async ({ page }) => {
+  test('Language dropdown shows all 10 supported languages, including Arabic', async ({ page }) => {
     await login(page);
-    await page.goto(`${BASE_URL}/profile`);
-    await page.locator('[role="tab"]').filter({ hasText: 'Localization' }).click();
-    await page.waitForTimeout(300);
+    await openLocalizationTab(page);
 
     // Open the language dropdown
-    await page.locator('[role="tabpanel"]').locator('[role="combobox"]').nth(1).click();
+    await languageDropdown(page).click();
     await page.waitForSelector('[role="listbox"]', { timeout: 3_000 });
 
     const options = await page.locator('[role="listbox"] [role="option"]').allTextContents();
-    const expected = ['English', 'Deutsch', 'Français', 'Español', 'Português', 'Nederlands', '日本語', '中文', '한국어'];
+    const expected = ['English', 'Deutsch', 'Français', 'Español', 'Português', 'Nederlands', '日本語', '中文', '한국어', 'العربية'];
     expected.forEach(lang => {
       expect(options).toContain(lang);
     });
@@ -95,20 +113,8 @@ test.describe('Language Switching — Profile Localization Tab', () => {
 
   test('Selecting German and saving changes the sidebar to German immediately', async ({ page }) => {
     await login(page);
-    await page.goto(`${BASE_URL}/profile`);
-    await page.locator('[role="tab"]').filter({ hasText: 'Localization' }).click();
-    await page.waitForTimeout(300);
-
-    // Select Deutsch from the language dropdown
-    const langDropdown = page.locator('[role="tabpanel"]').locator('[role="combobox"]').nth(1);
-    await langDropdown.click();
-    await page.locator('[role="listbox"] [role="option"]').filter({ hasText: 'Deutsch' }).click();
-
-    // Click Save Preferences
-    await page.locator('button').filter({ hasText: 'Save Preferences' }).click();
-
-    // Wait for the save to complete (success snackbar or button state)
-    await page.waitForTimeout(800);
+    await openLocalizationTab(page);
+    await selectLanguageAndSave(page, 'Deutsch');
 
     // The sidebar should now show German labels WITHOUT a page reload
     // "Overview" → "Übersicht"
@@ -123,15 +129,8 @@ test.describe('Language Switching — Profile Localization Tab', () => {
 
   test('Saving language persists to DB — next page load uses German', async ({ page }) => {
     await login(page);
-    await page.goto(`${BASE_URL}/profile`);
-    await page.locator('[role="tab"]').filter({ hasText: 'Localization' }).click();
-    await page.waitForTimeout(300);
-
-    const langDropdown = page.locator('[role="tabpanel"]').locator('[role="combobox"]').nth(1);
-    await langDropdown.click();
-    await page.locator('[role="listbox"] [role="option"]').filter({ hasText: 'Deutsch' }).click();
-    await page.locator('button').filter({ hasText: 'Save Preferences' }).click();
-    await page.waitForTimeout(1000);
+    await openLocalizationTab(page);
+    await selectLanguageAndSave(page, 'Deutsch');
 
     // Navigate to dashboard (full page reload from server)
     await page.goto(`${BASE_URL}/dashboard`);
@@ -152,19 +151,11 @@ test.describe('Language Switching — Profile Localization Tab', () => {
     await login(page);
 
     // First set to German
-    await page.goto(`${BASE_URL}/profile`);
-    await page.locator('[role="tab"]').filter({ hasText: 'Localization' }).click();
-    await page.waitForTimeout(300);
-    await page.locator('[role="tabpanel"]').locator('[role="combobox"]').nth(1).click();
-    await page.locator('[role="listbox"] [role="option"]').filter({ hasText: 'Deutsch' }).click();
-    await page.locator('button').filter({ hasText: 'Save Preferences' }).click();
-    await page.waitForTimeout(800);
+    await openLocalizationTab(page);
+    await selectLanguageAndSave(page, 'Deutsch');
 
     // Now switch back to English
-    await page.locator('[role="tabpanel"]').locator('[role="combobox"]').nth(1).click();
-    await page.locator('[role="listbox"] [role="option"]').filter({ hasText: 'English' }).click();
-    await page.locator('button').filter({ hasText: /Einstellungen speichern|Save Preferences/i }).click();
-    await page.waitForTimeout(800);
+    await selectLanguageAndSave(page, 'English');
 
     // Sidebar should be English again
     await expect(page.locator('text=Overview')).toBeVisible({ timeout: 5_000 });
@@ -175,15 +166,8 @@ test.describe('Language Switching — Profile Localization Tab', () => {
 
   test('Profile page Localization tab labels are translated after switching to German', async ({ page }) => {
     await login(page);
-    await page.goto(`${BASE_URL}/profile`);
-    await page.locator('[role="tab"]').filter({ hasText: 'Localization' }).click();
-    await page.waitForTimeout(300);
-
-    const langDropdown = page.locator('[role="tabpanel"]').locator('[role="combobox"]').nth(1);
-    await langDropdown.click();
-    await page.locator('[role="listbox"] [role="option"]').filter({ hasText: 'Deutsch' }).click();
-    await page.locator('button').filter({ hasText: 'Save Preferences' }).click();
-    await page.waitForTimeout(500);
+    await openLocalizationTab(page);
+    await selectLanguageAndSave(page, 'Deutsch');
 
     // The tab itself should now say "Lokalisierung" (German for Localization)
     await expect(
@@ -192,9 +176,74 @@ test.describe('Language Switching — Profile Localization Tab', () => {
 
     // "Save Preferences" button → "Einstellungen speichern"
     await expect(
-      page.locator('button').filter({ hasText: 'Einstellungen speichern' })
+      page.getByTestId('save-preferences-button').filter({ hasText: 'Einstellungen speichern' })
     ).toBeVisible({ timeout: 3_000 });
   });
 
-});
+  // ── The remaining 7 non-German locales ────────────────────────────────────
+  // Each entry: dropdown label, expected translated sidebar "Overview" label,
+  // and the ISO code expected in `data-language`/`<html lang>` after persist.
+  const remainingLocales = [
+    { label: 'Español',    overview: 'Resumen',           code: 'es' },
+    { label: 'Français',   overview: "Vue d'ensemble",    code: 'fr' },
+    { label: '日本語',      overview: '概要',              code: 'ja' },
+    { label: '한국어',      overview: '개요',              code: 'ko' },
+    { label: 'Nederlands', overview: 'Overzicht',         code: 'nl' },
+    { label: 'Português',  overview: 'Visão geral',       code: 'pt' },
+    { label: '中文',        overview: '概述',              code: 'zh' },
+  ];
 
+  for (const { label, overview, code } of remainingLocales) {
+    test(`Selecting ${label} translates the sidebar and persists (data-language="${code}")`, async ({ page }) => {
+      await login(page);
+      await openLocalizationTab(page);
+      await selectLanguageAndSave(page, label);
+
+      // Zero-lag: sidebar reflects the new locale without a page reload.
+      await expect(page.getByRole('button', { name: overview })).toBeVisible({ timeout: 5_000 });
+
+      // Persists server-side: a fresh navigation still uses this locale.
+      await page.goto(`${BASE_URL}/dashboard`);
+      await expect(page.locator('#react-sidebar-root')).toHaveAttribute('data-language', code);
+      await expect(page.locator('html')).toHaveAttribute('lang', code);
+      await expect(page.getByRole('button', { name: overview })).toBeVisible({ timeout: 5_000 });
+
+      // None of these locales are RTL — base direction must stay ltr.
+      await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
+    });
+  }
+
+  // ── Arabic — RTL layout verification ──────────────────────────────────────
+  test('Selecting Arabic sets <html dir="rtl">, persists, and applies real Arabic translations', async ({ page }) => {
+    await login(page);
+    await openLocalizationTab(page);
+    await selectLanguageAndSave(page, 'العربية');
+
+    // Zero-lag: dir flips to rtl immediately, without a page reload.
+    await expect(page.locator('html')).toHaveAttribute('dir', 'rtl', { timeout: 5_000 });
+    await expect(page.locator('html')).toHaveAttribute('lang', 'ar');
+
+    // Persists server-side: a fresh navigation still renders RTL.
+    await page.goto(`${BASE_URL}/dashboard`);
+    await expect(page.locator('#react-sidebar-root')).toHaveAttribute('data-language', 'ar');
+    await expect(page.locator('html')).toHaveAttribute('lang', 'ar');
+    await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
+
+    // Sanity-check a genuinely-translated Arabic string is rendered (not
+    // every key in ar.json is translated yet — see the product doc's "Notes
+    // & known limitations" — but "Inbox" is, and proves the pipeline works).
+    await expect(page.getByText('صندوق الوارد')).toBeVisible({ timeout: 5_000 });
+  });
+
+  test('Switching from Arabic back to English restores <html dir="ltr">', async ({ page }) => {
+    await login(page);
+    await openLocalizationTab(page);
+    await selectLanguageAndSave(page, 'العربية');
+    await expect(page.locator('html')).toHaveAttribute('dir', 'rtl', { timeout: 5_000 });
+
+    await selectLanguageAndSave(page, 'English');
+    await expect(page.locator('html')).toHaveAttribute('dir', 'ltr', { timeout: 5_000 });
+    await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+  });
+
+});

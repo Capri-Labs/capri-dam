@@ -47,12 +47,25 @@ image::dashboard.png[Capri DAM Dashboard, title="The Dashboard ('Command Center'
 
 ==== Test coverage status
 
-[.status-covered]#Covered# — none of the current E2E specs target `/dashboard`
-directly; existing coverage is incidental (post-login landing-page assertions in
-`spec/e2e/auth.e2e.spec.js`).
+[.status-covered]#Covered# — `spec/e2e/dashboard.e2e.spec.js`:
+
+* KPI cards, quick actions, and Recent Assets sections render.
+* Widget-level drill-down: clicking the Total Assets / Folders / Workflow
+  Tasks KPI cards navigates to `/assets`, `/folders`, `/workflows`
+  respectively.
+* Quick-action buttons (Search, Analytics) navigate to `/search`, `/reports`.
+* "View All" in Recent Assets navigates to `/assets`.
+* Clicking "View" on a Recent Assets row navigates to the asset explorer
+  scoped to that specific asset (`/assets?id=<uuid>`) — verified end-to-end
+  with a freshly-created test asset.
+* AI insights banner action button navigates to a related screen (when an
+  insight with an action is present).
+* Manual refresh control fires a real data request with no error banner.
 
 [.status-pending]#Pending / not yet covered#
 
-* Dashboard stat cards reflect real data changes (create an asset → total increments).
+* Dashboard stat cards reflect real data changes (create an asset → total
+  increments) — the KPI *values* are not yet asserted against a live create;
+  only navigation/drill-down behaviour is covered.
 * Asset Growth chart renders correctly with more than one data point.
 * Workflow summary counts update after a task is approved/rejected.

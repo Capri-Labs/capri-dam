@@ -31,8 +31,13 @@ image::profile-localization.png[Profile Localization tab, title="Profile → Loc
   UI string added anywhere in the app must be translated into all 9 non-English
   locales before Jest goes green, which is what keeps a 10-locale product from
   silently drifting into "half-translated" territory over time.
-* **RTL-ready** — Arabic is a first-class supported locale, meaning right-to-left
-  layout considerations are already part of the design baseline.
+* **Basic RTL support** — selecting Arabic sets `<html dir="rtl">` (server-side
+  on first paint via the layout, and client-side with zero lag on in-session
+  language switches), so native CSS logical properties/flexbox direction mirror
+  correctly. This is a lightweight `dir`-attribute implementation, not full
+  MUI-level RTL mirroring (no `stylis-plugin-rtl`/theme `direction: 'rtl'` is
+  configured), so some MUI component internals (e.g. icon/drawer placement)
+  are not yet mirrored.
 =====
 
 
@@ -40,7 +45,15 @@ image::profile-localization.png[Profile Localization tab, title="Profile → Loc
 
 * Translation *quality* (naturalness/tone per locale) is not automatically
   verified — only key *parity* (every key exists in every locale) is enforced.
-  Native-speaker review is still recommended for customer-facing rollouts.
+  Native-speaker review is still recommended for customer-facing rollouts. In
+  particular, most `ar.json` values are still placeholder copies of the English
+  source text (only a small number of keys have been genuinely translated to
+  date) — Arabic is functionally wired up end-to-end, but its translation
+  content itself needs a native-speaker pass before customer-facing rollout.
+* RTL support is limited to the `dir` attribute on `<html>`; it does not yet
+  re-mirror MUI component internals (icon placement, drawer anchor side, etc.).
+  A full RTL treatment would need a `direction: 'rtl'` MUI theme plus a
+  stylis RTL plugin.
 * Locale is a per-user setting only; there is currently no organisation-wide
   default-locale override for new users beyond English.
 
@@ -48,23 +61,38 @@ image::profile-localization.png[Profile Localization tab, title="Profile → Loc
 
 [.status-covered]#Covered by E2E# (`spec/e2e/language_switching.e2e.spec.js`)
 
-* Localization tab loads with a language selector; dropdown shows all 9
-  non-English supported languages.
+* Localization tab loads with a language selector; dropdown shows all 10
+  supported languages, including Arabic.
 * Selecting German and saving changes the sidebar to German immediately.
 * Saved language persists across a page reload (server round-trip).
 * Switching back to English restores all English sidebar labels.
 * Profile page's own Localization tab labels are translated after switching to
   German (dogfooding the feature on its own settings page).
+* Each of the remaining 7 non-German locales (Spanish, French, Japanese,
+  Korean, Dutch, Portuguese, Chinese) is individually exercised: selecting the
+  language translates the sidebar immediately and the choice persists across a
+  reload (`<html lang>` + a `data-language` marker).
+* Selecting Arabic sets `<html dir="rtl">` immediately (zero-lag) and after a
+  reload, sets `<html lang="ar">`, and renders at least one genuinely
+  translated string ("Inbox" → "صندوق الوارد") as a translation-pipeline
+  sanity check.
+* Switching from Arabic back to English restores `<html dir="ltr">`.
+* Both the Profile page and the Admin → Edit User drawer's language dropdowns
+  offer all 10 locales, including Arabic (regression-covered by Jest for the
+  Admin drawer — a prior bug had Arabic missing from both dropdowns despite
+  being fully supported everywhere else in the stack).
 
 Also covered (unit level, not E2E): translation-key parity across all 10 locales
-via the Jest suite (`spec/javascript/i18n/i18n.test.js`).
+via the Jest suite (`spec/javascript/i18n/i18n.test.js`); the Admin → Edit User
+drawer's Preferences tab offering all 10 languages including Arabic
+(`spec/javascript/components/Admin/UserDrawer.test.jsx`).
 
 [.status-pending]#Pending / not yet covered#
 
-* E2E coverage only exercises German ↔ English switching; the remaining 7
-  locales (Spanish, French, Arabic, Japanese, Korean, Dutch, Portuguese, Chinese)
-  are not individually exercised at the E2E level (though key-parity is enforced
-  for all of them via Jest).
-* RTL layout correctness for Arabic is not visually/automatically verified.
+* RTL layout correctness beyond the `dir` attribute (i.e. full MUI-level
+  mirroring of component internals) is not implemented or tested.
+* Translation *quality* for Arabic specifically (most `ar.json` values are
+  still untranslated placeholders) — out of scope for automated verification;
+  needs a native-speaker translation pass.
 * Organisation-wide default-locale configuration (not currently a feature, so
   nothing to test yet).

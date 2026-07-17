@@ -63,17 +63,15 @@ RSpec.describe "Collection routing", type: :integration, aggregate_failures: tru
       end
     end)
 
-    Asset.class_eval do
-      def vector_embedding
-        [ 0.9 ]
-      end
-    end unless Asset.method_defined?(:vector_embedding)
-
-    CollectionRule.class_eval do
-      def prompt_vector
-        [ 0.9 ]
-      end
-    end unless CollectionRule.method_defined?(:prompt_vector)
+    # The worker's semantic branch compares real vectors: the asset's
+    # `asset_embedding.embedding` (a pgvector column, populated by the async
+    # AI embedding pipeline) against the rule's own `prompt_vector` (a jsonb
+    # column, populated by `CollectionRule#embed_semantic_prompt`, which is a
+    # not-yet-wired-to-a-live-gateway placeholder — see the model). Since
+    # `VectorCalculator.cosine_similarity` is stubbed above, only presence
+    # (not the actual values) matters here.
+    AssetEmbedding.create!(asset: routed_asset, embedding: Array.new(1_536, 0.1), model_name: "test-embedding")
+    smart_collection.collection_rule.update!(prompt_vector: Array.new(1_536, 0.1))
 
     SmartCollectionRouterWorker.new.perform(routed_asset.id)
 

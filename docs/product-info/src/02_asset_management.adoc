@@ -86,14 +86,32 @@ image::folder-access-acl.png[Folder Access tab, title="Folder Info Panel — Acc
   future "Publish Later" action without prematurely flipping the asset's published
   state, and the button correctly hiding whenever the selection includes a folder —
   `spec/e2e/publish_asset.e2e.spec.js`.
+* Version history — listing versions and restoring a previous one via the real
+  restore endpoint (`spec/e2e/folders_workspace_coverage.e2e.spec.js`), plus a
+  real end-to-end pixel-diff run: uploading an asset, generating a second
+  version via `process_image` (rotate, `save_mode: version`), and asserting the
+  diff overlay renders real before/after canvases —
+  `spec/e2e/asset_version_diff.e2e.spec.js`. Writing this real (non-mocked)
+  test surfaced two genuine bugs, both now fixed:
+  ** `AssetVersionsTab.jsx`'s `loadImage()` unconditionally set
+     `image.crossOrigin = 'anonymous'` even for same-origin preview requests,
+     which strips session cookies and breaks authenticated image loads for any
+     self-hosted/dev deployment without a CDN in front of asset serving.
+  ** `AssetUrlHelper#asset_url_for` bypassed the UUID-based local-storage
+     routing guard whenever an explicit `version:` was requested, so it
+     returned the raw absolute filesystem path instead of the
+     `/api/v1/assets/local/:uuid?version_id=...` route — meaning **every**
+     version-scoped preview URL was fundamentally broken (guaranteed 404) on
+     any deployment using local storage, not just a display glitch.
+* Bulk metadata CSV import/export — real end-to-end CSV upload/processing,
+  results download, and CSV export/download —
+  `spec/e2e/metadata_tools.e2e.spec.js`.
 
 [.status-pending]#Pending / not yet covered#
 
 * Upload flow (drag-and-drop, presigned PUT, progress UI).
 * Folder create / rename / delete.
 * Metadata schema editor (add/remove custom fields on a folder).
-* Version history view and restore-a-previous-version flow.
-* Bulk CSV metadata import/export.
 * Multi-item (more than one folder/asset at once) Move/Copy/Download selections —
   today's E2E coverage exercises single-item moves/copies/downloads only; the
   underlying REST endpoints already accept and were manually verified against

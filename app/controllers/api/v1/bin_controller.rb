@@ -111,7 +111,14 @@ module Api
             if type == "folder"
               Folder.trashed.find(id).restore
             else
-              Asset.trashed.find(id).restore
+              # The bin listing (see #serialize_asset) exposes an asset's
+              # legacy `uuid` column as its `id` field (matching every other
+              # asset-facing API in the app — see Api::V1::AssetsController
+              # #find_asset_record), which does NOT match Asset's own
+              # primary key column (also a UUID, but independently
+              # generated). Resolve by either so restore actually finds the
+              # row the UI is showing.
+              (Asset.trashed.find_by(id: id) || Asset.trashed.find_by!(uuid: id)).restore
             end
             restored += 1
           rescue ActiveRecord::RecordNotFound
@@ -140,7 +147,15 @@ module Api
         errors  = []
 
         asset_ids = items.select { |i| i[:type].to_s != "folder" }.map { |i| i[:id] }
-        assets_by_id = Asset.trashed.includes(:asset_versions).where(id: asset_ids).index_by { |a| a.id.to_s }
+        # See the comment in {#bulk_restore} — the bin listing exposes an
+        # asset's legacy `uuid` column as its `id` field, which does not
+        # match the primary key column, so we must match on either and index
+        # the lookup hash by both keys.
+        trashed_assets = Asset.trashed.includes(:asset_versions).where(id: asset_ids).or(
+          Asset.trashed.includes(:asset_versions).where(uuid: asset_ids)
+        )
+        assets_by_id = {}
+        trashed_assets.each { |a| assets_by_id[a.id.to_s] = a; assets_by_id[a.uuid.to_s] = a }
 
         # See the comment in {#empty} — cross-referenced active_version_id
         # pointers must be cleared for the *whole batch* up front, otherwise

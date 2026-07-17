@@ -70,12 +70,25 @@ image::search-results.png[Search results page, title="Search Results page — qu
   `include_bin=true` and flags bin results with a "Bin" chip.
 * Clicking a result navigates to `/assets?id=<uuid>` and keeps that param in
   the URL (previously stripped by the folder explorer's URL-sync effect).
+* Semantic search relevance/ranking correctness — real end-to-end pgvector
+  query: seeds two assets with deliberately-orthogonal 1536-dim
+  `AssetEmbedding` fixtures, stands in for the AI Gateway with a tiny local
+  HTTP fixture server (nothing else in this environment listens on the
+  configured `AI_GATEWAY_URL`), and asserts the real `nearest_to_vector`
+  cosine-similarity ORDER BY ranks the embedding-nearest asset first, via
+  both the raw API and the "Visual Match" search-bar UI —
+  `spec/e2e/semantic_search.e2e.spec.js`.
+* Semantic cluster map rendering and node interaction — creates a real
+  collection with two real assets, opens "View AI Map", and verifies one
+  node renders per attached asset (via the real
+  `GET /api/v1/collections/:slug/cluster_map` endpoint) plus the hover
+  tooltip and dialog-close interactions —
+  `spec/e2e/semantic_cluster_map.e2e.spec.js`. (Added a `data-testid` to the
+  node markup in `SemanticClusterMap.jsx` since the nodes previously had no
+  stable selector for either assistive tech or test automation.)
 
 [.status-pending]#Pending / not yet covered#
 
-* Semantic search relevance/ranking correctness (would require a fixture with
-  known embeddings).
-* Semantic cluster map rendering and node interaction.
 * Faceted filter combinations (content type + date range + tags together).
 * AI Copilot natural-language → structured-filter translation accuracy
   (see also <<module-ai-suite>>).

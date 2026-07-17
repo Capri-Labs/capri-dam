@@ -13,8 +13,14 @@ RSpec.describe 'Folders API (functional)', type: :request do
   before { sign_in user }
 
   # ── DELETE (the bug the user reported) ──────────────────────────────────────
+  # Uses an admin user so check_folder_permission!(@folder, :delete) is bypassed
+  # (non-admin users need an explicit folder policy grant, even for folders
+  # they created themselves — see the permission-enforcement spec below).
   describe 'DELETE /api/v1/folders/:id' do
-    let!(:folder) { create(:folder, user: user) }
+    let(:admin_user) { create(:user, :admin) }
+    let!(:folder) { create(:folder, user: admin_user) }
+
+    before { sign_in admin_user }
 
     it 'soft-deletes the folder and returns 200' do
       delete "/api/v1/folders/#{folder.id}", as: :json
@@ -27,6 +33,71 @@ RSpec.describe 'Folders API (functional)', type: :request do
       expect {
         delete "/api/v1/folders/#{folder.id}", as: :json
       }.to change { folder.reload.deleted_at }.from(nil)
+    end
+  end
+
+  # ── DELETE permission enforcement (security regression guard) ───────────────
+  # DELETE /api/v1/folders/:id previously had NO folder-permission check at
+  # all — any authenticated non-admin user could soft-delete ANY folder in
+  # the system regardless of the 7-column ACL. This mirrors the existing
+  # check_asset_delete! enforcement on assets and closes that gap.
+  describe 'DELETE /api/v1/folders/:id permission enforcement' do
+    let(:owner)       { create(:user) }
+    let(:other_user)  { create(:user) }
+    let!(:folder)     { create(:folder, user: owner) }
+
+    it "forbids a user with no folder policy from deleting someone else's folder" do
+      sign_in other_user
+      delete "/api/v1/folders/#{folder.id}", as: :json
+      expect(response).to have_http_status(:forbidden)
+      expect(folder.reload.deleted_at).to be_nil
+    end
+
+    it 'allows deletion once the user is granted delete_access via a folder policy' do
+      group = create(:user_group)
+      other_user.user_groups << group
+      create(:folder_policy, folder: folder, user_group: group, delete_access: true)
+
+      sign_in other_user
+      delete "/api/v1/folders/#{folder.id}", as: :json
+      expect(response).to have_http_status(:ok)
+      expect(folder.reload.deleted_at).not_to be_nil
+    end
+  end
+
+  # ── CREATE (subfolder) permission enforcement (security regression guard) ───
+  # POST /api/v1/folders previously had NO folder-permission check on the
+  # target parent folder — any authenticated user could create a subfolder
+  # inside ANY folder in the system regardless of the 7-column ACL. This
+  # mirrors the existing check_folder_permission!(target_folder, :create)
+  # enforcement already applied to asset uploads (Api::V1::AssetsController).
+  describe 'POST /api/v1/folders permission enforcement' do
+    let(:owner)       { create(:user) }
+    let(:other_user)  { create(:user) }
+    let!(:parent)     { create(:folder, user: owner) }
+
+    it "forbids a user with no folder policy from creating a subfolder in someone else's folder" do
+      sign_in other_user
+      expect {
+        post "/api/v1/folders", params: { folder: { name: "Should Not Exist", parent_id: parent.id } }, as: :json
+      }.not_to change(Folder, :count)
+      expect(response).to have_http_status(:forbidden)
+    end
+
+    it 'allows subfolder creation once the user is granted create_access via a folder policy' do
+      group = create(:user_group)
+      other_user.user_groups << group
+      create(:folder_policy, folder: parent, user_group: group, create_access: true)
+
+      sign_in other_user
+      post "/api/v1/folders", params: { folder: { name: "Allowed Child", parent_id: parent.id } }, as: :json
+      expect(response).to have_http_status(:created)
+    end
+
+    it 'still allows creating a root-level folder with no policy at all (folder: nil is always creatable)' do
+      sign_in other_user
+      post "/api/v1/folders", params: { folder: { name: "Root Folder", parent_id: "root" } }, as: :json
+      expect(response).to have_http_status(:created)
     end
   end
 

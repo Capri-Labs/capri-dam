@@ -152,6 +152,23 @@ RSpec.describe 'API workflow instance coverage', type: :request do
       expect(response.parsed_body).to include('queued' => 1, 'workflow_id' => active_workflow.id)
     end
 
+    # Regression test: every asset-facing API response (see
+    # Api::V1::AssetsController#format_asset) exposes an asset's legacy
+    # `uuid` column as its `id` field — real clients (e.g. the workflow
+    # trigger UI, built on top of asset search/listing results) only ever
+    # have that `uuid` value on hand, never the actual primary key. This
+    # endpoint must resolve assets by either column, or it silently queues 0
+    # assets for any real caller.
+    it 'queues the workflow when asset_ids are the assets uuid column (as the real UI sends)' do
+      allow(WorkflowInitiatorWorker).to receive(:perform_async)
+
+      post '/api/v1/workflows/bulk_trigger', params: { workflow_id: active_workflow.id, asset_ids: [ asset.uuid ] }
+
+      expect(response).to have_http_status(:accepted)
+      expect(WorkflowInitiatorWorker).to have_received(:perform_async).with(asset.id, active_workflow.id)
+      expect(response.parsed_body).to include('queued' => 1, 'workflow_id' => active_workflow.id)
+    end
+
     it 'expands selected folders into every active asset inside them, recursively' do
       root  = create(:folder, user: user)
       child = create(:folder, user: user, parent: root)

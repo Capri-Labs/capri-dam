@@ -223,6 +223,25 @@ RSpec.describe "Bin API", type: :request do
       post "/api/v1/bin/bulk_restore", params: { items: [] }, as: :json
       expect(response).to have_http_status(:unauthorized)
     end
+
+    # Regression test: Api::V1::BinController#serialize_asset exposes an
+    # asset's legacy `uuid` column as the item's `id` field in the /api/v1/bin
+    # listing (matching every other asset-facing endpoint in the app), which
+    # is NOT the same value as the asset's actual primary key (also a UUID,
+    # but independently generated — see db/structure.sql). The real /bin UI
+    # only ever has the `uuid` value available (from the listing response),
+    # so restore must resolve by either column — previously it only matched
+    # the primary key, silently failing ("not found in bin") for every real
+    # browser-driven restore.
+    it "restores an asset when the item id is the asset's uuid column (as the real bin UI sends)" do
+      post "/api/v1/bin/bulk_restore", params: {
+        items: [ { id: trashed_asset.uuid, type: "asset" } ],
+      }, as: :json
+      data = JSON.parse(response.body)
+      expect(data["restored"]).to eq(1)
+      expect(data["errors"]).to be_empty
+      expect(trashed_asset.reload.deleted_at).to be_nil
+    end
   end
 
   # ===========================================================================
@@ -256,6 +275,18 @@ RSpec.describe "Bin API", type: :request do
       sign_out admin
       delete "/api/v1/bin/bulk_destroy", params: { items: [] }, as: :json
       expect(response).to have_http_status(:unauthorized)
+    end
+
+    # Regression test — see the equivalent bulk_restore test above for full
+    # context on the uuid/id mismatch this guards against.
+    it "permanently deletes an asset when the item id is the asset's uuid column (as the real bin UI sends)" do
+      delete "/api/v1/bin/bulk_destroy", params: {
+        items: [ { id: trashed_asset.uuid, type: "asset" } ],
+      }, as: :json
+      data = JSON.parse(response.body)
+      expect(data["deleted"]).to eq(1)
+      expect(data["errors"]).to be_empty
+      expect { trashed_asset.reload }.to raise_error(ActiveRecord::RecordNotFound)
     end
 
     # Regression test mirroring the /empty cross-reference fix above: deleting

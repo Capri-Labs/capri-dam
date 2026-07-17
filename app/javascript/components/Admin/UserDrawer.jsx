@@ -31,7 +31,7 @@ const SUPPORTED_LANGS = [
   { value: 'fr', label: 'Français' }, { value: 'es', label: 'Español' },
   { value: 'pt', label: 'Português' }, { value: 'nl', label: 'Nederlands' },
   { value: 'ja', label: '日本語' }, { value: 'zh', label: '中文' },
-  { value: 'ko', label: '한국어' },
+  { value: 'ko', label: '한국어' }, { value: 'ar', label: 'العربية' },
 ];
 
 function TabPanel({ children, value, index }) {

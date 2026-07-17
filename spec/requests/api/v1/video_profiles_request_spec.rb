@@ -47,6 +47,25 @@ RSpec.describe "Api::V1::VideoProfiles coverage", type: :request do
     expect(json["smart_crop_ratios"]).to eq([])
   end
 
+  # Regression test for a real bug found while writing Delivery & CDN E2E
+  # coverage: real browser clients (unlike the JSON-string params above) send
+  # `smart_crop_ratios` as an actual nested array, which Rails wraps as an
+  # array of `ActionController::Parameters` — not plain hashes. Previously
+  # `profile_params` assigned that raw array directly without permitting each
+  # element, so ActiveRecord's JSON-column serialization raised
+  # `ActionController::UnfilteredParameters` ("unable to convert unpermitted
+  # parameters to hash") the first time it tried to persist the value.
+  it "creates a profile when smart_crop_ratios is sent as a real (non-string) nested array" do
+    post "/api/v1/video_profiles", params: {
+      video_profile: {
+        name: "Real Array Ratios",
+        smart_crop_ratios: [ { name: "16:9", crop_ratio: "16:9" } ],
+      },
+    }, as: :json
+    expect(response).to have_http_status(:created)
+    expect(json["smart_crop_ratios"].first).to include("name" => "16:9", "crop_ratio" => "16:9")
+  end
+
   it "parses preset advanced_params JSON strings and falls back to an empty hash" do
     post "/api/v1/video_profiles", params: {
       video_profile: {

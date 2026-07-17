@@ -150,7 +150,14 @@ class Api::V1::WorkflowInstancesController < ApplicationController
     end
 
     resolved_ids = (asset_ids + folder_ids.flat_map { |folder_id| asset_ids_in_folder(folder_id) }).uniq
-    assets       = Asset.active.where(id: resolved_ids)
+    # Every asset-facing API response (see Api::V1::AssetsController
+    # #format_asset) exposes an asset's legacy `uuid` column as its `id`
+    # field, which is NOT the same value as the actual primary key column —
+    # so any real client (the workflow-trigger UI included) only ever has
+    # the `uuid` value on hand. Resolve by either column, matching the
+    # dual-lookup fallback used elsewhere (e.g. AssetsController
+    # #find_asset_record), otherwise this endpoint silently queues 0 assets.
+    assets = Asset.active.where(id: resolved_ids).or(Asset.active.where(uuid: resolved_ids))
 
     assets.find_each { |asset| WorkflowInitiatorWorker.perform_async(asset.id, workflow.id) }
 

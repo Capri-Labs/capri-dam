@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 
 const mockNotify = jest.fn();
 const mockApiFetch = jest.fn();
@@ -150,5 +150,34 @@ describe('UserDrawer', () => {
 
     const suspendBtn = screen.getByRole('button', { name: /suspend access/i });
     expect(suspendBtn).toBeEnabled();
+  });
+
+  it('offers all 10 supported languages, including Arabic, on the Preferences tab', async () => {
+    mockApiFetch.mockResolvedValueOnce({
+      language: 'en', receive_mention_emails: true, receive_workflow_emails: true,
+    });
+
+    render(
+      <UserDrawer
+        open
+        user={user}
+        editForm={editForm}
+        setEditForm={jest.fn()}
+        onClose={jest.fn()}
+        onSave={jest.fn()}
+        onToggleStatus={jest.fn()}
+        allGroups={[]}
+        isAdmin
+        isSuperAdmin
+      />
+    );
+
+    fireEvent.click(screen.getByRole('tab', { name: /preferences/i }));
+    await screen.findByLabelText('Interface Language');
+    fireEvent.mouseDown(screen.getByLabelText('Interface Language'));
+
+    const listbox = screen.getByRole('listbox');
+    expect(within(listbox).getByText('العربية')).toBeInTheDocument();
+    expect(within(listbox).getAllByRole('option')).toHaveLength(10);
   });
 });

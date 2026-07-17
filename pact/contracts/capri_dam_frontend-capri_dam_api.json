@@ -249,6 +249,3142 @@
           ]
         }
       }
+    },
+    {
+      "description": "a GET request to /api/v1/dashboard/overview succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/dashboard/overview"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/search succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/search"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/search/suggestions succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/search/suggestions"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/ai/lab/models succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/ai/lab/models"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/custom_node_definitions succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/custom_node_definitions"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/custom_node_definitions/{{custom_node_definition_id}} succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/custom_node_definitions/{{custom_node_definition_id}}"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/agent_workflows/{{agent_workflow_id}}/executions succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/agent_workflows/{{agent_workflow_id}}/executions"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/agent_workflows succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/agent_workflows"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/agent_workflows/{{agent_workflow_id}} succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/agent_workflows/{{agent_workflow_id}}"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/ai_batch_jobs/task_types succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/ai_batch_jobs/task_types"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/ai_batch_jobs succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/ai_batch_jobs"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/ai_batch_jobs/{{ai_batch_job_id}} succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/ai_batch_jobs/{{ai_batch_job_id}}"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/c2pa_configuration succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/c2pa_configuration"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/asset_provenance_records/stats succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/asset_provenance_records/stats"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/asset_provenance_records succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/asset_provenance_records"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/asset_provenance_records/{{asset_provenance_record_id}} succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/asset_provenance_records/{{asset_provenance_record_id}}"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/ai_model_configs/capabilities succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/ai_model_configs/capabilities"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/ai_model_configs succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/ai_model_configs"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/ai_model_configs/{{ai_model_config_id}} succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/ai_model_configs/{{ai_model_config_id}}"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/style_presets succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/style_presets"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/style_presets/{{style_preset_id}} succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/style_presets/{{style_preset_id}}"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/cdn_configurations succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/cdn_configurations"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/bin succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/bin"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/bin/stats succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/bin/stats"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/bin/retention_policy succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/bin/retention_policy"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/bin/purge_status succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/bin/purge_status"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/bin/ai/smart_suggestions succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/bin/ai/smart_suggestions"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/bin/ai/cleanup_report succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/bin/ai/cleanup_report"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/inbox/unread_count succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/inbox/unread_count"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/inbox succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/inbox"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/inbox/{{inbox_message_id}} succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/inbox/{{inbox_message_id}}"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/users succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/users"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/ai/template_suggestions succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/ai/template_suggestions"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/assets/{{asset_id}}/duplicates succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/assets/{{asset_id}}/duplicates"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/assets/{{asset_id}}/workflow_history succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/assets/{{asset_id}}/workflow_history"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/assets/{{asset_id}}/stats succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/assets/{{asset_id}}/stats"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/assets/{{asset_id}}/versions succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/assets/{{asset_id}}/versions"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/assets/{{asset_id}}/audit_trail succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/assets/{{asset_id}}/audit_trail"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/assets/{{asset_id}}/metadata_schema succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/assets/{{asset_id}}/metadata_schema"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/assets succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/assets"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/folders/{{folder_id}}/schema succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/folders/{{folder_id}}/schema"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/folders/{{folder_id}}/profiles succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/folders/{{folder_id}}/profiles"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/folders/{{folder_id}}/policies succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/folders/{{folder_id}}/policies"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/folders succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/folders"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/folders/{{folder_id}} succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/folders/{{folder_id}}"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/collections/{{collection_slug}}/cluster_map succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/collections/{{collection_slug}}/cluster_map"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/collections/{{collection_slug}}/policies succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/collections/{{collection_slug}}/policies"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/collections succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/collections"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/collections/{{collection_slug}} succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/collections/{{collection_slug}}"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/data_health/overview succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/data_health/overview"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/data_health/connectors succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/data_health/connectors"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/system_connectors succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/system_connectors"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/ingestion_items succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/ingestion_items"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/ingestion_items/{{ingestion_item_id}} succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/ingestion_items/{{ingestion_item_id}}"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/ingestion_batches/stats succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/ingestion_batches/stats"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/ingestion_batches/{{ingestion_batch_id}}/report succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/ingestion_batches/{{ingestion_batch_id}}/report"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/ingestion_batches succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/ingestion_batches"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/ingestion_batches/{{ingestion_batch_id}} succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/ingestion_batches/{{ingestion_batch_id}}"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/workflows/dashboard succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/workflows/dashboard"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/workflow_instances succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/workflow_instances"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/workflow_instances/{{workflow_instance_id}} succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/workflow_instances/{{workflow_instance_id}}"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/ai_configuration succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/ai_configuration"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/upload_restrictions succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/upload_restrictions"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/upload_limits succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/upload_limits"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/collection_settings succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/collection_settings"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/duplicate_manager_settings/scan_status succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/duplicate_manager_settings/scan_status"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/duplicate_manager_settings succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/duplicate_manager_settings"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/duplicate_groups/stats succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/duplicate_groups/stats"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/duplicate_groups succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/duplicate_groups"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/duplicate_groups/{{duplicate_group_id}} succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/duplicate_groups/{{duplicate_group_id}}"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/quarantined_assets/stats succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/quarantined_assets/stats"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/quarantined_assets succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/quarantined_assets"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/quarantined_assets/{{quarantined_asset_id}} succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/quarantined_assets/{{quarantined_asset_id}}"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/image_profiles/{{image_profile_id}}/folders succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/image_profiles/{{image_profile_id}}/folders"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/image_profiles succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/image_profiles"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/image_profiles/{{image_profile_id}} succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/image_profiles/{{image_profile_id}}"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/video_profiles/{{video_profile_id}}/folders succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/video_profiles/{{video_profile_id}}/folders"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/video_profiles succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/video_profiles"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/video_profiles/{{video_profile_id}} succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/video_profiles/{{video_profile_id}}"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/notifications succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/notifications"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/metadata_schemas/{{metadata_schema_id}}/folders succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/metadata_schemas/{{metadata_schema_id}}/folders"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/metadata_schemas succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/metadata_schemas"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/metadata_schemas/{{metadata_schema_id}} succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/metadata_schemas/{{metadata_schema_id}}"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/user_groups succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/user_groups"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/metadata_exports/properties succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/metadata_exports/properties"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/metadata_exports succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/metadata_exports"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/metadata_exports/{{metadata_export_id}} succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/metadata_exports/{{metadata_export_id}}"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/asset_downloads succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/asset_downloads"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/asset_downloads/{{asset_download_id}} succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/asset_downloads/{{asset_download_id}}"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/metadata_imports succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/metadata_imports"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/metadata_imports/{{metadata_import_id}} succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/metadata_imports/{{metadata_import_id}}"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request for a nonexistent custom node definition returns not found (/api/v1/custom_node_definitions/{{nonexistent_id}})",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/custom_node_definitions/{{nonexistent_id}}"
+      },
+      "response": {
+        "status": 404
+      }
+    },
+    {
+      "description": "a GET request for a nonexistent agent workflow returns not found (/api/v1/agent_workflows/{{nonexistent_id}})",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/agent_workflows/{{nonexistent_id}}"
+      },
+      "response": {
+        "status": 404
+      }
+    },
+    {
+      "description": "a GET request for a nonexistent AI batch job returns not found (/api/v1/ai_batch_jobs/{{nonexistent_id}})",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/ai_batch_jobs/{{nonexistent_id}}"
+      },
+      "response": {
+        "status": 404
+      }
+    },
+    {
+      "description": "a GET request for a nonexistent asset provenance record returns not found (/api/v1/asset_provenance_records/{{nonexistent_id}})",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/asset_provenance_records/{{nonexistent_id}}"
+      },
+      "response": {
+        "status": 404
+      }
+    },
+    {
+      "description": "a GET request for a nonexistent AI model config returns not found (/api/v1/ai_model_configs/{{nonexistent_id}})",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/ai_model_configs/{{nonexistent_id}}"
+      },
+      "response": {
+        "status": 404
+      }
+    },
+    {
+      "description": "a GET request for a nonexistent style preset returns not found (/api/v1/style_presets/{{nonexistent_id}})",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/style_presets/{{nonexistent_id}}"
+      },
+      "response": {
+        "status": 404
+      }
+    },
+    {
+      "description": "a GET request for a nonexistent inbox message returns not found (/api/v1/inbox/{{nonexistent_uuid}})",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/inbox/{{nonexistent_uuid}}"
+      },
+      "response": {
+        "status": 404
+      }
+    },
+    {
+      "description": "a GET request for a nonexistent asset returns not found (/api/v1/assets/{{nonexistent_uuid}})",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/assets/{{nonexistent_uuid}}"
+      },
+      "response": {
+        "status": 404
+      }
+    },
+    {
+      "description": "a GET request for a nonexistent folder returns not found (/api/v1/folders/{{nonexistent_id}})",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/folders/{{nonexistent_id}}"
+      },
+      "response": {
+        "status": 404
+      }
+    },
+    {
+      "description": "a GET request for a nonexistent collection returns not found (/api/v1/collections/nonexistent-collection-slug)",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/collections/nonexistent-collection-slug"
+      },
+      "response": {
+        "status": 404
+      }
+    },
+    {
+      "description": "a GET request for a nonexistent ingestion item returns not found (/api/v1/ingestion_items/{{nonexistent_id}})",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/ingestion_items/{{nonexistent_id}}"
+      },
+      "response": {
+        "status": 404
+      }
+    },
+    {
+      "description": "a GET request for a nonexistent ingestion batch returns not found (/api/v1/ingestion_batches/{{nonexistent_id}})",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/ingestion_batches/{{nonexistent_id}}"
+      },
+      "response": {
+        "status": 404
+      }
+    },
+    {
+      "description": "a GET request for a nonexistent workflow instance returns not found (/api/v1/workflow_instances/{{nonexistent_id}})",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/workflow_instances/{{nonexistent_id}}"
+      },
+      "response": {
+        "status": 404
+      }
+    },
+    {
+      "description": "a GET request for a nonexistent duplicate group returns not found (/api/v1/duplicate_groups/{{nonexistent_id}})",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/duplicate_groups/{{nonexistent_id}}"
+      },
+      "response": {
+        "status": 404
+      }
+    },
+    {
+      "description": "a GET request for a nonexistent quarantined asset returns not found (/api/v1/quarantined_assets/{{nonexistent_id}})",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/quarantined_assets/{{nonexistent_id}}"
+      },
+      "response": {
+        "status": 404
+      }
+    },
+    {
+      "description": "a GET request for a nonexistent image profile returns not found (/api/v1/image_profiles/{{nonexistent_id}})",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/image_profiles/{{nonexistent_id}}"
+      },
+      "response": {
+        "status": 404
+      }
+    },
+    {
+      "description": "a GET request for a nonexistent video profile returns not found (/api/v1/video_profiles/{{nonexistent_id}})",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/video_profiles/{{nonexistent_id}}"
+      },
+      "response": {
+        "status": 404
+      }
+    },
+    {
+      "description": "a GET request for a nonexistent metadata schema returns not found (/api/v1/metadata_schemas/{{nonexistent_id}})",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/metadata_schemas/{{nonexistent_id}}"
+      },
+      "response": {
+        "status": 404
+      }
+    },
+    {
+      "description": "a GET request for a nonexistent metadata export returns not found (/api/v1/metadata_exports/{{nonexistent_id}})",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/metadata_exports/{{nonexistent_id}}"
+      },
+      "response": {
+        "status": 404
+      }
+    },
+    {
+      "description": "a GET request for a nonexistent asset download returns not found (/api/v1/asset_downloads/{{nonexistent_id}})",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/asset_downloads/{{nonexistent_id}}"
+      },
+      "response": {
+        "status": 404
+      }
+    },
+    {
+      "description": "a GET request for a nonexistent metadata import returns not found (/api/v1/metadata_imports/{{nonexistent_id}})",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/metadata_imports/{{nonexistent_id}}"
+      },
+      "response": {
+        "status": 404
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/custom_node_definitions with page=1 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/custom_node_definitions",
+        "query": "page=1"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/custom_node_definitions with page=2&per_page=5 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/custom_node_definitions",
+        "query": "page=2&per_page=5"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/agent_workflows with page=1 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/agent_workflows",
+        "query": "page=1"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/agent_workflows with page=2&per_page=5 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/agent_workflows",
+        "query": "page=2&per_page=5"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/ai_batch_jobs with page=1 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/ai_batch_jobs",
+        "query": "page=1"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/ai_batch_jobs with page=2&per_page=5 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/ai_batch_jobs",
+        "query": "page=2&per_page=5"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/asset_provenance_records with page=1 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/asset_provenance_records",
+        "query": "page=1"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/asset_provenance_records with page=2&per_page=5 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/asset_provenance_records",
+        "query": "page=2&per_page=5"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/ai_model_configs with page=1 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/ai_model_configs",
+        "query": "page=1"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/ai_model_configs with page=2&per_page=5 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/ai_model_configs",
+        "query": "page=2&per_page=5"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/style_presets with page=1 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/style_presets",
+        "query": "page=1"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/style_presets with page=2&per_page=5 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/style_presets",
+        "query": "page=2&per_page=5"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/cdn_configurations with page=1 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/cdn_configurations",
+        "query": "page=1"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/cdn_configurations with page=2&per_page=5 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/cdn_configurations",
+        "query": "page=2&per_page=5"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/inbox with page=1 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/inbox",
+        "query": "page=1"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/inbox with page=2&per_page=5 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/inbox",
+        "query": "page=2&per_page=5"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/users with page=1 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/users",
+        "query": "page=1"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/users with page=2&per_page=5 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/users",
+        "query": "page=2&per_page=5"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/assets with page=1 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/assets",
+        "query": "page=1"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/assets with page=2&per_page=5 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/assets",
+        "query": "page=2&per_page=5"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/folders with page=1 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/folders",
+        "query": "page=1"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/folders with page=2&per_page=5 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/folders",
+        "query": "page=2&per_page=5"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/collections with page=1 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/collections",
+        "query": "page=1"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/collections with page=2&per_page=5 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/collections",
+        "query": "page=2&per_page=5"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/system_connectors with page=1 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/system_connectors",
+        "query": "page=1"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/system_connectors with page=2&per_page=5 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/system_connectors",
+        "query": "page=2&per_page=5"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/ingestion_items with page=1 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/ingestion_items",
+        "query": "page=1"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/ingestion_items with page=2&per_page=5 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/ingestion_items",
+        "query": "page=2&per_page=5"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/ingestion_batches with page=1 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/ingestion_batches",
+        "query": "page=1"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/ingestion_batches with page=2&per_page=5 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/ingestion_batches",
+        "query": "page=2&per_page=5"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/workflow_instances with page=1 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/workflow_instances",
+        "query": "page=1"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/workflow_instances with page=2&per_page=5 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/workflow_instances",
+        "query": "page=2&per_page=5"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/duplicate_groups with page=1 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/duplicate_groups",
+        "query": "page=1"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/duplicate_groups with page=2&per_page=5 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/duplicate_groups",
+        "query": "page=2&per_page=5"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/quarantined_assets with page=1 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/quarantined_assets",
+        "query": "page=1"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/quarantined_assets with page=2&per_page=5 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/quarantined_assets",
+        "query": "page=2&per_page=5"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/image_profiles with page=1 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/image_profiles",
+        "query": "page=1"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/image_profiles with page=2&per_page=5 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/image_profiles",
+        "query": "page=2&per_page=5"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/video_profiles with page=1 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/video_profiles",
+        "query": "page=1"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/video_profiles with page=2&per_page=5 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/video_profiles",
+        "query": "page=2&per_page=5"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/notifications with page=1 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/notifications",
+        "query": "page=1"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/notifications with page=2&per_page=5 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/notifications",
+        "query": "page=2&per_page=5"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/metadata_schemas with page=1 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/metadata_schemas",
+        "query": "page=1"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/metadata_schemas with page=2&per_page=5 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/metadata_schemas",
+        "query": "page=2&per_page=5"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/user_groups with page=1 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/user_groups",
+        "query": "page=1"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/user_groups with page=2&per_page=5 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/user_groups",
+        "query": "page=2&per_page=5"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/metadata_exports with page=1 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/metadata_exports",
+        "query": "page=1"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/metadata_exports with page=2&per_page=5 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/metadata_exports",
+        "query": "page=2&per_page=5"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/asset_downloads with page=1 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/asset_downloads",
+        "query": "page=1"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/asset_downloads with page=2&per_page=5 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/asset_downloads",
+        "query": "page=2&per_page=5"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/metadata_imports with page=1 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/metadata_imports",
+        "query": "page=1"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/metadata_imports with page=2&per_page=5 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/metadata_imports",
+        "query": "page=2&per_page=5"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/search with page=1 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/search",
+        "query": "page=1"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/search with page=2&per_page=5 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/search",
+        "query": "page=2&per_page=5"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/custom_node_definitions with per_page=1 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/custom_node_definitions",
+        "query": "per_page=1"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/agent_workflows with per_page=1 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/agent_workflows",
+        "query": "per_page=1"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/ai_batch_jobs with per_page=1 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/ai_batch_jobs",
+        "query": "per_page=1"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/asset_provenance_records with per_page=1 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/asset_provenance_records",
+        "query": "per_page=1"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/ai_model_configs with per_page=1 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/ai_model_configs",
+        "query": "per_page=1"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/style_presets with per_page=1 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/style_presets",
+        "query": "per_page=1"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/cdn_configurations with per_page=1 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/cdn_configurations",
+        "query": "per_page=1"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/inbox with per_page=1 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/inbox",
+        "query": "per_page=1"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/users with per_page=1 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/users",
+        "query": "per_page=1"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/assets with per_page=1 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/assets",
+        "query": "per_page=1"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/folders with per_page=1 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/folders",
+        "query": "per_page=1"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/collections with per_page=1 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/collections",
+        "query": "per_page=1"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/system_connectors with per_page=1 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/system_connectors",
+        "query": "per_page=1"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/ingestion_items with per_page=1 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/ingestion_items",
+        "query": "per_page=1"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/ingestion_batches with per_page=1 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/ingestion_batches",
+        "query": "per_page=1"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/workflow_instances with per_page=1 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/workflow_instances",
+        "query": "per_page=1"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/duplicate_groups with per_page=1 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/duplicate_groups",
+        "query": "per_page=1"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/quarantined_assets with per_page=1 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/quarantined_assets",
+        "query": "per_page=1"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/image_profiles with per_page=1 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/image_profiles",
+        "query": "per_page=1"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/video_profiles with per_page=1 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/video_profiles",
+        "query": "per_page=1"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/notifications with per_page=1 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/notifications",
+        "query": "per_page=1"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/metadata_schemas with per_page=1 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/metadata_schemas",
+        "query": "per_page=1"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/user_groups with per_page=1 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/user_groups",
+        "query": "per_page=1"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/metadata_exports with per_page=1 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/metadata_exports",
+        "query": "per_page=1"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/asset_downloads with per_page=1 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/asset_downloads",
+        "query": "per_page=1"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/metadata_imports with per_page=1 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/metadata_imports",
+        "query": "per_page=1"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/search with per_page=1 succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/search",
+        "query": "per_page=1"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/assets with q=catalog succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/assets",
+        "query": "q=catalog"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/folders with q=catalog succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/folders",
+        "query": "q=catalog"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/collections with q=catalog succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/collections",
+        "query": "q=catalog"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/users with q=catalog succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/users",
+        "query": "q=catalog"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/notifications with q=catalog succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/notifications",
+        "query": "q=catalog"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/ai_model_configs with q=catalog succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/ai_model_configs",
+        "query": "q=catalog"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/style_presets with q=catalog succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/style_presets",
+        "query": "q=catalog"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/user_groups with q=catalog succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/user_groups",
+        "query": "q=catalog"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/agent_workflows with q=catalog succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/agent_workflows",
+        "query": "q=catalog"
+      },
+      "response": {
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET request to /api/v1/custom_node_definitions with q=catalog succeeds",
+      "providerStates": [
+        {
+          "name": "the expanded catalog exists"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/custom_node_definitions",
+        "query": "q=catalog"
+      },
+      "response": {
+        "status": 200
+      }
     }
   ],
   "metadata": {

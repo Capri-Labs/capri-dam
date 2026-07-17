@@ -91,12 +91,17 @@ module AssetUrlHelper
     backend = active_storage_backend
     if backend
       adapter = StorageManager.adapter_for(backend) rescue nil
-      if adapter.respond_to?(:url)
-        # Local adapter: url(path) → /api/v1/assets/local/<path> is intentionally
-        # bypassed in favour of UUID-based lookup below, because the controller
-        # resolves files by UUID, not raw path.
-        return adapter.url(storage_path) if version.present?
-        return adapter.url(storage_path) unless adapter.is_a?(StorageAdapters::LocalStorageAdapter)
+      if adapter.respond_to?(:url) && !adapter.is_a?(StorageAdapters::LocalStorageAdapter)
+        # Local adapter: url(path) → /api/v1/assets/local/<raw storage path>
+        # is intentionally bypassed in favour of the UUID-based lookup below,
+        # because {Api::V1::AssetsController#serve_local} resolves files by
+        # asset UUID (+ optional `version_id`/`variant` query params), not by
+        # raw filesystem path. This must apply regardless of whether a
+        # specific `version` was requested — a prior version of this method
+        # only guarded the *no-version* branch, so any version-scoped preview
+        # URL (e.g. the Version History diff/compare view) for local storage
+        # leaked the raw absolute file path into the URL and always 404'd.
+        return adapter.url(storage_path)
       end
     end
 

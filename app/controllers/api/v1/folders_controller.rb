@@ -62,6 +62,15 @@ module Api
       end
 
       def create
+        parent_id = params[:folder][:parent_id]
+        parent_id = nil if parent_id == "root"
+        parent_folder = parent_id.present? ? Folder.find_by(id: parent_id) : nil
+
+        # Enforce folder-level create permission (folder: nil = root, always
+        # allowed — see Authorization#folder_permission?).
+        check_folder_permission!(parent_folder, :create)
+        return if performed?
+
         @folder = current_user.folders.build(folder_params)
         # Handle the 'root' case from JS
         @folder.parent_id = nil if params[:folder][:parent_id] == "root"
@@ -170,6 +179,9 @@ module Api
       # DELETE /api/v1/folders/:id (Soft Delete)
       def destroy
         @folder = Folder.find(params[:id])
+        check_folder_permission!(@folder, :delete)
+        return if performed?
+
         @folder.soft_delete
         FolderContentsCache.bust(@folder.parent_id)
 

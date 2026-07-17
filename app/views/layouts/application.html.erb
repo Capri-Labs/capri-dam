@@ -1,8 +1,11 @@
 <!DOCTYPE html>
 <%# The lang attribute on <html> gives screen-readers and search engines the
     correct language. It is set from the user's saved preference (falls back to
-    the Accept-Language header locale). %>
-<html lang="<%= current_user&.preference&.language || I18n.locale.to_s %>">
+    the Accept-Language header locale). `dir` mirrors it so right-to-left
+    locales (Arabic) get correct base text direction/layout on first paint,
+    before React has a chance to react to the language on the client. %>
+<% current_language = current_user&.preference&.language || I18n.locale.to_s %>
+<html lang="<%= current_language %>" dir="<%= current_language == 'ar' ? 'rtl' : 'ltr' %>">
 <head>
   <title><%= content_for(:title) || "Capri DAM" %></title>
   <meta name="viewport" content="width=device-width,initial-scale=1">

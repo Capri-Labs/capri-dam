@@ -93,6 +93,27 @@ RSpec.describe AssetUrlHelper, type: :helper do
       expect(helper_obj.asset_url_for(asset)).to eq("/api/v1/assets/local/#{asset.uuid}?version_id=#{version.id}")
     end
 
+    # Regression test: a prior version of this method only bypassed the local
+    # storage adapter's raw `url(path)` (which embeds the raw filesystem
+    # storage path, not a UUID) when no *explicit* `version:` was passed —
+    # but the Version History diff/compare view (Api::V1::AssetsController
+    # #versions) calls `asset_preview_url_for(@asset, version: v)` for every
+    # historical version, so every version-scoped preview URL for local
+    # storage leaked the raw file path and always 404'd via #serve_local
+    # (which resolves by asset UUID, never by raw path).
+    it "bypasses the local storage adapter even when an explicit version is passed" do
+      asset = build_asset(storage_path: "images/logo.png")
+      version = asset.active_version
+      backend = create(:storage_backend, active: true)
+      local_adapter = StorageAdapters::LocalStorageAdapter.new("root" => "storage")
+      allow(StorageBackend).to receive(:find_by).with(active: true).and_return(backend)
+      allow(StorageManager).to receive(:adapter_for).with(backend).and_return(local_adapter)
+      allow(local_adapter).to receive(:url)
+
+      expect(helper_obj.asset_url_for(asset, version: version)).to eq("/api/v1/assets/local/#{asset.uuid}?version_id=#{version.id}")
+      expect(local_adapter).not_to have_received(:url)
+    end
+
     it "memoizes the StorageBackend lookup across multiple calls on the same helper instance" do
       # Regression/perf test: FoldersController#show previously called
       # `StorageBackend.find_by(active: true)` once *per asset* when

@@ -129,12 +129,12 @@ export default function BinList({ items, isSelected, onToggleSelect, onRestore, 
                                 <TableCell align="right">
                                     <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'flex-end' }}>
                                         <Tooltip title={t('bin.item.restore')}>
-                                            <IconButton size="small" color="success" onClick={() => onRestore(item)}>
+                                            <IconButton size="small" color="success" onClick={() => onRestore(item)} aria-label={t('bin.item.restore')}>
                                                 <RestoreFromTrashOutlined fontSize="small" />
                                             </IconButton>
                                         </Tooltip>
                                         <Tooltip title={t('bin.item.deletePermanently')}>
-                                            <IconButton size="small" color="error" onClick={() => onDelete(item)}>
+                                            <IconButton size="small" color="error" onClick={() => onDelete(item)} aria-label={t('bin.item.deletePermanently')}>
                                                 <DeleteForeverOutlined fontSize="small" />
                                             </IconButton>
                                         </Tooltip>

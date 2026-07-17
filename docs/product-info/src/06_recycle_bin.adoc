@@ -56,22 +56,45 @@ image::recycle-bin.png[Recycle Bin, title="Recycle Bin — stat bar, type filter
 * Grid ↔ list view toggle and actually switching between them.
 * Search filtering the bin list; sort dropdown opens and lists options.
 * Empty-state message when the bin is empty with no filters applied.
-* "Empty Bin" button opens its confirmation dialog.
+* "Empty Bin" button opens its confirmation dialog, and the destructive
+  action itself (permanently emptying the bin end-to-end, no 500 error).
+* Restoring an item from the bin back to the active library — per-row
+  restore icon → confirm dialog → confirm → verifies the item disappears
+  from the bin and is fetchable again via the normal assets API.
+* Workflow-protected purge guard — an asset with a live (non-terminal)
+  workflow instance attached survives a purge run even when otherwise
+  eligible for deletion; verified via `last_results.skipped_items` reporting
+  `reason: "active_workflow"` and the asset remaining in the bin listing.
+* Retention policy editor is reachable from Asset Configurations, shows
+  retention fields, and a changed value (e.g. retention days) actually
+  persists server-side after Save (survives a full page reload).
 * Sidebar "Recycle Bin" link navigates to `/bin`.
 * "View Trash Bin" button in the folder explorer (All Assets screen) also
   navigates to `/bin` (`spec/e2e/search_and_duplicates_fixes.e2e.spec.js`) —
   it previously tried to render bin contents inline via an incompatible
   in-explorer view and always came up blank.
-* Retention-policy editor is reachable from Asset Configurations and shows
-  retention fields.
 * AI gateway teaser is shown; `purge_status` and `ai/smart_suggestions` API
   endpoints respond correctly.
 
 [.status-pending]#Pending / not yet covered#
 
-* Actually restoring an item from the bin back to its folder.
-* Actually permanently purging via "Empty Bin" (only the confirmation dialog
-  opening is covered, not the destructive action itself).
-* Workflow-protected purge guard (attempting to purge an asset with an active
-  workflow instance and confirming it's blocked).
-* Retention policy *save* (only the editor opening is covered).
+* None outstanding for this module — all previously-listed gaps above have
+  been closed.
+
+==== Known bug fixed: asset restore/permanent-delete silently failed
+
+While closing the E2E gap above, a real production bug was found and fixed:
+`GET /api/v1/bin` exposes each asset's legacy `uuid` column as its `id` field
+(matching the convention used by every other asset-facing endpoint), but
+`POST /api/v1/bin/bulk_restore` and `DELETE /api/v1/bin/bulk_destroy` only
+matched against the asset's actual primary key — a different UUID value on
+the same row. Every real restore/permanent-delete of an individual or
+multi-selected asset from the bin UI silently failed with a
+"not found in bin" error, while the confirmation dialog still appeared to
+succeed. Folders were unaffected (their bin `id` already is the real primary
+key). Both endpoints now resolve assets by either column. The same
+root-cause bug was also found and fixed in
+`POST /api/v1/workflows/bulk_trigger` (used to start a workflow on
+asset-search results) — see the Workflow Automation module for details.
+
+

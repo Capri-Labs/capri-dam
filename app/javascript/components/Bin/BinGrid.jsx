@@ -106,6 +106,7 @@ const BinCard = ({ item, isSelected, onToggleSelect, onRestore, onDelete, size }
             <Box sx={{ display: 'flex', borderTop: '1px solid #f1f5f9', bgcolor: '#fafafa' }}>
                 <Tooltip title={t('bin.item.restore')}>
                     <IconButton size="small" color="success" onClick={() => onRestore(item)}
+                        aria-label={t('bin.item.restore')}
                         sx={{ flexGrow: 1, borderRadius: 0, py: 0.75 }}>
                         <RestoreFromTrashOutlined fontSize="small" />
                     </IconButton>
@@ -113,6 +114,7 @@ const BinCard = ({ item, isSelected, onToggleSelect, onRestore, onDelete, size }
                 <Box sx={{ width: 1, bgcolor: '#f1f5f9' }} />
                 <Tooltip title={t('bin.item.deletePermanently')}>
                     <IconButton size="small" color="error" onClick={() => onDelete(item)}
+                        aria-label={t('bin.item.deletePermanently')}
                         sx={{ flexGrow: 1, borderRadius: 0, py: 0.75 }}>
                         <DeleteForeverOutlined fontSize="small" />
                     </IconButton>

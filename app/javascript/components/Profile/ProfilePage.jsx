@@ -35,7 +35,7 @@ const SUPPORTED_LANGS = [
   { value: 'fr', label: 'Français' },   { value: 'es', label: 'Español' },
   { value: 'pt', label: 'Português' },  { value: 'nl', label: 'Nederlands' },
   { value: 'ja', label: '日本語' },       { value: 'zh', label: '中文' },
-  { value: 'ko', label: '한국어' },
+  { value: 'ko', label: '한국어' },       { value: 'ar', label: 'العربية' },
 ];
 
 const SUPPORTED_THEMES = [
@@ -241,7 +241,7 @@ export default function ProfilePage(props) {
           variant="scrollable"
         >
           <Tab icon={<PersonOutlined sx={{ fontSize: 18 }} />} iconPosition="start" label={t('profile.tabs.personal')} />
-          <Tab icon={<PublicOutlined sx={{ fontSize: 18 }} />} iconPosition="start" label={t('profile.tabs.localization')} />
+          <Tab data-testid="profile-tab-localization" icon={<PublicOutlined sx={{ fontSize: 18 }} />} iconPosition="start" label={t('profile.tabs.localization')} />
           <Tab icon={<LockOutlined sx={{ fontSize: 18 }} />}   iconPosition="start" label={t('profile.tabs.security')} />
           <Tab icon={<HistoryOutlined sx={{ fontSize: 18 }} />} iconPosition="start" label={t('profile.tabs.activity')} />
         </Tabs>
@@ -351,7 +351,7 @@ export default function ProfilePage(props) {
 
               <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
                 <Button variant="contained" onClick={handleSavePreferences}
-                  disabled={prefsSaving} disableElevation>
+                  disabled={prefsSaving} disableElevation data-testid="save-preferences-button">
                   {prefsSaving ? t('common.saving') : t('profile.localization.savePreferences')}
                 </Button>
               </Box>

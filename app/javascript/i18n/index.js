@@ -81,6 +81,20 @@ function detectInitialLanguage() {
   return 'en';
 }
 
+/** Languages that read right-to-left — drives the `dir` attribute on <html>. */
+const RTL_LANGUAGES = ['ar'];
+
+/**
+ * Applies `lang`/`dir` to the document root so native text-direction/layout
+ * (flexbox row order, logical CSS properties, scrollbars, etc.) follows the
+ * active language without requiring a full MUI RTL theme plugin.
+ */
+function applyDocumentDirection(lang) {
+  if (typeof document === 'undefined') return;
+  document.documentElement.lang = lang;
+  document.documentElement.dir = RTL_LANGUAGES.includes(lang) ? 'rtl' : 'ltr';
+}
+
 i18n
   .use(initReactI18next)
   .init({
@@ -104,6 +118,12 @@ i18n
       }
     },
   });
+
+// Keep <html dir>/<html lang> in sync with the active language on every
+// change (Turbo page loads already get the right value server-side from
+// application.html.erb; this covers the zero-lag in-app switch case).
+applyDocumentDirection(i18n.language);
+i18n.on('languageChanged', applyDocumentDirection);
 
 /**
  * Switches the active language and persists the choice to localStorage so

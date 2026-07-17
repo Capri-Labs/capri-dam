@@ -9,6 +9,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### Pact Contract Test Coverage — 8 → 211 interactions
+- Expanded `pact/contracts/capri_dam_frontend-capri_dam_api.json` from 8 to
+  211 consumer interactions, covering ~90 of the ~102 `api/v1` GET routes
+  (base happy-path per route), 21 "not found" (404) variants for show-style
+  endpoints, and pagination/search query-param variants (`page`, `per_page`,
+  `q`) for ~26 index endpoints. Endpoints that stream files or serve raw
+  binary content (asset/metadata/CSV downloads, watermarked images, local
+  asset redirects) were intentionally excluded as unsuited to JSON body
+  contract testing.
+- Added a shared `"the expanded catalog exists"` provider state to
+  `spec/pact/provider/api_v1_pact_spec.rb`, seeding one real record of nearly
+  every top-level API resource (assets, folders, collections, user groups,
+  notifications, inbox messages, workflows/instances, ingestion
+  batches/items, system connectors, AI batch jobs/model configs/style
+  presets/agent workflows/custom nodes, provenance records, duplicate
+  groups, quarantined assets, image/video profiles, metadata
+  schemas/exports/imports, asset downloads) so the new interactions run
+  against real, persisted data rather than bespoke per-interaction fixtures.
+- Added a `{{token}}` path/query placeholder + interpolation mechanism
+  (`interpolate_seed_tokens`) to the provider spec so interactions can
+  reference dynamically-created bigint/UUID primary keys captured during
+  seeding, without hardcoding non-deterministic IDs into the static contract
+  JSON.
+- Verified via `make test-pact`: all 211 interactions pass; `bundle exec
+  rubocop` clean on the modified spec.
+
 #### Deployment Guides — AWS and Azure/Kubernetes
 - Renamed `docs/deployment-guide/` → `docs/deployment-guide-kamal/` to make the
   provider explicit now that multiple deployment targets are documented.
@@ -232,6 +258,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `.node-version` bumped to `22.16.0`.
 
 ### Fixed
+- **Broken access control: `DELETE /api/v1/folders/:id` had no permission
+  check** — any authenticated non-admin user could soft-delete (trash) any
+  folder in the system regardless of the 7-column ACL (`FolderPolicy`),
+  unlike the equivalent asset-delete endpoint which already enforced
+  `check_asset_delete!`. `Api::V1::FoldersController#destroy` now calls
+  `check_folder_permission!(@folder, :delete)` before soft-deleting, in line
+  with every other mutating folder action (`:modify`, `:create`, `:manage`).
+  Added regression coverage in `spec/requests/api/v1/folders_functional_spec.rb`
+  asserting a 403 with no policy grant and a 200 once `delete_access` is
+  granted via a `FolderPolicy`; updated the existing happy-path destroy specs
+  to use an admin user (consistent with the sibling PATCH/rename specs in the
+  same file) since non-admins require an explicit grant even for folders they
+  created themselves.
+- **Broken access control: `POST /api/v1/folders` (create subfolder) had no
+  permission check on the target parent folder** — any authenticated
+  non-admin user could create a subfolder inside ANY folder in the system
+  regardless of the 7-column ACL, unlike asset uploads which already enforce
+  `check_folder_permission!(target_folder, :create)`
+  (`Api::V1::AssetsController#create`). `Api::V1::FoldersController#create`
+  now resolves the real target parent folder (`nil` for root, which remains
+  always-creatable) and calls `check_folder_permission!(parent_folder,
+  :create)` before building/saving the new folder. Added regression coverage
+  in `spec/requests/api/v1/folders_functional_spec.rb` asserting a 403 with no
+  policy grant, a 201 once `create_access` is granted via a `FolderPolicy`,
+  and that root-level creation remains unaffected. Both of these access-control
+  gaps were found while building the new
+  `spec/e2e/access_control_security.e2e.spec.js` real (non-mocked) E2E
+  coverage for 7-column ACL enforcement and OAuth2 (Doorkeeper) System
+  Account token issuance — see
+  `docs/product-info/src/08_access_control_and_security.adoc`.
 - **Inbox download link not working** — the download action on `/inbox` was
   wired to a route/handler that didn't correctly resolve the asset's file for
   download; fixed the routing/controller logic so clicking "Download" from an
@@ -304,6 +360,186 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `expected integer, but received String`. Fixed the rswag annotations in
   `spec/requests/api/v1/folders_spec.rb` and regenerated
   `swagger/v1/swagger.yaml` via `make swagger-docs`.
+- **`VideoProfile` creation with `smart_crop_ratios` crashed (500)** —
+  `Api::V1::VideoProfilesController#profile_params` assigned the raw
+  `smart_crop_ratios` array directly to the permitted params hash without
+  permitting each element. Real (non-JSON-string) array payloads — i.e. what
+  actual browser clients send — arrive as an array of unpermitted
+  `ActionController::Parameters`, and ActiveRecord's JSON-column
+  serialization raised `ActionController::UnfilteredParameters` ("unable to
+  convert unpermitted parameters to hash") the first time it tried to
+  persist the value. Found while writing Delivery & CDN E2E coverage. Fixed
+  by explicitly permitting `:name`/`:crop_ratio` on each element before
+  assignment; added a regression request spec
+  (`spec/requests/api/v1/video_profiles_request_spec.rb`) covering the real
+  (non-string) array path, which the existing specs didn't exercise.
+- **Arabic was missing from the language dropdown on both the Profile page and
+  the Admin → Edit User drawer** — `ar` has been a fully supported locale in
+  `app/javascript/i18n/index.js` and `UserPreference::SUPPORTED_LANGUAGES`
+  (backend) all along, but the two UI-level `SUPPORTED_LANGS` option lists in
+  `ProfilePage.jsx` and `UserDrawer.jsx` were never updated when Arabic was
+  added, leaving it unselectable in either place. Fixed both dropdowns to
+  include `{ value: 'ar', label: 'العربية' }`; added a regression Jest test
+  (`spec/javascript/components/Admin/UserDrawer.test.jsx`) asserting the
+  Preferences-tab language dropdown offers all 10 languages including Arabic.
+- **No RTL layout support existed despite the docs claiming Arabic was
+  "RTL-ready"** — added basic `dir="rtl"`/`dir="ltr"` toggling on
+  `<html>`: server-side on first paint (`app/views/layouts/application.html.erb`,
+  based on `current_user.preference.language`) and client-side with zero lag
+  on in-session language switches (`app/javascript/i18n/index.js`, via a new
+  `applyDocumentDirection()` helper wired to i18next's `languageChanged`
+  event). This is a lightweight `dir`-attribute implementation, not full
+  MUI-themed RTL mirroring — documented as such in
+  `docs/product-info/src/13_localization_i18n.adoc`.
+- **Recycle Bin: restoring or permanently deleting an individual/bulk asset
+  silently failed** — `GET /api/v1/bin` exposes each asset's legacy `uuid`
+  column as its `id` field (matching every other asset-facing endpoint), but
+  `POST /api/v1/bin/bulk_restore` and `DELETE /api/v1/bin/bulk_destroy` only
+  matched against the asset's actual primary key — a different, independently
+  generated UUID on the same row. Every real click of "Restore" or "Delete
+  Permanently" on an asset (single or multi-select) in `/bin` silently
+  reported success in the confirmation dialog while the request underneath
+  actually failed with "not found in bin". Folders were unaffected. Both
+  endpoints now resolve assets by either `id` or `uuid`
+  (`app/controllers/api/v1/bin_controller.rb`). The identical bug was also
+  found and fixed in `POST /api/v1/workflows/bulk_trigger`
+  (`app/controllers/api/v1/workflow_instances_controller.rb`), which
+  similarly only matched assets by primary key and would silently queue 0
+  assets for any real caller (the trigger-workflow UI included). Added
+  regression request specs asserting both endpoints work when given the
+  `uuid`-style id real clients actually send.
+
+### Added (E2E test coverage)
+
+#### Recycle Bin — closed the last remaining gaps
+- `spec/e2e/bin.e2e.spec.js` — real end-to-end restore (per-row Restore icon
+  → confirm → verifies the asset is fetchable via the normal assets API
+  again), workflow-protected purge guard (asset with a live workflow
+  instance survives an eligible purge run, reported in
+  `last_results.skipped_items` with `reason: "active_workflow"`), and
+  retention-policy save (changed value persists across a full page reload).
+  This module now has no pending E2E scenarios.
+- `BinGrid.jsx` / `BinList.jsx` — added `aria-label`s to the per-item
+  Restore/Delete-Permanently icon buttons (previously only wrapped in a
+  `Tooltip`, giving them no stable accessible name for either assistive tech
+  or test automation).
+- `spec/requests/api/v1/bin_spec.rb` and
+  `spec/requests/api/v1/workflow_instances_request_spec.rb` — regression
+  coverage for the id/uuid bug described above.
+
+#### Search & Discovery — semantic relevance validation + cluster map interaction
+- `spec/e2e/semantic_search.e2e.spec.js` — real end-to-end pgvector query:
+  seeds two assets with deliberately-orthogonal 1536-dim `AssetEmbedding`
+  fixtures directly via `rails runner` (mirroring the `execFileSync` DB-seed
+  pattern from `bin.e2e.spec.js`), stands in for the AI Gateway with a tiny
+  local HTTP fixture server bound to the same `AI_GATEWAY_URL` the search
+  controller already calls (nothing else listens on it in this dev
+  environment), and asserts the real `Asset.nearest_to_vector` cosine-distance
+  ORDER BY ranks the embedding-nearest asset first — through both the raw API
+  and the "Visual Match" mode in the real search UI. Closes the "semantic
+  search relevance validation" gap without any application-code changes.
+- `spec/e2e/semantic_cluster_map.e2e.spec.js` — creates a real collection with
+  two real assets, opens "View AI Map", and verifies a node renders per
+  attached asset via the real `GET /api/v1/collections/:slug/cluster_map`
+  endpoint, plus hover-tooltip and dialog-close interactions. Added a
+  `data-testid="cluster-map-node"` + `aria-label` to each node in
+  `SemanticClusterMap.jsx` — the nodes previously had no stable selector for
+  assistive tech or test automation. Closes the "semantic cluster map
+  interactions" gap.
+
+#### Dashboard — widget-level interaction/drill-down coverage
+- `spec/e2e/dashboard.e2e.spec.js` — new file, 10 tests: each KPI card
+  navigates to its target screen (`/assets`, `/folders`, `/workflows`), the
+  quick-action tiles navigate to `/search` and `/reports`, "View All" on
+  Recent Assets navigates to `/assets`, clicking a real API-created asset's
+  "View" button drills into that asset, the AI insights banner action
+  works, and manual refresh re-fetches dashboard data. Closes the
+  "widget-level interaction/drill-down behaviour" gap for this module.
+
+#### Asset Management — version history diff view (real E2E, two bugs found & fixed)
+- `spec/e2e/asset_version_diff.e2e.spec.js` — new file: creates a real
+  asset, generates a second version via `POST /api/v1/assets/:id/process_image`
+  (rotate transform, `save_mode: version`), opens the Versions tab, selects
+  both versions, and verifies the pixel-diff overlay renders real
+  before/after canvases (not a mocked-route smoke test — an existing test in
+  `folders_workspace_coverage.e2e.spec.js` already covered the UI mechanics
+  with fake SVGs, but never exercised the real image pipeline).
+- Writing this real test surfaced two genuine, previously-unknown production
+  bugs, both now fixed:
+  - **`AssetVersionsTab.jsx`** — `loadImage()` unconditionally set
+    `image.crossOrigin = 'anonymous'`, which strips cookies even for
+    same-origin requests, breaking authenticated preview-image loads
+    (`serve_local` requires `authenticate_hybrid!`) whenever there's no CDN
+    in front of asset serving (e.g. local/dev/self-hosted). Fixed with a new
+    `isCrossOriginUrl` helper so `crossOrigin` is only set for genuinely
+    cross-origin URLs.
+  - **`AssetUrlHelper#asset_url_for`** (`app/controllers/concerns/asset_url_helper.rb`)
+    — the local-storage-adapter bypass guard only applied when *no* explicit
+    `version:` was requested; when a specific historical version was passed
+    (exactly what the version-diff view does), it fell through to
+    `adapter.url(storage_path)`, which for local storage embeds the raw
+    absolute filesystem path in the URL instead of the asset's UUID. Every
+    version-scoped preview URL was therefore unroutable (guaranteed 404) on
+    any deployment using local storage — not a cosmetic glitch. Fixed by
+    unifying the guard so the local-adapter bypass applies regardless of
+    whether `version` is present.
+- `spec/helpers/asset_url_helper_spec.rb` — added a regression test that
+  explicitly passes `version:` (the previous test only exercised the
+  no-explicit-version code path and would not have caught this bug).
+- Confirmed bulk metadata CSV import/export was already fully covered by
+  pre-existing tests in `spec/e2e/metadata_tools.e2e.spec.js` (no new work
+  needed there — the product-info doc was simply stale).
+
+#### Delivery & CDN — previously zero E2E coverage
+- `spec/e2e/delivery_cdn_image_video_profiles.e2e.spec.js` — Image Profile
+  CRUD (Smart Crop `crop_type`, responsive crops) and Video Profile CRUD
+  (adaptive-streaming presets, Smart Crop ratios, encoding presets, "Copy
+  Profile"), plus assignment/removal of both profile types to a folder via
+  the Folder Info Panel, verified against the real API (not just local
+  state).
+- `spec/e2e/delivery_cdn_cache_purge.e2e.spec.js` — Explorer "Edge CDN Ops"
+  menu: "Sync Metadata to CDN" and "Purge Edge Cache" dispatch real `202
+  Accepted` requests to `Api::V1::EdgeOperationsController`, including a
+  check on the `{ folders:, assets: }` request payload shape.
+- `spec/e2e/delivery_cdn_provider_switch.e2e.spec.js` — extends existing
+  Fastly-only CDN provider coverage to Cloudflare and Akamai (closes the
+  "Cloudflare/Akamai provider switch is still untested" gap noted under
+  System Operations & Admin), with cleanup that restores Fastly as the
+  active provider so it doesn't leak state into
+  `cdn_image_optimizer_formats.e2e.spec.js`.
+- Updated `docs/product-info/src/14_delivery_and_cdn.adoc` and
+  `docs/product-info/src/99_roadmap_and_test_coverage.adoc` to reflect the
+  newly-covered config/data-model surface, while still flagging real-time
+  transform correctness, smart-crop pixel/focal-point behavior, HMAC
+  signing, and actual encoding execution as untestable until the live
+  transform/encoding pipeline is implemented.
+
+#### Localization / i18n — remaining 7 locales + Arabic RTL
+- `spec/e2e/language_switching.e2e.spec.js` — extended from German-only
+  coverage to all 10 supported locales:
+  - Data-driven tests for the 7 previously-untested locales (Spanish, French,
+    Japanese, Korean, Dutch, Portuguese, Chinese): selecting the language
+    translates the sidebar immediately (zero-lag) and the choice persists
+    across a page reload (`<html lang>` + `data-language` marker).
+  - Two new Arabic-specific tests: selecting Arabic sets `<html dir="rtl">`
+    immediately and after reload, sets `<html lang="ar">`, and renders the one
+    genuinely-translated string in `ar.json` ("Inbox" → "صندوق الوارد") as a
+    translation-pipeline sanity check (without overclaiming full Arabic
+    translation coverage, since most `ar.json` values are still untranslated
+    placeholders); switching back to English restores `<html dir="ltr">`.
+  - Updated the "supported languages" dropdown-count assertion from 9 to 10.
+  - Refactored existing helpers to use new locale-agnostic
+    `data-testid="profile-tab-localization"` / `data-testid="save-preferences-
+    button"` selectors (added to `ProfilePage.jsx`) instead of matching
+    translated tab/button text, which doesn't scale across 10 locales.
+- `spec/javascript/components/Admin/UserDrawer.test.jsx` — added a regression
+  test asserting the Preferences-tab language dropdown offers all 10 locales
+  including Arabic.
+- Updated `docs/product-info/src/13_localization_i18n.adoc` and
+  `docs/product-info/src/99_roadmap_and_test_coverage.adoc` to correct the
+  prior "RTL-ready" overclaim (no RTL code existed before this fix) and
+  document the actual scope of the new `dir`-attribute implementation, the
+  Arabic-dropdown bug fix, and the new E2E coverage.
 
 [Unreleased]: https://github.com/your-org/headless-dam/compare/main...HEAD
 

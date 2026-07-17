@@ -60,6 +60,8 @@ export default function SemanticClusterMap({ open, onClose, slug }) {
                             {nodes.map(node => (
                                 <Box
                                     key={node.id}
+                                    data-testid="cluster-map-node"
+                                    aria-label={node.title}
                                     onMouseEnter={() => setHoveredNode(node)}
                                     onMouseLeave={() => setHoveredNode(null)}
                                     sx={{
