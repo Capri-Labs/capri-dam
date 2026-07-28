@@ -1,0 +1,91 @@
+= Capri DAM — Governance Guide
+Ashok Pelluru <apellurudotcom@gmail.com>
+v1.0.0, 2026-07-28
+:doctype: book
+:toc: left
+:toclevels: 4
+:sectnums:
+:sectanchors:
+:sectlinks:
+:icons: font
+:experimental:
+:source-highlighter: rouge
+:rouge-style: github
+:imagesdir: ./images
+:!prewrap:
+:lang: en
+:description: Governance framework for Capri DAM — roles & responsibilities, content/metadata \
+  governance, data classification & retention, change management, vendor governance, and \
+  compliance mapping for a headless Digital Asset Management platform.
+:keywords: DAM, governance, data governance, RACI, compliance, GDPR, retention, change management
+// ── Theme ─────────────────────────────────────────────────────────────────────
+:stylesdir: theme
+:stylesheet: arc42.css
+:docinfodir: .
+:docinfo: shared
+// ── PDF theme ────────────────────────────────────────────────────────────────
+:pdf-themesdir: theme
+:pdf-theme: arc42
+// ─────────────────────────────────────────────────────────────────────────────
+
+This guide defines **who decides what, how, and by which rules** for the Capri DAM
+platform and the digital assets it manages. Where the
+link:../architecture/[Architecture Guide] explains *how the system is built* and the
+link:../developer-guide/[Developer Guide] explains *how to build with it*, this guide
+explains *how the platform and its content are governed* — ownership, decision rights,
+data classification, retention, change control, vendor oversight, and compliance
+mapping.
+
+It complements the security posture described in the
+link:../security/[Security Guide], which covers *how* the platform protects data;
+this guide covers *who is accountable* for what happens to that data and *under what
+policy*.
+
+ifdef::backend-html5[]
+[.text-right]
+link:headless-dam-governance-guide.pdf[⬇ Download as PDF] · link:../[← Documentation Hub] · link:../security/[Security Guide] · link:../architecture/[Architecture Guide]
+endif::backend-html5[]
+
+// 1. Overview & Governance Model
+include::src/01_overview_and_governance_model.adoc[]
+
+// 2. Roles, Responsibilities & Decision Rights
+include::src/02_roles_responsibilities_and_decision_rights.adoc[]
+
+// 3. Content & Metadata Governance
+include::src/03_content_and_metadata_governance.adoc[]
+
+// 4. Data Classification & Retention
+include::src/04_data_classification_and_retention.adoc[]
+
+// 5. Access Governance
+include::src/05_access_governance.adoc[]
+
+// 6. Change & Release Management
+include::src/06_change_and_release_management.adoc[]
+
+// 7. Third-Party & Vendor Governance
+include::src/07_third_party_and_vendor_governance.adoc[]
+
+// 8. Compliance & Regulatory Mapping
+include::src/08_compliance_and_regulatory_mapping.adoc[]
+
+// 9. Audit, Reporting & KPIs
+include::src/09_audit_reporting_and_kpis.adoc[]
+
+// 10. Governance Roadmap
+include::src/10_governance_roadmap.adoc[]
+
+ifdef::backend-html5[]
+// Back-to-top button
+++++
+<button id="back-to-top" title="Back to top">&#8679;</button>
+<script>
+  const btn = document.getElementById('back-to-top');
+  window.addEventListener('scroll', () => {
+    btn.classList.toggle('visible', window.scrollY > 400);
+  });
+  btn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+</script>
+++++
+endif::backend-html5[]

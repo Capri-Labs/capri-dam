@@ -1,0 +1,107 @@
+[[section-compliance-and-regulatory-mapping]]
+== Compliance & Regulatory Mapping
+
+IMPORTANT: Capri DAM provides *technical capabilities* that help an adopting
+organisation meet common regulatory obligations. It does not, by itself,
+constitute compliance or certification with any regime — GDPR, CCPA, SOC 2,
+HIPAA, or otherwise. Formal compliance depends on how the organisation
+configures, operates, and documents its use of the platform, and typically
+requires an independent audit. The mapping below is a starting point for that
+work, not a substitute for it.
+
+=== GDPR / CCPA-style data-subject rights
+
+[cols="1,3", options="header"]
+|===
+| Right | Platform capability that supports it
+
+| Right to access
+| Users/administrators can query an individual's audit-log history
+  (`AuditLog` rows scoped by `user_id`) and any assets/metadata associated
+  with them.
+
+| Right to erasure
+| Assets can be permanently purged (Recycle Bin → purge); user accounts can
+  be deactivated/deleted via the Admin → Users screen. Note: audit-log rows
+  referencing the user are retained per the 90-day (configurable) retention
+  window described in
+  <<section-data-classification-and-retention,Data Classification &
+  Retention>> — align this window with the organisation's own erasure-request
+  SLA.
+
+| Right to rectification
+| Asset metadata and user profile fields are directly editable by authorised
+  users; every change is captured in the audit log for traceability.
+
+| Data minimisation
+| Metadata-schema design controls what embedded personal data (EXIF GPS,
+  author name, etc.) is surfaced or retained — see
+  <<section-content-and-metadata-governance,Content & Metadata Governance>>.
+
+| Data portability
+| Metadata export (CSV) and per-asset/per-folder download capabilities allow
+  bulk extraction of an individual's or a collection's data.
+
+| Processor/sub-processor transparency
+| The storage/CDN/AI-provider vendor list (see
+  <<section-third-party-and-vendor-governance,Third-Party & Vendor
+  Governance>>) should be maintained as the organisation's sub-processor
+  register.
+|===
+
+=== Access-governance mapping (SOC 2 / ISO 27001-style)
+
+[cols="1,3", options="header"]
+|===
+| Control area | Platform capability
+
+| Least-privilege access
+| Folder/collection 7-column and 4-tier ACLs; new users default to no access
+  beyond the `everyone` baseline.
+
+| Segregation of duties
+| Platform administration (`administrators`/`super-administrators`) is
+  distinct from content/workspace ownership (`Collection Admin`), and from
+  schema governance (`metadata_users`) — see
+  <<section-roles-and-decision-rights,Roles & Decision Rights>>.
+
+| Non-repudiation / audit trail
+| Immutable, trigger-protected `audit_logs` table; impersonation actions
+  explicitly flagged with both the acting and impersonated user recorded.
+
+| Change management
+| Migration/API-doc/CI gating on platform changes; recommended lightweight
+  change control for content-facing configuration — see
+  <<section-change-and-release-management,Change & Release Management>>.
+
+| Vulnerability management
+| RuboCop, Brakeman (SAST), and `bundler-audit` (dependency CVE scanning) run
+  as CI gates on every change — see the link:../security/[Security Guide]
+  for the full application-security posture.
+
+| Vendor risk management
+| Multi-provider storage/CDN/AI/ingestion architecture — see
+  <<section-third-party-and-vendor-governance,Third-Party & Vendor
+  Governance>> for the vendor inventory to feed into a formal vendor-risk
+  process.
+|===
+
+=== Content provenance & authenticity
+
+For organisations subject to disclosure requirements around AI-generated or
+AI-modified media (e.g. platform policies, advertising-standards regimes, or
+jurisdiction-specific AI-content-labelling laws), the C2PA provenance
+tracking described in
+<<section-third-party-and-vendor-governance,Third-Party & Vendor
+Governance>> provides the underlying manifest-verification signal — the
+organisation must still define and enforce the disclosure/labelling policy
+itself.
+
+=== Recommended compliance documentation to maintain outside the platform
+
+* A data-processing register mapping each storage/CDN/AI vendor to the
+  categories of data it processes.
+* A records-retention schedule that references (and is kept consistent with)
+  the platform's Recycle Bin and audit-log retention windows.
+* An access-review cadence (e.g. quarterly) re-certifying folder/collection
+  policy group membership against current team structure.

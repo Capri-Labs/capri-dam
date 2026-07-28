@@ -1,0 +1,129 @@
+[[section-roles-and-decision-rights]]
+== Roles, Responsibilities & Decision Rights
+
+=== Platform roles (as implemented)
+
+Capri DAM ships with four seeded, immutable system groups
+(`UserGroup::SYSTEM_SLUGS`) plus unlimited custom groups an administrator can
+create:
+
+[cols="1,2,3", options="header"]
+|===
+| Group (slug) | Membership | Grants
+
+| `everyone`
+| Every user is implicitly a member — cannot be removed.
+| The organisation-wide baseline. Governance owners should treat this group's
+  folder/collection policies as the "public inside the company" access level.
+
+| `administrators`
+| Assigned by a super-administrator.
+| Full access to all assets and folders. Can manage users, groups, folder
+  policies, image/video profiles, metadata schemas, workflows, and system
+  connectors.
+
+| `super-administrators`
+| Reserved, cannot be deleted, membership changes require another
+  super-administrator.
+| Reserved for the strictest system operations — e.g. changing which group is
+  the `administrators` group, irreversible destructive actions.
+
+| `metadata_users`
+| Added/removed freely by admins/super-admins.
+| Members can create, duplicate, edit, and delete custom Metadata Schemas.
+  Non-members get read-only access to schemas (see
+  `User#metadata_schema_manager?`).
+
+| Custom groups (unlimited)
+| Created by an administrator, membership managed via the Admin → User Groups
+  screen.
+| Scoped per-folder (`FolderPolicy`) and per-collection (`CollectionPolicy`)
+  access — see <<section-access-governance,Access Governance>>.
+|===
+
+=== Collection-level roles
+
+Independent of the platform-wide groups above, each **Collection** ("workspace")
+can define its own access tiers via `CollectionPolicy`, scoped to a
+`UserGroup`:
+
+[cols="1,3", options="header"]
+|===
+| Tier | Grants
+
+| Viewer (`view_access`)
+| View the workspace and its assets.
+
+| Editor (`edit_access`)
+| Add/remove/pin assets, edit workspace properties. Implies Viewer.
+
+| Collection Admin (`admin_access`)
+| Configure smart-collection rules, manage the collection's own access
+  policies, delete/archive the workspace. Implies Editor + Viewer.
+
+| Explicit deny (`explicit_deny`)
+| Short-circuits *all* access for that group to this specific collection,
+  even if another group grants it.
+|===
+
+NOTE: Creating even one `CollectionPolicy` row for a collection switches it
+from legacy open/allow-list access (governed by `allowed_groups`/`denied_groups`)
+into **strict group-governed mode** — from that point on, only groups with an
+explicit policy (and no `explicit_deny`) may access the collection. Document
+this transition point clearly to collection owners: adding the first policy
+row is a one-way governance decision for that collection.
+
+This design intentionally decouples *platform administration* (folder-level
+`administrators`/`super-administrators`) from *content/workspace ownership*
+(`Collection Admin`) — a marketing team lead can be a Collection Admin for
+their campaign workspace, with full control over its smart rules and
+membership, without ever being a platform administrator with folder-wide
+delete rights.
+
+=== RACI — recommended operating model
+
+The platform enforces the *mechanics* of access above; the table below is the
+recommended human RACI for adopting organisations layering governance
+process on top of those mechanics. (**R**esponsible, **A**ccountable,
+**C**onsulted, **I**nformed.)
+
+[cols="2,1,1,1,1", options="header"]
+|===
+| Decision | Super-Admin | Admin | Collection Admin | Metadata Users group
+
+| Grant/revoke `administrators`/`super-administrators` membership
+| A/R | I | — | —
+
+| Create/edit folder policies (7-column ACL)
+| C | A/R | I | —
+
+| Create/edit collection policies & smart-rule instructions
+| I | C | A/R | —
+
+| Create/edit metadata schemas
+| I | C | I | A/R
+
+| Configure image/video profiles, CDN/storage adapters
+| C | A/R | — | —
+
+| Approve a new ingestion connector / migration source
+| A | R | I | —
+
+| Set Recycle Bin retention window
+| C | A/R | — | —
+
+| Force-cancel or bulk-reassign a running workflow
+| I | A/R | — | —
+|===
+
+=== Governance escalation path
+
+1. **Content/metadata disputes** (e.g. conflicting taxonomy) → escalate to the
+   `metadata_users` group and, if unresolved, to an Administrator.
+2. **Access disputes** (e.g. a team believes it should have folder access it
+   doesn't) → Administrator reviews the folder's `FolderPolicy` rows and either
+   grants access or documents the reason for denial.
+3. **Platform-wide policy changes** (retention windows, group hierarchy,
+   ingestion connector approval) → require Administrator sign-off; changes to
+   who holds `super-administrators` require sign-off from an existing
+   super-administrator.

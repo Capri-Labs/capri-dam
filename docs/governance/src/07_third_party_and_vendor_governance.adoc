@@ -1,0 +1,88 @@
+[[section-third-party-and-vendor-governance]]
+== Third-Party & Vendor Governance
+
+Capri DAM is intentionally multi-vendor at every integration point — this is
+a deliberate architectural choice (see the "Bring Your Own Storage" strategy
+in the link:../architecture/[Architecture Guide]) but it means governance
+owners must actively track which vendors are in use and under what
+authorisation.
+
+=== Storage providers
+
+The platform ships adapters for AWS S3, Google Cloud Storage, Azure Blob
+Storage, Cloudflare R2, Wasabi, DigitalOcean Spaces, and Backblaze B2 (plus
+local disk for development), switchable per environment without code changes.
+
+* Only one storage backend is "active" at a time per environment
+  (`StorageBackend.find_by(active: true)`) — document which provider is
+  authoritative for production before switching, since asset URLs are
+  resolved dynamically based on the active adapter.
+* Recommend a data-processing/vendor-risk review for whichever storage
+  provider holds production master assets, matching the organisation's
+  standard third-party risk process — this platform does not perform that
+  review for you.
+
+=== CDN / delivery
+
+Fastly (Image Optimizer + CDN) is the reference edge-delivery integration.
+Governance considerations:
+
+* CDN cache-purge actions (per-asset, via Surrogate Keys) are available to
+  any user with `replicate_access` on the relevant folder — treat this as a
+  content-operations capability, not a restricted admin action, but monitor
+  for excessive purge activity as a signal of process problems upstream.
+* HMAC-signed URLs are used to prevent denial-of-wallet abuse of on-the-fly
+  transforms — see the link:../security/[Security Guide] for the mechanism.
+
+=== Ingestion & migration connectors
+
+`SystemConnector` records represent an approved external system (AEM, Bynder,
+FTP, or other adapters registered in `IngestionAdapters::Factory`) that the
+platform is authorised to pull assets from.
+
+* Treat creating a new `SystemConnector` as a vendor-onboarding decision, not
+  just a technical configuration step — it grants the platform standing
+  credentials to reach into an external system.
+* Store connector credentials via the platform's encrypted credential storage
+  only (see the link:../security/[Security Guide]) — never in ingestion batch
+  notes or shared documents.
+* Review connector `assets_imported` counts and quarantine rates
+  periodically; a connector with an unusually high quarantine rate may
+  indicate a mapping problem or a change in the source system that needs
+  re-validation before continuing a migration.
+
+=== AI model providers
+
+`AiModelConfig` records represent the LLM/vision/embedding providers the
+platform calls out to (e.g. OpenAI, a local Ollama model, a
+vision/style-transfer provider), each scoped to a capability (`generation`,
+`embedding`, `vision`, `style_transfer`).
+
+* Only one config should be `is_default: true` per capability — document who
+  is authorised to change the default provider for a capability, since it
+  changes behaviour (auto-tagging, semantic search relevance, smart-collection
+  routing) platform-wide without any content itself changing.
+* Track each provider's data-handling terms (e.g. whether prompts/thumbnails
+  sent to a third-party model provider are retained/trained on) as part of
+  standard vendor risk review — this is especially relevant if any asset
+  content is classified **Restricted** (see
+  <<section-data-classification-and-retention,Data Classification &
+  Retention>>).
+* `health_status`/`last_health_check_at` on each config gives an operational
+  signal, not a governance one — a "healthy" provider can still be
+  operating outside agreed data-handling terms if those terms change
+  upstream.
+
+=== Content provenance (C2PA)
+
+`AssetProvenanceRecord` and `C2paConfiguration` implement C2PA
+("Content Credentials") manifest verification — useful for governing
+AI-generated or AI-modified content:
+
+* Assets can be marked `verified`, `ai_generated`, `ai_modified`, `missing`,
+  `invalid`, `signed`, or `error` based on manifest inspection.
+* Governance recommendation: define an organisational policy for what
+  `ai_generated`/`ai_modified` assets are permitted for (e.g. internal
+  drafts only vs. cleared for external publication) and who reviews
+  `invalid`/`error` provenance status before an asset is approved through a
+  workflow.

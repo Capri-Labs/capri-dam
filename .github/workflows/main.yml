@@ -12,6 +12,7 @@
 #   https://capri-labs.github.io/capri-dam/developer-guide/  ← developer guide
 #   https://capri-labs.github.io/capri-dam/product-info/     ← product info
 #   https://capri-labs.github.io/capri-dam/customer-guide/   ← customer guide
+#   https://capri-labs.github.io/capri-dam/governance/       ← governance guide
 #   https://capri-labs.github.io/capri-dam/deployment-guide-kamal/            ← deployment guide (Kamal)
 #   https://capri-labs.github.io/capri-dam/deployment-guide-aws/              ← deployment guide (AWS)
 #   https://capri-labs.github.io/capri-dam/deployment-guide-azure-kubernetes/ ← deployment guide (Azure/K8s)
@@ -331,6 +332,7 @@ jobs:
           mkdir -p _site/developer-guide
           mkdir -p _site/product-info
           mkdir -p _site/customer-guide
+          mkdir -p _site/governance
           mkdir -p _site/deployment-guide-kamal
           mkdir -p _site/deployment-guide-aws
           mkdir -p _site/deployment-guide-azure-kubernetes
@@ -475,6 +477,29 @@ jobs:
             -a allow-uri-read \
             -o _site/customer-guide/headless-dam-customer-guide.pdf \
             docs/customer-guide/index.adoc
+
+      # ── Governance Guide ───────────────────────────────────────────────────
+      - name: Build governance guide
+        run: |
+          asciidoctor $ADOC_BASE \
+            -a toclevels=4 \
+            -a stylesdir=theme \
+            -a stylesheet=arc42.css \
+            -a docinfodir=docs/governance \
+            -a docinfo=shared \
+            -D _site/governance -o index.html \
+            docs/governance/index.adoc
+          mkdir -p _site/governance/theme
+          cp -r docs/governance/theme/. _site/governance/theme/
+
+      - name: Build governance guide PDF
+        run: |
+          asciidoctor-pdf \
+            -a allow-uri-read \
+            -a pdf-themesdir=docs/governance/theme \
+            -a pdf-theme=arc42 \
+            -o _site/governance/headless-dam-governance-guide.pdf \
+            docs/governance/index.adoc
 
       # ── Deployment Guide (Kamal) ───────────────────────────────────────────
       - name: Build deployment guide (Kamal)

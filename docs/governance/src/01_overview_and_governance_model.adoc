@@ -1,0 +1,95 @@
+[[section-governance-overview]]
+== Overview & Governance Model
+
+=== Purpose
+
+Digital Asset Management is not just a storage problem — every asset carries
+brand risk (an outdated or unlicensed image going live), operational risk (the
+wrong file overwriting a production asset), and compliance risk (personal data
+embedded in metadata, or a retention obligation on a legal-hold asset). This
+guide defines the governance framework Capri DAM implements and expects
+adopting organisations to operate on top of it: who decides what, what rules
+the platform enforces automatically, and what rules remain a people/process
+responsibility.
+
+=== Governance principles
+
+Capri DAM's governance model is built on four principles that recur throughout
+this guide:
+
+Least privilege by default:: New users start in the system `everyone` group
+with no folder or collection access. Access must be explicitly granted —
+nothing is world-readable by default (see
+<<section-access-governance,Access Governance>>).
+
+Explicit deny always wins:: Every access-control layer in the platform
+(folder policies, collection policies) supports an `explicit_deny` flag that
+short-circuits every other grant, even inherited ones. This lets governance
+owners carve out hard exceptions ("this group must never see this folder")
+without redesigning the whole group hierarchy.
+
+Machine-enforced where possible, policy-documented where not:: Anything the
+platform can enforce in code (immutable audit logs, retention purge windows,
+7-column folder ACLs, collection admin tiers) *is* enforced in code — governance
+here is not aspirational. Anything that requires human judgement (which
+metadata schema a business unit should standardise on, whether an asset is
+cleared for a given market) is documented as a policy and a named owner
+instead.
+
+Auditable by construction:: Every state-changing action a user takes against
+an asset, folder, or workflow is written to an append-only, database-trigger-protected
+`audit_logs` table (see
+<<section-audit-reporting-and-kpis,Audit, Reporting & KPIs>>) — governance decisions
+are traceable after the fact, not just at design time.
+
+=== Governance domains covered by this guide
+
+[cols="1,3", options="header"]
+|===
+| Domain | What it governs
+
+| <<section-roles-and-decision-rights,Roles & Decision Rights>>
+| Who owns platform-wide policy vs. day-to-day operations (RACI).
+
+| <<section-content-and-metadata-governance,Content & Metadata Governance>>
+| Metadata schema ownership, taxonomy control, smart-collection rule authoring.
+
+| <<section-data-classification-and-retention,Data Classification & Retention>>
+| Asset sensitivity tiers, Recycle Bin retention windows, audit-log retention.
+
+| <<section-access-governance,Access Governance>>
+| Folder-level and collection-level access control, group ownership model.
+
+| <<section-change-and-release-management,Change & Release Management>>
+| How schema/workflow/metadata-schema changes are proposed, reviewed, and rolled out.
+
+| <<section-third-party-and-vendor-governance,Third-Party & Vendor Governance>>
+| Storage providers, CDN, AI model providers, ingestion connectors.
+
+| <<section-compliance-and-regulatory-mapping,Compliance & Regulatory Mapping>>
+| How platform capabilities map to GDPR/CCPA-style obligations.
+
+| <<section-audit-reporting-and-kpis,Audit, Reporting & KPIs>>
+| What's logged, how long, and what governance health metrics to track.
+|===
+
+=== Relationship to other guides
+
+[cols="1,3", options="header"]
+|===
+| Guide | Governs
+
+| link:../architecture/[Architecture Guide]
+| *How* the system is technically built — building blocks, runtime views, ADRs.
+
+| link:../security/[Security Guide]
+| *How* the platform protects data technically — authN/authZ mechanisms,
+  encryption, secrets management, vulnerability handling.
+
+| **This guide**
+| *Who* is accountable for platform and content decisions, and *under what
+  policy* those decisions are made.
+
+| link:../developer-guide/[Developer Guide]
+| *How* to build features on the platform (domain models, APIs, testing).
+|===

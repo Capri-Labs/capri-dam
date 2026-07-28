@@ -1,0 +1,93 @@
+[[section-access-governance]]
+== Access Governance
+
+=== Two independent access layers
+
+Capri DAM enforces access control at two independent, composable layers —
+governance owners should understand both, since a user's effective access to
+an asset depends on *both* the folder it lives in *and* any collection it
+belongs to.
+
+[cols="1,2,2", options="header"]
+|===
+| Layer | Scope | Model
+
+| **Folder policy**
+| Hierarchical — a folder path (and everything under it, subject to
+  inheritance).
+| `FolderPolicy` — 7-column ACL per `(folder, user_group)` pair.
+
+| **Collection policy**
+| A single collection ("workspace") and the assets currently routed into it.
+| `CollectionPolicy` — 4-tier ACL per `(collection, user_group)` pair.
+|===
+
+=== Folder policy — the 7-column ACL
+
+[cols="1,1,3", options="header"]
+|===
+| Column | UI label | Grants
+
+| `read_access` | Read | View assets & child folders.
+| `modify_access` | Modify | Edit existing asset metadata / rename folders.
+| `create_access` | Create | Upload assets / create sub-folders.
+| `delete_access` | Delete | Delete assets and folders.
+| `replicate_access` | Replicate | Push assets to CDN.
+| `manage_access` | Manage | Reserved — admin-level folder configuration.
+| `explicit_deny` | — | Short-circuits ALL permissions for this group on this
+  folder, even those the group would otherwise inherit.
+|===
+
+Governance recommendations:
+
+* Grant the narrowest column set that satisfies a team's actual need — e.g. a
+  reviewing team typically needs `read_access` only, not `modify_access`.
+* Use `explicit_deny` sparingly and document *why* whenever it's used — it's
+  a strong override and can be surprising to a group that has broad access
+  everywhere else in the hierarchy.
+* Review folder policies whenever a team is reorganised — stale group
+  membership on a still-active policy is the most common access-governance
+  failure mode in DAM systems generally.
+
+=== Collection policy — the 4-tier ACL
+
+See <<section-roles-and-decision-rights,Roles & Decision Rights>> for the
+full tier table (Viewer / Editor / Collection Admin / explicit deny). Key
+governance point: creating the *first* `CollectionPolicy` row for a
+collection is a **one-way transition** from legacy open/allow-list access to
+strict group-governed mode. Socialise this with collection owners before they
+create their first policy row, so they don't assume access is additive on top
+of the old defaults.
+
+=== Group hierarchy design guidance
+
+* Keep the four system groups (`everyone`, `administrators`,
+  `super-administrators`, `metadata_users`) for what they're built for — platform
+  administration and schema governance — rather than repurposing them for
+  content-team access, which should use custom groups + folder/collection
+  policies instead.
+* Model custom groups around **teams or functions** (e.g. `brand-marketing`,
+  `legal-review`, `agency-partners`) rather than individuals, so policy grants
+  survive personnel changes without editing every `FolderPolicy`/`CollectionPolicy`
+  row.
+* For external parties (agencies, freelancers, contractors), create a
+  dedicated group with folder/collection access scoped to only the
+  campaigns/workspaces they need, and prefer collection-level access (which
+  can be revoked by archiving/removing the policy row) over broad folder
+  access when the engagement is temporary.
+
+=== Personal Access Tokens & service accounts
+
+API integrations (e.g. a headless front end, a CI pipeline pulling assets)
+authenticate via Personal Access Tokens or OAuth2 (Doorkeeper). Governance
+recommendations:
+
+* Treat a Personal Access Token as equivalent in privilege to the user who
+  issued it — rotate and revoke tokens when the issuing user's access
+  changes or when they leave the organisation.
+* Prefer a dedicated "service" user account (scoped to only the folders/
+  collections the integration needs) over issuing a token from a real human
+  admin's account, so the token's blast radius is bounded and independent of
+  that person's own access.
+* See the link:../security/[Security Guide] for the technical detail on
+  token issuance, scopes, and Keycloak SSO.

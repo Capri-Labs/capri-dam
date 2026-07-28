@@ -1,0 +1,74 @@
+[[section-change-and-release-management]]
+== Change & Release Management
+
+=== Platform code changes
+
+Capri DAM's own engineering change process (documented in full in
+`AGENTS.md`/`CLAUDE.md` at the repository root) already encodes several
+governance controls that carry through to how the *platform itself* evolves:
+
+* Every migration is additive and reversible — shipped migrations are never
+  edited; new ones are added instead, keeping a full, replayable history of
+  schema change.
+* API changes (REST or GraphQL) require regenerated documentation
+  (`make api-docs`) and a passing request/Pact-contract spec before merge —
+  the platform's own external contract cannot silently drift out of sync
+  with what's documented.
+* RuboCop, Brakeman, and bundler-audit must be green before merge — static
+  analysis and dependency-CVE checks are a release gate, not a suggestion.
+
+Adopting organisations extending or forking the platform should keep this bar
+rather than lowering it — it's what keeps the audit/retention/access
+guarantees described elsewhere in this guide actually true in production.
+
+=== Content-facing configuration changes
+
+Several platform capabilities are themselves configuration surfaces that
+*content* governance owners (not necessarily engineers) can change at
+runtime, and which deserve their own lightweight change control:
+
+[cols="1,2,2", options="header"]
+|===
+| Change | Risk if ungoverned | Recommended control
+
+| Metadata schema edits
+| Silently breaks existing asset displays/exports that expect the old field
+  shape.
+| Restricted to `metadata_users` group by the platform itself (see
+  <<section-content-and-metadata-governance,Content & Metadata Governance>>);
+  recommend a lightweight review by a second `metadata_users` member for
+  root-schema changes.
+
+| Image/video profile changes
+| Silently changes delivered image dimensions/quality across every folder the
+  profile is assigned to.
+| Recommend testing a profile change against a sample folder before
+  reassigning it broadly; document the profile's assigned folders before
+  editing.
+
+| Workflow blueprint edits
+| Editing a workflow that has in-progress instances can leave those instances
+  referencing a step that no longer exists.
+| Publish workflow changes as a new version rather than editing a workflow
+  with active instances in flight where possible; always check the Workflow
+  Dashboard for in-progress instances before editing a blueprint.
+
+| Retention policy changes (`bin_retention_days`)
+| Shortening the window can purge assets an in-flight legal/compliance
+  process still needs.
+| Restricted to administrators (platform-enforced); recommend a documented
+  sign-off before shortening (vs. lengthening) the window.
+
+| Ingestion connector / migration source approval
+| A misconfigured connector can bulk-import unlicensed or duplicate content.
+| See <<section-third-party-and-vendor-governance,Third-Party & Vendor
+  Governance>>.
+|===
+
+=== Recommended change ticket fields
+
+For organisations that want a lightweight, auditable trail for the
+content-facing changes above (beyond what the platform's own audit log
+captures automatically), record at minimum: what changed, who approved it,
+which folders/collections/schemas are affected, and the rollback plan (e.g.
+"re-assign the previous image profile version").

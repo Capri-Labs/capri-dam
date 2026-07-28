@@ -1,0 +1,93 @@
+[[section-audit-reporting-and-kpis]]
+== Audit, Reporting & KPIs
+
+=== What's captured automatically
+
+[cols="1,3", options="header"]
+|===
+| Source | Captures
+
+| `audit_logs`
+| Every create/update/destroy on an auditable model (assets, folders,
+  metadata schemas, workflows, users, groups, policies, etc.), plus
+  administrative actions like impersonation grants and password resets.
+  Immutable — protected by a database trigger.
+
+| Workflow `audit_log` (per instance)
+| The step-by-step history of a single workflow instance (started,
+  approved/rejected per step, force-cancelled, reassigned).
+
+| Data Health dashboard
+| Aggregate connector health, ingestion error rates, and quarantine review
+  backlog — operational signal for ingestion governance.
+
+| Duplicate Manager stats
+| Counts of pending/resolved/dismissed duplicate groups — signal for content
+  hygiene governance.
+
+| AI model config health checks
+| `health_status`/`last_health_check_at`/`health_latency_ms` per AI provider
+  — operational signal for vendor governance.
+|===
+
+=== Recommended governance KPIs
+
+These are not built-in platform metrics (with the exception of the
+dashboards noted above) — they're recommended for a governance owner to track
+periodically, using the audit log and admin screens as the source data:
+
+[cols="2,3", options="header"]
+|===
+| KPI | Why it matters
+
+| # of folder/collection policies with `explicit_deny` set
+| A growing number suggests the group hierarchy itself may need
+  restructuring rather than continuing to patch with exceptions.
+
+| Access-review completion rate (per quarter)
+| Tracks whether folder/collection policy group membership is actually being
+  re-certified against current team structure, not just set once and
+  forgotten.
+
+| % of assets under an applied metadata schema vs. schema-less
+| Low coverage indicates a taxonomy-governance gap — assets without a schema
+  are harder to search, export, and govern consistently.
+
+| Quarantined-asset review backlog / average time-to-review
+| A growing backlog is an early signal of an ingestion connector or
+  taxonomy problem that needs a change (see
+  <<section-change-and-release-management,Change & Release Management>>).
+
+| Duplicate-group resolution backlog
+| Unresolved duplicate groups are unmanaged storage cost and a source-of-
+  truth risk (see the LinkedIn post that inspired this doc set — "which
+  `hero_final_really_final.jpg` is the real one?").
+
+| Recycle Bin items approaching auto-purge without review
+| Confirms the retention window is being actively used as a safety net, not
+  bypassed by immediate hard-deletes elsewhere.
+
+| Impersonation-action count (per period)
+| Any use should be attributable and, ideally, rare — a spike warrants a
+  quick review of why.
+|===
+
+=== Recommended reporting cadence
+
+[cols="1,3", options="header"]
+|===
+| Cadence | Review
+
+| Weekly (operational)
+| Quarantine backlog, duplicate-group backlog, ingestion connector health.
+
+| Quarterly (governance)
+| Folder/collection access re-certification, metadata-schema coverage,
+  `explicit_deny` usage review.
+
+| Annually (compliance)
+| Full compliance-mapping review against
+  <<section-compliance-and-regulatory-mapping,Compliance & Regulatory
+  Mapping>>; vendor risk re-assessment for all active storage/CDN/AI/
+  ingestion vendors.
+|===

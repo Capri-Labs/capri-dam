@@ -97,6 +97,15 @@ ifdef::backend-html5[]
     <span class="tag">Getting Started · Support</span>
   </a>
 
+  <a class="card" href="governance/">
+    <div class="card-icon">🏢</div>
+    <h2>Governance Guide</h2>
+    <p>Roles &amp; decision rights, content/metadata governance, data classification &amp;
+       retention, access governance, change management, vendor governance, and
+       compliance mapping.</p>
+    <span class="tag">RACI · Compliance · Retention</span>
+  </a>
+
   <a class="card" href="deployment-guide-kamal/">
     <div class="card-icon">🚀</div>
     <h2>Deployment Guide — Kamal</h2>
@@ -210,6 +219,7 @@ ifdef::backend-html5[]
   <a href="developer-guide/search.html">Search &amp; AI</a>
   <a href="developer-guide/testing.html">Testing</a>
   <a href="developer-guide/environment-variables.html">Environment Variables Reference</a>
+  <a href="governance/">Governance Guide</a>
   <a href="deployment-guide-kamal/">Kamal 2 Deployment</a>
   <a href="deployment-guide-aws/">AWS Deployment</a>
   <a href="deployment-guide-azure-kubernetes/">Azure/Kubernetes Deployment</a>
@@ -229,6 +239,7 @@ ifndef::backend-html5[]
 * link:developer-guide/index.adoc[Developer Guide]
 * link:product-info/index.adoc[Product Info]
 * link:customer-guide/index.adoc[Customer Guide]
+* link:governance/index.adoc[Governance Guide]
 * link:deployment-guide-kamal/index.adoc[Deployment Guide — Kamal]
 * link:deployment-guide-aws/index.adoc[Deployment Guide — AWS]
 * link:deployment-guide-azure-kubernetes/index.adoc[Deployment Guide — Azure & Kubernetes]

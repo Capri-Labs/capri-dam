@@ -1,0 +1,65 @@
+[[section-governance-roadmap]]
+== Governance Roadmap
+
+The table below tracks known gaps between the governance model described in
+this guide and full automation/enforcement in the platform — useful for
+adopting organisations planning their own compensating controls, and for
+maintainers prioritising future work.
+
+[cols="2,3,1", options="header"]
+|===
+| Gap | Compensating control today | Status
+
+| No built-in data-processing register / sub-processor tracking UI
+| Maintain the vendor list from
+  <<section-third-party-and-vendor-governance,Third-Party & Vendor
+  Governance>> manually alongside the organisation's existing vendor-risk
+  tooling.
+| [.status-planned]#Planned#
+
+| No built-in scheduled access-recertification workflow (quarterly review
+  reminders, sign-off tracking)
+| Track manually via the KPI cadence in
+  <<section-audit-reporting-and-kpis,Audit, Reporting & KPIs>>; consider an
+  external ticketing workflow.
+| [.status-planned]#Planned#
+
+| No automated PII-detection scan across embedded metadata (EXIF GPS,
+  author fields) at ingest time
+| Rely on metadata-schema design (field allow-listing) and manual spot
+  checks; see
+  <<section-data-classification-and-retention,Data Classification &
+  Retention>>.
+| [.status-planned]#Planned#
+
+| No formal legal-hold flag distinct from Recycle Bin retention (an asset
+  under litigation hold today must be manually excluded from any retention
+  or purge changes)
+| Document hold status in the asset's metadata schema and communicate to
+  whoever manages the retention window.
+| [.status-planned]#Planned#
+
+| No per-vendor data-residency configuration/reporting (e.g. confirming
+  which region a storage bucket or AI provider processes data in)
+| Confirm and document residency directly with each configured storage/AI
+  vendor as part of vendor onboarding.
+| [.status-planned]#Planned#
+
+| No consolidated "governance health" dashboard combining the KPIs in this
+  guide into a single admin screen
+| Compute manually from the Data Health, Duplicate Manager, and Bin stats
+  screens plus direct `audit_logs` queries.
+| [.status-planned]#Planned#
+
+| Smart-collection semantic-match thresholds are not automatically
+  re-validated when the underlying embedding model changes
+| Manually re-run the dry-run/simulate preview for affected rules after any
+  AI model config default change — see
+  <<section-content-and-metadata-governance,Content & Metadata
+  Governance>>.
+| [.status-planned]#Planned#
+|===
+
+See also the consolidated E2E test-coverage roadmap in the
+link:../product-info/[Product Info guide] for feature-level (rather than
+governance-process-level) gaps.

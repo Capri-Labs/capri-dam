@@ -1,0 +1,97 @@
+[[section-data-classification-and-retention]]
+== Data Classification & Retention
+
+=== Recommended asset sensitivity tiers
+
+Capri DAM does not impose a fixed sensitivity taxonomy — classification is
+expressed via metadata schema fields and/or folder structure so it fits each
+organisation's existing scheme. The recommended baseline used across this
+documentation set:
+
+[cols="1,3,2", options="header"]
+|===
+| Tier | Description | Suggested control
+
+| **Public**
+| Cleared for external distribution (marketing collateral, published product
+  images).
+| Standard folder policy; may be delivered via public/unsigned CDN URLs.
+
+| **Internal**
+| For internal use only (drafts, internal comms assets, working files).
+| Folder policy restricted to relevant groups; avoid public CDN delivery.
+
+| **Restricted**
+| Contains personal data, unlicensed third-party content pending clearance,
+  or contractually restricted material.
+| Folder policy limited to a small named group; `explicit_deny` for all other
+  groups; consider HMAC-signed, short-TTL CDN URLs only.
+
+| **Legal hold**
+| Under litigation hold or a retention obligation that overrides normal
+  lifecycle rules.
+| Exclude from Recycle Bin auto-purge (see below) and document the hold
+  reason in the asset's metadata schema fields.
+|===
+
+=== Recycle Bin retention
+
+Deleted assets move to the Recycle Bin (soft-delete, `deleted_at` set) before
+any permanent removal:
+
+* Default retention window is governed by `BinPurgeWorker::DEFAULT_RETENTION_DAYS`
+  and can be overridden per-tenant via `PUT /api/v1/bin/retention_policy`
+  (admin-only), clamped to **1–365 days**.
+* `BinPurgeWorker` / `BinPurgeService` permanently purge items older than the
+  configured window — this is a scheduled, automatic action, not a manual
+  step.
+* **Workflow-protected purge guard**: an asset with an in-progress workflow
+  instance is protected from purge until the workflow reaches a terminal
+  state, preventing an approval-in-flight asset from disappearing out from
+  under a reviewer.
+* Governance recommendation: document the organisation's chosen retention
+  window (and who is authorised to change it — see the RACI in
+  <<section-roles-and-decision-rights,Roles & Decision Rights>>) in the
+  adopting organisation's records-management policy, not just in the
+  platform setting.
+
+=== Audit log retention & immutability
+
+* Every create/update/destroy on an auditable model, plus administrative
+  actions (impersonation grants, password resets), is written to an
+  append-only `audit_logs` table.
+* A Postgres trigger (`trigger_protect_audit_logs`) raises on any UPDATE or
+  DELETE against `audit_logs` — application code cannot silently tamper with
+  or lose an entry. The **only** sanctioned exception is the scheduled
+  `PruneAuditLogsJob`, which disables the trigger for the duration of a
+  retention-window delete and always re-enables it afterwards, even if the
+  delete raises.
+* Default audit log retention is **90 days** (`PruneAuditLogsJob::RETENTION_PERIOD`).
+  Organisations with longer compliance-retention requirements (e.g. SOC 2,
+  financial-services record-keeping) should extend this value and document
+  the justification — treat it as a governed constant, not a UI setting, since
+  it protects the integrity of the non-repudiation trail itself.
+* Impersonation actions are specifically flagged (`impersonated: true`) with
+  both the impersonated user (`user_id`) and the real admin who initiated it
+  (`true_user_id`) recorded, so security reviews can always distinguish
+  "acting as" from "acting for."
+
+=== Quarantine & duplicate data lifecycle
+
+* Assets flagged during ingestion (e.g. rejected by a connector's validation
+  rules) land in `QuarantinedAsset` with a `pending_review` status and must be
+  explicitly `release!`d or discarded by a reviewer — they do not silently
+  enter the main catalog.
+* The Duplicate Manager groups assets sharing a SHA-256 checksum
+  (`DuplicateGroup`) or high perceptual-hash similarity, and requires an
+  explicit resolution action (kept-all / kept-one / dismissed) — duplicates
+  are surfaced for a human governance decision, never auto-deleted silently.
+
+=== Data minimisation in metadata
+
+Embedded file metadata (XMP/IPTC/EXIF) can carry personal data (author name,
+GPS coordinates, device serial numbers) that the uploader may not intend to
+publish. Governance recommendation: adopting organisations should define a
+metadata-schema policy for which embedded fields are surfaced/retained vs.
+stripped on ingest for assets destined for public distribution, and assign
+ownership of that policy to the `metadata_users` group.

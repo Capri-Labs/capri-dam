@@ -1,0 +1,105 @@
+[[section-content-and-metadata-governance]]
+== Content & Metadata Governance
+
+=== Metadata schema governance
+
+Metadata schemas are the taxonomy backbone of the platform — they define what
+fields exist, whether they're required, and how they map to embedded
+(XMP/IPTC/EXIF) metadata on ingest. Schema governance is deliberately
+restricted:
+
+* Only members of the `metadata_users` system group (plus
+  administrators/super-administrators) may create, duplicate, edit, or delete
+  a metadata schema. Everyone else has read-only visibility.
+* Schemas are hierarchical: **root** schemas can be assigned per folder path;
+  **type**-level schemas narrow by MIME segment (e.g. `image`); **subtype**
+  schemas narrow further (e.g. `image/jpeg`). Governance owners should treat
+  root-schema creation as a higher-impact change than adding a field to an
+  existing schema, since it can be assigned across many folders at once.
+* A root schema may also *inherit* tabs from another root schema
+  (`inherits_from`) — e.g. a business-unit-specific schema inheriting a
+  shared "Basic Info" tab. Document inheritance chains so schema owners don't
+  unknowingly change behaviour for schemas that inherit from theirs.
+* Built-in schemas (`is_builtin: true`) ship with the platform and should be
+  treated as a governance baseline — customise by creating a new schema that
+  inherits from the builtin rather than editing it directly, to preserve a
+  known-good fallback.
+
+=== Taxonomy & tagging governance
+
+Free-text tags stored in `asset.properties["tags"]` are powerful but prone to
+drift (`"Q3-campaign"` vs `"Q3 Campaign"` vs `"q3campaign"`). Recommended
+governance controls:
+
+* Nominate a taxonomy owner (typically a `metadata_users` member) responsible
+  for a canonical tag list, published and socialised outside the platform
+  (e.g. a shared style guide).
+* Prefer structured metadata-schema fields over free-text tags wherever a
+  value set is closed (e.g. "Market" as a schema dropdown rather than a tag).
+* Review smart-collection rule tag filters (see below) periodically — a rule
+  built on a since-abandoned tag spelling silently stops routing new assets.
+
+=== Smart-collection routing governance
+
+Collections can auto-route incoming assets via `CollectionRule`, in one of
+three modes:
+
+[cols="1,2", options="header"]
+|===
+| Match mode | Governance consideration
+
+| `metadata`
+| Deterministic and immediate — matches `properties` (tags, custom schema
+  fields) with AND-across-keys / OR-within-array-values semantics. Lowest
+  governance risk: rule behaviour is fully predictable from its configuration.
+
+| `semantic`
+| Routes by cosine-similarity of an asset's embedding to a natural-language
+  prompt, above a configurable `similarity_threshold`. Requires periodic
+  review — a threshold set too low silently pulls in unrelated assets; too
+  high, a rule stops matching anything as content drifts.
+
+| `hybrid`
+| Requires both a metadata match *and* crossing the semantic threshold —
+  recommended for higher-stakes collections (e.g. legal/compliance
+  workspaces) where false positives are costly.
+|===
+
+Governance recommendations:
+
+* Only Collection Admins (see
+  <<section-roles-and-decision-rights,Roles & Decision Rights>>) may create or
+  edit smart rules for a given collection — this is enforced by
+  `CollectionPolicy#admin_access`.
+* Every new/edited rule should be validated against a small sample of known
+  assets before relying on it in production (the Collections UI supports a
+  dry-run/simulate preview for exactly this purpose).
+* Rules that route by AI-detected semantic similarity should be re-validated
+  whenever the underlying embedding model changes (see
+  <<section-third-party-and-vendor-governance,Third-Party & Vendor
+  Governance>> for AI model-config governance).
+
+=== Content lifecycle ownership
+
+[cols="1,2", options="header"]
+|===
+| Stage | Owner
+
+| Ingestion (upload / connector migration)
+| Uploading user or Ingestion & Migration operator (for bulk/connector jobs).
+
+| Metadata enrichment / schema application
+| Asset owner, or automated via applied metadata schema + AI Intelligence
+  Suite (auto-tagging, embedding generation).
+
+| Workflow approval (if the asset's folder/collection triggers a workflow)
+| Assigned reviewer(s) per the workflow's step configuration.
+
+| Collection membership (manual or smart-routed)
+| Collection Admin for that workspace.
+
+| Retirement (Recycle Bin → permanent purge)
+| Asset owner or Administrator — see
+  <<section-data-classification-and-retention,Data Classification &
+  Retention>> for the retention window and workflow-protected purge guard.
+|===
