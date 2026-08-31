@@ -71,7 +71,7 @@ group :test do
   gem "selenium-webdriver"
 
   # Shoulda Matchers — one-liner specs for validations and associations
-  gem "shoulda-matchers", "~> 6.0"
+  gem "shoulda-matchers", "~> 8.0"
 
   # OpenAPI contract testing — validates every API response against swagger.yaml
   gem "committee"
