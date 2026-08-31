@@ -1,0 +1,104 @@
+[[section-security-overview]]
+== Overview & Security Principles
+
+=== Security disclosure
+
+IMPORTANT: If you discover a security vulnerability in Capri DAM, please
+report it responsibly rather than opening a public issue — see
+`SECURITY.md` at the repository root, or
+<<section-incident-response,Incident Response>> in this guide for a
+summary. This guide describes the platform's *current* security posture,
+including known gaps — it is written for transparency with adopting
+organisations performing their own risk assessment, not as a marketing
+claim of completeness.
+
+=== Security principles
+
+Defense in depth:: No single control is trusted alone. Authentication
+(Devise + Doorkeeper OAuth2 + optional Keycloak SSO), authorization
+(role checks + folder/collection ACLs + PAT scopes), encryption at rest for
+sensitive columns, and CI-gated static analysis are layered so that a failure
+in one layer doesn't expose the whole system.
+
+Least privilege:: New users get no folder/collection access beyond the
+`everyone` baseline group. Personal Access Tokens carry an explicit
+`read`/`write`/`admin` scope that's enforced independently of the issuing
+user's own role — a leaked read-only PAT cannot be used to modify data.
+
+Secure by default, not by configuration:: Sensitive database columns
+(credentials, tokens, webhook secrets, CDN configuration payloads) are
+encrypted via Rails' `ActiveRecord::Encryption` unconditionally — there is no
+"remember to enable encryption" step for a new integration that stores
+secrets this way.
+
+Fail closed:: Authorization checks (`require_admin!`, folder/collection
+policy checks, PAT scope checks) render `403 Forbidden` by default; webhook
+signature verification renders `401 Unauthorized` on any missing or
+mismatched signature, using a timing-safe comparison
+(`ActiveSupport::SecurityUtils.secure_compare`) rather than a naive string
+equality check.
+
+Verify continuously, not just at release:: Every push and pull request runs
+CodeQL, Semgrep, Brakeman, `bundler-audit`, `yarn audit`, and secret scanning
+(TruffleHog) — see
+<<section-security-testing-and-ci-pipeline,Security Testing & CI
+Pipeline>>. This is a continuous gate, not a point-in-time audit.
+
+=== Threat model summary
+
+[cols="1,2,2", options="header"]
+|===
+| Actor | Primary risk | Primary controls
+
+| Unauthenticated external attacker
+| Credential stuffing, API abuse, SSRF via ingestion connectors, injection
+  attacks.
+| Devise authentication, Doorkeeper OAuth2, CSP/CSRF protections, SAST/DAST-
+  style static analysis, encrypted connector credentials, `force_ssl`.
+
+| Authenticated user exceeding their access
+| Reading/modifying assets or folders they shouldn't have access to.
+| Folder 7-column ACL, collection 4-tier ACL, `explicit_deny`, PAT scopes.
+
+| Malicious or compromised third-party system (ingestion source, webhook
+  sender)
+| Forged ingestion payloads, SSRF, supply-chain compromise via a connector
+  integration.
+| HMAC webhook signature verification (timing-safe), encrypted connector
+  credentials, quarantine review gate for suspicious ingested assets.
+
+| Insider (privileged user misusing legitimate access)
+| Unauthorised bulk export/deletion, undetected impersonation misuse.
+| Immutable audit log (including impersonation flagging — see
+  link:../governance/[Governance Guide]), segregation of duties between
+  platform admin / collection admin / metadata governance roles.
+
+| Compromised dependency (gem/npm package)
+| Known-CVE exploitation via an outdated dependency.
+| `bundler-audit`, `yarn audit`, and CVE-floor pins documented directly in
+  the `Gemfile` (see
+  <<section-vulnerability-and-dependency-management,Vulnerability &
+  Dependency Management>>).
+|===
+
+=== Relationship to other guides
+
+[cols="1,3", options="header"]
+|===
+| Guide | Covers
+
+| **This guide**
+| *How* the platform technically protects data and access.
+
+| link:../governance/[Governance Guide]
+| *Who* is accountable for platform and content decisions, retention
+  policy, and compliance-mapping ownership.
+
+| link:../architecture/[Architecture Guide]
+| The overall system design this security posture is built into (building
+  blocks, deployment topology, ADRs).
+
+| link:../deployment-guide-kamal/[Deployment Guides] (Kamal / AWS / Azure)
+| Infrastructure-level security specifics per deployment target — TLS
+  termination, secrets injection, network/firewall configuration.
+|===

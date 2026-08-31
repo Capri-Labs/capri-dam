@@ -1,0 +1,115 @@
+[[section-authentication-and-identity]]
+== Authentication & Identity
+
+=== Primary authentication (Devise)
+
+Capri DAM's `User` model uses Devise with the following modules only
+(`app/models/user.rb`):
+
+[source,ruby]
+----
+devise :database_authenticatable,
+       :recoverable, :rememberable, :validatable,
+       :omniauthable, omniauth_providers: %i[keycloak_openid]
+----
+
+[cols="1,3", options="header"]
+|===
+| Module | What it provides today
+
+| `database_authenticatable`
+| Password hashing/verification via bcrypt (`config.stretches` = 12 in
+  production, 1 in test to keep the suite fast).
+
+| `recoverable`
+| "Forgot password" email flow.
+
+| `rememberable`
+| Persistent "remember me" cookie; `expire_all_remember_me_on_sign_out` is
+  enabled, so signing out invalidates the remember-me cookie everywhere.
+
+| `validatable`
+| Email format/uniqueness and password length validation (Devise defaults).
+
+| `omniauthable`
+| Enables the Keycloak OpenID Connect SSO flow described below.
+|===
+
+NOTE: The `User` model does **not** currently include `:lockable`,
+`:timeoutable`, `:confirmable`, or `:trackable`. There is no automatic
+account lockout after repeated failed logins, no forced session idle
+timeout, and no sign-in IP/timestamp tracking at the Devise level. This is a
+tracked gap — see
+<<section-security-roadmap,Compliance Mapping & Security Roadmap>>.
+
+=== Single sign-on (Keycloak OIDC)
+
+`config/initializers/devise.rb` configures a `keycloak_openid` OmniAuth
+strategy. This lets an organisation delegate authentication to its own
+Keycloak realm (SAML/LDAP/AD behind Keycloak, MFA enforced at the IdP) rather
+than relying solely on Capri DAM's local password store. When SSO is
+enabled, local password authentication can be treated as a fallback/break-
+glass path rather than the primary login method — this is an operational
+decision left to the deploying organisation, not something enforced in code
+today.
+
+=== OAuth2 for machine clients (Doorkeeper)
+
+Doorkeeper is mounted for OAuth2 client-credential and authorization-code
+flows (`config/initializers/doorkeeper.rb`, routes in `config/routes.rb`).
+This is the mechanism external services (e.g. a partner integration, a
+mobile app, or a CI pipeline needing broader scope than a PAT) use to obtain
+short-lived access tokens instead of a user's own password. Token TTL,
+refresh-token issuance, and PKCE requirements are configured per-application
+in the Doorkeeper initializer and are deployment-specific — consult
+`config/initializers/doorkeeper.rb` directly before enabling a new OAuth
+client, since several of the stricter options (e.g.
+`force_ssl_in_redirect_uri`, `revoke_previous_client_credentials_token`) ship
+commented out in the default template and should be reviewed for each
+environment.
+
+=== Personal Access Tokens (PATs)
+
+For CLI tools and scripts that shouldn't hold a user's password,
+`PersonalAccessToken` (`app/models/personal_access_token.rb`) issues
+long-lived bearer tokens with this design:
+
+* **Format**: `dat_<32 random hex chars>` — the `dat_` prefix makes tokens
+  self-identifying in logs and secret scanners.
+* **One-time reveal**: the raw token is returned to the user exactly once,
+  at creation time, and is never persisted in plaintext.
+* **Digest storage**: only a SHA-256 digest (`token_digest`) is stored;
+  incoming tokens are hashed and compared against the digest, so a database
+  read alone cannot recover a usable token.
+* **`last_four`**: stores only the last 4 characters so users can visually
+  identify a token in the UI (e.g. "CI/CD pipeline … af3d") without any
+  security exposure.
+* **Revocation without deletion**: `active: false` immediately revokes a
+  token while preserving it (and its usage history) for audit purposes,
+  rather than hard-deleting the row.
+* **Scopes**: `VALID_SCOPES = %w[read write admin]` — enforced independently
+  of the issuing user's own role by the `Authorization` controller concern
+  (see <<section-authorization-and-rbac,Authorization & RBAC>>), so a
+  read-only PAT cannot be replayed to perform writes even if it leaks.
+
+=== Password storage
+
+Passwords are hashed with bcrypt via Devise's `database_authenticatable`
+module; `config.stretches = 12` in production (cost factor), reduced to `1`
+only in the test environment to keep the RSpec suite fast — this is a
+standard, expected pattern and not a production weakening.
+
+=== Session cookies & transport
+
+`config/environments/production.rb` sets:
+
+[source,ruby]
+----
+config.force_ssl = true
+config.ssl_options = { redirect: { exclude: ->(request) { request.path == "/up" } } }
+----
+
+All production traffic is forced to HTTPS (with a carve-out for the
+Kamal/Rails health-check endpoint `/up`, which must remain reachable over
+plain HTTP for the load balancer's health probe). Session cookies inherit
+Rails' default `secure`/`httponly` behaviour under `force_ssl`.

@@ -1,0 +1,114 @@
+[[section-network-and-application-security]]
+== Network & Application Security
+
+=== Transport security
+
+`config.force_ssl = true` (production) forces HTTPS for all traffic except
+the `/up` Kamal health-check endpoint, which the load balancer must be able
+to reach over plain HTTP before TLS termination is confirmed healthy. See
+`config/environments/production.rb`.
+
+=== Content Security Policy
+
+Rails ships a commented-out CSP template at
+`config/initializers/content_security_policy.rb` — **no CSP is currently
+enforced** in this application. This is a known, tracked gap rather than an
+intentional decision to omit it; enabling a properly scoped policy
+(`default_src :self`, explicit allowances for the CDN/asset host, nonce-
+based script/style directives) is tracked in
+<<section-security-roadmap,Compliance Mapping & Security Roadmap>>. Until
+enabled, XSS defense relies on Rails' default output escaping in ERB/React
+rather than a defense-in-depth CSP layer.
+
+=== CSRF protection
+
+Standard Rails CSRF protection (`protect_from_forgery`) applies to all
+browser-originated requests by default. The one documented, intentional
+exception is `Api::V1::WebhooksController`, which explicitly skips CSRF
+verification (`skip_before_action :verify_authenticity_token`) because
+webhook calls are machine-to-machine and carry no browser session — CSRF
+tokens are meaningless in that context. This exception is paired with a
+different authentication mechanism (HMAC signature, below), not left
+unauthenticated.
+
+=== Webhook signature verification (HMAC)
+
+Inbound webhooks are authenticated using a per-connector HMAC-SHA256
+signature rather than a session or API key
+(`app/controllers/api/v1/webhooks_controller.rb`):
+
+[source,ruby]
+----
+signature_header = request.headers["x-adobe-signature"] ||
+                    request.headers["x-hub-signature-256"]
+return head :unauthorized unless signature_header
+
+request.body.rewind
+payload_body = request.body.read
+
+expected_signature = OpenSSL::HMAC.base64digest(
+  OpenSSL::Digest.new("sha256"),
+  connector.webhook_secret,
+  payload_body
+)
+
+unless ActiveSupport::SecurityUtils.secure_compare(signature_header, expected_signature)
+  Rails.logger.warn("Security Alert: Invalid webhook signature attempt on connector #{connector.id}")
+  head :unauthorized
+end
+----
+
+Two points worth calling out for anyone extending this pattern to a new
+connector type:
+
+* Both known signature header conventions (Adobe I/O's
+  `x-adobe-signature` and the more generic `x-hub-signature-256` used by
+  GitHub-style webhook senders) are supported so a single endpoint can serve
+  multiple provider integrations.
+* The comparison uses `ActiveSupport::SecurityUtils.secure_compare` — a
+  constant-time comparison — specifically to prevent a timing attack from
+  being able to recover the expected signature byte-by-byte. **Never**
+  replace this with a plain `==` comparison when adding a new signature
+  check anywhere in the codebase.
+
+=== CDN / delivery-layer security
+
+Fastly and Akamai CDN integrations rely on **provider-native** request
+signing/authentication rather than application-level HMAC signing of
+delivered asset URLs:
+
+* The Akamai adapter (`app/services/cdn_adapters/akamai_adapter.rb`) uses
+  Akamai's EdgeGrid HTTP client, which handles EdgeGrid HMAC request signing
+  internally for API calls to Akamai's management API — this secures
+  *configuration* calls to Akamai, not end-user asset delivery URLs.
+* CDN provider configuration (API keys, tokens) is stored encrypted via
+  `CdnConfiguration#settings` (see
+  <<section-data-protection-and-encryption,Data Protection &
+  Encryption>>).
+
+If a deployment needs signed, time-limited delivery URLs (e.g. Fastly Token
+Authentication) to prevent hot-linking or denial-of-wallet abuse, that is
+configured at the CDN provider level today, not implemented as an
+application-level URL-signing service in this codebase — tracked as a
+roadmap item rather than an existing feature.
+
+=== Rate limiting
+
+There is no `Rack::Attack` (or equivalent) middleware configured in this
+application today — no application-level rate limiting on login attempts,
+password reset requests, or API calls. This is a tracked gap; see
+<<section-security-roadmap,Compliance Mapping & Security Roadmap>>. In the
+interim, deployments should rely on rate limiting at the CDN/load-balancer
+layer (Fastly, Cloudflare, an AWS ALB + WAF, etc. — see the relevant
+deployment guide) rather than assuming the application enforces it.
+
+=== SSRF surface (ingestion connectors)
+
+`SystemConnector` integrations fetch content from URLs/hosts supplied by an
+external, admin-configured connector. Because this is inherently an
+outbound-fetch surface, connector credentials are encrypted at rest (see
+<<section-data-protection-and-encryption>>) and CodeQL's
+`security-extended` query suite (which includes SSRF detection rules) runs
+against the Ruby codebase on every push/PR — see
+<<section-security-testing-and-ci-pipeline,Security Testing & CI
+Pipeline>>.

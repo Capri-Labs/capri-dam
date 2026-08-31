@@ -1,0 +1,103 @@
+[[section-security-testing-and-ci-pipeline]]
+== Security Testing & CI Pipeline
+
+Capri DAM runs a dedicated **SAST & Security Scanning Pipeline**
+(`.github/workflows/sast.yml`) on every push and pull request to
+`main`/`master`/`develop`, plus a full weekly scheduled run (Sunday 02:00
+UTC). All tooling is open-source; findings are uploaded to the repository's
+GitHub Security tab as SARIF where the tool supports it.
+
+=== Pipeline jobs
+
+[cols="1,2,3", options="header"]
+|===
+| Job | Tool | What it checks
+
+| `codeql`
+| GitHub CodeQL (`security-extended` query suite)
+| Semantic analysis of both Ruby and JavaScript for injection, SSRF,
+  auth-bypass, and other OWASP-class issues. Runs as a matrix across both
+  languages; vendor/`node_modules`/generated paths are excluded via
+  `.github/codeql/codeql-config.yml` so third-party code never surfaces as
+  a first-party finding.
+
+| `semgrep`
+| Semgrep CI
+| Multi-ruleset scan: `p/owasp-top-ten`, `p/ruby`, `p/rails`,
+  `p/javascript`, `p/react`, `p/sql-injection`, `p/xss`. Runs
+  `continue-on-error: true` (informational/SARIF-only today, not yet a hard
+  merge gate).
+
+| `secrets-scan`
+| TruffleHog OSS (`--only-verified`)
+| Diff-scans PR/push changes for **verified, live** secrets; falls back to
+  a full-history scan on the scheduled weekly run.
+
+| `brakeman`
+| Brakeman (Rails-specific SAST)
+| Runs twice: once producing SARIF for the Security tab, once with
+  `--format github --exit-on-warn`, which **fails the job** for any new
+  warning not already present in `.brakeman/ignore.json`. This is a hard
+  merge gate.
+
+| `bundler-audit`
+| `bundler-audit`
+| Checks all Ruby gem versions against the public advisory database
+  (`config/bundler-audit.yml` for any documented exceptions). Hard gate —
+  no `continue-on-error`.
+
+| `yarn-audit`
+| `yarn audit --groups dependencies --level high`
+| Production JS dependency CVEs only (dev tooling like `spectaql`/`jest` is
+  excluded — those CVEs never ship in the app bundle). Currently
+  `continue-on-error: true`, surfaced as a GitHub Actions warning rather
+  than a hard failure.
+
+| `sast-all-green`
+| Aggregation job
+| Fails the overall workflow if `codeql`, `semgrep`, `secrets-scan`,
+  `brakeman`, or `bundler-audit` did not succeed (`yarn-audit` is
+  soft-gated as noted above).
+|===
+
+=== Local equivalents
+
+Contributors and agents working on this repository should run the same
+checks locally before opening a PR, mirroring `AGENTS.md`/`CLAUDE.md`'s
+verification gates:
+
+[source,bash]
+----
+bundle exec brakeman -q                     # Ruby SAST
+bundle exec bundler-audit check --update    # Ruby gem CVEs
+bundle exec rubocop                         # Ruby style (not security per se,
+                                             # but required to merge cleanly)
+yarn audit --groups dependencies --level high
+----
+
+=== Application-level security regression tests
+
+Beyond the SAST pipeline, security-relevant behaviour is also covered by
+ordinary RSpec request specs — for example, folder/collection ACL
+enforcement, PAT scope rejection, and webhook signature verification each
+have dedicated request/model specs exercising both the allow and deny
+paths, rather than relying on SAST tooling alone to catch an authorization
+regression. When adding a new authorization check (a new `require_*!`
+guard, a new PAT scope, a new webhook-authenticated endpoint), add a
+matching **negative** test (the request that should be rejected) alongside
+the positive one — this is the same TDD discipline already required by
+`CLAUDE.md` for all new behaviour, applied specifically to security
+controls.
+
+=== Pact contract testing
+
+Pact provider verification (`spec/pact/provider/`, `make test-pact`) is not
+itself a security tool, but it does guard against a specific class of
+security-adjacent regression: an API response shape silently changing (e.g.
+a field that should never be present in a response — such as
+`user_preferences.timezone`, which is intentionally server-managed and
+excluded from `ProfileController#preference_params`/serializers — being
+accidentally reintroduced) would typically also break the corresponding
+Pact contract if the frontend depends on the absence or presence of that
+field. It is not a substitute for an explicit test asserting a sensitive
+field is absent from a response body.

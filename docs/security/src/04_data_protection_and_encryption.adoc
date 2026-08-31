@@ -1,0 +1,95 @@
+[[section-data-protection-and-encryption]]
+== Data Protection & Encryption
+
+=== Encryption at rest (application-level)
+
+Capri DAM uses Rails' built-in `ActiveRecord::Encryption` (introduced in
+Rails 7) to encrypt specific sensitive columns transparently — the database
+only ever stores ciphertext; Rails encrypts/decrypts in memory using the
+application's derived encryption keys.
+
+[cols="1,2,3", options="header"]
+|===
+| Model | Encrypted column(s) | Why
+
+| `SystemConnector`
+| `auth_token`, `credentials_payload`, `access_token`
+| Ingestion connector credentials (e.g. Adobe I/O, generic webhook sources)
+  must never be recoverable from a raw database dump or backup.
+
+| `CdnConfiguration`
+| `settings` (JSON)
+| CDN provider configuration (which can include provider API keys/signing
+  material) is stored as an encrypted JSON blob.
+
+| `EmailDelivery`
+| `payload`
+| Outbound email payloads may contain PII; encrypting at rest limits
+  exposure from a database-level breach.
+
+| `Setting`
+| `value` (`deterministic: false`)
+| Generic key/value application settings that may hold sensitive
+  configuration values. Non-deterministic encryption means the same
+  plaintext produces different ciphertext each time it's saved, trading
+  queryability for stronger confidentiality.
+|===
+
+CAUTION: `encrypts ..., type: :json` is **not** a valid combination on the
+Rails version this app pins (it silently corrupts the encryption context).
+The correct pattern used throughout this codebase — see `SystemConnector`
+and `CdnConfiguration` — is to declare the attribute's cast type first via
+`attribute :column, :json`, then call `encrypts :column` with no extra
+options. Any new model needing encrypted JSON storage **must** follow this
+same two-step pattern; do not "fix" it back to `encrypts :column,
+type: :json`.
+
+=== Encryption in transit
+
+* `config.force_ssl = true` in `config/environments/production.rb` forces
+  all production HTTP traffic to HTTPS, with a single documented exclusion
+  for the Kamal health-check path (`/up`).
+* Inter-service calls to storage providers (S3, GCS, Azure Blob, R2, Wasabi,
+  Spaces, Backblaze — see `app/services/storage_adapters/`) and CDN
+  providers (Fastly, Akamai, Cloudflare) use each provider's official SDK or
+  HTTPS API, inheriting TLS from those clients rather than the application
+  rolling its own transport security.
+
+=== Sensitive data in logs
+
+`config/initializers/filter_parameter_logging.rb` redacts parameters whose
+name partially matches any of the following from Rails logs:
+
+[source,ruby]
+----
+Rails.application.config.filter_parameters += [
+  :passw, :email, :secret, :token, :_key, :crypt, :salt, :certificate, :otp, :ssn, :cvv, :cvc
+]
+----
+
+This is a partial-match filter (e.g. `:passw` also redacts
+`password_confirmation`), so it covers common secret-bearing parameter
+names by default across the whole application without requiring each
+controller to opt in individually.
+
+=== Non-repudiation for privileged access (impersonation)
+
+`AuditLog` records `user_id` (the acting identity), `true_user_id` (the real
+administrator, if the action occurred during an impersonation session), and
+an `impersonated` boolean flag. This ensures that if a support admin
+impersonates a customer to debug an issue, every action taken during that
+session is attributable to *both* identities — the audit trail cannot be
+used to plausibly claim "the customer did it" when it was actually an
+impersonating admin, or vice versa. See the Governance Guide's
+link:../governance/#section-audit-reporting-and-kpis[Audit, Reporting &
+KPIs] section for retention and reporting details on this same log.
+
+=== Data classification
+
+Data classification tiers (Public / Internal / Confidential / Restricted)
+and their handling rules are a **governance policy concern**, not a
+technical mechanism — see the Governance Guide's
+link:../governance/#section-data-classification-and-retention[Data
+Classification & Retention] section for the authoritative tier definitions.
+This guide documents only the technical controls (encryption, access
+enforcement) that make those classifications enforceable in practice.

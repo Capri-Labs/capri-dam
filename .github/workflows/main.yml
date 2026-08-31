@@ -13,6 +13,7 @@
 #   https://capri-labs.github.io/capri-dam/product-info/     ← product info
 #   https://capri-labs.github.io/capri-dam/customer-guide/   ← customer guide
 #   https://capri-labs.github.io/capri-dam/governance/       ← governance guide
+#   https://capri-labs.github.io/capri-dam/security/         ← security guide
 #   https://capri-labs.github.io/capri-dam/deployment-guide-kamal/            ← deployment guide (Kamal)
 #   https://capri-labs.github.io/capri-dam/deployment-guide-aws/              ← deployment guide (AWS)
 #   https://capri-labs.github.io/capri-dam/deployment-guide-azure-kubernetes/ ← deployment guide (Azure/K8s)
@@ -333,6 +334,7 @@ jobs:
           mkdir -p _site/product-info
           mkdir -p _site/customer-guide
           mkdir -p _site/governance
+          mkdir -p _site/security
           mkdir -p _site/deployment-guide-kamal
           mkdir -p _site/deployment-guide-aws
           mkdir -p _site/deployment-guide-azure-kubernetes
@@ -500,6 +502,29 @@ jobs:
             -a pdf-theme=arc42 \
             -o _site/governance/headless-dam-governance-guide.pdf \
             docs/governance/index.adoc
+
+      # ── Security Guide ──────────────────────────────────────────────────────
+      - name: Build security guide
+        run: |
+          asciidoctor $ADOC_BASE \
+            -a toclevels=4 \
+            -a stylesdir=theme \
+            -a stylesheet=arc42.css \
+            -a docinfodir=docs/security \
+            -a docinfo=shared \
+            -D _site/security -o index.html \
+            docs/security/index.adoc
+          mkdir -p _site/security/theme
+          cp -r docs/security/theme/. _site/security/theme/
+
+      - name: Build security guide PDF
+        run: |
+          asciidoctor-pdf \
+            -a allow-uri-read \
+            -a pdf-themesdir=docs/security/theme \
+            -a pdf-theme=arc42 \
+            -o _site/security/headless-dam-security-guide.pdf \
+            docs/security/index.adoc
 
       # ── Deployment Guide (Kamal) ───────────────────────────────────────────
       - name: Build deployment guide (Kamal)

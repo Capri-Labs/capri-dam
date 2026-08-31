@@ -1,0 +1,86 @@
+= Capri DAM — Security Guide
+Ashok Pelluru <apellurudotcom@gmail.com>
+v1.0.0, 2026-07-28
+:doctype: book
+:toc: left
+:toclevels: 4
+:sectnums:
+:sectanchors:
+:sectlinks:
+:icons: font
+:experimental:
+:source-highlighter: rouge
+:rouge-style: github
+:imagesdir: ./images
+:!prewrap:
+:lang: en
+:description: Security architecture and posture for Capri DAM — authentication, authorization/RBAC, \
+  data protection, secrets management, network security, application security testing, \
+  vulnerability management, incident response, and compliance mapping for a headless DAM platform.
+:keywords: DAM, security, authentication, authorization, RBAC, encryption, OAuth2, SAST, vulnerability management
+// ── Theme ─────────────────────────────────────────────────────────────────────
+:stylesdir: theme
+:stylesheet: arc42.css
+:docinfodir: .
+:docinfo: shared
+// ── PDF theme ────────────────────────────────────────────────────────────────
+:pdf-themesdir: theme
+:pdf-theme: arc42
+// ─────────────────────────────────────────────────────────────────────────────
+
+This guide documents **how** Capri DAM technically protects the platform and
+the data it manages — authentication, authorization, encryption, secrets
+handling, network hardening, application security testing, vulnerability
+management, and incident response. It complements the
+link:../governance/[Governance Guide], which covers *who* is accountable for
+platform and content decisions and *under what policy*; this guide covers the
+technical controls that make those policies enforceable.
+
+ifdef::backend-html5[]
+[.text-right]
+link:headless-dam-security-guide.pdf[⬇ Download as PDF] · link:../[← Documentation Hub] · link:../governance/[Governance Guide] · link:../architecture/[Architecture Guide]
+endif::backend-html5[]
+
+// 1. Overview & Security Principles
+include::src/01_overview_and_security_principles.adoc[]
+
+// 2. Authentication & Identity
+include::src/02_authentication_and_identity.adoc[]
+
+// 3. Authorization & RBAC
+include::src/03_authorization_and_rbac.adoc[]
+
+// 4. Data Protection & Encryption
+include::src/04_data_protection_and_encryption.adoc[]
+
+// 5. Secrets & Credential Management
+include::src/05_secrets_and_credential_management.adoc[]
+
+// 6. Network & Application Security
+include::src/06_network_and_application_security.adoc[]
+
+// 7. Security Testing & CI Pipeline
+include::src/07_security_testing_and_ci_pipeline.adoc[]
+
+// 8. Vulnerability & Dependency Management
+include::src/08_vulnerability_and_dependency_management.adoc[]
+
+// 9. Incident Response
+include::src/09_incident_response.adoc[]
+
+// 10. Compliance Mapping & Security Roadmap
+include::src/10_compliance_mapping_and_security_roadmap.adoc[]
+
+ifdef::backend-html5[]
+// Back-to-top button
+++++
+<button id="back-to-top" title="Back to top">&#8679;</button>
+<script>
+  const btn = document.getElementById('back-to-top');
+  window.addEventListener('scroll', () => {
+    btn.classList.toggle('visible', window.scrollY > 400);
+  });
+  btn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+</script>
+++++
+endif::backend-html5[]

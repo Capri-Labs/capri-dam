@@ -1,0 +1,123 @@
+[[section-authorization-and-rbac]]
+== Authorization & RBAC
+
+NOTE: This section documents the *technical* enforcement mechanism. For the
+*policy* perspective — who is granted which role and under what governance
+process — see the Governance Guide's
+link:../governance/#section-access-governance[Access Governance] section.
+The two are deliberately kept separate so this guide can focus purely on how
+the checks are implemented and enforced in code.
+
+=== Permission hierarchy
+
+The `Authorization` controller concern
+(`app/controllers/concerns/authorization.rb`) documents and implements a
+strict top-down hierarchy:
+
+. **Super-admin** — member of the `super-administrators` group.
+. **Admin** — `user.admin?` flag OR member of the `administrators` group.
+. **Regular user with folder-level grants** — governed by `FolderPolicy`.
+. **Regular user with no grants** — read-only or fully denied, depending on
+  the resource's default visibility.
+
+[source,ruby]
+----
+def require_admin!
+  return if current_user_admin?
+  render json: { error: "Administrator privileges required." }, status: :forbidden
+end
+
+def require_super_admin!
+  return if current_user&.super_admin?
+  render json: { error: "Super-administrator privileges required." }, status: :forbidden
+end
+----
+
+Both guards **fail closed**: any error path (missing `current_user`, missing
+group membership) falls through to `403 Forbidden` rather than defaulting to
+allow.
+
+=== Folder-level ACL (7 columns)
+
+`FolderPolicy` grants are evaluated per user-group/folder pair across seven
+independent boolean columns:
+
+[cols="1,3", options="header"]
+|===
+| Column | Grants
+
+| `read_access`
+| View folder contents and metadata.
+
+| `modify_access`
+| Edit metadata, rename.
+
+| `create_access`
+| Add new assets/sub-folders inside this folder.
+
+| `delete_access`
+| Move assets/folders to the Recycle Bin.
+
+| `replicate_access`
+| Duplicate assets/folders elsewhere in the tree.
+
+| `manage_access`
+| Change the folder's own ACL grants (delegate access to others).
+
+| `explicit_deny`
+| Overrides every other grant for this group on this folder, including
+  ones inherited from an ancestor folder.
+|===
+
+`explicit_deny` is intentionally the highest-precedence column — it exists
+so an administrator can carve out a genuinely locked-down sub-tree (e.g. a
+legal-hold folder) even for a group that otherwise has broad access
+elsewhere in the hierarchy.
+
+=== Collection-level ACL (4 tiers)
+
+`CollectionPolicy` uses a simpler 4-tier model: `view_access`,
+`edit_access`, `admin_access`, `explicit_deny`. A collection with **no**
+policy rows uses legacy open/allow-list access; creating the **first**
+policy row for a collection is a one-way transition to strict,
+group-governed mode — once any group has an explicit policy on a
+collection, that collection can never revert to the legacy open mode. This
+is enforced at the model level, not just in the UI, so it cannot be
+bypassed via a direct API call.
+
+=== PAT scope enforcement
+
+When a request authenticates via a Personal Access Token, the
+`Authorization` concern applies an *additional* scope check on top of the
+user's own role — the PAT's scope is the ceiling, never the floor:
+
+[cols="1,2", options="header"]
+|===
+| PAT scope | Allowed endpoints
+
+| `read`
+| GET-only endpoints.
+
+| `write`
+| GET, POST, PATCH, PUT.
+
+| `admin`
+| All of the above, plus admin-only operations (e.g. CDN cache flush, user
+  management).
+|===
+
+A `read`-scoped PAT issued to an admin user is still rejected on any
+write endpoint — the scope is checked independently of
+`current_user_admin?`, so scope compromise (e.g. a leaked read-only CI
+token) cannot be escalated by virtue of the underlying user's own
+privileges.
+
+=== Webhook / machine-to-machine authorization
+
+Inbound webhooks (`Api::V1::WebhooksController`) bypass session-based
+authentication entirely (`skip_before_action :verify_authenticity_token`)
+and instead authenticate via a per-connector HMAC-SHA256 signature —
+see <<section-network-and-application-security,Network & Application
+Security>> for the implementation detail. This is a distinct authorization
+path from user/PAT authentication and is scoped to a single
+`SystemConnector` record per request.

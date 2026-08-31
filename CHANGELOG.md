@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+#### Ruby gem CVE patches — bundler-audit remediation
+- Updated `Gemfile.lock` (no `Gemfile` constraint changes needed — all
+  patched versions satisfy existing version requirements) to remediate 6
+  vulnerabilities flagged by `bundle exec bundler-audit check`:
+  - `rails`/`activestorage` `8.1.3` → `8.1.3.1` (CVE-2026-66066 — possible
+    arbitrary file read and remote code execution in Active Storage variant
+    processing).
+  - `graphql` `2.6.3` → `2.6.10` (GHSA-j7xr-4g94-r9h3 — authorization bypass
+    in `Execution::Next`).
+  - `json` `2.20.0` → `2.21.2` (CVE-2026-71847 — `JSON::ResumableParser`
+    dereferences a freed input buffer on truncated duplicate-key streams).
+  - `loofah` `2.25.1` → `2.25.2` (CVE-2026-73490/73491,
+    GHSA-5qhf-9phg-95m2 — `allowed_uri?` bypasses and SVG `href`
+    local-reference restriction bypass).
+  - `mail` `2.9.0` → `2.9.1` (GHSA-mvxr-6m87-mv2q — email address spoofing
+    via malformed RFC 2047 encoded-words).
+  - `rails-html-sanitizer` `1.7.0` → `1.7.1` (CVE-2026-73648 — possible XSS
+    with certain sanitizer configurations).
+  - Verified: `bundle exec bundler-audit check` → 0 vulnerabilities found;
+    `bundle exec rubocop` → 755 files, no offenses; `bundle exec brakeman
+    --ignore-config .brakeman/ignore.json --exit-on-warn` → exit 0 (no new
+    warnings); `bundle exec rspec spec/requests` (incl. GraphQL request
+    specs) → 1296 examples, 0 failures.
+
 ### Added
 
 #### Pact Contract Test Coverage — 8 → 211 interactions

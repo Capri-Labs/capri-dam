@@ -1,0 +1,102 @@
+[[section-incident-response]]
+== Incident Response
+
+NOTE: This section describes the technical mechanisms available during an
+incident (audit trail, revocation controls, rotation paths). Organisational
+roles, escalation ownership, and reporting cadence to stakeholders are a
+**governance** concern — see the Governance Guide's
+link:../governance/#section-roles-and-decision-rights[Roles,
+Responsibilities & Decision Rights] section, which this guide defers to
+rather than duplicating.
+
+=== Detection sources
+
+[cols="1,2", options="header"]
+|===
+| Signal | Where it surfaces
+
+| New Brakeman warning in first-party code
+| Fails the `brakeman` CI job; visible in the GitHub Security tab (SARIF).
+
+| CodeQL / Semgrep finding
+| GitHub Security tab (SARIF upload), tagged by category (`codeql`,
+  `semgrep`).
+
+| Verified live secret in a commit
+| TruffleHog `secrets-scan` job output; treat as an active incident, not
+  just a lint failure (see below).
+
+| Suspicious ingested asset
+| `QuarantinedAsset` with status `pending_review` — routed to a human
+  reviewer rather than published automatically (see the Governance Guide's
+  content-governance section for the review workflow).
+
+| Anomalous webhook traffic
+| `Rails.logger.warn("Security Alert: Invalid webhook signature attempt on
+  connector #{connector.id}")` — repeated warnings for the same connector
+  ID indicate either a misconfigured legitimate sender or an active forgery
+  attempt.
+
+| Failed/anomalous authentication patterns
+| Not currently instrumented beyond default Rails/Devise logging — no
+  dedicated auth-anomaly alerting exists today (see roadmap).
+|===
+
+=== Immediate containment actions available today
+
+[cols="1,2", options="header"]
+|===
+| Suspected compromise of… | Containment action
+
+| A Personal Access Token
+| Set `active: false` on the `PersonalAccessToken` record — immediately
+  revokes it without deleting audit history.
+
+| A `SystemConnector`'s webhook secret
+| Rotate `webhook_secret` on that connector; only that connector's inbound
+  webhooks are affected, other connectors are unaffected (see
+  <<section-secrets-and-credential-management,Secrets & Credential
+  Management>>).
+
+| A user account
+| Disable/reset the account via Devise (`recoverable` module supports
+  forced password reset); review `AuditLog` entries for that `user_id`
+  (and any `true_user_id` impersonation entries) to scope the blast
+  radius.
+
+| The Rails master key / `credentials.yml.enc`
+| Requires re-encrypting `credentials.yml.enc` with a new master key and
+  redeploying with the new key everywhere it's injected (Kamal secrets /
+  cloud secrets manager per the relevant deployment guide) — there is no
+  "hot" rotation path; plan for a maintenance window.
+
+| A committed secret found by TruffleHog
+| Rotate the underlying secret immediately at the provider. Removing it
+  from the current diff is **not sufficient** — it remains in git history
+  until a history rewrite, so rotation (not just removal) is the actual
+  containment step.
+|===
+
+=== Post-incident audit trail
+
+Every privileged action (folder/collection ACL changes, bin purges,
+retention-policy changes, impersonation sessions) is recorded in the
+immutable `AuditLog` table, protected by the Postgres trigger
+`trigger_protect_audit_logs` (see the Governance Guide for the full
+retention/immutability model). This is the primary forensic source when
+reconstructing what happened during an incident — `user_id`/`true_user_id`
+pairs specifically let investigators distinguish an impersonating admin's
+actions from the impersonated user's own actions.
+
+=== Responsible disclosure
+
+This repository publishes a formal disclosure policy at `SECURITY.md`:
+vulnerabilities should be reported privately via `security@capri-dam.dev` or
+GitHub's private vulnerability reporting feature — **never** via a public
+issue, discussion, or pull request. The published commitment is
+acknowledgement within 48 hours and a remediation timeline after triage
+(typically targeting a fix within 90 days depending on severity). See
+`SECURITY.md` at the repository root for the full policy, including scope
+(in-scope: the Rails app, REST/GraphQL APIs, auth, background workers;
+out-of-scope: already-tracked upstream dependency CVEs and anything
+requiring physical/developer-machine compromise).

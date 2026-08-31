@@ -106,6 +106,15 @@ ifdef::backend-html5[]
     <span class="tag">RACI · Compliance · Retention</span>
   </a>
 
+  <a class="card" href="security/">
+    <div class="card-icon">🔐</div>
+    <h2>Security Guide</h2>
+    <p>Authentication &amp; SSO, authorization/RBAC enforcement, encryption &amp; secrets
+       management, network &amp; application security, the SAST/CI pipeline, vulnerability
+       management, incident response, and compliance mapping.</p>
+    <span class="tag">AuthN/AuthZ · Encryption · SAST</span>
+  </a>
+
   <a class="card" href="deployment-guide-kamal/">
     <div class="card-icon">🚀</div>
     <h2>Deployment Guide — Kamal</h2>
@@ -220,6 +229,7 @@ ifdef::backend-html5[]
   <a href="developer-guide/testing.html">Testing</a>
   <a href="developer-guide/environment-variables.html">Environment Variables Reference</a>
   <a href="governance/">Governance Guide</a>
+  <a href="security/">Security Guide</a>
   <a href="deployment-guide-kamal/">Kamal 2 Deployment</a>
   <a href="deployment-guide-aws/">AWS Deployment</a>
   <a href="deployment-guide-azure-kubernetes/">Azure/Kubernetes Deployment</a>
@@ -240,6 +250,7 @@ ifndef::backend-html5[]
 * link:product-info/index.adoc[Product Info]
 * link:customer-guide/index.adoc[Customer Guide]
 * link:governance/index.adoc[Governance Guide]
+* link:security/index.adoc[Security Guide]
 * link:deployment-guide-kamal/index.adoc[Deployment Guide — Kamal]
 * link:deployment-guide-aws/index.adoc[Deployment Guide — AWS]
 * link:deployment-guide-azure-kubernetes/index.adoc[Deployment Guide — Azure & Kubernetes]

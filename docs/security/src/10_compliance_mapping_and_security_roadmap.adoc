@@ -1,0 +1,113 @@
+[[section-compliance-mapping-and-security-roadmap]]
+[[section-security-roadmap]]
+== Compliance Mapping & Security Roadmap
+
+=== Compliance mapping
+
+Regulatory/compliance-framework mapping (GDPR, SOC 2, HIPAA-adjacent
+considerations, etc.) is owned by the Governance Guide's
+link:../governance/#section-compliance-and-regulatory-mapping[Compliance &
+Regulatory Mapping] section, which frames these as policy/process
+obligations. The table below summarises which **technical** controls in
+*this* guide support each framework area, without restating the governance
+ownership or process detail.
+
+[cols="1,3", options="header"]
+|===
+| Framework area | Supporting technical control (this guide)
+
+| Data minimisation / right to erasure
+| Recycle Bin + `BinPurgeWorker` retention purge; `PruneAuditLogsJob`
+  90-day audit log retention (see the Governance Guide for the
+  policy-level retention windows).
+
+| Access control
+| `FolderPolicy` (7-column ACL), `CollectionPolicy` (4-tier ACL), PAT
+  scopes, role hierarchy in `Authorization` concern.
+
+| Encryption of sensitive data
+| `ActiveRecord::Encryption` on `SystemConnector`, `CdnConfiguration`,
+  `EmailDelivery`, `Setting`; `force_ssl` for transport.
+
+| Audit trail / non-repudiation
+| Immutable `AuditLog` with impersonation (`true_user_id`) tracking.
+
+| Vulnerability management
+| CodeQL, Semgrep, Brakeman, `bundler-audit`, `yarn audit`, Dependabot (see
+  <<section-vulnerability-and-dependency-management>>).
+
+| Incident response
+| Published `SECURITY.md` disclosure policy; containment actions in
+  <<section-incident-response>>.
+|===
+
+=== Security roadmap (known gaps)
+
+The following gaps were identified while writing this guide by reading the
+actual configuration and code, not assumed — each is a genuine, currently
+unaddressed item rather than a hypothetical risk.
+
+[cols="3,1,4", options="header"]
+|===
+| Gap | Status | Notes
+
+| No Content Security Policy enforced
+(`config/initializers/content_security_policy.rb` ships fully commented
+out)
+| [.status-pending]#Pending#
+| Highest-priority item in this roadmap — enabling even a conservative CSP
+  materially reduces XSS blast radius.
+
+| No `Rack::Attack` (or equivalent) rate limiting
+| [.status-pending]#Pending#
+| No application-level throttling on login, password-reset, or API
+  request volume; currently depends entirely on CDN/load-balancer-layer
+  rate limiting, which varies by deployment target.
+
+| No `:lockable`/`:timeoutable`/`:trackable` Devise modules
+| [.status-pending]#Pending#
+| No automatic account lockout after repeated failed logins, no forced
+  session idle timeout, no sign-in IP/timestamp history at the
+  application layer.
+
+| No automatic PAT expiry
+| [.status-pending]#Pending#
+| Personal Access Tokens are valid indefinitely until manually deactivated
+  (`active: false`); no TTL or forced-rotation reminder exists.
+
+| Dependabot not configured for the `npm`/`yarn` ecosystem
+| [.status-pending]#Pending#
+| `.github/dependabot.yml` only covers `bundler` and `github-actions`
+  today; frontend dependency staleness relies solely on reactive
+  `yarn audit` runs.
+
+| Semgrep and `yarn audit` run as soft gates
+(`continue-on-error: true`)
+| [.status-progress]#Under review#
+| Both currently surface findings without blocking merges; promoting them
+  to hard gates (like `brakeman`/`bundler-audit` already are) is under
+  consideration once current findings are triaged to avoid a noisy
+  first rollout.
+
+| No application-level HMAC/token-signed CDN delivery URLs
+| [.status-planned]#Planned#
+| Today, hot-link/denial-of-wallet protection is delegated to whichever
+  CDN provider's native signing feature (e.g. Fastly Token Auth) is
+  configured, rather than implemented as an application-level signing
+  service.
+
+| No formal secret-rotation schedule for
+`RAILS_MASTER_KEY`/`credentials.yml.enc`
+| [.status-pending]#Pending#
+| Rotation happens only reactively, on suspected compromise; no
+  proactive cadence is defined or automated.
+|===
+
+=== Roadmap ownership
+
+Prioritisation of the items above sits with the same governance body that
+owns the platform's overall change/release process — see the Governance
+Guide's
+link:../governance/#section-change-and-release-management[Change & Release
+Management] section. This guide will be updated as each gap is closed;
+status badges above should be kept current rather than left stale.
