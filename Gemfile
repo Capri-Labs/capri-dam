@@ -71,7 +71,7 @@ group :test do
   gem "selenium-webdriver"
 
   # Shoulda Matchers — one-liner specs for validations and associations
-  gem "shoulda-matchers", "~> 6.0"
+  gem "shoulda-matchers", "~> 8.0"
 
   # OpenAPI contract testing — validates every API response against swagger.yaml
   gem "committee"
@@ -128,7 +128,7 @@ gem "omniauth-rails_csrf_protection" # Crucial for security
 gem "aws-sdk-s3", "~> 1"
 gem "google-cloud-storage", "~> 1.0"
 gem "azure-storage-blob", "~> 2.0"
-gem "liquid", "~> 5.12"
+gem "liquid", "~> 5.13"
 
 gem "mini_magick", "~> 5.3"
 

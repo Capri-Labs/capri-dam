@@ -33,6 +33,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     warnings); `bundle exec rspec spec/requests` (incl. GraphQL request
     specs) → 1296 examples, 0 failures.
 
+#### Dependabot backlog — routine gem & GitHub Actions version bumps
+- Applied the version bumps proposed by the following open Dependabot PRs
+  directly to `Gemfile`/`Gemfile.lock` (loosened the `liquid` and
+  `shoulda-matchers` pessimistic constraints where they blocked the target
+  version): `selenium-webdriver` 4.45.0 → 4.48.0, `oauth2` 2.0.24 → 2.0.25,
+  `mini_magick` 5.3.1 → 5.4.0, `google-cloud-storage` 1.61.0 → 1.62.0,
+  `opentelemetry-exporter-otlp` 0.34.0 → 0.34.1, `thruster` 0.1.21 → 0.1.26,
+  `liquid` 5.12.0 → 5.13.0, `shoulda-matchers` 6.5.0 → 8.0.1 (major bump —
+  verified against all 5 spec files using shoulda matchers, 66 examples, 0
+  failures, only an informational deprecation notice from
+  `validate_inclusion_of` on a boolean column). `devise` was already at
+  5.0.4 in `Gemfile.lock` — PR #10 is stale/redundant and can be closed.
+  `graphql` was already bumped past its target (2.6.5) by the CVE
+  remediation above (now 2.6.10) — PR #47 is likewise stale/redundant.
+- Bumped the GitHub Actions versions from the remaining open Dependabot PRs
+  across every workflow file that referenced them: `github/codeql-action`
+  v3 → v4, `actions/deploy-pages` v4 → v5, `docker/setup-buildx-action` v3 →
+  v4, `actions/setup-node` v4 → v7, `actions/upload-pages-artifact` v3 →
+  v5, `actions/attest-build-provenance` v1 → v4, `docker/login-action` v3 →
+  v4, `docker/metadata-action` v5 → v6, `docker/setup-qemu-action` v3 → v4,
+  `actions/upload-artifact` v4 → v7 (`.github/workflows/ci.yml`,
+  `docker.yml`, `e2e.yml`, `generate-pdf.yml`, `integration.yml`,
+  `main.yml`, `sast.yml`).
+- Verified: `bundle exec bundler-audit check` → 0 vulnerabilities;
+  `bundle exec rubocop` → 755 files, no offenses; `bundle exec brakeman` →
+  exit 0; `bundle exec rspec spec/models spec/requests spec/workers
+  spec/services` → 2981 examples, 0 failures; all 7 modified workflow YAML
+  files re-validated for syntax.
+
+#### E2E suite parallelization — 59 specs split into 8 feature-based CI jobs
+- Rewrote `.github/workflows/e2e.yml`'s single ~30-minute sequential
+  Playwright job into an 8-way `strategy.matrix` (`access-control`,
+  `assets-core`, `folders-workspace`, `delivery-cdn`, `search-metadata`,
+  `workflow-ingestion`, `system-admin`, `misc-ui-comms`), each running as an
+  independent parallel job with its own Postgres/Redis services and Rails
+  server, using `yarn playwright test <space-separated filename fragments>`
+  to select only that suite's spec files. `fail-fast: false` so one
+  suite's failure doesn't cancel the others; per-suite Playwright report
+  artifacts (`playwright-report-<suite>`); a new `e2e-all-green`
+  aggregation job mirrors the existing `sast-all-green` pattern for a
+  single pass/fail signal.
+- Verified all 59 `spec/e2e/*.e2e.spec.js` files are assigned to exactly
+  one suite (no gaps, no duplicates) via a Ruby YAML-parse script, and
+  spot-checked two suites with `npx playwright test <fragments> --list` to
+  confirm the fragment-matching selects only the intended files (8 files /
+  89 tests for `access-control`, 8 files / 73 tests for `misc-ui-comms`).
+
 ### Added
 
 #### Pact Contract Test Coverage — 8 → 211 interactions

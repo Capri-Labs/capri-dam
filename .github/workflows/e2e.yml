@@ -1,8 +1,13 @@
 # ─────────────────────────────────────────────────────────────────────────────
 # Capri DAM — E2E Tests (Playwright)
 #
-# Runs the full Playwright end-to-end suite against a live Rails server
-# (spun up inside the workflow using Docker Compose-style services).
+# Runs the Playwright end-to-end suite against a live Rails server (spun up
+# inside the workflow using Docker Compose-style services). The 59
+# *.e2e.spec.js files are split into 8 feature-based suites (see the
+# `matrix.suite` list in the `playwright` job below) that each run as an
+# independent parallel job with its own Postgres/Redis services and Rails
+# server, instead of one long sequential job. `e2e-all-green` aggregates the
+# matrix into a single pass/fail check.
 #
 # Triggers:
 #   - Push to main/master
@@ -43,9 +48,61 @@ env:
 
 jobs:
   playwright:
-    name: Playwright E2E
+    name: Playwright E2E (${{ matrix.suite.name }})
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      # ── Feature-suite matrix ────────────────────────────────────────────
+      # The 59 *.e2e.spec.js files are grouped into 8 feature-based suites so
+      # they run as independent parallel jobs instead of one 30+ minute
+      # sequential job. Each `specs` value is a space-separated list of
+      # filename fragments passed straight to `playwright test <fragment>`,
+      # which matches any spec file whose path contains that fragment.
+      # When adding a new *.e2e.spec.js file, add its basename (no
+      # `.e2e.spec.js` suffix) to whichever suite below best matches it.
+      matrix:
+        suite:
+          - name: access-control
+            specs: >-
+              access_control_security auth impersonation
+              header_impersonate_groups group_hierarchy users_and_groups
+              folder_access_tab security_policies
+          - name: assets-core
+            specs: >-
+              asset_3d_viewer asset_download asset_serving
+              asset_thumbnail_states asset_version_diff
+              asset_viewer_edit_image asset_viewer_exif_and_layout
+              image_asset_formats document_asset_formats
+              video_asset_management
+          - name: folders-workspace
+            specs: >-
+              folders_crud folders_view_toggle folders_workspace_coverage
+              copy_folder_asset move_folder_asset rename_folder_asset
+              collections_workspace duplicate_manager_workspace
+          - name: delivery-cdn
+            specs: >-
+              delivery_cdn_cache_purge delivery_cdn_image_video_profiles
+              delivery_cdn_provider_switch cdn_image_optimizer_formats
+              origin_storage_settings smtp_settings
+          - name: search-metadata
+            specs: >-
+              global_search_bar semantic_search semantic_cluster_map
+              search_and_duplicates_fixes metadata_tools data_health
+          - name: workflow-ingestion
+            specs: >-
+              workflow_designer ingestion_migration_lifecycle
+              ingestion_pipeline publish_asset quarantine provenance_c2pa
+          - name: system-admin
+            specs: >-
+              feature_flags_tab operational_logging_tab
+              system_observability_tab ai_gateway_controls_tab
+              reports_screen audit_log style_model_hub
+          - name: misc-ui-comms
+            specs: >-
+              dashboard footer_redesign custom_404_page
+              language_switching upload_overlay_tags_and_bin inbox
+              email_engine bin
 
     services:
       postgres:
@@ -84,7 +141,7 @@ jobs:
           bundler-cache: true
 
       - name: Set up Node ${{ env.NODE_VERSION }}
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: yarn
@@ -150,13 +207,13 @@ jobs:
           E2E_PASSWORD: ${{ secrets.E2E_PASSWORD || 'AdminUser' }}
           RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY }}
           SECRET_KEY_BASE: ${{ secrets.RAILS_MASTER_KEY || 'ci_e2e_placeholder_secret_key_base_that_is_at_least_64_chars_long_required' }}
-        run: yarn playwright test --reporter=html
+        run: yarn playwright test ${{ matrix.suite.specs }} --reporter=html
 
       - name: Upload Playwright HTML report
         uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: playwright-report
+          name: playwright-report-${{ matrix.suite.name }}
           path: coverage-frontend/playwright-report/
           retention-days: 30
 
@@ -164,7 +221,26 @@ jobs:
         uses: actions/upload-artifact@v7
         if: failure()
         with:
-          name: playwright-screenshots
+          name: playwright-screenshots-${{ matrix.suite.name }}
           path: coverage-frontend/playwright-report/
           if-no-files-found: ignore
+
+  # ── Aggregation gate ─────────────────────────────────────────────────────
+  # A single required-check-friendly job that fails if any suite in the
+  # matrix above failed, mirroring the `sast-all-green` pattern in
+  # .github/workflows/sast.yml.
+  e2e-all-green:
+    name: All E2E suites passed
+    runs-on: ubuntu-latest
+    needs: [playwright]
+    if: always()
+
+    steps:
+      - name: Evaluate E2E matrix results
+        run: |
+          if [[ "${{ needs.playwright.result }}" != "success" ]]; then
+            echo "One or more E2E suites failed — see the Playwright job matrix above."
+            exit 1
+          fi
+          echo "All E2E suites passed ✅"
 

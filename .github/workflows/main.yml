@@ -122,7 +122,7 @@ jobs:
           bundler-cache: true
 
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '22'
           cache: yarn
@@ -147,7 +147,7 @@ jobs:
           RAILS_ENV=test RUN_API_DOCS=1 RSWAG_DRY_RUN=1 bundle exec rails rswag:specs:swaggerize
 
       - name: Upload test results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: rspec-results
@@ -165,7 +165,7 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '22'
           cache: yarn
@@ -235,7 +235,7 @@ jobs:
           bundler-cache: true
 
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '22'
           cache: yarn
@@ -283,7 +283,7 @@ jobs:
         run: yarn playwright test
 
       - name: Upload Playwright report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: playwright-report
@@ -291,7 +291,7 @@ jobs:
           if-no-files-found: ignore
 
       - name: Upload Rails server log on failure
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: rails-server-log
@@ -610,12 +610,12 @@ jobs:
           enablement: true
 
       - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: _site/
 
       - name: Upload docs as downloadable artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: capri-dam-docs-site
           path: _site/
@@ -640,5 +640,5 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
 
