@@ -54,7 +54,7 @@ export default function SystemConnectors() {
         if (!formData.id) return;
         setIsRefreshingToken(true);
         try {
-            const csrfToken = document.querySelector('[name="csrf-token"]').content;
+            const csrfToken = document.querySelector('[name="csrf-token"]')?.content;
             const res = await fetch(`/api/v1/system_connectors/${formData.id}/refresh_token`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken }
@@ -77,7 +77,7 @@ export default function SystemConnectors() {
         if (!formData.id) return;
         if (!window.confirm('Revoke the cached access token? Note: full revocation requires rotating the client secret in the Adobe Developer Console.')) return;
         try {
-            const csrfToken = document.querySelector('[name="csrf-token"]').content;
+            const csrfToken = document.querySelector('[name="csrf-token"]')?.content;
             const res = await fetch(`/api/v1/system_connectors/${formData.id}/revoke_token`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken }
@@ -95,7 +95,7 @@ export default function SystemConnectors() {
     const handleToggleStatus = async (connector) => {
         const newStatus = connector.status === 'active' ? 'disabled' : 'active';
         try {
-            const csrfToken = document.querySelector('[name="csrf-token"]').content;
+            const csrfToken = document.querySelector('[name="csrf-token"]')?.content;
             const res = await fetch(`/api/v1/system_connectors/${connector.id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
@@ -114,7 +114,7 @@ export default function SystemConnectors() {
         setIsTesting(true);
         setTestResult(null);
         try {
-            const csrfToken = document.querySelector('[name="csrf-token"]').content;
+            const csrfToken = document.querySelector('[name="csrf-token"]')?.content;
             const res = await fetch('/api/v1/system_connectors/test_connection', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
@@ -136,7 +136,7 @@ export default function SystemConnectors() {
         const method = isEditing ? 'PUT' : 'POST';
 
         try {
-            const csrfToken = document.querySelector('[name="csrf-token"]').content;
+            const csrfToken = document.querySelector('[name="csrf-token"]')?.content;
             const res = await fetch(url, {
                 method: method,
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
@@ -166,7 +166,7 @@ export default function SystemConnectors() {
 
         if (!window.confirm(`Start migration from ${connector.name}${sourcePath ? ` (folder: ${sourcePath})` : ''}? This will pull assets from the source system.`)) return;
         try {
-            const csrfToken = document.querySelector('[name="csrf-token"]').content;
+            const csrfToken = document.querySelector('[name="csrf-token"]')?.content;
             const res = await fetch(`/api/v1/system_connectors/${connector.id}/start_migration`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },

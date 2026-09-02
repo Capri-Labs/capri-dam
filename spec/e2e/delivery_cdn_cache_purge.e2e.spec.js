@@ -16,6 +16,34 @@ const { test, expect } = require('./fixtures');
 const EMAIL = process.env.E2E_EMAIL || 'admin@admin.com';
 const PASSWORD = process.env.E2E_PASSWORD || 'AdminUser';
 
+// The "Select All" checkbox in ExplorerTopBar.jsx only renders when the
+// current folder view has at least one folder/asset
+// (`viewData.folders?.length > 0 || viewData.assets?.length > 0`). A freshly
+// seeded CI database has no folders/assets at root, so this suite must
+// create its own fixture folder first — mirroring the createFolderViaApi
+// pattern used by copy_folder_asset.e2e.spec.js / move_folder_asset.e2e.spec.js.
+async function csrfHeaders(page) {
+  const token = await page.locator('meta[name="csrf-token"]').getAttribute('content');
+  return {
+    Accept: 'application/json',
+    'Content-Type': 'application/json',
+    'X-CSRF-Token': token || '',
+  };
+}
+
+async function createFolderViaApi(page, name, parentId = 'root') {
+  const response = await page.request.post('/api/v1/folders', {
+    headers: await csrfHeaders(page),
+    data: { folder: { name, parent_id: parentId } },
+  });
+  expect(response.ok()).toBeTruthy();
+  return response.json();
+}
+
+function uniqueName(prefix) {
+  return `${prefix} ${Date.now()} ${Math.random().toString(36).slice(2, 8)}`;
+}
+
 async function login(page) {
   await page.goto('/users/sign_in');
   await page.waitForSelector('input[autocomplete="email"]', { timeout: 15_000 });
@@ -41,6 +69,13 @@ async function login(page) {
 test.describe('Delivery & CDN — Edge CDN Ops (cache purge & metadata sync)', () => {
   test.beforeEach(async ({ page }) => {
     await login(page);
+
+    // A freshly seeded database has no folders/assets at root, and the
+    // "Select All" checkbox in ExplorerTopBar.jsx only renders when the
+    // current view has at least one item — so create a fixture folder
+    // first (same pattern as copy_folder_asset.e2e.spec.js).
+    await createFolderViaApi(page, uniqueName('Edge CDN Ops fixture'));
+
     await page.goto('/folders');
     await page.waitForLoadState('networkidle');
 

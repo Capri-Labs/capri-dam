@@ -167,6 +167,22 @@ jobs:
           bundle exec rails db:migrate
           bundle exec rails db:seed
 
+      - name: Start Sidekiq worker in background
+        # config.active_job.queue_adapter is :sidekiq app-wide, so any test
+        # that depends on a background job (asset ZIP downloads, ingestion,
+        # workflow transitions, CDN invalidation, email sending, etc.) will
+        # hang until its 30s Playwright timeout unless a real worker is
+        # consuming the Redis queue. This step was previously missing.
+        env:
+          RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY }}
+          SECRET_KEY_BASE: ${{ secrets.RAILS_MASTER_KEY || 'ci_e2e_placeholder_secret_key_base_that_is_at_least_64_chars_long_required' }}
+          ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY: test-ar-enc-primary-key-32bytes!
+          ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY: test-ar-enc-det-key-32bytes!!!!!
+          ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT: test-ar-enc-derivation-salt32b!!
+        run: |
+          bundle exec sidekiq -e test > /tmp/sidekiq.log 2>&1 &
+          echo "Sidekiq PID: $!"
+
       - name: Start Rails server in background
         env:
           RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY }}

@@ -25,7 +25,7 @@ export default function SystemAccountShow(props) {
             const csrfInput = document.createElement('input');
             csrfInput.type = 'hidden';
             csrfInput.name = 'authenticity_token';
-            csrfInput.value = document.querySelector('[name="csrf-token"]').content;
+            csrfInput.value = document.querySelector('[name="csrf-token"]')?.content;
 
             form.appendChild(methodInput);
             form.appendChild(csrfInput);

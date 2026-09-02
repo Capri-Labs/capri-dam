@@ -17,7 +17,7 @@ export default function WorkflowList({ workflows = [], pagination, loading = fal
         }
 
         try {
-            const csrfToken = document.querySelector('[name="csrf-token"]').content;
+            const csrfToken = document.querySelector('[name="csrf-token"]')?.content;
             const response = await fetch(`/workflows/${id}`, {
                 method: 'DELETE',
                 headers: {

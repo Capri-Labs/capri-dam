@@ -32,7 +32,7 @@ export default function SmtpSettingsTab({ incomingConfigs }) {
 
     const handleSaveSmtp = () => {
         setSaveStatus(null);
-        const csrfToken = document.querySelector('[name="csrf-token"]').content;
+        const csrfToken = document.querySelector('[name="csrf-token"]')?.content;
 
         fetch('/admin/system_status/update_smtp', {
             method: 'POST',
@@ -55,7 +55,7 @@ export default function SmtpSettingsTab({ incomingConfigs }) {
     const handleTestConnection = () => {
         setConnectionTesting(true);
         setConnectionResult(null);
-        const csrfToken = document.querySelector('[name="csrf-token"]').content;
+        const csrfToken = document.querySelector('[name="csrf-token"]')?.content;
 
         fetch('/admin/system_status/test_connection', {
             method: 'POST',
@@ -84,7 +84,7 @@ export default function SmtpSettingsTab({ incomingConfigs }) {
     const handleSendTestEmail = () => {
         setTestLoading(true);
         setTestResult(null);
-        const csrfToken = document.querySelector('[name="csrf-token"]').content;
+        const csrfToken = document.querySelector('[name="csrf-token"]')?.content;
 
         fetch('/admin/system_status/test_email', {
             method: 'POST',

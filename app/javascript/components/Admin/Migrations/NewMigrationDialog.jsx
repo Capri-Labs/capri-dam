@@ -97,7 +97,7 @@ export default function NewMigrationDialog({ open, onClose, onSuccess }) {
     const handleLaunch = async () => {
         setLaunching(true);
         try {
-            const csrf = document.querySelector('[name="csrf-token"]').content;
+            const csrf = document.querySelector('[name="csrf-token"]')?.content;
             const body = {
                 ingestion_batch: {
                     name:         formData.name,

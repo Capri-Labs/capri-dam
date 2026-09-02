@@ -52,7 +52,7 @@ export default function SystemAccountNew() {
                             <input
                                 type="hidden"
                                 name="authenticity_token"
-                                value={document.querySelector('[name="csrf-token"]').content}
+                                value={document.querySelector('[name="csrf-token"]')?.content}
                             />
 
                             <Stack spacing={3}>

@@ -187,7 +187,7 @@ export default function OriginStorageTab(props) {
         setLoading(true);
         setSaveStatus(null);
         try {
-            const csrfToken = document.querySelector('[name="csrf-token"]').content;
+            const csrfToken = document.querySelector('[name="csrf-token"]')?.content;
             const response = await fetch('/settings/update_storage', {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
@@ -213,7 +213,7 @@ export default function OriginStorageTab(props) {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content
+                    'X-CSRF-Token': document.querySelector('[name="csrf-token"]')?.content
                 },
                 body: JSON.stringify(buildPayload())
             });

@@ -70,7 +70,7 @@ export default function BatchReviewWorkspace({ batchId, onBack }) {
         if (!window.confirm('Approve and commit this batch to the live DAM? This will create Asset records for all ready items.')) return;
         setCommitting(true);
         try {
-            const csrf = document.querySelector('[name="csrf-token"]').content;
+            const csrf = document.querySelector('[name="csrf-token"]')?.content;
             const res  = await fetch(`/api/v1/ingestion_batches/${batchId}/commit`, {
                 method: 'POST',
                 headers: { 'X-CSRF-Token': csrf, 'Content-Type': 'application/json' }
@@ -89,7 +89,7 @@ export default function BatchReviewWorkspace({ batchId, onBack }) {
     const handleAbort = async () => {
         if (!window.confirm('Abort this migration batch? All staged data will be discarded.')) return;
         try {
-            const csrf = document.querySelector('[name="csrf-token"]').content;
+            const csrf = document.querySelector('[name="csrf-token"]')?.content;
             await fetch(`/api/v1/ingestion_batches/${batchId}/abort`, {
                 method: 'POST', headers: { 'X-CSRF-Token': csrf }
             });

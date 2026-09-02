@@ -49,6 +49,24 @@ async function login(page) {
   }
 }
 
+async function csrfHeaders(page) {
+  const token = await page.locator('meta[name="csrf-token"]').getAttribute('content');
+  return {
+    Accept: 'application/json',
+    'Content-Type': 'application/json',
+    'X-CSRF-Token': token || '',
+  };
+}
+
+async function createFolderViaApi(page, name, parentId = 'root') {
+  const response = await page.request.post('/api/v1/folders', {
+    headers: await csrfHeaders(page),
+    data: { folder: { name, parent_id: parentId } },
+  });
+  expect(response.ok()).toBeTruthy();
+  return response.json();
+}
+
 test.describe('Reports screen (/reports) — page shell', () => {
   test.beforeEach(async ({ page }) => {
     await login(page);
@@ -77,6 +95,16 @@ test.describe('Reports screen (/reports) — page shell', () => {
 });
 
 test.describe('Reports screen — Analytics Dashboard', () => {
+  // The folder filter's autocomplete has nothing to match against on a
+  // freshly-seeded/empty DB (as in a real CI matrix job's isolated run), so
+  // create a fixture folder containing "a" once for the whole describe block.
+  test.beforeAll(async ({ browser }) => {
+    const page = await browser.newPage();
+    await login(page);
+    await createFolderViaApi(page, `Analytics Fixture ${Date.now()}`);
+    await page.close();
+  });
+
   test.beforeEach(async ({ page }) => {
     await login(page);
     await page.goto('/reports');

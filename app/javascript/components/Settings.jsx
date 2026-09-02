@@ -37,7 +37,7 @@ export default function Settings(props) {
             methodInput.type = 'hidden'; methodInput.name = '_method'; methodInput.value = 'delete';
             const csrfInput = document.createElement('input');
             csrfInput.type = 'hidden'; csrfInput.name = 'authenticity_token';
-            csrfInput.value = document.querySelector('[name="csrf-token"]').content;
+            csrfInput.value = document.querySelector('[name="csrf-token"]')?.content;
             form.appendChild(methodInput); form.appendChild(csrfInput);
             document.body.appendChild(form); form.submit();
         }

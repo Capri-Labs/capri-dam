@@ -33,7 +33,7 @@ export default function NotificationBell() {
 
     const handleNotificationClick = async (notif) => {
         try {
-            const csrfToken = document.querySelector('[name="csrf-token"]').content;
+            const csrfToken = document.querySelector('[name="csrf-token"]')?.content;
             await fetch(`/api/v1/notifications/${notif.id}/mark_read`, {
                 method: 'PATCH',
                 headers: { 'X-CSRF-Token': csrfToken }
@@ -52,7 +52,7 @@ export default function NotificationBell() {
 
     const handleMarkAllRead = async () => {
         try {
-            const csrfToken = document.querySelector('[name="csrf-token"]').content;
+            const csrfToken = document.querySelector('[name="csrf-token"]')?.content;
             await fetch('/api/v1/notifications/mark_all_read', {
                 method: 'PATCH',
                 headers: { 'X-CSRF-Token': csrfToken }

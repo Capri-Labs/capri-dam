@@ -59,6 +59,24 @@ async function login(page) {
   }
 }
 
+async function csrfHeaders(page) {
+  const token = await page.locator('meta[name="csrf-token"]').getAttribute('content');
+  return {
+    Accept: 'application/json',
+    'Content-Type': 'application/json',
+    'X-CSRF-Token': token || '',
+  };
+}
+
+async function createFolderViaApi(page, name, parentId = 'root') {
+  const response = await page.request.post('/api/v1/folders', {
+    headers: await csrfHeaders(page),
+    data: { folder: { name, parent_id: parentId } },
+  });
+  expect(response.ok()).toBeTruthy();
+  return response.json();
+}
+
 // ─────────────────────────────────────────────────────────────────
 // Users
 // ─────────────────────────────────────────────────────────────────
@@ -119,8 +137,10 @@ test.describe('Admin — Users', () => {
   test('can navigate to Impersonators tab', async ({ page }) => {
     await page.locator('.MuiDataGrid-row').first().click();
     await page.getByRole('tab', { name: /impersonators/i }).click();
-    // Should show info alert
-    await expect(page.getByRole('alert')).toBeVisible();
+    // Two alerts render on this tab: an info alert ("Users below can act as
+    // System...") and a warning alert about super-admin accounts. Scope to
+    // the info alert specifically to avoid a strict-mode multi-match.
+    await expect(page.getByRole('alert').filter({ hasText: /can act as/i })).toBeVisible();
   });
 
   test('suspend / restore user via drawer', async ({ page }) => {
@@ -503,6 +523,23 @@ test.describe('Access Control — Group Assignment', () => {
 // ─────────────────────────────────────────────────────────────────
 
 test.describe('Folder Permissions ACL', () => {
+  // "Archive" (with subfolders 2023/2024) is not part of db/seeds.rb — create
+  // it once per describe block via the API so this suite doesn't depend on
+  // undocumented global seed state (matches the createFolderViaApi pattern
+  // used by copy_folder_asset.e2e.spec.js / move_folder_asset.e2e.spec.js).
+  let archiveFolderName;
+
+  test.beforeAll(async ({ browser }) => {
+    const page = await browser.newPage();
+    await login(page);
+    const stamp = Date.now();
+    archiveFolderName = `Archive ${stamp}`;
+    const archive = await createFolderViaApi(page, archiveFolderName);
+    await createFolderViaApi(page, '2023', archive.id);
+    await createFolderViaApi(page, '2024', archive.id);
+    await page.close();
+  });
+
   test.beforeEach(async ({ page }) => {
     await login(page);
   });
@@ -541,15 +578,17 @@ test.describe('Folder Permissions ACL', () => {
     await page.waitForLoadState('networkidle');
     await page.getByRole('tab', { name: /permissions/i }).click();
 
-    // "Archive" is a seeded root folder with two subfolders (2023, 2024).
-    await expect(page.getByText('/Archive', { exact: true })).toBeVisible({ timeout: 8000 });
-    await expect(page.getByText('/Archive/2023', { exact: true })).toHaveCount(0);
+    // The fixture folder (created in beforeAll) has two subfolders (2023, 2024).
+    const archivePath = `/${archiveFolderName}`;
+    const childPath = `/${archiveFolderName}/2023`;
+    await expect(page.getByText(archivePath, { exact: true })).toBeVisible({ timeout: 8000 });
+    await expect(page.getByText(childPath, { exact: true })).toHaveCount(0);
 
     await page.getByTestId('acl-expand-all').click();
-    await expect(page.getByText('/Archive/2023', { exact: true })).toBeVisible({ timeout: 8000 });
+    await expect(page.getByText(childPath, { exact: true })).toBeVisible({ timeout: 8000 });
 
     await page.getByTestId('acl-collapse-all').click();
-    await expect(page.getByText('/Archive/2023', { exact: true })).toHaveCount(0);
+    await expect(page.getByText(childPath, { exact: true })).toHaveCount(0);
   });
 
   test('toggling a permission on a parent folder cascades to its expanded subfolders', async ({ page }) => {
@@ -560,11 +599,13 @@ test.describe('Folder Permissions ACL', () => {
     await page.waitForLoadState('networkidle');
     await page.getByRole('tab', { name: /permissions/i }).click();
 
+    const archivePath = `/${archiveFolderName}`;
+    const childPath = `/${archiveFolderName}/2023`;
     await page.getByTestId('acl-expand-all').click();
-    await expect(page.getByText('/Archive/2023', { exact: true })).toBeVisible({ timeout: 8000 });
+    await expect(page.getByText(childPath, { exact: true })).toBeVisible({ timeout: 8000 });
 
-    const archiveRow = page.locator('tr', { has: page.getByText('/Archive', { exact: true }) });
-    const childRow = page.locator('tr', { has: page.getByText('/Archive/2023', { exact: true }) });
+    const archiveRow = page.locator('tr', { has: page.getByText(archivePath, { exact: true }) });
+    const childRow = page.locator('tr', { has: page.getByText(childPath, { exact: true }) });
 
     // "Read" is the first permission checkbox after the Path column.
     const archiveReadCheckbox = archiveRow.getByRole('checkbox').nth(0);

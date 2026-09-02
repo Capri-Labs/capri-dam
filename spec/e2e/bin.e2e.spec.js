@@ -39,6 +39,35 @@ async function login(page) {
 }
 
 test.describe('Recycle Bin E2E', () => {
+    // A freshly-seeded/empty DB (as in a real CI matrix job's isolated run)
+    // has zero trashed items, so the default list view has no <table> to
+    // render. Create + trash one fixture asset once for the whole describe
+    // block so the bin always has content to display.
+    test.beforeAll(async ({ browser }) => {
+        const page = await browser.newPage();
+        await login(page);
+        const csrfToken = await page.evaluate(() => document.querySelector('meta[name="csrf-token"]')?.content);
+        const buffer = Buffer.from(
+            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+            'base64',
+        );
+        const createRes = await page.request.post('/api/v1/assets', {
+            multipart: {
+                file: { name: `bin-fixture-${Date.now()}.png`, mimeType: 'image/png', buffer },
+                title: `Bin Fixture ${Date.now()}`,
+            },
+            headers: { 'X-CSRF-Token': csrfToken },
+        });
+        expect(createRes.ok()).toBe(true);
+        const created = await createRes.json();
+        const assetId = created.id || created.uuid;
+        const trashRes = await page.request.delete(`/api/v1/assets/${assetId}`, {
+            headers: { 'X-CSRF-Token': csrfToken },
+        });
+        expect(trashRes.ok()).toBe(true);
+        await page.close();
+    });
+
     test.beforeEach(async ({ page }) => {
         await login(page);
     });
@@ -50,7 +79,10 @@ test.describe('Recycle Bin E2E', () => {
     test('renders the Recycle Bin page title', async ({ page }) => {
         await page.goto('/bin');
         await page.waitForLoadState('networkidle');
-        await expect(page.getByRole('heading', { name: /recycle bin/i })).toBeVisible();
+        // The empty-state ("Your recycle bin is empty") also renders an
+        // <h6> heading matching /recycle bin/i, so scope to the exact page
+        // title (an <h5>) to avoid a strict-mode multi-match.
+        await expect(page.getByRole('heading', { name: 'Recycle Bin', exact: true })).toBeVisible();
     });
 
     test('renders the stats bar with 4 stat cards', async ({ page }) => {

@@ -27,7 +27,7 @@ export function CollectionProvider({ children }) {
 
     const createCollection = async (payload) => {
         try {
-            const csrfToken = document.querySelector('[name="csrf-token"]').content;
+            const csrfToken = document.querySelector('[name="csrf-token"]')?.content;
             const res = await fetch('/api/v1/collections', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
@@ -52,7 +52,7 @@ export function CollectionProvider({ children }) {
 
     const deleteCollection = async (slug) => {
         try {
-            const csrfToken = document.querySelector('[name="csrf-token"]').content;
+            const csrfToken = document.querySelector('[name="csrf-token"]')?.content;
             const res = await fetch(`/api/v1/collections/${slug}`, {
                 method: 'DELETE',
                 headers: { 'X-CSRF-Token': csrfToken }
@@ -72,7 +72,7 @@ export function CollectionProvider({ children }) {
 
     const bulkDeleteCollections = async (ids) => {
         try {
-            const csrfToken = document.querySelector('[name="csrf-token"]').content;
+            const csrfToken = document.querySelector('[name="csrf-token"]')?.content;
             const res = await fetch('/api/v1/collections/bulk_delete', {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
@@ -95,7 +95,7 @@ export function CollectionProvider({ children }) {
 
     const purgeCdnCache = async (slug) => {
         try {
-            const csrfToken = document.querySelector('[name="csrf-token"]').content;
+            const csrfToken = document.querySelector('[name="csrf-token"]')?.content;
             const res = await fetch(`/api/v1/collections/${slug}/purge_cdn`, {
                 method: 'POST',
                 headers: { 'X-CSRF-Token': csrfToken }
@@ -110,7 +110,7 @@ export function CollectionProvider({ children }) {
     // Update the Semantic AI Rule for a Smart Collection
     const updateSmartRule = async (slug, rulePayload) => {
         try {
-            const csrfToken = document.querySelector('[name="csrf-token"]').content;
+            const csrfToken = document.querySelector('[name="csrf-token"]')?.content;
             const res = await fetch(`/api/v1/collections/${slug}/rule`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
@@ -133,7 +133,7 @@ export function CollectionProvider({ children }) {
     // Toggle the "Pin" status of an asset to prevent AI from removing it
     const toggleAssetPin = async (slug, assetId) => {
         try {
-            const csrfToken = document.querySelector('[name="csrf-token"]').content;
+            const csrfToken = document.querySelector('[name="csrf-token"]')?.content;
             const res = await fetch(`/api/v1/collections/${slug}/assets/${assetId}/pin`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken }
@@ -152,7 +152,7 @@ export function CollectionProvider({ children }) {
 
     const updateCollection = async (slug, payload) => {
         try {
-            const csrfToken = document.querySelector('[name="csrf-token"]').content;
+            const csrfToken = document.querySelector('[name="csrf-token"]')?.content;
             const res = await fetch(`/api/v1/collections/${slug}`, {
                 method: 'PATCH', // or PUT
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
@@ -176,7 +176,7 @@ export function CollectionProvider({ children }) {
 
     const simulateSmartRule = async (options) => {
         try {
-            const csrfToken = document.querySelector('[name="csrf-token"]').content;
+            const csrfToken = document.querySelector('[name="csrf-token"]')?.content;
             const res = await fetch('/api/v1/collections/simulate_rule', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
@@ -198,7 +198,7 @@ export function CollectionProvider({ children }) {
     // Mint a time-limited, signed public share link for a collection.
     const generateShareLink = async (slug) => {
         try {
-            const csrfToken = document.querySelector('[name="csrf-token"]').content;
+            const csrfToken = document.querySelector('[name="csrf-token"]')?.content;
             const res = await fetch(`/api/v1/collections/${slug}/share_link`, {
                 method: 'POST',
                 headers: { 'X-CSRF-Token': csrfToken }
@@ -218,7 +218,7 @@ export function CollectionProvider({ children }) {
     // Attach an existing asset to a collection (used by the Add Assets picker).
     const addAssetToCollection = async (slug, assetId) => {
         try {
-            const csrfToken = document.querySelector('[name="csrf-token"]').content;
+            const csrfToken = document.querySelector('[name="csrf-token"]')?.content;
             const res = await fetch(`/api/v1/collections/${slug}/assets`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
@@ -238,7 +238,7 @@ export function CollectionProvider({ children }) {
 
     const bulkUpdateCollections = async (ids, payload) => {
         try {
-            const csrfToken = document.querySelector('[name="csrf-token"]').content;
+            const csrfToken = document.querySelector('[name="csrf-token"]')?.content;
             const res = await fetch('/api/v1/collections/bulk_update', {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },

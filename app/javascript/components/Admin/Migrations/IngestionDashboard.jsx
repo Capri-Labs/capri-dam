@@ -226,7 +226,7 @@ export default function IngestionDashboard() {
     const handleAbort = async (batchId) => {
         if (!window.confirm(t('ingestion.batch.abortConfirm'))) return;
         try {
-            const csrf = document.querySelector('[name="csrf-token"]').content;
+            const csrf = document.querySelector('[name="csrf-token"]')?.content;
             const res  = await fetch(`/api/v1/ingestion_batches/${batchId}/abort`, {
                 method:  'POST',
                 headers: { 'X-CSRF-Token': csrf, 'Content-Type': 'application/json' },
@@ -238,7 +238,7 @@ export default function IngestionDashboard() {
     const handleDelete = async (batchId) => {
         if (!window.confirm(t('ingestion.batch.deleteConfirm'))) return;
         try {
-            const csrf = document.querySelector('[name="csrf-token"]').content;
+            const csrf = document.querySelector('[name="csrf-token"]')?.content;
             const res  = await fetch(`/api/v1/ingestion_batches/${batchId}`, {
                 method:  'DELETE',
                 headers: { 'X-CSRF-Token': csrf },

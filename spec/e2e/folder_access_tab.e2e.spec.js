@@ -57,9 +57,40 @@ async function openFolderInfoPanel(page) {
   await expect(page.locator('[role="presentation"]').filter({ hasText: 'Folder properties' })).toBeVisible();
 }
 
+async function csrfHeaders(page) {
+  const token = await page.locator('meta[name="csrf-token"]').getAttribute('content');
+  return {
+    Accept: 'application/json',
+    'Content-Type': 'application/json',
+    'X-CSRF-Token': token || '',
+  };
+}
+
+async function createFolderViaApi(page, name, parentId = 'root') {
+  const response = await page.request.post('/api/v1/folders', {
+    headers: await csrfHeaders(page),
+    data: { folder: { name, parent_id: parentId } },
+  });
+  expect(response.ok()).toBeTruthy();
+  return response.json();
+}
+
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 test.describe('Folder Info Panel – Access Tab', () => {
+  // This suite assumes a root-level folder already exists (so the
+  // FolderGrid renders a card with a hoverable .folder-info-btn). That's
+  // true when other E2E suites ran first and left folders behind, but in a
+  // real CI matrix job each suite runs against its own freshly-seeded,
+  // otherwise-empty DB — so this suite must create its own fixture folder
+  // rather than depend on incidental state from other spec files.
+  test.beforeAll(async ({ browser }) => {
+    const page = await browser.newPage();
+    await signInAsAdmin(page);
+    await createFolderViaApi(page, `Access Tab Fixture ${Date.now()}`);
+    await page.close();
+  });
+
   test.beforeEach(async ({ page }) => {
     await signInAsAdmin(page);
     await openFolderInfoPanel(page);

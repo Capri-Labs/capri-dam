@@ -106,7 +106,7 @@ export default function WorkflowDashboard() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    const csrf = () => document.querySelector('[name="csrf-token"]').content;
+    const csrf = () => document.querySelector('[name="csrf-token"]')?.content;
 
     const isOverdue = (startedAt, deadlineDays = 2) => {
         const diffDays = Math.ceil(Math.abs(new Date() - new Date(startedAt)) / 86400000);

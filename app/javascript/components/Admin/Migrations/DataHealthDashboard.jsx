@@ -403,7 +403,7 @@ export default function DataHealthDashboard() {
     const handlePreFlight = async (connectorId) => {
         setPreFlight(connectorId);
         try {
-            const csrf = document.querySelector('[name="csrf-token"]').content;
+            const csrf = document.querySelector('[name="csrf-token"]')?.content;
             const res  = await fetch('/api/v1/system_connectors/pre_flight_analysis', {
                 method:  'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
@@ -425,7 +425,7 @@ export default function DataHealthDashboard() {
     const handleRemediate = async (debtType) => {
         setIsRemediating(debtType);
         try {
-            const csrf = document.querySelector('[name="csrf-token"]').content;
+            const csrf = document.querySelector('[name="csrf-token"]')?.content;
             const res  = await fetch('/api/v1/data_health/remediate', {
                 method:  'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
@@ -447,7 +447,7 @@ export default function DataHealthDashboard() {
 
     const handleTriggerScan = async () => {
         try {
-            const csrf = document.querySelector('[name="csrf-token"]').content;
+            const csrf = document.querySelector('[name="csrf-token"]')?.content;
             const res  = await fetch('/api/v1/duplicate_manager_settings/trigger_scan', {
                 method:  'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },

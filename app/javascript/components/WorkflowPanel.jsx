@@ -190,7 +190,7 @@ export default function WorkflowPanel({ assetId, assetThumb, onClose, onWorkflow
   const submitDecision = async (taskId, decision, comment, onDone) => {
     setSubmitting(true);
     try {
-      const csrfToken = document.querySelector('[name="csrf-token"]').content;
+      const csrfToken = document.querySelector('[name="csrf-token"]')?.content;
       const res = await fetch(`/api/v1/workflow_tasks/${taskId}/submit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
@@ -214,7 +214,7 @@ export default function WorkflowPanel({ assetId, assetThumb, onClose, onWorkflow
     const reason = window.prompt(`Cancel workflow "${workflowName}"? Enter a reason (optional):`, '');
     if (reason === null) return; // user dismissed
     try {
-      const csrfToken = document.querySelector('[name="csrf-token"]').content;
+      const csrfToken = document.querySelector('[name="csrf-token"]')?.content;
       const res = await fetch(`/api/v1/workflow_instances/${instanceId}/force_cancel`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },

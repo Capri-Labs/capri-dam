@@ -9,7 +9,18 @@
 <head>
   <title><%= content_for(:title) || "Capri DAM" %></title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <%= csrf_meta_tags %>
+  <%# Render the CSRF meta tags unconditionally (rather than via csrf_meta_tags,
+      which silently omits them whenever protect_against_forgery? is false —
+      e.g. config.action_controller.allow_forgery_protection = false in the
+      test environment). Several frontend components read this tag directly
+      via document.querySelector and dereference `.content` without a null
+      check, so its absence throws a JS TypeError and breaks page
+      interactivity — which only ever surfaces in the test/E2E environment
+      since production always has forgery protection enabled. Token
+      generation via form_authenticity_token is independent of whether
+      protection is enforced, so this is safe in every environment. %>
+  <meta name="csrf-param" content="<%= request_forgery_protection_token %>">
+  <meta name="csrf-token" content="<%= form_authenticity_token %>">
   <%= csp_meta_tag %>
 
   <%= yield :head %>

@@ -6,7 +6,7 @@ export default function ApprovalActions({ assetId, currentStep, onActionComplete
     const [note, setNote] = useState('');
 
     const handleAction = (status) => {
-        const csrfToken = document.querySelector('[name="csrf-token"]').content;
+        const csrfToken = document.querySelector('[name="csrf-token"]')?.content;
         fetch(`/assets/${assetId}/workflow_action`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },

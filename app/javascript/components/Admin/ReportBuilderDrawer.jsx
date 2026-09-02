@@ -31,7 +31,7 @@ export default function ReportBuilderDrawer({ open, onClose, onExportStarted }) 
         }
 
         setIsSubmitting(true);
-        const csrfToken = document.querySelector('[name="csrf-token"]').content;
+        const csrfToken = document.querySelector('[name="csrf-token"]')?.content;
 
         fetch(`/admin/reports/${selectedReportId}/generate.json`, {
             method: 'POST',

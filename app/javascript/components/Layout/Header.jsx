@@ -35,7 +35,7 @@ export default function Header(props) {
         fetch('/users/sign_out', {
             method: 'DELETE',
             headers: {
-                'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content,
+                'X-CSRF-Token': document.querySelector('[name="csrf-token"]')?.content,
                 'Content-Type': 'application/json'
             }
         }).then(() => window.location.href = '/');

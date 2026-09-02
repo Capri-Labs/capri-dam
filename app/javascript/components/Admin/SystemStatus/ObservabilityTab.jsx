@@ -35,7 +35,7 @@ export default function ObservabilityTab() {
 
         setRestartLoading(true);
         setRestartMessage(null);
-        const csrfToken = document.querySelector('[name="csrf-token"]').content;
+        const csrfToken = document.querySelector('[name="csrf-token"]')?.content;
 
         fetch('/admin/system_status/restart_server', {
             method: 'POST',
