@@ -2358,7 +2358,9 @@
       "versions": "Versions",
       "audit": "Audit",
       "workflows": "Workflows",
-      "aiEngine": "AI Engine"
+      "aiEngine": "AI Engine",
+      "comments": "Comments",
+      "commentsWithCount": "Comments ({{count}})"
     },
     "info": {
       "generalMetadata": "General Metadata",
@@ -3020,6 +3022,72 @@
       "admin": "Collection Admin",
       "deny": "Deny",
       "remove": "Remove policy"
+    }
+  },
+  "assetComments": {
+    "title": "Comments & Annotations",
+    "unresolvedCount_one": "{{count}} unresolved",
+    "unresolvedCount_other": "{{count}} unresolved",
+    "empty": "No comments yet. Draw on the preview or type below to start a review thread.",
+    "hint": {
+      "annotationsFollowVersions": "Threads stay with the asset across versions; each comment records the version it was written against."
+    },
+    "composer": {
+      "placeholder": "Add a comment… use @ to mention someone",
+      "mentionHint": "Keep typing to find someone to mention."
+    },
+    "reply": {
+      "placeholder": "Reply…"
+    },
+    "filters": {
+      "unresolvedOnly": "Unresolved only",
+      "allVersions": "All versions",
+      "version": "Version {{number}}"
+    },
+    "tools": {
+      "pin": "Pin",
+      "rect": "Rectangle",
+      "ellipse": "Ellipse",
+      "arrow": "Arrow",
+      "line": "Line",
+      "freehand": "Freehand",
+      "text": "Text",
+      "drawHint": "Draw on the preview to place your markup."
+    },
+    "status": {
+      "open": "Open",
+      "addressed": "Addressed",
+      "verified": "Verified",
+      "resolved": "Resolved"
+    },
+    "thread": {
+      "showOnPreview": "Highlight on the preview",
+      "openedOnVersion": "v{{number}}"
+    },
+    "comment": {
+      "edited": "(edited)",
+      "aiSuggestion": "AI"
+    },
+    "actions": {
+      "refresh": "Refresh",
+      "post": "Comment",
+      "clearMarkup": "Clear markup",
+      "reply": "Reply",
+      "replyAndMarkAddressed": "Reply & mark addressed",
+      "cancel": "Cancel",
+      "save": "Save",
+      "edit": "Edit",
+      "delete": "Delete",
+      "deleteThread": "Delete thread",
+      "resolve": "Resolve",
+      "verify": "Mark verified — the fix is confirmed",
+      "reopen": "Reopen"
+    },
+    "time": {
+      "justNow": "just now",
+      "minutesAgo": "{{count}}m ago",
+      "hoursAgo": "{{count}}h ago",
+      "daysAgo": "{{count}}d ago"
     }
   }
 }

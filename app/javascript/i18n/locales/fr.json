@@ -2358,7 +2358,9 @@
       "versions": "Versions",
       "audit": "Audit",
       "workflows": "Workflows",
-      "aiEngine": "Moteur IA"
+      "aiEngine": "Moteur IA",
+      "comments": "Commentaires",
+      "commentsWithCount": "Commentaires ({{count}})"
     },
     "info": {
       "generalMetadata": "Métadonnées générales",
@@ -3020,6 +3022,72 @@
       "admin": "Administrateur de la collection",
       "deny": "Refuser",
       "remove": "Supprimer la politique"
+    }
+  },
+  "assetComments": {
+    "title": "Commentaires et annotations",
+    "unresolvedCount_one": "{{count}} non résolu",
+    "unresolvedCount_other": "{{count}} non résolus",
+    "empty": "Aucun commentaire pour l'instant. Dessinez sur l'aperçu ou écrivez ci-dessous pour démarrer un fil de révision.",
+    "hint": {
+      "annotationsFollowVersions": "Les fils restent attachés à l'actif d'une version à l'autre ; chaque commentaire enregistre la version sur laquelle il a été écrit."
+    },
+    "composer": {
+      "placeholder": "Ajouter un commentaire… utilisez @ pour mentionner quelqu’un",
+      "mentionHint": "Continuez à taper pour trouver une personne à mentionner."
+    },
+    "reply": {
+      "placeholder": "Répondre…"
+    },
+    "filters": {
+      "unresolvedOnly": "Non résolus uniquement",
+      "allVersions": "Toutes les versions",
+      "version": "Version {{number}}"
+    },
+    "tools": {
+      "pin": "Épingle",
+      "rect": "Rectangle",
+      "ellipse": "Ellipse",
+      "arrow": "Flèche",
+      "line": "Ligne",
+      "freehand": "Main levée",
+      "text": "Texte",
+      "drawHint": "Dessinez sur l'aperçu pour placer votre annotation."
+    },
+    "status": {
+      "open": "Ouvert",
+      "addressed": "Traité",
+      "verified": "Vérifié",
+      "resolved": "Résolu"
+    },
+    "thread": {
+      "showOnPreview": "Mettre en évidence sur l'aperçu",
+      "openedOnVersion": "v{{number}}"
+    },
+    "comment": {
+      "edited": "(modifié)",
+      "aiSuggestion": "IA"
+    },
+    "actions": {
+      "refresh": "Actualiser",
+      "post": "Commenter",
+      "clearMarkup": "Effacer les annotations",
+      "reply": "Répondre",
+      "replyAndMarkAddressed": "Répondre et marquer comme traité",
+      "cancel": "Annuler",
+      "save": "Enregistrer",
+      "edit": "Modifier",
+      "delete": "Supprimer",
+      "deleteThread": "Supprimer le fil",
+      "resolve": "Résoudre",
+      "verify": "Marquer comme vérifié — la correction est confirmée",
+      "reopen": "Rouvrir"
+    },
+    "time": {
+      "justNow": "à l'instant",
+      "minutesAgo": "il y a {{count}} min",
+      "hoursAgo": "il y a {{count}} h",
+      "daysAgo": "il y a {{count}} j"
     }
   }
 }

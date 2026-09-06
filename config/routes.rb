@@ -297,7 +297,28 @@ Rails.application.routes.draw do
         end
         # AI Embedding specific to this asset
         resource :embedding, only: [ :update ], controller: "asset_embeddings"
+
+        # Review conversations about this asset. Threads hang off the asset
+        # (not off a version) so feedback survives a re-upload; each comment
+        # inside records the version it was written against.
+        # See Api::V1::CommentThreadsController.
+        resources :comment_threads, only: [ :index, :create ], path: "comments"
       end
+
+      # Thread-level and comment-level operations. Kept off the /assets path
+      # because a thread is addressable in its own right (deep links from the
+      # inbox, notification bell and mention emails all point straight at one).
+      resources :comment_threads, only: [ :show, :update, :destroy ] do
+        member do
+          patch :resolve # close it: { status: "resolved" | "verified" }
+          patch :reopen
+        end
+
+        # Replies and follow-up comments within the thread.
+        resources :comments, only: [ :create ]
+      end
+
+      resources :comments, only: [ :update, :destroy ]
 
       # Folders
       resources :folders, only: [ :index, :show, :create, :update, :destroy ] do

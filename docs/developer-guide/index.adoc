@@ -120,6 +120,9 @@ include::src/27_document-asset-formats.adoc[]
 // 28. Environment Variables Reference
 include::src/28_environment-variables.adoc[]
 
+// 29. Comments & Annotations
+include::src/29_comments-and-annotations.adoc[]
+
 ifdef::backend-html5[]
 // Back-to-top button
 ++++

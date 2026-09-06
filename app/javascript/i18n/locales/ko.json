@@ -2358,7 +2358,9 @@
       "versions": "버전",
       "audit": "감사",
       "workflows": "워크플로",
-      "aiEngine": "AI 엔진"
+      "aiEngine": "AI 엔진",
+      "comments": "댓글",
+      "commentsWithCount": "댓글 ({{count}})"
     },
     "info": {
       "generalMetadata": "일반 메타데이터",
@@ -3020,6 +3022,72 @@
       "admin": "컬렉션 관리자",
       "deny": "거부",
       "remove": "정책 제거"
+    }
+  },
+  "assetComments": {
+    "title": "댓글 및 주석",
+    "unresolvedCount_one": "미해결 {{count}}건",
+    "unresolvedCount_other": "미해결 {{count}}건",
+    "empty": "아직 댓글이 없습니다. 미리보기에 그리거나 아래에 입력해 검토 스레드를 시작하세요.",
+    "hint": {
+      "annotationsFollowVersions": "스레드는 버전이 바뀌어도 자산에 남아 있으며, 각 댓글은 작성 대상 버전을 기록합니다."
+    },
+    "composer": {
+      "placeholder": "댓글 추가… @로 다른 사용자를 멘션하세요",
+      "mentionHint": "멘션할 사용자를 찾으려면 계속 입력하세요."
+    },
+    "reply": {
+      "placeholder": "답글…"
+    },
+    "filters": {
+      "unresolvedOnly": "미해결만",
+      "allVersions": "모든 버전",
+      "version": "버전 {{number}}"
+    },
+    "tools": {
+      "pin": "핀",
+      "rect": "사각형",
+      "ellipse": "타원",
+      "arrow": "화살표",
+      "line": "선",
+      "freehand": "자유 곡선",
+      "text": "텍스트",
+      "drawHint": "미리보기에 그려서 마크업을 배치하세요."
+    },
+    "status": {
+      "open": "열림",
+      "addressed": "처리됨",
+      "verified": "확인됨",
+      "resolved": "해결됨"
+    },
+    "thread": {
+      "showOnPreview": "미리보기에서 강조",
+      "openedOnVersion": "v{{number}}"
+    },
+    "comment": {
+      "edited": "(수정됨)",
+      "aiSuggestion": "AI"
+    },
+    "actions": {
+      "refresh": "새로고침",
+      "post": "댓글 달기",
+      "clearMarkup": "마크업 지우기",
+      "reply": "답글",
+      "replyAndMarkAddressed": "답글 후 처리됨으로 표시",
+      "cancel": "취소",
+      "save": "저장",
+      "edit": "편집",
+      "delete": "삭제",
+      "deleteThread": "스레드 삭제",
+      "resolve": "해결",
+      "verify": "확인됨으로 표시 — 수정이 확인되었습니다",
+      "reopen": "다시 열기"
+    },
+    "time": {
+      "justNow": "방금",
+      "minutesAgo": "{{count}}분 전",
+      "hoursAgo": "{{count}}시간 전",
+      "daysAgo": "{{count}}일 전"
     }
   }
 }

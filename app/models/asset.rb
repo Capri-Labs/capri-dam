@@ -58,6 +58,13 @@ class Asset < ApplicationRecord
 
   has_many :workflow_instances, dependent: :destroy
 
+  # @!attribute [r] comment_threads
+  #   @return [ActiveRecord::Associations::CollectionProxy<CommentThread>]
+  #     review conversations about this asset. Threads hang off the *asset*,
+  #     not off a version, so feedback survives a re-upload; each individual
+  #     {Comment} records the {AssetVersion} it was written against.
+  has_many :comment_threads, dependent: :destroy
+
   # ActiveStorage attachment on the asset itself (legacy; new uploads use AssetVersion#file).
   has_one_attached :file
 

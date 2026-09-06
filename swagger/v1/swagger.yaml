@@ -5346,6 +5346,1073 @@ paths:
                 properties:
                   error:
                     type: string
+  "/api/v1/assets/{asset_id}/comments":
+    get:
+      summary: List review comment threads for an asset
+      tags:
+      - Comment Threads
+      security:
+      - Bearer: []
+      description: |
+        Lists active comment threads attached to an asset. Threads are deliberately
+        version-independent so a conversation survives new uploads, while each
+        comment inside the thread remains bound to the asset version it was made
+        against. Filtering by `version_id` therefore means "threads discussed on
+        this version", not "threads owned by this version".
+
+        Geometry filters operate on normalized annotation coordinates in the
+        `0..1` media space. Commenting and listing require only `:read` access to
+        the asset folder so reviewers without edit rights can participate.
+      parameters:
+      - name: asset_id
+        in: path
+        description: Asset UUID or id
+        required: true
+        schema:
+          type: string
+      - name: version_id
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: status
+        in: query
+        required: false
+        enum:
+        - open
+        - addressed
+        - verified
+        - resolved
+        schema:
+          type: string
+        description: ":\n * `open` \n * `addressed` \n * `verified` \n * `resolved`
+          \n "
+      - name: unresolved
+        in: query
+        required: false
+        schema:
+          type: boolean
+      - name: annotated
+        in: query
+        required: false
+        schema:
+          type: boolean
+      responses:
+        '200':
+          description: threads listed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  threads:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        asset_id:
+                          type: string
+                          format: uuid
+                        status:
+                          type: string
+                          enum:
+                          - open
+                          - addressed
+                          - verified
+                          - resolved
+                        visibility:
+                          type: string
+                          enum:
+                          - internal
+                          - guest
+                        closed:
+                          type: boolean
+                        origin_version:
+                          type: object
+                          nullable: true
+                        created_by:
+                          type: object
+                        resolved_at:
+                          type: string
+                          format: date-time
+                          nullable: true
+                        resolved_by:
+                          type: object
+                          nullable: true
+                        comment_count:
+                          type: integer
+                        comments:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                                format: uuid
+                              comment_thread_id:
+                                type: string
+                                format: uuid
+                              annotations:
+                                type: array
+                                items:
+                                  type: object
+                                  properties:
+                                    id:
+                                      type: string
+                                      format: uuid
+                                    comment_id:
+                                      type: string
+                                      format: uuid
+                                    thread_id:
+                                      type: string
+                                      format: uuid
+                                      description: Owning thread id for overlay-to-thread
+                                        navigation
+                                    media_type:
+                                      type: string
+                                    shape:
+                                      type: string
+                                    bbox:
+                                      type: object
+                        created_at:
+                          type: string
+                          format: date-time
+                        updated_at:
+                          type: string
+                          format: date-time
+                  meta:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                      unresolved:
+                        type: integer
+        '401':
+          description: unauthenticated
+    post:
+      summary: Create a thread with its first comment
+      tags:
+      - Comment Threads
+      security:
+      - Bearer: []
+      description: |
+        Opens a version-independent asset thread and creates the first,
+        version-bound comment in one transaction. If `asset_version_id` is
+        omitted, the comment is written against the asset's active version.
+
+        Optional annotations use normalized `bbox` coordinates (`x`, `y`, `w`,
+        `h`) in the `0..1` source-media space, never pixels, so regions remain
+        stable across responsive layouts and renditions. Creating comments only
+        requires `:read` access; reviewers are expected to comment without asset
+        `:modify` permission.
+      parameters:
+      - name: asset_id
+        in: path
+        description: Asset UUID or id
+        required: true
+        schema:
+          type: string
+      responses:
+        '201':
+          description: thread created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  asset_id:
+                    type: string
+                    format: uuid
+                  status:
+                    type: string
+                    enum:
+                    - open
+                    - addressed
+                    - verified
+                    - resolved
+                  visibility:
+                    type: string
+                    enum:
+                    - internal
+                    - guest
+                  closed:
+                    type: boolean
+                  origin_version:
+                    type: object
+                    nullable: true
+                  created_by:
+                    type: object
+                  resolved_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  resolved_by:
+                    type: object
+                    nullable: true
+                  comment_count:
+                    type: integer
+                  comments:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        comment_thread_id:
+                          type: string
+                          format: uuid
+                        annotations:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                                format: uuid
+                              comment_id:
+                                type: string
+                                format: uuid
+                              thread_id:
+                                type: string
+                                format: uuid
+                                description: Owning thread id for overlay-to-thread
+                                  navigation
+                              media_type:
+                                type: string
+                              shape:
+                                type: string
+                              bbox:
+                                type: object
+                  created_at:
+                    type: string
+                    format: date-time
+                  updated_at:
+                    type: string
+                    format: date-time
+        '422':
+          description: invalid or missing body/annotation payload
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - body
+              properties:
+                body:
+                  type: string
+                  example: The logo is clipped in the hero crop.
+                asset_version_id:
+                  type: string
+                  format: uuid
+                  nullable: true
+                visibility:
+                  type: string
+                  enum:
+                  - internal
+                  - guest
+                  example: internal
+                motivation:
+                  type: string
+                  example: editing
+                annotations:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      media_type:
+                        type: string
+                        enum:
+                        - image
+                        - video
+                        - document
+                      shape:
+                        type: string
+                        enum:
+                        - pin
+                        - rect
+                        - ellipse
+                        - arrow
+                        - line
+                        - freehand
+                        - text
+                        - highlight
+                      bbox:
+                        type: object
+                        properties:
+                          x:
+                            type: number
+                            example: 0.1
+                          "y":
+                            type: number
+                            example: 0.2
+                          w:
+                            type: number
+                            example: 0.3
+                          h:
+                            type: number
+                            example: 0.1
+                      source:
+                        type: object
+                        example:
+                          width: 4000
+                          height: 3000
+  "/api/v1/comment_threads/{id}":
+    get:
+      summary: Fetch one comment thread
+      tags:
+      - Comment Threads
+      security:
+      - Bearer: []
+      description: |
+        Returns a deep-linkable thread representation with active root comments,
+        single-level replies and normalized annotations. The thread address is
+        standalone because notifications and mention emails point directly to the
+        conversation, while access is still checked through the thread's asset.
+      parameters:
+      - name: id
+        in: path
+        format: uuid
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: thread found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  asset_id:
+                    type: string
+                    format: uuid
+                  status:
+                    type: string
+                    enum:
+                    - open
+                    - addressed
+                    - verified
+                    - resolved
+                  visibility:
+                    type: string
+                    enum:
+                    - internal
+                    - guest
+                  closed:
+                    type: boolean
+                  origin_version:
+                    type: object
+                    nullable: true
+                  created_by:
+                    type: object
+                  resolved_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  resolved_by:
+                    type: object
+                    nullable: true
+                  comment_count:
+                    type: integer
+                  comments:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        comment_thread_id:
+                          type: string
+                          format: uuid
+                        annotations:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                                format: uuid
+                              comment_id:
+                                type: string
+                                format: uuid
+                              thread_id:
+                                type: string
+                                format: uuid
+                                description: Owning thread id for overlay-to-thread
+                                  navigation
+                              media_type:
+                                type: string
+                              shape:
+                                type: string
+                              bbox:
+                                type: object
+                  created_at:
+                    type: string
+                    format: date-time
+                  updated_at:
+                    type: string
+                    format: date-time
+        '404':
+          description: thread not found
+    patch:
+      summary: Update a thread visibility flag
+      tags:
+      - Comment Threads
+      security:
+      - Bearer: []
+      description: |
+        Updates direct thread metadata only. Lifecycle status changes use the
+        dedicated resolve/reopen endpoints so resolution attribution is always
+        captured. Owners may manage their own thread; non-owners need asset
+        folder `:modify` permission.
+      parameters:
+      - name: id
+        in: path
+        format: uuid
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: visibility updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  asset_id:
+                    type: string
+                    format: uuid
+                  status:
+                    type: string
+                    enum:
+                    - open
+                    - addressed
+                    - verified
+                    - resolved
+                  visibility:
+                    type: string
+                    enum:
+                    - internal
+                    - guest
+                  closed:
+                    type: boolean
+                  origin_version:
+                    type: object
+                    nullable: true
+                  created_by:
+                    type: object
+                  resolved_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  resolved_by:
+                    type: object
+                    nullable: true
+                  comment_count:
+                    type: integer
+                  comments:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        comment_thread_id:
+                          type: string
+                          format: uuid
+                        annotations:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                                format: uuid
+                              comment_id:
+                                type: string
+                                format: uuid
+                              thread_id:
+                                type: string
+                                format: uuid
+                                description: Owning thread id for overlay-to-thread
+                                  navigation
+                              media_type:
+                                type: string
+                              shape:
+                                type: string
+                              bbox:
+                                type: object
+                  created_at:
+                    type: string
+                    format: date-time
+                  updated_at:
+                    type: string
+                    format: date-time
+        '403':
+          description: not allowed to manage this thread
+        '422':
+          description: visibility missing or invalid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - visibility
+              properties:
+                visibility:
+                  type: string
+                  enum:
+                  - internal
+                  - guest
+    delete:
+      summary: Soft-delete a comment thread
+      tags:
+      - Comment Threads
+      security:
+      - Bearer: []
+      description: |
+        Soft-deletes the thread so review history remains auditable while active
+        indexes no longer return it. Deleting someone else's thread is a
+        moderation action and requires asset folder `:modify`; the thread owner
+        may delete their own thread with only read access.
+      parameters:
+      - name: id
+        in: path
+        format: uuid
+        required: true
+        schema:
+          type: string
+      responses:
+        '204':
+          description: thread soft-deleted
+        '403':
+          description: not allowed to delete this thread
+  "/api/v1/comment_threads/{id}/resolve":
+    patch:
+      summary: Resolve or verify a thread
+      tags:
+      - Comment Threads
+      security:
+      - Bearer: []
+      description: |
+        Closes a thread as `resolved` or `verified`. `verified` means the
+        original reviewer confirmed the fix, while `resolved` closes without
+        further action. Resolution stamps `resolved_at` and `resolved_by`; only
+        owners or users with folder `:modify` can resolve someone else's thread.
+      parameters:
+      - name: id
+        in: path
+        format: uuid
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: thread closed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  asset_id:
+                    type: string
+                    format: uuid
+                  status:
+                    type: string
+                    enum:
+                    - open
+                    - addressed
+                    - verified
+                    - resolved
+                  visibility:
+                    type: string
+                    enum:
+                    - internal
+                    - guest
+                  closed:
+                    type: boolean
+                  origin_version:
+                    type: object
+                    nullable: true
+                  created_by:
+                    type: object
+                  resolved_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  resolved_by:
+                    type: object
+                    nullable: true
+                  comment_count:
+                    type: integer
+                  comments:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        comment_thread_id:
+                          type: string
+                          format: uuid
+                        annotations:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                                format: uuid
+                              comment_id:
+                                type: string
+                                format: uuid
+                              thread_id:
+                                type: string
+                                format: uuid
+                                description: Owning thread id for overlay-to-thread
+                                  navigation
+                              media_type:
+                                type: string
+                              shape:
+                                type: string
+                              bbox:
+                                type: object
+                  created_at:
+                    type: string
+                    format: date-time
+                  updated_at:
+                    type: string
+                    format: date-time
+        '422':
+          description: unsupported resolve status
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum:
+                  - resolved
+                  - verified
+                  default: resolved
+  "/api/v1/comment_threads/{id}/reopen":
+    patch:
+      summary: Reopen a closed thread
+      tags:
+      - Comment Threads
+      security:
+      - Bearer: []
+      description: |
+        Moves a closed thread back to `open` and clears resolution attribution.
+        The thread remains version-independent; subsequent comments continue to
+        record whichever asset version they discuss.
+      parameters:
+      - name: id
+        in: path
+        format: uuid
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: thread reopened
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  asset_id:
+                    type: string
+                    format: uuid
+                  status:
+                    type: string
+                    enum:
+                    - open
+                    - addressed
+                    - verified
+                    - resolved
+                  visibility:
+                    type: string
+                    enum:
+                    - internal
+                    - guest
+                  closed:
+                    type: boolean
+                  origin_version:
+                    type: object
+                    nullable: true
+                  created_by:
+                    type: object
+                  resolved_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  resolved_by:
+                    type: object
+                    nullable: true
+                  comment_count:
+                    type: integer
+                  comments:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        comment_thread_id:
+                          type: string
+                          format: uuid
+                        annotations:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                                format: uuid
+                              comment_id:
+                                type: string
+                                format: uuid
+                              thread_id:
+                                type: string
+                                format: uuid
+                                description: Owning thread id for overlay-to-thread
+                                  navigation
+                              media_type:
+                                type: string
+                              shape:
+                                type: string
+                              bbox:
+                                type: object
+                  created_at:
+                    type: string
+                    format: date-time
+                  updated_at:
+                    type: string
+                    format: date-time
+        '403':
+          description: not allowed to reopen this thread
+  "/api/v1/comment_threads/{comment_thread_id}/comments":
+    post:
+      summary: Reply to or add a follow-up comment in a thread
+      tags:
+      - Comments
+      security:
+      - Bearer: []
+      description: |
+        Adds a version-bound comment to an existing, version-independent asset
+        thread. Supplying `parent_comment_id` creates a single-level reply; the
+        model rejects replies to replies so review sidebars stay flat.
+
+        `asset_version_id` defaults to the asset's active version. Optional
+        annotations use normalized `0..1` geometry and may include frame-native
+        video positions. Posting a comment requires only `:read` access; setting
+        `mark_addressed` explicitly moves still-open feedback to `addressed`.
+      parameters:
+      - name: comment_thread_id
+        in: path
+        format: uuid
+        required: true
+        schema:
+          type: string
+      responses:
+        '201':
+          description: comment created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  comment_thread_id:
+                    type: string
+                    format: uuid
+                  parent_comment_id:
+                    type: string
+                    format: uuid
+                    nullable: true
+                  body:
+                    type: string
+                  motivation:
+                    type: string
+                  agent_type:
+                    type: string
+                    enum:
+                    - person
+                    - software
+                  agent_name:
+                    type: string
+                    nullable: true
+                  confidence:
+                    type: number
+                    nullable: true
+                  author:
+                    type: object
+                    nullable: true
+                  author_display_name:
+                    type: string
+                  asset_version:
+                    type: object
+                    nullable: true
+                  edited:
+                    type: boolean
+                  edited_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  annotations:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        comment_id:
+                          type: string
+                          format: uuid
+                        thread_id:
+                          type: string
+                          format: uuid
+                          description: Owning thread id for overlay-to-thread navigation
+                        media_type:
+                          type: string
+                        shape:
+                          type: string
+                        bbox:
+                          type: object
+                  replies:
+                    type: array
+                    items:
+                      type: object
+                  created_at:
+                    type: string
+                    format: date-time
+        '404':
+          description: parent comment not found in this thread
+        '422':
+          description: invalid or missing body
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - body
+              properties:
+                body:
+                  type: string
+                  example: Fixed in the new version.
+                parent_comment_id:
+                  type: string
+                  format: uuid
+                  nullable: true
+                asset_version_id:
+                  type: string
+                  format: uuid
+                  nullable: true
+                motivation:
+                  type: string
+                  example: replying
+                mark_addressed:
+                  type: boolean
+                  example: true
+                annotations:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      comment_id:
+                        type: string
+                        format: uuid
+                      thread_id:
+                        type: string
+                        format: uuid
+                        description: Owning thread id for overlay-to-thread navigation
+                      media_type:
+                        type: string
+                      shape:
+                        type: string
+                      bbox:
+                        type: object
+  "/api/v1/comments/{id}":
+    patch:
+      summary: Edit a comment body
+      tags:
+      - Comments
+      security:
+      - Bearer: []
+      description: |
+        Edits a comment body and stamps `edited_at`, letting clients display an
+        explicit edited state instead of rewriting review history invisibly. Only
+        the original author may edit; asset managers cannot rewrite another
+        participant's words.
+      parameters:
+      - name: id
+        in: path
+        format: uuid
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: comment edited
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  comment_thread_id:
+                    type: string
+                    format: uuid
+                  parent_comment_id:
+                    type: string
+                    format: uuid
+                    nullable: true
+                  body:
+                    type: string
+                  motivation:
+                    type: string
+                  agent_type:
+                    type: string
+                    enum:
+                    - person
+                    - software
+                  agent_name:
+                    type: string
+                    nullable: true
+                  confidence:
+                    type: number
+                    nullable: true
+                  author:
+                    type: object
+                    nullable: true
+                  author_display_name:
+                    type: string
+                  asset_version:
+                    type: object
+                    nullable: true
+                  edited:
+                    type: boolean
+                  edited_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  annotations:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        comment_id:
+                          type: string
+                          format: uuid
+                        thread_id:
+                          type: string
+                          format: uuid
+                          description: Owning thread id for overlay-to-thread navigation
+                        media_type:
+                          type: string
+                        shape:
+                          type: string
+                        bbox:
+                          type: object
+                  replies:
+                    type: array
+                    items:
+                      type: object
+                  created_at:
+                    type: string
+                    format: date-time
+        '403':
+          description: not the comment author
+        '422':
+          description: body missing or invalid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - body
+              properties:
+                body:
+                  type: string
+                  example: Updated wording.
+    delete:
+      summary: Soft-delete a comment
+      tags:
+      - Comments
+      security:
+      - Bearer: []
+      description: |
+        Soft-deletes a comment for auditability. The row remains in storage, but
+        active serializers and thread indexes omit it. Only the author may delete
+        their own comment.
+      parameters:
+      - name: id
+        in: path
+        format: uuid
+        required: true
+        schema:
+          type: string
+      responses:
+        '204':
+          description: comment soft-deleted
+        '403':
+          description: not the comment author
   "/api/v1/copilot/search":
     post:
       summary: Semantic (vector) search powered by the AI Gateway

@@ -2358,7 +2358,9 @@
       "versions": "Versies",
       "audit": "Audit",
       "workflows": "Workflows",
-      "aiEngine": "AI-engine"
+      "aiEngine": "AI-engine",
+      "comments": "Opmerkingen",
+      "commentsWithCount": "Opmerkingen ({{count}})"
     },
     "info": {
       "generalMetadata": "Algemene metadata",
@@ -3020,6 +3022,72 @@
       "admin": "Collectiebeheerder",
       "deny": "Weigeren",
       "remove": "Beleid verwijderen"
+    }
+  },
+  "assetComments": {
+    "title": "Opmerkingen en annotaties",
+    "unresolvedCount_one": "{{count}} onopgelost",
+    "unresolvedCount_other": "{{count}} onopgelost",
+    "empty": "Nog geen opmerkingen. Teken op de preview of typ hieronder om een reviewthread te starten.",
+    "hint": {
+      "annotationsFollowVersions": "Threads blijven bij het asset over versies heen; elke opmerking legt vast op welke versie hij is geschreven."
+    },
+    "composer": {
+      "placeholder": "Voeg een opmerking toe… gebruik @ om iemand te noemen",
+      "mentionHint": "Blijf typen om iemand te vinden om te noemen."
+    },
+    "reply": {
+      "placeholder": "Antwoorden…"
+    },
+    "filters": {
+      "unresolvedOnly": "Alleen onopgelost",
+      "allVersions": "Alle versies",
+      "version": "Versie {{number}}"
+    },
+    "tools": {
+      "pin": "Pin",
+      "rect": "Rechthoek",
+      "ellipse": "Ellips",
+      "arrow": "Pijl",
+      "line": "Lijn",
+      "freehand": "Vrije hand",
+      "text": "Tekst",
+      "drawHint": "Teken op de preview om je markering te plaatsen."
+    },
+    "status": {
+      "open": "Open",
+      "addressed": "Afgehandeld",
+      "verified": "Geverifieerd",
+      "resolved": "Opgelost"
+    },
+    "thread": {
+      "showOnPreview": "Markeren op de preview",
+      "openedOnVersion": "v{{number}}"
+    },
+    "comment": {
+      "edited": "(bewerkt)",
+      "aiSuggestion": "AI"
+    },
+    "actions": {
+      "refresh": "Vernieuwen",
+      "post": "Plaatsen",
+      "clearMarkup": "Markering wissen",
+      "reply": "Antwoorden",
+      "replyAndMarkAddressed": "Antwoorden en als afgehandeld markeren",
+      "cancel": "Annuleren",
+      "save": "Opslaan",
+      "edit": "Bewerken",
+      "delete": "Verwijderen",
+      "deleteThread": "Thread verwijderen",
+      "resolve": "Oplossen",
+      "verify": "Als geverifieerd markeren — de correctie is bevestigd",
+      "reopen": "Heropenen"
+    },
+    "time": {
+      "justNow": "zojuist",
+      "minutesAgo": "{{count}} min geleden",
+      "hoursAgo": "{{count}} u geleden",
+      "daysAgo": "{{count}} d geleden"
     }
   }
 }

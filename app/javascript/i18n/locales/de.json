@@ -2358,7 +2358,9 @@
       "versions": "Versionen",
       "audit": "Audit",
       "workflows": "Workflows",
-      "aiEngine": "KI-Engine"
+      "aiEngine": "KI-Engine",
+      "comments": "Kommentare",
+      "commentsWithCount": "Kommentare ({{count}})"
     },
     "info": {
       "generalMetadata": "Allgemeine Metadaten",
@@ -3020,6 +3022,72 @@
       "admin": "Sammlungsadministrator",
       "deny": "Verweigern",
       "remove": "Richtlinie entfernen"
+    }
+  },
+  "assetComments": {
+    "title": "Kommentare & Anmerkungen",
+    "unresolvedCount_one": "{{count}} offen",
+    "unresolvedCount_other": "{{count}} offen",
+    "empty": "Noch keine Kommentare. Zeichnen Sie in der Vorschau oder schreiben Sie unten, um einen Review-Thread zu starten.",
+    "hint": {
+      "annotationsFollowVersions": "Threads bleiben versionsübergreifend am Asset; jeder Kommentar hält die Version fest, zu der er verfasst wurde."
+    },
+    "composer": {
+      "placeholder": "Kommentar hinzufügen… mit @ jemanden erwähnen",
+      "mentionHint": "Weitertippen, um jemanden zum Erwähnen zu finden."
+    },
+    "reply": {
+      "placeholder": "Antworten…"
+    },
+    "filters": {
+      "unresolvedOnly": "Nur offene",
+      "allVersions": "Alle Versionen",
+      "version": "Version {{number}}"
+    },
+    "tools": {
+      "pin": "Pin",
+      "rect": "Rechteck",
+      "ellipse": "Ellipse",
+      "arrow": "Pfeil",
+      "line": "Linie",
+      "freehand": "Freihand",
+      "text": "Text",
+      "drawHint": "Zeichnen Sie in der Vorschau, um Ihre Markierung zu setzen."
+    },
+    "status": {
+      "open": "Offen",
+      "addressed": "Bearbeitet",
+      "verified": "Verifiziert",
+      "resolved": "Erledigt"
+    },
+    "thread": {
+      "showOnPreview": "In der Vorschau hervorheben",
+      "openedOnVersion": "v{{number}}"
+    },
+    "comment": {
+      "edited": "(bearbeitet)",
+      "aiSuggestion": "KI"
+    },
+    "actions": {
+      "refresh": "Aktualisieren",
+      "post": "Kommentieren",
+      "clearMarkup": "Markierungen löschen",
+      "reply": "Antworten",
+      "replyAndMarkAddressed": "Antworten & als bearbeitet markieren",
+      "cancel": "Abbrechen",
+      "save": "Speichern",
+      "edit": "Bearbeiten",
+      "delete": "Löschen",
+      "deleteThread": "Thread löschen",
+      "resolve": "Erledigen",
+      "verify": "Als verifiziert markieren — Korrektur bestätigt",
+      "reopen": "Wieder öffnen"
+    },
+    "time": {
+      "justNow": "gerade eben",
+      "minutesAgo": "vor {{count}} Min.",
+      "hoursAgo": "vor {{count}} Std.",
+      "daysAgo": "vor {{count}} T."
     }
   }
 }

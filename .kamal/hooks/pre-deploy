@@ -6,7 +6,7 @@
 # built or shipped. Fails fast and loud rather than deploying an image built
 # from a dirty tree or an unverified commit.
 #
-# See docs/deployment-guide/src/06_first-deployment-playbook.adoc.
+# See docs/deployment-guide-kamal/src/06_first-deployment-playbook.adoc.
 # ─────────────────────────────────────────────────────────────────────────────
 set -euo pipefail
 

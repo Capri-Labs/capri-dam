@@ -6,7 +6,7 @@
 # real HTTP smoke test against the public health check endpoint so a broken
 # deploy is caught immediately instead of silently "succeeding".
 #
-# See docs/deployment-guide/src/09_monitoring-and-troubleshooting.adoc.
+# See docs/deployment-guide-kamal/src/09_monitoring-and-troubleshooting.adoc.
 # ─────────────────────────────────────────────────────────────────────────────
 set -euo pipefail
 

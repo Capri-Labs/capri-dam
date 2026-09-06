@@ -368,6 +368,43 @@ ALTER SEQUENCE public.ai_model_configs_id_seq OWNED BY public.ai_model_configs.i
 
 
 --
+-- Name: annotation_targets; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.annotation_targets (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    comment_id uuid NOT NULL,
+    media_type character varying DEFAULT 'image'::character varying NOT NULL,
+    shape character varying DEFAULT 'pin'::character varying NOT NULL,
+    bbox_x double precision DEFAULT 0.0 NOT NULL,
+    bbox_y double precision DEFAULT 0.0 NOT NULL,
+    bbox_w double precision DEFAULT 0.0 NOT NULL,
+    bbox_h double precision DEFAULT 0.0 NOT NULL,
+    svg_path text,
+    start_frame integer,
+    end_frame integer,
+    fps numeric(8,4),
+    drop_frame boolean DEFAULT false NOT NULL,
+    page integer,
+    text_exact text,
+    text_prefix text,
+    text_suffix text,
+    text_start integer,
+    text_end integer,
+    source_width integer,
+    source_height integer,
+    source_rotation integer DEFAULT 0 NOT NULL,
+    source_crop jsonb,
+    style jsonb DEFAULT '{}'::jsonb NOT NULL,
+    label character varying,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT chk_annotation_targets_bbox_normalised CHECK (((bbox_x >= (0)::double precision) AND (bbox_x <= (1)::double precision) AND (bbox_y >= (0)::double precision) AND (bbox_y <= (1)::double precision) AND (bbox_w >= (0)::double precision) AND (bbox_w <= (1)::double precision) AND (bbox_h >= (0)::double precision) AND (bbox_h <= (1)::double precision) AND ((bbox_x + bbox_w) <= (1.0001)::double precision) AND ((bbox_y + bbox_h) <= (1.0001)::double precision))),
+    CONSTRAINT chk_annotation_targets_frame_range CHECK (((end_frame IS NULL) OR (start_frame IS NULL) OR (end_frame >= start_frame)))
+);
+
+
+--
 -- Name: ar_internal_metadata; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -783,6 +820,47 @@ CREATE SEQUENCE public.collections_id_seq
 --
 
 ALTER SEQUENCE public.collections_id_seq OWNED BY public.collections.id;
+
+
+--
+-- Name: comment_threads; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.comment_threads (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    asset_id uuid NOT NULL,
+    origin_version_id uuid,
+    created_by_id bigint NOT NULL,
+    status character varying DEFAULT 'open'::character varying NOT NULL,
+    visibility character varying DEFAULT 'internal'::character varying NOT NULL,
+    resolved_at timestamp(6) without time zone,
+    resolved_by_id bigint,
+    deleted_at timestamp(6) without time zone,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: comments; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.comments (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    comment_thread_id uuid NOT NULL,
+    asset_version_id uuid,
+    parent_comment_id uuid,
+    body text NOT NULL,
+    motivation character varying DEFAULT 'commenting'::character varying NOT NULL,
+    author_id bigint,
+    agent_type character varying DEFAULT 'person'::character varying NOT NULL,
+    agent_name character varying,
+    confidence numeric(5,4),
+    edited_at timestamp(6) without time zone,
+    deleted_at timestamp(6) without time zone,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
 
 
 --
@@ -2891,6 +2969,14 @@ ALTER TABLE ONLY public.ai_model_configs
 
 
 --
+-- Name: annotation_targets annotation_targets_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.annotation_targets
+    ADD CONSTRAINT annotation_targets_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: ar_internal_metadata ar_internal_metadata_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3000,6 +3086,22 @@ ALTER TABLE ONLY public.collection_rules
 
 ALTER TABLE ONLY public.collections
     ADD CONSTRAINT collections_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: comment_threads comment_threads_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.comment_threads
+    ADD CONSTRAINT comment_threads_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: comments comments_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.comments
+    ADD CONSTRAINT comments_pkey PRIMARY KEY (id);
 
 
 --
@@ -3575,6 +3677,34 @@ CREATE UNIQUE INDEX index_ai_model_configs_one_default_per_capability ON public.
 
 
 --
+-- Name: index_annotation_targets_on_bbox_x_and_bbox_y; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_annotation_targets_on_bbox_x_and_bbox_y ON public.annotation_targets USING btree (bbox_x, bbox_y);
+
+
+--
+-- Name: index_annotation_targets_on_comment_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_annotation_targets_on_comment_id ON public.annotation_targets USING btree (comment_id);
+
+
+--
+-- Name: index_annotation_targets_on_media_type_and_shape; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_annotation_targets_on_media_type_and_shape ON public.annotation_targets USING btree (media_type, shape);
+
+
+--
+-- Name: index_annotation_targets_on_start_frame_and_end_frame; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_annotation_targets_on_start_frame_and_end_frame ON public.annotation_targets USING btree (start_frame, end_frame);
+
+
+--
 -- Name: index_asset_downloads_on_expires_at; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -3873,6 +4003,90 @@ CREATE UNIQUE INDEX index_collections_on_slug ON public.collections USING btree 
 --
 
 CREATE UNIQUE INDEX index_collections_on_uuid ON public.collections USING btree (uuid);
+
+
+--
+-- Name: index_comment_threads_on_asset_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_comment_threads_on_asset_id ON public.comment_threads USING btree (asset_id);
+
+
+--
+-- Name: index_comment_threads_on_asset_id_and_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_comment_threads_on_asset_id_and_status ON public.comment_threads USING btree (asset_id, status);
+
+
+--
+-- Name: index_comment_threads_on_created_by_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_comment_threads_on_created_by_id ON public.comment_threads USING btree (created_by_id);
+
+
+--
+-- Name: index_comment_threads_on_deleted_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_comment_threads_on_deleted_at ON public.comment_threads USING btree (deleted_at);
+
+
+--
+-- Name: index_comment_threads_on_origin_version_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_comment_threads_on_origin_version_id ON public.comment_threads USING btree (origin_version_id);
+
+
+--
+-- Name: index_comment_threads_on_resolved_by_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_comment_threads_on_resolved_by_id ON public.comment_threads USING btree (resolved_by_id);
+
+
+--
+-- Name: index_comments_on_asset_version_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_comments_on_asset_version_id ON public.comments USING btree (asset_version_id);
+
+
+--
+-- Name: index_comments_on_author_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_comments_on_author_id ON public.comments USING btree (author_id);
+
+
+--
+-- Name: index_comments_on_comment_thread_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_comments_on_comment_thread_id ON public.comments USING btree (comment_thread_id);
+
+
+--
+-- Name: index_comments_on_comment_thread_id_and_created_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_comments_on_comment_thread_id_and_created_at ON public.comments USING btree (comment_thread_id, created_at);
+
+
+--
+-- Name: index_comments_on_deleted_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_comments_on_deleted_at ON public.comments USING btree (deleted_at);
+
+
+--
+-- Name: index_comments_on_parent_comment_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_comments_on_parent_comment_id ON public.comments USING btree (parent_comment_id);
 
 
 --
@@ -4808,6 +5022,14 @@ ALTER TABLE ONLY public.video_encoding_presets
 
 
 --
+-- Name: annotation_targets fk_rails_2269fe28f8; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.annotation_targets
+    ADD CONSTRAINT fk_rails_2269fe28f8 FOREIGN KEY (comment_id) REFERENCES public.comments(id);
+
+
+--
 -- Name: renditions fk_rails_27f1b0206e; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -4885,6 +5107,14 @@ ALTER TABLE ONLY public.asset_usage_events
 
 ALTER TABLE ONLY public.collection_rules
     ADD CONSTRAINT fk_rails_4cb8ce7ec8 FOREIGN KEY (collection_id) REFERENCES public.collections(id);
+
+
+--
+-- Name: comments fk_rails_4cc35c3c1d; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.comments
+    ADD CONSTRAINT fk_rails_4cc35c3c1d FOREIGN KEY (asset_version_id) REFERENCES public.asset_versions(id);
 
 
 --
@@ -4968,6 +5198,14 @@ ALTER TABLE ONLY public.collection_assets
 
 
 --
+-- Name: comment_threads fk_rails_704a01f560; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.comment_threads
+    ADD CONSTRAINT fk_rails_704a01f560 FOREIGN KEY (asset_id) REFERENCES public.assets(id);
+
+
+--
 -- Name: quarantined_assets fk_rails_70a650ffc7; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -4997,6 +5235,14 @@ ALTER TABLE ONLY public.video_profile_folder_assignments
 
 ALTER TABLE ONLY public.oauth_access_tokens
     ADD CONSTRAINT fk_rails_732cb83ab7 FOREIGN KEY (application_id) REFERENCES public.oauth_applications(id);
+
+
+--
+-- Name: comment_threads fk_rails_7531de63db; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.comment_threads
+    ADD CONSTRAINT fk_rails_7531de63db FOREIGN KEY (created_by_id) REFERENCES public.users(id);
 
 
 --
@@ -5128,6 +5374,22 @@ ALTER TABLE ONLY public.asset_versions
 
 
 --
+-- Name: comment_threads fk_rails_a13f781f72; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.comment_threads
+    ADD CONSTRAINT fk_rails_a13f781f72 FOREIGN KEY (origin_version_id) REFERENCES public.asset_versions(id);
+
+
+--
+-- Name: comment_threads fk_rails_a4bd7b894c; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.comment_threads
+    ADD CONSTRAINT fk_rails_a4bd7b894c FOREIGN KEY (resolved_by_id) REFERENCES public.users(id);
+
+
+--
 -- Name: ingestion_batches fk_rails_a51efdc248; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -5141,6 +5403,14 @@ ALTER TABLE ONLY public.ingestion_batches
 
 ALTER TABLE ONLY public.workflow_tasks
     ADD CONSTRAINT fk_rails_a54e91259b FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
+-- Name: comments fk_rails_a5d70e6445; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.comments
+    ADD CONSTRAINT fk_rails_a5d70e6445 FOREIGN KEY (comment_thread_id) REFERENCES public.comment_threads(id);
 
 
 --
@@ -5280,6 +5550,14 @@ ALTER TABLE ONLY public.quarantined_assets
 
 
 --
+-- Name: comments fk_rails_da28d53ee7; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.comments
+    ADD CONSTRAINT fk_rails_da28d53ee7 FOREIGN KEY (parent_comment_id) REFERENCES public.comments(id);
+
+
+--
 -- Name: user_groups fk_rails_da7f4bdaa5; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -5320,12 +5598,21 @@ ALTER TABLE ONLY public.email_templates
 
 
 --
+-- Name: comments fk_rails_f44b1e3c8a; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.comments
+    ADD CONSTRAINT fk_rails_f44b1e3c8a FOREIGN KEY (author_id) REFERENCES public.users(id);
+
+
+--
 -- PostgreSQL database dump complete
 --
 
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260906120000'),
 ('20260716113000'),
 ('20260716080552'),
 ('20260716080551'),

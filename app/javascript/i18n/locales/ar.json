@@ -2358,7 +2358,9 @@
       "versions": "الإصدارات",
       "audit": "التدقيق",
       "workflows": "سير العمل",
-      "aiEngine": "محرك الذكاء الاصطناعي"
+      "aiEngine": "محرك الذكاء الاصطناعي",
+      "comments": "التعليقات",
+      "commentsWithCount": "التعليقات ({{count}})"
     },
     "info": {
       "generalMetadata": "البيانات الوصفية العامة",
@@ -3020,6 +3022,72 @@
       "admin": "مسؤول المجموعة",
       "deny": "رفض",
       "remove": "إزالة السياسة"
+    }
+  },
+  "assetComments": {
+    "title": "التعليقات والتعليقات التوضيحية",
+    "unresolvedCount_one": "{{count}} غير محلول",
+    "unresolvedCount_other": "{{count}} غير محلولة",
+    "empty": "لا توجد تعليقات بعد. ارسم على المعاينة أو اكتب أدناه لبدء سلسلة مراجعة.",
+    "hint": {
+      "annotationsFollowVersions": "تبقى السلاسل مرتبطة بالأصل عبر الإصدارات؛ ويسجل كل تعليق الإصدار الذي كُتب عليه."
+    },
+    "composer": {
+      "placeholder": "أضف تعليقًا… استخدم @ للإشارة إلى شخص ما",
+      "mentionHint": "تابع الكتابة للعثور على شخص للإشارة إليه."
+    },
+    "reply": {
+      "placeholder": "رد…"
+    },
+    "filters": {
+      "unresolvedOnly": "غير المحلولة فقط",
+      "allVersions": "كل الإصدارات",
+      "version": "الإصدار {{number}}"
+    },
+    "tools": {
+      "pin": "دبوس",
+      "rect": "مستطيل",
+      "ellipse": "بيضاوي",
+      "arrow": "سهم",
+      "line": "خط",
+      "freehand": "رسم حر",
+      "text": "نص",
+      "drawHint": "ارسم على المعاينة لوضع العلامة."
+    },
+    "status": {
+      "open": "مفتوح",
+      "addressed": "تمت المعالجة",
+      "verified": "تم التحقق",
+      "resolved": "محلول"
+    },
+    "thread": {
+      "showOnPreview": "إبراز في المعاينة",
+      "openedOnVersion": "إصدار {{number}}"
+    },
+    "comment": {
+      "edited": "(مُعدّل)",
+      "aiSuggestion": "ذكاء اصطناعي"
+    },
+    "actions": {
+      "refresh": "تحديث",
+      "post": "تعليق",
+      "clearMarkup": "مسح العلامات",
+      "reply": "رد",
+      "replyAndMarkAddressed": "الرد ووضع علامة تمت المعالجة",
+      "cancel": "إلغاء",
+      "save": "حفظ",
+      "edit": "تعديل",
+      "delete": "حذف",
+      "deleteThread": "حذف السلسلة",
+      "resolve": "حل",
+      "verify": "وضع علامة تم التحقق — تم تأكيد الإصلاح",
+      "reopen": "إعادة فتح"
+    },
+    "time": {
+      "justNow": "الآن",
+      "minutesAgo": "قبل {{count}} د",
+      "hoursAgo": "قبل {{count}} س",
+      "daysAgo": "قبل {{count}} ي"
     }
   }
 }

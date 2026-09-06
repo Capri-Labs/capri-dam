@@ -37,6 +37,24 @@ class Admin::EmailTemplatesController < ApplicationController
       variables: %w[recipient.first_name sender.name mention.text context.name context.url],
     },
     {
+      # Fired by CommentNotificationService for everyone already participating
+      # in a review thread. Users named with @handle get "user_mentioned"
+      # instead, so nobody is emailed twice about the same comment.
+      id: "comment_created",
+      label: "Asset Comment: New Comment",
+      category: "notification",
+      variables: %w[recipient.first_name comment.body comment.author asset.name asset.url context.name context.url],
+    },
+    {
+      # Fired when a reviewer's feedback is closed — either "resolved"
+      # (no further action) or "verified" (the fix was confirmed on a later
+      # version). `comment.status` distinguishes the two.
+      id: "comment_resolved",
+      label: "Asset Comment: Thread Resolved",
+      category: "notification",
+      variables: %w[recipient.first_name comment.body comment.author comment.status asset.name asset.url],
+    },
+    {
       id: "asset_published",
       label: "Asset Published",
       category: "notification",

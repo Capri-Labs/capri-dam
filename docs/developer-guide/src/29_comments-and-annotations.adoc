@@ -1,0 +1,221 @@
+[[section-comments-and-annotations]]
+= Comments & Annotations
+
+Capri DAM supports threaded review conversations on any asset, with optional
+spatial (and, in the data model, temporal) annotations anchored to the media
+itself. This replaces the situation where the only "comment" in the product was
+the free-text approve/reject note on a workflow task — feedback was impossible
+outside a formal workflow and could never point at a *region* of an image.
+
+== Design decisions
+
+Three decisions shape everything else, and each was made deliberately.
+
+=== Threads belong to the asset, comments belong to a version
+
+A `CommentThread` is attached to the `Asset`. Every `Comment` inside it records
+the `AssetVersion` it was written against.
+
+Every comparable product binds a comment to exactly one version, so re-uploading
+a file orphans all outstanding feedback — reviewers must re-enter it by hand.
+Splitting the two keeps the geometry meaningful (it was drawn on a specific
+version, at specific pixel dimensions) while giving the *conversation* a
+lifecycle that spans versions:
+
+[cols="1,4", options="header"]
+|===
+| Status | Meaning
+| `open` | Raised, nothing done yet.
+| `addressed` | Someone claims it is handled — set explicitly via
+  `mark_addressed` on a reply, never inferred from the mere existence of a
+  newer comment.
+| `verified` | A reviewer has confirmed the fix actually landed. This is the
+  distinction that makes a review trail auditable rather than optimistic.
+| `resolved` | Closed, no further action.
+|===
+
+`open` and `addressed` are the `OPEN_STATUSES`; `CommentThread#closed?` covers
+the other two.
+
+=== Geometry is normalised, never pixels
+
+`annotation_targets` stores `bbox_x`, `bbox_y`, `bbox_w`, `bbox_h` as floats in
+the range `0..1` with an upper-left origin, enforced by the
+`chk_annotation_targets_bbox_normalised` database `CHECK` constraint.
+
+Pixel coordinates would break the moment the annotation is shown at any size
+other than the one it was drawn at — a thumbnail, a different rendition, a
+zoomed viewport, or a CDN transform. Normalised coordinates are resolution- and
+layout-independent by construction.
+
+Two representations are kept, mirroring the W3C Web Annotation Data Model's
+split between a `FragmentSelector` and an `SvgSelector`:
+
+* **`bbox_*`** — always populated, indexed, and used for cheap hit-testing and
+  region-overlap queries (`AnnotationTarget.overlapping`).
+* **`svg_path`** — a geometry-only path in a `viewBox="0 0 1 1"` space, required
+  for `arrow`, `line` and `freehand`, whose shape (and, for the first two,
+  *direction*) cannot be recovered from a bounding box.
+
+Styling lives in a separate JSONB `style` column rather than inside the SVG,
+which is what the W3C spec recommends. `style.stroke_width` is a fraction of the
+shorter source dimension, so a stroke keeps its visual weight at any display
+size instead of thinning out on a large preview.
+
+`source_width` / `source_height` / `source_rotation` / `source_crop` record the
+media as it was at annotation time. That is what will later allow an annotation
+to be re-projected onto a differently sized or cropped version instead of
+silently landing in the wrong place.
+
+=== Video positions are stored as frames
+
+`start_frame`, `end_frame`, `fps` and `drop_frame` are the stored truth; seconds
+and SMPTE timecode are derived. The reverse is not possible — a frame number
+cannot be recovered from a rounded millisecond value, and rounding errors
+accumulate into off-by-one-frame feedback, which is exactly the kind of note
+video reviewers write.
+
+`AnnotationTarget#frames_to_timecode` implements the standard SMPTE
+drop-frame algorithm for NTSC timebases (29.97/59.94), where two frame *numbers*
+are skipped at every minute boundary except every tenth minute. The API emits
+all three timebases (`start_frame`, `start_seconds`, `start_timecode`) so the
+client never has to reimplement it; `app/javascript/utils/annotationGeometry.js`
+mirrors the algorithm only for client-side drafts that have not yet been saved.
+
+`end_frame` makes range ("in/out") comments representable. The player-side UI
+for placing them is tracked on the product roadmap.
+
+== Schema
+
+[cols="1,4", options="header"]
+|===
+| Table | Purpose
+| `comment_threads` | One review conversation on an asset. Holds `status`,
+  `visibility` (`internal` / `guest`), `origin_version_id`, `created_by_id`,
+  and the resolution attribution (`resolved_by_id`, `resolved_at`).
+| `comments` | One message. Holds `body`, `author_id`, `asset_version_id`,
+  `parent_comment_id` (single level only), the W3C `motivation`, and the agent
+  fields `agent_type` (`person` / `software`), `agent_name`, `confidence`.
+| `annotation_targets` | Zero or more anchors per comment: shape, normalised
+  bbox, `svg_path`, video frame range, page number, W3C text-quote selector
+  fields, source dimensions, `style`, `label`.
+|===
+
+All three are soft-deletable (`SoftDeletable`), consistent with the Recycle Bin:
+review history is evidence and should not silently vanish.
+
+NOTE: These models intentionally do **not** include the `Auditable` concern.
+`audit_logs.auditable_id` is an `integer` column and cannot hold the UUID
+primary keys used here. Comments carry their own trail instead — `edited_at` is
+stamped on every edit and deletes are soft — so history cannot be rewritten
+invisibly.
+
+== Permissions
+
+[cols="2,3", options="header"]
+|===
+| Action | Requires
+| Read threads, post a comment or reply | `:read` on the asset's folder
+| Resolve / reopen / delete someone else's thread | `:modify` (the thread's
+  creator may always manage their own)
+| Edit or delete an individual comment | **Author only**
+|===
+
+Commenting is deliberately gated on `:read`, not `:modify`. Reviewing is not
+editing, and the people whose job is to review are frequently the people who are
+explicitly *not* allowed to change the asset. Comment edit/delete is author-only
+because an audit trail that anyone with `:modify` can rewrite is not an audit
+trail; moderating a whole thread is available on the thread endpoint instead.
+
+== REST API
+
+[cols="3,4", options="header"]
+|===
+| Endpoint | Purpose
+| `GET /api/v1/assets/:asset_id/comments` | List threads. Filters:
+  `version_id`, `status`, `unresolved=true`, `annotated=true`.
+| `POST /api/v1/assets/:asset_id/comments` | Open a thread. Creates the thread
+  and its first comment in one transaction (a thread with no comment would be
+  meaningless). Accepts an `annotations` array.
+| `GET \| PATCH \| DELETE /api/v1/comment_threads/:id` | Show, change
+  `visibility`, or soft-delete a thread.
+| `PATCH /api/v1/comment_threads/:id/resolve` | `{"status": "resolved"\|"verified"}`
+| `PATCH /api/v1/comment_threads/:id/reopen` | Reopen a closed thread.
+| `POST /api/v1/comment_threads/:id/comments` | Reply. Optional
+  `parent_comment_id` (must belong to this thread — anything else is a 404) and
+  `mark_addressed`.
+| `PATCH \| DELETE /api/v1/comments/:id` | Edit or soft-delete your own comment.
+|===
+
+`asset_version_id` may be omitted on any create; it defaults to the asset's
+active version, which is what the reviewer is looking at.
+
+An incoming annotation is nested, and flattened onto columns by
+`CommentSerialization#annotation_attributes_from`:
+
+[source,json]
+----
+{
+  "shape": "rect",
+  "bbox": { "x": 0.12, "y": 0.30, "w": 0.25, "h": 0.10 },
+  "svg_path": null,
+  "video": { "start_frame": 1500, "end_frame": 1620, "fps": 29.97, "drop_frame": true },
+  "source": { "width": 4000, "height": 3000, "rotation": 0 },
+  "style": { "stroke_color": "#ef4444", "stroke_width": 0.004 }
+}
+----
+
+== Notifications
+
+`CommentNotificationService` wires comments into the pipeline that already
+exists, rather than adding a parallel one:
+
+1. `@mentions` are handed to `MentionProcessorWorker`, which is already
+   polymorphic (`reference_type` / `reference_id`, where `reference_id` is
+   already a `uuid` column) — so mentions on comments needed no schema change at
+   all.
+2. Other thread participants get a `Notification` record for the bell.
+3. `EmailOrchestrator` fires the `comment_created` and `comment_resolved`
+   system events, both registered in `Admin::EmailTemplatesController`.
+
+Mentioned users are de-duplicated against participants so nobody is notified
+twice for one comment. Asset *owners* are deliberately not notified on every
+comment — on a busy asset that is a spam vector, not a feature.
+
+== Front end
+
+[cols="2,4", options="header"]
+|===
+| File | Responsibility
+| `app/javascript/utils/annotationGeometry.js` | Pure geometry: normalisation,
+  bbox/path construction, SMPTE conversion. No React, no fetch.
+| `app/javascript/components/Folders/useAssetComments.js` | All comment state
+  for one asset — data, plus the shared UI state (`tool`, `draft`,
+  `selectedThreadId`, `hoveredThreadId`).
+| `app/javascript/components/Folders/AnnotationOverlay.jsx` | The SVG drawing
+  and display layer stacked on the preview.
+| `app/javascript/components/Folders/AssetCommentsPanel.jsx` | The *Comments*
+  tab: composer with `@mention` autocomplete, thread cards, lifecycle actions.
+|===
+
+The overlay and the panel are siblings that must stay in lockstep — hovering a
+marker highlights its thread and vice versa — so their state is lifted into
+`useAssetComments` and `AssetViewer` passes one object to both. Duplicating it
+would guarantee they drift.
+
+Two rendering details are load-bearing:
+
+* The overlay and the `<img>` share a **shrink-wrapping relative container**, so
+  the annotation space is the *rendered image box* and not the padded grey
+  preview pane. Otherwise normalised coordinates would map onto the
+  letterboxing too and every marker would drift toward the centre.
+* The `<svg>` is sized in **pixels** from a live `ResizeObserver` measurement,
+  with normalised values multiplied up at render time. Rendering directly into a
+  `viewBox="0 0 1 1"` would non-uniformly scale the coordinate space, turning
+  circles into ellipses and distorting stroke widths. Stored `svg_path` data
+  (which *is* in that space) is handled with a `scale()` transform plus
+  `vector-effect="non-scaling-stroke"`.
+
+SVG is used rather than `<canvas>` because annotations are persistent,
+individually selectable objects: SVG gives per-shape hit-testing, hover and
+focus for free and stays crisp at any zoom or DPI.

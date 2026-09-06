@@ -15,7 +15,7 @@ import {
     LocalOffer,
     ChevronRight,
     ExpandMore,
-    ContentCopy, PushPin, Share, PolicyOutlined, SchemaOutlined
+    ContentCopy, PushPin, Share, PolicyOutlined, SchemaOutlined, ChatBubbleOutlined
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import ImageEditorDialog from './ImageEditorDialog';
@@ -31,8 +31,15 @@ import AssetVersionsTab from './AssetVersionsTab';
 import AssetAuditTab from './AssetAuditTab';
 import AssetMetadataPanel from './AssetMetadataPanel';
 import AssetStatsPopover from './AssetStatsPopover';
+import AssetCommentsPanel from './AssetCommentsPanel';
+import AnnotationOverlay from './AnnotationOverlay';
+import useAssetComments from './useAssetComments';
 
 const interpolate = (template, values = {}) => template.replace(/\{\{(\w+)\}\}/g, (_, key) => values[key] ?? '');
+
+// Index of the Comments tab. Named because the annotation overlay switches to
+// it when a marker on the image is clicked.
+const COMMENTS_TAB_INDEX = 6;
 
 // Video MIME types every modern browser can play natively in a <video>
 // element without server-side transcoding. Anything outside this list
@@ -96,6 +103,28 @@ export default function AssetViewer({ asset: initialAsset, open, onClose, onAsse
     // section so users can inspect *everything* stored on the asset (not just
     // the curated EXIF/IPTC/XMP subset).
     const [rawMetadataExpanded, setRawMetadataExpanded] = useState(false);
+    // Natural pixel dimensions of the rendered preview. Stored on every
+    // annotation so a later phase can re-project it onto a differently sized
+    // (or cropped/rotated) version instead of guessing.
+    const [previewNaturalSize, setPreviewNaturalSize] = useState({});
+
+    // All comment/annotation state for this asset, shared by the overlay on the
+    // preview and the Comments tab so the two never disagree about what is
+    // selected, hovered or pending.
+    const comments = useAssetComments({ assetId: initialAsset?.id, enabled: open });
+
+    // Honour the `?thread=` deep link that comment notification emails and
+    // inbox mentions produce (see CommentNotificationService#context_url):
+    // open the Comments tab with that conversation preselected.
+    useEffect(() => {
+        if (!open) return;
+        const threadId = new URLSearchParams(window.location.search).get('thread');
+        if (!threadId) return;
+
+        comments.setSelectedThreadId(threadId);
+        setActiveTab(COMMENTS_TAB_INDEX);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [open]);
 
     // Keep it synced if the parent explicitly passes a new asset
     useEffect(() => {
@@ -374,18 +403,41 @@ export default function AssetViewer({ asset: initialAsset, open, onClose, onAsse
                             </Box>
                         )
                     ) : canPreview && previewSrc ? (
-                        <Box component="img"
-                             src={previewSrc}
-                             alt={displayName}
-                             data-testid="asset-viewer-preview-image"
-                             sx={{
-                                 maxWidth: '100%',
-                                 maxHeight: '100%',
-                                 objectFit: 'contain',
-                                 boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-                                 filter: liveFilterStyle,
-                                 transform: `scaleX(${geometry.flip_horizontal ? -1 : 1}) rotate(${geometry.rotate || 0}deg)`
-                        }} />
+                        // The overlay must align with the *rendered image box*,
+                        // not the padded grey pane, so the image and the SVG
+                        // share a shrink-wrapping relative container. Without
+                        // this the normalised 0..1 coordinates would map onto
+                        // the letterboxing as well and every marker would drift.
+                        <Box sx={{ position: 'relative', display: 'inline-flex', maxWidth: '100%', maxHeight: '100%' }}>
+                            <Box component="img"
+                                 src={previewSrc}
+                                 alt={displayName}
+                                 data-testid="asset-viewer-preview-image"
+                                 onLoad={(event) => setPreviewNaturalSize({
+                                     width: event.currentTarget.naturalWidth,
+                                     height: event.currentTarget.naturalHeight,
+                                 })}
+                                 sx={{
+                                     maxWidth: '100%',
+                                     maxHeight: '100%',
+                                     objectFit: 'contain',
+                                     display: 'block',
+                                     boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                                     filter: liveFilterStyle,
+                                     transform: `scaleX(${geometry.flip_horizontal ? -1 : 1}) rotate(${geometry.rotate || 0}deg)`
+                            }} />
+                            <AnnotationOverlay
+                                annotations={comments.annotations}
+                                draft={comments.draft}
+                                tool={comments.tool}
+                                onDraftAdd={comments.addDraftAnnotation}
+                                selectedThreadId={comments.selectedThreadId}
+                                hoveredThreadId={comments.hoveredThreadId}
+                                onSelectThread={(id) => { comments.setSelectedThreadId(id); setActiveTab(COMMENTS_TAB_INDEX); }}
+                                onHoverThread={comments.setHoveredThreadId}
+                                sourceSize={previewNaturalSize}
+                            />
+                        </Box>
                     ) : (
                         <Box data-testid="asset-preview-download-fallback" sx={{ textAlign: 'center', maxWidth: 420 }}>
                             <Typography variant="subtitle1" sx={{ color: '#334155', fontWeight: 600, mb: 1 }}>
@@ -415,6 +467,14 @@ export default function AssetViewer({ asset: initialAsset, open, onClose, onAsse
                             <Tab icon={<PolicyOutlined fontSize="small" />} iconPosition="start" label={translate('assetViewer.tabs.audit', 'Audit')} />
                             <Tab icon={<AccountTreeOutlined fontSize="small" />} iconPosition="start" label={translate('assetViewer.tabs.workflows', 'Workflows')} />
                             <Tab icon={<AutoAwesome fontSize="small" />} iconPosition="start" label={translate('assetViewer.tabs.aiEngine', 'AI Engine')} />
+                            <Tab
+                                icon={<ChatBubbleOutlined fontSize="small" />}
+                                iconPosition="start"
+                                data-testid="asset-viewer-comments-tab"
+                                label={comments.unresolvedCount > 0
+                                    ? translate('assetViewer.tabs.commentsWithCount', 'Comments ({{count}})', { count: comments.unresolvedCount })
+                                    : translate('assetViewer.tabs.comments', 'Comments')}
+                            />
                         </Tabs>
                     </Box>
 
@@ -580,6 +640,11 @@ export default function AssetViewer({ asset: initialAsset, open, onClose, onAsse
                         {/* TAB 5: AI */}
                         <TabPanel value={activeTab} index={5}>
                             <Typography variant="subtitle1" fontWeight="700" sx={{ mb: 2 }}>{translate('assetViewer.ai.semanticAndVisionAnalysis', 'Semantic & Vision Analysis')}</Typography>
+                        </TabPanel>
+
+                        {/* TAB 6: COMMENTS & ANNOTATIONS */}
+                        <TabPanel value={activeTab} index={COMMENTS_TAB_INDEX}>
+                            <AssetCommentsPanel comments={comments} asset={asset} />
                         </TabPanel>
 
                     </Box>

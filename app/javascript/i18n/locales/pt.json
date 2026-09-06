@@ -2358,7 +2358,9 @@
       "versions": "Versões",
       "audit": "Auditoria",
       "workflows": "Fluxos de trabalho",
-      "aiEngine": "Motor de IA"
+      "aiEngine": "Motor de IA",
+      "comments": "Comentários",
+      "commentsWithCount": "Comentários ({{count}})"
     },
     "info": {
       "generalMetadata": "Metadados gerais",
@@ -3020,6 +3022,72 @@
       "admin": "Administrador da coleção",
       "deny": "Negar",
       "remove": "Remover política"
+    }
+  },
+  "assetComments": {
+    "title": "Comentários e anotações",
+    "unresolvedCount_one": "{{count}} não resolvido",
+    "unresolvedCount_other": "{{count}} não resolvidos",
+    "empty": "Ainda não há comentários. Desenhe na pré-visualização ou escreva abaixo para iniciar um tópico de revisão.",
+    "hint": {
+      "annotationsFollowVersions": "Os tópicos permanecem no ativo entre versões; cada comentário regista a versão sobre a qual foi escrito."
+    },
+    "composer": {
+      "placeholder": "Adicione um comentário… use @ para mencionar alguém",
+      "mentionHint": "Continue a escrever para encontrar alguém para mencionar."
+    },
+    "reply": {
+      "placeholder": "Responder…"
+    },
+    "filters": {
+      "unresolvedOnly": "Apenas não resolvidos",
+      "allVersions": "Todas as versões",
+      "version": "Versão {{number}}"
+    },
+    "tools": {
+      "pin": "Marcador",
+      "rect": "Retângulo",
+      "ellipse": "Elipse",
+      "arrow": "Seta",
+      "line": "Linha",
+      "freehand": "Mão livre",
+      "text": "Texto",
+      "drawHint": "Desenhe na pré-visualização para colocar a sua marcação."
+    },
+    "status": {
+      "open": "Aberto",
+      "addressed": "Tratado",
+      "verified": "Verificado",
+      "resolved": "Resolvido"
+    },
+    "thread": {
+      "showOnPreview": "Destacar na pré-visualização",
+      "openedOnVersion": "v{{number}}"
+    },
+    "comment": {
+      "edited": "(editado)",
+      "aiSuggestion": "IA"
+    },
+    "actions": {
+      "refresh": "Atualizar",
+      "post": "Comentar",
+      "clearMarkup": "Limpar marcação",
+      "reply": "Responder",
+      "replyAndMarkAddressed": "Responder e marcar como tratado",
+      "cancel": "Cancelar",
+      "save": "Guardar",
+      "edit": "Editar",
+      "delete": "Eliminar",
+      "deleteThread": "Eliminar tópico",
+      "resolve": "Resolver",
+      "verify": "Marcar como verificado — a correção está confirmada",
+      "reopen": "Reabrir"
+    },
+    "time": {
+      "justNow": "agora mesmo",
+      "minutesAgo": "há {{count}} min",
+      "hoursAgo": "há {{count}} h",
+      "daysAgo": "há {{count}} d"
     }
   }
 }

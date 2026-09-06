@@ -2358,7 +2358,9 @@
       "versions": "バージョン",
       "audit": "監査",
       "workflows": "ワークフロー",
-      "aiEngine": "AIエンジン"
+      "aiEngine": "AIエンジン",
+      "comments": "コメント",
+      "commentsWithCount": "コメント ({{count}})"
     },
     "info": {
       "generalMetadata": "一般メタデータ",
@@ -3020,6 +3022,72 @@
       "admin": "コレクション管理者",
       "deny": "拒否",
       "remove": "ポリシーを削除"
+    }
+  },
+  "assetComments": {
+    "title": "コメントと注釈",
+    "unresolvedCount_one": "未解決 {{count}} 件",
+    "unresolvedCount_other": "未解決 {{count}} 件",
+    "empty": "まだコメントはありません。プレビュー上に描画するか、下に入力してレビュースレッドを開始してください。",
+    "hint": {
+      "annotationsFollowVersions": "スレッドはバージョンをまたいでアセットに残り、各コメントは書かれた対象バージョンを記録します。"
+    },
+    "composer": {
+      "placeholder": "コメントを追加… @ でメンションできます",
+      "mentionHint": "入力を続けてメンションする相手を探してください。"
+    },
+    "reply": {
+      "placeholder": "返信…"
+    },
+    "filters": {
+      "unresolvedOnly": "未解決のみ",
+      "allVersions": "すべてのバージョン",
+      "version": "バージョン {{number}}"
+    },
+    "tools": {
+      "pin": "ピン",
+      "rect": "長方形",
+      "ellipse": "楕円",
+      "arrow": "矢印",
+      "line": "直線",
+      "freehand": "フリーハンド",
+      "text": "テキスト",
+      "drawHint": "プレビュー上に描画してマークアップを配置します。"
+    },
+    "status": {
+      "open": "オープン",
+      "addressed": "対応済み",
+      "verified": "確認済み",
+      "resolved": "解決済み"
+    },
+    "thread": {
+      "showOnPreview": "プレビューで強調表示",
+      "openedOnVersion": "v{{number}}"
+    },
+    "comment": {
+      "edited": "(編集済み)",
+      "aiSuggestion": "AI"
+    },
+    "actions": {
+      "refresh": "更新",
+      "post": "コメント",
+      "clearMarkup": "マークアップを消去",
+      "reply": "返信",
+      "replyAndMarkAddressed": "返信して対応済みにする",
+      "cancel": "キャンセル",
+      "save": "保存",
+      "edit": "編集",
+      "delete": "削除",
+      "deleteThread": "スレッドを削除",
+      "resolve": "解決",
+      "verify": "確認済みにする — 修正を確認しました",
+      "reopen": "再オープン"
+    },
+    "time": {
+      "justNow": "たった今",
+      "minutesAgo": "{{count}} 分前",
+      "hoursAgo": "{{count}} 時間前",
+      "daysAgo": "{{count}} 日前"
     }
   }
 }
