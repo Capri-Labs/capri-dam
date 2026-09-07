@@ -2235,7 +2235,9 @@
       "queued": "Seu download foi colocado na fila atrás de outro download em andamento.",
       "failed": "Não foi possível gerar o download. Tente novamente.",
       "error": "Não foi possível iniciar o download. Tente novamente."
-    }
+    },
+    "restrictedTitle": "{{count}} item foi omitido porque os seus direitos de utilização não permitem a distribuição:",
+    "restrictedTitle_other": "{{count}} itens foram omitidos porque os seus direitos de utilização não permitem a distribuição:"
   },
   "applySchemaDialog": {
     "title": "Aplicar esquema de metadados",
@@ -3201,5 +3203,41 @@
       "noAsset": "Nothing to review here.",
       "download": "Download"
     }
+  },
+  "assetRights": {
+    "title": "Direitos de distribuição",
+    "description": "Controla se este ativo pode ser partilhado fora da organização e até quando. Estes valores são aplicados nas transferências e nas ligações de revisão para convidados.",
+    "usageTermsLabel": "Condições de utilização",
+    "licenseExpiresLabel": "A licença expira",
+    "licenseExpiresHelp": "Deixe em branco se a licença não expirar. O ativo permanece utilizável até ao final do dia indicado.",
+    "notDistributable": "apenas interno",
+    "internalBadge": "Não destinado a divulgação externa",
+    "expiredBadge": "Licença expirada",
+    "save": "Guardar direitos",
+    "notifications": {
+      "saved": "Direitos de distribuição atualizados."
+    },
+    "errors": {
+      "saveFailed": "Não foi possível atualizar os direitos de distribuição.",
+      "optionsUnavailable": "Não foi possível carregar a lista de condições de utilização. Recarregue a página."
+    }
+  },
+  "portal": {
+    "download": "Transferir",
+    "viewOnly": "Apenas visualização",
+    "viewOnlyHint": "Pode pré-visualizar este ficheiro, mas não foi partilhado para transferência.",
+    "fileCount": "{{count}} ficheiro",
+    "fileCount_other": "{{count}} ficheiros",
+    "empty": "Ainda não há ficheiros nesta partilha.",
+    "passphraseTitle": "Esta partilha está protegida",
+    "passphraseHint": "Introduza a frase-passe que lhe foi fornecida para ver estes ficheiros.",
+    "passphraseLabel": "Frase-passe",
+    "unlock": "Desbloquear",
+    "identityTitle": "Quem está a recolher estes ficheiros?",
+    "identityHint": "O seu nome é registado junto de tudo o que transferir. Não é usado para iniciar sessão.",
+    "email": "Endereço de e-mail",
+    "name": "Nome (opcional)",
+    "later": "Agora não",
+    "continue": "Continuar"
   }
 }

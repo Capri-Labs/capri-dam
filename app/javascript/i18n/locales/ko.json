@@ -2235,7 +2235,9 @@
       "queued": "다운로드가 다른 진행 중인 다운로드 뒤에 대기 중입니다.",
       "failed": "다운로드를 생성할 수 없습니다. 다시 시도해 주세요.",
       "error": "다운로드를 시작할 수 없습니다. 다시 시도해 주세요."
-    }
+    },
+    "restrictedTitle": "사용 권한이 배포를 허용하지 않아 {{count}}개 항목이 제외되었습니다:",
+    "restrictedTitle_other": "사용 권한이 배포를 허용하지 않아 {{count}}개 항목이 제외되었습니다:"
   },
   "applySchemaDialog": {
     "title": "메타데이터 스키마 적용",
@@ -3201,5 +3203,41 @@
       "noAsset": "Nothing to review here.",
       "download": "Download"
     }
+  },
+  "assetRights": {
+    "title": "배포 권한",
+    "description": "이 자산을 조직 외부에 공유할 수 있는지와 언제까지 가능한지를 제어합니다. 이 값은 다운로드 시와 게스트 검토 링크에 적용됩니다.",
+    "usageTermsLabel": "사용 조건",
+    "licenseExpiresLabel": "라이선스 만료일",
+    "licenseExpiresHelp": "라이선스가 만료되지 않으면 비워 두세요. 표시된 날짜의 종료 시점까지 사용할 수 있습니다.",
+    "notDistributable": "내부 전용",
+    "internalBadge": "외부 공개 불가",
+    "expiredBadge": "라이선스 만료됨",
+    "save": "권한 저장",
+    "notifications": {
+      "saved": "배포 권한이 업데이트되었습니다."
+    },
+    "errors": {
+      "saveFailed": "배포 권한을 업데이트할 수 없습니다.",
+      "optionsUnavailable": "사용 조건 목록을 불러올 수 없습니다. 페이지를 새로 고치세요."
+    }
+  },
+  "portal": {
+    "download": "다운로드",
+    "viewOnly": "보기 전용",
+    "viewOnlyHint": "이 파일은 미리 볼 수 있지만 다운로드용으로 공유되지 않았습니다.",
+    "fileCount": "파일 {{count}}개",
+    "fileCount_other": "파일 {{count}}개",
+    "empty": "이 공유에는 아직 파일이 없습니다.",
+    "passphraseTitle": "이 공유는 보호되어 있습니다",
+    "passphraseHint": "이 파일을 보려면 전달받은 암호를 입력하세요.",
+    "passphraseLabel": "암호",
+    "unlock": "잠금 해제",
+    "identityTitle": "누가 이 파일을 받으시나요?",
+    "identityHint": "다운로드하는 모든 항목과 함께 이름이 기록됩니다. 로그인에는 사용되지 않습니다.",
+    "email": "이메일 주소",
+    "name": "이름 (선택 사항)",
+    "later": "나중에",
+    "continue": "계속"
   }
 }

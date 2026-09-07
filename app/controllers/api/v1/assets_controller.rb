@@ -381,6 +381,11 @@ module Api
           attributes = { properties: merged_props }
           attributes[:title] = title if title.present?
           attributes[:folder_id] = target_folder_id if folder_id_supplied?
+          # Applied after the properties merge so that an explicit rights field
+          # beats the same key arriving inside the free-form metadata blob —
+          # Asset#normalise_rights gives precedence to a changed column, and the
+          # blob is the vaguer of the two intents.
+          attributes.merge!(rights_payload)
 
           asset.update!(attributes)
         end
@@ -1041,9 +1046,20 @@ module Api
       #
       # @return [void] renders +200 OK+ with the binary image data as an attachment
       # @return [void] renders +422+ for non-image assets
+      # @return [void] renders +403+ when the asset's rights forbid export
       # @return [void] renders +500+ on MiniMagick failure
       def watermarked
         @asset = find_asset_record(Asset.includes(:active_version))
+
+        # This action is an export, not a view: it sets
+        # <tt>disposition: "attachment"</tt> and records a confirmed download
+        # event below. A watermark makes an asset harder to misuse, but it does
+        # not make an expired licence valid again.
+        decision = Rights::DownloadPolicy.for(
+          @asset, audience: :internal, purpose: :download, user: current_user
+        )
+        return render json: { error: decision.message }, status: :forbidden if decision.denied?
+
         active_v = @asset.active_version
 
         storage_path = active_v&.properties&.fetch("storage_path", nil) || @asset.properties["storage_path"]
@@ -1296,13 +1312,27 @@ module Api
       # against the *specific* asset being requested. Used only to decide
       # whether {#serve_local} may skip normal authentication — never trusts
       # the token in isolation, always confirms collection membership too.
+      #
+      # RIGHTS ARE PART OF VALIDITY HERE
+      # --------------------------------
+      # {#serve_local} is deliberately not gated on rights for *internal*
+      # callers: blocking inline delivery would blank every thumbnail the day
+      # a licence lapsed, which is how a safety control gets switched off.
+      # That reasoning does not carry over to this branch. Reaching it means
+      # the caller is unauthenticated and outside the organisation, and for
+      # them showing the asset *is* the disclosure — the same conclusion
+      # Rights::DownloadPolicy already reaches for guest review and portal
+      # links. So a token is simply not valid for an asset that may not leave.
       def valid_collection_share_for_asset?(uuid, token)
         return false if token.blank? || uuid.blank?
 
         collection = Collection.find_by_share_token(token)
         return false unless collection
 
-        collection.assets.exists?(uuid: uuid)
+        collection.assets
+                  .externally_distributable
+                  .license_current
+                  .exists?(uuid: uuid)
       end
 
       # Parses the DAM filename naming convention and extracts structured metadata.
@@ -1507,6 +1537,17 @@ module Api
           thumb_url: asset_preview_url_for(asset),
           folder_id: asset.folder_id,
           trashed: asset.trashed?,
+          # Rights read from the typed columns, not from `metadata` above:
+          # that hash merges the active version's properties over the asset's,
+          # so a stale key on a version could otherwise shadow the value the
+          # platform actually enforces on.
+          rights: {
+            usage_terms:              asset.usage_terms,
+            usage_terms_label:        asset.usage_terms_label,
+            license_expires_at:       asset.license_expires_at,
+            license_expired:          asset.license_expired?,
+            externally_distributable: asset.externally_distributable?,
+          },
           url: asset_url_for(asset),
           preview_url: asset_preview_url_for(asset),
           editable: web_renderable_image?(metadata["content_type"]),
@@ -1695,6 +1736,42 @@ module Api
         tags = payload["tags"] || payload[:tags]
         metadata = metadata.merge("tags" => tags) if tags.present?
         metadata.compact_blank
+      end
+
+      # Extracts the first-class rights fields from an update request.
+      #
+      # These are deliberately *not* routed through the free-form +metadata+
+      # blob, for two reasons. The blob is +compact_blank+-ed, so it cannot
+      # express "clear this licence expiry" — a blank would simply vanish and
+      # the old date would survive a deliberate attempt to remove it. And a
+      # field that decides whether an asset may leave the organisation should
+      # be a named part of the request, not an anonymous key inside a hash the
+      # server merges verbatim.
+      #
+      # Values are handed to the model as-is: {Rights::UsageTerms} canonicalises
+      # the term and {Rights::LicenseExpiry} rejects an unreadable date with a
+      # validation error, which surfaces here as a 422.
+      #
+      # @return [Hash] empty unless at least one rights field was supplied
+      def rights_payload
+        payload = {}
+
+        terms = params.dig(:asset, :usage_terms) || params[:usage_terms]
+        payload[:usage_terms] = terms if terms.present?
+
+        if rights_key_supplied?(:license_expires_at)
+          raw = params.dig(:asset, :license_expires_at)
+          raw = params[:license_expires_at] if raw.nil?
+          payload[:license_expires_at] = raw.presence
+        end
+
+        payload
+      end
+
+      # +present?+ is the wrong question for a field whose blank value is a
+      # meaningful instruction ("this asset no longer has an expiry").
+      def rights_key_supplied?(key)
+        (params[:asset].respond_to?(:key?) && params[:asset].key?(key)) || params.key?(key)
       end
 
       def normalised_folder_id

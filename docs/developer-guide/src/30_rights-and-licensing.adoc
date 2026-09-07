@@ -1,0 +1,454 @@
+= Rights and licensing
+:toc: macro
+:toclevels: 3
+
+toc::[]
+
+== Why this exists
+
+Every asset carries two facts that decide whether it may leave the
+organisation: what it is licensed *for*, and *until when*. Until Phase 10a both
+lived as free text inside the `assets.properties` JSONB blob, where nothing
+constrained them.
+
+That was unsafe in ways that were straightforward to demonstrate:
+
+* **Usage terms were compared against one exact English literal.**
+  `Collection#compliance_violations` asked `usage == "Internal Use Only"`. An
+  importer, a bulk edit or an API client writing `"internal use only"`,
+  `"Internal-Only"` or `"Confidential"` produced a value that failed that
+  comparison — and failing it meant *not internal*, i.e. clearance to expose the
+  asset externally. The default direction of the bug was toward disclosure.
+* **Expiry dates were parsed at read time, and the parser raised.**
+  `Time.zone.parse("2024")` raises `ArgumentError`, so a single asset with a
+  year-only value aborted the compliance scan for an entire collection.
+* **Where it did not raise, it invented data.**
+  `Time.zone.parse("12345")` returns the year 12 — a typo becomes an asset that
+  has been expired for two millennia. `Time.zone.parse("2026-02-30")` silently
+  returns 2 March.
+* **The analytics forecast hid all of this.** The expiry query cast the JSONB
+  text in SQL inside a bare `rescue 0`, so one malformed row anywhere in the
+  table reported *no licences expiring*. The dashboard was quietest exactly when
+  the data was worst.
+
+Enforcement (Phase 10b) cannot be built on a field with those properties. This
+phase makes the data enforceable.
+
+== The typed columns
+
+[cols="1,1,3"]
+|===
+| Column | Type | Notes
+
+| `assets.usage_terms`
+| `varchar NOT NULL DEFAULT 'internal_only'`
+| Constrained to the vocabulary below by a `CHECK` constraint *and* a model
+  validation. `NOT NULL` with a restrictive default because the safe state must
+  be the one you get by doing nothing.
+
+| `assets.license_expires_at`
+| `timestamptz` (nullable)
+| Nullable on purpose: "no expiry" is a legitimate, common state, and it is
+  deliberately distinct from "unknown expiry", which is not representable.
+|===
+
+Both are indexed. `license_expires_at` uses a partial index
+(`WHERE license_expires_at IS NOT NULL`) because most assets have no expiry and
+every query that touches the column is looking for the ones that do.
+
+== The vocabulary
+
+`Rights::UsageTerms` (`app/services/rights/usage_terms.rb`) holds the controlled
+list. Each term carries the single fact enforcement needs — whether the asset may
+be distributed outside the organisation at all. Expiry is orthogonal: a licence
+window can close on any term.
+
+[cols="1,2,1"]
+|===
+| Code | Label | External distribution
+
+| `internal_only`   | Internal Use Only  | ✗ (default)
+| `editorial_only`  | Editorial Use Only | ✓
+| `rights_managed`  | Rights Managed     | ✓
+| `royalty_free`    | Royalty Free       | ✓
+| `public_domain`   | Public Domain      | ✓
+|===
+
+`Rights::UsageTerms.normalise` maps arbitrary input onto a code. Casing,
+hyphens, spaces and punctuation are collapsed first, so `"Royalty-Free"`,
+`"royalty free"` and `"ROYALTY_FREE"` are one term; a synonym table then covers
+genuinely different words (`"Licensed"` → `rights_managed`, `"CC0"` →
+`public_domain`, `"Confidential"` → `internal_only`).
+
+[IMPORTANT]
+====
+Anything unrecognised normalises to `internal_only`, the most restrictive term.
+This is deliberately fail-closed. An unreadable rights statement is not evidence
+of permission, and the alternative — treating "we could not parse this" as "no
+restriction recorded" — turns a data-quality problem into a distribution
+incident.
+
+The original text is *not* discarded: it is preserved under
+`properties["usage_terms_raw"]` so a human can correct it. Callers that need to
+know whether the input was actually understood ask
+`Rights::UsageTerms.recognised?`.
+====
+
+Every canonical code also maps to itself (`LOOKUP`), so a code can never be
+downgraded by being absent from the synonym table — a bug the specs caught, where
+`editorial_only` was a valid code with no matching synonym and an API client
+sending the exact code got `internal_only` back.
+
+== Expiry parsing
+
+`Rights::LicenseExpiry` accepts **ISO 8601 and nothing else**.
+
+* A full timestamp (`2026-12-31T10:00:00Z`) is taken as written.
+* A bare date (`2026-12-31`) is read as the **end** of that day. A licence stated
+  to expire on 31 December is good through 31 December; reading it as midnight
+  would retire the asset a day early, every time.
+* `Time`, `Date` and `DateTime` objects are accepted directly.
+
+Locale-ambiguous forms are **rejected, not guessed**: `01/02/2026` is a different
+day in London and New York, and a rights expiry is not a field to be wrong about
+by ten months. So are `"2024"`, `"12345"`, `"2026-02-30"` and free text.
+
+`malformed?` distinguishes *absent* from *unreadable*. The two have opposite risk
+profiles and must not collapse into the same `nil`.
+
+== How the column and the JSONB stay in step
+
+Both spellings have to keep working. The columns are the source of truth for
+enforcement and reporting, but `properties` is what the bulk metadata editor, the
+XMP mapper and the migration importers write to, and what search facets read.
+Rather than migrate a dozen call sites and hope none were missed,
+`Asset#normalise_rights` runs `before_validation` and reconciles them in both
+directions — whichever side was written wins, and the other is brought into line.
+
+Precedence is decided by *whether a value was supplied*, not by whether it
+differs from the one already stored. `Asset` overrides the two attribute writers
+to record that:
+
+`usage_terms=`:: Sets a "supplied" flag. Asking `usage_terms_changed?` looked
+equivalent but is not — assigning the value the record already holds is not a
+change, so an explicit `usage_terms: "internal_only"` on an already-internal
+asset lost to a `public_domain` buried in the metadata blob. The caller's
+clearest statement of intent was the one being discarded.
+
+`license_expires_at=`:: Parses *before* assigning. Active Record casts an
+unparseable string to `nil` on the way into a `datetime` attribute, which
+silently discarded exactly the input this phase exists to reject:
+`license_expires_at: "31/12/2026"` arrived as `nil`, nothing looked changed, and
+the request succeeded with the expiry quietly dropped. Capturing the raw value in
+the writer is what lets the validation report it.
+
+The flags are cleared `after_save`, since they describe one write rather than the
+record.
+
+`properties` is a `jsonb` column, so it can hold an array or a scalar rather than
+an object — the metadata exporter has specs for tolerating that. Normalisation
+detects a non-Hash and normalises the column alone rather than blowing up the
+save.
+
+== Model API
+
+[source,ruby]
+----
+asset.usage_terms                 # => "rights_managed"
+asset.usage_terms_label           # => "Rights Managed"
+asset.license_expired?            # => false        (no expiry ⇒ not expired)
+asset.license_expired?(1.year.from_now)
+asset.externally_distributable?   # => permissive terms AND a current licence
+
+Asset.license_expired                    # past their date
+Asset.license_current                    # inside the window, or never had one
+Asset.license_expiring_within(30.days)   # bounded at *both* ends
+Asset.externally_distributable           # on terms alone, ignoring expiry
+----
+
+`externally_distributable?` ANDs the two conditions: a royalty-free asset whose
+licence lapsed is no more distributable than an internal-only one. It lives on
+the model so that reports, compliance scans and (in Phase 10b) enforcement all
+give the same answer.
+
+`license_expiring_within` is bounded below as well as above. The query it
+replaced was `< 30.days.from_now` with no floor, so assets that had *already*
+expired — and typo'd dates that landed in antiquity — were reported as "expiring
+soon".
+
+== API surface
+
+`GET /api/v1/assets/:id` returns a `rights` block read from the typed columns:
+
+[source,json]
+----
+"rights": {
+  "usage_terms": "rights_managed",
+  "usage_terms_label": "Rights Managed",
+  "license_expires_at": "2027-03-31T23:59:59Z",
+  "license_expired": false,
+  "externally_distributable": true
+}
+----
+
+It is read from the columns rather than from the serialised `properties`, because
+that hash merges the active version's properties over the asset's — a stale key
+on a version could otherwise shadow the value the platform actually enforces on.
+
+`PATCH /api/v1/assets/:id` accepts `usage_terms` and `license_expires_at` as
+first-class fields (`asset[usage_terms]`, or top-level). They are deliberately
+*not* routed through the free-form `metadata` blob:
+
+* the blob is `compact_blank`-ed, so it cannot express "clear this licence
+  expiry" — a blank would simply vanish and the old date would survive a
+  deliberate attempt to remove it;
+* a field that decides whether an asset may leave the organisation should be a
+  named part of the request, not an anonymous key inside a hash the server merges
+  verbatim.
+
+Rights arriving inside `metadata` still work, because that is how the importers
+send them — the explicit field simply wins when both are present. An unreadable
+expiry returns `422` naming the offending string.
+
+== Backfill
+
+`db/migrate/20260907100000_add_rights_columns_to_assets.rb` copies the legacy
+JSONB values into the new columns and rewrites the JSONB to match, so there is
+exactly one spelling of the truth afterwards.
+
+Anything that cannot be understood is neither discarded nor guessed at: the
+original text moves to `usage_terms_raw` / `license_expires_at_raw`, the column
+falls back to the restrictive default, and the counts are reported in the
+migration log.
+
+The migration duplicates the synonym table rather than calling
+`Rights::UsageTerms`, and queries through a throwaway `Class.new(ActiveRecord::Base)`
+rather than `::Asset`. A migration records what happened to the data on the day it
+ran; binding it to the live model would let a future default scope, validation or
+callback silently alter a historical rewrite.
+
+[WARNING]
+====
+When writing a `jsonb` column with `update_all`, pass the **Hash**, not
+`hash.to_json`. A String is stored as a JSON *scalar string*, so every
+subsequent read returns `"{\"usage_terms\":…}"` instead of an object. This was
+caught during development of this migration; the repair is
+`UPDATE … SET properties = (properties #>> '{}')::jsonb WHERE jsonb_typeof(properties) = 'string'`.
+====
+
+== Downstream readers updated
+
+* `Collection#compliance_violations` — now reads the columns; the violation
+  message uses the term's label.
+* `Reports::AnalyticsService#ai_insights` — uses `license_expiring_within` and
+  gains a separate *already expired* anomaly, which the old unbounded query
+  folded into "expiring soon".
+* `MigrationCommitWorker` — sanitises the incoming expiry at the boundary.
+  Migration sources are other people's systems and their rights fields are
+  whatever a decade of users typed in; an unreadable date must not abort the
+  import of an otherwise good asset, so it is logged and dropped with the
+  original text carried through, while the model stays strict for everything else.
+* `db/seeds/report_definitions.rb` — the License Expiry Forecast definition now
+  describes the column rather than the JSONB path.
+
+== Tests
+
+* `spec/services/rights/usage_terms_spec.rb` — spelling collapse, legacy synonym
+  mapping, the fail-closed fallback for unreadable input, `recognised?`
+  distinguishing understood from defaulted, and the identity guarantee for every
+  canonical code.
+* `spec/services/rights/license_expiry_spec.rb` — one example per unsafe input
+  the old `Time.zone.parse` accepted, each asserting the *old* behaviour
+  (raising, year 12, rolling 30 February into March) alongside the new refusal,
+  so the regression is documented rather than merely fixed.
+* `spec/models/asset_rights_spec.rb` — sync in both directions, precedence when
+  both sides are written, the raw-value preservation, `license_expired?` /
+  `externally_distributable?`, the scopes, and the database `CHECK` constraint
+  catching a writer that bypasses the model.
+* `spec/requests/api/v1/asset_rights_request_spec.rb` — the `rights` block, the
+  first-class fields, clearing an expiry (which the metadata blob cannot
+  express), `422` for an unreadable date, explicit-field precedence, and rights
+  still arriving via `metadata` as importers send them.
+
+== Enforcement (Phase 10b)
+
+Phase 10a made the data trustworthy. Phase 10b makes it *matter*. All decisions
+route through one object, `Rights::DownloadPolicy`:
+
+[source,ruby]
+----
+decision = Rights::DownloadPolicy.for(asset, audience: :external)
+decision.allowed?  # => false
+decision.code      # => :not_externally_distributable
+decision.message   # => "This asset is restricted to 'Internal Use Only' …"
+----
+
+=== Why one object
+
+Nine files call `send_data`, `send_file` or `rails_blob_path`, and one concern
+mints signed storage URLs that bypass controllers entirely. A rights check
+written per controller is a rights check that will be missing from the tenth
+surface somebody adds — and the surfaces that matter most, the guest review path
+and the distribution portal, are exactly the ones a contributor is least likely
+to remember.
+
+It returns a `Decision`, not a boolean, because "you may not download this"
+without a reason produces a support ticket rather than a corrected licence.
+
+=== What blocks whom
+
+Two independent facts each block a *different* audience:
+
+[cols="1,3,1,1"]
+|===
+|Fact |Question it answers |Blocks internal |Blocks external
+
+|Usage terms
+|May this leave the organisation?
+|No
+|Yes
+
+|Licence expiry
+|Are we still allowed to use this at all?
+|Export only
+|Yes
+|===
+
+=== Viewing is not distribution
+
+Internally the policy gates *export*, not the viewer. Blocking inline delivery
+for staff would blank every thumbnail in the application the day a licence
+lapsed — which is how a safety control gets switched off. The asset stays
+visible to the people who need to see it has a problem; what stops is their
+ability to take a copy.
+
+Externally there is no such distinction. Showing a guest an internal-only asset
+*is* the disclosure, so preview and download are both refused.
+
+[NOTE]
+====
+There is deliberately no internal block on `serve_local`. The viewer's download
+button fetches `asset.url`, the same inline URL used to render the image, so
+gating it would gate viewing. Internal enforcement therefore covers the two
+paths that are unambiguously *exports* — the watermarked endpoint and the bulk
+ZIP — and the URL-issuance helper.
+====
+
+=== Administrator bypass
+
+An administrator may export an asset with a lapsed licence: somebody has to be
+able to archive it, hand it to legal, or replace it. The bypass is limited to
+the *internal* audience — an admin creating a guest link is not the admin
+receiving the file, and their privileges are not transitive to the recipient.
+
+=== Enforced surfaces
+
+[cols="2,1,3"]
+|===
+|Surface |Audience |Behaviour
+
+|`ReviewLink#distributable_assets`
+|external
+|Restricted assets are filtered out of the link's scope entirely, so they never
+appear in the listing, the comment threads or a direct fetch.
+
+|`Public::ReviewAssetsController#preview` / `#download`
+|external
+|Backstop check behind the scope filter. Refuses without disclosing the reason.
+
+|`Api::V1::AssetsController#watermarked`
+|internal
+|`403` with the reason. A watermark makes misuse traceable; it does not make an
+expired licence valid.
+
+|`AssetDownloadWorker`
+|internal
+|Filters at `add_entry`, the single funnel both the flat selection and the
+recursive folder walk pass through.
+
+|`AssetUrlHelper#asset_download_url_for`
+|either
+|Returns `nil` rather than minting a URL.
+|===
+
+=== Refusal is a 404, not a 403, for guests
+
+Filtering at the *scope* rather than at delivery means a restricted asset is
+indistinguishable from one that was never shared. That matters: refusing the
+bytes while still listing the title, dimensions and comment thread of an
+unreleased asset tells an outsider it exists, what it is called and roughly what
+it is — most of the disclosure the restriction existed to prevent.
+
+The owner is not left guessing. `Api::V1::ReviewLinksController` returns both
+`asset_count` and `distributable_asset_count`, because a link to a 20-asset
+collection of which 3 are cleared is not the link its creator thinks they made.
+
+=== Enforcement at URL *issuance*
+
+In production an asset URL is a presigned S3/GCS link or a signed CDN path. The
+bytes are served by infrastructure this application never sees, so there is no
+later moment at which it could refuse. Once the URL exists the file is
+effectively released, which makes issuance the only enforceable moment.
+
+=== Bulk export tells you what it withheld
+
+A ZIP that silently omits three files is worse than one that refuses to build:
+the recipient has no way to know anything is missing and will assume the archive
+is complete. So the worker records every exclusion on
+`asset_downloads.restricted_items` (a jsonb array of
+`asset_id` / `title` / `code` / `reason`), surfaces it in the download dialog,
+*and* writes a `RESTRICTED_ASSETS.txt` manifest into the archive itself — because
+the archive travels and the web UI does not.
+
+This is not an error. The export succeeded and the archive is valid, so it does
+not go in `error_message`.
+
+== Managing rights
+
+`AssetRightsPanel` on the asset viewer's Info tab reads the `rights` block and
+writes the first-class `usage_terms` / `license_expires_at` fields. It badges an
+asset that is not cleared for external release, or whose licence has expired.
+
+The dropdown's options come from `GET /api/v1/rights/usage_terms` rather than a
+hard-coded list, so the vocabulary the UI offers cannot drift from the one the
+policy enforces. A term added or relabelled in `Rights::UsageTerms` would
+otherwise silently fail to appear in the only UI that can set it.
+
+Clearing the expiry field sends an explicit `null`: "no expiry" has to be
+distinguishable from "not editing this field".
+
+[WARNING]
+====
+Enforcement is fail-closed and the default term is `internal_only`, so every
+asset the 10a backfill could not confidently classify is *not* shareable
+externally. Existing review links pointing at such assets will show nothing
+until somebody classifies them. This is the intended behaviour — the bug being
+fixed was that every unrecognised spelling read as permission to distribute —
+but operators should expect to triage after deploying.
+====
+
+== Tests
+
+[cols="2,3"]
+|===
+|Spec |Covers
+
+|`spec/services/rights/download_policy_spec.rb`
+|Both audiences, both purposes, the admin bypass (and that it does *not* apply
+externally), the end-of-day expiry boundary, `.partition`, and a `nil` asset.
+
+|`spec/requests/rights_enforcement_spec.rb`
+|Each wired surface: the guest 404, the listing not leaking a restricted title,
+the watermarked `403`, and URL issuance returning `nil`.
+
+|`spec/workers/asset_download_worker_spec.rb`
+|Exclusion from a flat selection *and* from a folder walk, the in-archive
+manifest, the admin bypass, and an all-withheld export still completing.
+
+|`spec/requests/api/v1/rights_spec.rb`
+|The vocabulary endpoint agrees with `Rights::UsageTerms` for every term.
+
+|`spec/javascript/components/Folders/AssetRightsPanel.test.jsx`
+|Badges, the disabled-until-dirty save, clearing an expiry as `null`, and a
+failed vocabulary lookup not silently showing an empty dropdown.
+|===

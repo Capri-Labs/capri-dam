@@ -30,6 +30,7 @@ import { useNotify } from '../../context/NotificationContext';
 import AssetVersionsTab from './AssetVersionsTab';
 import AssetAuditTab from './AssetAuditTab';
 import AssetMetadataPanel from './AssetMetadataPanel';
+import AssetRightsPanel from './AssetRightsPanel';
 import AssetStatsPopover from './AssetStatsPopover';
 import AssetCommentsPanel from './AssetCommentsPanel';
 import AnnotationOverlay from './AnnotationOverlay';
@@ -709,6 +710,17 @@ export default function AssetViewer({ asset: initialAsset, open, onClose, onAsse
                                     </Typography>
                                 </Paper>
                             </Collapse>
+
+                            {/* Distribution rights: enforced on delivery, so
+                                edited here rather than in the descriptive
+                                schema-driven metadata panel. */}
+                            <AssetRightsPanel
+                                asset={asset}
+                                onAssetUpdated={(updated) => {
+                                    setAsset(updated);
+                                    if (onAssetUpdated) onAssetUpdated(updated);
+                                }}
+                            />
                         </TabPanel>
 
                         {/* TAB 1: METADATA SCHEMA */}

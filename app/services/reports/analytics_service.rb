@@ -276,11 +276,22 @@ module Reports
       end
 
       # 5. License expiry forecast
-      expiring_soon = active_scope.where(
-        "(properties->>'license_expires_at')::timestamp < ?", 30.days.from_now
-      ).count rescue 0
+      #
+      # Reads the typed column. The previous form cast a JSONB text value —
+      # +(properties->>'license_expires_at')::timestamp+ — inside a bare
+      # +rescue 0+, so a single unparseable string anywhere in the table made
+      # the whole forecast report zero: the dashboard was quietest exactly when
+      # the rights data was worst. It was also unbounded below, counting assets
+      # whose licences had already lapsed (and typo'd dates that landed in
+      # antiquity) as "expiring within 30 days".
+      expiring_soon = active_scope.license_expiring_within(30.days).count
       if expiring_soon > 0
         anomalies << "⚠️ #{expiring_soon} assets have licenses expiring within 30 days. Review before campaign launch."
+      end
+
+      already_expired = active_scope.license_expired.count
+      if already_expired > 0
+        anomalies << "🚫 #{already_expired} assets are past their license expiry date and must not be distributed."
       end
 
       # 6. Workflow backlog

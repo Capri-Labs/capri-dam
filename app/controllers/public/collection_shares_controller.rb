@@ -22,8 +22,17 @@ module Public
         return
       end
 
-      @token  = params[:token]
-      @assets = @collection.assets.order(created_at: :desc)
+      @token = params[:token]
+      # Rights are applied to the *scope*, exactly as they are for review and
+      # portal links. A share page that listed the title and thumbnail of an
+      # internal-only or licence-expired asset would leak most of what the
+      # restriction exists to prevent, whether or not the file itself could be
+      # fetched. This surface predates Rights::DownloadPolicy and was still
+      # showing everything in the collection.
+      @assets = @collection.assets
+                           .externally_distributable
+                           .license_current
+                           .order(created_at: :desc)
     end
   end
 end

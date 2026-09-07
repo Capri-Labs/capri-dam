@@ -13,7 +13,11 @@ RSpec.describe "Public::CollectionShares", type: :request do
 
   it "renders the collection read-only when given a valid, unexpired share token" do
     collection = create(:collection, user: owner, name: "Spring Launch")
-    asset = create(:asset, user: owner, title: "Hero Shot", properties: {
+    # Cleared for external release. A share page filters out anything that may
+    # not leave the organisation (the factory default is internal_only), so
+    # this must be distributable for the example to be testing share mechanics
+    # rather than the rights filter.
+    asset = create(:asset, :externally_distributable, user: owner, title: "Hero Shot", properties: {
       "storage_path" => "collection_shares_coverage/hero.txt",
       "content_type" => "text/plain",
     })
@@ -70,7 +74,7 @@ RSpec.describe "Public::CollectionShares", type: :request do
 
   it "lets an unauthenticated request load an asset thumbnail via the share_token query param" do
     collection = create(:collection, user: owner)
-    asset = create(:asset, user: owner, properties: {
+    asset = create(:asset, :externally_distributable, user: owner, properties: {
       "storage_path" => "collection_shares_coverage/thumb.txt",
       "content_type" => "text/plain",
     })
@@ -107,5 +111,58 @@ RSpec.describe "Public::CollectionShares", type: :request do
     get "/api/v1/assets/local/#{asset.uuid}", params: { share_token: token }
 
     expect(response).to have_http_status(:unauthorized)
+  end
+
+  # These two cases were live disclosure holes: the share page listed every
+  # asset in the collection and the share_token branch of #serve_local handed
+  # over the bytes, neither consulting usage terms or licence expiry. Rights
+  # enforcement (Phase 10b) had only ever been wired into review links.
+  describe "rights enforcement on the public share surface" do
+    let(:collection) { create(:collection, user: owner, name: "Mixed rights") }
+
+    it "omits an internal-only asset from the share page entirely" do
+      cleared = create(:asset, :externally_distributable, user: owner, title: "Cleared shot")
+      internal = create(:asset, user: owner, title: "Internal shot", usage_terms: "internal_only")
+      create(:collection_asset, collection: collection, asset: cleared)
+      create(:collection_asset, collection: collection, asset: internal)
+
+      get "/s/collections/#{collection.generate_share_token}"
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Cleared shot")
+      # The title alone is the disclosure for an unannounced product shot.
+      expect(response.body).not_to include("Internal shot")
+    end
+
+    it "omits an asset whose licence has expired" do
+      lapsed = create(:asset, :license_expired, user: owner, title: "Lapsed shot")
+      create(:collection_asset, collection: collection, asset: lapsed)
+
+      get "/s/collections/#{collection.generate_share_token}"
+
+      expect(response.body).not_to include("Lapsed shot")
+    end
+
+    it "refuses the bytes of an internal-only asset requested with a valid share token" do
+      internal = create(:asset, user: owner, usage_terms: "internal_only", properties: {
+        "storage_path" => "collection_shares_coverage/secret.txt",
+        "content_type" => "text/plain",
+      })
+      dam_path = Rails.root.join("storage/dam/collection_shares_coverage/secret.txt")
+      FileUtils.mkdir_p(dam_path.dirname)
+      File.binwrite(dam_path, "secret body")
+      create(:collection_asset, collection: collection, asset: internal)
+      token = collection.generate_share_token
+
+      get "/api/v1/assets/local/#{internal.uuid}", params: { share_token: token }
+
+      # The token is genuine and the asset really is in the collection; it is
+      # the rights that refuse. Falls back to normal auth, which an
+      # unauthenticated caller cannot satisfy.
+      expect(response).to have_http_status(:unauthorized)
+      expect(response.body).not_to include("secret body")
+    ensure
+      FileUtils.rm_rf(Rails.root.join("storage/dam/collection_shares_coverage"))
+    end
   end
 end

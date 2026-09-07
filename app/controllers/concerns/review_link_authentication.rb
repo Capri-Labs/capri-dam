@@ -20,10 +20,32 @@ module ReviewLinkAuthentication
   extend ActiveSupport::Concern
 
   included do
+    # Which kind of link this surface serves. Nil means "either", which no
+    # controller should choose deliberately.
+    class_attribute :served_link_kind, instance_writer: false, default: nil
+
     # These pages are a credential in a URL. Search engines must never index
     # them, and neither should an intermediary cache hold a copy.
     before_action :set_review_link
+    before_action :enforce_link_kind
     before_action :discourage_caching
+  end
+
+  class_methods do
+    # Declares that this controller serves one kind of link only.
+    #
+    # Without this, a portal token would be accepted by the review surface and
+    # a review token by the portal surface — and each surface applies the
+    # permission model of the *route*, not of the link. A review link routed
+    # through the portal would hand out every asset in the collection with no
+    # grants to narrow it; a portal link routed through review would offer
+    # commenting that was never granted. The kinds diverge in what they permit,
+    # so they must not be interchangeable in the URL.
+    #
+    # @param kind [String, Symbol]
+    def serves_link_kind(kind)
+      self.served_link_kind = kind.to_s
+    end
   end
 
   private
@@ -50,6 +72,17 @@ module ReviewLinkAuthentication
     return deny(:passphrase_required) unless passphrase_cleared?
 
     @review_link.record_access!
+  end
+
+  # A link of the wrong kind is reported as simply not found: the holder of a
+  # valid review token learns nothing about whether a portal exists at the
+  # same address, and there is no legitimate flow that lands here.
+  def enforce_link_kind
+    return if performed?
+    return if served_link_kind.blank?
+    return if @review_link&.kind == served_link_kind
+
+    deny(:not_found)
   end
 
   # The passphrase is checked once and remembered in the session, so a guest
@@ -120,7 +153,7 @@ module ReviewLinkAuthentication
   def scoped_asset(asset_id)
     return nil if asset_id.blank?
 
-    @review_link.scoped_assets.find_by(id: asset_id)
+    @review_link.distributable_assets.find_by(id: asset_id)
   end
 
   # Threads a guest is allowed to see on an asset: guest-visible only.
@@ -152,19 +185,30 @@ module ReviewLinkAuthentication
     status = reason == :passphrase_required ? :unauthorized : :gone
 
     respond_to do |format|
-      format.html { render "public/reviews/unavailable", status: status, layout: "public_review" }
+      format.html { render "public/reviews/unavailable", status: status, layout: denial_layout }
       format.json { render json: { error: denial_message(reason), reason: reason }, status: status }
       format.any  { head status }
     end
   end
 
+  # The refusal is rendered in the chrome of the surface that was asked for,
+  # so a partner who follows a dead portal link is not suddenly looking at a
+  # page about reviews.
+  def denial_layout
+    served_link_kind == "portal" ? "public_portal" : "public_review"
+  end
+
+  # Worded for the surface, not the table. "Review link" is the internal name
+  # for both kinds; a partner collecting artwork has never heard it.
   def denial_message(reason)
+    noun = served_link_kind == "portal" ? "share link" : "review link"
+
     case reason
-    when :not_found          then "This review link is not valid."
-    when :expired            then "This review link has expired."
-    when :revoked            then "This review link has been withdrawn."
-    when :passphrase_required then "This review link requires a passphrase."
-    else "This review link is unavailable."
+    when :not_found           then "This #{noun} is not valid."
+    when :expired             then "This #{noun} has expired."
+    when :revoked             then "This #{noun} has been withdrawn."
+    when :passphrase_required then "This #{noun} requires a passphrase."
+    else "This #{noun} is unavailable."
     end
   end
 end

@@ -8,6 +8,10 @@ module Public
   # code with the internal comment endpoints.
   class ReviewsController < ApplicationController
     include ReviewLinkAuthentication
+
+    # Review tokens only; a portal token routed here would be granted commenting
+    # and the collection-wide scope that portal grants exist to narrow.
+    serves_link_kind :review
     include GuestReviewSerialization
 
     layout "public_review"
@@ -26,15 +30,16 @@ module Public
                with: -> { render json: { error: "Too many attempts. Please wait a moment." }, status: :too_many_requests }
 
     # The passphrase gate has to be reachable *before* the gate is satisfied,
-    # so it opts out of the normal check and validates the token itself.
-    skip_before_action :set_review_link, only: %i[unlock]
+    # so it opts out of the normal check and validates the token itself —
+    # including the kind check, which cannot run without a resolved link.
+    skip_before_action :set_review_link, :enforce_link_kind, only: %i[unlock]
 
     # GET /s/reviews/:token
     #
     # The HTML shell. Everything else on this controller is JSON consumed by
     # the guest review app mounted here.
     def show
-      @assets = @review_link.scoped_assets.order(created_at: :desc)
+      @assets = @review_link.distributable_assets.order(created_at: :desc)
       @guest  = current_review_guest
     end
 
@@ -43,7 +48,7 @@ module Public
       render json: {
         review: review_stub,
         guest: guest_stub(current_review_guest),
-        assets: @review_link.scoped_assets.order(created_at: :desc).map { |a| asset_stub(a) },
+        assets: @review_link.distributable_assets.order(created_at: :desc).map { |a| asset_stub(a) },
       }
     end
 
@@ -70,7 +75,11 @@ module Public
     # Exchanges a passphrase for session access to a protected link.
     def unlock
       link = ReviewLink.find_by_token(params[:token])
-      return render(json: { error: "This review link is not valid." }, status: :gone) if link.nil? || !link.usable?
+      # A token of the wrong kind is refused exactly like an invalid one, so
+      # unlocking here cannot be used to clear the passphrase on a portal.
+      if link.nil? || !link.usable? || link.kind != self.class.served_link_kind
+        return render(json: { error: "This review link is not valid." }, status: :gone)
+      end
 
       @review_link = link
       unless link.passphrase_matches?(params[:passphrase])

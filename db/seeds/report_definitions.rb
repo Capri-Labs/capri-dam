@@ -72,7 +72,7 @@ REPORT_DEFINITIONS = [
     description: 'Assets with license_expires_at within the next 30, 60, and 90 days. Essential for campaign risk management.',
     active:      true,
     query_config: {
-      filter: "properties->>'license_expires_at' IS NOT NULL",
+      filter: "license_expires_at IS NOT NULL",
       sort: "license_expires_at ASC",
     },
   },

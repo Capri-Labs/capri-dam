@@ -5,8 +5,16 @@ require "rails_helper"
 # the point of this file: everything here is reachable by anyone holding a URL.
 RSpec.describe "Guest review flow", type: :request do
   let(:user)  { create(:user) }
-  let(:asset) { create(:asset, user: user, title: "Hero shot", properties: { "content_type" => "image/jpeg" }) }
-  let(:other_asset) { create(:asset, user: user, title: "Secret") }
+  # Cleared for external release: a review link to an asset nobody has cleared
+  # is filtered out entirely (see ReviewLink#distributable_assets), which is
+  # covered in spec/requests/rights_enforcement_spec.rb. Marking these
+  # distributable keeps the scope and revocation cases below testing scope and
+  # revocation rather than rights.
+  let(:asset) do
+    create(:asset, :externally_distributable, user: user, title: "Hero shot",
+                   properties: { "content_type" => "image/jpeg" })
+  end
+  let(:other_asset) { create(:asset, :externally_distributable, user: user, title: "Secret") }
 
   def mint(**opts)
     ReviewLink.mint(target: asset, created_by: user, name: "Client review", **opts)
@@ -164,6 +172,40 @@ RSpec.describe "Guest review flow", type: :request do
     _link, token = mint(require_email: false)
     get "/s/reviews/#{token}/assets/#{asset.id}/download"
     expect(response).to have_http_status(:forbidden)
+  end
+
+  # REGRESSION: the refusal case above passes whether or not delivery actually
+  # works, and for a long time it did not — the storage read was called with
+  # one argument instead of two, and the rescue turned the resulting
+  # ArgumentError into a silent 404 on every guest image. Asserting the
+  # *success* path, with a verified double that enforces the real arity, is
+  # what closes that hole.
+  it "actually delivers the bytes for a preview" do
+    _link, token = mint(require_email: false)
+    expect(StorageManager).to receive(:read_file_from_adapter)
+      .with(anything, "hero.jpg").and_return("image-bytes")
+
+    asset.update!(properties: asset.properties.merge("storage_path" => "hero.jpg"))
+
+    get "/s/reviews/#{token}/assets/#{asset.id}/preview"
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to eq("image-bytes")
+    expect(response.headers["Content-Type"]).to include("image/jpeg")
+  end
+
+  it "actually delivers the bytes for an allowed download" do
+    _link, token = mint(require_email: false, allow_downloads: true)
+    allow(StorageManager).to receive(:read_file_from_adapter)
+      .with(anything, "hero.jpg").and_return("original-bytes")
+
+    asset.update!(properties: asset.properties.merge("storage_path" => "hero.jpg"))
+
+    get "/s/reviews/#{token}/assets/#{asset.id}/download"
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to eq("original-bytes")
+    expect(response.headers["Content-Disposition"]).to include("attachment")
   end
 
   it "covers a collection target" do

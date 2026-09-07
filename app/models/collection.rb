@@ -230,6 +230,13 @@ class Collection < ApplicationRecord
   # * Internal-only assets inside externally accessible collections.
   # * Assets whose license expiry predates the collection's own +expires_at+.
   #
+  # Reads the typed +assets.usage_terms+ / +assets.license_expires_at+ columns.
+  # It previously compared a free-text JSONB string against the single literal
+  # +"Internal Use Only"+ — so +"internal use only"+, +"Internal-Only"+ or any
+  # other spelling read as "not internal", i.e. as clearance to expose the asset
+  # externally — and parsed the expiry with +Time.zone.parse+, which *raises* on
+  # a value like +"2024"+ and would abort the scan for the entire collection.
+  #
   # @return [Array<Hash>] each entry has +:asset_id+, +:title+, +:reason+
   def compliance_violations
     violations = []
@@ -238,25 +245,21 @@ class Collection < ApplicationRecord
                                Array(allowed_groups).include?("External Agencies")
 
     assets.find_each do |asset|
-      props = asset.properties || {}
-      usage = props["usage_terms"] || "Internal Use Only"
-
-      if is_externally_accessible && usage == "Internal Use Only"
+      if is_externally_accessible && !Rights::UsageTerms.externally_distributable?(asset.usage_terms)
         violations << {
           asset_id: asset.id,
           title:    asset.title || asset.original_filename,
-          reason:   "Asset is restricted to 'Internal Use Only' but workspace allows external access.",
+          reason:   "Asset is restricted to '#{asset.usage_terms_label}' but workspace allows external access.",
         }
       end
 
-      if props["license_expires_at"].present? && self.expires_at.present?
-        if Time.zone.parse(props["license_expires_at"]) < self.expires_at
-          violations << {
-            asset_id: asset.id,
-            title:    asset.title || asset.original_filename,
-            reason:   "Asset license expires before the campaign workspace TTL finishes.",
-          }
-        end
+      if asset.license_expires_at.present? && expires_at.present? &&
+         asset.license_expires_at < expires_at
+        violations << {
+          asset_id: asset.id,
+          title:    asset.title || asset.original_filename,
+          reason:   "Asset license expires before the campaign workspace TTL finishes.",
+        }
       end
     end
 

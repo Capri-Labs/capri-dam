@@ -19,6 +19,10 @@ module Public
   # destroy the audit trail the review exists to produce.
   class ReviewCommentsController < ApplicationController
     include ReviewLinkAuthentication
+
+    # Review tokens only; a portal token routed here would be granted commenting
+    # and the collection-wide scope that portal grants exist to narrow.
+    serves_link_kind :review
     include GuestReviewSerialization
 
     # A cap, because this endpoint is reachable by anyone with the URL and an
@@ -114,7 +118,7 @@ module Public
     def set_thread
       @thread = CommentThread.active
                              .visible_to_guests
-                             .where(asset_id: @review_link.scoped_assets.select(:id))
+                             .where(asset_id: @review_link.distributable_assets.select(:id))
                              .find_by(id: params[:thread_id])
 
       render json: { error: "Not found" }, status: :not_found if @thread.nil?

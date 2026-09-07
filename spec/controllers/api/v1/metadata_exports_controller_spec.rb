@@ -30,7 +30,11 @@ RSpec.describe Api::V1::MetadataExportsController, type: :controller do
       create(:asset, properties: [])
       create(:asset, properties: { "copyright" => "ACME" })
 
-      expect(controller.send(:collect_property_keys, nil, true)).to eq([ "copyright" ])
+      # usage_terms is stamped into properties on every save by
+      # Asset#normalise_rights, so it is a genuine exportable key now. The
+      # point of this example is that the asset with array properties
+      # contributes nothing at all.
+      expect(controller.send(:collect_property_keys, nil, true)).to eq(%w[copyright usage_terms])
     end
   end
 end

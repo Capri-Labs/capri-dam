@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<%# Layout for the unauthenticated distribution portal.
+
+    Like `public_review` it loads a guest-only bundle and omits the app header,
+    sidebar and navigation: a partner is here to collect a specific set of
+    files and must not be shown a way into the authenticated application.
+
+    The accent colour comes from the link's branding blob, which is whitelisted
+    down to a literal hex value by Portal::Branding before it reaches this
+    inline style — see that class for why escaping alone was not enough. %>
+<% branding = @review_link&.branding_settings %>
+<% accent = branding&.accent || Portal::Branding::DEFAULT_ACCENT %>
+<html lang="<%= I18n.locale.to_s %>">
+<head>
+  <title><%= content_for(:title) || t("public.portals.default_title") %></title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <%# A portal link is a credential in a URL; it must never reach an index. %>
+  <meta name="robots" content="noindex, nofollow">
+  <%= csrf_meta_tags %>
+  <%= csp_meta_tag %>
+  <link rel="icon" href="/icon.png" type="image/png">
+  <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
+  <%# The portal bundle only, never "application": that one ships the whole
+      internal UI and would boot navigation a partner cannot follow. %>
+  <%= javascript_include_tag "guest_portal", "data-turbo-track": "reload", defer: true %>
+</head>
+<body style="margin:0; padding:0; background:#f4f7fb; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+  <header style="background:#fff; border-bottom:1px solid #e2e8f0; border-top:3px solid <%= accent %>; padding:14px 24px; display:flex; align-items:center; justify-content:space-between; gap:16px;">
+    <div style="display:flex; align-items:center; gap:12px; min-width:0;">
+      <% if branding&.logo_url.present? %>
+        <img src="<%= branding.logo_url %>" alt="" style="height:28px; width:auto; max-width:160px; object-fit:contain;">
+      <% else %>
+        <strong style="font-size:1.05rem; color:#121926;">Capri DAM</strong>
+      <% end %>
+    </div>
+    <span style="font-size:0.75rem; color:#94a3b8; text-transform:uppercase; letter-spacing:0.05em; white-space:nowrap;">
+      <%= t("public.portals.badge") %>
+    </span>
+  </header>
+  <%= yield %>
+</body>
+</html>

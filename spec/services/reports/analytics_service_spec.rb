@@ -330,11 +330,16 @@ RSpec.describe Reports::AnalyticsService, type: :service do
         ]
       )
 
-      asset_active_scope = instance_double(ActiveRecord::Relation)
+      # Asset.all.class rather than ActiveRecord::Relation: the bare relation
+      # class does not carry the model's own scopes, so a verifying double
+      # built from it rejects license_expiring_within. (The per-model relation
+      # constant itself is private, hence reaching it this way.)
+      asset_active_scope = instance_double(Asset.all.class)
       allow(Asset).to receive(:active).and_return(asset_active_scope)
       allow(asset_active_scope).to receive(:where).with("properties->>'alt_text' IS NULL OR properties->>'alt_text' = ''").and_return(instance_double(ActiveRecord::Relation, count: 30))
       allow(asset_active_scope).to receive(:count).and_return(100)
-      allow(asset_active_scope).to receive(:where).with("(properties->>'license_expires_at')::timestamp < ?", anything).and_return(instance_double(ActiveRecord::Relation, count: 5))
+      allow(asset_active_scope).to receive(:license_expiring_within).with(30.days).and_return(instance_double(ActiveRecord::Relation, count: 5))
+      allow(asset_active_scope).to receive(:license_expired).and_return(instance_double(ActiveRecord::Relation, count: 0))
       allow(AssetEmbedding).to receive(:count).and_return(20)
       allow(Asset).to receive(:trashed).and_return(instance_double(ActiveRecord::Relation, count: 150))
       allow(WorkflowInstance).to receive(:where).with(status: 'pending').and_return(instance_double(ActiveRecord::Relation, where: instance_double(ActiveRecord::Relation, count: 3)))
@@ -356,10 +361,15 @@ RSpec.describe Reports::AnalyticsService, type: :service do
         ]
       )
 
-      asset_active_scope = instance_double(ActiveRecord::Relation)
+      # Asset.all.class rather than ActiveRecord::Relation: the bare relation
+      # class does not carry the model's own scopes, so a verifying double
+      # built from it rejects license_expiring_within. (The per-model relation
+      # constant itself is private, hence reaching it this way.)
+      asset_active_scope = instance_double(Asset.all.class)
       allow(Asset).to receive(:active).and_return(asset_active_scope)
       allow(asset_active_scope).to receive(:where).with("properties->>'alt_text' IS NULL OR properties->>'alt_text' = ''").and_return(instance_double(ActiveRecord::Relation, count: 1))
-      allow(asset_active_scope).to receive(:where).with("(properties->>'license_expires_at')::timestamp < ?", anything).and_return(instance_double(ActiveRecord::Relation, count: 0))
+      allow(asset_active_scope).to receive(:license_expiring_within).with(30.days).and_return(instance_double(ActiveRecord::Relation, count: 0))
+      allow(asset_active_scope).to receive(:license_expired).and_return(instance_double(ActiveRecord::Relation, count: 0))
       allow(asset_active_scope).to receive(:count).and_return(10)
       allow(AssetEmbedding).to receive(:count).and_return(9)
       allow(Asset).to receive(:trashed).and_return(instance_double(ActiveRecord::Relation, count: 50))
@@ -378,10 +388,15 @@ RSpec.describe Reports::AnalyticsService, type: :service do
         Array.new(7) { |i| { 'date' => "2026-06-0#{i + 1}", 'cnt' => '10' } }
       )
 
-      asset_active_scope = instance_double(ActiveRecord::Relation)
+      # Asset.all.class rather than ActiveRecord::Relation: the bare relation
+      # class does not carry the model's own scopes, so a verifying double
+      # built from it rejects license_expiring_within. (The per-model relation
+      # constant itself is private, hence reaching it this way.)
+      asset_active_scope = instance_double(Asset.all.class)
       allow(Asset).to receive(:active).and_return(asset_active_scope)
       allow(asset_active_scope).to receive(:where).with("properties->>'alt_text' IS NULL OR properties->>'alt_text' = ''").and_return(instance_double(ActiveRecord::Relation, count: 2))
-      allow(asset_active_scope).to receive(:where).with("(properties->>'license_expires_at')::timestamp < ?", anything).and_return(instance_double(ActiveRecord::Relation, count: 0))
+      allow(asset_active_scope).to receive(:license_expiring_within).with(30.days).and_return(instance_double(ActiveRecord::Relation, count: 0))
+      allow(asset_active_scope).to receive(:license_expired).and_return(instance_double(ActiveRecord::Relation, count: 0))
       allow(asset_active_scope).to receive(:count).and_return(20)
       allow(AssetEmbedding).to receive(:count).and_return(19)
       allow(Asset).to receive(:trashed).and_return(instance_double(ActiveRecord::Relation, count: 10))

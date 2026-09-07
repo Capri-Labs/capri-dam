@@ -2235,7 +2235,9 @@
       "queued": "Ihr Download wurde hinter einem anderen laufenden Download eingereiht.",
       "failed": "Der Download konnte nicht erstellt werden. Bitte versuchen Sie es erneut.",
       "error": "Der Download konnte nicht gestartet werden. Bitte versuchen Sie es erneut."
-    }
+    },
+    "restrictedTitle": "{{count}} Element wurde ausgelassen, da seine Nutzungsrechte keine Verbreitung erlauben:",
+    "restrictedTitle_other": "{{count}} Elemente wurden ausgelassen, da ihre Nutzungsrechte keine Verbreitung erlauben:"
   },
   "applySchemaDialog": {
     "title": "Metadatenschema anwenden",
@@ -3201,5 +3203,41 @@
       "noAsset": "Nothing to review here.",
       "download": "Download"
     }
+  },
+  "assetRights": {
+    "title": "Verbreitungsrechte",
+    "description": "Legt fest, ob dieses Asset außerhalb der Organisation geteilt werden darf und bis wann. Diese Werte werden beim Download und bei Gast-Freigabelinks durchgesetzt.",
+    "usageTermsLabel": "Nutzungsbedingungen",
+    "licenseExpiresLabel": "Lizenz läuft ab",
+    "licenseExpiresHelp": "Leer lassen, wenn die Lizenz nicht abläuft. Das Asset bleibt bis zum Ende des angegebenen Tages nutzbar.",
+    "notDistributable": "nur intern",
+    "internalBadge": "Nicht zur externen Veröffentlichung",
+    "expiredBadge": "Lizenz abgelaufen",
+    "save": "Rechte speichern",
+    "notifications": {
+      "saved": "Verbreitungsrechte aktualisiert."
+    },
+    "errors": {
+      "saveFailed": "Verbreitungsrechte konnten nicht aktualisiert werden.",
+      "optionsUnavailable": "Die Liste der Nutzungsbedingungen konnte nicht geladen werden. Bitte Seite neu laden."
+    }
+  },
+  "portal": {
+    "download": "Herunterladen",
+    "viewOnly": "Nur ansehen",
+    "viewOnlyHint": "Sie können diese Datei ansehen, sie wurde jedoch nicht zum Download freigegeben.",
+    "fileCount": "{{count}} Datei",
+    "fileCount_other": "{{count}} Dateien",
+    "empty": "Diese Freigabe enthält noch keine Dateien.",
+    "passphraseTitle": "Diese Freigabe ist geschützt",
+    "passphraseHint": "Geben Sie die Ihnen mitgeteilte Passphrase ein, um diese Dateien anzuzeigen.",
+    "passphraseLabel": "Passphrase",
+    "unlock": "Entsperren",
+    "identityTitle": "Wer holt diese Dateien ab?",
+    "identityHint": "Ihr Name wird zusammen mit allen Downloads erfasst. Er dient nicht zur Anmeldung.",
+    "email": "E-Mail-Adresse",
+    "name": "Name (optional)",
+    "later": "Jetzt nicht",
+    "continue": "Weiter"
   }
 }

@@ -2217,6 +2217,24 @@
     },
     "loadingFolders": "Loading folders…"
   },
+  "assetRights": {
+    "title": "Distribution rights",
+    "description": "Controls whether this asset may be shared outside the organisation, and until when. These values are enforced on download and on guest review links.",
+    "usageTermsLabel": "Usage terms",
+    "licenseExpiresLabel": "Licence expires",
+    "licenseExpiresHelp": "Leave blank if the licence does not expire. The asset remains usable to the end of the day shown.",
+    "notDistributable": "internal only",
+    "internalBadge": "Not for external release",
+    "expiredBadge": "Licence expired",
+    "save": "Save rights",
+    "notifications": {
+      "saved": "Distribution rights updated."
+    },
+    "errors": {
+      "saveFailed": "Could not update distribution rights.",
+      "optionsUnavailable": "Could not load the list of usage terms. Try reloading the page."
+    }
+  },
   "downloadDialog": {
     "title": "Download {{count}} item",
     "title_other": "Download {{count}} items",
@@ -2224,6 +2242,8 @@
     "queuedNotice": "You already have another download in progress — this one has been queued and will start shortly.",
     "readyNotice": "Your ZIP is ready. We've also sent a download link to your inbox.",
     "partialFailureTitle": "Some items could not be included:",
+    "restrictedTitle": "{{count}} item was left out because its usage rights do not permit distribution:",
+    "restrictedTitle_other": "{{count}} items were left out because their usage rights do not permit distribution:",
     "preparing": "Preparing…",
     "runInBackground": "Run in background",
     "downloadZip": "Download ZIP",
@@ -3201,5 +3221,23 @@
       "noAsset": "Nothing to review here.",
       "download": "Download"
     }
+  },
+  "portal": {
+    "download": "Download",
+    "viewOnly": "View only",
+    "viewOnlyHint": "You can preview this file, but it was not shared for download.",
+    "fileCount": "{{count}} file",
+    "fileCount_other": "{{count}} files",
+    "empty": "There are no files in this share yet.",
+    "passphraseTitle": "This share is protected",
+    "passphraseHint": "Enter the passphrase you were given to view these files.",
+    "passphraseLabel": "Passphrase",
+    "unlock": "Unlock",
+    "identityTitle": "Who is collecting these files?",
+    "identityHint": "Your name is recorded alongside anything you download. It is not used to sign you in.",
+    "email": "Email address",
+    "name": "Name (optional)",
+    "later": "Not now",
+    "continue": "Continue"
   }
 }

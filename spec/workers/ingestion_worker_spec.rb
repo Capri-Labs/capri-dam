@@ -128,7 +128,12 @@ RSpec.describe IngestionWorker, type: :worker do
     }.to change(Asset, :count).by(1)
 
     asset = Asset.last
-    expect(asset).to have_attributes(title: "hero.jpg", properties: { "description" => "summer" })
+    # usage_terms is stamped by Asset#normalise_rights on save, keeping the
+    # JSONB key in step with the typed column.
+    expect(asset).to have_attributes(
+      title: "hero.jpg",
+      properties: { "description" => "summer", "usage_terms" => "internal_only" }
+    )
     expect(asset.asset_embedding.embedding).to eq(vector)
     expect(asset.asset_embedding.model_name).to eq("ingestion-worker")
     expect(connector.reload.assets_imported).to eq(1)

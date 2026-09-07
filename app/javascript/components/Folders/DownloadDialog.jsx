@@ -47,6 +47,10 @@ export default function DownloadDialog({
     const [queuedNotice, setQueuedNotice] = useState(false);
     const [error, setError] = useState('');
     const [itemErrors, setItemErrors] = useState([]);
+    // Assets deliberately withheld from the archive because their rights did not
+    // permit export. Distinct from itemErrors: nothing went wrong, but the user
+    // must still be told the ZIP is incomplete and why.
+    const restrictedItems = download?.restricted_items ?? [];
     const pollRef = useRef(null);
     const startedRef = useRef(false);
 
@@ -233,6 +237,19 @@ export default function DownloadDialog({
                         {itemErrors.map((e, idx) => (
                             <Typography key={idx} variant="caption" component="div">
                                 {(e.name || `#${e.id}`)}: {e.error}
+                            </Typography>
+                        ))}
+                    </Alert>
+                )}
+
+                {restrictedItems.length > 0 && (
+                    <Alert severity="warning" sx={{ mb: 2 }} data-testid="download-restricted-alert">
+                        <Typography variant="body2" fontWeight={600}>
+                            {t('downloadDialog.restrictedTitle', { count: restrictedItems.length })}
+                        </Typography>
+                        {restrictedItems.map((item) => (
+                            <Typography key={item.asset_id} variant="caption" component="div">
+                                {item.title}: {item.reason}
                             </Typography>
                         ))}
                     </Alert>

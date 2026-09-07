@@ -24,7 +24,12 @@ class Api::V1::ReviewLinksController < ApplicationController
   # Scoped to links the caller created unless they are an administrator, so a
   # user cannot enumerate what colleagues have shared externally.
   def index
-    links = ReviewLink.includes(:asset, :collection, :created_by, :review_guests)
+    # Reviews only. Distribution portals share this table but are a different
+    # surface with a different permission model, and are managed through
+    # Api::V1::PortalsController — listing them here would offer settings
+    # (comment permissions) that do not apply and hide the ones that do
+    # (per-asset grants).
+    links = ReviewLink.reviews.includes(:asset, :collection, :created_by, :review_guests)
     links = links.where(created_by_id: current_user.id) unless current_user.admin?
     links = apply_status_filter(links)
 
@@ -99,7 +104,7 @@ class Api::V1::ReviewLinksController < ApplicationController
   private
 
   def set_review_link
-    @review_link = ReviewLink.find_by(id: params[:id])
+    @review_link = ReviewLink.reviews.find_by(id: params[:id])
     return render(json: { error: "Review link not found" }, status: :not_found) if @review_link.nil?
 
     return if current_user.admin? || @review_link.created_by_id == current_user.id
@@ -165,6 +170,11 @@ class Api::V1::ReviewLinksController < ApplicationController
       target_id: link.asset_id || link.collection_id,
       target_label: link.target_label,
       asset_count: link.scoped_assets.count,
+      # What the guest will actually see. The owner needs both numbers: a link
+      # to a 20-asset collection of which 3 are cleared for external release is
+      # not the link they think they created, and "asset_count: 20" alone would
+      # never tell them.
+      distributable_asset_count: link.distributable_assets.count,
       expires_at: link.expires_at,
       revoked_at: link.revoked_at,
       status: link_status(link),

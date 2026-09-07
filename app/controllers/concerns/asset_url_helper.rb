@@ -143,9 +143,27 @@ module AssetUrlHelper
 
   # Convenience wrapper that returns a download-disposition URL.
   #
+  # Returns +nil+ when the asset's rights forbid export, so a restricted asset
+  # simply has no download URL to hand out.
+  #
+  # This check belongs at *issuance* rather than at delivery. In production an
+  # asset URL is a presigned S3/GCS link or a signed CDN path — the bytes are
+  # served by infrastructure this application never sees, so there is no later
+  # moment at which it could refuse. Once the URL exists, the file is
+  # effectively released. The only enforceable moment is this one.
+  #
   # @param asset [Asset]
+  # @param user [User, nil] the recipient; defaults to the current user
+  # @param audience [Symbol] +:internal+ or +:external+ (see
+  #   {Rights::DownloadPolicy})
   # @return [String, nil]
-  def asset_download_url_for(asset)
+  def asset_download_url_for(asset, user: nil, audience: :internal)
+    recipient = user || (respond_to?(:current_user, true) ? current_user : nil)
+
+    return nil unless Rights::DownloadPolicy.allow?(
+      asset, audience: audience, purpose: :download, user: recipient
+    )
+
     asset_url_for(asset, disposition: :download)
   end
 

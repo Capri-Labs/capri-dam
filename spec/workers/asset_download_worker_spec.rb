@@ -138,4 +138,105 @@ RSpec.describe AssetDownloadWorker, type: :worker do
     expect(download.error_message).to eq("boom")
     expect(user.notifications.last.title).to match(/download failed/i)
   end
+
+  # Phase 10b: a ZIP that silently omits files is worse than one that refuses,
+  # because the recipient assumes the archive is complete.
+  describe "rights enforcement" do
+    it "omits an asset whose licence has lapsed and records why" do
+      allowed  = asset_with_file(title: "Cleared", filename: "ok.txt")
+      lapsed   = asset_with_file(title: "Lapsed", filename: "bad.txt")
+      lapsed.update!(license_expires_at: 1.day.ago, usage_terms: "rights_managed")
+
+      download = create(:asset_download, user: user,
+                                         asset_ids: [ allowed.id, lapsed.id ],
+                                         folder_ids: [], total_items: 2)
+
+      described_class.new.perform(download.id)
+      download.reload
+
+      expect(download).to be_completed
+      expect(zip_entries(download)).to include("ok.txt")
+      expect(zip_entries(download)).not_to include("bad.txt")
+
+      expect(download.restricted_items.size).to eq(1)
+      entry = download.restricted_items.first
+      expect(entry["asset_id"]).to eq(lapsed.id)
+      expect(entry["title"]).to eq("Lapsed")
+      expect(entry["code"]).to eq("license_expired")
+      expect(entry["reason"]).to match(/licence expired/i)
+    end
+
+    it "writes a manifest into the archive itself" do
+      # The archive travels; the web UI does not. Someone who receives the ZIP
+      # second-hand cannot see the download record that explains it.
+      lapsed = asset_with_file(title: "Lapsed", filename: "bad.txt")
+      lapsed.update!(license_expires_at: 1.day.ago, usage_terms: "rights_managed")
+      download = create(:asset_download, user: user, asset_ids: [ lapsed.id ],
+                                         folder_ids: [], total_items: 1)
+
+      described_class.new.perform(download.id)
+
+      expect(zip_entries(download.reload)).to include("RESTRICTED_ASSETS.txt")
+    end
+
+    it "adds no manifest when nothing was withheld" do
+      asset = asset_with_file(title: "Cleared", filename: "ok.txt")
+      download = create(:asset_download, user: user, asset_ids: [ asset.id ],
+                                         folder_ids: [], total_items: 1)
+
+      described_class.new.perform(download.id)
+      download.reload
+
+      expect(zip_entries(download)).not_to include("RESTRICTED_ASSETS.txt")
+      expect(download.restricted_items).to be_empty
+    end
+
+    it "filters assets pulled in by a folder selection, not just hand-picked ones" do
+      # The folder walk is the path a contributor is most likely to forget, and
+      # the one that sweeps up the most assets.
+      folder = create(:folder, user: user, name: "Campaign")
+      asset_with_file(folder: folder, title: "Cleared", filename: "ok.txt")
+      lapsed = asset_with_file(folder: folder, title: "Lapsed", filename: "bad.txt")
+      lapsed.update!(license_expires_at: 1.day.ago, usage_terms: "rights_managed")
+
+      download = create(:asset_download, user: user, asset_ids: [],
+                                         folder_ids: [ folder.id ], total_items: 2)
+
+      described_class.new.perform(download.id)
+      download.reload
+
+      expect(zip_entries(download)).to include("Campaign/ok.txt")
+      expect(zip_entries(download)).not_to include("Campaign/bad.txt")
+      expect(download.restricted_items.map { |i| i["title"] }).to eq([ "Lapsed" ])
+    end
+
+    it "lets an administrator export a lapsed asset" do
+      admin  = create(:user, :admin)
+      lapsed = asset_with_file(title: "Lapsed", filename: "bad.txt")
+      lapsed.update!(license_expires_at: 1.day.ago, usage_terms: "rights_managed")
+      download = create(:asset_download, user: admin, asset_ids: [ lapsed.id ],
+                                         folder_ids: [], total_items: 1)
+
+      described_class.new.perform(download.id)
+      download.reload
+
+      expect(zip_entries(download)).to include("bad.txt")
+      expect(download.restricted_items).to be_empty
+    end
+
+    it "still completes when every asset was withheld" do
+      # An empty-but-explained archive beats a failure the user cannot act on.
+      lapsed = asset_with_file(title: "Lapsed", filename: "bad.txt")
+      lapsed.update!(license_expires_at: 1.day.ago, usage_terms: "rights_managed")
+      download = create(:asset_download, user: user, asset_ids: [ lapsed.id ],
+                                         folder_ids: [], total_items: 1)
+
+      described_class.new.perform(download.id)
+      download.reload
+
+      expect(download).to be_completed
+      expect(download.processed_items).to eq(0)
+      expect(zip_entries(download)).to eq([ "RESTRICTED_ASSETS.txt" ])
+    end
+  end
 end

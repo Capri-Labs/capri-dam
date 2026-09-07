@@ -2235,7 +2235,9 @@
       "queued": "Votre téléchargement a été mis en file d'attente derrière un autre téléchargement en cours.",
       "failed": "Le téléchargement n'a pas pu être généré. Veuillez réessayer.",
       "error": "Impossible de démarrer le téléchargement. Veuillez réessayer."
-    }
+    },
+    "restrictedTitle": "{{count}} élément a été exclu car ses droits d'utilisation n'autorisent pas la diffusion :",
+    "restrictedTitle_other": "{{count}} éléments ont été exclus car leurs droits d'utilisation n'autorisent pas la diffusion :"
   },
   "applySchemaDialog": {
     "title": "Appliquer le schéma de métadonnées",
@@ -3201,5 +3203,41 @@
       "noAsset": "Nothing to review here.",
       "download": "Download"
     }
+  },
+  "assetRights": {
+    "title": "Droits de diffusion",
+    "description": "Détermine si ce média peut être partagé en dehors de l'organisation, et jusqu'à quelle date. Ces valeurs sont appliquées lors des téléchargements et sur les liens de révision invité.",
+    "usageTermsLabel": "Conditions d'utilisation",
+    "licenseExpiresLabel": "Expiration de la licence",
+    "licenseExpiresHelp": "Laissez vide si la licence n'expire pas. Le média reste utilisable jusqu'à la fin de la journée indiquée.",
+    "notDistributable": "usage interne uniquement",
+    "internalBadge": "Pas de diffusion externe",
+    "expiredBadge": "Licence expirée",
+    "save": "Enregistrer les droits",
+    "notifications": {
+      "saved": "Droits de diffusion mis à jour."
+    },
+    "errors": {
+      "saveFailed": "Impossible de mettre à jour les droits de diffusion.",
+      "optionsUnavailable": "Impossible de charger la liste des conditions d'utilisation. Rechargez la page."
+    }
+  },
+  "portal": {
+    "download": "Télécharger",
+    "viewOnly": "Consultation seule",
+    "viewOnlyHint": "Vous pouvez prévisualiser ce fichier, mais il n'a pas été partagé pour téléchargement.",
+    "fileCount": "{{count}} fichier",
+    "fileCount_other": "{{count}} fichiers",
+    "empty": "Ce partage ne contient pas encore de fichiers.",
+    "passphraseTitle": "Ce partage est protégé",
+    "passphraseHint": "Saisissez la phrase secrète qui vous a été communiquée pour voir ces fichiers.",
+    "passphraseLabel": "Phrase secrète",
+    "unlock": "Déverrouiller",
+    "identityTitle": "Qui récupère ces fichiers ?",
+    "identityHint": "Votre nom est enregistré avec tout ce que vous téléchargez. Il ne sert pas à vous connecter.",
+    "email": "Adresse e-mail",
+    "name": "Nom (facultatif)",
+    "later": "Pas maintenant",
+    "continue": "Continuer"
   }
 }

@@ -1,0 +1,20 @@
+<%# Mount point for the guest distribution portal. All data is fetched from the
+    /s/portal/:token JSON endpoints — the token in the URL is the only
+    credential, so nothing about the assets is embedded here. %>
+<% content_for :title, "#{@review_link.name} — #{t('public.portals.default_title')}" %>
+
+<div id="guest-portal-root"
+     data-token="<%= params[:token] %>"
+     data-portal-name="<%= @review_link.name %>"
+     data-headline="<%= @branding.headline || @review_link.name %>"
+     data-message="<%= @branding.message %>"
+     data-accent="<%= @branding.accent %>"
+     data-require-email="<%= @review_link.require_email? %>"
+     data-identified="<%= @guest.present? %>"
+     data-guest-name="<%= @guest&.display_name %>">
+  <noscript>
+    <p style="max-width:640px; margin:48px auto; text-align:center; color:#64748b;">
+      <%= t("public.portals.noscript") %>
+    </p>
+  </noscript>
+</div>

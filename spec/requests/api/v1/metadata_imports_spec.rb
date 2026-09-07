@@ -106,7 +106,12 @@ RSpec.describe 'Api::V1::MetadataImports', type: :request do
         'message' => "No asset found at path '/Adventures/missing.jpg'"
       )
 
-      expect(asset.reload.properties).to eq('copyright' => 'Original', 'tags' => [ 'legacy' ])
+      # usage_terms is stamped by Asset#normalise_rights on save, keeping the
+      # JSONB key in step with the typed column; the preview itself changed
+      # nothing.
+      expect(asset.reload.properties).to eq(
+        'copyright' => 'Original', 'tags' => [ 'legacy' ], 'usage_terms' => 'internal_only'
+      )
     end
 
     it 'rejects preview requests without a file' do

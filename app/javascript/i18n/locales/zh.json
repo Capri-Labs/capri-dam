@@ -2235,7 +2235,9 @@
       "queued": "您的下载已排在另一个正在进行的下载之后。",
       "failed": "无法生成下载文件，请重试。",
       "error": "无法启动下载，请重试。"
-    }
+    },
+    "restrictedTitle": "有 {{count}} 个项目因使用权限不允许分发而被排除：",
+    "restrictedTitle_other": "有 {{count}} 个项目因使用权限不允许分发而被排除："
   },
   "applySchemaDialog": {
     "title": "应用元数据架构",
@@ -3201,5 +3203,41 @@
       "noAsset": "Nothing to review here.",
       "download": "Download"
     }
+  },
+  "assetRights": {
+    "title": "分发权限",
+    "description": "控制此资产能否在组织外共享，以及可共享到何时。这些值将在下载时以及访客审阅链接上强制执行。",
+    "usageTermsLabel": "使用条款",
+    "licenseExpiresLabel": "许可到期日",
+    "licenseExpiresHelp": "如果许可不会到期，请留空。资产在所示日期结束前仍可使用。",
+    "notDistributable": "仅限内部使用",
+    "internalBadge": "不可对外发布",
+    "expiredBadge": "许可已到期",
+    "save": "保存权限",
+    "notifications": {
+      "saved": "分发权限已更新。"
+    },
+    "errors": {
+      "saveFailed": "无法更新分发权限。",
+      "optionsUnavailable": "无法加载使用条款列表，请重新加载页面。"
+    }
+  },
+  "portal": {
+    "download": "下载",
+    "viewOnly": "仅供查看",
+    "viewOnlyHint": "您可以预览此文件，但它并未共享供下载。",
+    "fileCount": "{{count}} 个文件",
+    "fileCount_other": "{{count}} 个文件",
+    "empty": "此共享中还没有文件。",
+    "passphraseTitle": "此共享受保护",
+    "passphraseHint": "请输入您收到的口令以查看这些文件。",
+    "passphraseLabel": "口令",
+    "unlock": "解锁",
+    "identityTitle": "由谁领取这些文件？",
+    "identityHint": "您的姓名将与您下载的所有内容一并记录。它不会用于登录。",
+    "email": "电子邮件地址",
+    "name": "姓名（可选）",
+    "later": "暂不",
+    "continue": "继续"
   }
 }

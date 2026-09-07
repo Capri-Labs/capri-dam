@@ -33,14 +33,21 @@ class ReviewLink < ApplicationRecord
 
   has_many :review_guests, dependent: :destroy
   has_many :comment_threads, dependent: :nullify
+  has_many :portal_grants, dependent: :destroy
+  has_many :portal_downloads, dependent: :destroy
+
+  KINDS = %w[review portal].freeze
 
   validates :name, presence: true
   validates :token_digest, presence: true, uniqueness: true
   validates :expires_at, presence: true
+  validates :kind, presence: true, inclusion: { in: KINDS }
   validate  :exactly_one_target
   validate  :expiry_within_bounds
 
   scope :live, -> { where(revoked_at: nil).where("expires_at > ?", Time.current) }
+  scope :portals, -> { where(kind: "portal") }
+  scope :reviews, -> { where(kind: "review") }
 
   class << self
     # Creates a link and returns it alongside the *only* copy of its raw token.
@@ -134,11 +141,50 @@ class ReviewLink < ApplicationRecord
   # every outstanding review link at once. The alternative — a frozen list —
   # would mean a retracted asset stayed visible to external reviewers.
   #
+  # For a portal the membership test is joined by a second, independent one:
+  # an explicit {PortalGrant}. Both must hold. An asset dropped from the
+  # collection disappears even though its grant survives, and an asset added
+  # to the collection stays hidden until somebody grants it — so a portal
+  # handed out last month cannot silently start offering this month's work.
+  #
   # @return [ActiveRecord::Relation<Asset>]
   def scoped_assets
-    return Asset.active.where(id: asset_id) if asset_id.present?
+    portal? ? target_assets.where(id: portal_grants.select(:asset_id)) : target_assets
+  end
 
-    collection ? collection.assets.merge(Asset.active) : Asset.none
+  # @return [Boolean]
+  def portal?
+    kind == "portal"
+  end
+
+  # @return [Boolean]
+  def review?
+    !portal?
+  end
+
+  # The grant covering an asset, if this link has one.
+  #
+  # @param candidate [Asset, String, nil]
+  # @return [PortalGrant, nil]
+  def grant_for(candidate)
+    id = candidate.respond_to?(:id) ? candidate.id : candidate
+    return nil if id.blank?
+
+    portal_grants.find_by(asset_id: id)
+  end
+
+  # Whether a guest may take this file.
+  #
+  # Answers the *sender's* half of the question only. The asset must also be
+  # in scope and must independently clear {Rights::DownloadPolicy}; a grant
+  # can narrow what rights permit but can never widen it.
+  #
+  # @param candidate [Asset, String, nil]
+  # @return [Boolean]
+  def may_download?(candidate)
+    return allow_downloads? if review?
+
+    grant_for(candidate)&.download? || false
   end
 
   # @param candidate [Asset, String, nil]
@@ -148,6 +194,25 @@ class ReviewLink < ApplicationRecord
     return false if id.blank?
 
     scoped_assets.exists?(id: id)
+  end
+
+  # The subset of {#scoped_assets} a guest may actually be shown.
+  #
+  # Rights are applied to the *scope*, not just to byte delivery, because a
+  # listing leaks too. Refusing the file while still showing the title,
+  # dimensions and comment thread of an unreleased asset tells an outsider it
+  # exists, what it is called and roughly what it is — which for an unannounced
+  # product shot is most of the disclosure the restriction existed to prevent.
+  #
+  # Filtering here also means a restricted asset is indistinguishable from one
+  # that was never in the link's scope: both produce a 404. That is the right
+  # answer for a guest, who should not be able to tell "not shared with you"
+  # from "shared but restricted".
+  #
+  # @param at [Time] the moment to judge license expiry against
+  # @return [ActiveRecord::Relation]
+  def distributable_assets(at = Time.current)
+    scoped_assets.externally_distributable.license_current(at)
   end
 
   # @return [Asset, Collection, nil]
@@ -173,6 +238,13 @@ class ReviewLink < ApplicationRecord
     asset&.title || collection&.name || "Review"
   end
 
+  # Render-safe presentation settings for a portal.
+  #
+  # @return [Portal::Branding]
+  def branding_settings
+    @branding_settings ||= Portal::Branding.new(branding)
+  end
+
   # Records that the link was opened. Uses a bare UPDATE rather than a
   # validated save because this fires on every guest page view and must not be
   # able to fail the request it is measuring.
@@ -182,6 +254,21 @@ class ReviewLink < ApplicationRecord
       last_accessed_at: Time.current,
       updated_at: Time.current,
     )
+  end
+
+  # The link's target membership, *before* per-asset grants are considered.
+  #
+  # Public because the management API needs the full pick list: a portal editor
+  # has to show every asset in the collection so somebody can choose which to
+  # grant, which is precisely the set {#scoped_assets} excludes.
+  #
+  # This is not a guest-facing scope. Never render it on a public surface.
+  #
+  # @return [ActiveRecord::Relation<Asset>]
+  def target_assets
+    return Asset.active.where(id: asset_id) if asset_id.present?
+
+    collection ? collection.assets.merge(Asset.active) : Asset.none
   end
 
   private

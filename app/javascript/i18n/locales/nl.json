@@ -2235,7 +2235,9 @@
       "queued": "Je download is in de wachtrij geplaatst achter een andere lopende download.",
       "failed": "De download kon niet worden gegenereerd. Probeer het opnieuw.",
       "error": "De download kon niet worden gestart. Probeer het opnieuw."
-    }
+    },
+    "restrictedTitle": "{{count}} item is weggelaten omdat de gebruiksrechten distributie niet toestaan:",
+    "restrictedTitle_other": "{{count}} items zijn weggelaten omdat de gebruiksrechten distributie niet toestaan:"
   },
   "applySchemaDialog": {
     "title": "Metadataschema toepassen",
@@ -3201,5 +3203,41 @@
       "noAsset": "Nothing to review here.",
       "download": "Download"
     }
+  },
+  "assetRights": {
+    "title": "Distributierechten",
+    "description": "Bepaalt of dit bestand buiten de organisatie gedeeld mag worden, en tot wanneer. Deze waarden worden afgedwongen bij downloads en bij beoordelingslinks voor gasten.",
+    "usageTermsLabel": "Gebruiksvoorwaarden",
+    "licenseExpiresLabel": "Licentie verloopt",
+    "licenseExpiresHelp": "Laat leeg als de licentie niet verloopt. Het bestand blijft bruikbaar tot het einde van de getoonde dag.",
+    "notDistributable": "alleen intern",
+    "internalBadge": "Niet voor externe publicatie",
+    "expiredBadge": "Licentie verlopen",
+    "save": "Rechten opslaan",
+    "notifications": {
+      "saved": "Distributierechten bijgewerkt."
+    },
+    "errors": {
+      "saveFailed": "Kan de distributierechten niet bijwerken.",
+      "optionsUnavailable": "Kan de lijst met gebruiksvoorwaarden niet laden. Herlaad de pagina."
+    }
+  },
+  "portal": {
+    "download": "Downloaden",
+    "viewOnly": "Alleen bekijken",
+    "viewOnlyHint": "U kunt dit bestand bekijken, maar het is niet gedeeld om te downloaden.",
+    "fileCount": "{{count}} bestand",
+    "fileCount_other": "{{count}} bestanden",
+    "empty": "Deze share bevat nog geen bestanden.",
+    "passphraseTitle": "Deze share is beveiligd",
+    "passphraseHint": "Voer de wachtwoordzin in die u hebt gekregen om deze bestanden te bekijken.",
+    "passphraseLabel": "Wachtwoordzin",
+    "unlock": "Ontgrendelen",
+    "identityTitle": "Wie haalt deze bestanden op?",
+    "identityHint": "Uw naam wordt vastgelegd bij alles wat u downloadt. Het wordt niet gebruikt om in te loggen.",
+    "email": "E-mailadres",
+    "name": "Naam (optioneel)",
+    "later": "Niet nu",
+    "continue": "Doorgaan"
   }
 }

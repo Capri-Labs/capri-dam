@@ -57,7 +57,7 @@ class AssetDownloadWorker
 
     download.update!(status: :processing, processed_items: 0)
 
-    entries = collect_entries(download)
+    entries, restricted = collect_entries(download)
     tmp_path = Rails.root.join("tmp", "asset_download_#{download.id}_#{SecureRandom.hex(8)}.zip")
 
     processed = 0
@@ -67,6 +67,8 @@ class AssetDownloadWorker
         processed += 1
         download.update!(processed_items: processed) if (processed % PROGRESS_BATCH_SIZE).zero?
       end
+
+      write_restriction_manifest(zipfile, restricted) if restricted.any?
     end
 
     byte_size = File.size(tmp_path)
@@ -84,7 +86,10 @@ class AssetDownloadWorker
       file_count:      1,
       byte_size:       byte_size,
       expires_at:      Time.current + AssetDownload::RETENTION_PERIOD,
-      error_message:   nil
+      error_message:   nil,
+      # Not an error: the export succeeded and the archive is valid. But the
+      # user has to be able to see that it is deliberately incomplete.
+      restricted_items: restricted
     )
 
     notify_user(download, success: true)
@@ -102,35 +107,84 @@ class AssetDownloadWorker
   # Builds the flat list of (Asset, zip-internal path) pairs to write,
   # expanding every folder in +download.folder_ids+ recursively and
   # resolving name collisions across the whole archive.
+  #
+  # Assets whose rights forbid export are filtered out here rather than at the
+  # controller, because this is the single point every asset passes through on
+  # its way into the archive — both the flat +asset_ids+ list and the recursive
+  # folder walk. A check in the controller would cover the assets the user
+  # picked by hand and miss every asset pulled in by selecting a folder.
+  #
+  # @return [Array(Array, Array<Hash>)] entries, and a record of each exclusion
   def collect_entries(download)
     entries    = []
     used_paths = Set.new
+    restricted = []
 
     Asset.active.where(id: download.asset_ids).find_each do |asset|
-      add_entry(entries, used_paths, asset, sanitize_segment(filename_for(asset)))
+      add_entry(entries, used_paths, restricted, download, asset, sanitize_segment(filename_for(asset)))
     end
 
     Folder.active.where(id: download.folder_ids).find_each do |folder|
-      collect_folder_entries(folder, sanitize_segment(folder.name), entries, used_paths)
+      collect_folder_entries(folder, sanitize_segment(folder.name), entries, used_paths, restricted, download)
     end
 
-    entries
+    [ entries, restricted ]
   end
 
-  def collect_folder_entries(folder, path_prefix, entries, used_paths)
+  def collect_folder_entries(folder, path_prefix, entries, used_paths, restricted, download)
     folder.assets.active.find_each do |asset|
-      add_entry(entries, used_paths, asset, "#{path_prefix}/#{sanitize_segment(filename_for(asset))}")
+      add_entry(entries, used_paths, restricted, download, asset,
+                "#{path_prefix}/#{sanitize_segment(filename_for(asset))}")
     end
 
     folder.children.active.find_each do |child|
-      collect_folder_entries(child, "#{path_prefix}/#{sanitize_segment(child.name)}", entries, used_paths)
+      collect_folder_entries(child, "#{path_prefix}/#{sanitize_segment(child.name)}",
+                             entries, used_paths, restricted, download)
     end
   end
 
-  def add_entry(entries, used_paths, asset, path)
+  def add_entry(entries, used_paths, restricted, download, asset, path)
+    decision = Rights::DownloadPolicy.for(
+      asset, audience: :internal, purpose: :download, user: download.user
+    )
+
+    if decision.denied?
+      restricted << {
+        "asset_id" => asset.id,
+        "title"    => asset.title || filename_for(asset),
+        "code"     => decision.code.to_s,
+        "reason"   => decision.message,
+      }
+      return
+    end
+
     path = unique_path(used_paths, path)
     used_paths << path
     entries << [ asset, path ]
+  end
+
+  # Writes a plain-text manifest of everything that was withheld.
+  #
+  # The archive travels; the web UI does not. Someone who receives this ZIP
+  # second-hand has no access to the download record that explains it, so the
+  # explanation goes inside the file itself.
+  def write_restriction_manifest(zipfile, restricted)
+    lines = [
+      "The following #{restricted.size} asset(s) were excluded from this archive",
+      "because their usage rights do not permit distribution.",
+      "",
+    ]
+
+    restricted.each do |item|
+      lines << "- #{item["title"]} (#{item["asset_id"]})"
+      lines << "  #{item["reason"]}"
+    end
+
+    zipfile.get_output_stream("RESTRICTED_ASSETS.txt") { |io| io.write(lines.join("\n") + "\n") }
+  rescue StandardError => e
+    # A manifest that cannot be written must not lose the user the assets that
+    # *were* exported successfully.
+    Rails.logger.warn("[AssetDownloadWorker] could not write restriction manifest: #{e.message}")
   end
 
   def unique_path(used_paths, path)

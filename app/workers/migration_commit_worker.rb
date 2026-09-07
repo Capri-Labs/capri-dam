@@ -65,6 +65,20 @@ class MigrationCommitWorker
     staging_path = adapter.download_and_stream(item.original_filename)
     version      = nil
 
+    # Migration sources are other people's systems, and their rights fields are
+    # whatever a decade of users typed into them. An unreadable expiry date must
+    # not abort the import of an otherwise good asset — Asset validates the
+    # format strictly, so it is sanitised here, at the boundary, and the
+    # original text carried through under a +_raw+ key for a human to correct.
+    license_expiry     = Rights::LicenseExpiry.parse(props["license_expires_at"])
+    unreadable_expiry  = Rights::LicenseExpiry.malformed?(props["license_expires_at"]) ? props["license_expires_at"] : nil
+    if unreadable_expiry
+      Rails.logger.warn(
+        "[MigrationCommitWorker] item=#{item.id} unreadable license_expires_at " \
+        "#{unreadable_expiry.inspect}; imported without an expiry"
+      )
+    end
+
     ActiveRecord::Base.transaction do
       # Create the canonical Asset record
       asset = Asset.create!(
@@ -77,11 +91,12 @@ class MigrationCommitWorker
           original_filename: item.original_filename,
           description:       props["description"],
           alt_text:          props["alt_text"] || props["description"],
-          usage_terms:       props["usage_terms"] || "Internal Use Only",
+          usage_terms:       props["usage_terms"] || Rights::UsageTerms::DEFAULT,
           tags:              Array(props["tags"]),
           author:            props["author"],
           campaign:          props["campaign"],
-          license_expires_at: props["license_expires_at"],
+          license_expires_at: Rights::LicenseExpiry.serialise(license_expiry),
+          license_expires_at_raw: unreadable_expiry,
           migrated_from:     batch.source_type,
           migration_batch_id: batch.id.to_s,
           content_type:      props["content_type"],

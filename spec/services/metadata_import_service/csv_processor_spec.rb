@@ -157,7 +157,12 @@ RSpec.describe MetadataImportService::CsvProcessor do
         include(field: 'tags', from: [ 'legacy' ], to: %w[bike outdoor])
       )
       expect(asset.reload.title).to eq('bike.jpg')
-      expect(asset.properties).to eq('copyright' => 'Original', 'tags' => [ 'legacy' ])
+      # usage_terms is stamped by Asset#normalise_rights when the asset is
+      # first saved, keeping the JSONB key in step with the typed column; the
+      # dry run itself changed nothing, as the unchanged updated_at confirms.
+      expect(asset.properties).to eq(
+        'copyright' => 'Original', 'tags' => [ 'legacy' ], 'usage_terms' => 'internal_only'
+      )
       expect(asset.updated_at.to_i).to eq(original_updated_at.to_i)
       expect(Rails.logger).not_to have_received(:info).with(/WriteBack workflow launch/)
     end

@@ -1,0 +1,260 @@
+[[section-distribution-portal]]
+= Distribution Portal
+
+A *distribution portal* is a branded, revocable, time-boxed URL through which
+someone without a Capri account can browse and collect a specific, hand-picked
+set of files.
+
+It replaces the previous answer to "send this to the agency", which was a
+signed Collection share link: whole-collection, all-or-nothing, unbranded, and
+with no record of what was actually taken.
+
+[cols="1,2,2", options="header"]
+|===
+| | Collection share link | Distribution portal
+
+| Granularity     | The whole collection | Per asset
+| Download        | Implicit — anything visible | Explicit `view` or `download` per asset
+| Revocation      | Rotate the collection's token | Revoke the link
+| Who collected it| Unknown | Recorded per file
+| Appearance      | Generic | Sender-supplied headline, message, logo, accent
+|===
+
+== Why this is a `ReviewLink`, not a new model
+
+A portal and a guest review link share a table, `review_links`, discriminated by
+a `kind` column.
+
+They do not share a *job* — one is for discussion, the other for collection —
+but they share the entire security-critical apparatus: a digest-only bearer
+token, an optional bcrypt passphrase, explicit revocation, a hard expiry
+ceiling, link-scoped guest identity, and the `Rights::DownloadPolicy` filter
+added in Phase 10b. All of it is already built and specified.
+
+A parallel model would have meant two copies of that machinery, and therefore a
+future security fix landing in only one of them. The comment on the original
+`CreateReviewLinks` migration already made this argument: a bare `signed_id` is
+adequate for read-only browsing, but anywhere you need revocation, identity and
+metering you need a row. A portal needs all three.
+
+=== Kinds never mix
+
+Sharing a table makes it possible to present a portal token to a review URL, or
+the reverse. `ReviewLinkAuthentication` therefore refuses any token whose `kind`
+does not match the surface serving it:
+
+[source,ruby]
+----
+class Public::PortalsController < ApplicationController
+  include ReviewLinkAuthentication
+  serves_link_kind :portal
+end
+----
+
+The same separation is enforced on the management side: `GET /api/v1/portals`
+never returns review links, and `GET /api/v1/review_links` never returns
+portals.
+
+NOTE: `unlock` deliberately skips `set_review_link` — a locked visitor has no
+established link yet — so it skips `enforce_link_kind` too and performs its own
+`kind` check. Without that, the passphrase gate answers `410 Gone` where it
+should answer `401 Unauthorized`.
+
+== The three gates
+
+An asset reaches a recipient only if it passes *all three* of these,
+independently:
+
+. *Live collection membership.* Resolved at request time, so removing an asset
+  from the collection withdraws it from every outstanding portal at once.
+. *An explicit `PortalGrant`.* Absence of a grant is a denial.
+. *`Rights::DownloadPolicy`.* Whether the asset may lawfully leave.
+
+[source,ruby]
+----
+# app/models/review_link.rb
+def scoped_assets
+  return target_assets if review?
+
+  target_assets.where(id: portal_grants.select(:asset_id))
+end
+----
+
+Default-deny is the important half. If a grant were implied by membership, a
+portal handed to a partner last month would silently begin offering this
+month's work the moment somebody added it to the collection. Requiring the
+sender to say so means the set only grows by decision.
+
+Grants deliberately *survive* removal from the collection. Membership already
+gates delivery, so a stale grant is inert; keeping it means re-adding the asset
+restores the intent that was already expressed rather than silently dropping it.
+
+=== A grant cannot widen rights
+
+`PortalGrant` records only that *the sender is willing*. Whether the asset may
+lawfully leave is `Rights::DownloadPolicy`'s question, asked independently at
+delivery.
+
+Granting `download` on an `internal_only` asset is therefore allowed to be
+recorded, but is never honoured. Because that gap is invisible to the person
+configuring the portal, the management API reports it explicitly:
+
+[source,json]
+----
+{ "granted_count": 12, "downloadable_count": 12, "distributable_count": 9 }
+----
+
+and marks each asset with `externally_distributable`. Three of twelve picks not
+being shared is something to discover while configuring, not from the partner's
+email a week later.
+
+== What a refusal looks like
+
+The status code differs by case, deliberately:
+
+[cols="2,1,3", options="header"]
+|===
+| Situation | Status | Why
+
+| Granted `view`, download attempted | `403` | The recipient can already see the
+  file, so pretending it does not exist would read as a broken portal rather
+  than a rule.
+| Not granted at all | `404` | Must be indistinguishable from an asset that was
+  never shared. A `403` would confirm the asset exists.
+| Granted, but rights refuse it | `404` | Same reason. The recipient learning
+  that a restricted asset exists is itself the disclosure.
+|===
+
+For the same reason, `download_url` is `null` rather than a URL that would
+return `403`. The UI cannot then render a button that does not work.
+
+== Download tracking
+
+`portal_downloads` records what actually left, and to whom.
+
+Only *successful deliveries* are recorded — a refused or failed request is not a
+distribution, and must not appear in a record used to answer "did we send them
+that file?".
+
+`PortalDownload.record!` swallows its own errors. Tracking must never fail the
+download it is measuring: losing a log line is a reporting gap, whereas a
+partner's download failing because a logging insert raised is an outage.
+
+.Why not `asset_usage_events`?
+[NOTE]
+====
+That table's `user_id` is `bigint NOT NULL`. A `ReviewGuest` is deliberately not
+a `User` — it has no password, no session, no permissions, and self-asserted
+identity. Widening the column to accommodate one would have made every existing
+consumer of that table handle a row that is not a real user.
+====
+
+== Branding is whitelisted, not escaped
+
+`Portal::Branding` validates rather than sanitises:
+
+[cols="1,3", options="header"]
+|===
+| Field | Rule
+
+| `accent`   | Hex colour only. Anything else falls back to the default.
+| `logo_url` | `http(s)` or site-relative. Protocol-relative and `javascript:` are dropped.
+| `headline` | Plain text, length-capped.
+| `message`  | Plain text, length-capped.
+|===
+
+These values reach an `img` source and an inline stylesheet, which is precisely
+where escaping is easy to get subtly wrong — a CSS `url()` payload survives HTML
+escaping intact. "Only staff can set it" is exactly the assumption that lets
+stored XSS live through review, so the portal does not rely on it.
+
+Invalid values are *dropped, not rejected*. A malformed accent colour should not
+cost you the portal you were trying to create.
+
+== Surfaces
+
+.Guest (no authentication, token in the path)
+[cols="2,3", options="header"]
+|===
+| Route | Purpose
+
+| `GET  /s/portal/:token`                            | The portal page shell
+| `GET  /s/portal/:token/assets`                     | Portal, guest and visible assets as JSON
+| `POST /s/portal/:token/unlock`                     | Passphrase gate
+| `POST /s/portal/:token/identify`                   | Attribution, not authentication
+| `GET  /s/portal/:token/assets/:asset_id/preview`   | Inline bytes
+| `GET  /s/portal/:token/assets/:asset_id/download`  | Attachment; recorded
+|===
+
+The asset payload is deliberately narrow — id, title, content type, size,
+preview URL, and whether it may be downloaded. A portal is a pick-up point, not
+a catalogue: internal metadata, folder placement, version history and comment
+threads are no part of collecting a file, and are not sent.
+
+.Management (`/api/v1`, authenticated, requires `:modify` on the target)
+[cols="2,3", options="header"]
+|===
+| Route | Purpose
+
+| `GET    /api/v1/portals`                | List (own portals; all, for an administrator)
+| `POST   /api/v1/portals`                | Mint. Returns the token *once*.
+| `GET    /api/v1/portals/:id`            | Portal plus the full pick list
+| `PATCH  /api/v1/portals/:id`            | Settings, branding, expiry, grants
+| `DELETE /api/v1/portals/:id`            | Revoke (does not delete)
+| `GET    /api/v1/portals/:id/downloads`  | What left, and to whom
+|===
+
+Minting requires `:modify` rather than `:read`, for the same reason a review
+link does: being allowed to look at a collection is not the same as being
+allowed to hand it to a partner.
+
+`GET /api/v1/portals/:id` returns *every* asset in the target, granted or not,
+so an editor can render the whole pick list and see which entries rights will
+refuse.
+
+=== Grants are declarative
+
+`PATCH` replaces the grant set with exactly what is sent; anything omitted is
+withdrawn.
+
+An incremental "add these" API makes removal something you must remember to do
+separately — and the permission you forget to remove is the one that leaks.
+
+Two related rules: grants are confined to the portal's own target, so a portal
+over one collection can never be pointed at another's assets; and an
+unrecognised permission falls back to `view`, the weakest, so a typo cannot
+widen access.
+
+=== Revoke, do not delete
+
+`DELETE` sets `revoked_at`. The row stays, because the download records point at
+it for their provenance — "who was sent what, and under which grant" is exactly
+what an audit asks later, and deleting the link would erase the answer.
+
+== Front end
+
+The portal ships as its own esbuild entry point, `app/javascript/guest_portal.js`,
+mounted from the `public_portal` layout.
+
+It is deliberately *not* part of the internal bundle, and does not reuse
+`useGuestReview`. The review hook carries threads, annotations, drafts and
+comment permissions; a portal has none of those. Merging them would mean every
+partner collecting a logo also downloaded the annotation client, and every
+change to one surface risked the other. The guest bundle is ~3.6 MB against the
+internal application's ~13.3 MB.
+
+There is no permission model on the client. The server decides what the token
+covers, which assets were granted, and which of those may be downloaded; the
+React app renders the answer.
+
+== Testing
+
+[cols="2,3", options="header"]
+|===
+| File | Covers
+
+| `spec/models/review_link_portal_spec.rb`            | The three gates, branding sanitisation
+| `spec/requests/public/distribution_portal_spec.rb`  | Guest listing, per-asset permission, rights suppression, kind separation, passphrase, hostile branding
+| `spec/requests/api/v1/portals_request_spec.rb`      | Ownership scoping, declarative grants, grant confinement, download record
+| `spec/javascript/components/GuestPortal/*`          | Gate precedence, view-only rendering, non-image placeholder, 401-as-state
+|===

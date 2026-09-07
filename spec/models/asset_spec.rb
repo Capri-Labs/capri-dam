@@ -35,7 +35,9 @@ RSpec.describe Asset, type: :model do
   describe 'property defaults' do
     it 'seeds default properties when none are supplied' do
       asset = Asset.new(properties: nil)
-      expect(asset.properties).to include('usage_terms' => 'Internal Use Only')
+      # The canonical code, not the old free-text "Internal Use Only" — see
+      # Rights::UsageTerms and spec/models/asset_rights_spec.rb.
+      expect(asset.properties).to include('usage_terms' => 'internal_only')
     end
   end
 

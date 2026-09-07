@@ -2235,7 +2235,9 @@
       "queued": "他の進行中のダウンロードの後にキューに入れられました。",
       "failed": "ダウンロードを生成できませんでした。もう一度お試しください。",
       "error": "ダウンロードを開始できませんでした。もう一度お試しください。"
-    }
+    },
+    "restrictedTitle": "使用権限により配布が許可されていないため、{{count}} 件のアイテムが除外されました:",
+    "restrictedTitle_other": "使用権限により配布が許可されていないため、{{count}} 件のアイテムが除外されました:"
   },
   "applySchemaDialog": {
     "title": "メタデータスキーマを適用",
@@ -3201,5 +3203,41 @@
       "noAsset": "Nothing to review here.",
       "download": "Download"
     }
+  },
+  "assetRights": {
+    "title": "配布権限",
+    "description": "このアセットを組織外で共有できるか、またいつまで共有できるかを制御します。これらの値はダウンロード時およびゲストレビューリンクで適用されます。",
+    "usageTermsLabel": "使用条件",
+    "licenseExpiresLabel": "ライセンス有効期限",
+    "licenseExpiresHelp": "ライセンスに期限がない場合は空欄にしてください。表示された日の終わりまで使用できます。",
+    "notDistributable": "社内限定",
+    "internalBadge": "社外公開不可",
+    "expiredBadge": "ライセンス期限切れ",
+    "save": "権限を保存",
+    "notifications": {
+      "saved": "配布権限を更新しました。"
+    },
+    "errors": {
+      "saveFailed": "配布権限を更新できませんでした。",
+      "optionsUnavailable": "使用条件の一覧を読み込めませんでした。ページを再読み込みしてください。"
+    }
+  },
+  "portal": {
+    "download": "ダウンロード",
+    "viewOnly": "閲覧のみ",
+    "viewOnlyHint": "このファイルはプレビューできますが、ダウンロード用には共有されていません。",
+    "fileCount": "{{count}} 件のファイル",
+    "fileCount_other": "{{count}} 件のファイル",
+    "empty": "この共有にはまだファイルがありません。",
+    "passphraseTitle": "この共有は保護されています",
+    "passphraseHint": "これらのファイルを表示するには、通知されたパスフレーズを入力してください。",
+    "passphraseLabel": "パスフレーズ",
+    "unlock": "ロック解除",
+    "identityTitle": "ファイルを受け取るのはどなたですか?",
+    "identityHint": "お名前はダウンロード履歴とともに記録されます。ログインには使用されません。",
+    "email": "メールアドレス",
+    "name": "名前 (任意)",
+    "later": "後で",
+    "continue": "続ける"
   }
 }

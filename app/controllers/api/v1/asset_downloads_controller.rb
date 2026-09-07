@@ -192,6 +192,9 @@ module Api
           file_count:      download.file_count,
           byte_size:       download.byte_size,
           error_message:   download.error_message,
+          # Deliberate omissions, not failures — see AssetDownloadWorker.
+          restricted_items: download.restricted_items,
+          restricted_count: download.restricted_items.size,
           created_at:      download.created_at&.strftime("%b %d, %Y at %H:%M"),
           expires_at:      download.expires_at&.strftime("%b %d, %Y"),
           download_url:    download.completed? && download.zip_file.attached? ? download_api_v1_asset_download_path(download) : nil,

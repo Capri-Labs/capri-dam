@@ -111,6 +111,13 @@ class Asset < ApplicationRecord
 
   validates :title, presence: true
 
+  # The vocabulary is also enforced by a CHECK constraint on the column; this
+  # turns what would be a 500 from the database into a 422 with a usable
+  # message.
+  validates :usage_terms, inclusion: { in: Rights::UsageTerms::CODES }
+
+  validate :license_expiry_must_be_parseable
+
   # ---------------------------------------------------------------------------
   # Enums
   # ---------------------------------------------------------------------------
@@ -165,6 +172,36 @@ class Asset < ApplicationRecord
       .select("assets.*")
   }
 
+  # Assets whose licence window has closed. An asset with no recorded expiry is
+  # not expired — "no expiry" and "unknown expiry" are deliberately different
+  # states, and only the former is stored.
+  # @return [ActiveRecord::Relation]
+  scope :license_expired, ->(at = Time.current) {
+    where.not(license_expires_at: nil).where(license_expires_at: ...at)
+  }
+
+  # @return [ActiveRecord::Relation] assets still inside their licence window
+  #   (including those that never had one)
+  scope :license_current, ->(at = Time.current) {
+    where(license_expires_at: nil).or(where(license_expires_at: at..))
+  }
+
+  # Assets expiring within the given window — the query behind the expiry
+  # forecast in {Reports::AnalyticsService}. Bounded at both ends, because an
+  # asset that expired last year is a different problem from one expiring next
+  # week, and lumping them together was how the old unbounded JSONB cast
+  # reported "expiring soon" for assets whose typo'd dates landed in antiquity.
+  # @return [ActiveRecord::Relation]
+  scope :license_expiring_within, ->(window, from: Time.current) {
+    where(license_expires_at: from..(from + window))
+  }
+
+  # @return [ActiveRecord::Relation] assets whose terms permit distribution
+  #   outside the organisation, ignoring expiry
+  scope :externally_distributable, -> {
+    where(usage_terms: Rights::UsageTerms::TERMS.select { |_, v| v[:external] }.keys)
+  }
+
   # ---------------------------------------------------------------------------
   # Callbacks
   # ---------------------------------------------------------------------------
@@ -186,6 +223,17 @@ class Asset < ApplicationRecord
 
   after_initialize :set_property_defaults, if: :new_record?
 
+  # Keeps the typed rights columns and the legacy +properties+ keys of the same
+  # name in agreement — see {#normalise_rights}. Runs before validation so that
+  # the vocabulary and date-format checks below see canonical values regardless
+  # of which spelling the caller used.
+  before_validation :normalise_rights
+
+  # The "was this supplied?" flags describe one write, not the record. Left
+  # standing, an explicit `usage_terms:` on one update would keep beating the
+  # `properties` key on every later save of the same in-memory object.
+  after_save :clear_rights_write_flags
+
   # ---------------------------------------------------------------------------
   # Public instance methods
   # ---------------------------------------------------------------------------
@@ -195,6 +243,69 @@ class Asset < ApplicationRecord
   # @return [ActiveStorage::Attached::One, nil]
   def current_file
     active_version&.file
+  end
+
+  # Whether this asset's licence window has closed.
+  #
+  # @param at [Time] the moment to judge against
+  # @return [Boolean] +false+ when no expiry is recorded
+  def license_expired?(at = Time.current)
+    license_expires_at.present? && license_expires_at < at
+  end
+
+  # Whether the asset's usage terms permit distribution outside the
+  # organisation *and* its licence is still current. Both must hold: a
+  # royalty-free asset whose licence lapsed is no more distributable than an
+  # internal-only one.
+  #
+  # This is the single question {Rights::DownloadPolicy} asks in Phase 10b;
+  # it lives on the model so that reports and compliance scans give the same
+  # answer as enforcement does.
+  #
+  # @param at [Time]
+  # @return [Boolean]
+  def externally_distributable?(at = Time.current)
+    Rights::UsageTerms.externally_distributable?(usage_terms) && !license_expired?(at)
+  end
+
+  # The English label for the current usage terms. Translated labels belong
+  # with the rights management UI, keyed on the code.
+  #
+  # @return [String]
+  def usage_terms_label
+    Rights::UsageTerms.label(usage_terms)
+  end
+
+  # Records *that* a term was supplied, not merely that it differed from the
+  # one already stored.
+  #
+  # {#normalise_rights} has to decide which of two writers wins when a request
+  # sets both the column and the +properties+ key. Asking +usage_terms_changed?+
+  # looked equivalent but is not: assigning the value the record already holds
+  # is not a change, so an explicit +usage_terms: "internal_only"+ on an asset
+  # that was already internal-only lost to a +public_domain+ buried in the
+  # metadata blob — the caller's clearest statement of intent was the one
+  # discarded.
+  def usage_terms=(value)
+    @usage_terms_supplied = true
+    super
+  end
+
+  # Parses before assigning, so that an unreadable date is *caught* rather than
+  # swallowed.
+  #
+  # Active Record casts an unparseable string to +nil+ on the way into a
+  # +datetime+ attribute. That silently discarded exactly the input this phase
+  # exists to reject: +license_expires_at: "31/12/2026"+ arrived as +nil+,
+  # nothing looked changed, and the request succeeded with the expiry quietly
+  # dropped. Capturing the raw value here is what lets the validation below
+  # report it.
+  def license_expires_at=(value)
+    @license_expiry_supplied = true
+    @malformed_license_expiry_input =
+      Rights::LicenseExpiry.malformed?(value) ? value : nil
+
+    super(Rights::LicenseExpiry.parse(value))
   end
 
   # Returns the version number that should be assigned to the next new version.
@@ -305,9 +416,115 @@ class Asset < ApplicationRecord
   def set_property_defaults
     self.properties ||= {
       description:  "",
-      usage_terms:  "Internal Use Only",
+      usage_terms:  Rights::UsageTerms::DEFAULT,
       alt_text:     "",
       tags:         [],
     }
+  end
+
+  # Reconciles the typed rights columns with the +properties+ JSONB keys of the
+  # same names, in both directions, before every validation.
+  #
+  # Both spellings have to keep working. The columns are the source of truth for
+  # enforcement and reporting, but +properties+ is what the bulk metadata
+  # editor, the migration importers and the XMP mapper write to, and what search
+  # facets read. Rather than migrate a dozen call sites and hope none were
+  # missed, whichever side was just written wins and the other is brought into
+  # line — so an importer setting +properties["usage_terms"] = "Licensed"+ and an
+  # API client setting +usage_terms = "rights_managed"+ both end up with the same
+  # canonical value in both places.
+  #
+  # @api private
+  def normalise_rights
+    props = properties
+
+    # jsonb accepts any valid JSON value, and an array or scalar genuinely does
+    # turn up in this column — the metadata exporter has specs for tolerating
+    # it. There is no key to keep in step with in that case, so the column is
+    # normalised on its own rather than the save being blown up.
+    unless props.is_a?(Hash)
+      @malformed_license_expiry = @malformed_license_expiry_input
+      self[:usage_terms] = Rights::UsageTerms.normalise(usage_terms)
+      return
+    end
+
+    sync_usage_terms(props)
+    sync_license_expiry(props)
+  end
+
+  # @api private
+  def sync_usage_terms(properties)
+    raw = if @usage_terms_supplied && usage_terms.present?
+            usage_terms
+    elsif properties.key?("usage_terms")
+            properties["usage_terms"]
+    else
+            usage_terms
+    end
+
+    # An unrecognised term is kept verbatim alongside the canonical one instead
+    # of being thrown away. It cannot be enforced on — the column falls back to
+    # the restrictive default — but discarding what an importer actually read
+    # from the file would destroy the only evidence of what the rights were
+    # meant to say.
+    if raw.present? && !Rights::UsageTerms.recognised?(raw)
+      properties["usage_terms_raw"] = raw
+    elsif raw.present?
+      properties.delete("usage_terms_raw")
+    end
+
+    self[:usage_terms]        = Rights::UsageTerms.normalise(raw)
+    properties["usage_terms"] = usage_terms
+  end
+
+  # @api private
+  def sync_license_expiry(properties)
+    @malformed_license_expiry = @malformed_license_expiry_input
+
+    # A value was supplied and could not be read. The column has already been
+    # left nil by the writer; the validation below turns this into a 422 rather
+    # than a silently dropped expiry.
+    return if @malformed_license_expiry.present?
+
+    if @license_expiry_supplied
+      properties["license_expires_at"] = Rights::LicenseExpiry.serialise(license_expires_at)
+      return
+    end
+
+    return unless properties.key?("license_expires_at")
+
+    raw = properties["license_expires_at"]
+
+    if Rights::LicenseExpiry.malformed?(raw)
+      # Left exactly as written, for the validation below to reject. The value
+      # is neither guessed at nor quietly dropped: the save fails and the caller
+      # is told which string could not be read. Historical junk that predates
+      # this rule was preserved under a +_raw+ key by the backfill migration;
+      # nothing new is allowed to join it.
+      @malformed_license_expiry = raw
+      self[:license_expires_at] = nil
+      return
+    end
+
+    parsed = Rights::LicenseExpiry.parse(raw)
+    self[:license_expires_at]        = parsed
+    properties["license_expires_at"] = Rights::LicenseExpiry.serialise(parsed)
+  end
+
+  # @api private
+  def clear_rights_write_flags
+    @usage_terms_supplied           = false
+    @license_expiry_supplied        = false
+    @malformed_license_expiry_input = nil
+  end
+
+  # @api private
+  def license_expiry_must_be_parseable
+    return if @malformed_license_expiry.blank?
+
+    errors.add(
+      :license_expires_at,
+      "must be an ISO 8601 date or timestamp (got #{@malformed_license_expiry.inspect})"
+    )
   end
 end

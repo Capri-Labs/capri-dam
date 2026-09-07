@@ -457,7 +457,8 @@ CREATE TABLE public.asset_downloads (
     error_message text,
     expires_at timestamp(6) without time zone,
     created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    restricted_items jsonb DEFAULT '[]'::jsonb NOT NULL
 );
 
 
@@ -581,7 +582,10 @@ CREATE TABLE public.assets (
     updated_at timestamp(6) without time zone NOT NULL,
     user_id bigint NOT NULL,
     uuid character varying NOT NULL,
-    published_at timestamp(6) without time zone
+    published_at timestamp(6) without time zone,
+    usage_terms character varying DEFAULT 'internal_only'::character varying NOT NULL,
+    license_expires_at timestamp(6) without time zone,
+    CONSTRAINT assets_usage_terms_in_vocabulary CHECK (((usage_terms)::text = ANY ((ARRAY['internal_only'::character varying, 'editorial_only'::character varying, 'rights_managed'::character varying, 'royalty_free'::character varying, 'public_domain'::character varying])::text[])))
 );
 
 
@@ -1729,6 +1733,36 @@ ALTER SEQUENCE public.personal_access_tokens_id_seq OWNED BY public.personal_acc
 
 
 --
+-- Name: portal_downloads; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.portal_downloads (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    review_link_id uuid NOT NULL,
+    review_guest_id uuid,
+    asset_id uuid NOT NULL,
+    ip_address character varying,
+    user_agent character varying,
+    created_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: portal_grants; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.portal_grants (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    review_link_id uuid NOT NULL,
+    asset_id uuid NOT NULL,
+    permission character varying DEFAULT 'view'::character varying NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT portal_grants_permission_valid CHECK (((permission)::text = ANY ((ARRAY['view'::character varying, 'download'::character varying])::text[])))
+);
+
+
+--
 -- Name: quarantined_assets; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1891,7 +1925,10 @@ CREATE TABLE public.review_links (
     last_accessed_at timestamp(6) without time zone,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
-    CONSTRAINT review_links_exactly_one_target CHECK ((((asset_id IS NOT NULL) AND (collection_id IS NULL)) OR ((asset_id IS NULL) AND (collection_id IS NOT NULL))))
+    kind character varying DEFAULT 'review'::character varying NOT NULL,
+    branding jsonb DEFAULT '{}'::jsonb NOT NULL,
+    CONSTRAINT review_links_exactly_one_target CHECK ((((asset_id IS NOT NULL) AND (collection_id IS NULL)) OR ((asset_id IS NULL) AND (collection_id IS NOT NULL)))),
+    CONSTRAINT review_links_kind_valid CHECK (((kind)::text = ANY ((ARRAY['review'::character varying, 'portal'::character varying])::text[])))
 );
 
 
@@ -3426,6 +3463,22 @@ ALTER TABLE ONLY public.personal_access_tokens
 
 
 --
+-- Name: portal_downloads portal_downloads_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.portal_downloads
+    ADD CONSTRAINT portal_downloads_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: portal_grants portal_grants_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.portal_grants
+    ADD CONSTRAINT portal_grants_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: quarantined_assets quarantined_assets_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -4026,6 +4079,13 @@ CREATE INDEX index_assets_on_folder_id_and_deleted_at ON public.assets USING btr
 
 
 --
+-- Name: index_assets_on_license_expires_at_present; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_assets_on_license_expires_at_present ON public.assets USING btree (license_expires_at) WHERE (license_expires_at IS NOT NULL);
+
+
+--
 -- Name: index_assets_on_properties; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -4086,6 +4146,13 @@ CREATE INDEX index_assets_on_published_at ON public.assets USING btree (publishe
 --
 
 CREATE INDEX index_assets_on_title_trgm ON public.assets USING gin (title public.gin_trgm_ops);
+
+
+--
+-- Name: index_assets_on_usage_terms; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_assets_on_usage_terms ON public.assets USING btree (usage_terms);
 
 
 --
@@ -4845,6 +4912,55 @@ CREATE INDEX index_personal_access_tokens_on_user_id_and_active ON public.person
 
 
 --
+-- Name: index_portal_downloads_on_asset_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_portal_downloads_on_asset_id ON public.portal_downloads USING btree (asset_id);
+
+
+--
+-- Name: index_portal_downloads_on_review_guest_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_portal_downloads_on_review_guest_id ON public.portal_downloads USING btree (review_guest_id);
+
+
+--
+-- Name: index_portal_downloads_on_review_link_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_portal_downloads_on_review_link_id ON public.portal_downloads USING btree (review_link_id);
+
+
+--
+-- Name: index_portal_downloads_on_review_link_id_and_created_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_portal_downloads_on_review_link_id_and_created_at ON public.portal_downloads USING btree (review_link_id, created_at);
+
+
+--
+-- Name: index_portal_grants_on_asset_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_portal_grants_on_asset_id ON public.portal_grants USING btree (asset_id);
+
+
+--
+-- Name: index_portal_grants_on_review_link_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_portal_grants_on_review_link_id ON public.portal_grants USING btree (review_link_id);
+
+
+--
+-- Name: index_portal_grants_on_review_link_id_and_asset_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_portal_grants_on_review_link_id_and_asset_id ON public.portal_grants USING btree (review_link_id, asset_id);
+
+
+--
 -- Name: index_quarantined_assets_on_asset_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -4926,6 +5042,13 @@ CREATE INDEX index_review_links_on_created_by_id ON public.review_links USING bt
 --
 
 CREATE INDEX index_review_links_on_expires_at ON public.review_links USING btree (expires_at);
+
+
+--
+-- Name: index_review_links_on_kind; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_review_links_on_kind ON public.review_links USING btree (kind);
 
 
 --
@@ -5360,6 +5483,14 @@ ALTER TABLE ONLY public.video_encoding_presets
 
 
 --
+-- Name: portal_downloads fk_rails_21b6bd34cc; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.portal_downloads
+    ADD CONSTRAINT fk_rails_21b6bd34cc FOREIGN KEY (review_guest_id) REFERENCES public.review_guests(id);
+
+
+--
 -- Name: annotation_targets fk_rails_2269fe28f8; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -5373,6 +5504,14 @@ ALTER TABLE ONLY public.annotation_targets
 
 ALTER TABLE ONLY public.ai_reviews
     ADD CONSTRAINT fk_rails_22f0981b22 FOREIGN KEY (asset_version_id) REFERENCES public.asset_versions(id);
+
+
+--
+-- Name: portal_downloads fk_rails_275c2f96ab; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.portal_downloads
+    ADD CONSTRAINT fk_rails_275c2f96ab FOREIGN KEY (asset_id) REFERENCES public.assets(id);
 
 
 --
@@ -5429,6 +5568,14 @@ ALTER TABLE ONLY public.review_links
 
 ALTER TABLE ONLY public.scheduled_publish_actions
     ADD CONSTRAINT fk_rails_3aa18beefd FOREIGN KEY (asset_id) REFERENCES public.assets(id);
+
+
+--
+-- Name: portal_grants fk_rails_41f2d450ac; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.portal_grants
+    ADD CONSTRAINT fk_rails_41f2d450ac FOREIGN KEY (asset_id) REFERENCES public.assets(id);
 
 
 --
@@ -5568,6 +5715,14 @@ ALTER TABLE ONLY public.collection_assets
 
 
 --
+-- Name: portal_downloads fk_rails_62db0c5261; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.portal_downloads
+    ADD CONSTRAINT fk_rails_62db0c5261 FOREIGN KEY (review_link_id) REFERENCES public.review_links(id);
+
+
+--
 -- Name: comment_threads fk_rails_704a01f560; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -5613,6 +5768,14 @@ ALTER TABLE ONLY public.oauth_access_tokens
 
 ALTER TABLE ONLY public.comment_threads
     ADD CONSTRAINT fk_rails_7531de63db FOREIGN KEY (created_by_id) REFERENCES public.users(id);
+
+
+--
+-- Name: portal_grants fk_rails_770be9eabd; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.portal_grants
+    ADD CONSTRAINT fk_rails_770be9eabd FOREIGN KEY (review_link_id) REFERENCES public.review_links(id);
 
 
 --
@@ -6030,6 +6193,9 @@ ALTER TABLE ONLY public.comments
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260907120000'),
+('20260907110000'),
+('20260907100000'),
 ('20260907070000'),
 ('20260907061011'),
 ('20260907061010'),

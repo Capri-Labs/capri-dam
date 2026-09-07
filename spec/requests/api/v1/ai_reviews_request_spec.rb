@@ -213,6 +213,11 @@ RSpec.describe "Api::V1::AiReviews", type: :request do
 
     # An unreviewed machine guess reaching a client is the worst outcome here.
     it "never shows a pending suggestion to an external reviewer" do
+      # Cleared for external release on purpose. Left as internal_only the asset
+      # is filtered out of the link's scope and this endpoint 404s, which would
+      # make the assertion below pass without ever exercising the AI-suggestion
+      # suppression it exists to prove.
+      asset.update!(usage_terms: "royalty_free")
       thread = asset.comment_threads.create!(ai_review: review, suggestion_state: "pending")
       thread.comments.create!(body: "Logo clipped", agent_type: "software", agent_name: "gpt-4o")
 

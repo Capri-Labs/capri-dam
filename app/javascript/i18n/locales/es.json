@@ -2235,7 +2235,9 @@
       "queued": "Tu descarga se ha puesto en cola detrás de otra descarga en curso.",
       "failed": "No se pudo generar la descarga. Inténtalo de nuevo.",
       "error": "No se pudo iniciar la descarga. Inténtalo de nuevo."
-    }
+    },
+    "restrictedTitle": "Se ha omitido {{count}} elemento porque sus derechos de uso no permiten la distribución:",
+    "restrictedTitle_other": "Se han omitido {{count}} elementos porque sus derechos de uso no permiten la distribución:"
   },
   "applySchemaDialog": {
     "title": "Aplicar esquema de metadatos",
@@ -3201,5 +3203,41 @@
       "noAsset": "Nothing to review here.",
       "download": "Download"
     }
+  },
+  "assetRights": {
+    "title": "Derechos de distribución",
+    "description": "Controla si este recurso puede compartirse fuera de la organización y hasta cuándo. Estos valores se aplican en las descargas y en los enlaces de revisión para invitados.",
+    "usageTermsLabel": "Condiciones de uso",
+    "licenseExpiresLabel": "La licencia caduca",
+    "licenseExpiresHelp": "Déjelo en blanco si la licencia no caduca. El recurso seguirá siendo utilizable hasta el final del día indicado.",
+    "notDistributable": "solo uso interno",
+    "internalBadge": "No apto para publicación externa",
+    "expiredBadge": "Licencia caducada",
+    "save": "Guardar derechos",
+    "notifications": {
+      "saved": "Derechos de distribución actualizados."
+    },
+    "errors": {
+      "saveFailed": "No se han podido actualizar los derechos de distribución.",
+      "optionsUnavailable": "No se ha podido cargar la lista de condiciones de uso. Vuelva a cargar la página."
+    }
+  },
+  "portal": {
+    "download": "Descargar",
+    "viewOnly": "Solo visualización",
+    "viewOnlyHint": "Puede previsualizar este archivo, pero no se compartió para su descarga.",
+    "fileCount": "{{count}} archivo",
+    "fileCount_other": "{{count}} archivos",
+    "empty": "Todavía no hay archivos en este recurso compartido.",
+    "passphraseTitle": "Este recurso compartido está protegido",
+    "passphraseHint": "Introduzca la contraseña que le facilitaron para ver estos archivos.",
+    "passphraseLabel": "Contraseña",
+    "unlock": "Desbloquear",
+    "identityTitle": "¿Quién recoge estos archivos?",
+    "identityHint": "Su nombre se registra junto con todo lo que descargue. No se utiliza para iniciar sesión.",
+    "email": "Correo electrónico",
+    "name": "Nombre (opcional)",
+    "later": "Ahora no",
+    "continue": "Continuar"
   }
 }

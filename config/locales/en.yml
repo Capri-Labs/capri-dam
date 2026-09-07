@@ -45,6 +45,11 @@ en:
         body: "The share link you followed is no longer valid. Ask the person who shared it with you for a new link."
         meta_title: "Link expired — Capri DAM"
 
+    portals:
+      default_title: "Shared files"
+      badge: "Secure file share"
+      noscript: "Viewing these files requires JavaScript. Please enable it and reload the page."
+
   errors:
     messages:
       invalid: "is invalid"

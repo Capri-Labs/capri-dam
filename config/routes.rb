@@ -119,6 +119,22 @@ Rails.application.routes.draw do
     post "/threads/:thread_id/comments", to: "public/review_comments#reply", as: :thread_comments
   end
 
+  # Public, unauthenticated *distribution portal* links. Same DB-backed
+  # credential as a review link (see {CreateDistributionPortal}) but a
+  # different permission model: every asset must clear an explicit
+  # {PortalGrant}, and every completed download is recorded.
+  scope "/s/portal/:token", as: :portal, format: false do
+    get  "/",         to: "public/portals#show",     as: ""
+    post "/unlock",   to: "public/portals#unlock"
+    post "/identify", to: "public/portals#identify"
+    get  "/assets",   to: "public/portals#assets",   as: :assets
+
+    scope "/assets/:asset_id" do
+      get "/preview",  to: "public/portal_assets#preview",  as: :asset_preview
+      get "/download", to: "public/portal_assets#download", as: :asset_download
+    end
+  end
+
   # Workflows UI
   get "/workflows", to: "workflows#index"
   get "workflows/dashboard", to: "workflows#dashboard"
@@ -382,6 +398,15 @@ Rails.application.routes.draw do
       # the provenance record for any guest comments collected through it.
       resources :review_links, only: [ :index, :show, :create, :update, :destroy ]
 
+      # Distribution portals share the review_links table but are a separate
+      # management surface: per-asset grants instead of link-wide permissions,
+      # plus the record of what was actually taken.
+      resources :portals, only: [ :index, :show, :create, :update, :destroy ] do
+        member do
+          get :downloads
+        end
+      end
+
       # Folders
       resources :folders, only: [ :index, :show, :create, :update, :destroy ] do
         member do
@@ -571,6 +596,9 @@ Rails.application.routes.draw do
           get :download
         end
       end
+
+      # The controlled usage-terms vocabulary, for the rights editor.
+      get "rights/usage_terms", to: "rights#usage_terms"
 
       # Metadata Import (async CSV import / bulk metadata update)
       resources :metadata_imports, only: [ :index, :show, :create, :destroy ] do
