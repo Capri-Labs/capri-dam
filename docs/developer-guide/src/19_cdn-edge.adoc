@@ -55,14 +55,83 @@ for a given CDN configuration.
   performs real `GET`/`PUT` calls against `/api/v1/cdn_configurations` and
   renders WebP/AVIF checkboxes bound to `image_optimizer_formats`.
 
-IMPORTANT: This only controls which *output formats an admin is allowed to
-request*. It does **not** implement a live image-transformation/delivery
-pipeline — no code path in this repo currently negotiates format, width,
-height, or crop at request time (see
-<<module-delivery-cdn,Delivery & CDN>> in the product guide for the honest,
-customer-facing status of real-time transforms). Treat this as the
-configuration layer a future transformation proxy would read from, not as
-AVIF delivery itself.
+IMPORTANT: The allow-list now governs *two* things, not one: what an edge CDN
+is permitted to serve, and what this application will produce at request time
+(below). One switch, one behaviour, whether or not a CDN sits in front.
+
+== Request-time format negotiation
+
+`Api::V1::AssetsController#serve_local` re-encodes an image on the way out when
+— and only when — three parties agree. Each can veto:
+
+[cols="1,3"]
+|===
+| Party | Veto
+
+| The administrator | The format must appear in `image_optimizer_formats` on the
+  *active* `CdnConfiguration`. With no active configuration nothing is
+  transcoded, so the feature stays off until somebody turns it on.
+| The client | The `Accept` header must name `image/avif` or `image/webp`
+  explicitly. A wildcard (`image/*`, `*/*`) is not evidence — every browser
+  sends one regardless of what it can decode, and a browser sent a format it
+  cannot decode shows a *broken* image, not a larger one.
+| The encoder | The result must actually be smaller. See below.
+|===
+
+`ImageDelivery::FormatNegotiator` decides the format; `ImageDelivery::Derivative`
+produces and caches the bytes. Preference is AVIF before WebP.
+
+An explicit `?output=avif` bypasses the `Accept` check (a build pipeline
+fetching AVIF is not a browser and need not pretend to be one) but is still
+subject to the administrator's allow-list. The parameter is `output`, not
+`format`, because Rails already uses `format` for the routing extension —
+`/assets/local/x.png` would otherwise arrive as a request for PNG.
+
+=== Only photographs are re-encoded
+
+`TRANSCODABLE_SOURCE_TYPES` is JPEG and PNG. SVG is excluded because
+re-encoding a vector destroys the reason it is one; GIF because it may be
+animated, and a single-frame AVIF would silently truncate it to its first
+frame; AVIF/WebP because they are already optimal.
+
+=== A derivative that is not smaller is thrown away
+
+AVIF is usually much smaller, but not always: on small images the format's
+fixed overhead can exceed what it saves, and re-encoding an already-lean JPEG
+can produce something *bigger*. `Derivative` compares the encode against the
+source and discards it if it did not pay for itself. The point of the feature
+is fewer bytes, not newer formats.
+
+Every failure path returns `nil` rather than raising — this runs inline on an
+image request, so a missing delegate or a corrupt source must degrade to the
+original, never turn a working image into a 500. Sources above
+`MAX_SOURCE_BYTES` (25 MB) are served as-is rather than transcoded on a request
+thread.
+
+=== Caching and invalidation
+
+Derivatives are content-addressed files under `storage/dam/.derivatives`, keyed
+on a digest of the source's path, size and mtime plus the encode settings. They
+are deliberately *not* `renditions` rows: a delivery derivative is disposable,
+has no independent identity, and giving it a database row would mean inventing
+a storage backend for it and keeping row and file in step on every re-upload.
+The digest gets invalidation for free — re-uploading changes the source's
+size/mtime, which changes the key, so the stale derivative is simply never
+asked for again.
+
+Writes go to a unique temp file and are moved into place, so two concurrent
+requests for the same image cannot serve each other a half-written file.
+
+=== Two HTTP details that matter
+
+*`Vary: Accept` is set on every response from the endpoint*, including 304s and
+untranscoded originals. The chosen format depends on `Accept`, so a shared
+cache keyed only on the URL would happily hand an AVIF to a client that cannot
+decode it. This is the classic way to break content negotiation.
+
+*The ETag is computed over the bytes actually sent*, not over the source. A
+shared ETag would let a client holding the JPEG revalidate into a `304` and
+never receive the AVIF at all.
 
 === Bug fix: `CdnConfiguration#settings` encryption was completely broken
 
@@ -108,3 +177,16 @@ asserting the raw database column never contains plaintext.
   API.
 * `spec/javascript/i18n/i18n.test.js` — regression guard for the new
   `cdnEdge.*` translation keys across all 10 locales.
+* `spec/services/image_delivery/format_negotiator_spec.rb` — each of the three
+  vetoes: no active CDN configuration, a format the administrator left off, a
+  client that advertises only a wildcard; plus SVG/GIF/video exclusions and the
+  `?output=` override still obeying the allow-list.
+* `spec/services/image_delivery/derivative_spec.rb` — a real AVIF/WebP is
+  produced at the source's dimensions, the cache is reused and re-keyed when the
+  source changes, an encode that is not smaller is discarded and cached, and a
+  corrupt source, missing file, oversized source or failing encoder all return
+  `nil` instead of raising.
+* `spec/requests/api/v1/asset_image_delivery_request_spec.rb` — end to end:
+  real AVIF magic bytes in the body, `Vary: Accept` on transcoded *and*
+  untranscoded responses, a distinct ETag per format, 304 still working, and
+  the WebP fallback for a client that cannot decode AVIF.

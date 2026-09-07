@@ -814,6 +814,42 @@ arbitrary instructions against stored assets.
 | `POST /api/v1/comment_threads/:id/dismiss_suggestion` | Reject, but keep.
 |===
 
+=== Front end
+
+Triage lives in the *Comments* tab of the asset viewer, above the human
+threads, because a suggestion is a comment thread awaiting admission —
+accepting one makes it appear in the list directly below, so both halves of
+the same job stay on one screen.
+
+[cols="1,3"]
+|===
+| File | Responsibility
+
+| `components/Folders/useAiReview.js` | Run history, the pending queue,
+  accept/dismiss, and polling.
+| `components/Folders/AiSuggestionsPanel.jsx` | The triage queue: one card per
+  finding, with its shape, confidence and the model that produced it.
+|===
+
+Three decisions worth keeping:
+
+*It is a separate hook from `useAssetComments`.* The comments endpoint
+deliberately withholds pending suggestions, so folding them into the same hook
+would mean re-mixing in the client the two sets the server just took care to
+separate. They meet only on the overlay, where each is drawn in its own colour.
+
+*It polls, but only while a run is in flight.* Findings arrive from the gateway
+through a server-to-server callback; nothing pushes to the browser. Polling
+starts when a run is `queued`/`running` and stops the moment it is terminal, so
+a finished review leaves no timer running against the API.
+
+*There is no "accept all".* The assistant's value is that a human looked at
+each claim; a bulk button would quietly turn it into an unreviewed bot posting
+into the client's review. Suggestion markers are drawn on the shared
+`AnnotationOverlay` in the assistant's purple (`#a855f7`) — the colour is
+stamped on the annotation server-side rather than applied in the client, so the
+UI and the W3C export cannot disagree about which marks are machine-made.
+
 == Webhooks
 
 `CommentWebhookSubscription` registers an endpoint that wants to be told when
@@ -933,9 +969,17 @@ to harvest signing keys for endpoints it did not create.
   callback (including a signed-in user being refused without it), replay of a
   terminal run ignored, in-flight duplicate runs refused, and pending
   suggestions absent from the thread list, the export and the guest surface.
+| `spec/javascript/components/Folders/useAiReview.test.js` | Profile posted on a
+  run, accept/dismiss routed to the right endpoint, selection cleared once a
+  card is decided, the comment list refreshed on accept but not on dismiss, and
+  polling that starts with an in-flight run and stops when it finishes.
+| `spec/javascript/components/Folders/AiSuggestionsPanel.test.jsx` | Per-finding
+  accept/dismiss with no bulk control, every triage affordance hidden without
+  modify rights, a clean run distinguished from never having run, and model
+  attribution shown on the queue.
 |===
 
-The guest specs load the real `en.json` bundle via
+The guest and AI-review specs load the real `en.json` bundle via
 `i18n.addResourceBundle` rather than asserting on key paths, so a deleted or
 renamed translation key fails the test instead of passing silently.
 

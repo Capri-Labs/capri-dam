@@ -50,19 +50,20 @@ captured for this module; see the folder configuration screens referenced in
 
 ==== Notes & known limitations
 
-* AVIF output format support is **partially in progress**: an admin-configurable
+* **AVIF/WebP output is now delivered at request time.** The admin-configurable
   allow-list (`image_optimizer_formats`, in the System Status → Storage & Edge
-  tab) now lets an admin declare `webp`/`avif` as permitted output formats, and
-  this is enforced and persisted via the real `/api/v1/cdn_configurations` API.
-  However, the **live, request-time image-transformation/delivery pipeline
-  itself is not yet implemented** in this repo — there is no code path today
-  that negotiates width/height/crop/format on an actual delivery URL. The
-  real-time-transform, smart-crop, and HMAC-signing capabilities described
-  above in "Key features" represent the target design; only WebP/JPEG/PNG are
-  genuinely deliverable today, and this module's stated real-time-transform
-  behaviour should be treated as **planned**, not shipped, until a
-  transformation proxy exists to read the new allow-list. See the
-  <<module-roadmap,Roadmap>> for status.
+  tab) both permits an edge CDN to serve those formats *and* governs what the
+  application itself produces, so the switch means the same thing with or
+  without a CDN in front. A delivery request is answered in AVIF (preferred) or
+  WebP only when the administrator has enabled the format, the browser's
+  `Accept` header names it explicitly, and the re-encode actually comes out
+  smaller than the original — otherwise the stored file is served untouched.
+  Derivatives are cached and invalidate themselves when the asset is re-uploaded.
+* **Request-time resizing and cropping are still edge-only.** Width, height and
+  crop mode are computed at the Fastly edge; the in-application pipeline
+  negotiates *format* only. Without a CDN in front, a delivery URL returns the
+  stored dimensions. The smart-crop and HMAC-signing capabilities described
+  above in "Key features" likewise depend on the edge tier.
 * There is no dedicated admin UI screen purely for this module today; profile
   assignment happens inside folder settings, and cache-purge/CDN config lives
   inside the System Status → Storage & Edge tab.

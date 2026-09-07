@@ -1163,7 +1163,41 @@ module Api
           }, status: :not_found
         end
 
+        # ── Request-time format negotiation ─────────────────────────────────────
+        # Vary is set before anything else and on *every* response from this
+        # action, including 304s and untranscoded originals. The chosen format
+        # depends on Accept, so a cache that keys only on the URL would happily
+        # hand an AVIF to a client that cannot decode it.
+        response.headers["Vary"] = "Accept"
+
+        negotiated = ImageDelivery::FormatNegotiator.new(
+          source_content_type: content_type,
+          accept_header: request.headers["Accept"],
+          # Deliberately not `format`: Rails already uses that param for the
+          # routing extension, so `/assets/local/x.png` would arrive here as
+          # an explicit format request for PNG.
+          requested_format: params[:output],
+        ).call
+
+        if negotiated
+          derivative = ImageDelivery::Derivative.fetch(
+            source_path: file_to_serve,
+            format: negotiated.format,
+            content_type: negotiated.content_type,
+          )
+
+          # A nil derivative is a decision, not an error: the encode was not
+          # smaller, the source was too large, or the transcode failed. In all
+          # three cases the original is the right answer.
+          if derivative
+            file_to_serve = derivative.path
+            content_type = derivative.content_type
+          end
+        end
+
         # ── HTTP caching headers ────────────────────────────────────────────────
+        # The ETag is computed over the bytes actually being sent, so a client
+        # holding the JPEG does not get a 304 once it starts accepting AVIF.
         file_stat    = File.stat(file_to_serve)
         etag_value   = %("#{Digest::MD5.file(file_to_serve).hexdigest}")
         last_modified = file_stat.mtime.httpdate

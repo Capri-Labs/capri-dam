@@ -3126,6 +3126,33 @@
       "unavailableLoad": "이 버전들의 미리보기를 불러올 수 없습니다."
     }
   },
+  "aiReview": {
+    "title": "AI review assistant",
+    "pendingCount_one": "{{count}} to review",
+    "pendingCount_other": "{{count}} to review",
+    "profileLabel": "Review profile",
+    "empty": "Run a review to have the assistant check this asset.",
+    "emptyReadOnly": "No AI review has been run for this asset.",
+    "noFindings": "No issues found in the last review.",
+    "failed": "The review could not be completed.",
+    "confidence": "{{percent}}% confident",
+    "modelCredit": "Suggested by {{model}}",
+    "profiles": {
+      "brand_guidelines": "Brand guidelines",
+      "accessibility": "Accessibility",
+      "safe_area": "Safe area",
+      "composition": "Composition"
+    },
+    "actions": {
+      "run": "Run review",
+      "running": "Reviewing…",
+      "accept": "Accept",
+      "dismiss": "Dismiss",
+      "refresh": "Refresh",
+      "collapse": "Collapse",
+      "expand": "Expand"
+    }
+  },
   "guestReview": {
     "identity": {
       "title": "Who's reviewing?",

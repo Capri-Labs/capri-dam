@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {
     Dialog, AppBar, Toolbar, IconButton, Typography, Box, Grid,
     Button, Divider, Chip, Tabs, Tab, Paper, List, ListItem,
@@ -36,6 +36,8 @@ import AnnotationOverlay from './AnnotationOverlay';
 import VideoAnnotationPlayer from './VideoAnnotationPlayer';
 import { frameRateContext } from '../../utils/annotationGeometry';
 import useAssetComments from './useAssetComments';
+import useAiReview from './useAiReview';
+import AiSuggestionsPanel from './AiSuggestionsPanel';
 
 const interpolate = (template, values = {}) => template.replace(/\{\{(\w+)\}\}/g, (_, key) => values[key] ?? '');
 
@@ -114,6 +116,55 @@ export default function AssetViewer({ asset: initialAsset, open, onClose, onAsse
     // preview and the Comments tab so the two never disagree about what is
     // selected, hovered or pending.
     const comments = useAssetComments({ assetId: initialAsset?.id, enabled: open });
+
+    // AI-suggested findings awaiting triage. Kept in its own hook because the
+    // comments endpoint deliberately withholds pending suggestions — see
+    // useAiReview for why the two sets are not merged server-side. Accepting
+    // one turns it into a real thread, so the comment list is refreshed.
+    const aiReview = useAiReview({
+        assetId: initialAsset?.id,
+        enabled: open,
+        onAccepted: comments.refresh,
+    });
+
+    // Suggestion markers are drawn on the same overlay as human annotations,
+    // in the assistant's purple, so a reviewer sees what the model is pointing
+    // at in place rather than having to imagine it from a text description.
+    const overlayAnnotations = useMemo(
+        () => [...comments.annotations, ...aiReview.annotations],
+        [comments.annotations, aiReview.annotations],
+    );
+
+    const overlayVisibleAnnotations = useMemo(
+        () => [...comments.visibleAnnotations, ...aiReview.annotations],
+        [comments.visibleAnnotations, aiReview.annotations],
+    );
+
+    // One marker can belong to either set, so a click has to be routed to
+    // whichever list actually owns it — otherwise selecting a suggestion would
+    // silently highlight nothing.
+    const selectOverlayThread = useCallback((id) => {
+        const isSuggestion = aiReview.annotations.some((a) => a.thread_id === id);
+        if (isSuggestion) {
+            aiReview.setSelectedThreadId(id);
+            comments.setSelectedThreadId(null);
+        } else {
+            comments.setSelectedThreadId(id);
+            aiReview.setSelectedThreadId(null);
+        }
+        setActiveTab(COMMENTS_TAB_INDEX);
+    }, [aiReview, comments]);
+
+    const hoverOverlayThread = useCallback((id) => {
+        const isSuggestion = id != null && aiReview.annotations.some((a) => a.thread_id === id);
+        aiReview.setHoveredThreadId(isSuggestion ? id : null);
+        comments.setHoveredThreadId(isSuggestion ? null : id);
+    }, [aiReview, comments]);
+
+    // The overlay takes a single id for each, so the two sources are collapsed
+    // back into one here.
+    const overlaySelectedThreadId = comments.selectedThreadId || aiReview.selectedThreadId;
+    const overlayHoveredThreadId = comments.hoveredThreadId || aiReview.hoveredThreadId;
 
     // Honour the `?thread=` deep link that comment notification emails and
     // inbox mentions produce (see CommentNotificationService#context_url):
@@ -387,14 +438,14 @@ export default function AssetViewer({ asset: initialAsset, open, onClose, onAsse
                                 onLoadedMetadata={setPreviewNaturalSize}
                             >
                                 <AnnotationOverlay
-                                    annotations={comments.visibleAnnotations}
+                                    annotations={overlayVisibleAnnotations}
                                     draft={comments.draft}
                                     tool={comments.tool}
                                     onDraftAdd={comments.addDraftAnnotation}
-                                    selectedThreadId={comments.selectedThreadId}
-                                    hoveredThreadId={comments.hoveredThreadId}
-                                    onSelectThread={(id) => { comments.setSelectedThreadId(id); setActiveTab(COMMENTS_TAB_INDEX); }}
-                                    onHoverThread={comments.setHoveredThreadId}
+                                    selectedThreadId={overlaySelectedThreadId}
+                                    hoveredThreadId={overlayHoveredThreadId}
+                                    onSelectThread={selectOverlayThread}
+                                    onHoverThread={hoverOverlayThread}
                                     sourceSize={previewNaturalSize}
                                     mediaType="video"
                                     videoPosition={videoDraftPosition}
@@ -471,14 +522,14 @@ export default function AssetViewer({ asset: initialAsset, open, onClose, onAsse
                                      transform: `scaleX(${geometry.flip_horizontal ? -1 : 1}) rotate(${geometry.rotate || 0}deg)`
                             }} />
                             <AnnotationOverlay
-                                annotations={comments.annotations}
+                                annotations={overlayAnnotations}
                                 draft={comments.draft}
                                 tool={comments.tool}
                                 onDraftAdd={comments.addDraftAnnotation}
-                                selectedThreadId={comments.selectedThreadId}
-                                hoveredThreadId={comments.hoveredThreadId}
-                                onSelectThread={(id) => { comments.setSelectedThreadId(id); setActiveTab(COMMENTS_TAB_INDEX); }}
-                                onHoverThread={comments.setHoveredThreadId}
+                                selectedThreadId={overlaySelectedThreadId}
+                                hoveredThreadId={overlayHoveredThreadId}
+                                onSelectThread={selectOverlayThread}
+                                onHoverThread={hoverOverlayThread}
                                 sourceSize={previewNaturalSize}
                             />
                         </Box>
@@ -688,6 +739,7 @@ export default function AssetViewer({ asset: initialAsset, open, onClose, onAsse
 
                         {/* TAB 6: COMMENTS & ANNOTATIONS */}
                         <TabPanel value={activeTab} index={COMMENTS_TAB_INDEX}>
+                            <AiSuggestionsPanel review={aiReview} canModify />
                             <AssetCommentsPanel comments={comments} asset={asset} />
                         </TabPanel>
 
