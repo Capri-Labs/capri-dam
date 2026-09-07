@@ -118,4 +118,72 @@ RSpec.describe AnnotationTarget, type: :model do
       expect(described_class.overlapping(0.3, 0.3, 0.2, 0.2)).to contain_exactly(overlapping)
     end
   end
+
+  # A "time" target is a position on the timeline with no spatial extent —
+  # "the music is too loud here". Without it, commenting on a moment would
+  # force the reviewer to draw a meaningless shape somewhere on the frame.
+  describe 'time-only targets' do
+    it 'is valid with a frame and no spatial extent' do
+      target = build_target(
+        media_type: 'video', shape: 'time',
+        bbox_x: 0, bbox_y: 0, bbox_w: 0, bbox_h: 0,
+        start_frame: 300, fps: 25
+      )
+
+      expect(target).to be_valid
+    end
+
+    it 'requires a frame, since nothing else locates it' do
+      target = build_target(
+        media_type: 'video', shape: 'time',
+        bbox_x: 0, bbox_y: 0, bbox_w: 0, bbox_h: 0
+      )
+
+      expect(target).not_to be_valid
+      expect(target.errors[:start_frame]).to include("is required for a 'time' annotation")
+    end
+
+    it 'still requires a frame rate to interpret the frame' do
+      target = build_target(
+        media_type: 'video', shape: 'time',
+        bbox_x: 0, bbox_y: 0, bbox_w: 0, bbox_h: 0,
+        start_frame: 300
+      )
+
+      expect(target).not_to be_valid
+      expect(target.errors[:fps]).to include('is required when a frame position is given')
+    end
+
+    it 'accepts a range' do
+      target = build_target(
+        media_type: 'video', shape: 'time',
+        bbox_x: 0, bbox_y: 0, bbox_w: 0, bbox_h: 0,
+        start_frame: 300, end_frame: 500, fps: 25
+      )
+
+      expect(target).to be_valid
+      expect(target.range?).to be(true)
+    end
+
+    it 'is excluded from the spatial scope alongside pins' do
+      described_class.create!(
+        comment: comment, media_type: 'video', shape: 'time',
+        bbox_x: 0, bbox_y: 0, bbox_w: 0, bbox_h: 0, start_frame: 10, fps: 25
+      )
+      described_class.create!(comment: comment, shape: 'pin', bbox_x: 0.1, bbox_y: 0.1, bbox_w: 0, bbox_h: 0)
+      rect = described_class.create!(comment: comment, shape: 'rect', bbox_x: 0.1, bbox_y: 0.1, bbox_w: 0.2, bbox_h: 0.2)
+
+      expect(described_class.spatial).to contain_exactly(rect)
+    end
+
+    it 'appears in the temporal scope' do
+      time_target = described_class.create!(
+        comment: comment, media_type: 'video', shape: 'time',
+        bbox_x: 0, bbox_y: 0, bbox_w: 0, bbox_h: 0, start_frame: 10, fps: 25
+      )
+      described_class.create!(comment: comment, shape: 'rect', bbox_x: 0.1, bbox_y: 0.1, bbox_w: 0.2, bbox_h: 0.2)
+
+      expect(described_class.temporal).to contain_exactly(time_target)
+    end
+  end
 end

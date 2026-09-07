@@ -205,6 +205,12 @@ class AssetProcessorWorker
   # previewed in the asset viewer, mirroring the AEM "FFmpeg pack" behaviour.
   NATIVE_PLAYABLE_VIDEO_MIME_TYPES = %w[video/mp4 video/webm video/ogg].freeze
 
+  # The two NTSC broadcast frame rates that use SMPTE drop-frame timecode.
+  # Matched on the exact ffprobe rational rather than the rounded float,
+  # because 29.97 and a genuine 30 are indistinguishable once rounded — and
+  # only the former skips frame numbers to stay aligned with wall clock.
+  NTSC_DROP_FRAME_RATIOS = %w[30000/1001 60000/1001].freeze
+
   # Source codecs that are already MP4/browser compatible — when the source
   # video is already H.264 video with AAC (or no) audio, the MP4 rendition is
   # produced via a fast, lossless **stream copy** ("remux": `-c copy`, just
@@ -875,7 +881,8 @@ class AssetProcessorWorker
   end
 
   # Runs +ffprobe+ against +path+ and populates +:video_duration_seconds+,
-  # +:video_width+, +:video_height+, and +:video_codec+ in +meta+.
+  # +:video_width+, +:video_height+, +:video_codec+ and the frame-rate fields
+  # in +meta+.
   #
   # @param path [String]
   # @param meta [Hash]
@@ -896,10 +903,54 @@ class AssetProcessorWorker
       meta[:video_width]  = video_stream["width"]
       meta[:video_height] = video_stream["height"]
       meta[:video_codec]  = video_stream["codec_name"]
+      extract_video_frame_rate(video_stream, duration, meta)
     end
     meta[:audio_codec] = audio_stream["codec_name"] if audio_stream
   rescue StandardError => e
     Rails.logger.error "Video technical metadata extraction failed: #{e.message}"
+  end
+
+  # Derives the frame-rate fields the annotation layer needs from an ffprobe
+  # video stream.
+  #
+  # Frame-accurate video comments store a frame *number*, not a timestamp
+  # (see AnnotationTarget), which is only meaningful alongside the rate it was
+  # counted at — so a temporal annotation is rejected without an +fps+. The
+  # exact rational is kept as well as the float because 30000/1001 is the only
+  # way to tell true 29.97 apart from a rounded 30.
+  #
+  # @param stream [Hash] the ffprobe video stream object
+  # @param duration [Float, nil] container duration in seconds
+  # @param meta [Hash]
+  # @return [void]
+  def extract_video_frame_rate(stream, duration, meta)
+    # Each candidate is *parsed* before being accepted rather than merely
+    # checked for presence: ffprobe reports "0/0" (a non-blank string) for
+    # variable-frame-rate and image streams, so a `.presence` chain would
+    # latch onto that placeholder and never reach the usable value.
+    ratio = [ stream["avg_frame_rate"], stream["r_frame_rate"] ]
+              .find { |candidate| parse_frame_rate_ratio(candidate).to_f.positive? }
+    rate  = parse_frame_rate_ratio(ratio)
+    return if rate.nil? || rate <= 0
+
+    meta[:video_frame_rate]       = rate.round(6)
+    meta[:video_frame_rate_ratio] = ratio
+    # NTSC broadcast rates run 0.1% slow, so timecode must skip frame *numbers*
+    # to stay aligned with wall clock. Only these two rates are drop-frame.
+    meta[:video_drop_frame]       = NTSC_DROP_FRAME_RATIOS.include?(ratio)
+    meta[:video_frame_count]      = (duration * rate).round if duration&.positive?
+  end
+
+  # @param ratio [String, nil] e.g. "25/1", "30000/1001", or a bare "24"
+  # @return [Float, nil] nil when unparseable or a 0/0 placeholder
+  def parse_frame_rate_ratio(ratio)
+    return nil if ratio.blank?
+
+    numerator, denominator = ratio.to_s.split("/", 2)
+    denominator = "1" if denominator.blank?
+    return nil if denominator.to_f.zero?
+
+    numerator.to_f / denominator.to_f
   end
 
   # Extracts a single frame (1 second in, or the first frame for very short

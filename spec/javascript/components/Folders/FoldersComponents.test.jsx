@@ -958,7 +958,7 @@ describe('Folders components', () => {
     expect(screen.queryByTestId('asset-3d-model-viewer')).not.toBeInTheDocument();
   });
 
-  it('renders a native <video> player (poster + controls) for an MP4 video asset', () => {
+  it('renders a frame-accurate video player (poster + custom transport) for an MP4 video asset', () => {
     const mp4Asset = {
       id: 16,
       title: 'Product Demo.mp4',
@@ -976,7 +976,12 @@ describe('Folders components', () => {
     expect(player).toBeInTheDocument();
     expect(player).toHaveAttribute('src', '/product-demo.mp4');
     expect(player).toHaveAttribute('poster', '/product-demo-poster.jpg');
-    expect(player).toHaveAttribute('controls');
+    // The native controls are deliberately replaced: they report time in
+    // seconds, cannot step a frame at a time, and leave nowhere to render the
+    // comment marker track. See VideoAnnotationPlayer.
+    expect(player).not.toHaveAttribute('controls');
+    expect(screen.getByTestId('video-transport')).toBeInTheDocument();
+    expect(screen.getByTestId('video-marker-track')).toBeInTheDocument();
   });
 
   it('plays a non-native video format (QuickTime) via its transcoded MP4 rendition when available', () => {

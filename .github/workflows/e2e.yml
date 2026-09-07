@@ -47,6 +47,52 @@ env:
   E2E_BASE_URL: ${{ inputs.base_url || 'http://localhost:3000' }}
 
 jobs:
+  # ── Guard: every *.e2e.spec.js must belong to a matrix suite ─────────────
+  # The `matrix.suite` lists below are maintained by hand, so a newly added
+  # spec file that nobody adds a fragment for would silently never run in CI.
+  # This job fails the PR that introduces the drift, rather than letting the
+  # spec sit un-executed indefinitely.
+  suite-coverage:
+    name: E2E suite coverage
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Verify every E2E spec is covered by a suite
+        run: |
+          python3 - <<'PY'
+          import glob, os, sys, yaml
+
+          wf = yaml.safe_load(open(".github/workflows/e2e.yml"))
+          suites = wf["jobs"]["playwright"]["strategy"]["matrix"]["suite"]
+          fragments = [f for s in suites for f in s["specs"].split()]
+          specs = [os.path.basename(p)
+                   for p in glob.glob("spec/e2e/**/*.e2e.spec.js", recursive=True)]
+
+          uncovered = sorted(s for s in specs
+                             if not any(f in s for f in fragments))
+          stale = sorted(f for f in fragments
+                         if not any(f in s for s in specs))
+
+          if uncovered:
+              print("::error::These E2E specs match no suite and would never run:")
+              for s in uncovered:
+                  print(f"::error file=spec/e2e/{s}::{s} is not covered by any "
+                        f"matrix.suite `specs` fragment in .github/workflows/e2e.yml")
+          if stale:
+              print("::error::These matrix fragments match no spec file "
+                    "(renamed or deleted?):")
+              for f in stale:
+                  print(f"::error::  {f}")
+
+          if uncovered or stale:
+              sys.exit(1)
+
+          print(f"All {len(specs)} E2E specs are covered by "
+                f"{len(suites)} suites ✅")
+          PY
+
   playwright:
     name: Playwright E2E (${{ matrix.suite.name }})
     runs-on: ubuntu-latest
@@ -248,12 +294,16 @@ jobs:
   e2e-all-green:
     name: All E2E suites passed
     runs-on: ubuntu-latest
-    needs: [playwright]
+    needs: [playwright, suite-coverage]
     if: always()
 
     steps:
       - name: Evaluate E2E matrix results
         run: |
+          if [[ "${{ needs.suite-coverage.result }}" != "success" ]]; then
+            echo "E2E suite coverage check failed — a spec file is not mapped to any suite."
+            exit 1
+          fi
           if [[ "${{ needs.playwright.result }}" != "success" ]]; then
             echo "One or more E2E suites failed — see the Playwright job matrix above."
             exit 1

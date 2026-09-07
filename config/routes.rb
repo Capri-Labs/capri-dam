@@ -99,6 +99,26 @@ Rails.application.routes.draw do
   # column). No login required — the token itself *is* the credential.
   get "/s/collections/:token", to: "public/collection_shares#show", as: :public_collection_share, format: false
 
+  # Public, unauthenticated *review* links. Unlike the collection share above
+  # these are DB-backed (see {CreateReviewLinks}) because a link that grants
+  # write access has to be revocable, attributable and scopable — none of which
+  # a self-describing signed_id can do.
+  scope "/s/reviews/:token", as: :review, format: false do
+    get  "/",         to: "public/reviews#show",     as: ""
+    post "/unlock",   to: "public/reviews#unlock"
+    post "/identify", to: "public/reviews#identify"
+    get  "/assets",   to: "public/reviews#assets",   as: :assets
+
+    scope "/assets/:asset_id" do
+      get  "/preview",  to: "public/review_assets#preview",   as: :preview_asset
+      get  "/download", to: "public/review_assets#download",  as: :download_asset
+      get  "/threads",  to: "public/reviews#threads",         as: :asset_threads
+      post "/comments", to: "public/review_comments#create",  as: :asset_comments
+    end
+
+    post "/threads/:thread_id/comments", to: "public/review_comments#reply", as: :thread_comments
+  end
+
   # Workflows UI
   get "/workflows", to: "workflows#index"
   get "workflows/dashboard", to: "workflows#dashboard"
@@ -303,6 +323,20 @@ Rails.application.routes.draw do
         # inside records the version it was written against.
         # See Api::V1::CommentThreadsController.
         resources :comment_threads, only: [ :index, :create ], path: "comments"
+
+        # Review interchange: W3C Web Annotation JSON-LD in and out, plus an
+        # annotated PDF sign-off sheet. See Api::V1::CommentExportsController.
+        get  "comments/export", to: "comment_exports#show"
+        post "comments/import", to: "comment_exports#create"
+
+        # AI review assistant runs against this asset, plus the queue of
+        # suggestions awaiting a human decision.
+        # See Api::V1::AiReviewsController.
+        resources :ai_reviews, only: %i[index create] do
+          collection do
+            get :pending
+          end
+        end
       end
 
       # Thread-level and comment-level operations. Kept off the /assets path
@@ -312,6 +346,12 @@ Rails.application.routes.draw do
         member do
           patch :resolve # close it: { status: "resolved" | "verified" }
           patch :reopen
+
+          # Triage of an AI-suggested thread. Accepting admits machine output
+          # into the review; dismissing keeps it for tuning rather than
+          # deleting it. See Api::V1::AiReviewsController.
+          post :accept_suggestion,  to: "ai_reviews#accept"
+          post :dismiss_suggestion, to: "ai_reviews#dismiss"
         end
 
         # Replies and follow-up comments within the thread.
@@ -319,6 +359,28 @@ Rails.application.routes.draw do
       end
 
       resources :comments, only: [ :update, :destroy ]
+
+      # A review run is addressable in its own right so the UI can poll it.
+      # +findings+ is the AI gateway's callback, authenticated with the shared
+      # gateway secret rather than a user session.
+      resources :ai_reviews, only: %i[show] do
+        member do
+          post :findings
+        end
+      end
+
+      # Outbound review-activity webhooks. Registry-style subscriptions, as
+      # distinct from the workflow engine's per-step webhook action: these fire
+      # because something happened, not because a workflow reached a step.
+      resources :comment_webhook_subscriptions, except: [ :new, :edit ] do
+        member do
+          post :test # synthetic ping, for verifying reachability + signature
+        end
+      end
+
+      # External review links. DELETE revokes rather than destroys — the row is
+      # the provenance record for any guest comments collected through it.
+      resources :review_links, only: [ :index, :show, :create, :update, :destroy ]
 
       # Folders
       resources :folders, only: [ :index, :show, :create, :update, :destroy ] do

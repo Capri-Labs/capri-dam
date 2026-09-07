@@ -1,0 +1,20 @@
+<%# Mount point for the guest review app. All data is fetched from the
+    /s/reviews/:token JSON endpoints on this controller — the token in the URL
+    is the only credential, so nothing about the asset is embedded here. %>
+<% content_for :title, "#{@review_link.target_label} — Review" %>
+
+<div id="guest-review-root"
+     data-token="<%= params[:token] %>"
+     data-review-name="<%= @review_link.name %>"
+     data-target-label="<%= @review_link.target_label %>"
+     data-allow-comments="<%= @review_link.allow_comments? %>"
+     data-allow-downloads="<%= @review_link.allow_downloads? %>"
+     data-require-email="<%= @review_link.require_email? %>"
+     data-identified="<%= @guest.present? %>"
+     data-guest-name="<%= @guest&.display_name %>">
+  <noscript>
+    <p style="max-width:640px; margin:48px auto; text-align:center; color:#64748b;">
+      Reviewing requires JavaScript, because comments are placed directly on the image.
+    </p>
+  </noscript>
+</div>

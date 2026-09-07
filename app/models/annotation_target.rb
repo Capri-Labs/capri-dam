@@ -45,7 +45,13 @@ class AnnotationTarget < ApplicationRecord
   # +freehand+ — pencil stroke, requires an svg_path
   # +text+     — a text callout anchored at the bbox
   # +highlight+— a document text highlight
-  SHAPES = %w[pin rect ellipse arrow line freehand text highlight].freeze
+  # +time+     — a position (or range) on a video timeline with no spatial
+  #              extent: "at 0:14 the music is too loud". Its bbox is all
+  #              zeroes and it is deliberately *not* drawn on the video
+  #              overlay — it belongs on the scrubber's marker track only.
+  #              Without it, commenting on a moment would force the reviewer to
+  #              draw a meaningless shape somewhere on the frame.
+  SHAPES = %w[pin rect ellipse arrow line freehand text highlight time].freeze
 
   # Shapes whose geometry cannot be reconstructed from a bounding box alone.
   PATH_REQUIRED_SHAPES = %w[arrow line freehand].freeze
@@ -75,11 +81,12 @@ class AnnotationTarget < ApplicationRecord
   validate :path_present_for_path_shapes
   validate :frame_range_is_ordered
   validate :video_targets_declare_a_frame_rate
+  validate :time_shape_carries_a_frame
 
   before_validation :apply_default_style
 
   scope :temporal, -> { where.not(start_frame: nil) }
-  scope :spatial, -> { where.not(shape: "pin") }
+  scope :spatial, -> { where.not(shape: %w[pin time]) }
 
   # Annotations whose region overlaps the given normalised rectangle. Used to
   # ask "does the pixel-diff between two versions intersect this feedback?".
@@ -206,5 +213,15 @@ class AnnotationTarget < ApplicationRecord
     return if fps.present?
 
     errors.add(:fps, "is required when a frame position is given")
+  end
+
+  # A +time+ target has no spatial extent, so a frame is the only thing that
+  # locates it. Without one it would be invisible everywhere — not drawn on the
+  # overlay (by design) and absent from the scrubber's marker track.
+  def time_shape_carries_a_frame
+    return unless shape == "time"
+    return if start_frame.present?
+
+    errors.add(:start_frame, "is required for a 'time' annotation")
   end
 end

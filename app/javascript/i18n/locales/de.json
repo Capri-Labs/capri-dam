@@ -3052,7 +3052,8 @@
       "line": "Linie",
       "freehand": "Freihand",
       "text": "Text",
-      "drawHint": "Zeichnen Sie in der Vorschau, um Ihre Markierung zu setzen."
+      "drawHint": "Zeichnen Sie in der Vorschau, um Ihre Markierung zu setzen.",
+      "time": "Timecode"
     },
     "status": {
       "open": "Offen",
@@ -3088,6 +3089,90 @@
       "minutesAgo": "vor {{count}} Min.",
       "hoursAgo": "vor {{count}} Std.",
       "daysAgo": "vor {{count}} T."
+    },
+    "video": {
+      "play": "Abspielen",
+      "pause": "Pause",
+      "previousFrame": "Vorheriges Bild",
+      "nextFrame": "Nächstes Bild",
+      "scrubber": "Videoposition",
+      "mute": "Stummschalten",
+      "unmute": "Stummschaltung aufheben",
+      "loop": "Ausgewählten Bereich wiederholen",
+      "clearRange": "Bereich löschen",
+      "inShort": "IN",
+      "outShort": "OUT",
+      "setIn": "Startpunkt setzen",
+      "setOut": "Endpunkt setzen",
+      "setInHint": "Startpunkt eines Bereichskommentars am aktuellen Bild setzen",
+      "setOutHint": "Endpunkt eines Bereichskommentars am aktuellen Bild setzen",
+      "jumpToMarker": "Zur Anmerkung springen",
+      "seekTo": "Zu {{time}} springen",
+      "attachTime": "{{time}} anhängen",
+      "attachRange": "{{from}}–{{to}} anhängen",
+      "frameHint": "Gezeichnete Markierungen werden am aktuellen Bild verankert. Für einen Bereich IN/OUT im Player setzen.",
+      "rangeSelected": "Ein Bereich ist ausgewählt — neue Markierungen gelten für die gesamte Spanne.",
+      "approximateRate": "Für dieses Video wurde keine Bildrate erkannt, daher ist die Einzelbildnavigation ungefähr."
+    },
+    "lineage": {
+      "changed": "Geändert in v{{to}}",
+      "unchanged": "Unverändert seit v{{from}}",
+      "unavailable": "Nicht verglichen",
+      "before": "Vorher (v{{number}})",
+      "after": "Nachher (v{{number}})",
+      "changedHint": "Etwa {{percent}} % dieses Bereichs unterscheiden sich von v{{from}}. Vergleichen Sie Vorher und Nachher, um zu bestätigen, dass die Anmerkung umgesetzt wurde.",
+      "unchangedHint": "Dieser Bereich sieht identisch zu v{{from}} aus — das Feedback ist möglicherweise noch offen.",
+      "unavailableCrossOrigin": "Die Änderungserkennung benötigt Pixelzugriff auf die Vorschauen, den dieses CDN nicht erlaubt.",
+      "unavailableLoad": "Die Vorschauen für diese Versionen konnten nicht geladen werden."
+    }
+  },
+  "guestReview": {
+    "identity": {
+      "title": "Who's reviewing?",
+      "description": "Your name is shown alongside your comments so the team knows whose feedback it is. It isn't used for anything else.",
+      "email": "Email address",
+      "name": "Your name",
+      "skip": "Not now",
+      "continue": "Continue"
+    },
+    "header": {
+      "reviewingAs": "Reviewing as {{name}}",
+      "expires": "Access ends {{date}}"
+    },
+    "panel": {
+      "title": "Review notes",
+      "count": "{{count}} thread",
+      "count_other": "{{count}} threads",
+      "empty": "No notes yet. Draw on the asset or type below to leave the first one.",
+      "placeholder": "Add a note…",
+      "send": "Post note",
+      "readOnly": "This link is view-only.",
+      "identifyPrompt": "Tell us who you are before leaving a note.",
+      "identifyAction": "Add your name",
+      "draftMarks": "{{count}} mark ready",
+      "draftMarks_other": "{{count}} marks ready",
+      "clearMarks": "Clear"
+    },
+    "thread": {
+      "reply": "Reply",
+      "replyPlaceholder": "Write a reply…",
+      "resolved": "Resolved"
+    },
+    "comment": {
+      "team": "Team",
+      "edited": "edited"
+    },
+    "tools": {
+      "select": "Select",
+      "rect": "Rectangle",
+      "ellipse": "Ellipse",
+      "arrow": "Arrow",
+      "freehand": "Freehand",
+      "pin": "Pin"
+    },
+    "viewer": {
+      "noAsset": "Nothing to review here.",
+      "download": "Download"
     }
   }
 }

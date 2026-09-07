@@ -30,7 +30,7 @@ RSpec.describe 'Api::V1::Comments coverage', type: :request do
       }, as: :json
 
       expect(response).to have_http_status(:created)
-      reply = Comment.last
+      reply = Comment.find(parsed_body['id'])
       expect(reply.parent_comment).to eq(root_comment)
       expect(reply.motivation).to eq('replying')
       expect(parsed_body['parent_comment_id']).to eq(root_comment.id)
@@ -78,14 +78,14 @@ RSpec.describe 'Api::V1::Comments coverage', type: :request do
 
       expect(response).to have_http_status(:created)
       expect(thread.reload.status).to eq('addressed')
-      expect(Comment.last.asset_version).to eq(version_two)
+      expect(Comment.find(parsed_body['id']).asset_version).to eq(version_two)
     end
 
     it "defaults the comment to the asset's active version" do
       post "/api/v1/comment_threads/#{thread.id}/comments", params: { body: 'Current version follow-up' }, as: :json
 
       expect(response).to have_http_status(:created)
-      expect(Comment.last.asset_version).to eq(version_two)
+      expect(Comment.find(parsed_body['id']).asset_version).to eq(version_two)
     end
   end
 

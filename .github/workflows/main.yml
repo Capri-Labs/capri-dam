@@ -177,128 +177,7 @@ jobs:
         run: yarn test --ci
 
   # ─────────────────────────────────────────────────────────────────────────
-  # JOB 4 — End-to-end tests (Playwright) — push to main/master only
-  # ─────────────────────────────────────────────────────────────────────────
-  e2e-tests:
-    name: Playwright (E2E)
-    runs-on: ubuntu-latest
-    if: >
-      github.event_name == 'push' &&
-      (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
-    needs: [backend-tests, frontend-tests]
-
-    services:
-      postgres:
-        image: pgvector/pgvector:pg14
-        env:
-          POSTGRES_USER:     capri
-          POSTGRES_PASSWORD: capri
-          POSTGRES_DB:       headless_dam_test
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports: ['5432:5432']
-
-      redis:
-        image: redis:7-alpine
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports: ['6379:6379']
-
-    env:
-      RAILS_ENV:              test
-      DATABASE_URL:           postgres://capri:capri@localhost:5432/headless_dam_test
-      REDIS_URL:              redis://localhost:6379/1
-      SECRET_KEY_BASE:        ${{ secrets.SECRET_KEY_BASE || 'ci_e2e_placeholder_secret_key_base_that_is_at_least_64_chars_long' }}
-      ACTIVE_STORAGE_SERVICE: local
-      ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY: "test-ar-enc-primary-key-32bytes!"
-      ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY: "test-ar-enc-det-key-32bytes!!!!!"
-      ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT: "test-ar-enc-derivation-salt32b!!"
-      RAILS_SERVE_STATIC_FILES: true
-      E2E_BASE_URL: http://localhost:3000
-
-    steps:
-      - name: Install system packages
-        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y libpq-dev libvips node-gyp exiv2 imagemagick libimage-exiftool-perl
-
-      - uses: actions/checkout@v7
-
-      - name: Set up Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: '4.0.3'
-          bundler-cache: true
-
-      - name: Set up Node
-        uses: actions/setup-node@v7
-        with:
-          node-version: '22'
-          cache: yarn
-
-      - name: Install JS dependencies
-        run: yarn install --frozen-lockfile --ignore-engines
-
-      - name: Prepare test database + seed
-        run: |
-          bundle exec rails db:test:prepare
-          bundle exec rails db:seed RAILS_ENV=test || true
-
-      - name: Install Playwright browsers
-        run: yarn playwright install --with-deps chromium
-
-      - name: Build JS assets
-        run: yarn build
-
-      - name: Precompile assets for Propshaft (test env)
-        run: bundle exec rails assets:precompile
-
-      - name: Start Rails server (background)
-        run: |
-          bundle exec rails server -b 0.0.0.0 -p 3000 -e test > /tmp/rails-server.log 2>&1 &
-          echo $! > /tmp/rails-server.pid
-          echo "Rails server PID: $(cat /tmp/rails-server.pid)"
-
-      - name: Wait for Rails server to be ready
-        run: |
-          echo "Waiting for Rails on http://localhost:3000/up …"
-          for i in $(seq 1 60); do
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/up || true)
-            if [ "$STATUS" = "200" ] || [ "$STATUS" = "204" ]; then
-              echo "Server ready (HTTP $STATUS) after ${i}s"
-              exit 0
-            fi
-            echo "  attempt $i/60 — HTTP $STATUS, retrying…"
-            sleep 2
-          done
-          echo "Server failed to start. Last log lines:"
-          tail -30 /tmp/rails-server.log || true
-          exit 1
-
-      - name: Run Playwright tests
-        run: yarn playwright test
-
-      - name: Upload Playwright report
-        uses: actions/upload-artifact@v7
-        if: always()
-        with:
-          name: playwright-report
-          path: coverage-frontend/playwright-report/
-          if-no-files-found: ignore
-
-      - name: Upload Rails server log on failure
-        uses: actions/upload-artifact@v7
-        if: failure()
-        with:
-          name: rails-server-log
-          path: /tmp/rails-server.log
-
-  # ─────────────────────────────────────────────────────────────────────────
-  # JOB 5 — Build documentation site (AsciiDoc → HTML)
+  # JOB 4 — Build documentation site (AsciiDoc → HTML)
   # ─────────────────────────────────────────────────────────────────────────
   build-docs:
     name: Build docs site
@@ -622,7 +501,7 @@ jobs:
           retention-days: 30
 
   # ─────────────────────────────────────────────────────────────────────────
-  # JOB 6 — Deploy to GitHub Pages
+  # JOB 5 — Deploy to GitHub Pages
   # ─────────────────────────────────────────────────────────────────────────
   deploy-pages:
     name: Deploy to GitHub Pages

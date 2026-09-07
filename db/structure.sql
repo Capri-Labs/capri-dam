@@ -368,6 +368,29 @@ ALTER SEQUENCE public.ai_model_configs_id_seq OWNED BY public.ai_model_configs.i
 
 
 --
+-- Name: ai_reviews; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.ai_reviews (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    asset_id uuid NOT NULL,
+    asset_version_id uuid,
+    requested_by_id bigint,
+    status character varying DEFAULT 'queued'::character varying NOT NULL,
+    profile character varying DEFAULT 'brand_guidelines'::character varying NOT NULL,
+    ai_model_name character varying,
+    provider character varying,
+    findings_count integer DEFAULT 0 NOT NULL,
+    error_message text,
+    options jsonb DEFAULT '{}'::jsonb NOT NULL,
+    started_at timestamp(6) without time zone,
+    completed_at timestamp(6) without time zone,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
 -- Name: annotation_targets; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -830,15 +853,64 @@ CREATE TABLE public.comment_threads (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     asset_id uuid NOT NULL,
     origin_version_id uuid,
-    created_by_id bigint NOT NULL,
+    created_by_id bigint,
     status character varying DEFAULT 'open'::character varying NOT NULL,
     visibility character varying DEFAULT 'internal'::character varying NOT NULL,
     resolved_at timestamp(6) without time zone,
     resolved_by_id bigint,
     deleted_at timestamp(6) without time zone,
     created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    created_by_guest_id uuid,
+    review_link_id uuid,
+    ai_review_id uuid,
+    suggestion_state character varying,
+    suggestion_decided_by_id bigint,
+    suggestion_decided_at timestamp(6) without time zone,
+    CONSTRAINT comment_threads_have_an_author CHECK (((created_by_id IS NOT NULL) OR (created_by_guest_id IS NOT NULL) OR (ai_review_id IS NOT NULL)))
+);
+
+
+--
+-- Name: comment_webhook_subscriptions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.comment_webhook_subscriptions (
+    id bigint NOT NULL,
+    name character varying NOT NULL,
+    url character varying NOT NULL,
+    secret character varying NOT NULL,
+    events jsonb DEFAULT '[]'::jsonb NOT NULL,
+    active boolean DEFAULT true NOT NULL,
+    asset_id uuid,
+    folder_id uuid,
+    created_by_id bigint,
+    last_delivered_at timestamp(6) without time zone,
+    last_status integer,
+    last_error text,
+    consecutive_failures integer DEFAULT 0 NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL
 );
+
+
+--
+-- Name: comment_webhook_subscriptions_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.comment_webhook_subscriptions_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: comment_webhook_subscriptions_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.comment_webhook_subscriptions_id_seq OWNED BY public.comment_webhook_subscriptions.id;
 
 
 --
@@ -859,7 +931,9 @@ CREATE TABLE public.comments (
     edited_at timestamp(6) without time zone,
     deleted_at timestamp(6) without time zone,
     created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    import_source jsonb DEFAULT '{}'::jsonb NOT NULL,
+    review_guest_id uuid
 );
 
 
@@ -1782,6 +1856,46 @@ ALTER SEQUENCE public.report_snapshots_id_seq OWNED BY public.report_snapshots.i
 
 
 --
+-- Name: review_guests; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.review_guests (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    review_link_id uuid NOT NULL,
+    email character varying NOT NULL,
+    name character varying,
+    last_seen_at timestamp(6) without time zone,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: review_links; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.review_links (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    name character varying NOT NULL,
+    token_digest character varying NOT NULL,
+    asset_id uuid,
+    collection_id bigint,
+    created_by_id bigint NOT NULL,
+    expires_at timestamp(6) without time zone NOT NULL,
+    revoked_at timestamp(6) without time zone,
+    allow_comments boolean DEFAULT true NOT NULL,
+    allow_downloads boolean DEFAULT false NOT NULL,
+    require_email boolean DEFAULT true NOT NULL,
+    passphrase_digest character varying,
+    access_count integer DEFAULT 0 NOT NULL,
+    last_accessed_at timestamp(6) without time zone,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT review_links_exactly_one_target CHECK ((((asset_id IS NOT NULL) AND (collection_id IS NULL)) OR ((asset_id IS NULL) AND (collection_id IS NOT NULL))))
+);
+
+
+--
 -- Name: scheduled_publish_actions; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -2632,6 +2746,13 @@ ALTER TABLE ONLY public.collections ALTER COLUMN id SET DEFAULT nextval('public.
 
 
 --
+-- Name: comment_webhook_subscriptions id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.comment_webhook_subscriptions ALTER COLUMN id SET DEFAULT nextval('public.comment_webhook_subscriptions_id_seq'::regclass);
+
+
+--
 -- Name: custom_node_definitions id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -2969,6 +3090,14 @@ ALTER TABLE ONLY public.ai_model_configs
 
 
 --
+-- Name: ai_reviews ai_reviews_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_reviews
+    ADD CONSTRAINT ai_reviews_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: annotation_targets annotation_targets_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3094,6 +3223,14 @@ ALTER TABLE ONLY public.collections
 
 ALTER TABLE ONLY public.comment_threads
     ADD CONSTRAINT comment_threads_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: comment_webhook_subscriptions comment_webhook_subscriptions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.comment_webhook_subscriptions
+    ADD CONSTRAINT comment_webhook_subscriptions_pkey PRIMARY KEY (id);
 
 
 --
@@ -3318,6 +3455,22 @@ ALTER TABLE ONLY public.report_definitions
 
 ALTER TABLE ONLY public.report_snapshots
     ADD CONSTRAINT report_snapshots_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: review_guests review_guests_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.review_guests
+    ADD CONSTRAINT review_guests_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: review_links review_links_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.review_links
+    ADD CONSTRAINT review_links_pkey PRIMARY KEY (id);
 
 
 --
@@ -3677,6 +3830,41 @@ CREATE UNIQUE INDEX index_ai_model_configs_one_default_per_capability ON public.
 
 
 --
+-- Name: index_ai_reviews_on_asset_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_reviews_on_asset_id ON public.ai_reviews USING btree (asset_id);
+
+
+--
+-- Name: index_ai_reviews_on_asset_id_and_created_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_reviews_on_asset_id_and_created_at ON public.ai_reviews USING btree (asset_id, created_at);
+
+
+--
+-- Name: index_ai_reviews_on_asset_version_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_reviews_on_asset_version_id ON public.ai_reviews USING btree (asset_version_id);
+
+
+--
+-- Name: index_ai_reviews_on_requested_by_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_reviews_on_requested_by_id ON public.ai_reviews USING btree (requested_by_id);
+
+
+--
+-- Name: index_ai_reviews_on_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_reviews_on_status ON public.ai_reviews USING btree (status);
+
+
+--
 -- Name: index_annotation_targets_on_bbox_x_and_bbox_y; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -4006,6 +4194,13 @@ CREATE UNIQUE INDEX index_collections_on_uuid ON public.collections USING btree 
 
 
 --
+-- Name: index_comment_threads_on_ai_review_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_comment_threads_on_ai_review_id ON public.comment_threads USING btree (ai_review_id);
+
+
+--
 -- Name: index_comment_threads_on_asset_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -4017,6 +4212,13 @@ CREATE INDEX index_comment_threads_on_asset_id ON public.comment_threads USING b
 --
 
 CREATE INDEX index_comment_threads_on_asset_id_and_status ON public.comment_threads USING btree (asset_id, status);
+
+
+--
+-- Name: index_comment_threads_on_created_by_guest_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_comment_threads_on_created_by_guest_id ON public.comment_threads USING btree (created_by_guest_id);
 
 
 --
@@ -4041,10 +4243,59 @@ CREATE INDEX index_comment_threads_on_origin_version_id ON public.comment_thread
 
 
 --
+-- Name: index_comment_threads_on_pending_suggestions; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_comment_threads_on_pending_suggestions ON public.comment_threads USING btree (asset_id, suggestion_state) WHERE (suggestion_state IS NOT NULL);
+
+
+--
 -- Name: index_comment_threads_on_resolved_by_id; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_comment_threads_on_resolved_by_id ON public.comment_threads USING btree (resolved_by_id);
+
+
+--
+-- Name: index_comment_threads_on_review_link_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_comment_threads_on_review_link_id ON public.comment_threads USING btree (review_link_id);
+
+
+--
+-- Name: index_comment_threads_on_suggestion_decided_by_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_comment_threads_on_suggestion_decided_by_id ON public.comment_threads USING btree (suggestion_decided_by_id);
+
+
+--
+-- Name: index_comment_webhook_subscriptions_on_active; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_comment_webhook_subscriptions_on_active ON public.comment_webhook_subscriptions USING btree (active);
+
+
+--
+-- Name: index_comment_webhook_subscriptions_on_asset_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_comment_webhook_subscriptions_on_asset_id ON public.comment_webhook_subscriptions USING btree (asset_id);
+
+
+--
+-- Name: index_comment_webhook_subscriptions_on_created_by_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_comment_webhook_subscriptions_on_created_by_id ON public.comment_webhook_subscriptions USING btree (created_by_id);
+
+
+--
+-- Name: index_comment_webhook_subscriptions_on_folder_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_comment_webhook_subscriptions_on_folder_id ON public.comment_webhook_subscriptions USING btree (folder_id);
 
 
 --
@@ -4083,10 +4334,24 @@ CREATE INDEX index_comments_on_deleted_at ON public.comments USING btree (delete
 
 
 --
+-- Name: index_comments_on_import_source; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_comments_on_import_source ON public.comments USING gin (import_source) WHERE (import_source <> '{}'::jsonb);
+
+
+--
 -- Name: index_comments_on_parent_comment_id; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_comments_on_parent_comment_id ON public.comments USING btree (parent_comment_id);
+
+
+--
+-- Name: index_comments_on_review_guest_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_comments_on_review_guest_id ON public.comments USING btree (review_guest_id);
 
 
 --
@@ -4622,6 +4887,55 @@ CREATE INDEX index_report_snapshots_on_report_definition_id ON public.report_sna
 
 
 --
+-- Name: index_review_guests_on_review_link_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_review_guests_on_review_link_id ON public.review_guests USING btree (review_link_id);
+
+
+--
+-- Name: index_review_guests_on_review_link_id_and_email; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_review_guests_on_review_link_id_and_email ON public.review_guests USING btree (review_link_id, email);
+
+
+--
+-- Name: index_review_links_on_asset_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_review_links_on_asset_id ON public.review_links USING btree (asset_id);
+
+
+--
+-- Name: index_review_links_on_collection_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_review_links_on_collection_id ON public.review_links USING btree (collection_id);
+
+
+--
+-- Name: index_review_links_on_created_by_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_review_links_on_created_by_id ON public.review_links USING btree (created_by_id);
+
+
+--
+-- Name: index_review_links_on_expires_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_review_links_on_expires_at ON public.review_links USING btree (expires_at);
+
+
+--
+-- Name: index_review_links_on_token_digest; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_review_links_on_token_digest ON public.review_links USING btree (token_digest);
+
+
+--
 -- Name: index_scheduled_publish_actions_on_asset_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -4990,6 +5304,22 @@ ALTER TABLE ONLY public.ai_batch_jobs
 
 
 --
+-- Name: review_links fk_rails_167e72f196; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.review_links
+    ADD CONSTRAINT fk_rails_167e72f196 FOREIGN KEY (asset_id) REFERENCES public.assets(id);
+
+
+--
+-- Name: review_links fk_rails_1822563124; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.review_links
+    ADD CONSTRAINT fk_rails_1822563124 FOREIGN KEY (created_by_id) REFERENCES public.users(id);
+
+
+--
 -- Name: workflow_tasks fk_rails_1c88744c14; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -5014,6 +5344,14 @@ ALTER TABLE ONLY public.audit_logs
 
 
 --
+-- Name: comment_threads fk_rails_2047fd6896; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.comment_threads
+    ADD CONSTRAINT fk_rails_2047fd6896 FOREIGN KEY (ai_review_id) REFERENCES public.ai_reviews(id);
+
+
+--
 -- Name: video_encoding_presets fk_rails_21716e2d82; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -5027,6 +5365,14 @@ ALTER TABLE ONLY public.video_encoding_presets
 
 ALTER TABLE ONLY public.annotation_targets
     ADD CONSTRAINT fk_rails_2269fe28f8 FOREIGN KEY (comment_id) REFERENCES public.comments(id);
+
+
+--
+-- Name: ai_reviews fk_rails_22f0981b22; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_reviews
+    ADD CONSTRAINT fk_rails_22f0981b22 FOREIGN KEY (asset_version_id) REFERENCES public.asset_versions(id);
 
 
 --
@@ -5070,6 +5416,14 @@ ALTER TABLE ONLY public.assets
 
 
 --
+-- Name: review_links fk_rails_390d59e46f; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.review_links
+    ADD CONSTRAINT fk_rails_390d59e46f FOREIGN KEY (collection_id) REFERENCES public.collections(id);
+
+
+--
 -- Name: scheduled_publish_actions fk_rails_3aa18beefd; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -5099,6 +5453,14 @@ ALTER TABLE ONLY public.collection_assets
 
 ALTER TABLE ONLY public.asset_usage_events
     ADD CONSTRAINT fk_rails_4484bf5a65 FOREIGN KEY (asset_id) REFERENCES public.assets(id);
+
+
+--
+-- Name: comment_threads fk_rails_450e53a469; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.comment_threads
+    ADD CONSTRAINT fk_rails_450e53a469 FOREIGN KEY (review_link_id) REFERENCES public.review_links(id);
 
 
 --
@@ -5171,6 +5533,14 @@ ALTER TABLE ONLY public.metadata_exports
 
 ALTER TABLE ONLY public.renditions
     ADD CONSTRAINT fk_rails_5cbb791ced FOREIGN KEY (storage_backend_id) REFERENCES public.storage_backends(id);
+
+
+--
+-- Name: ai_reviews fk_rails_5e0af5d9cf; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_reviews
+    ADD CONSTRAINT fk_rails_5e0af5d9cf FOREIGN KEY (requested_by_id) REFERENCES public.users(id);
 
 
 --
@@ -5278,6 +5648,14 @@ ALTER TABLE ONLY public.collection_policies
 
 
 --
+-- Name: comment_threads fk_rails_8a6e4c6dd4; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.comment_threads
+    ADD CONSTRAINT fk_rails_8a6e4c6dd4 FOREIGN KEY (suggestion_decided_by_id) REFERENCES public.users(id);
+
+
+--
 -- Name: asset_versions fk_rails_8bf75f0f47; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -5315,6 +5693,14 @@ ALTER TABLE ONLY public.collection_policies
 
 ALTER TABLE ONLY public.scheduled_publish_actions
     ADD CONSTRAINT fk_rails_935a3cb13b FOREIGN KEY (created_by_id) REFERENCES public.users(id);
+
+
+--
+-- Name: ai_reviews fk_rails_937f1c9757; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_reviews
+    ADD CONSTRAINT fk_rails_937f1c9757 FOREIGN KEY (asset_id) REFERENCES public.assets(id);
 
 
 --
@@ -5478,6 +5864,14 @@ ALTER TABLE ONLY public.oauth_access_grants
 
 
 --
+-- Name: comment_webhook_subscriptions fk_rails_b6c1e489ef; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.comment_webhook_subscriptions
+    ADD CONSTRAINT fk_rails_b6c1e489ef FOREIGN KEY (created_by_id) REFERENCES public.users(id);
+
+
+--
 -- Name: workflow_instances fk_rails_b82a522ef9; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -5491,6 +5885,14 @@ ALTER TABLE ONLY public.workflow_instances
 
 ALTER TABLE ONLY public.folder_policies
     ADD CONSTRAINT fk_rails_b8bd408b5a FOREIGN KEY (user_group_id) REFERENCES public.user_groups(id);
+
+
+--
+-- Name: comment_threads fk_rails_b95168469b; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.comment_threads
+    ADD CONSTRAINT fk_rails_b95168469b FOREIGN KEY (created_by_guest_id) REFERENCES public.review_guests(id);
 
 
 --
@@ -5566,6 +5968,22 @@ ALTER TABLE ONLY public.user_groups
 
 
 --
+-- Name: comments fk_rails_dccb5f9120; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.comments
+    ADD CONSTRAINT fk_rails_dccb5f9120 FOREIGN KEY (review_guest_id) REFERENCES public.review_guests(id);
+
+
+--
+-- Name: review_guests fk_rails_dfe267c70a; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.review_guests
+    ADD CONSTRAINT fk_rails_dfe267c70a FOREIGN KEY (review_link_id) REFERENCES public.review_links(id);
+
+
+--
 -- Name: assets fk_rails_e0424c2c3e; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -5612,6 +6030,11 @@ ALTER TABLE ONLY public.comments
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260907070000'),
+('20260907061011'),
+('20260907061010'),
+('20260907051626'),
+('20260907050450'),
 ('20260906120000'),
 ('20260716113000'),
 ('20260716080552'),

@@ -56,6 +56,7 @@ module Api
         end
 
         CommentNotificationService.new(comment).deliver
+        Comments::EventPublisher.comment_created(comment)
 
         render json: serialize_comment(comment), status: :created
       rescue ActionController::ParameterMissing => e

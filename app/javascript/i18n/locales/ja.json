@@ -3052,7 +3052,8 @@
       "line": "直線",
       "freehand": "フリーハンド",
       "text": "テキスト",
-      "drawHint": "プレビュー上に描画してマークアップを配置します。"
+      "drawHint": "プレビュー上に描画してマークアップを配置します。",
+      "time": "タイムコード"
     },
     "status": {
       "open": "オープン",
@@ -3088,6 +3089,90 @@
       "minutesAgo": "{{count}} 分前",
       "hoursAgo": "{{count}} 時間前",
       "daysAgo": "{{count}} 日前"
+    },
+    "video": {
+      "play": "再生",
+      "pause": "一時停止",
+      "previousFrame": "前のフレーム",
+      "nextFrame": "次のフレーム",
+      "scrubber": "動画の位置",
+      "mute": "ミュート",
+      "unmute": "ミュート解除",
+      "loop": "選択範囲をループ再生",
+      "clearRange": "範囲をクリア",
+      "inShort": "IN",
+      "outShort": "OUT",
+      "setIn": "イン点を設定",
+      "setOut": "アウト点を設定",
+      "setInHint": "現在のフレームに範囲コメントのイン点を設定します",
+      "setOutHint": "現在のフレームに範囲コメントのアウト点を設定します",
+      "jumpToMarker": "注釈へ移動",
+      "seekTo": "{{time}} へ移動",
+      "attachTime": "{{time}} を添付",
+      "attachRange": "{{from}}–{{to}} を添付",
+      "frameHint": "描画したマークアップは現在のフレームに固定されます。範囲を指定するにはプレーヤーで IN/OUT を設定してください。",
+      "rangeSelected": "範囲が選択されています — 新しいマークアップは全区間に適用されます。",
+      "approximateRate": "この動画のフレームレートを検出できなかったため、フレーム送りは概算です。"
+    },
+    "lineage": {
+      "changed": "v{{to}} で変更あり",
+      "unchanged": "v{{from}} から変更なし",
+      "unavailable": "未比較",
+      "before": "変更前 (v{{number}})",
+      "after": "変更後 (v{{number}})",
+      "changedHint": "この領域の約 {{percent}}% が v{{from}} と異なります。変更前後を比較して、指摘が対応されたか確認してください。",
+      "unchangedHint": "この領域は v{{from}} と同一に見えます。フィードバックはまだ未対応の可能性があります。",
+      "unavailableCrossOrigin": "変更検出にはプレビューのピクセルへのアクセスが必要ですが、この CDN では許可されていません。",
+      "unavailableLoad": "これらのバージョンのプレビューを読み込めませんでした。"
+    }
+  },
+  "guestReview": {
+    "identity": {
+      "title": "Who's reviewing?",
+      "description": "Your name is shown alongside your comments so the team knows whose feedback it is. It isn't used for anything else.",
+      "email": "Email address",
+      "name": "Your name",
+      "skip": "Not now",
+      "continue": "Continue"
+    },
+    "header": {
+      "reviewingAs": "Reviewing as {{name}}",
+      "expires": "Access ends {{date}}"
+    },
+    "panel": {
+      "title": "Review notes",
+      "count": "{{count}} thread",
+      "count_other": "{{count}} threads",
+      "empty": "No notes yet. Draw on the asset or type below to leave the first one.",
+      "placeholder": "Add a note…",
+      "send": "Post note",
+      "readOnly": "This link is view-only.",
+      "identifyPrompt": "Tell us who you are before leaving a note.",
+      "identifyAction": "Add your name",
+      "draftMarks": "{{count}} mark ready",
+      "draftMarks_other": "{{count}} marks ready",
+      "clearMarks": "Clear"
+    },
+    "thread": {
+      "reply": "Reply",
+      "replyPlaceholder": "Write a reply…",
+      "resolved": "Resolved"
+    },
+    "comment": {
+      "team": "Team",
+      "edited": "edited"
+    },
+    "tools": {
+      "select": "Select",
+      "rect": "Rectangle",
+      "ellipse": "Ellipse",
+      "arrow": "Arrow",
+      "freehand": "Freehand",
+      "pin": "Pin"
+    },
+    "viewer": {
+      "noAsset": "Nothing to review here.",
+      "download": "Download"
     }
   }
 }

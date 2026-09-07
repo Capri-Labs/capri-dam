@@ -3052,7 +3052,8 @@
       "line": "Línea",
       "freehand": "Mano alzada",
       "text": "Texto",
-      "drawHint": "Dibuja sobre la vista previa para colocar tu marca."
+      "drawHint": "Dibuja sobre la vista previa para colocar tu marca.",
+      "time": "Código de tiempo"
     },
     "status": {
       "open": "Abierto",
@@ -3088,6 +3089,90 @@
       "minutesAgo": "hace {{count}} min",
       "hoursAgo": "hace {{count}} h",
       "daysAgo": "hace {{count}} d"
+    },
+    "video": {
+      "play": "Reproducir",
+      "pause": "Pausar",
+      "previousFrame": "Fotograma anterior",
+      "nextFrame": "Fotograma siguiente",
+      "scrubber": "Posición del vídeo",
+      "mute": "Silenciar",
+      "unmute": "Activar sonido",
+      "loop": "Repetir el rango seleccionado",
+      "clearRange": "Borrar el rango",
+      "inShort": "IN",
+      "outShort": "OUT",
+      "setIn": "Definir punto de entrada",
+      "setOut": "Definir punto de salida",
+      "setInHint": "Definir el punto de entrada de un comentario de rango en el fotograma actual",
+      "setOutHint": "Definir el punto de salida de un comentario de rango en el fotograma actual",
+      "jumpToMarker": "Ir a la anotación",
+      "seekTo": "Ir a {{time}}",
+      "attachTime": "Adjuntar {{time}}",
+      "attachRange": "Adjuntar {{from}}–{{to}}",
+      "frameHint": "Las marcas que dibujes se fijan al fotograma actual. Define IN/OUT en el reproductor para un rango.",
+      "rangeSelected": "Hay un rango seleccionado: las nuevas marcas cubren todo el intervalo.",
+      "approximateRate": "No se detectó la velocidad de fotogramas de este vídeo, por lo que el avance por fotogramas es aproximado."
+    },
+    "lineage": {
+      "changed": "Cambiado en v{{to}}",
+      "unchanged": "Sin cambios desde v{{from}}",
+      "unavailable": "Sin comparar",
+      "before": "Antes (v{{number}})",
+      "after": "Después (v{{number}})",
+      "changedHint": "Alrededor del {{percent}} % de esta región difiere de v{{from}}. Compara el antes y el después para confirmar que se atendió la nota.",
+      "unchangedHint": "Esta región parece idéntica a v{{from}}, por lo que el comentario podría seguir pendiente.",
+      "unavailableCrossOrigin": "La detección de cambios necesita acceso a los píxeles de las vistas previas, algo que esta CDN no permite.",
+      "unavailableLoad": "No se pudieron cargar las vistas previas de estas versiones."
+    }
+  },
+  "guestReview": {
+    "identity": {
+      "title": "Who's reviewing?",
+      "description": "Your name is shown alongside your comments so the team knows whose feedback it is. It isn't used for anything else.",
+      "email": "Email address",
+      "name": "Your name",
+      "skip": "Not now",
+      "continue": "Continue"
+    },
+    "header": {
+      "reviewingAs": "Reviewing as {{name}}",
+      "expires": "Access ends {{date}}"
+    },
+    "panel": {
+      "title": "Review notes",
+      "count": "{{count}} thread",
+      "count_other": "{{count}} threads",
+      "empty": "No notes yet. Draw on the asset or type below to leave the first one.",
+      "placeholder": "Add a note…",
+      "send": "Post note",
+      "readOnly": "This link is view-only.",
+      "identifyPrompt": "Tell us who you are before leaving a note.",
+      "identifyAction": "Add your name",
+      "draftMarks": "{{count}} mark ready",
+      "draftMarks_other": "{{count}} marks ready",
+      "clearMarks": "Clear"
+    },
+    "thread": {
+      "reply": "Reply",
+      "replyPlaceholder": "Write a reply…",
+      "resolved": "Resolved"
+    },
+    "comment": {
+      "team": "Team",
+      "edited": "edited"
+    },
+    "tools": {
+      "select": "Select",
+      "rect": "Rectangle",
+      "ellipse": "Ellipse",
+      "arrow": "Arrow",
+      "freehand": "Freehand",
+      "pin": "Pin"
+    },
+    "viewer": {
+      "noAsset": "Nothing to review here.",
+      "download": "Download"
     }
   }
 }

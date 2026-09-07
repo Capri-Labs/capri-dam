@@ -65,6 +65,13 @@ class Asset < ApplicationRecord
   #     {Comment} records the {AssetVersion} it was written against.
   has_many :comment_threads, dependent: :destroy
 
+  # @!attribute [r] ai_reviews
+  #   @return [ActiveRecord::Associations::CollectionProxy<AiReview>]
+  #     runs of the AI review assistant against this asset. Destroyed with the
+  #     asset — without this the foreign key blocks deleting any asset that has
+  #     ever been reviewed.
+  has_many :ai_reviews, dependent: :destroy
+
   # ActiveStorage attachment on the asset itself (legacy; new uploads use AssetVersion#file).
   has_one_attached :file
 

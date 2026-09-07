@@ -3052,7 +3052,8 @@
       "line": "Line",
       "freehand": "Freehand",
       "text": "Text",
-      "drawHint": "Draw on the preview to place your markup."
+      "drawHint": "Draw on the preview to place your markup.",
+      "time": "Timecode"
     },
     "status": {
       "open": "Open",
@@ -3088,6 +3089,90 @@
       "minutesAgo": "{{count}}m ago",
       "hoursAgo": "{{count}}h ago",
       "daysAgo": "{{count}}d ago"
+    },
+    "video": {
+      "play": "Play",
+      "pause": "Pause",
+      "previousFrame": "Previous frame",
+      "nextFrame": "Next frame",
+      "scrubber": "Video position",
+      "mute": "Mute",
+      "unmute": "Unmute",
+      "loop": "Loop the selected range",
+      "clearRange": "Clear the range",
+      "inShort": "IN",
+      "outShort": "OUT",
+      "setIn": "Set in point",
+      "setOut": "Set out point",
+      "setInHint": "Set the in point of a range comment at the current frame",
+      "setOutHint": "Set the out point of a range comment at the current frame",
+      "jumpToMarker": "Jump to annotation",
+      "seekTo": "Jump to {{time}}",
+      "attachTime": "Attach {{time}}",
+      "attachRange": "Attach {{from}}–{{to}}",
+      "frameHint": "Markup you draw is pinned to the current frame. Set IN/OUT on the player for a range.",
+      "rangeSelected": "A range is selected — new markup covers the whole span.",
+      "approximateRate": "No frame rate was detected for this video, so frame stepping is approximate."
+    },
+    "lineage": {
+      "changed": "Changed in v{{to}}",
+      "unchanged": "Unchanged since v{{from}}",
+      "unavailable": "Not compared",
+      "before": "Before (v{{number}})",
+      "after": "After (v{{number}})",
+      "changedHint": "Roughly {{percent}}% of this region differs from v{{from}}. Compare before and after to confirm the note was addressed.",
+      "unchangedHint": "This region looks identical to v{{from}}, so the feedback may still be outstanding.",
+      "unavailableCrossOrigin": "Change detection needs pixel access to the previews, which this CDN does not allow.",
+      "unavailableLoad": "The previews for these versions could not be loaded."
+    }
+  },
+  "guestReview": {
+    "identity": {
+      "title": "Who's reviewing?",
+      "description": "Your name is shown alongside your comments so the team knows whose feedback it is. It isn't used for anything else.",
+      "email": "Email address",
+      "name": "Your name",
+      "skip": "Not now",
+      "continue": "Continue"
+    },
+    "header": {
+      "reviewingAs": "Reviewing as {{name}}",
+      "expires": "Access ends {{date}}"
+    },
+    "panel": {
+      "title": "Review notes",
+      "count": "{{count}} thread",
+      "count_other": "{{count}} threads",
+      "empty": "No notes yet. Draw on the asset or type below to leave the first one.",
+      "placeholder": "Add a note…",
+      "send": "Post note",
+      "readOnly": "This link is view-only.",
+      "identifyPrompt": "Tell us who you are before leaving a note.",
+      "identifyAction": "Add your name",
+      "draftMarks": "{{count}} mark ready",
+      "draftMarks_other": "{{count}} marks ready",
+      "clearMarks": "Clear"
+    },
+    "thread": {
+      "reply": "Reply",
+      "replyPlaceholder": "Write a reply…",
+      "resolved": "Resolved"
+    },
+    "comment": {
+      "team": "Team",
+      "edited": "edited"
+    },
+    "tools": {
+      "select": "Select",
+      "rect": "Rectangle",
+      "ellipse": "Ellipse",
+      "arrow": "Arrow",
+      "freehand": "Freehand",
+      "pin": "Pin"
+    },
+    "viewer": {
+      "noAsset": "Nothing to review here.",
+      "download": "Download"
     }
   }
 }

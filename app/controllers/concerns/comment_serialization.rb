@@ -32,6 +32,20 @@ module CommentSerialization
       updated_at: thread.updated_at,
     }
 
+    # Only present for assistant-opened threads. Human threads carry no
+    # triage state, and emitting a null +suggestion+ key on every thread
+    # would invite the UI to branch on it needlessly.
+    if thread.ai_suggested?
+      payload[:suggestion] = {
+        state: thread.suggestion_state,
+        ai_review_id: thread.ai_review_id,
+        model_name: thread.ai_review&.ai_model_name,
+        profile: thread.ai_review&.profile,
+        decided_by: serialize_comment_user(thread.suggestion_decided_by),
+        decided_at: thread.suggestion_decided_at,
+      }
+    end
+
     payload[:comments] = thread.comments.active.roots.chronological.map { |c| serialize_comment(c) } if include_comments
 
     payload

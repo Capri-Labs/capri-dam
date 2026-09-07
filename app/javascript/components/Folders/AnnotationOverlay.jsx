@@ -43,6 +43,8 @@ export default function AnnotationOverlay({
     onHoverThread,
     sourceSize = {},
     strokeColor = DEFAULT_STROKE_COLOR,
+    mediaType = 'image',
+    videoPosition = null,
 }) {
     const containerRef = useRef(null);
     const [size, setSize] = useState({ width: 0, height: 0 });
@@ -62,16 +64,26 @@ export default function AnnotationOverlay({
             const rect = entries[0]?.contentRect;
             if (rect) setSize({ width: rect.width, height: rect.height });
         });
-        observer.observe(node);
+
+        // Seed from the current layout first, then subscribe — otherwise a
+        // synchronously-delivered first observation would be overwritten by
+        // this fallback measurement.
         setSize({ width: node.clientWidth, height: node.clientHeight });
+        observer.observe(node);
 
         return () => observer.disconnect();
     }, []);
 
     const finishGesture = useCallback((points, shape) => {
-        const annotation = buildAnnotation(shape, points, sourceSize, strokeColor);
+        // On a video the shape is stamped with the frame (or in/out range) it
+        // was drawn over, so the markup only appears at the moment it is about
+        // — an arrow pointing at a car is wrong once the car has driven off.
+        const annotation = buildAnnotation(shape, points, sourceSize, strokeColor, {
+            mediaType,
+            video: videoPosition,
+        });
         if (annotation && onDraftAdd) onDraftAdd(annotation);
-    }, [onDraftAdd, sourceSize, strokeColor]);
+    }, [onDraftAdd, sourceSize, strokeColor, mediaType, videoPosition]);
 
     const handlePointerDown = useCallback((event) => {
         if (!isDrawing) return;
@@ -235,6 +247,10 @@ function AnnotationShape({
 
     const box = toPixels(annotation.bbox, width, height);
     const points = pointsFromPath(annotation.svg_path);
+
+    // A `time` target marks a moment on the timeline, not a place in the
+    // frame; it is rendered on the scrubber's marker track instead.
+    if (annotation.shape === 'time') return null;
 
     const interaction = interactive && annotation.thread_id ? {
         style: { cursor: 'pointer', pointerEvents: 'auto' },

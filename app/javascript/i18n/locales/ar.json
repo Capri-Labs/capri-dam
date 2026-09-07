@@ -3052,7 +3052,8 @@
       "line": "خط",
       "freehand": "رسم حر",
       "text": "نص",
-      "drawHint": "ارسم على المعاينة لوضع العلامة."
+      "drawHint": "ارسم على المعاينة لوضع العلامة.",
+      "time": "الرمز الزمني"
     },
     "status": {
       "open": "مفتوح",
@@ -3088,6 +3089,90 @@
       "minutesAgo": "قبل {{count}} د",
       "hoursAgo": "قبل {{count}} س",
       "daysAgo": "قبل {{count}} ي"
+    },
+    "video": {
+      "play": "تشغيل",
+      "pause": "إيقاف مؤقت",
+      "previousFrame": "الإطار السابق",
+      "nextFrame": "الإطار التالي",
+      "scrubber": "موضع الفيديو",
+      "mute": "كتم الصوت",
+      "unmute": "إلغاء كتم الصوت",
+      "loop": "تكرار النطاق المحدد",
+      "clearRange": "مسح النطاق",
+      "inShort": "IN",
+      "outShort": "OUT",
+      "setIn": "تعيين نقطة البداية",
+      "setOut": "تعيين نقطة النهاية",
+      "setInHint": "تعيين نقطة بداية تعليق النطاق عند الإطار الحالي",
+      "setOutHint": "تعيين نقطة نهاية تعليق النطاق عند الإطار الحالي",
+      "jumpToMarker": "الانتقال إلى التعليق التوضيحي",
+      "seekTo": "الانتقال إلى {{time}}",
+      "attachTime": "إرفاق {{time}}",
+      "attachRange": "إرفاق {{from}}–{{to}}",
+      "frameHint": "يتم تثبيت العلامات التي ترسمها على الإطار الحالي. عيّن IN/OUT في المشغّل لتحديد نطاق.",
+      "rangeSelected": "تم تحديد نطاق — ستغطي العلامات الجديدة النطاق بأكمله.",
+      "approximateRate": "لم يتم اكتشاف معدل الإطارات لهذا الفيديو، لذا فإن التنقل بين الإطارات تقريبي."
+    },
+    "lineage": {
+      "changed": "تم التغيير في الإصدار {{to}}",
+      "unchanged": "دون تغيير منذ الإصدار {{from}}",
+      "unavailable": "لم تتم المقارنة",
+      "before": "قبل (الإصدار {{number}})",
+      "after": "بعد (الإصدار {{number}})",
+      "changedHint": "يختلف نحو {{percent}}٪ من هذه المنطقة عن الإصدار {{from}}. قارن بين قبل وبعد للتأكد من معالجة الملاحظة.",
+      "unchangedHint": "تبدو هذه المنطقة مطابقة للإصدار {{from}}، لذا قد تكون الملاحظة ما زالت قائمة.",
+      "unavailableCrossOrigin": "يتطلب اكتشاف التغييرات الوصول إلى بكسلات المعاينات، وهو ما لا تسمح به شبكة توصيل المحتوى هذه.",
+      "unavailableLoad": "تعذّر تحميل معاينات هذه الإصدارات."
+    }
+  },
+  "guestReview": {
+    "identity": {
+      "title": "Who's reviewing?",
+      "description": "Your name is shown alongside your comments so the team knows whose feedback it is. It isn't used for anything else.",
+      "email": "Email address",
+      "name": "Your name",
+      "skip": "Not now",
+      "continue": "Continue"
+    },
+    "header": {
+      "reviewingAs": "Reviewing as {{name}}",
+      "expires": "Access ends {{date}}"
+    },
+    "panel": {
+      "title": "Review notes",
+      "count": "{{count}} thread",
+      "count_other": "{{count}} threads",
+      "empty": "No notes yet. Draw on the asset or type below to leave the first one.",
+      "placeholder": "Add a note…",
+      "send": "Post note",
+      "readOnly": "This link is view-only.",
+      "identifyPrompt": "Tell us who you are before leaving a note.",
+      "identifyAction": "Add your name",
+      "draftMarks": "{{count}} mark ready",
+      "draftMarks_other": "{{count}} marks ready",
+      "clearMarks": "Clear"
+    },
+    "thread": {
+      "reply": "Reply",
+      "replyPlaceholder": "Write a reply…",
+      "resolved": "Resolved"
+    },
+    "comment": {
+      "team": "Team",
+      "edited": "edited"
+    },
+    "tools": {
+      "select": "Select",
+      "rect": "Rectangle",
+      "ellipse": "Ellipse",
+      "arrow": "Arrow",
+      "freehand": "Freehand",
+      "pin": "Pin"
+    },
+    "viewer": {
+      "noAsset": "Nothing to review here.",
+      "download": "Download"
     }
   }
 }

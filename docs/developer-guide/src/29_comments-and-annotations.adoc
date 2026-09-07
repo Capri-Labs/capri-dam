@@ -82,8 +82,38 @@ all three timebases (`start_frame`, `start_seconds`, `start_timecode`) so the
 client never has to reimplement it; `app/javascript/utils/annotationGeometry.js`
 mirrors the algorithm only for client-side drafts that have not yet been saved.
 
-`end_frame` makes range ("in/out") comments representable. The player-side UI
-for placing them is tracked on the product roadmap.
+`end_frame` makes range ("in/out") comments representable.
+
+==== Where the frame rate comes from
+
+`AssetProcessorWorker` parses ffprobe's `avg_frame_rate` (falling back to
+`r_frame_rate`) into three properties on the asset: `video_frame_rate` (float),
+`video_frame_rate_ratio` (the exact rational, e.g. `30000/1001`) and
+`video_drop_frame`.
+
+The exact rational is kept because **29.97 and a true 30 are
+indistinguishable once rounded**, and only the former uses drop-frame timecode.
+Drop-frame is therefore decided by matching the rational against
+`NTSC_DROP_FRAME_RATIOS`, never by inspecting the float.
+
+Each candidate is *parsed* before being accepted rather than merely checked for
+presence: ffprobe reports `"0/0"` — a non-blank string — for variable-frame-rate
+and image streams, so a `.presence` chain would latch onto that placeholder and
+never reach the usable `r_frame_rate`.
+
+Clips ingested before this extraction existed (or without FFmpeg installed) have
+no rate at all. `frameRateContext()` falls back to a flagged 25 fps rather than
+zero, so the review tools still work and the UI can warn that stepping is
+approximate — degrading instead of disappearing.
+
+==== The `time` shape
+
+A `time` target is a position (or range) on the timeline with *no spatial
+extent*: "the music is too loud here". Its bbox is all zeroes, it is excluded
+from the `spatial` scope alongside `pin`, and it is deliberately **not drawn on
+the video overlay** — it belongs on the scrubber's marker track only. Without
+it, commenting on a moment would force the reviewer to draw a meaningless shape
+somewhere on the frame.
 
 == Schema
 
@@ -92,17 +122,35 @@ for placing them is tracked on the product roadmap.
 | Table | Purpose
 | `comment_threads` | One review conversation on an asset. Holds `status`,
   `visibility` (`internal` / `guest`), `origin_version_id`, `created_by_id`,
-  and the resolution attribution (`resolved_by_id`, `resolved_at`).
+  and the resolution attribution (`resolved_by_id`, `resolved_at`). AI-opened
+  threads additionally carry `ai_review_id` and the triage fields
+  `suggestion_state`, `suggestion_decided_by_id`, `suggestion_decided_at`.
 | `comments` | One message. Holds `body`, `author_id`, `asset_version_id`,
   `parent_comment_id` (single level only), the W3C `motivation`, and the agent
   fields `agent_type` (`person` / `software`), `agent_name`, `confidence`.
 | `annotation_targets` | Zero or more anchors per comment: shape, normalised
   bbox, `svg_path`, video frame range, page number, W3C text-quote selector
   fields, source dimensions, `style`, `label`.
+| `review_links` | A revocable external grant: `token_digest` (SHA-256; the raw
+  token is never stored), exactly one of `asset_id` / `collection_id`, a
+  mandatory capped `expires_at`, `revoked_at`, the `allow_comments` /
+  `allow_downloads` / `require_email` switches, an optional bcrypt
+  `passphrase_digest`, and `access_count` / `last_accessed_at`.
+| `review_guests` | A person on the far side of a link — `email`, `name`,
+  `last_seen_at` — unique per link. Not a `User`; see below.
+| `ai_reviews` | One run of the review assistant against one asset version:
+  `status`, `profile`, `ai_model_name` / `provider` pinned at execution time,
+  `findings_count`, `error_message`, timings. Recorded separately from its
+  findings so "looked, found nothing" is distinguishable from "never looked".
 |===
 
-All three are soft-deletable (`SoftDeletable`), consistent with the Recycle Bin:
-review history is evidence and should not silently vanish.
+The comment tables are soft-deletable (`SoftDeletable`), consistent with the
+Recycle Bin: review history is evidence and should not silently vanish.
+
+The `comment_threads_have_an_author` check constraint requires a user, a guest,
+*or* an AI review. It was widened rather than dropped when the assistant landed,
+so the original guarantee still holds — a thread can never be anonymous, only
+attributable to a person, an external reviewer, or a recorded machine run.
 
 NOTE: These models intentionally do **not** include the `Auditable` concern.
 `audit_logs.auditable_id` is an `integer` column and cannot hold the UUID
@@ -119,6 +167,9 @@ invisibly.
 | Resolve / reopen / delete someone else's thread | `:modify` (the thread's
   creator may always manage their own)
 | Edit or delete an individual comment | **Author only**
+| Mint or revoke an external review link | `:modify` on the target
+| Comment as a guest through a review link | The link's token, plus
+  `allow_comments`
 |===
 
 Commenting is deliberately gated on `:read`, not `:modify`. Reviewing is not
@@ -145,7 +196,23 @@ trail; moderating a whole thread is available on the thread endpoint instead.
   `parent_comment_id` (must belong to this thread — anything else is a 404) and
   `mark_addressed`.
 | `PATCH \| DELETE /api/v1/comments/:id` | Edit or soft-delete your own comment.
+| `GET /api/v1/assets/:asset_id/comments/export` | Export the review as W3C
+  Web Annotation JSON-LD (`export_format=jsonld`) or an annotated PDF sign-off
+  sheet (`export_format=pdf`). Takes the same filters as the list endpoint.
+| `POST /api/v1/assets/:asset_id/comments/import` | Ingest a W3C
+  `AnnotationPage` as threads and comments.
+| `/api/v1/comment_webhook_subscriptions` | Full CRUD plus
+  `POST :id/test`, for outbound review-activity webhooks. Administrator only.
+| `/api/v1/review_links` | Mint, list, update and revoke external review links.
+  `POST` returns the raw token exactly once; `DELETE` revokes rather than
+  destroys.
 |===
+
+The unauthenticated guest surface lives on separate routes under
+`/s/reviews/:token` — `assets`, `assets/:id/threads`, `assets/:id/comments`,
+`threads/:id/comments`, `identify`, `unlock`, and the proxied
+`assets/:id/preview` and `assets/:id/download`. It shares no authorisation code
+with the endpoints above; see <<_guest_reviewers_and_external_review_links>>.
 
 `asset_version_id` may be omitted on any create; it defaults to the asset's
 active version, which is what the reviewer is looking at.
@@ -196,6 +263,12 @@ comment — on a busy asset that is a spam vector, not a feature.
   and display layer stacked on the preview.
 | `app/javascript/components/Folders/AssetCommentsPanel.jsx` | The *Comments*
   tab: composer with `@mention` autocomplete, thread cards, lifecycle actions.
+| `app/javascript/components/Folders/VideoAnnotationPlayer.jsx` | Frame-accurate
+  transport: frame stepping, SMPTE readout, marker track, in/out range, loop.
+| `app/javascript/utils/regionDiff.js` | Pure canvas comparison of one
+  normalised region across two versions. No React.
+| `app/javascript/components/Folders/useRegionChangeDetection.js` | Runs that
+  comparison for every thread on screen and caches the preview loads.
 |===
 
 The overlay and the panel are siblings that must stay in lockstep — hovering a
@@ -219,3 +292,654 @@ Two rendering details are load-bearing:
 SVG is used rather than `<canvas>` because annotations are persistent,
 individually selectable objects: SVG gives per-shape hit-testing, hover and
 focus for free and stays crisp at any zoom or DPI.
+
+=== The video player
+
+Video uses the same overlay, wrapped by `VideoAnnotationPlayer` instead of an
+`<img>`. The native `controls` attribute is **not** used, for three reasons: the
+browser transport reports time only in seconds, cannot step a frame at a time,
+and — decisively — offers nowhere to render the marker track. Seeing at a glance
+that three notes cluster at 0:14, without scrubbing to find them, is the point.
+
+Every position in the player is an integer frame, converted to seconds only when
+handed to the media element. Two conversions in `annotationGeometry.js` are
+deliberately asymmetric:
+
+* `secondsToFrames()` **floors** — at `t = 1.999s` in a 30 fps clip the viewer is
+  looking at frame 59, and an annotation must attach to the frame they can
+  actually see.
+* `framesToSeconds()` adds **half a frame**, so a seek lands *inside* the target
+  frame rather than on its boundary, where floating-point error can leave the
+  previous frame on screen.
+
+Together these round-trip cleanly instead of drifting a frame earlier on each
+pass.
+
+The play head is sampled with `requestAnimationFrame` rather than the
+`timeupdate` event: `timeupdate` fires roughly four times a second, so a frame
+counter driven by it would jump ~7 frames at a time. The loop range is enforced
+in the same rAF tick, so the jump back happens within a frame of the out point
+instead of up to 250 ms late. The loop is torn down when playback stops, so it
+costs nothing while idle.
+
+Temporal annotations are filtered before they reach the overlay
+(`visibleAnnotations`): rendering every frame's markup at once would bury the
+picture under every note ever left on the clip. A range annotation shows for its
+whole span; an instant annotation gets a ±15-frame window, because a single
+frame at 30 fps is on screen for 33 ms and a marker that flickers past is
+useless.
+
+Selecting a video thread also **seeks** to it. Without that, highlighting a
+thread whose markup lives elsewhere on the timeline would highlight nothing at
+all.
+
+Transport keys follow the standard NLE bindings (`space`/`K` play, `←`/`→` and
+`,`/`.` step, `I`/`O` set in and out) and are scoped to the player element, so
+they never hijack typing in the comment composer.
+
+=== Cross-version lineage
+
+A thread outlives the version it was written against, which is what makes "is
+this still outstanding?" a question worth asking. Answering it used to mean
+opening both files side by side. Because the annotation geometry is
+**normalised**, the same region can be located on both versions and the pixels
+inside it compared directly, so a thread card can say _Changed in v3_ on its
+own.
+
+This is the concrete payoff of the storage decision in
+<<Geometry is normalised, never pixels>>. The two versions routinely differ in
+pixel dimensions — a re-export at another resolution, a different crop — so a
+pixel bounding box captured on v2 would point somewhere else entirely on v3.
+Each crop is therefore taken at its *own* version's native resolution and only
+then resampled onto a shared 96×96 raster, which also keeps the cost of a
+comparison constant instead of scaling with a 6000px master.
+
+Four things are deliberate:
+
+* **"Changed" is not "fixed".** Pixels moving inside the box means someone
+  worked there, not that the note was satisfied. The badge sits *next to* the
+  human `verified` status and never replaces it, and the wording is
+  _Changed in v3_, never _Fixed_.
+* **Two thresholds, not one.** A per-pixel delta of `72` absorbs JPEG
+  re-compression noise, and a region must have at least `2%` of its pixels
+  differ before it counts — otherwise every re-exported file would report as
+  changed. The pixel threshold matches `AssetVersionsTab`'s whole-image diff so
+  the two features never disagree about what "different" means.
+* **A pin gets a neighbourhood.** A point annotation has no area, so there
+  would be nothing to diff; it is expanded to a small centred region, slid back
+  inside the frame if that pushed it over an edge.
+* **The promise is cached, not the image.** A dozen threads against the same
+  pair of versions must still cost two image loads. Caching the in-flight
+  promise means concurrent callers during the initial load share one request
+  too.
+
+Threads are skipped when they are anchored to video (frame-anchored markup
+makes a still comparison meaningless) or when they were written against the
+version currently on screen — there is no before and after in that case, only
+a now.
+
+CAUTION: Reading pixels back from a canvas requires the previews to be
+same-origin or CORS-enabled. A CDN that serves them without `Access-Control-
+Allow-Origin` taints the canvas and the read throws. That is a deployment
+property rather than a bug, so it surfaces as a neutral *Not compared* badge.
+Note also that `crossOrigin` is set only for genuinely cross-origin URLs:
+setting it unconditionally makes the browser omit session cookies, so a
+same-origin, cookie-authenticated preview would 401 and fail silently.
+
+== Interoperability
+
+Feedback is the part of a DAM that most needs to leave it. Approvals run in
+agency tooling, archives live elsewhere, and a proofing vendor is often the
+contractual system of record. Capri therefore speaks the
+https://www.w3.org/TR/annotation-model/[W3C Web Annotation Data Model] in both
+directions, which turns each of those from a bespoke integration into a file
+copy.
+
+The schema was built for this from the start: `comments.motivation` already
+validates against the W3C motivation vocabulary (§3.3.5), and
+`annotation_targets` carries `text_exact`, `text_prefix`, `text_suffix`,
+`text_start`, `text_end` and `page` — the TextQuote and TextPosition selector
+fields, verbatim.
+
+=== The mapping
+
+[cols="2,3", options="header"]
+|===
+| Capri | W3C Web Annotation
+| `Comment` | `Annotation`
+| `comment.body` | `body` as a `TextualBody` with `format: text/plain`
+| `comment.motivation` | `motivation`
+| `comment.author` | `creator` as a `Person`
+| `AnnotationTarget` bbox | `FragmentSelector`, `xywh=percent:...`
+| Non-rectangular geometry | `SvgSelector` in a `viewBox="0 0 1 1"` space
+| Video frame range | `FragmentSelector`, `t=<start>,<end>` in seconds
+| A reply | `motivation: replying` with the parent annotation's IRI as `target`
+| A set of threads | `AnnotationPage`
+|===
+
+Geometry is emitted as **percentage** media fragments, never pixels. Emitting
+pixels would bind the export to whichever rendition happened to be on screen
+when the note was drawn; percentages are exactly what the normalised `0..1`
+storage already holds.
+
+An `AnnotationPage` is used rather than an `AnnotationCollection` because the
+model reserves `Collection` for paged, dereferenceable resources, which a
+one-shot file export is not.
+
+=== Why there is a `capri:` extension
+
+Pure W3C cannot express everything that has to survive a round trip. A
+rectangle and an ellipse share a bounding box, so shape is unrecoverable from
+the selector alone. Stroke colour and width, the exact frame rate, the
+drop-frame flag and thread grouping have no standard representation at all.
+
+Those travel *alongside* the standard under a namespaced `capri:` prefix, which
+the model explicitly permits. A third party sees a valid W3C document and
+ignores the extension; Capri reads it back and reconstructs the annotation
+exactly. Extension-alongside-standard, never instead of it.
+
+=== Import is a security boundary
+
+An uploaded file is untrusted input that creates records. Three decisions
+follow from that, and each is enforced in
+`Annotations::WebAnnotationImporter`:
+
+*Attribution is never honoured.* Trusting the document's `creator` would let
+anyone forge "the Creative Director approved this" by editing JSON in a text
+editor. The importing user is always recorded as the author. The document's
+claim is preserved as untrusted provenance in `comments.import_source`
+alongside the original IRI and a source label, so it is auditable without ever
+being authoritative.
+
+*Visibility is always forced to `internal`.* Making a thread visible to
+external guests is a disclosure decision, and an uploaded file must not be able
+to make it.
+
+*A claimed `resolved` status is gated on `:modify`.* Accepting it is equivalent
+to calling the resolve endpoint, so it is only honoured for a caller who could
+have closed the thread by hand. Without that permission everything imports
+`open`, and an upload can never silently close outstanding feedback.
+
+The import is additive and idempotent. Annotations already present are skipped
+rather than updated, because an import is someone else's copy of the past and
+must not rewrite the live thread; re-posting the same document is a no-op.
+Idempotency is checked against three identities — the live comment UUID, the
+`capri_id` recorded at import, and the source IRI — because a document may
+arrive having been through another system that rewrote its identifiers.
+
+Parent resolution is scoped to the target asset. A bare global lookup on an
+embedded UUID would silently graft an imported reply onto the *original*
+asset's thread when the same document is imported onto a second asset.
+
+Reply detection is format-agnostic: a target is a reply if it names another
+annotation *within the same document*. Matching on IRI shape would only ever
+recognise Capri's own URL scheme and would misread a vendor's `/anno/1` as a
+root comment.
+
+=== The PDF contact sheet
+
+`Annotations::ContactSheetPdf` renders a print-ready sign-off sheet: the
+version preview with the markers drawn over it, numbered badges tied to a
+numbered comment list below, status colours, reply indentation and — for video
+— SMPTE drop-frame timecode headings.
+
+Marks are drawn as *vectors over* the placed preview rather than composited
+into a raster. That keeps them crisp at print resolution, avoids an
+ImageMagick round trip, and uses the stored `0..1` geometry directly; the only
+conversion needed is the y-flip into PDF's bottom-left origin.
+
+Roboto is registered as the document font because Prawn's built-in fonts are
+Windows-1252 and *raise* on anything outside it — a single emoji in a comment
+would otherwise abort the whole export.
+
+Nothing in the sheet may fail the export. If the preview is missing or
+unreadable the sheet degrades to a text-only listing, because a review record
+without its plate is still useful and a 500 is not.
+
+== Guest reviewers and external review links
+
+An external client can review and comment on an asset or a collection through
+`/s/reviews/:token` without holding a Capri account.
+
+=== Why not reuse the existing share link
+
+Capri already has public share links: `Collection#generate_share_token` mints a
+Rails `signed_id` and `Public::CollectionSharesController` renders it. There is
+no table behind them, which is exactly right for what they do.
+
+They were not reused here, because a signed id is a self-describing bearer
+token and therefore:
+
+* *cannot be revoked* — it stays valid until it expires, so if a client
+  forwards the link there is no kill switch short of rotating the application's
+  secret key;
+* *carries no identity* — it knows only which record it was minted for, and
+  "the client said this" is the entire point of a review;
+* *cannot be scoped or metered* — whether the holder may download, whether they
+  must say who they are, and how often the link has been opened are per-link
+  facts with nowhere to live.
+
+Tolerating those limits for read-only browsing of a curated collection is a
+reasonable trade. Tolerating them for a link that lets an outsider *write* into
+your review threads is not. Review links are therefore DB-backed, and the
+existing share links are left alone.
+
+=== The token
+
+`review_links` stores only `SHA256(token)`. The raw token is returned exactly
+once, from `POST /api/v1/review_links`, and cannot be recovered afterwards — a
+caller who loses it revokes and mints again. The consequence is the point: a
+dump of this table yields no working review URLs.
+
+SHA-256 rather than bcrypt is deliberate. The token is 32 random bytes from
+`SecureRandom`, so there is no dictionary for a slow digest to defend against,
+and bcrypt would add latency to *every* guest request, including each image
+fetch.
+
+The optional passphrase is the opposite case — human-chosen, low entropy,
+shared out of band — so that one *does* use bcrypt.
+
+`expires_at` is `NOT NULL` and capped at `ReviewLink::MAX_EXPIRY` (180 days).
+An external grant with no end date is a permanent hole in the perimeter that
+nobody remembers to close.
+
+=== Scope
+
+A link targets exactly one asset *or* one collection, enforced by the
+`review_links_exactly_one_target` check constraint as well as by the model, and
+assigned through `ReviewLink#target=` so the two columns cannot both end up
+set.
+
+`ReviewLink#scoped_assets` resolves a collection link through *live*
+membership rather than a snapshot taken at mint time. Removing an asset from
+the collection withdraws it from every outstanding link at once, which is what
+makes curation usable as an access control.
+
+Every guest lookup goes through `scoped_assets`, never a bare `Asset.find`, so
+editing the asset id in the URL cannot pivot to something the link does not
+cover.
+
+=== Guests are not users
+
+`ReviewGuest` deliberately is not a `User`. A `User` is an *account*: it can be
+granted folder policies, added to groups, counted against a seat licence and,
+if the password reset flow is reachable, signed into. A guest record has no
+credentials to compromise and no permission surface to widen.
+
+Identity here is *attribution, not authentication*. The email is self-asserted
+and unverified — the link is the credential — and it is never matched against
+an existing `User`, because silently adopting a colleague's identity on an
+email match would be privilege escalation dressed up as a convenience.
+
+When a link does not require an email, `ReviewGuest.anonymous!` mints a
+per-session identity on the reserved `@guests.invalid` domain (RFC 2606, so it
+can never be mailed by accident). Anonymous reviewers are kept distinct from
+one another rather than collapsed into a single shared "Guest" persona, which
+would misrepresent two people disagreeing as one person contradicting
+themselves. A guest cannot claim that domain themselves.
+
+Because a thread may now be opened by a guest, `comment_threads.created_by_id`
+is nullable and a `comment_threads_have_an_author` check constraint requires
+either a user or a guest. Attributing a guest's thread to the *link's creator*
+would have avoided the migration, but it would have recorded the account
+manager as the author of the client's objection.
+
+=== The authorisation boundary
+
+`ReviewLinkAuthentication` is a separate authentication system. Nothing in the
+guest controllers touches Devise, Doorkeeper, `current_user` or the folder
+policy engine.
+
+There is no branch anywhere of the form "if this is a guest, skip the
+permission check" — which is the shape of bug that turns a review link into a
+breach. A guest controller cannot accidentally inherit an internal permission,
+because it never had one.
+
+Visibility filtering happens at the query (`asset.comment_threads.active
+.visible_to_guests`), not in the serialiser, so a future change to
+serialisation cannot start emitting internal threads.
+
+`GuestReviewSerialization` is an *allow-list*, not a delegation to
+`CommentSerialization`. The internal serialiser emits `{ id, email, name }` for
+a comment author; sending that to a guest would hand an outsider internal staff
+emails and user ids. The guest serialiser emits a display name or the generic
+"Capri team", and adding a field to the internal serialiser can never silently
+widen guest exposure.
+
+Thread `visibility` is omitted from guest payloads entirely. It carries no
+information a guest can act on and would advertise that a hidden internal tier
+exists.
+
+=== Bytes are proxied, never signed
+
+`Public::ReviewAssetsController` streams previews and downloads through the
+application. It would have been cheaper to resolve a CDN or signed storage URL
+as the internal viewer does, but a signed URL keeps working for its own
+lifetime regardless of what happens to the review link — which would make the
+revoke button decorative. Proxying means every byte is re-authorised against
+the live link.
+
+Downloads are gated separately on `allow_downloads` (default `false`): being
+invited to comment on something does not imply the right to keep a copy of it.
+
+=== What a guest cannot do
+
+Guests open threads, annotate and reply. They cannot resolve, verify, reopen,
+edit or delete. Closing feedback is a decision for the people accountable for
+the asset, and a client marking their own objection resolved would destroy the
+audit trail the review exists to produce.
+
+Guest writes are forced to `visibility: "guest"` and guest attribution; there
+is no code path in `Public::ReviewCommentsController` that can set `author_id`.
+Annotations go through the same `annotation_attributes_from` whitelist as
+internal ones and are capped per comment, because an unbounded array on an
+unauthenticated endpoint is an easy way to bloat the database.
+
+Every guest endpoint is rate limited with Rails 8's built-in `rate_limit`;
+writes harder than reads, and the passphrase and identify endpoints hardest of
+all.
+
+=== Administration
+
+`/api/v1/review_links` mints, lists, updates and revokes. Creation requires
+`:modify` on the target rather than the `:read` that ordinary commenting needs:
+being allowed to discuss an asset internally is not the same as being allowed
+to send it outside the organisation.
+
+The target cannot be changed after minting — re-pointing a live link would
+silently grant an outsider access to material they were never shown while the
+URL in their inbox looks unchanged. `DELETE` revokes rather than destroys,
+because the row is the provenance record for the comments collected through it:
+"who was this shown to, and under what grant" is exactly what an audit asks
+later.
+
+Listing is scoped to the caller's own links unless they are an administrator,
+and another user's link 404s rather than 403s, since its existence is itself
+information about what a colleague has shared externally.
+
+=== Front end
+
+The guest page ships its own esbuild entry point,
+`app/javascript/guest_review.js`, rather than reusing `application.js`. The
+internal bundle mounts the header, sidebar, footer and the whole component
+registry, none of which an external reviewer is entitled to receive; shipping it
+would hand an outsider the navigation map of the system and every admin screen's
+code. Splitting the entry point takes the guest payload from ~13 MB to ~3.6 MB
+as a side effect, but the reason is exposure, not size.
+
+Because `yarn build` compiles every top-level file in `app/javascript` as its own
+entry point, adding the file was enough — no build configuration changed.
+
+The app lives in `app/javascript/components/GuestReview/`:
+
+[cols="1,3"]
+|===
+| File | Responsibility
+
+| `useGuestReview.js` | All I/O. Every request is scoped to
+  `/s/reviews/:token`; the app never calls `/api/v1`.
+| `GuestReviewApp.jsx` | Root. Loading/failure states, header, asset rail,
+  and wiring between viewer and panel.
+| `GuestAssetViewer.jsx` | Preview plus the annotation toolbar, reusing the
+  same `annotationGeometry` helpers as the internal viewer.
+| `GuestCommentPanel.jsx` | Thread list, replies and the composer.
+| `IdentityGate.jsx` | Identity prompt (see below).
+|===
+
+There is no user object, no permission model and no client-side authorisation on
+this side: the server decides what the token covers and the app only renders the
+result. `IdentityGate` is an identity *prompt, not a login* — nothing is verified
+and nothing is authorised on the answer, since the link is the credential. It
+exists so feedback arrives as "Priya at the client" rather than "Anonymous". It
+stays dismissible even on a `require_email` link, because blocking someone who
+only wants to read would be gatekeeping with no security benefit; the composer,
+not the dialog, is what enforces identification before a comment is accepted.
+
+== AI review assistant
+
+A vision model can run over an asset and post what it finds as *real annotated
+comments* — the same threads, the same normalised geometry, the same version
+binding as a human remark — which a person then accepts or dismisses.
+
+=== Findings are threads, not a parallel table
+
+A finding is stored as a `CommentThread` + `Comment` + `AnnotationTarget`. The
+alternative, a separate `suggestions` table, would need normalised coordinates,
+version binding, region-diff across versions, W3C export and the contact sheet
+all reimplemented against it — and the two implementations would drift. Storing
+findings as ordinary threads means every one of those features applies to
+machine output the day it ships.
+
+What separates a suggestion from feedback is `comment_threads.suggestion_state`,
+which is `NULL` for every human thread and starts at `pending` for a machine
+one.
+
+=== A pending suggestion is not part of the review
+
+Until somebody accepts it, a suggestion is excluded from the thread list, from
+exports, and from the guest surface. The `triaged` scope is what every listing
+must use:
+
+[source,ruby]
+----
+scope :triaged, -> { where("suggestion_state IS DISTINCT FROM 'pending'") }
+----
+
+`IS DISTINCT FROM` rather than `where.not`: human threads have a `NULL`
+`suggestion_state`, and `suggestion_state != 'pending'` evaluates to `NULL` for
+those rows, which SQL treats as *not matched*. A plain `where.not` here would
+hide every human-authored thread in the system.
+
+Suggestions are additionally created `visibility: "internal"`, so the guest
+query excludes them twice over. The redundancy is deliberate — an unreviewed
+machine guess reaching a client is the worst outcome this feature has.
+
+=== Accepting does not launder attribution
+
+Accepting records *who decided* in `suggestion_decided_by`, but does not rewrite
+the comment's author. `agent_type` stays `software` for ever. Rewriting it to
+the accepting human would destroy exactly the audit trail that `agent_type`
+exists to keep — six months later, nobody could tell which review notes a model
+wrote.
+
+Dismissed suggestions are kept rather than deleted. A false positive is the only
+evidence available for tuning the model, and a deleted one is simply raised
+again on the next run.
+
+=== Inference happens in the gateway, not in Rails
+
+Consistent with every other AI feature here, Rails performs no inference. It
+publishes an `ai_review.dispatch` event on the `ai_gateway_events` Redis channel
+and the gateway posts findings back to
+`POST /api/v1/ai_reviews/:id/findings`, authenticated with the shared
+`X-Gateway-Secret` header. The dispatch payload carries a callback URL rather
+than storage credentials, so revoking a run revokes its access.
+
+`AiReviewWorker` no-ops unless the run is still `queued`, so a Sidekiq retry
+cannot dispatch twice and duplicate every finding. A delivery for an already
+terminal run is ignored for the same reason.
+
+=== The run is recorded separately from its findings
+
+Without an `AiReview` row, "the assistant looked and found nothing" and "the
+assistant never looked" are the same empty list — and that distinction is the
+entire value of an automated check. The run also pins `ai_model_name` and
+`provider` at execution time rather than resolving them later, because model
+configuration changes and a finding must stay attributable to whatever actually
+produced it.
+
+NOTE: the column is `ai_model_name`, not `model_name`: `model_name` is an Active
+Record class method and a column of that name raises `DangerousAttributeError`
+on load.
+
+=== The gateway payload is untrusted
+
+The gateway is a separate service, so its output is validated rather than
+trusted:
+
+* coordinates are clamped into the unit square — the database `CHECK` rejects
+  `x + w > 1`, and one box running off the edge would otherwise abort the whole
+  import and lose every other finding in the run;
+* bodies are length-capped, unknown shapes fall back to `rect`, and a path-only
+  shape (`arrow`, `line`, `freehand`) arriving with no path has the annotation
+  dropped while the note is kept;
+* findings below `MIN_CONFIDENCE` (0.35) are discarded — a triage queue nobody
+  reads is worse than no queue;
+* a run is capped at `MAX_FINDINGS` (50), since a flood is almost always a
+  misconfigured prompt rather than a genuinely terrible asset;
+* one malformed finding is skipped, not fatal.
+
+=== Permissions
+
+Requesting a review needs `:modify`, not the `:read` that ordinary commenting
+needs: a run discloses the asset to an external inference service and spends
+against the AI budget, which is a different kind of decision from reading.
+Accepting or dismissing likewise needs `:modify`, because accepting is what
+turns machine output into part of the team's record.
+
+`profile` is an allow-list (`brand_guidelines`, `accessibility`, `safe_area`,
+`composition`), not a free-text prompt, so the endpoint cannot be used to run
+arbitrary instructions against stored assets.
+
+[cols="1,3"]
+|===
+| Endpoint | Purpose
+
+| `POST /api/v1/assets/:id/ai_reviews` | Request a run. 409s if one is already in flight.
+| `GET /api/v1/assets/:id/ai_reviews` | Past runs for the asset.
+| `GET /api/v1/assets/:id/ai_reviews/pending` | The triage queue.
+| `GET /api/v1/ai_reviews/:id` | Poll a single run.
+| `POST /api/v1/ai_reviews/:id/findings` | Gateway callback (gateway secret).
+| `POST /api/v1/comment_threads/:id/accept_suggestion` | Admit into the review.
+| `POST /api/v1/comment_threads/:id/dismiss_suggestion` | Reject, but keep.
+|===
+
+== Webhooks
+
+`CommentWebhookSubscription` registers an endpoint that wants to be told when
+review activity happens: `comment.created`, `comment.resolved`,
+`thread.created`, `thread.resolved`, `thread.reopened`.
+
+This is deliberately not the workflow engine's webhook. That one is a
+configured *step* inside an approval chain — it models "when this workflow
+reaches this point". A proofing vendor wants "whenever anyone comments", and
+wiring it into a workflow it has no part in would be a misuse of the workflow.
+
+`Comments::EventPublisher` fans an event out to matching subscriptions, one
+Sidekiq job per subscription. Per-subscription rather than per-event means a
+slow receiver delays only its own delivery, and a retry does not re-deliver to
+endpoints that already succeeded. Only identifiers are enqueued; the payload is
+rebuilt at delivery time by `Comments::WebhookPayload`, so what is sent
+reflects the record as it stands rather than a snapshot that may since have
+been edited or deleted.
+
+Publishing can never break the action that caused it. Posting a comment is the
+user's work; notifying an integration is a side effect, so every failure in the
+publisher is logged and swallowed. A misconfigured subscription must not turn a
+successful comment into a 500.
+
+Each delivery carries `X-Capri-Event`, a unique `X-Capri-Delivery` id (reused
+across retries, so a receiver can drop duplicates) and `X-Capri-Signature`, an
+HMAC-SHA256 over the exact bytes sent. The signature is computed *after* the
+body is serialised, because re-serialising to verify would risk a different key
+order and a mismatched signature.
+
+Subscriptions can be scoped to an asset or folder. An unscoped subscription on
+a large tenant is a firehose that will get the endpoint rate-limited or simply
+ignored. After 20 consecutive failures a subscription stops being delivered to
+so one dead endpoint cannot consume worker capacity indefinitely; the API
+surfaces this as `health.suspended` so an operator can see why an "active"
+endpoint has gone quiet. Updating the subscription clears the counter.
+
+The signing secret is returned exactly once, at creation. It is never included
+in any subsequent response, so a hijacked administrator session cannot be used
+to harvest signing keys for endpoints it did not create.
+
+== Tests
+
+[cols="2,3", options="header"]
+|===
+| Suite | Covers
+| `spec/models/{annotation_target,comment,comment_thread}_spec.rb` | Geometry
+  validation, single-level threading, lifecycle transitions, SMPTE drop-frame
+  conversion.
+| `spec/requests/api/v1/comment*_request_spec.rb` | Behaviour: permissions,
+  version defaulting, cross-thread parent rejection, soft deletes.
+| `spec/requests/api/v1/comment*_spec.rb` | rswag/OpenAPI documentation specs
+  (required by `make check-api-specs`).
+| `spec/services/comment_notification_service_spec.rb` | Mention dispatch,
+  participant de-duplication, deep-link URL.
+| `spec/javascript/utils/annotationGeometry.test.js` | Normalisation, path
+  round-trip, gesture rejection thresholds, drop-frame timecode.
+| `spec/javascript/components/Folders/AnnotationOverlay.test.jsx` | Pixel
+  projection, draw gestures, click-through behaviour when no tool is armed.
+| `spec/javascript/components/Folders/useAssetComments.test.js` | Fetch/mutate
+  cycle, filters, draft handling, CSRF, error surfacing.
+| `spec/javascript/components/Folders/AssetCommentsPanel.test.jsx` | Composer,
+  replies, lifecycle actions, mention autocomplete.
+| `spec/requests/api/v1/comment_exports_request_spec.rb` | W3C export shape,
+  percent-not-pixel fragments, PDF rendering, third-party import, lossless
+  round trip, idempotent re-import, forged attribution, cross-asset parent
+  leak, the `honour_status` gate.
+| `spec/requests/api/v1/comment_webhook_subscriptions_request_spec.rb` |
+  Subscription CRUD, secret disclosed only on creation, event-name validation,
+  failure-count reset, signed test ping.
+| `spec/javascript/utils/annotationTemporal.test.js` | Frame-rate parsing,
+  seconds/frame round-tripping, visibility windows, temporal payload building.
+| `spec/javascript/components/Folders/VideoAnnotationPlayer.test.jsx` | Frame
+  stepping and clamping, marker track, in/out capture, loop, external seek
+  requests, keyboard transport.
+| `spec/workers/asset_processor_worker_spec.rb` | ffprobe frame-rate extraction,
+  including the `0/0` placeholder fallback and NTSC drop-frame detection.
+| `spec/javascript/utils/regionDiff.test.js` | Region mapping across
+  differently-sized versions, diff thresholds, aspect-preserving crops, the
+  single-load image cache.
+| `spec/javascript/components/Folders/AssetCommentLineage.test.jsx` | Changed
+  vs unchanged detection, skipped threads, cross-origin and load failures, the
+  badge and its before/after crops.
+| `spec/models/review_link_spec.rb` | Token digest never stores the raw value,
+  digest lookup, the expiry cap, exactly-one-target, live collection membership
+  driving scope, bcrypt passphrase, revocation and access metering.
+| `spec/models/review_guest_spec.rb` | Email normalisation and reuse, per-link
+  identity isolation, distinct anonymous identities, and the refusal to let a
+  guest claim the reserved anonymous domain.
+| `spec/requests/public/guest_reviews_request_spec.rb` | The full guest surface:
+  unknown/expired/revoked tokens, the passphrase gate, identity capture,
+  cross-asset pivot blocked, internal threads never visible, no staff email in
+  any payload, download gating, and collection-scoped links.
+| `spec/requests/api/v1/review_links_request_spec.rb` | Minting (token returned
+  once, never again), the expiry cap, passphrase digesting, `:modify` required
+  on the target, per-caller listing, status filters, target immutability on
+  update, and revoke-not-destroy.
+| `spec/javascript/components/GuestReview/useGuestReview.test.js` | Guest fetch
+  layer: token-scoped URLs, CSRF header, annotation flattening across threads,
+  and error surfacing.
+| `spec/javascript/components/GuestReview/GuestReviewApp.test.jsx` | Loading and
+  failure states, header attribution, the asset rail appearing only for
+  multi-asset links, and when the identity prompt is and is not shown.
+| `spec/javascript/components/GuestReview/GuestCommentPanel.test.jsx` | Thread
+  list, reply flow, composer gating, and the prompt to identify.
+| `spec/javascript/components/GuestReview/IdentityGate.test.jsx` | Trimmed
+  submission, server rejection surfaced against the email field, and the
+  presence/absence of the dismiss affordance.
+| `spec/models/ai_review_spec.rb` | Machine authorship satisfying the author
+  constraint, the NULL-safety of `triaged`, triage state rejected on a human
+  thread, accepting not rewriting authorship, and a run with accepted findings
+  no longer being destroyable.
+| `spec/services/ai/review_finding_importer_spec.rb` | Coordinate clamping,
+  confidence floor, finding cap, body truncation, path-only shapes without a
+  path, unknown shapes, and one bad finding not losing the good ones.
+| `spec/requests/api/v1/ai_reviews_request_spec.rb` | Gateway-secret auth on the
+  callback (including a signed-in user being refused without it), replay of a
+  terminal run ignored, in-flight duplicate runs refused, and pending
+  suggestions absent from the thread list, the export and the guest surface.
+|===
+
+The guest specs load the real `en.json` bundle via
+`i18n.addResourceBundle` rather than asserting on key paths, so a deleted or
+renamed translation key fails the test instead of passing silently.
+
+NOTE: `spec/javascript/setup.js` stubs `ResizeObserver`, `PointerEvent` and
+pointer capture, none of which jsdom implements. The overlay needs all three:
+without them a pointer gesture silently loses its `clientX`/`clientY` and every
+coordinate comes back `NaN`.

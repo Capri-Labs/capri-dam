@@ -1509,4 +1509,73 @@ RSpec.describe AssetProcessorWorker, type: :worker do
     expect { worker.send(:extract_perceptual_hash, "image.jpg", meta) }.not_to raise_error
     expect(meta).not_to have_key(:perceptual_hash)
   end
+
+  # Frame-accurate video comments store a frame *number* rather than a
+  # timestamp, so the frame rate is not decoration — without it
+  # AnnotationTarget rejects the annotation outright.
+  describe "video frame-rate extraction" do
+    let(:worker) { described_class.new }
+
+    def frame_rate_meta(stream, duration: 10.0)
+      {}.tap { |meta| worker.send(:extract_video_frame_rate, stream, duration, meta) }
+    end
+
+    it "parses an integer rate" do
+      meta = frame_rate_meta({ "avg_frame_rate" => "25/1" })
+
+      expect(meta[:video_frame_rate]).to eq(25.0)
+      expect(meta[:video_frame_rate_ratio]).to eq("25/1")
+      expect(meta[:video_drop_frame]).to be(false)
+      expect(meta[:video_frame_count]).to eq(250)
+    end
+
+    it "flags the NTSC rates as drop-frame" do
+      expect(frame_rate_meta({ "avg_frame_rate" => "30000/1001" })[:video_drop_frame]).to be(true)
+      expect(frame_rate_meta({ "avg_frame_rate" => "60000/1001" })[:video_drop_frame]).to be(true)
+    end
+
+    it "does not mistake a true 30 fps for drop-frame" do
+      # 29.97 and 30 are indistinguishable once rounded, which is exactly why
+      # the exact rational is matched rather than the float.
+      meta = frame_rate_meta({ "avg_frame_rate" => "30/1" })
+
+      expect(meta[:video_frame_rate]).to eq(30.0)
+      expect(meta[:video_drop_frame]).to be(false)
+    end
+
+    it "keeps the exact rational alongside the rounded float" do
+      meta = frame_rate_meta({ "avg_frame_rate" => "30000/1001" })
+
+      expect(meta[:video_frame_rate]).to be_within(0.001).of(29.97)
+      expect(meta[:video_frame_rate_ratio]).to eq("30000/1001")
+    end
+
+    it "falls back to r_frame_rate when avg_frame_rate is the 0/0 placeholder" do
+      meta = frame_rate_meta({ "avg_frame_rate" => "0/0", "r_frame_rate" => "24/1" })
+
+      expect(meta[:video_frame_rate]).to eq(24.0)
+    end
+
+    it "records nothing when no rate can be determined" do
+      expect(frame_rate_meta({ "avg_frame_rate" => "0/0" })).to be_empty
+      expect(frame_rate_meta({})).to be_empty
+    end
+
+    it "omits the frame count when the duration is unknown" do
+      meta = frame_rate_meta({ "avg_frame_rate" => "25/1" }, duration: nil)
+
+      expect(meta[:video_frame_rate]).to eq(25.0)
+      expect(meta).not_to have_key(:video_frame_count)
+    end
+
+    it "parses a bare rate with no denominator" do
+      expect(worker.send(:parse_frame_rate_ratio, "24")).to eq(24.0)
+    end
+
+    it "refuses to divide by zero" do
+      expect(worker.send(:parse_frame_rate_ratio, "25/0")).to be_nil
+      expect(worker.send(:parse_frame_rate_ratio, nil)).to be_nil
+      expect(worker.send(:parse_frame_rate_ratio, "")).to be_nil
+    end
+  end
 end

@@ -33,6 +33,8 @@ import AssetMetadataPanel from './AssetMetadataPanel';
 import AssetStatsPopover from './AssetStatsPopover';
 import AssetCommentsPanel from './AssetCommentsPanel';
 import AnnotationOverlay from './AnnotationOverlay';
+import VideoAnnotationPlayer from './VideoAnnotationPlayer';
+import { frameRateContext } from '../../utils/annotationGeometry';
 import useAssetComments from './useAssetComments';
 
 const interpolate = (template, values = {}) => template.replace(/\{\{(\w+)\}\}/g, (_, key) => values[key] ?? '');
@@ -214,6 +216,21 @@ export default function AssetViewer({ asset: initialAsset, open, onClose, onAsse
             : (isNativelyPlayableVideo ? asset.url : (asset.video_mp4_rendition_url || null)))
         : null;
     const videoPoster = asset.video_poster_url || undefined;
+    // Frame rate comes from the ffprobe metadata AssetProcessorWorker stores.
+    // It falls back to a flagged approximation for clips ingested before
+    // frame-rate extraction existed (or without FFmpeg installed), so the
+    // review tools degrade rather than disappear.
+    const videoFrameRate = frameRateContext(asset.properties);
+    // The timeline position a newly drawn shape is stamped with: the selected
+    // in/out range when one is set, otherwise the current play head.
+    const videoDraftPosition = isVideo
+        ? {
+            startFrame: comments.inPoint != null ? comments.inPoint : comments.currentFrame,
+            endFrame: (comments.inPoint != null && comments.outPoint != null) ? comments.outPoint : null,
+            fps: videoFrameRate.fps,
+            dropFrame: videoFrameRate.dropFrame,
+        }
+        : null;
     const hasGeneratedPreview = Boolean(
         asset.properties?.preview_storage_path || asset.properties?.preview_content_type
     );
@@ -348,14 +365,41 @@ export default function AssetViewer({ asset: initialAsset, open, onClose, onAsse
                         />
                     ) : isVideo ? (
                         videoSrc ? (
-                            <Box
-                                component="video"
-                                controls
-                                poster={videoPoster}
+                            <VideoAnnotationPlayer
                                 src={videoSrc}
-                                data-testid="asset-viewer-video-player"
-                                sx={{ maxWidth: '100%', maxHeight: '100%', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}
-                            />
+                                poster={videoPoster}
+                                fps={videoFrameRate.fps}
+                                dropFrame={videoFrameRate.dropFrame}
+                                exactFrameRate={videoFrameRate.exact}
+                                annotations={comments.temporalAnnotations}
+                                currentFrame={comments.currentFrame}
+                                onFrameChange={comments.setCurrentFrame}
+                                seekRequest={comments.seekRequest}
+                                inPoint={comments.inPoint}
+                                outPoint={comments.outPoint}
+                                onSetIn={comments.setRangeIn}
+                                onSetOut={comments.setRangeOut}
+                                onClearRange={comments.clearRange}
+                                loop={comments.loopRange}
+                                onToggleLoop={comments.setLoopRange}
+                                hoveredThreadId={comments.hoveredThreadId}
+                                onSelectThread={(id) => { comments.setSelectedThreadId(id); setActiveTab(COMMENTS_TAB_INDEX); }}
+                                onLoadedMetadata={setPreviewNaturalSize}
+                            >
+                                <AnnotationOverlay
+                                    annotations={comments.visibleAnnotations}
+                                    draft={comments.draft}
+                                    tool={comments.tool}
+                                    onDraftAdd={comments.addDraftAnnotation}
+                                    selectedThreadId={comments.selectedThreadId}
+                                    hoveredThreadId={comments.hoveredThreadId}
+                                    onSelectThread={(id) => { comments.setSelectedThreadId(id); setActiveTab(COMMENTS_TAB_INDEX); }}
+                                    onHoverThread={comments.setHoveredThreadId}
+                                    sourceSize={previewNaturalSize}
+                                    mediaType="video"
+                                    videoPosition={videoDraftPosition}
+                                />
+                            </VideoAnnotationPlayer>
                         ) : (
                             <Box sx={{ textAlign: 'center', maxWidth: 420 }}>
                                 <Typography variant="subtitle1" sx={{ color: '#334155', fontWeight: 600, mb: 1 }}>

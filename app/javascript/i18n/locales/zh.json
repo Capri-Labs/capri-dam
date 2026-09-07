@@ -3052,7 +3052,8 @@
       "line": "直线",
       "freehand": "自由绘制",
       "text": "文本",
-      "drawHint": "在预览上绘制以放置批注。"
+      "drawHint": "在预览上绘制以放置批注。",
+      "time": "时间码"
     },
     "status": {
       "open": "待处理",
@@ -3088,6 +3089,90 @@
       "minutesAgo": "{{count}} 分钟前",
       "hoursAgo": "{{count}} 小时前",
       "daysAgo": "{{count}} 天前"
+    },
+    "video": {
+      "play": "播放",
+      "pause": "暂停",
+      "previousFrame": "上一帧",
+      "nextFrame": "下一帧",
+      "scrubber": "视频位置",
+      "mute": "静音",
+      "unmute": "取消静音",
+      "loop": "循环播放所选范围",
+      "clearRange": "清除范围",
+      "inShort": "IN",
+      "outShort": "OUT",
+      "setIn": "设置入点",
+      "setOut": "设置出点",
+      "setInHint": "在当前帧设置范围评论的入点",
+      "setOutHint": "在当前帧设置范围评论的出点",
+      "jumpToMarker": "跳转到批注",
+      "seekTo": "跳转到 {{time}}",
+      "attachTime": "附加 {{time}}",
+      "attachRange": "附加 {{from}}–{{to}}",
+      "frameHint": "绘制的批注会固定在当前帧。若要标注一段范围，请在播放器上设置 IN/OUT。",
+      "rangeSelected": "已选择一段范围 — 新批注将覆盖整个区间。",
+      "approximateRate": "未检测到该视频的帧率，因此逐帧步进为近似值。"
+    },
+    "lineage": {
+      "changed": "在 v{{to}} 中已更改",
+      "unchanged": "自 v{{from}} 起未更改",
+      "unavailable": "未比较",
+      "before": "之前 (v{{number}})",
+      "after": "之后 (v{{number}})",
+      "changedHint": "该区域约 {{percent}}% 与 v{{from}} 不同。请比较前后画面以确认该批注已被处理。",
+      "unchangedHint": "该区域与 v{{from}} 看起来完全相同，反馈可能仍未处理。",
+      "unavailableCrossOrigin": "变更检测需要读取预览图的像素，而此 CDN 不允许。",
+      "unavailableLoad": "无法加载这些版本的预览图。"
+    }
+  },
+  "guestReview": {
+    "identity": {
+      "title": "Who's reviewing?",
+      "description": "Your name is shown alongside your comments so the team knows whose feedback it is. It isn't used for anything else.",
+      "email": "Email address",
+      "name": "Your name",
+      "skip": "Not now",
+      "continue": "Continue"
+    },
+    "header": {
+      "reviewingAs": "Reviewing as {{name}}",
+      "expires": "Access ends {{date}}"
+    },
+    "panel": {
+      "title": "Review notes",
+      "count": "{{count}} thread",
+      "count_other": "{{count}} threads",
+      "empty": "No notes yet. Draw on the asset or type below to leave the first one.",
+      "placeholder": "Add a note…",
+      "send": "Post note",
+      "readOnly": "This link is view-only.",
+      "identifyPrompt": "Tell us who you are before leaving a note.",
+      "identifyAction": "Add your name",
+      "draftMarks": "{{count}} mark ready",
+      "draftMarks_other": "{{count}} marks ready",
+      "clearMarks": "Clear"
+    },
+    "thread": {
+      "reply": "Reply",
+      "replyPlaceholder": "Write a reply…",
+      "resolved": "Resolved"
+    },
+    "comment": {
+      "team": "Team",
+      "edited": "edited"
+    },
+    "tools": {
+      "select": "Select",
+      "rect": "Rectangle",
+      "ellipse": "Ellipse",
+      "arrow": "Arrow",
+      "freehand": "Freehand",
+      "pin": "Pin"
+    },
+    "viewer": {
+      "noAsset": "Nothing to review here.",
+      "download": "Download"
     }
   }
 }

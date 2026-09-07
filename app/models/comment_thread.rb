@@ -35,10 +35,34 @@ class CommentThread < ApplicationRecord
   # Statuses that still require someone to act.
   OPEN_STATUSES = %w[open addressed].freeze
 
+  # Triage state for a thread the AI review assistant opened. NULL for every
+  # human-authored thread — the column answers "has a person decided about
+  # this machine suggestion yet?", a question that simply does not apply to a
+  # remark a person wrote themselves.
+  #
+  # A pending suggestion is deliberately *not* part of the review yet. It is
+  # stored as a real thread (so it keeps annotation geometry, version binding
+  # and region-diff) but is filtered out of every human and guest listing until
+  # somebody accepts it. Machine output must never silently become a client's
+  # feedback.
+  SUGGESTION_STATES = %w[pending accepted dismissed].freeze
+
   belongs_to :asset
   belongs_to :origin_version, class_name: "AssetVersion", optional: true
-  belongs_to :created_by, class_name: "User"
+  # Optional because a thread may have been opened by an external reviewer
+  # holding a {ReviewLink} rather than by an account holder. Exactly one of
+  # +created_by+ and +created_by_guest+ is always set, enforced by the
+  # +comment_threads_have_an_author+ check constraint.
+  belongs_to :created_by, class_name: "User", optional: true
+  belongs_to :created_by_guest, class_name: "ReviewGuest", optional: true
+  # Which link an external thread arrived through, so a revoked link's
+  # contributions remain traceable after the fact.
+  belongs_to :review_link, optional: true
   belongs_to :resolved_by, class_name: "User", optional: true
+  # Present when the assistant opened this thread. Also what satisfies the
+  # +comment_threads_have_an_author+ constraint for machine-authored threads.
+  belongs_to :ai_review, optional: true
+  belongs_to :suggestion_decided_by, class_name: "User", optional: true
 
   has_many :comments, dependent: :destroy
 
@@ -53,6 +77,9 @@ class CommentThread < ApplicationRecord
 
   validates :status, inclusion: { in: STATUSES }
   validates :visibility, inclusion: { in: VISIBILITIES }
+  validates :suggestion_state, inclusion: { in: SUGGESTION_STATES }, allow_nil: true
+  validate :has_an_author
+  validate :suggestion_state_belongs_to_a_review
 
   # Threads still awaiting action.
   scope :unresolved, -> { where(status: OPEN_STATUSES) }
@@ -64,6 +91,82 @@ class CommentThread < ApplicationRecord
   }
 
   scope :visible_to_guests, -> { where(visibility: "guest") }
+
+  # Threads that count as part of the review: everything a human wrote, plus
+  # machine suggestions somebody has accepted.
+  #
+  # This is the scope every listing must use.
+  #
+  # +IS DISTINCT FROM+ rather than +where.not+: human threads have a NULL
+  # +suggestion_state+, and `suggestion_state != 'pending'` evaluates to NULL
+  # for those rows, which SQL treats as not-matched. A plain +where.not+ here
+  # would therefore hide every human-authored thread in the system.
+  scope :triaged, -> { where("suggestion_state IS DISTINCT FROM 'pending'") }
+
+  # Untriaged machine output, awaiting a human decision.
+  scope :pending_suggestions, -> { where(suggestion_state: "pending") }
+
+  scope :suggested_by_ai, -> { where.not(ai_review_id: nil) }
+
+  # @return [String] who opened the thread, for display
+  def creator_display_name
+    return ai_review_display_name if ai_suggested?
+
+    created_by&.email.presence || created_by_guest&.display_name || "Unknown"
+  end
+
+  # @return [Boolean] whether the assistant opened this thread
+  def ai_suggested?
+    ai_review_id.present?
+  end
+
+  # @return [Boolean] whether this is machine output nobody has ruled on yet
+  def pending_suggestion?
+    suggestion_state == "pending"
+  end
+
+  # Folds a machine suggestion into the human review.
+  #
+  # The accepting user is recorded as the decision-maker but is deliberately
+  # *not* rewritten as the comment's author: the assistant did write it, and
+  # laundering machine output into a person's name would destroy the audit
+  # trail that {Comment#agent_type} exists to keep. Attribution stays with the
+  # machine; accountability for admitting it attaches to the human.
+  #
+  # @param user [User] who accepted it
+  # @return [Boolean]
+  def accept_suggestion!(user:)
+    raise ArgumentError, "not a pending suggestion" unless pending_suggestion?
+
+    update!(
+      suggestion_state: "accepted",
+      suggestion_decided_by: user,
+      suggestion_decided_at: Time.current,
+    )
+  end
+
+  # Rejects a machine suggestion.
+  #
+  # Dismissed suggestions are kept rather than deleted: what the assistant got
+  # wrong is the only evidence available for tuning it, and a silently deleted
+  # false positive will simply be raised again on the next run.
+  #
+  # @param user [User] who dismissed it
+  # @return [Boolean]
+  def dismiss_suggestion!(user:)
+    raise ArgumentError, "not a pending suggestion" unless pending_suggestion?
+
+    update!(
+      suggestion_state: "dismissed",
+      suggestion_decided_by: user,
+      suggestion_decided_at: Time.current,
+    )
+  end
+
+  # @return [Boolean] whether this thread originated outside the organisation
+  def guest_originated?
+    created_by_guest_id.present?
+  end
 
   # Marks the thread closed.
   #
@@ -101,5 +204,32 @@ class CommentThread < ApplicationRecord
   # @return [Array<User>]
   def participants
     User.where(id: comments.active.where.not(author_id: nil).select(:author_id).distinct)
+  end
+
+  private
+
+  # Mirrors the +comment_threads_have_an_author+ check constraint so the
+  # failure surfaces as a validation error rather than a database exception.
+  # A recorded assistant run counts as an author: the thread is attributable
+  # to a specific {AiReview}, which names the model that produced it.
+  def has_an_author
+    return if created_by_id.present? || created_by_guest_id.present? || ai_review_id.present?
+
+    errors.add(:base, "A thread must be opened by a user, a review guest, or an AI review")
+  end
+
+  # Triage state is meaningless without something to triage. Allowing it on a
+  # human thread would let a person's remark be "dismissed" through the
+  # suggestion path, bypassing the resolve/reopen lifecycle entirely.
+  def suggestion_state_belongs_to_a_review
+    return if suggestion_state.blank?
+    return if ai_review_id.present?
+
+    errors.add(:suggestion_state, "only applies to a thread opened by an AI review")
+  end
+
+  def ai_review_display_name
+    name = ai_review&.ai_model_name.presence
+    name ? "Review assistant (#{name})" : "Review assistant"
   end
 end

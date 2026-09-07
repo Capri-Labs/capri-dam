@@ -118,7 +118,7 @@ RSpec.describe 'Api::V1::CommentThreads', type: :request do
               type: :object,
               properties: {
                 media_type: { type: :string, enum: %w[image video document] },
-                shape: { type: :string, enum: %w[pin rect ellipse arrow line freehand text highlight] },
+                shape: { type: :string, enum: %w[pin rect ellipse arrow line freehand text highlight time] },
                 bbox: {
                   type: :object,
                   properties: {

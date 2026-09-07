@@ -2280,6 +2280,456 @@ paths:
                     error_message:
                       type: string
                       nullable: true
+  "/api/v1/assets/{asset_id}/ai_reviews":
+    parameters:
+    - name: asset_id
+      in: path
+      format: uuid
+      required: true
+      schema:
+        type: string
+    get:
+      summary: List AI review runs for an asset
+      tags:
+      - AI Reviews
+      security:
+      - bearer_auth: []
+      responses:
+        '200':
+          description: runs listed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  reviews:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        asset_id:
+                          type: string
+                          format: uuid
+                        asset_version_id:
+                          type: string
+                          format: uuid
+                          nullable: true
+                        status:
+                          type: string
+                          enum:
+                          - queued
+                          - running
+                          - completed
+                          - failed
+                          - cancelled
+                        profile:
+                          type: string
+                          enum:
+                          - brand_guidelines
+                          - accessibility
+                          - safe_area
+                          - composition
+                        profile_label:
+                          type: string
+                          description: What the assistant was asked to check
+                        model_name:
+                          type: string
+                          nullable: true
+                          example: gpt-4o
+                        provider:
+                          type: string
+                          nullable: true
+                          example: openai
+                        findings_count:
+                          type: integer
+                        error_message:
+                          type: string
+                          nullable: true
+                        requested_by:
+                          type: string
+                          nullable: true
+                        started_at:
+                          type: string
+                          format: date-time
+                          nullable: true
+                        completed_at:
+                          type: string
+                          format: date-time
+                          nullable: true
+                        created_at:
+                          type: string
+                          format: date-time
+    post:
+      summary: Request an AI review of an asset
+      tags:
+      - AI Reviews
+      description: |
+        Runs a vision model over the asset and posts its findings as real
+        annotated comment threads, each marked `suggestion_state: "pending"`
+        until a human accepts or dismisses it.
+
+        Requires `:modify` on the asset rather than the `:read` that ordinary
+        commenting needs: a run discloses the asset to an external inference
+        service and spends against the AI budget.
+
+        `profile` is an allow-list, not a free-text prompt, so this endpoint
+        cannot be used to run arbitrary instructions against stored assets.
+      security:
+      - bearer_auth: []
+      parameters: []
+      responses:
+        '201':
+          description: review queued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  review:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      asset_id:
+                        type: string
+                        format: uuid
+                      asset_version_id:
+                        type: string
+                        format: uuid
+                        nullable: true
+                      status:
+                        type: string
+                        enum:
+                        - queued
+                        - running
+                        - completed
+                        - failed
+                        - cancelled
+                      profile:
+                        type: string
+                        enum:
+                        - brand_guidelines
+                        - accessibility
+                        - safe_area
+                        - composition
+                      profile_label:
+                        type: string
+                        description: What the assistant was asked to check
+                      model_name:
+                        type: string
+                        nullable: true
+                        example: gpt-4o
+                      provider:
+                        type: string
+                        nullable: true
+                        example: openai
+                      findings_count:
+                        type: integer
+                      error_message:
+                        type: string
+                        nullable: true
+                      requested_by:
+                        type: string
+                        nullable: true
+                      started_at:
+                        type: string
+                        format: date-time
+                        nullable: true
+                      completed_at:
+                        type: string
+                        format: date-time
+                        nullable: true
+                      created_at:
+                        type: string
+                        format: date-time
+        '409':
+          description: a review is already running for this asset
+        '422':
+          description: unknown profile
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                profile:
+                  type: string
+                  enum:
+                  - brand_guidelines
+                  - accessibility
+                  - safe_area
+                  - composition
+                  default: brand_guidelines
+                options:
+                  type: object
+                  description: Bounded knobs forwarded to the gateway
+                  properties:
+                    brand_kit_id:
+                      type: string
+                    locale:
+                      type: string
+                    strictness:
+                      type: string
+  "/api/v1/assets/{asset_id}/ai_reviews/pending":
+    parameters:
+    - name: asset_id
+      in: path
+      format: uuid
+      required: true
+      schema:
+        type: string
+    get:
+      summary: 'Triage queue: suggestions awaiting a human decision'
+      tags:
+      - AI Reviews
+      description: |
+        Threads the assistant opened that nobody has ruled on yet. These are
+        deliberately absent from `GET /api/v1/assets/{id}/comments`, from
+        exports, and from the guest review surface — machine output is not part
+        of the review until a person accepts it.
+      security:
+      - bearer_auth: []
+      responses:
+        '200':
+          description: pending suggestions listed
+  "/api/v1/ai_reviews/{id}":
+    parameters:
+    - name: id
+      in: path
+      format: uuid
+      required: true
+      schema:
+        type: string
+    get:
+      summary: Fetch a single review run
+      tags:
+      - AI Reviews
+      security:
+      - bearer_auth: []
+      responses:
+        '200':
+          description: run returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  review:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      asset_id:
+                        type: string
+                        format: uuid
+                      asset_version_id:
+                        type: string
+                        format: uuid
+                        nullable: true
+                      status:
+                        type: string
+                        enum:
+                        - queued
+                        - running
+                        - completed
+                        - failed
+                        - cancelled
+                      profile:
+                        type: string
+                        enum:
+                        - brand_guidelines
+                        - accessibility
+                        - safe_area
+                        - composition
+                      profile_label:
+                        type: string
+                        description: What the assistant was asked to check
+                      model_name:
+                        type: string
+                        nullable: true
+                        example: gpt-4o
+                      provider:
+                        type: string
+                        nullable: true
+                        example: openai
+                      findings_count:
+                        type: integer
+                      error_message:
+                        type: string
+                        nullable: true
+                      requested_by:
+                        type: string
+                        nullable: true
+                      started_at:
+                        type: string
+                        format: date-time
+                        nullable: true
+                      completed_at:
+                        type: string
+                        format: date-time
+                        nullable: true
+                      created_at:
+                        type: string
+                        format: date-time
+        '404':
+          description: no such run
+  "/api/v1/ai_reviews/{id}/findings":
+    parameters:
+    - name: id
+      in: path
+      format: uuid
+      required: true
+      schema:
+        type: string
+    post:
+      summary: 'Gateway callback: deliver findings for a run'
+      tags:
+      - AI Reviews
+      description: |
+        Called by the AI gateway, not by a user. Authenticated with the shared
+        `X-Gateway-Secret` header rather than a user session or bearer token.
+
+        The payload is treated as untrusted: coordinates are clamped into the
+        unit square, bodies are length-capped, low-confidence findings are
+        dropped, and a malformed finding is skipped rather than aborting the
+        run. A delivery for an already-finished run is ignored, so a retry
+        cannot duplicate findings a reviewer has already triaged.
+      parameters:
+      - name: X-Gateway-Secret
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: findings imported
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  imported:
+                    type: integer
+                  skipped:
+                    type: integer
+                  errors:
+                    type: array
+                    items:
+                      type: string
+        '401':
+          description: missing or wrong gateway secret
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                error:
+                  type: string
+                  description: Set instead of findings when the run failed
+                findings:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      title:
+                        type: string
+                      detail:
+                        type: string
+                      rule:
+                        type: string
+                        description: Guideline breached, quoted into the note
+                      confidence:
+                        type: number
+                        format: float
+                        minimum: 0
+                        maximum: 1
+                      annotations:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            shape:
+                              type: string
+                              enum:
+                              - pin
+                              - rect
+                              - ellipse
+                              - arrow
+                              - line
+                              - freehand
+                              - text
+                              - highlight
+                              - time
+                            bbox:
+                              type: object
+                              description: Normalised 0..1, upper-left origin
+                              properties:
+                                x:
+                                  type: number
+                                "y":
+                                  type: number
+                                w:
+                                  type: number
+                                h:
+                                  type: number
+                            svg_path:
+                              type: string
+                              description: Required for arrow, line and freehand
+                            label:
+                              type: string
+  "/api/v1/comment_threads/{id}/accept_suggestion":
+    parameters:
+    - name: id
+      in: path
+      format: uuid
+      required: true
+      schema:
+        type: string
+    post:
+      summary: Accept an AI suggestion into the review
+      tags:
+      - AI Reviews
+      description: |
+        Admits the suggestion into the human review. The accepting user is
+        recorded as the decision-maker, but authorship stays with the machine —
+        `agent_type` remains `software`, so the audit trail is not laundered
+        into a person's name.
+      security:
+      - bearer_auth: []
+      responses:
+        '200':
+          description: accepted
+        '422':
+          description: not a pending suggestion
+  "/api/v1/comment_threads/{id}/dismiss_suggestion":
+    parameters:
+    - name: id
+      in: path
+      format: uuid
+      required: true
+      schema:
+        type: string
+    post:
+      summary: Dismiss an AI suggestion
+      tags:
+      - AI Reviews
+      description: |
+        Rejects the suggestion. The thread is kept rather than deleted: a
+        dismissed false positive is the only evidence available for tuning the
+        model, and a deleted one is simply raised again on the next run.
+      security:
+      - bearer_auth: []
+      responses:
+        '200':
+          description: dismissed
   "/api/v1/asset_downloads":
     post:
       summary: Bundle one or more folders and/or assets into a ZIP for download
@@ -5346,6 +5796,631 @@ paths:
                 properties:
                   error:
                     type: string
+  "/api/v1/assets/{asset_id}/comments/export":
+    get:
+      summary: Export an asset review as W3C Web Annotations or a PDF sign-off sheet
+      tags:
+      - Comment Exports
+      security:
+      - Bearer: []
+      description: |
+        Emits an asset's review conversation in a form that can leave the DAM.
+
+        **JSON-LD (`export_format=jsonld`)** returns a W3C Web Annotation Data
+        Model `AnnotationPage` (https://www.w3.org/TR/annotation-model/), so a
+        proofing vendor, archive or approvals system consumes a standard rather
+        than a bespoke integration.
+
+        Geometry is always expressed as **percentage media fragments**
+        (`xywh=percent:...`), never pixels, so the export is not bound to
+        whichever rendition happened to be on screen when the note was drawn.
+        Non-rectangular shapes additionally carry an `SvgSelector` in a
+        `viewBox="0 0 1 1"` space, and video notes carry a `t=` temporal
+        fragment derived from the stored frame number.
+
+        Pure W3C cannot express everything Capri stores: a rectangle and an
+        ellipse share a bounding box, and stroke style, exact frame rate,
+        drop-frame flag and thread grouping have no standard representation.
+        Those travel **alongside** the standard under a namespaced `capri:`
+        prefix, which the model explicitly permits — third parties see valid
+        W3C and ignore the extension, while Capri reads it back for a lossless
+        round trip.
+
+        **PDF (`export_format=pdf`)** renders an annotated contact sheet: the
+        version preview with vector-drawn markers over it, numbered badges tied
+        to a numbered comment list, statuses and (for video) SMPTE timecode
+        headings. Marks are drawn as vectors rather than composited into a
+        raster so they stay crisp at print resolution. If the preview cannot be
+        read the sheet degrades to a text-only listing rather than failing the
+        export.
+
+        Requires only `:read` on the asset folder — the people who most need to
+        take feedback out are reviewers who cannot edit the asset.
+      parameters:
+      - name: asset_id
+        in: path
+        description: Asset UUID or id
+        required: true
+        schema:
+          type: string
+      - name: export_format
+        in: query
+        required: false
+        enum:
+        - jsonld
+        - pdf
+        description: "Defaults to jsonld:\n * `jsonld` \n * `pdf` \n "
+        schema:
+          type: string
+      - name: version_id
+        in: query
+        required: false
+        description: Only threads discussed on this version
+        schema:
+          type: string
+      - name: status
+        in: query
+        required: false
+        enum:
+        - open
+        - addressed
+        - verified
+        - resolved
+        schema:
+          type: string
+      - name: unresolved
+        in: query
+        required: false
+        description: Only threads still needing action — the common case for a hand-off
+        schema:
+          type: boolean
+      - name: annotated
+        in: query
+        required: false
+        description: Only threads anchored to a region of the media
+        schema:
+          type: boolean
+      responses:
+        '200':
+          description: annotation page or PDF returned
+          content:
+            application/ld+json:
+              schema:
+                type: object
+                properties:
+                  "@context":
+                    type: array
+                    items: {}
+                    description: anno.jsonld plus the capri extension prefix
+                  id:
+                    type: string
+                  type:
+                    type: string
+                    example: AnnotationPage
+                  label:
+                    type: string
+                  capri:generated:
+                    type: string
+                    format: date-time
+                  capri:asset:
+                    type: object
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          description: Dereferenceable IRI for this annotation
+                        type:
+                          type: string
+                          example: Annotation
+                        motivation:
+                          type: string
+                          example: editing
+                          description: W3C Web Annotation motivation vocabulary (§3.3.5)
+                        created:
+                          type: string
+                          format: date-time
+                        creator:
+                          type: object
+                        body:
+                          type: object
+                          description: TextualBody carrying the comment text
+                        target:
+                          type: object
+                          properties:
+                            source:
+                              type: string
+                              description: IRI of the asset version the note was made
+                                against
+                            type:
+                              type: string
+                              enum:
+                              - Image
+                              - Video
+                              - Text
+                              - Dataset
+                            selector:
+                              type: object
+                              properties:
+                                type:
+                                  type: string
+                                  enum:
+                                  - FragmentSelector
+                                  - SvgSelector
+                                  - TextQuoteSelector
+                                  - TextPositionSelector
+                                conformsTo:
+                                  type: string
+                                  example: http://www.w3.org/TR/media-frags/
+                                value:
+                                  type: string
+                                  example: xywh=percent:10,20,30,40
+                                capri:shape:
+                                  type: string
+                                  enum:
+                                  - pin
+                                  - rect
+                                  - ellipse
+                                  - arrow
+                                  - line
+                                  - freehand
+                                  - text
+                                  - highlight
+                                  - time
+                                capri:style:
+                                  type: object
+                                  description: Stroke colour, width and opacity, lost
+                                    in plain W3C
+                                capri:source:
+                                  type: object
+                                  description: Original media dimensions and rotation
+                        capri:commentId:
+                          type: string
+                          format: uuid
+                        capri:threadId:
+                          type: string
+                          format: uuid
+                        capri:thread:
+                          type: object
+                          description: Thread status and visibility, for a lossless
+                            round trip
+                        capri:versionId:
+                          type: string
+                          format: uuid
+                          nullable: true
+            application/pdf:
+              schema:
+                type: object
+                properties:
+                  "@context":
+                    type: array
+                    items: {}
+                    description: anno.jsonld plus the capri extension prefix
+                  id:
+                    type: string
+                  type:
+                    type: string
+                    example: AnnotationPage
+                  label:
+                    type: string
+                  capri:generated:
+                    type: string
+                    format: date-time
+                  capri:asset:
+                    type: object
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          description: Dereferenceable IRI for this annotation
+                        type:
+                          type: string
+                          example: Annotation
+                        motivation:
+                          type: string
+                          example: editing
+                          description: W3C Web Annotation motivation vocabulary (§3.3.5)
+                        created:
+                          type: string
+                          format: date-time
+                        creator:
+                          type: object
+                        body:
+                          type: object
+                          description: TextualBody carrying the comment text
+                        target:
+                          type: object
+                          properties:
+                            source:
+                              type: string
+                              description: IRI of the asset version the note was made
+                                against
+                            type:
+                              type: string
+                              enum:
+                              - Image
+                              - Video
+                              - Text
+                              - Dataset
+                            selector:
+                              type: object
+                              properties:
+                                type:
+                                  type: string
+                                  enum:
+                                  - FragmentSelector
+                                  - SvgSelector
+                                  - TextQuoteSelector
+                                  - TextPositionSelector
+                                conformsTo:
+                                  type: string
+                                  example: http://www.w3.org/TR/media-frags/
+                                value:
+                                  type: string
+                                  example: xywh=percent:10,20,30,40
+                                capri:shape:
+                                  type: string
+                                  enum:
+                                  - pin
+                                  - rect
+                                  - ellipse
+                                  - arrow
+                                  - line
+                                  - freehand
+                                  - text
+                                  - highlight
+                                  - time
+                                capri:style:
+                                  type: object
+                                  description: Stroke colour, width and opacity, lost
+                                    in plain W3C
+                                capri:source:
+                                  type: object
+                                  description: Original media dimensions and rotation
+                        capri:commentId:
+                          type: string
+                          format: uuid
+                        capri:threadId:
+                          type: string
+                          format: uuid
+                        capri:thread:
+                          type: object
+                          description: Thread status and visibility, for a lossless
+                            round trip
+                        capri:versionId:
+                          type: string
+                          format: uuid
+                          nullable: true
+        '401':
+          description: unauthenticated
+        '403':
+          description: no read access to the asset folder
+        '422':
+          description: unsupported export format
+          content:
+            application/ld+json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+            application/pdf:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+  "/api/v1/assets/{asset_id}/comments/import":
+    post:
+      summary: Import a W3C Web Annotation document onto an asset
+      tags:
+      - Comment Exports
+      security:
+      - Bearer: []
+      description: |
+        Ingests a W3C `AnnotationPage` (or a bare list of `Annotation`s) as
+        Capri threads, comments and annotation targets. Accepts either a
+        `document` parameter or the raw request body with an
+        `application/ld+json` content type, which is how another W3C-speaking
+        system would naturally hand it over. Documents above 8MB are rejected.
+
+        **Attribution is deliberately not honoured.** Trusting the file's
+        `creator` would let anyone forge "the Creative Director approved this"
+        by editing JSON in a text editor, so the importing user is always
+        recorded as the author. The document's claim is preserved as untrusted
+        provenance in `import_source.claimed_creator` alongside the original
+        IRI and source label.
+
+        **Visibility is always forced to `internal`.** Exposing a thread to
+        external guests is a disclosure decision, and an uploaded file must not
+        be able to make it.
+
+        **A claimed `resolved` status is only honoured for a caller holding
+        `:modify`** on the asset folder, because accepting it is equivalent to
+        resolving the thread by hand. Without that permission everything is
+        imported `open`, so an upload can never silently close outstanding
+        feedback.
+
+        The import is **additive and idempotent**: annotations already present
+        are skipped rather than updated, since an import is someone else's copy
+        of the past and must not rewrite the live thread. Re-posting the same
+        document is therefore a no-op. Replies are nested by resolving targets
+        that name another annotation within the same document, and parent
+        lookup is scoped to the target asset so importing onto a second asset
+        cannot graft comments onto the first.
+
+        Importing requires only `:read`, matching the comment endpoints — it is
+        the bulk form of posting a comment.
+      parameters:
+      - name: asset_id
+        in: path
+        description: Asset UUID or id
+        required: true
+        schema:
+          type: string
+      responses:
+        '201':
+          description: document imported
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  asset_id:
+                    type: string
+                    format: uuid
+                  threads_created:
+                    type: integer
+                  comments_created:
+                    type: integer
+                  skipped:
+                    type: integer
+                    description: Annotations already present from a previous import
+                  errors:
+                    type: array
+                    items:
+                      type: string
+        '401':
+          description: unauthenticated
+        '403':
+          description: no read access to the asset folder
+        '413':
+          description: document exceeds the 8MB import limit
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '422':
+          description: malformed JSON, or not an annotation document
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                document:
+                  type: object
+                  description: A W3C AnnotationPage, or an object with an items array
+                  properties:
+                    "@context":
+                      type: string
+                      example: http://www.w3.org/ns/anno.jsonld
+                    type:
+                      type: string
+                      example: AnnotationPage
+                    items:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            description: Dereferenceable IRI for this annotation
+                          type:
+                            type: string
+                            example: Annotation
+                          motivation:
+                            type: string
+                            example: editing
+                            description: W3C Web Annotation motivation vocabulary
+                              (§3.3.5)
+                          created:
+                            type: string
+                            format: date-time
+                          creator:
+                            type: object
+                          body:
+                            type: object
+                            description: TextualBody carrying the comment text
+                          target:
+                            type: object
+                            properties:
+                              source:
+                                type: string
+                                description: IRI of the asset version the note was
+                                  made against
+                              type:
+                                type: string
+                                enum:
+                                - Image
+                                - Video
+                                - Text
+                                - Dataset
+                              selector:
+                                type: object
+                                properties:
+                                  type:
+                                    type: string
+                                    enum:
+                                    - FragmentSelector
+                                    - SvgSelector
+                                    - TextQuoteSelector
+                                    - TextPositionSelector
+                                  conformsTo:
+                                    type: string
+                                    example: http://www.w3.org/TR/media-frags/
+                                  value:
+                                    type: string
+                                    example: xywh=percent:10,20,30,40
+                                  capri:shape:
+                                    type: string
+                                    enum:
+                                    - pin
+                                    - rect
+                                    - ellipse
+                                    - arrow
+                                    - line
+                                    - freehand
+                                    - text
+                                    - highlight
+                                    - time
+                                  capri:style:
+                                    type: object
+                                    description: Stroke colour, width and opacity,
+                                      lost in plain W3C
+                                  capri:source:
+                                    type: object
+                                    description: Original media dimensions and rotation
+                          capri:commentId:
+                            type: string
+                            format: uuid
+                          capri:threadId:
+                            type: string
+                            format: uuid
+                          capri:thread:
+                            type: object
+                            description: Thread status and visibility, for a lossless
+                              round trip
+                          capri:versionId:
+                            type: string
+                            format: uuid
+                            nullable: true
+                source_label:
+                  type: string
+                  example: ziflow
+                  description: Recorded as provenance so imported notes can be traced
+                    to their origin
+          application/ld+json:
+            schema:
+              type: object
+              properties:
+                document:
+                  type: object
+                  description: A W3C AnnotationPage, or an object with an items array
+                  properties:
+                    "@context":
+                      type: string
+                      example: http://www.w3.org/ns/anno.jsonld
+                    type:
+                      type: string
+                      example: AnnotationPage
+                    items:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            description: Dereferenceable IRI for this annotation
+                          type:
+                            type: string
+                            example: Annotation
+                          motivation:
+                            type: string
+                            example: editing
+                            description: W3C Web Annotation motivation vocabulary
+                              (§3.3.5)
+                          created:
+                            type: string
+                            format: date-time
+                          creator:
+                            type: object
+                          body:
+                            type: object
+                            description: TextualBody carrying the comment text
+                          target:
+                            type: object
+                            properties:
+                              source:
+                                type: string
+                                description: IRI of the asset version the note was
+                                  made against
+                              type:
+                                type: string
+                                enum:
+                                - Image
+                                - Video
+                                - Text
+                                - Dataset
+                              selector:
+                                type: object
+                                properties:
+                                  type:
+                                    type: string
+                                    enum:
+                                    - FragmentSelector
+                                    - SvgSelector
+                                    - TextQuoteSelector
+                                    - TextPositionSelector
+                                  conformsTo:
+                                    type: string
+                                    example: http://www.w3.org/TR/media-frags/
+                                  value:
+                                    type: string
+                                    example: xywh=percent:10,20,30,40
+                                  capri:shape:
+                                    type: string
+                                    enum:
+                                    - pin
+                                    - rect
+                                    - ellipse
+                                    - arrow
+                                    - line
+                                    - freehand
+                                    - text
+                                    - highlight
+                                    - time
+                                  capri:style:
+                                    type: object
+                                    description: Stroke colour, width and opacity,
+                                      lost in plain W3C
+                                  capri:source:
+                                    type: object
+                                    description: Original media dimensions and rotation
+                          capri:commentId:
+                            type: string
+                            format: uuid
+                          capri:threadId:
+                            type: string
+                            format: uuid
+                          capri:thread:
+                            type: object
+                            description: Thread status and visibility, for a lossless
+                              round trip
+                          capri:versionId:
+                            type: string
+                            format: uuid
+                            nullable: true
+                source_label:
+                  type: string
+                  example: ziflow
+                  description: Recorded as provenance so imported notes can be traced
+                    to their origin
   "/api/v1/assets/{asset_id}/comments":
     get:
       summary: List review comment threads for an asset
@@ -5651,6 +6726,7 @@ paths:
                         - freehand
                         - text
                         - highlight
+                        - time
                       bbox:
                         type: object
                         properties:
@@ -6127,6 +7203,522 @@ paths:
                     format: date-time
         '403':
           description: not allowed to reopen this thread
+  "/api/v1/comment_webhook_subscriptions":
+    get:
+      summary: List review-activity webhook subscriptions
+      tags:
+      - Comment Webhooks
+      security:
+      - Bearer: []
+      description: |
+        Lists registered outbound webhooks for review activity, along with the
+        set of event names available to subscribe to.
+
+        These are **subscriptions**, as distinct from the workflow engine's
+        per-step webhook action. The workflow webhook models "when this
+        workflow reaches this point"; a subscription models "whenever anyone
+        comments", which is what a proofing vendor or project tracker actually
+        wants and which no workflow should have to be invented for.
+
+        The signing secret is never returned here. It is disclosed exactly once,
+        at creation, so a hijacked administrator session cannot be used to
+        harvest signing keys for endpoints it did not create.
+
+        Administrator only: a subscription sends internal review conversation to
+        an arbitrary external URL, which is a data-egress decision rather than a
+        per-asset permission.
+      responses:
+        '200':
+          description: subscriptions listed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  events:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                      - comment.created
+                      - comment.resolved
+                      - thread.created
+                      - thread.resolved
+                      - thread.reopened
+                  subscriptions:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        name:
+                          type: string
+                          example: Proofing vendor
+                        url:
+                          type: string
+                          example: https://vendor.example/hooks/capri
+                        events:
+                          type: array
+                          items:
+                            type: string
+                            enum:
+                            - comment.created
+                            - comment.resolved
+                            - thread.created
+                            - thread.resolved
+                            - thread.reopened
+                          description: An empty array means every event
+                        active:
+                          type: boolean
+                        asset_id:
+                          type: string
+                          format: uuid
+                          nullable: true
+                        folder_id:
+                          type: string
+                          format: uuid
+                          nullable: true
+                        created_by:
+                          type: object
+                          nullable: true
+                        health:
+                          type: object
+                          properties:
+                            last_delivered_at:
+                              type: string
+                              format: date-time
+                              nullable: true
+                            last_status:
+                              type: integer
+                              nullable: true
+                            last_error:
+                              type: string
+                              nullable: true
+                            consecutive_failures:
+                              type: integer
+                            suspended:
+                              type: boolean
+                              description: True once the failure limit is reached;
+                                the subscription stays "active" but stops being delivered
+                                to
+                        created_at:
+                          type: string
+                          format: date-time
+                        updated_at:
+                          type: string
+                          format: date-time
+        '401':
+          description: unauthenticated
+        '403':
+          description: not an administrator
+    post:
+      summary: Register a review-activity webhook
+      tags:
+      - Comment Webhooks
+      security:
+      - Bearer: []
+      description: |
+        Creates a subscription and returns its signing `secret` **once**. Store
+        it: every delivery carries an `X-Capri-Signature` header of
+        `sha256=<HMAC-SHA256 of the exact request body>`, and the secret cannot
+        be read back afterwards.
+
+        Deliveries also carry `X-Capri-Event` and a unique `X-Capri-Delivery`
+        id. Retries reuse the delivery id, so a receiver that has already
+        processed it can drop the duplicate.
+
+        Scope the subscription with `asset_id` or `folder_id` unless you really
+        want every comment in the estate — an unscoped subscription on a large
+        tenant is a firehose. Leave `events` empty to receive everything.
+
+        A subscription that fails 20
+        times consecutively stops being delivered to, so one dead endpoint
+        cannot consume worker capacity indefinitely. Updating it clears the
+        counter.
+      parameters: []
+      responses:
+        '201':
+          description: subscription created; secret returned once
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  name:
+                    type: string
+                    example: Proofing vendor
+                  url:
+                    type: string
+                    example: https://vendor.example/hooks/capri
+                  events:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                      - comment.created
+                      - comment.resolved
+                      - thread.created
+                      - thread.resolved
+                      - thread.reopened
+                    description: An empty array means every event
+                  active:
+                    type: boolean
+                  asset_id:
+                    type: string
+                    format: uuid
+                    nullable: true
+                  folder_id:
+                    type: string
+                    format: uuid
+                    nullable: true
+                  created_by:
+                    type: object
+                    nullable: true
+                  health:
+                    type: object
+                    properties:
+                      last_delivered_at:
+                        type: string
+                        format: date-time
+                        nullable: true
+                      last_status:
+                        type: integer
+                        nullable: true
+                      last_error:
+                        type: string
+                        nullable: true
+                      consecutive_failures:
+                        type: integer
+                      suspended:
+                        type: boolean
+                        description: True once the failure limit is reached; the subscription
+                          stays "active" but stops being delivered to
+                  created_at:
+                    type: string
+                    format: date-time
+                  updated_at:
+                    type: string
+                    format: date-time
+                  secret:
+                    type: string
+                    description: Shown only on creation
+        '401':
+          description: unauthenticated
+        '403':
+          description: not an administrator
+        '422':
+          description: invalid URL or unknown event name
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - comment_webhook_subscription
+              properties:
+                comment_webhook_subscription:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                      example: Proofing vendor
+                    url:
+                      type: string
+                      example: https://vendor.example/hooks/capri
+                    events:
+                      type: array
+                      items:
+                        type: string
+                        enum:
+                        - comment.created
+                        - comment.resolved
+                        - thread.created
+                        - thread.resolved
+                        - thread.reopened
+                    active:
+                      type: boolean
+                    asset_id:
+                      type: string
+                      format: uuid
+                      nullable: true
+                    folder_id:
+                      type: string
+                      format: uuid
+                      nullable: true
+  "/api/v1/comment_webhook_subscriptions/{id}":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+    get:
+      summary: Fetch one webhook subscription
+      tags:
+      - Comment Webhooks
+      security:
+      - Bearer: []
+      description: Returns the subscription including its delivery health, so an operator
+        can see why an "active" endpoint has gone quiet.
+      responses:
+        '200':
+          description: subscription found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  name:
+                    type: string
+                    example: Proofing vendor
+                  url:
+                    type: string
+                    example: https://vendor.example/hooks/capri
+                  events:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                      - comment.created
+                      - comment.resolved
+                      - thread.created
+                      - thread.resolved
+                      - thread.reopened
+                    description: An empty array means every event
+                  active:
+                    type: boolean
+                  asset_id:
+                    type: string
+                    format: uuid
+                    nullable: true
+                  folder_id:
+                    type: string
+                    format: uuid
+                    nullable: true
+                  created_by:
+                    type: object
+                    nullable: true
+                  health:
+                    type: object
+                    properties:
+                      last_delivered_at:
+                        type: string
+                        format: date-time
+                        nullable: true
+                      last_status:
+                        type: integer
+                        nullable: true
+                      last_error:
+                        type: string
+                        nullable: true
+                      consecutive_failures:
+                        type: integer
+                      suspended:
+                        type: boolean
+                        description: True once the failure limit is reached; the subscription
+                          stays "active" but stops being delivered to
+                  created_at:
+                    type: string
+                    format: date-time
+                  updated_at:
+                    type: string
+                    format: date-time
+        '404':
+          description: subscription not found
+    patch:
+      summary: Update a webhook subscription
+      tags:
+      - Comment Webhooks
+      security:
+      - Bearer: []
+      description: |
+        Updates the endpoint, its event filter or its scope. A successful update
+        also resets `consecutive_failures`, since editing a subscription is the
+        natural moment to give a previously failing endpoint another chance.
+      parameters: []
+      responses:
+        '200':
+          description: subscription updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  name:
+                    type: string
+                    example: Proofing vendor
+                  url:
+                    type: string
+                    example: https://vendor.example/hooks/capri
+                  events:
+                    type: array
+                    items:
+                      type: string
+                      enum:
+                      - comment.created
+                      - comment.resolved
+                      - thread.created
+                      - thread.resolved
+                      - thread.reopened
+                    description: An empty array means every event
+                  active:
+                    type: boolean
+                  asset_id:
+                    type: string
+                    format: uuid
+                    nullable: true
+                  folder_id:
+                    type: string
+                    format: uuid
+                    nullable: true
+                  created_by:
+                    type: object
+                    nullable: true
+                  health:
+                    type: object
+                    properties:
+                      last_delivered_at:
+                        type: string
+                        format: date-time
+                        nullable: true
+                      last_status:
+                        type: integer
+                        nullable: true
+                      last_error:
+                        type: string
+                        nullable: true
+                      consecutive_failures:
+                        type: integer
+                      suspended:
+                        type: boolean
+                        description: True once the failure limit is reached; the subscription
+                          stays "active" but stops being delivered to
+                  created_at:
+                    type: string
+                    format: date-time
+                  updated_at:
+                    type: string
+                    format: date-time
+        '422':
+          description: invalid URL or unknown event name
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - comment_webhook_subscription
+              properties:
+                comment_webhook_subscription:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                      example: Proofing vendor
+                    url:
+                      type: string
+                      example: https://vendor.example/hooks/capri
+                    events:
+                      type: array
+                      items:
+                        type: string
+                        enum:
+                        - comment.created
+                        - comment.resolved
+                        - thread.created
+                        - thread.resolved
+                        - thread.reopened
+                    active:
+                      type: boolean
+                    asset_id:
+                      type: string
+                      format: uuid
+                      nullable: true
+                    folder_id:
+                      type: string
+                      format: uuid
+                      nullable: true
+    delete:
+      summary: Remove a webhook subscription
+      tags:
+      - Comment Webhooks
+      security:
+      - Bearer: []
+      description: Deletes the subscription. In-flight deliveries for it are dropped
+        rather than retried.
+      responses:
+        '204':
+          description: subscription removed
+        '404':
+          description: subscription not found
+  "/api/v1/comment_webhook_subscriptions/{id}/test":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+    post:
+      summary: Send a signed test ping
+      tags:
+      - Comment Webhooks
+      security:
+      - Bearer: []
+      description: |
+        Posts a synthetic `ping` event to the configured URL, signed with the
+        subscription's secret, so an integrator can confirm reachability and
+        verify their signature implementation before real review activity
+        depends on it.
+
+        An unreachable endpoint still returns **200** with `ok: false`: a failed
+        ping is a successful test — it told the integrator what is wrong — and
+        reporting it as a 5xx would wrongly implicate Capri. Test pings do not
+        count towards the failure limit.
+      responses:
+        '200':
+          description: ping attempted; inspect ok/status/error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  status:
+                    type: integer
+                    nullable: true
+                  body:
+                    type: string
+                  error:
+                    type: string
+                    nullable: true
+        '403':
+          description: not an administrator
   "/api/v1/comment_threads/{comment_thread_id}/comments":
     post:
       summary: Reply to or add a follow-up comment in a thread
@@ -9632,6 +11224,587 @@ paths:
               properties:
                 review_notes:
                   type: string
+  "/api/v1/review_links":
+    get:
+      summary: List review links
+      tags:
+      - Review Links
+      security:
+      - Bearer: []
+      description: |
+        Lists external review links, newest first.
+
+        Scoped to links the caller created, unless they are an administrator: a
+        user should not be able to enumerate what their colleagues have shared
+        outside the organisation.
+
+        The token is never present here. Only its SHA-256 digest is stored, and
+        even that is not exposed — so a compromised session cannot be used to
+        harvest working review URLs for links it did not create.
+      parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - active
+          - expired
+          - revoked
+      - name: asset_id
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
+      - name: collection_id
+        in: query
+        required: false
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: review links listed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  review_links:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        name:
+                          type: string
+                          example: Autumn campaign — client review
+                        target_type:
+                          type: string
+                          enum:
+                          - asset
+                          - collection
+                        target_id:
+                          type: string
+                          description: Asset UUID or collection id
+                        target_label:
+                          type: string
+                          example: Hero shot
+                        asset_count:
+                          type: integer
+                          description: Assets currently in scope; follows live collection
+                            membership
+                        expires_at:
+                          type: string
+                          format: date-time
+                        revoked_at:
+                          type: string
+                          format: date-time
+                          nullable: true
+                        status:
+                          type: string
+                          enum:
+                          - active
+                          - expired
+                          - revoked
+                        allow_comments:
+                          type: boolean
+                        allow_downloads:
+                          type: boolean
+                        require_email:
+                          type: boolean
+                        passphrase_protected:
+                          type: boolean
+                        access_count:
+                          type: integer
+                        last_accessed_at:
+                          type: string
+                          format: date-time
+                          nullable: true
+                        guest_count:
+                          type: integer
+                        comment_count:
+                          type: integer
+                        created_by:
+                          type: object
+                          nullable: true
+                        created_at:
+                          type: string
+                          format: date-time
+                  meta:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+        '401':
+          description: unauthenticated
+    post:
+      summary: Mint a review link
+      tags:
+      - Review Links
+      security:
+      - Bearer: []
+      description: |
+        Creates a revocable, time-boxed link that lets someone without a Capri
+        account view and comment on an asset or a collection.
+
+        **The `token` and `url` in this response are the only copies that will
+        ever exist.** Only a digest is stored, so a lost token cannot be
+        recovered — revoke and mint a new one instead. This is deliberate: it
+        means a dump of the database does not hand an attacker a set of live
+        review URLs.
+
+        Supply exactly one of `asset_id` or `collection_id`. A collection link
+        resolves through *live* membership, so removing an asset from the
+        collection withdraws it from every outstanding link at once.
+
+        Requires `:modify` on the target, not the `:read` that ordinary
+        commenting needs — being allowed to discuss an asset internally is not
+        the same as being allowed to send it outside the organisation.
+
+        `expires_at` is always set: it defaults to 30 days and is hard-capped,
+        because an external grant with no end date is a permanent hole in the
+        perimeter that nobody remembers to close.
+      parameters: []
+      responses:
+        '201':
+          description: review link minted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  name:
+                    type: string
+                    example: Autumn campaign — client review
+                  target_type:
+                    type: string
+                    enum:
+                    - asset
+                    - collection
+                  target_id:
+                    type: string
+                    description: Asset UUID or collection id
+                  target_label:
+                    type: string
+                    example: Hero shot
+                  asset_count:
+                    type: integer
+                    description: Assets currently in scope; follows live collection
+                      membership
+                  expires_at:
+                    type: string
+                    format: date-time
+                  revoked_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  status:
+                    type: string
+                    enum:
+                    - active
+                    - expired
+                    - revoked
+                  allow_comments:
+                    type: boolean
+                  allow_downloads:
+                    type: boolean
+                  require_email:
+                    type: boolean
+                  passphrase_protected:
+                    type: boolean
+                  access_count:
+                    type: integer
+                  last_accessed_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  guest_count:
+                    type: integer
+                  comment_count:
+                    type: integer
+                  created_by:
+                    type: object
+                    nullable: true
+                  created_at:
+                    type: string
+                    format: date-time
+                  token:
+                    type: string
+                    description: Shown exactly once. Not recoverable.
+                  url:
+                    type: string
+                    example: https://dam.example.com/s/reviews/<token>
+        '403':
+          description: no modify permission on the target
+        '404':
+          description: target not found
+        '422':
+          description: no target, two targets, or an expiry beyond the cap
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: Autumn campaign — client review
+                asset_id:
+                  type: string
+                  format: uuid
+                  nullable: true
+                collection_id:
+                  type: integer
+                  nullable: true
+                expires_at:
+                  type: string
+                  format: date-time
+                  description: Defaults to 30 days; capped at 180 days
+                allow_comments:
+                  type: boolean
+                  default: true
+                allow_downloads:
+                  type: boolean
+                  default: false
+                require_email:
+                  type: boolean
+                  default: true
+                passphrase:
+                  type: string
+                  nullable: true
+                  description: Optional second factor, shared out of band. Stored
+                    as a bcrypt digest and never returned.
+        required: true
+  "/api/v1/review_links/{id}":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    get:
+      summary: Show a review link and who has used it
+      tags:
+      - Review Links
+      security:
+      - Bearer: []
+      description: |
+        Returns the link plus the guests who have identified themselves through
+        it and how much each has said — the "who did we actually show this to"
+        record that an audit asks for later.
+
+        Returns 404 rather than 403 for another user's link: whether a
+        particular link exists is itself information about what a colleague has
+        shared externally.
+      responses:
+        '200':
+          description: review link found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  name:
+                    type: string
+                    example: Autumn campaign — client review
+                  target_type:
+                    type: string
+                    enum:
+                    - asset
+                    - collection
+                  target_id:
+                    type: string
+                    description: Asset UUID or collection id
+                  target_label:
+                    type: string
+                    example: Hero shot
+                  asset_count:
+                    type: integer
+                    description: Assets currently in scope; follows live collection
+                      membership
+                  expires_at:
+                    type: string
+                    format: date-time
+                  revoked_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  status:
+                    type: string
+                    enum:
+                    - active
+                    - expired
+                    - revoked
+                  allow_comments:
+                    type: boolean
+                  allow_downloads:
+                    type: boolean
+                  require_email:
+                    type: boolean
+                  passphrase_protected:
+                    type: boolean
+                  access_count:
+                    type: integer
+                  last_accessed_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  guest_count:
+                    type: integer
+                  comment_count:
+                    type: integer
+                  created_by:
+                    type: object
+                    nullable: true
+                  created_at:
+                    type: string
+                    format: date-time
+                  guests:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        email:
+                          type: string
+                          nullable: true
+                          description: Null for a reviewer who was never asked to
+                            identify themselves
+                        name:
+                          type: string
+                          nullable: true
+                        display_name:
+                          type: string
+                          example: Priya
+                        anonymous:
+                          type: boolean
+                        last_seen_at:
+                          type: string
+                          format: date-time
+                          nullable: true
+                        comment_count:
+                          type: integer
+        '404':
+          description: not found, or not the caller’s link
+    patch:
+      summary: Update a review link
+      tags:
+      - Review Links
+      security:
+      - Bearer: []
+      description: |
+        Adjusts settings, expiry or passphrase on a live link.
+
+        **The target cannot be changed.** Re-pointing an existing link at a
+        different asset would silently grant an outsider access to material they
+        were never shown, while the URL already sitting in their inbox looks
+        unchanged. Mint a new link instead.
+
+        Send `passphrase: ""` to remove passphrase protection.
+      parameters: []
+      responses:
+        '200':
+          description: review link updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  name:
+                    type: string
+                    example: Autumn campaign — client review
+                  target_type:
+                    type: string
+                    enum:
+                    - asset
+                    - collection
+                  target_id:
+                    type: string
+                    description: Asset UUID or collection id
+                  target_label:
+                    type: string
+                    example: Hero shot
+                  asset_count:
+                    type: integer
+                    description: Assets currently in scope; follows live collection
+                      membership
+                  expires_at:
+                    type: string
+                    format: date-time
+                  revoked_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  status:
+                    type: string
+                    enum:
+                    - active
+                    - expired
+                    - revoked
+                  allow_comments:
+                    type: boolean
+                  allow_downloads:
+                    type: boolean
+                  require_email:
+                    type: boolean
+                  passphrase_protected:
+                    type: boolean
+                  access_count:
+                    type: integer
+                  last_accessed_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  guest_count:
+                    type: integer
+                  comment_count:
+                    type: integer
+                  created_by:
+                    type: object
+                    nullable: true
+                  created_at:
+                    type: string
+                    format: date-time
+        '404':
+          description: not found, or not the caller’s link
+        '422':
+          description: validation failed
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: Autumn campaign — client review
+                asset_id:
+                  type: string
+                  format: uuid
+                  nullable: true
+                collection_id:
+                  type: integer
+                  nullable: true
+                expires_at:
+                  type: string
+                  format: date-time
+                  description: Defaults to 30 days; capped at 180 days
+                allow_comments:
+                  type: boolean
+                  default: true
+                allow_downloads:
+                  type: boolean
+                  default: false
+                require_email:
+                  type: boolean
+                  default: true
+                passphrase:
+                  type: string
+                  nullable: true
+                  description: Optional second factor, shared out of band. Stored
+                    as a bcrypt digest and never returned.
+        required: true
+    delete:
+      summary: Revoke a review link
+      tags:
+      - Review Links
+      security:
+      - Bearer: []
+      description: |
+        Ends the link's usefulness as a credential, immediately and for
+        everyone holding it.
+
+        This **revokes rather than deletes**. Comments already collected through
+        the link point at this record for their provenance, so the row survives
+        and only its ability to admit anyone stops. The response shows the link
+        with `status: "revoked"`.
+
+        Revocation is effective for asset bytes too: guest previews and
+        downloads are proxied through the application rather than handed out as
+        signed storage URLs, precisely so that revoking actually revokes.
+      responses:
+        '200':
+          description: review link revoked
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  name:
+                    type: string
+                    example: Autumn campaign — client review
+                  target_type:
+                    type: string
+                    enum:
+                    - asset
+                    - collection
+                  target_id:
+                    type: string
+                    description: Asset UUID or collection id
+                  target_label:
+                    type: string
+                    example: Hero shot
+                  asset_count:
+                    type: integer
+                    description: Assets currently in scope; follows live collection
+                      membership
+                  expires_at:
+                    type: string
+                    format: date-time
+                  revoked_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  status:
+                    type: string
+                    enum:
+                    - active
+                    - expired
+                    - revoked
+                  allow_comments:
+                    type: boolean
+                  allow_downloads:
+                    type: boolean
+                  require_email:
+                    type: boolean
+                  passphrase_protected:
+                    type: boolean
+                  access_count:
+                    type: integer
+                  last_accessed_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  guest_count:
+                    type: integer
+                  comment_count:
+                    type: integer
+                  created_by:
+                    type: object
+                    nullable: true
+                  created_at:
+                    type: string
+                    format: date-time
+        '404':
+          description: not found, or not the caller’s link
   "/api/v1/style_presets":
     get:
       summary: List style presets

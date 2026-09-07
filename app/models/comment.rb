@@ -30,6 +30,9 @@ class Comment < ApplicationRecord
   belongs_to :asset_version, optional: true
   belongs_to :parent_comment, class_name: "Comment", optional: true
   belongs_to :author, class_name: "User", optional: true
+  # Set instead of +author+ when the comment came in through a {ReviewLink}.
+  # An external reviewer has no account, so there is no User to point at.
+  belongs_to :review_guest, optional: true
 
   has_many :replies,
            -> { order(:created_at) },
@@ -77,7 +80,12 @@ class Comment < ApplicationRecord
   def author_display_name
     return agent_name.presence || "Assistant" if agent_type == "software"
 
-    author&.email.presence || "Unknown"
+    author&.email.presence || review_guest&.display_name || "Unknown"
+  end
+
+  # @return [Boolean] whether an external reviewer wrote this
+  def guest_authored?
+    review_guest_id.present?
   end
 
   # Records an edit, stamping +edited_at+ so the UI can show "(edited)".
@@ -91,10 +99,12 @@ class Comment < ApplicationRecord
   private
 
   # A +person+ comment without an author would be unattributable, which
-  # undermines the audit story. Software agents legitimately have no user.
+  # undermines the audit story. A guest reviewer is a person too — they simply
+  # have a {ReviewGuest} identity instead of a {User} account. Software agents
+  # legitimately have no author at all.
   def human_comments_have_an_author
     return unless agent_type == "person"
-    return if author_id.present?
+    return if author_id.present? || review_guest_id.present?
 
     errors.add(:author, "must be present for a person-authored comment")
   end

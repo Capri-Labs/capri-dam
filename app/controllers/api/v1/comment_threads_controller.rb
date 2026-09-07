@@ -39,8 +39,11 @@ module Api
       #   unresolved  — "true" to return only threads still needing action
       #   annotated   — "true" to return only threads anchored to the media
       def index
-        threads = @asset.comment_threads.active
-                        .includes(:created_by, :resolved_by, :origin_version,
+        # +triaged+ keeps untriaged AI suggestions out of the review. They are
+        # real threads, but until a human accepts one it is machine output, not
+        # feedback — see AiReviewsController#pending for the triage queue.
+        threads = @asset.comment_threads.active.triaged
+                        .includes(:created_by, :resolved_by, :origin_version, :ai_review,
                                   comments: [ :author, :asset_version, :annotation_targets, { replies: :author } ])
 
         threads = threads.for_version(params[:version_id]) if params[:version_id].present?
@@ -54,7 +57,8 @@ module Api
           threads: threads.map { |t| serialize_thread(t) },
           meta: {
             total: threads.size,
-            unresolved: @asset.comment_threads.active.unresolved.count,
+            unresolved: @asset.comment_threads.active.triaged.unresolved.count,
+            pending_suggestions: @asset.comment_threads.active.pending_suggestions.count,
           },
         }
       end
@@ -99,6 +103,11 @@ module Api
         end
 
         CommentNotificationService.new(comment).deliver
+        # Both events fire: an integration watching for new work wants
+        # thread.created, one mirroring the conversation wants comment.created,
+        # and the opening comment is genuinely both.
+        Comments::EventPublisher.thread_created(thread)
+        Comments::EventPublisher.comment_created(comment)
 
         render json: serialize_thread(thread.reload), status: :created
       rescue ActionController::ParameterMissing => e
@@ -152,6 +161,7 @@ module Api
 
         @thread.resolve!(user: current_user, status: status)
         CommentNotificationService.new(@thread.comments.active.chronological.first).deliver_resolution(by: current_user)
+        Comments::EventPublisher.thread_resolved(@thread)
 
         render json: serialize_thread(@thread)
       end
@@ -161,6 +171,7 @@ module Api
         return unless authorize_thread_management!
 
         @thread.reopen!
+        Comments::EventPublisher.thread_reopened(@thread)
         render json: serialize_thread(@thread)
       end
 

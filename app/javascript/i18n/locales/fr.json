@@ -3052,7 +3052,8 @@
       "line": "Ligne",
       "freehand": "Main levée",
       "text": "Texte",
-      "drawHint": "Dessinez sur l'aperçu pour placer votre annotation."
+      "drawHint": "Dessinez sur l'aperçu pour placer votre annotation.",
+      "time": "Code temporel"
     },
     "status": {
       "open": "Ouvert",
@@ -3088,6 +3089,90 @@
       "minutesAgo": "il y a {{count}} min",
       "hoursAgo": "il y a {{count}} h",
       "daysAgo": "il y a {{count}} j"
+    },
+    "video": {
+      "play": "Lecture",
+      "pause": "Pause",
+      "previousFrame": "Image précédente",
+      "nextFrame": "Image suivante",
+      "scrubber": "Position de la vidéo",
+      "mute": "Couper le son",
+      "unmute": "Rétablir le son",
+      "loop": "Lire en boucle la plage sélectionnée",
+      "clearRange": "Effacer la plage",
+      "inShort": "IN",
+      "outShort": "OUT",
+      "setIn": "Définir le point d'entrée",
+      "setOut": "Définir le point de sortie",
+      "setInHint": "Définir le point d'entrée d'un commentaire de plage à l'image actuelle",
+      "setOutHint": "Définir le point de sortie d'un commentaire de plage à l'image actuelle",
+      "jumpToMarker": "Aller à l'annotation",
+      "seekTo": "Aller à {{time}}",
+      "attachTime": "Joindre {{time}}",
+      "attachRange": "Joindre {{from}}–{{to}}",
+      "frameHint": "Les annotations dessinées sont fixées à l'image actuelle. Définissez IN/OUT sur le lecteur pour une plage.",
+      "rangeSelected": "Une plage est sélectionnée — les nouvelles annotations couvrent tout l'intervalle.",
+      "approximateRate": "Aucune fréquence d'images n'a été détectée pour cette vidéo : le défilement image par image est approximatif."
+    },
+    "lineage": {
+      "changed": "Modifié dans v{{to}}",
+      "unchanged": "Inchangé depuis v{{from}}",
+      "unavailable": "Non comparé",
+      "before": "Avant (v{{number}})",
+      "after": "Après (v{{number}})",
+      "changedHint": "Environ {{percent}} % de cette zone diffère de v{{from}}. Comparez l'avant et l'après pour confirmer que la remarque a été traitée.",
+      "unchangedHint": "Cette zone semble identique à v{{from}} : le retour est peut-être toujours en attente.",
+      "unavailableCrossOrigin": "La détection des modifications nécessite un accès aux pixels des aperçus, que ce CDN n'autorise pas.",
+      "unavailableLoad": "Les aperçus de ces versions n'ont pas pu être chargés."
+    }
+  },
+  "guestReview": {
+    "identity": {
+      "title": "Who's reviewing?",
+      "description": "Your name is shown alongside your comments so the team knows whose feedback it is. It isn't used for anything else.",
+      "email": "Email address",
+      "name": "Your name",
+      "skip": "Not now",
+      "continue": "Continue"
+    },
+    "header": {
+      "reviewingAs": "Reviewing as {{name}}",
+      "expires": "Access ends {{date}}"
+    },
+    "panel": {
+      "title": "Review notes",
+      "count": "{{count}} thread",
+      "count_other": "{{count}} threads",
+      "empty": "No notes yet. Draw on the asset or type below to leave the first one.",
+      "placeholder": "Add a note…",
+      "send": "Post note",
+      "readOnly": "This link is view-only.",
+      "identifyPrompt": "Tell us who you are before leaving a note.",
+      "identifyAction": "Add your name",
+      "draftMarks": "{{count}} mark ready",
+      "draftMarks_other": "{{count}} marks ready",
+      "clearMarks": "Clear"
+    },
+    "thread": {
+      "reply": "Reply",
+      "replyPlaceholder": "Write a reply…",
+      "resolved": "Resolved"
+    },
+    "comment": {
+      "team": "Team",
+      "edited": "edited"
+    },
+    "tools": {
+      "select": "Select",
+      "rect": "Rectangle",
+      "ellipse": "Ellipse",
+      "arrow": "Arrow",
+      "freehand": "Freehand",
+      "pin": "Pin"
+    },
+    "viewer": {
+      "noAsset": "Nothing to review here.",
+      "download": "Download"
     }
   }
 }

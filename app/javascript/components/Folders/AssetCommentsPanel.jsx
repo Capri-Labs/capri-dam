@@ -7,10 +7,12 @@ import {
 import {
     CheckCircleOutlined, ChatBubbleOutlined, Close, DeleteOutlined, EditOutlined,
     Gesture, HighlightAltOutlined, NorthEast, PlaceOutlined, RadioButtonUnchecked,
-    Refresh, Remove, ReplayOutlined, Send, TaskAltOutlined,
+    Refresh, Remove, ReplayOutlined, Send, TaskAltOutlined, AccessTime,
+    CompareArrows, HelpOutlined,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
-import { SHAPES, framesToTimecode } from '../../utils/annotationGeometry';
+import { SHAPES, framesToTimecode, framesToClock, frameRateContext } from '../../utils/annotationGeometry';
+import useRegionChangeDetection from './useRegionChangeDetection';
 
 const interpolate = (template, values = {}) => template.replace(/\{\{(\w+)\}\}/g, (_, key) => values[key] ?? '');
 
@@ -30,6 +32,47 @@ const STATUS_COLORS = {
     addressed: 'info',
     verified: 'success',
     resolved: 'success',
+};
+
+// English fallbacks used when a translation key is missing. Without these the
+// raw database enum (`open`, `rect`) would leak into the UI.
+const STATUS_LABELS = {
+    open: 'Open',
+    addressed: 'Addressed',
+    verified: 'Verified',
+    resolved: 'Resolved',
+};
+
+const SHAPE_LABELS = {
+    pin: 'Pin',
+    rect: 'Rectangle',
+    ellipse: 'Ellipse',
+    arrow: 'Arrow',
+    line: 'Line',
+    freehand: 'Freehand',
+    text: 'Text',
+    time: 'Timecode',
+};
+
+const shapeLabel = (translate, shape) => translate(`assetComments.tools.${shape}`, SHAPE_LABELS[shape] || shape);
+
+/**
+ * Label for a pending annotation chip.
+ *
+ * A `time` target has no shape worth naming — showing "Timecode · 0:14" would
+ * be redundant — so it is labelled by its position alone.
+ */
+const draftChipLabel = (translate, annotation, fps) => {
+    const video = annotation.video;
+    const start = video?.start_frame;
+    const rate = video?.fps || fps;
+    if (start == null || !rate) return shapeLabel(translate, annotation.shape);
+
+    const span = video.end_frame != null && video.end_frame > start
+        ? `${framesToClock(start, rate)}–${framesToClock(video.end_frame, rate)}`
+        : framesToClock(start, rate);
+
+    return annotation.shape === 'time' ? span : `${shapeLabel(translate, annotation.shape)} · ${span}`;
 };
 
 const initials = (name = '') => name.trim().split(/\s+/).slice(0, 2).map((p) => p[0]).join('').toUpperCase() || '?';
@@ -73,10 +116,23 @@ export default function AssetCommentsPanel({ comments, asset }) {
         versionFilter, setVersionFilter, unresolvedOnly, setUnresolvedOnly,
         createThread, createReply, updateComment, deleteComment,
         resolveThread, reopenThread, deleteThread,
+        currentFrame, inPoint, outPoint, addTimeDraft, seekToFrame, threadFrame,
     } = comments;
 
     const [body, setBody] = useState('');
     const [versions, setVersions] = useState([]);
+
+    const isVideo = Boolean(asset?.properties?.content_type?.startsWith('video/'));
+    const frameRate = useMemo(() => frameRateContext(asset?.properties), [asset?.properties]);
+
+    // Cross-version lineage: has the region each thread points at actually
+    // changed since the feedback was written? Images only — video markup is
+    // anchored to a frame, so a still comparison would be meaningless.
+    const lineageByThread = useRegionChangeDetection({
+        threads,
+        versions,
+        enabled: !isVideo,
+    });
 
     // Version list is only needed for the "filter by version" control, so it is
     // fetched here rather than threaded down from the viewer — the Versions tab
@@ -129,7 +185,7 @@ export default function AssetCommentsPanel({ comments, asset }) {
                     />
                     <Tooltip title={translate('assetComments.actions.refresh', 'Refresh')}>
                         <span>
-                            <IconButton size="small" onClick={refresh} disabled={loading}>
+                            <IconButton size="small" onClick={refresh} disabled={loading} aria-label={translate('assetComments.actions.refresh', 'Refresh')}>
                                 <Refresh fontSize="small" />
                             </IconButton>
                         </span>
@@ -153,6 +209,12 @@ export default function AssetCommentsPanel({ comments, asset }) {
                 onPost={handlePost}
                 canPost={canPost}
                 saving={saving}
+                isVideo={isVideo}
+                frameRate={frameRate}
+                currentFrame={currentFrame}
+                inPoint={inPoint}
+                outPoint={outPoint}
+                onAttachTime={() => addTimeDraft({ fps: frameRate.fps, dropFrame: frameRate.dropFrame })}
             />
 
             <Divider />
@@ -200,7 +262,18 @@ export default function AssetCommentsPanel({ comments, asset }) {
                             translate={translate}
                             selected={selectedThreadId === thread.id}
                             hovered={hoveredThreadId === thread.id}
-                            onSelect={() => setSelectedThreadId(selectedThreadId === thread.id ? null : thread.id)}
+                            onSelect={() => {
+                                const nowSelected = selectedThreadId !== thread.id;
+                                setSelectedThreadId(nowSelected ? thread.id : null);
+                                // Selecting a video thread scrubs to it, so its
+                                // markup is actually on screen when highlighted
+                                // — otherwise the overlay would hide it as
+                                // belonging to a different part of the timeline.
+                                if (nowSelected && isVideo) {
+                                    const frame = threadFrame?.(thread.id);
+                                    if (frame != null) seekToFrame?.(frame);
+                                }
+                            }}
                             onHover={setHoveredThreadId}
                             saving={saving}
                             onReply={createReply}
@@ -209,6 +282,8 @@ export default function AssetCommentsPanel({ comments, asset }) {
                             onResolve={resolveThread}
                             onReopen={reopenThread}
                             onDeleteThread={deleteThread}
+                            onSeek={isVideo ? seekToFrame : undefined}
+                            lineage={lineageByThread[thread.id]}
                         />
                     ))}
                 </Stack>
@@ -227,7 +302,19 @@ export default function AssetCommentsPanel({ comments, asset }) {
 function Composer({
     translate, body, onBodyChange, tool, onToolChange, draft,
     onRemoveDraft, onClearDraft, onPost, canPost, saving,
+    isVideo = false, frameRate = null, currentFrame = 0,
+    inPoint = null, outPoint = null, onAttachTime,
 }) {
+    const hasRange = inPoint != null && outPoint != null && outPoint > inPoint;
+    const fps = frameRate?.fps;
+    const attachLabel = hasRange
+        ? translate('assetComments.video.attachRange', 'Attach {{from}}–{{to}}', {
+            from: framesToClock(inPoint, fps), to: framesToClock(outPoint, fps),
+        })
+        : translate('assetComments.video.attachTime', 'Attach {{time}}', {
+            time: framesToClock(currentFrame || 0, fps),
+        });
+
     return (
         <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 2 }} data-testid="asset-comments-composer">
             <ToggleButtonGroup
@@ -239,13 +326,40 @@ function Composer({
                 data-testid="annotation-tool-group"
             >
                 {TOOLS.map(({ shape, icon: Icon, key, fallback }) => (
-                    <ToggleButton key={shape} value={shape} sx={{ px: 1 }}>
+                    <ToggleButton
+                        key={shape}
+                        value={shape}
+                        sx={{ px: 1 }}
+                        aria-label={translate(`assetComments.tools.${key}`, fallback)}
+                    >
                         <Tooltip title={translate(`assetComments.tools.${key}`, fallback)}>
                             <Icon fontSize="small" />
                         </Tooltip>
                     </ToggleButton>
                 ))}
             </ToggleButtonGroup>
+
+            {isVideo && (
+                <Stack direction="row" spacing={1} sx={{ mb: 1, alignItems: 'center', flexWrap: 'wrap', gap: 0.5 }}>
+                    {/* Lets a reviewer comment on a *moment* without drawing —
+                        "the music is too loud here" is about the timeline, not
+                        about a region of the frame. */}
+                    <Chip
+                        size="small"
+                        icon={<AccessTime fontSize="small" />}
+                        variant="outlined"
+                        color="primary"
+                        label={attachLabel}
+                        onClick={onAttachTime}
+                        data-testid="asset-comments-attach-time"
+                    />
+                    <Typography variant="caption" color="text.secondary">
+                        {hasRange
+                            ? translate('assetComments.video.rangeSelected', 'A range is selected — new markup covers the whole span.')
+                            : translate('assetComments.video.frameHint', 'Markup you draw is pinned to the current frame. Set IN/OUT on the player for a range.')}
+                    </Typography>
+                </Stack>
+            )}
 
             {tool && (
                 <Typography variant="caption" color="primary" sx={{ display: 'block', mb: 1 }}>
@@ -261,7 +375,7 @@ function Composer({
                             size="small"
                             color="primary"
                             variant="outlined"
-                            label={translate(`assetComments.tools.${annotation.shape}`, annotation.shape)}
+                            label={draftChipLabel(translate, annotation, fps)}
                             onDelete={() => onRemoveDraft(index)}
                             deleteIcon={<Close fontSize="small" />}
                         />
@@ -376,7 +490,7 @@ function MentionTextField({ value, onChange, placeholder, translate, testId, aut
 function ThreadCard({
     thread, markerLabel, translate, selected, hovered, onSelect, onHover,
     saving, onReply, onUpdateComment, onDeleteComment,
-    onResolve, onReopen, onDeleteThread,
+    onResolve, onReopen, onDeleteThread, onSeek, lineage = null,
 }) {
     const [replyBody, setReplyBody] = useState('');
     const [replying, setReplying] = useState(false);
@@ -425,7 +539,7 @@ function ThreadCard({
                     size="small"
                     variant="outlined"
                     color={STATUS_COLORS[thread.status] || 'default'}
-                    label={translate(`assetComments.status.${thread.status}`, thread.status)}
+                    label={translate(`assetComments.status.${thread.status}`, STATUS_LABELS[thread.status] || thread.status)}
                 />
                 {thread.origin_version?.version_number != null && (
                     <Chip
@@ -434,11 +548,12 @@ function ThreadCard({
                         label={translate('assetComments.thread.openedOnVersion', 'v{{number}}', { number: thread.origin_version.version_number })}
                     />
                 )}
+                <LineageBadge lineage={lineage} translate={translate} />
                 <Box sx={{ flexGrow: 1 }} />
                 {thread.closed ? (
                     <Tooltip title={translate('assetComments.actions.reopen', 'Reopen')}>
                         <span>
-                            <IconButton size="small" disabled={saving} onClick={() => onReopen(thread.id)}>
+                            <IconButton size="small" disabled={saving} onClick={() => onReopen(thread.id)} aria-label={translate('assetComments.actions.reopen', 'Reopen')}>
                                 <ReplayOutlined fontSize="small" />
                             </IconButton>
                         </span>
@@ -447,14 +562,14 @@ function ThreadCard({
                     <>
                         <Tooltip title={translate('assetComments.actions.verify', 'Mark verified — the fix is confirmed')}>
                             <span>
-                                <IconButton size="small" disabled={saving} onClick={() => onResolve(thread.id, 'verified')}>
+                                <IconButton size="small" disabled={saving} onClick={() => onResolve(thread.id, 'verified')} aria-label={translate('assetComments.actions.verify', 'Mark verified — the fix is confirmed')}>
                                     <TaskAltOutlined fontSize="small" />
                                 </IconButton>
                             </span>
                         </Tooltip>
                         <Tooltip title={translate('assetComments.actions.resolve', 'Resolve')}>
                             <span>
-                                <IconButton size="small" disabled={saving} onClick={() => onResolve(thread.id, 'resolved')}>
+                                <IconButton size="small" disabled={saving} onClick={() => onResolve(thread.id, 'resolved')} aria-label={translate('assetComments.actions.resolve', 'Resolve')}>
                                     <CheckCircleOutlined fontSize="small" />
                                 </IconButton>
                             </span>
@@ -463,7 +578,7 @@ function ThreadCard({
                 )}
                 <Tooltip title={translate('assetComments.actions.deleteThread', 'Delete thread')}>
                     <span>
-                        <IconButton size="small" disabled={saving} onClick={() => onDeleteThread(thread.id)}>
+                        <IconButton size="small" disabled={saving} onClick={() => onDeleteThread(thread.id)} aria-label={translate('assetComments.actions.deleteThread', 'Delete thread')}>
                             <DeleteOutlined fontSize="small" />
                         </IconButton>
                     </span>
@@ -479,6 +594,7 @@ function ThreadCard({
                         saving={saving}
                         onUpdate={onUpdateComment}
                         onDelete={onDeleteComment}
+                        onSeek={onSeek}
                     />
                 ))}
             </Stack>
@@ -517,7 +633,7 @@ function ThreadCard({
 }
 
 /** A single comment plus its (single level of) replies. */
-function CommentRow({ comment, translate, saving, onUpdate, onDelete, nested = false }) {
+function CommentRow({ comment, translate, saving, onUpdate, onDelete, onSeek, nested = false }) {
     const [editing, setEditing] = useState(false);
     const [editBody, setEditBody] = useState(comment.body);
 
@@ -588,21 +704,21 @@ function CommentRow({ comment, translate, saving, onUpdate, onDelete, nested = f
                         </Typography>
                     )}
 
-                    <AnnotationSummary annotations={comment.annotations} translate={translate} />
+                    <AnnotationSummary annotations={comment.annotations} translate={translate} onSeek={onSeek} />
                 </Box>
 
                 {!editing && (
                     <Stack direction="row">
                         <Tooltip title={translate('assetComments.actions.edit', 'Edit')}>
                             <span>
-                                <IconButton size="small" disabled={saving} onClick={() => setEditing(true)}>
+                                <IconButton size="small" disabled={saving} onClick={() => setEditing(true)} aria-label={translate('assetComments.actions.edit', 'Edit')}>
                                     <EditOutlined sx={{ fontSize: 15 }} />
                                 </IconButton>
                             </span>
                         </Tooltip>
                         <Tooltip title={translate('assetComments.actions.delete', 'Delete')}>
                             <span>
-                                <IconButton size="small" disabled={saving} onClick={() => onDelete(comment.id)}>
+                                <IconButton size="small" disabled={saving} onClick={() => onDelete(comment.id)} aria-label={translate('assetComments.actions.delete', 'Delete')}>
                                     <DeleteOutlined sx={{ fontSize: 15 }} />
                                 </IconButton>
                             </span>
@@ -621,6 +737,7 @@ function CommentRow({ comment, translate, saving, onUpdate, onDelete, nested = f
                             saving={saving}
                             onUpdate={onUpdate}
                             onDelete={onDelete}
+                            onSeek={onSeek}
                             nested
                         />
                     ))}
@@ -631,25 +748,49 @@ function CommentRow({ comment, translate, saving, onUpdate, onDelete, nested = f
 }
 
 /** Compact description of what a comment is anchored to. */
-function AnnotationSummary({ annotations = [], translate }) {
+function AnnotationSummary({ annotations = [], translate, onSeek }) {
     if (annotations.length === 0) return null;
 
     return (
         <Stack direction="row" spacing={0.5} sx={{ mt: 0.5, flexWrap: 'wrap', gap: 0.5 }}>
             {annotations.map((annotation) => {
                 const video = annotation.video;
+                // Prefer the server's timecode: it is the authority on
+                // drop-frame handling. The client-side conversion is only a
+                // fallback for drafts that have not round-tripped yet.
                 const timecode = video?.start_timecode
                     || framesToTimecode(video?.start_frame, video?.fps, video?.drop_frame);
+                const endTimecode = video?.end_timecode
+                    || framesToTimecode(video?.end_frame, video?.fps, video?.drop_frame);
+
+                const position = timecode
+                    ? (endTimecode ? `${timecode}–${endTimecode}` : timecode)
+                    : null;
+                const label = position
+                    ? (annotation.shape === 'time' ? position : `${shapeLabel(translate, annotation.shape)} · ${position}`)
+                    : shapeLabel(translate, annotation.shape);
+
+                const seekable = onSeek && video?.start_frame != null;
 
                 return (
                     <Chip
                         key={annotation.id}
                         size="small"
                         variant="outlined"
-                        sx={{ height: 20, fontSize: 10 }}
-                        label={timecode
-                            ? `${translate(`assetComments.tools.${annotation.shape}`, annotation.shape)} · ${timecode}`
-                            : translate(`assetComments.tools.${annotation.shape}`, annotation.shape)}
+                        icon={position ? <AccessTime sx={{ fontSize: 12 }} /> : undefined}
+                        sx={{ height: 20, fontSize: 10, cursor: seekable ? 'pointer' : 'default' }}
+                        clickable={Boolean(seekable)}
+                        onClick={seekable ? (event) => {
+                            // The chip lives inside the thread card's own click
+                            // target; without this, seeking would also toggle
+                            // the thread's selection shut.
+                            event.stopPropagation();
+                            onSeek(video.start_frame);
+                        } : undefined}
+                        aria-label={seekable
+                            ? translate('assetComments.video.seekTo', 'Jump to {{time}}', { time: position })
+                            : undefined}
+                        label={label}
                     />
                 );
             })}
@@ -657,4 +798,96 @@ function AnnotationSummary({ annotations = [], translate }) {
     );
 }
 
-export { MentionTextField };
+/**
+ * Tells the reviewer whether the region this thread points at actually changed
+ * since the feedback was written, with an optional before/after crop.
+ *
+ * The wording is deliberately evidential ("changed in v3") rather than
+ * conclusive ("fixed"): pixels moving inside the box proves someone worked
+ * there, not that the note was satisfied. The human `verified` status remains
+ * the authority — this only saves the trip to a compare view.
+ */
+function LineageBadge({ lineage, translate }) {
+    const [expanded, setExpanded] = useState(false);
+
+    if (!lineage) return null;
+
+    if (lineage.status === 'unavailable') {
+        return (
+            <Tooltip title={lineage.reason === 'cross-origin'
+                ? translate('assetComments.lineage.unavailableCrossOrigin', 'Change detection needs pixel access to the previews, which this CDN does not allow.')
+                : translate('assetComments.lineage.unavailableLoad', 'The previews for these versions could not be loaded.')}>
+                <Chip
+                    size="small"
+                    variant="outlined"
+                    icon={<HelpOutlined sx={{ fontSize: 13 }} />}
+                    label={translate('assetComments.lineage.unavailable', 'Not compared')}
+                    data-testid="thread-lineage-badge"
+                    sx={{ height: 20, fontSize: 10 }}
+                />
+            </Tooltip>
+        );
+    }
+
+    const changed = lineage.status === 'changed';
+    const hasCrops = Boolean(lineage.beforeCrop && lineage.afterCrop);
+
+    return (
+        <>
+            <Tooltip title={changed
+                ? translate('assetComments.lineage.changedHint', 'Roughly {{percent}}% of this region differs from v{{from}}. Compare before and after to confirm the note was addressed.', {
+                    percent: Math.round((lineage.ratio || 0) * 100), from: lineage.fromVersion,
+                })
+                : translate('assetComments.lineage.unchangedHint', 'This region looks identical to v{{from}}, so the feedback may still be outstanding.', { from: lineage.fromVersion })}>
+                <Chip
+                    size="small"
+                    variant="outlined"
+                    color={changed ? 'info' : 'warning'}
+                    icon={changed ? <CompareArrows sx={{ fontSize: 13 }} /> : <HelpOutlined sx={{ fontSize: 13 }} />}
+                    label={changed
+                        ? translate('assetComments.lineage.changed', 'Changed in v{{to}}', { to: lineage.toVersion })
+                        : translate('assetComments.lineage.unchanged', 'Unchanged since v{{from}}', { from: lineage.fromVersion })}
+                    onClick={hasCrops ? (event) => {
+                        // The chip sits inside the card's own click target, so
+                        // without this, opening the crops would also toggle the
+                        // thread's selection.
+                        event.stopPropagation();
+                        setExpanded((current) => !current);
+                    } : undefined}
+                    clickable={hasCrops}
+                    data-testid="thread-lineage-badge"
+                    sx={{ height: 20, fontSize: 10 }}
+                />
+            </Tooltip>
+
+            {expanded && hasCrops && (
+                <Stack
+                    direction="row"
+                    spacing={1}
+                    onClick={(event) => event.stopPropagation()}
+                    sx={{ mt: 1, width: '100%' }}
+                    data-testid="thread-lineage-crops"
+                >
+                    {[
+                        { src: lineage.beforeCrop, key: 'before', version: lineage.fromVersion },
+                        { src: lineage.afterCrop, key: 'after', version: lineage.toVersion },
+                    ].map(({ src, key, version }) => (
+                        <Box key={key} sx={{ flex: 1, minWidth: 0 }}>
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                                {translate(`assetComments.lineage.${key}`, key === 'before' ? 'Before (v{{number}})' : 'After (v{{number}})', { number: version })}
+                            </Typography>
+                            <Box
+                                component="img"
+                                src={src}
+                                alt={translate(`assetComments.lineage.${key}`, key === 'before' ? 'Before (v{{number}})' : 'After (v{{number}})', { number: version })}
+                                sx={{ width: '100%', border: '1px solid #e2e8f0', borderRadius: 1, display: 'block' }}
+                            />
+                        </Box>
+                    ))}
+                </Stack>
+            )}
+        </>
+    );
+}
+
+export { MentionTextField, LineageBadge };

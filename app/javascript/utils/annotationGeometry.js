@@ -125,9 +125,12 @@ export function toPixels(bbox, width, height) {
  * @param {Array<{x:number,y:number}>} points the drawn points, normalised
  * @param {{width:number, height:number}} sourceSize natural media dimensions
  * @param {string} strokeColor
+ * @param {object} [options]
+ * @param {string} [options.mediaType='image'] `image`, `video` or `document`
+ * @param {object} [options.video] temporal position, see {@link buildTemporal}
  * @returns {object|null} null when the gesture was too small to be intentional
  */
-export function buildAnnotation(shape, points, sourceSize = {}, strokeColor = DEFAULT_STROKE_COLOR) {
+export function buildAnnotation(shape, points, sourceSize = {}, strokeColor = DEFAULT_STROKE_COLOR, options = {}) {
     if (!points || points.length === 0) return null;
 
     const first = points[0];
@@ -155,10 +158,13 @@ export function buildAnnotation(shape, points, sourceSize = {}, strokeColor = DE
     }
 
     return {
-        media_type: 'image',
+        media_type: options.mediaType || 'image',
         shape,
         bbox,
         svg_path: svgPath,
+        // Omitted entirely for stills: the API treats a null `video` as "not
+        // time-based", and AnnotationTarget rejects a frame without an fps.
+        video: buildTemporal(options.video) || undefined,
         source: {
             width: sourceSize.width || null,
             height: sourceSize.height || null,
@@ -172,6 +178,34 @@ export function buildAnnotation(shape, points, sourceSize = {}, strokeColor = DE
             fill: 'none',
             opacity: 1,
         },
+    };
+}
+
+/**
+ * Normalises a temporal position into the `video` block the API accepts.
+ *
+ * Returns null unless both a frame and a frame rate are present, because the
+ * server rejects a frame number it cannot interpret (see
+ * AnnotationTarget#video_targets_declare_a_frame_rate). An `end_frame` equal to
+ * the start is dropped so a zero-length "range" is stored as an instant.
+ *
+ * @param {{startFrame:number, endFrame:number|null, fps:number, dropFrame:boolean}} [position]
+ * @returns {object|null}
+ */
+export function buildTemporal(position) {
+    if (!position) return null;
+
+    const { startFrame, endFrame, fps, dropFrame } = position;
+    if (startFrame == null || !fps) return null;
+
+    const start = Math.max(0, Math.trunc(startFrame));
+    const end = endFrame == null ? null : Math.max(0, Math.trunc(endFrame));
+
+    return {
+        start_frame: start,
+        end_frame: end != null && end > start ? end : null,
+        fps,
+        drop_frame: Boolean(dropFrame),
     };
 }
 
@@ -232,4 +266,152 @@ export function framesToTimecode(frame, fps, dropFrame = false) {
         pad(Math.trunc(totalSeconds / 60) % 60),
         pad(totalSeconds % 60),
     ].join(':') + (dropFrame ? ';' : ':') + pad(frames);
+}
+
+// ---------------------------------------------------------------------------
+// Time <-> frame conversion
+//
+// The <video> element only ever reports `currentTime` in floating-point
+// seconds, but annotations are stored as frame integers (see AnnotationTarget).
+// Everything below is the bridge between those two worlds, and it is
+// deliberately asymmetric: seconds -> frames floors (the frame *being
+// displayed* at time t), while frames -> seconds returns the frame's start
+// time. Round-tripping therefore lands back on the same frame instead of
+// drifting a frame earlier each time.
+// ---------------------------------------------------------------------------
+
+/** NTSC rationals that use SMPTE drop-frame timecode. Mirrors the worker. */
+export const NTSC_DROP_FRAME_RATIOS = ['30000/1001', '60000/1001'];
+
+/**
+ * Parses an ffprobe frame-rate rational ("30000/1001", "25/1", "24") into a
+ * float. Returns null for the `0/0` placeholder ffprobe emits for streams with
+ * no meaningful rate.
+ *
+ * @param {string|number|null} ratio
+ * @returns {number|null}
+ */
+export function frameRateFromRatio(ratio) {
+    if (ratio == null || ratio === '') return null;
+    if (typeof ratio === 'number') return ratio > 0 ? ratio : null;
+
+    const [numerator, denominator = '1'] = String(ratio).split('/');
+    const n = parseFloat(numerator);
+    const d = parseFloat(denominator);
+    if (!Number.isFinite(n) || !Number.isFinite(d) || d === 0 || n <= 0) return null;
+
+    return n / d;
+}
+
+/**
+ * The frame displayed at a given playback time.
+ *
+ * Floors rather than rounds: at t = 1.999s in a 30fps clip the viewer is
+ * looking at frame 59, not frame 60, and an annotation must attach to the
+ * frame they can actually see.
+ *
+ * @param {number} seconds
+ * @param {number} fps
+ * @returns {number|null}
+ */
+export function secondsToFrames(seconds, fps) {
+    if (seconds == null || !fps || !Number.isFinite(seconds)) return null;
+    return Math.max(0, Math.floor(seconds * fps));
+}
+
+/**
+ * The playback time at which a frame begins.
+ *
+ * Half a frame is added so that seeking lands *inside* the target frame rather
+ * than exactly on its boundary, where floating-point error in the browser's
+ * seek implementation can leave the previous frame on screen.
+ *
+ * @param {number} frame
+ * @param {number} fps
+ * @returns {number|null}
+ */
+export function framesToSeconds(frame, fps) {
+    if (frame == null || !fps) return null;
+    return (Math.max(0, Math.trunc(frame)) + 0.5) / fps;
+}
+
+/**
+ * True when this annotation carries a video position rather than being a
+ * still-image markup.
+ */
+export function isTemporal(annotation) {
+    return annotation?.video?.start_frame != null;
+}
+
+/**
+ * Whether a temporal annotation should be visible at the given frame.
+ *
+ * A range annotation is shown for its whole span; an instant annotation is
+ * shown for a short window around its frame, because a single frame at 30fps
+ * is on screen for 33ms and a marker that flickers past is useless. Non-video
+ * annotations are always visible.
+ *
+ * @param {object} annotation
+ * @param {number|null} frame current playhead frame
+ * @param {number} [tolerance] half-window in frames for instant annotations
+ * @returns {boolean}
+ */
+export function isVisibleAtFrame(annotation, frame, tolerance = 15) {
+    if (!isTemporal(annotation)) return true;
+    if (frame == null) return true;
+
+    const { start_frame: start, end_frame: end } = annotation.video;
+    if (end != null && end > start) return frame >= start && frame <= end;
+
+    return Math.abs(frame - start) <= tolerance;
+}
+
+/**
+ * Formats a frame position as a compact `m:ss` label for dense UI (chips,
+ * marker tooltips) where a full SMPTE timecode is too wide.
+ *
+ * @param {number} frame
+ * @param {number} fps
+ * @returns {string|null}
+ */
+export function framesToClock(frame, fps) {
+    if (frame == null || !fps) return null;
+
+    const total = Math.max(0, Math.trunc(frame)) / fps;
+    const minutes = Math.floor(total / 60);
+    const seconds = Math.floor(total % 60);
+    const hours = Math.floor(minutes / 60);
+
+    const body = `${hours > 0 ? minutes % 60 : minutes}:${String(seconds).padStart(2, '0')}`;
+    return hours > 0 ? `${hours}:${String(minutes % 60).padStart(2, '0')}:${String(seconds).padStart(2, '0')}` : body;
+}
+
+/**
+ * Reads the frame-rate context off an asset's `properties`, falling back to a
+ * sane default so the annotation tools still work on a video that predates
+ * frame-rate extraction (or was ingested without FFmpeg installed).
+ *
+ * @param {object} properties asset.properties
+ * @returns {{fps: number, dropFrame: boolean, exact: boolean}}
+ */
+export function frameRateContext(properties = {}) {
+    const ratio = properties?.video_frame_rate_ratio;
+    const fromRatio = frameRateFromRatio(ratio);
+    const fromFloat = frameRateFromRatio(properties?.video_frame_rate);
+    const fps = fromRatio || fromFloat;
+
+    if (!fps) {
+        // 25fps is a deliberate, documented guess rather than a silent 0: it
+        // keeps the frame arithmetic self-consistent, and `exact: false` lets
+        // the UI warn that stepping is approximate.
+        return { fps: 25, dropFrame: false, exact: false };
+    }
+
+    return {
+        fps,
+        dropFrame: ratio
+            ? NTSC_DROP_FRAME_RATIOS.includes(String(ratio))
+            : Boolean(properties?.video_drop_frame),
+        exact: true,
+    };
 }

@@ -75,6 +75,48 @@ if (!global.fetch) {
   global.fetch = () => Promise.resolve({ ok: true, json: () => Promise.resolve([]) });
 }
 
+// jsdom does not implement ResizeObserver, but components that project
+// normalised coordinates onto a rendered element (e.g. AnnotationOverlay) need
+// a live size measurement. Deliver observations from `contentRect` so tests can
+// control the reported size by stubbing getBoundingClientRect.
+if (!global.ResizeObserver) {
+  global.ResizeObserver = class ResizeObserver {
+    constructor(callback) {
+      this.callback = callback;
+    }
+
+    observe(target) {
+      this.callback([{ target, contentRect: target.getBoundingClientRect() }], this);
+    }
+
+    unobserve() {}
+
+    disconnect() {}
+  };
+}
+
+// jsdom does not implement PointerEvent, so @testing-library falls back to a
+// plain Event and silently drops clientX/clientY — which breaks any component
+// that derives coordinates from a pointer gesture (e.g. AnnotationOverlay).
+if (typeof window.PointerEvent === 'undefined') {
+  window.PointerEvent = class PointerEvent extends window.MouseEvent {
+    constructor(type, props = {}) {
+      super(type, props);
+      this.pointerId = props.pointerId ?? 1;
+      this.pointerType = props.pointerType ?? 'mouse';
+      this.isPrimary = props.isPrimary ?? true;
+    }
+  };
+}
+
+// jsdom does not implement pointer capture, which drag-to-draw interactions use
+// to keep receiving events when the pointer leaves the element.
+if (!window.HTMLElement.prototype.setPointerCapture) {
+  window.HTMLElement.prototype.setPointerCapture = () => {};
+  window.HTMLElement.prototype.releasePointerCapture = () => {};
+  window.HTMLElement.prototype.hasPointerCapture = () => false;
+}
+
 // jsdom does not implement scrollIntoView, but chat-style components call it on
 // a ref after each render. Provide a no-op so those effects don't throw.
 if (!window.HTMLElement.prototype.scrollIntoView) {

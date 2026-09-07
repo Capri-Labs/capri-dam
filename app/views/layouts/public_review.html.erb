@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<%# Layout for the unauthenticated guest review surface.
+
+    Unlike `public_share` (read-only, no JS) this one *does* load the bundle,
+    because reviewing means drawing annotations on an image. It still omits the
+    app header, sidebar and navigation: a guest is here for one asset set and
+    must not be shown a way into the authenticated application.
+
+    csrf_meta_tags is present because, unlike a share page, this surface
+    accepts writes. %>
+<html lang="<%= I18n.locale.to_s %>">
+<head>
+  <title><%= content_for(:title) || "Review — Capri DAM" %></title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <%# A review link is a credential in a URL; it must never reach an index. %>
+  <meta name="robots" content="noindex, nofollow">
+  <%= csrf_meta_tags %>
+  <%= csp_meta_tag %>
+  <link rel="icon" href="/icon.png" type="image/png">
+  <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
+  <%# The guest bundle only, never "application": that one ships the whole
+      internal UI and would boot navigation a guest cannot follow. %>
+  <%= javascript_include_tag "guest_review", "data-turbo-track": "reload", defer: true %>
+</head>
+<body style="margin:0; padding:0; background:#f4f7fb; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+  <header style="background:#fff; border-bottom:1px solid #e2e8f0; padding:14px 24px; display:flex; align-items:center; justify-content:space-between;">
+    <strong style="font-size:1.05rem; color:#121926;">Capri DAM</strong>
+    <span style="font-size:0.75rem; color:#94a3b8; text-transform:uppercase; letter-spacing:0.05em;">Guest review</span>
+  </header>
+  <%= yield %>
+</body>
+</html>

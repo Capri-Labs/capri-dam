@@ -56,7 +56,7 @@ RSpec.describe 'Api::V1::CommentThreads coverage', type: :request do
         .and change(AnnotationTarget, :count).by(1)
 
       expect(response).to have_http_status(:created)
-      comment = Comment.last
+      comment = Comment.find(parsed_body.dig('comments', 0, 'id'))
       annotation = comment.annotation_targets.last
       expect(comment.asset_version).to eq(version_one)
       expect(annotation).to have_attributes(
@@ -77,7 +77,7 @@ RSpec.describe 'Api::V1::CommentThreads coverage', type: :request do
       post "/api/v1/assets/#{asset.id}/comments", params: { body: 'Discuss current file' }, as: :json
 
       expect(response).to have_http_status(:created)
-      expect(Comment.last.asset_version).to eq(version_two)
+      expect(Comment.find(parsed_body.dig('comments', 0, 'id')).asset_version).to eq(version_two)
       expect(parsed_body.dig('origin_version', 'id')).to eq(version_two.id)
     end
 
@@ -89,7 +89,7 @@ RSpec.describe 'Api::V1::CommentThreads coverage', type: :request do
       post "/api/v1/assets/#{asset.id}/comments", params: { body: 'Reviewer-only feedback' }, as: :json
 
       expect(response).to have_http_status(:created)
-      expect(Comment.last.author).to eq(reviewer)
+      expect(Comment.find(parsed_body.dig('comments', 0, 'id')).author).to eq(reviewer)
     end
 
     it 'returns 422 when body is missing' do
