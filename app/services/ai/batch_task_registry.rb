@@ -135,6 +135,14 @@ module Ai
         default_tools:      %w[StyleAnalyser MetadataTagger],
         gateway_capability: "style.tag",
       ),
+      Task.new(
+        key:                "auto_tag",
+        label:              "Subject Auto-Tag",
+        description:        "Propose subject tags from a vision model. Suggestions are queued for human triage, never applied automatically.",
+        cost_tier:          "medium",
+        default_tools:      %w[VisionTagger MetadataTagger],
+        gateway_capability: "vision.tag",
+      ),
     ].freeze
 
     # -- Target datasets --------------------------------------------------------

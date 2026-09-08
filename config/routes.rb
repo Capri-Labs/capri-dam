@@ -95,6 +95,10 @@ Rails.application.routes.draw do
   # React Router (BrowserRouter basename="/collections") handles client-side routing.
   get "/collections/*path", to: "collections#index", as: :collection_workspace
 
+  # Internal management screen for distribution portals. The guest-facing
+  # surface is /s/portal/:token and is defined separately below.
+  resources :portals, only: [ :index ]
+
   # Public, unauthenticated collection share links (signed_id-based, no DB
   # column). No login required — the token itself *is* the credential.
   get "/s/collections/:token", to: "public/collection_shares#show", as: :public_collection_share, format: false
@@ -334,6 +338,10 @@ Rails.application.routes.draw do
         # AI Embedding specific to this asset
         resource :embedding, only: [ :update ], controller: "asset_embeddings"
 
+        # Alternative stored forms of this same work — print, social, proxy.
+        # Unlike versions these are all current at once; see Rendition.
+        resources :renditions, only: %i[index create destroy]
+
         # Review conversations about this asset. Threads hang off the asset
         # (not off a version) so feedback survives a re-upload; each comment
         # inside records the version it was written against.
@@ -353,6 +361,12 @@ Rails.application.routes.draw do
             get :pending
           end
         end
+
+        # Automatic tag suggestions from a vision model. `ai_tag_suggestions`
+        # is the triage queue: what the machine proposes for this asset that
+        # nobody has ruled on yet. See Api::V1::AiTaggingRunsController.
+        resources :ai_tagging_runs, only: %i[index create]
+        get :ai_tag_suggestions, to: "ai_tagging_runs#pending"
       end
 
       # Thread-level and comment-level operations. Kept off the /assets path
@@ -382,6 +396,26 @@ Rails.application.routes.draw do
       resources :ai_reviews, only: %i[show] do
         member do
           post :findings
+        end
+      end
+
+      # A tagging run is addressable in its own right so the UI can poll it.
+      # +suggestions+ is the AI gateway's callback, authenticated with the
+      # shared gateway secret rather than a user session — and able to create
+      # only *pending* rows, never real tags.
+      resources :ai_tagging_runs, only: %i[show] do
+        member do
+          post :suggestions
+        end
+      end
+
+      # Triage of one proposed label. Accepting is the only path that writes a
+      # machine-derived tag onto an asset; dismissing keeps the row so the same
+      # label is not proposed and rejected forever.
+      resources :ai_tag_suggestions, only: [] do
+        member do
+          post :accept,  to: "ai_tagging_runs#accept"
+          post :dismiss, to: "ai_tagging_runs#dismiss"
         end
       end
 

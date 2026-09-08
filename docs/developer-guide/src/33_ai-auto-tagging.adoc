@@ -1,0 +1,130 @@
+[[section-ai-auto-tagging]]
+= AI Auto-Tagging
+
+A vision model can look at an image and produce a list of words. Turning those
+words into tags on the asset is a separate decision, and this feature keeps the
+two apart.
+
+Tags in Capri DAM are load-bearing. They drive search, collection filters and
+rights rules. A vocabulary that silently blends curated terms with speculative
+ones cannot be separated again cheaply — once "vintage" is on four thousand
+assets, nobody can tell which of them a person meant it for. So the model gets
+to *propose*, and only a person gets to *apply*.
+
+== A suggestion is not a tag
+
+`AiTagSuggestion#accept!` is the only code path in the application that writes a
+machine-derived label into `assets.properties["tags"]`. A gateway callback,
+however well-authenticated, can create nothing but `pending` rows.
+
+[cols="1,2,2", options="header"]
+|===
+| | Suggestion | Tag
+
+| Origin | A model's opinion | A person's decision
+| Visibility | Triage queue only | Search, filters, rights rules
+| Created by | Gateway callback | `accept!`, never anything else
+| Reversible | Dismiss (kept as a record) | Ordinary tag edit
+|===
+
+== Two tables, not one
+
+`ai_tagging_runs` and `ai_tag_suggestions` are separate because a run and a
+label have different lifecycles.
+
+The run row is what makes dispatch idempotent — the worker is a no-op unless the
+run is still `queued` — and it gives the callback something to correlate
+against. It also makes a *gateway outage visible*: without it, a model that
+never answered would be indistinguishable from a model that found nothing to
+say.
+
+Suggestions are separate rows because each label carries its own accept/dismiss
+state, decider and timestamp. Collapsing them into a JSON column on the run
+would make "who accepted this and when" unanswerable.
+
+== Dismissed rows are kept, never deleted
+
+A rejection is a decision, and decisions are worth as much as approvals. If a
+dismissed row were deleted, the next run would happily propose the same label
+again, and the run after that, forever.
+
+`dismissed_labels` is therefore consulted on every later import, across *all*
+runs for that asset — not just the current one.
+
+== What the importer throws away
+
+`Ai::TagSuggestionImporter` is the trust boundary. Everything arriving from the
+gateway is untrusted input. Three classes of candidate are discarded:
+
+[cols="1,3", options="header"]
+|===
+| Rejection | Reason
+
+| Below `MIN_CONFIDENCE` (0.55) | Not worth a human's attention
+| Already on the asset | Compared after normalisation, so `Sunset` matches `sunset`
+| Previously dismissed | Someone already answered this question
+|===
+
+In-payload duplicates collapse to one row. `MAX_SUGGESTIONS` (25) caps the
+triage burden however chatty the model is; the importer scans up to four times
+that many candidates so rejected labels do not eat the budget.
+
+=== Confidence is clamped, not rejected
+
+Confidence is *nullable and meaningful*: a model that does not report confidence
+is not the same as one reporting zero, and the UI renders those differently.
+
+An out-of-range value is clamped into `0..1` rather than discarded. A gateway
+reporting `1.4` has a scaling bug, but the label it attached is probably real,
+and throwing away good labels to punish a bad number helps nobody. A database
+`CHECK` constraint guarantees what lands in the column.
+
+== The profile is a key, not a prompt
+
+`profile` selects from an allow-list on `AiTaggingRun::PROFILES`. An
+unrecognised value falls back to `general_subject` rather than passing through.
+
+This is deliberate: a caller able to dictate the model instruction could
+redirect the model under our credentials. The API accepts a *name* for an
+instruction we wrote, never the instruction itself.
+
+== The upload trigger is off by default
+
+Auto-tagging on ingest requires `Setting.set("ai_auto_tagging_enabled", "true")`
+and applies to images only. The call sits in `AssetProcessorWorker` after the
+asset is already stored and `ready`, and is wrapped in a rescue — a tagging
+failure must never fail an upload that otherwise succeeded.
+
+Upload-triggered runs have a nil `requested_by`. Nobody asked for them, so there
+is nobody to attribute them to; inventing an attribution would make the audit
+trail lie.
+
+== Conflicts the API reports
+
+Three situations return `409` rather than quietly doing something surprising:
+
+* a run is requested while one is already in flight for that asset;
+* a callback arrives for a run that has already reached a terminal state
+  (a replay, or a late delivery after a timeout);
+* a suggestion is decided twice — two curators clicking at the same moment.
+
+== Triage UI
+
+`AiTagSuggestionsPanel` lives in the *AI* tab of the asset viewer. It lists
+pending labels with their confidence, offers accept and dismiss per label, and
+exposes a "Suggest tags" button for on-demand runs. Accepting refreshes the
+asset, because the tag list the rest of the viewer is showing has just changed.
+
+== Related files
+
+[cols="1,2", options="header"]
+|===
+| Path | Role
+
+| `app/models/ai_tagging_run.rb` | Run lifecycle, profile allow-list, thresholds
+| `app/models/ai_tag_suggestion.rb` | `normalise`, `accept!`, `dismiss!`
+| `app/services/ai/tag_suggestion_importer.rb` | Gateway trust boundary
+| `app/workers/ai_auto_tag_worker.rb` | Redis dispatch to the AI gateway
+| `app/controllers/api/v1/ai_tagging_runs_controller.rb` | REST surface
+| `app/javascript/components/Folders/AiTagSuggestionsPanel.jsx` | Triage queue
+|===

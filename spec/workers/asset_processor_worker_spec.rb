@@ -1579,3 +1579,64 @@ RSpec.describe AssetProcessorWorker, type: :worker do
     end
   end
 end
+
+# ---------------------------------------------------------------------------
+# Auto-tagging trigger
+# ---------------------------------------------------------------------------
+# Tested directly rather than through a full #perform run: the enqueue decision
+# is the whole behaviour here, and driving it through file IO, MIME sniffing and
+# storage would test those instead.
+RSpec.describe AssetProcessorWorker, "auto-tagging trigger", type: :worker do
+  let(:asset)   { create(:asset, properties: { "content_type" => "image/jpeg" }) }
+  let(:version) { create(:asset_version, asset: asset) }
+  let(:worker)  { described_class.new }
+
+  def trigger(meta = { content_type: "image/jpeg" })
+    worker.send(:enqueue_auto_tagging, asset, version, meta)
+  end
+
+  before { allow(AiAutoTagWorker).to receive(:perform_async) }
+
+  context "when the administrator has not enabled it" do
+    # Automatic tagging costs money per asset and fills a queue somebody has to
+    # work through, so a fresh install must not start doing it unasked.
+    it "does not queue a run" do
+      expect { trigger }.not_to change(AiTaggingRun, :count)
+      expect(AiAutoTagWorker).not_to have_received(:perform_async)
+    end
+  end
+
+  context "when enabled" do
+    before { Setting.set("ai_auto_tagging_enabled", "true") }
+
+    it "queues a run marked as upload-triggered" do
+      expect { trigger }.to change(AiTaggingRun, :count).by(1)
+
+      run = AiTaggingRun.last
+      expect(run.trigger).to eq("upload")
+      expect(run.asset_id).to eq(asset.id)
+      expect(run.asset_version_id).to eq(version.id)
+      # Nobody asked for this run, so there is nobody to attribute it to.
+      expect(run.requested_by).to be_nil
+      expect(AiAutoTagWorker).to have_received(:perform_async).with(run.id)
+    end
+
+    # The tagging capability is a vision model; handing it a spreadsheet would
+    # burn a gateway call to be told nothing.
+    it "skips non-images" do
+      expect { trigger(content_type: "application/pdf") }.not_to change(AiTaggingRun, :count)
+    end
+
+    it "falls back to the asset's recorded content type" do
+      expect { trigger({}) }.to change(AiTaggingRun, :count).by(1)
+    end
+
+    # The asset is already stored and ready by this point; losing a speculative
+    # tagging run is far smaller than failing a perfectly good upload.
+    it "never lets a tagging failure break the upload" do
+      allow(AiAutoTagWorker).to receive(:perform_async).and_raise(StandardError, "redis down")
+
+      expect { trigger }.not_to raise_error
+    end
+  end
+end

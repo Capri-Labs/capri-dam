@@ -46,7 +46,8 @@
       "Queues": "Files Sidekiq",
       "Inbox": "Boîte de réception",
       "Quarantine Review": "Quarantine Review",
-      "Custom Nodes": "Nœuds personnalisés"
+      "Custom Nodes": "Nœuds personnalisés",
+      "Portals": "Portails de distribution"
     }
   },
   "common": {
@@ -2362,7 +2363,8 @@
       "workflows": "Workflows",
       "aiEngine": "Moteur IA",
       "comments": "Commentaires",
-      "commentsWithCount": "Commentaires ({{count}})"
+      "commentsWithCount": "Commentaires ({{count}})",
+      "renditions": "Rendus"
     },
     "info": {
       "generalMetadata": "Métadonnées générales",
@@ -3239,5 +3241,162 @@
     "name": "Nom (facultatif)",
     "later": "Pas maintenant",
     "continue": "Continuer"
+  },
+  "portalManager": {
+    "title": "Portails de distribution",
+    "subtitle": "Pages personnalisées et protégées par identifiant pour partager des ressources approuvées hors de l'organisation.",
+    "create": "Nouveau portail",
+    "refresh": "Actualiser",
+    "empty": "Aucun portail pour l'instant.",
+    "untitled": "Portail sans titre",
+    "passphraseSet": "Phrase secrète",
+    "cancel": "Annuler",
+    "save": "Enregistrer les modifications",
+    "close": "Fermer",
+    "saved": "Portail mis à jour.",
+    "revoked": "Portail révoqué.",
+    "grantsCount": "{{granted}} accordées / {{deliverable}} livrables",
+    "grantsTooltip": "{{granted}} ressources ont été accordées ; {{deliverable}} d'entre elles peuvent réellement sortir selon leurs droits.",
+    "filter": {
+      "all": "Toutes",
+      "active": "Actifs",
+      "expired": "Expirés",
+      "revoked": "Révoqués"
+    },
+    "column": {
+      "name": "Nom",
+      "target": "Partage",
+      "status": "Statut",
+      "grants": "Autorisations",
+      "downloads": "Téléchargements",
+      "expires": "Expire le",
+      "actions": "Actions"
+    },
+    "status": {
+      "active": "Actif",
+      "expired": "Expiré",
+      "revoked": "Révoqué"
+    },
+    "action": {
+      "edit": "Modifier le portail",
+      "downloads": "Journal des téléchargements",
+      "revoke": "Révoquer"
+    },
+    "revoke": {
+      "title": "Révoquer ce portail ?",
+      "body": "Le lien cesse immédiatement de fonctionner. L'enregistrement est conservé afin que l'historique des téléchargements reste auditable, mais il ne peut pas être réactivé.",
+      "confirm": "Révoquer"
+    },
+    "form": {
+      "createTitle": "Nouveau portail de distribution",
+      "editTitle": "Modifier le portail",
+      "createSubmit": "Créer le portail",
+      "name": "Nom du portail",
+      "collection": "Collection à partager",
+      "targetRequired": "Choisissez une collection à partager.",
+      "targetLocked": "Partage {{target}}. La cible ne peut pas être modifiée après la création.",
+      "expiresAt": "Expire le",
+      "passphrase": "Phrase secrète",
+      "passphraseHelp": "Facultatif. Les destinataires doivent la saisir avant de voir quoi que ce soit.",
+      "passphraseKeep": "Laissez vide pour conserver la phrase secrète actuelle.",
+      "requireEmail": "Demander aux destinataires de s'identifier",
+      "grantsAfterCreate": "Vous pourrez choisir quelles ressources sont partagées, et si elles peuvent être téléchargées, une fois le portail créé."
+    },
+    "branding": {
+      "title": "Personnalisation",
+      "help": "Affiché sur la page du destinataire. Les valeurs non reconnues sont ignorées plutôt que refusées.",
+      "accent": "Couleur d'accentuation",
+      "logoUrl": "URL du logo",
+      "headline": "Titre",
+      "message": "Message d'accueil"
+    },
+    "grants": {
+      "title": "Ressources partagées",
+      "help": "Tout ce qui est réglé sur aucun accès est retenu. Cette liste remplace entièrement la précédente lors de l'enregistrement.",
+      "none": "La cible de ce portail ne contient encore aucune ressource.",
+      "summary": "{{granted}} ressources partagées sur {{total}}",
+      "selectAll": "Tout partager",
+      "clearAll": "Tout retenir",
+      "asset": "Ressource",
+      "rights": "Droits",
+      "permission": "Autorisation",
+      "permissionFor": "Autorisation pour {{name}}",
+      "distributable": "Distribuable",
+      "notDistributable": "Non distribuable",
+      "notDistributableHelp": "Les conditions d'utilisation de cette ressource n'autorisent pas la distribution externe : elle ne sera pas partagée même si vous l'accordez ici.",
+      "blockedNotice": "{{count}} des ressources que vous avez partagées ne peuvent pas sortir selon leurs droits actuels et n'apparaîtront pas sur le portail.",
+      "option": {
+        "none": "Aucun accès",
+        "view": "Consultation seule",
+        "download": "Consulter et télécharger"
+      }
+    },
+    "token": {
+      "title": "Portail créé",
+      "warning": "Copiez ce lien maintenant. Il n'est affiché qu'une seule fois et ne peut pas être récupéré — si vous le perdez, vous devrez révoquer ce portail et en créer un autre.",
+      "urlLabel": "Lien du portail",
+      "copy": "Copier le lien",
+      "copied": "Copié",
+      "done": "J'ai copié le lien"
+    },
+    "downloads": {
+      "title": "Téléchargements — {{name}}",
+      "empty": "Rien n'a été téléchargé depuis ce portail.",
+      "total": "{{count}} téléchargements enregistrés",
+      "asset": "Ressource",
+      "guest": "Destinataire",
+      "ip": "Adresse IP",
+      "when": "Téléchargé le"
+    }
+  },
+  "renditions": {
+    "description": "Formes alternatives stockées de cet asset — un fichier CMJN prêt à imprimer, une variante sociale recadrée à la main. Contrairement aux versions, tous les rendus sont actuels en même temps.",
+    "empty": "Aucun rendu pour l’instant.",
+    "field": {
+      "kind": "Type de rendu",
+      "kindHelp": "Minuscules reliées par des tirets bas, ex. print_cmyk"
+    },
+    "action": {
+      "chooseFile": "Choisir un fichier",
+      "upload": "Téléverser",
+      "delete": "Supprimer",
+      "open": "Ouvrir",
+      "generatedLocked": "Généré automatiquement — supprimez plutôt la source"
+    },
+    "column": {
+      "kind": "Type de rendu",
+      "type": "Type",
+      "dimensions": "Dimensions",
+      "size": "Taille",
+      "source": "Origine",
+      "actions": "Actions"
+    },
+    "source": {
+      "manual": "Manuel",
+      "generated": "Généré"
+    },
+    "error": {
+      "reservedKind": "« {{kind}} » est généré automatiquement et ne peut pas être téléversé manuellement.",
+      "malformedKind": "Utilisez des minuscules reliées par des tirets bas.",
+      "duplicateKind": "Cet asset possède déjà un rendu de ce type."
+    },
+    "deleteDialog": {
+      "title": "Supprimer le rendu ?",
+      "body": "Le rendu « {{kind}} » et son fichier stocké seront supprimés définitivement."
+    }
+  },
+  "aiTagging": {
+    "title": "Suggestions de tags IA",
+    "description": "Libellés proposés par un modèle de vision. Rien n'est appliqué à cet actif tant que vous ne l'avez pas accepté.",
+    "empty": "Aucune suggestion de tag en attente de révision.",
+    "action": {
+      "suggest": "Suggérer des tags",
+      "accept": "Accepter le tag",
+      "dismiss": "Rejeter le tag"
+    },
+    "status": {
+      "running": "Analyse de cet actif…",
+      "failed": "La dernière exécution de tagging a échoué. {{message}}"
+    }
   }
 }

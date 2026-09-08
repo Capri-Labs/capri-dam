@@ -36,6 +36,7 @@ jest.mock('../../../app/javascript/components/Inbox/InboxPage', () => () => <div
 jest.mock('../../../app/javascript/components/Admin/Quarantine/QuarantineManager', () => () => <div>QuarantineManager</div>);
 jest.mock('../../../app/javascript/components/Admin/CustomNodes/CustomNodeManager', () => () => <div>CustomNodeManager</div>);
 jest.mock('../../../app/javascript/components/Admin/SecurityPoliciesManager', () => () => <div>SecurityPoliciesManager</div>);
+jest.mock('../../../app/javascript/components/Portals/PortalsManager', () => () => <div>PortalsManager</div>);
 
 import { COMPONENT_REGISTRY } from '../../../app/javascript/components/Registry';
 
@@ -117,6 +118,7 @@ describe('COMPONENT_REGISTRY', () => {
       'quarantine-manager-screen': 'QuarantineManager',
       'custom-nodes-screen': 'CustomNodeManager',
       policies: 'SecurityPoliciesManager',
+      portalsView: 'PortalsManager',
     };
 
     Object.entries(COMPONENT_REGISTRY).forEach(([key, Component]) => {

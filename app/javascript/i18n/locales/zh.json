@@ -46,7 +46,8 @@
       "Queues": "Sidekiq队列",
       "Inbox": "收件箱",
       "Quarantine Review": "Quarantine Review",
-      "Custom Nodes": "自定义节点"
+      "Custom Nodes": "自定义节点",
+      "Portals": "分发门户"
     }
   },
   "common": {
@@ -2362,7 +2363,8 @@
       "workflows": "工作流",
       "aiEngine": "AI 引擎",
       "comments": "评论",
-      "commentsWithCount": "评论 ({{count}})"
+      "commentsWithCount": "评论 ({{count}})",
+      "renditions": "衍生版本"
     },
     "info": {
       "generalMetadata": "常规元数据",
@@ -3239,5 +3241,162 @@
     "name": "姓名（可选）",
     "later": "暂不",
     "continue": "继续"
+  },
+  "portalManager": {
+    "title": "分发门户",
+    "subtitle": "带品牌标识、需凭据访问的页面，用于向组织外部共享已批准的资产。",
+    "create": "新建门户",
+    "refresh": "刷新",
+    "empty": "暂无门户。",
+    "untitled": "未命名门户",
+    "passphraseSet": "口令",
+    "cancel": "取消",
+    "save": "保存更改",
+    "close": "关闭",
+    "saved": "门户已更新。",
+    "revoked": "门户已吊销。",
+    "grantsCount": "已授权 {{granted}} 项 / 可交付 {{deliverable}} 项",
+    "grantsTooltip": "已授权 {{granted}} 项资产，其中 {{deliverable}} 项在其权利下确实可以对外分发。",
+    "filter": {
+      "all": "全部",
+      "active": "有效",
+      "expired": "已过期",
+      "revoked": "已吊销"
+    },
+    "column": {
+      "name": "名称",
+      "target": "共享内容",
+      "status": "状态",
+      "grants": "授权",
+      "downloads": "下载",
+      "expires": "过期时间",
+      "actions": "操作"
+    },
+    "status": {
+      "active": "有效",
+      "expired": "已过期",
+      "revoked": "已吊销"
+    },
+    "action": {
+      "edit": "编辑门户",
+      "downloads": "下载记录",
+      "revoke": "吊销"
+    },
+    "revoke": {
+      "title": "确定吊销此门户？",
+      "body": "链接将立即失效。为保证下载历史可供审计，记录会保留，但无法重新启用。",
+      "confirm": "吊销"
+    },
+    "form": {
+      "createTitle": "新建分发门户",
+      "editTitle": "编辑门户",
+      "createSubmit": "创建门户",
+      "name": "门户名称",
+      "collection": "要共享的集合",
+      "targetRequired": "请选择要共享的集合。",
+      "targetLocked": "正在共享 {{target}}。创建后无法更改共享目标。",
+      "expiresAt": "过期时间",
+      "passphrase": "口令",
+      "passphraseHelp": "可选。收件人必须先输入口令才能看到任何内容。",
+      "passphraseKeep": "留空表示保留当前口令。",
+      "requireEmail": "要求收件人表明身份",
+      "grantsAfterCreate": "门户创建后，您可以选择共享哪些资产以及是否允许下载。"
+    },
+    "branding": {
+      "title": "品牌设置",
+      "help": "显示在收件人页面上。无法识别的值会被丢弃，而不是被拒绝。",
+      "accent": "强调色",
+      "logoUrl": "标志 URL",
+      "headline": "标题",
+      "message": "欢迎语"
+    },
+    "grants": {
+      "title": "共享的资产",
+      "help": "设置为无访问权限的内容将被保留不发。保存时，此列表会完全替换之前的列表。",
+      "none": "此门户的共享目标中尚无资产。",
+      "summary": "已共享 {{total}} 项资产中的 {{granted}} 项",
+      "selectAll": "全部共享",
+      "clearAll": "全部不共享",
+      "asset": "资产",
+      "rights": "权利",
+      "permission": "权限",
+      "permissionFor": "{{name}} 的权限",
+      "distributable": "可分发",
+      "notDistributable": "不可分发",
+      "notDistributableHelp": "该资产的使用条款不允许对外分发，因此即使在此授权也不会被共享。",
+      "blockedNotice": "您共享的资产中有 {{count}} 项按当前权利不得对外提供，不会出现在门户中。",
+      "option": {
+        "none": "无访问权限",
+        "view": "仅查看",
+        "download": "查看并下载"
+      }
+    },
+    "token": {
+      "title": "门户已创建",
+      "warning": "请立即复制此链接。它只显示一次且无法恢复——若丢失，您需要吊销此门户并重新创建。",
+      "urlLabel": "门户链接",
+      "copy": "复制链接",
+      "copied": "已复制",
+      "done": "我已复制链接"
+    },
+    "downloads": {
+      "title": "下载 — {{name}}",
+      "empty": "尚未有人从此门户下载任何内容。",
+      "total": "已记录 {{count}} 次下载",
+      "asset": "资产",
+      "guest": "收件人",
+      "ip": "IP 地址",
+      "when": "下载时间"
+    }
+  },
+  "renditions": {
+    "description": "此资产的其他存储形式，例如可直接印刷的 CMYK 文件或手工裁剪的社交媒体版本。与版本不同，所有衍生版本同时有效。",
+    "empty": "暂无衍生版本。",
+    "field": {
+      "kind": "类型标识",
+      "kindHelp": "使用小写字母并以下划线连接，例如 print_cmyk"
+    },
+    "action": {
+      "chooseFile": "选择文件",
+      "upload": "上传",
+      "delete": "删除",
+      "open": "打开",
+      "generatedLocked": "由系统自动生成 — 请改为删除源文件"
+    },
+    "column": {
+      "kind": "类型标识",
+      "type": "文件类型",
+      "dimensions": "尺寸",
+      "size": "大小",
+      "source": "来源",
+      "actions": "操作"
+    },
+    "source": {
+      "manual": "手动",
+      "generated": "自动生成"
+    },
+    "error": {
+      "reservedKind": "“{{kind}}”由系统自动生成，无法手动上传。",
+      "malformedKind": "请使用小写字母并以下划线连接。",
+      "duplicateKind": "该资产已存在此类型的衍生版本。"
+    },
+    "deleteDialog": {
+      "title": "删除衍生版本？",
+      "body": "“{{kind}}”衍生版本及其存储文件将被永久删除。"
+    }
+  },
+  "aiTagging": {
+    "title": "AI 标签建议",
+    "description": "由视觉模型提出的标签。在您接受之前，不会应用于此资产。",
+    "empty": "没有等待审核的标签建议。",
+    "action": {
+      "suggest": "建议标签",
+      "accept": "接受标签",
+      "dismiss": "忽略标签"
+    },
+    "status": {
+      "running": "正在分析此资产…",
+      "failed": "上次标签运行失败。{{message}}"
+    }
   }
 }

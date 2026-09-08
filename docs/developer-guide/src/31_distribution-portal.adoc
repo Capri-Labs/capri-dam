@@ -247,6 +247,49 @@ There is no permission model on the client. The server decides what the token
 covers, which assets were granted, and which of those may be downloaded; the
 React app renders the answer.
 
+== Management UI
+
+The internal screen lives at `/portals`, served by `PortalsController` as a
+mount point for `app/javascript/components/Portals/`. It is part of the ordinary
+internal bundle — it is a normal authenticated screen, and only the guest
+surface needs its own entry point.
+
+[cols="2,3", options="header"]
+|===
+| Component | Responsibility
+
+| `PortalsManager.jsx`        | List, status filter, revoke confirmation
+| `PortalFormDialog.jsx`      | Create and reconfigure; branding fields
+| `PortalGrantsPanel.jsx`     | The per-asset pick list
+| `PortalTokenDialog.jsx`     | One-time reveal of the link
+| `PortalDownloadsDialog.jsx` | The distribution record
+| `usePortals.js`             | All `/api/v1/portals` traffic
+|===
+
+Three things the screen exists to make visible:
+
+*The gap between intent and rights.* Every row shows `granted_count` next to
+`distributable_count`, and the pick list marks each asset that its usage terms
+will not let out. A portal with twelve picks and three deliverable files is not
+an error the system can resolve on the sender's behalf — rights outrank intent —
+but discovering it while configuring is much better than discovering it when the
+recipient writes to say files are missing.
+
+*That the link is unrecoverable.* Creation returns the token exactly once,
+because the server keeps only a digest. It goes straight into a modal that says
+so plainly; a copy button the user clicks past is a portal they have to revoke
+and recreate.
+
+*That withholding is an action.* The pick list shows every asset in the target
+rather than only the granted ones, and saving replaces the whole grant set.
+"Nothing shared yet" and "everything deliberately withheld" would otherwise look
+identical.
+
+The target is choosable only at creation. Re-pointing a live portal would hand
+an outsider material they were never shown while the URL in their inbox looks
+unchanged, so the API refuses it and the UI does not offer it. Likewise, an
+empty passphrase field on edit means "leave it alone" rather than "clear it".
+
 == Testing
 
 [cols="2,3", options="header"]
@@ -257,4 +300,6 @@ React app renders the answer.
 | `spec/requests/public/distribution_portal_spec.rb`  | Guest listing, per-asset permission, rights suppression, kind separation, passphrase, hostile branding
 | `spec/requests/api/v1/portals_request_spec.rb`      | Ownership scoping, declarative grants, grant confinement, download record
 | `spec/javascript/components/GuestPortal/*`          | Gate precedence, view-only rendering, non-image placeholder, 401-as-state
+| `spec/javascript/components/Portals/*`             | Grant/deliverable disclosure, declarative grant submission, one-time token reveal, revoke confirmation
+| `spec/requests/portals_html_spec.rb`               | The management shell is gated
 |===

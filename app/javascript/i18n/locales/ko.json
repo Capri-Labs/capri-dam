@@ -46,7 +46,8 @@
       "Queues": "Sidekiq 대기열",
       "Inbox": "받은 편지함",
       "Quarantine Review": "Quarantine Review",
-      "Custom Nodes": "사용자 지정 노드"
+      "Custom Nodes": "사용자 지정 노드",
+      "Portals": "배포 포털"
     }
   },
   "common": {
@@ -2362,7 +2363,8 @@
       "workflows": "워크플로",
       "aiEngine": "AI 엔진",
       "comments": "댓글",
-      "commentsWithCount": "댓글 ({{count}})"
+      "commentsWithCount": "댓글 ({{count}})",
+      "renditions": "렌디션"
     },
     "info": {
       "generalMetadata": "일반 메타데이터",
@@ -3239,5 +3241,162 @@
     "name": "이름 (선택 사항)",
     "later": "나중에",
     "continue": "계속"
+  },
+  "portalManager": {
+    "title": "배포 포털",
+    "subtitle": "승인된 자산을 조직 외부와 공유하기 위한 브랜딩 적용 및 자격 증명 보호 페이지입니다.",
+    "create": "새 포털",
+    "refresh": "새로 고침",
+    "empty": "아직 포털이 없습니다.",
+    "untitled": "제목 없는 포털",
+    "passphraseSet": "암호문",
+    "cancel": "취소",
+    "save": "변경 사항 저장",
+    "close": "닫기",
+    "saved": "포털이 업데이트되었습니다.",
+    "revoked": "포털이 철회되었습니다.",
+    "grantsCount": "허용 {{granted}}개 / 전달 가능 {{deliverable}}개",
+    "grantsTooltip": "{{granted}}개의 자산이 허용되었으며, 그중 {{deliverable}}개가 권리상 실제로 외부로 나갈 수 있습니다.",
+    "filter": {
+      "all": "전체",
+      "active": "활성",
+      "expired": "만료됨",
+      "revoked": "철회됨"
+    },
+    "column": {
+      "name": "이름",
+      "target": "공유 대상",
+      "status": "상태",
+      "grants": "허용",
+      "downloads": "다운로드",
+      "expires": "만료",
+      "actions": "작업"
+    },
+    "status": {
+      "active": "활성",
+      "expired": "만료됨",
+      "revoked": "철회됨"
+    },
+    "action": {
+      "edit": "포털 편집",
+      "downloads": "다운로드 기록",
+      "revoke": "철회"
+    },
+    "revoke": {
+      "title": "이 포털을 철회할까요?",
+      "body": "링크가 즉시 작동하지 않습니다. 다운로드 이력을 감사할 수 있도록 기록은 유지되지만 다시 활성화할 수는 없습니다.",
+      "confirm": "철회"
+    },
+    "form": {
+      "createTitle": "새 배포 포털",
+      "editTitle": "포털 편집",
+      "createSubmit": "포털 만들기",
+      "name": "포털 이름",
+      "collection": "공유할 컬렉션",
+      "targetRequired": "공유할 컬렉션을 선택하세요.",
+      "targetLocked": "{{target}}을(를) 공유합니다. 생성 후에는 대상을 변경할 수 없습니다.",
+      "expiresAt": "만료 일시",
+      "passphrase": "암호문",
+      "passphraseHelp": "선택 사항입니다. 수신자는 내용을 보기 전에 이를 입력해야 합니다.",
+      "passphraseKeep": "현재 암호문을 유지하려면 비워 두세요.",
+      "requireEmail": "수신자에게 신원 확인 요청",
+      "grantsAfterCreate": "어떤 자산을 공유할지, 다운로드를 허용할지는 포털이 생성된 후에 선택할 수 있습니다."
+    },
+    "branding": {
+      "title": "브랜딩",
+      "help": "수신자 페이지에 표시됩니다. 인식되지 않는 값은 거부되지 않고 무시됩니다.",
+      "accent": "강조 색상",
+      "logoUrl": "로고 URL",
+      "headline": "제목",
+      "message": "환영 메시지"
+    },
+    "grants": {
+      "title": "공유 자산",
+      "help": "접근 없음으로 설정된 항목은 제공되지 않습니다. 저장하면 이 목록이 이전 목록을 완전히 대체합니다.",
+      "none": "이 포털의 대상에는 아직 자산이 없습니다.",
+      "summary": "{{total}}개 중 {{granted}}개 자산 공유 중",
+      "selectAll": "모두 공유",
+      "clearAll": "모두 보류",
+      "asset": "자산",
+      "rights": "권리",
+      "permission": "권한",
+      "permissionFor": "{{name}}의 권한",
+      "distributable": "배포 가능",
+      "notDistributable": "배포 불가",
+      "notDistributableHelp": "이 자산의 사용 조건은 외부 배포를 허용하지 않으므로 여기서 허용하더라도 공유되지 않습니다.",
+      "blockedNotice": "공유한 자산 중 {{count}}개는 현재 권리로는 외부로 나갈 수 없어 포털에 표시되지 않습니다.",
+      "option": {
+        "none": "접근 없음",
+        "view": "보기 전용",
+        "download": "보기 및 다운로드"
+      }
+    },
+    "token": {
+      "title": "포털이 생성되었습니다",
+      "warning": "지금 이 링크를 복사하세요. 한 번만 표시되며 복구할 수 없습니다. 분실하면 이 포털을 철회하고 새로 만들어야 합니다.",
+      "urlLabel": "포털 링크",
+      "copy": "링크 복사",
+      "copied": "복사됨",
+      "done": "링크를 복사했습니다"
+    },
+    "downloads": {
+      "title": "다운로드 — {{name}}",
+      "empty": "이 포털에서 다운로드된 항목이 없습니다.",
+      "total": "{{count}}건의 다운로드가 기록됨",
+      "asset": "자산",
+      "guest": "수신자",
+      "ip": "IP 주소",
+      "when": "다운로드 일시"
+    }
+  },
+  "renditions": {
+    "description": "이 자산의 대체 저장 형식입니다. 인쇄용 CMYK 파일, 수동으로 자른 소셜 변형 등이 있습니다. 버전과 달리 모든 렌디션은 동시에 유효합니다.",
+    "empty": "아직 렌디션이 없습니다.",
+    "field": {
+      "kind": "종류",
+      "kindHelp": "소문자를 밑줄로 연결합니다. 예: print_cmyk"
+    },
+    "action": {
+      "chooseFile": "파일 선택",
+      "upload": "업로드",
+      "delete": "삭제",
+      "open": "열기",
+      "generatedLocked": "자동으로 생성됨 — 원본을 대신 삭제하세요"
+    },
+    "column": {
+      "kind": "종류",
+      "type": "형식",
+      "dimensions": "크기",
+      "size": "용량",
+      "source": "출처",
+      "actions": "작업"
+    },
+    "source": {
+      "manual": "수동",
+      "generated": "자동 생성"
+    },
+    "error": {
+      "reservedKind": "'{{kind}}'은(는) 자동으로 생성되며 수동으로 업로드할 수 없습니다.",
+      "malformedKind": "소문자를 밑줄로 연결해 입력하세요.",
+      "duplicateKind": "이 자산에는 이미 해당 종류의 렌디션이 있습니다."
+    },
+    "deleteDialog": {
+      "title": "렌디션을 삭제할까요?",
+      "body": "'{{kind}}' 렌디션과 저장된 파일이 영구적으로 삭제됩니다."
+    }
+  },
+  "aiTagging": {
+    "title": "AI 태그 제안",
+    "description": "비전 모델이 제안한 라벨입니다. 수락하기 전까지는 이 자산에 적용되지 않습니다.",
+    "empty": "검토 대기 중인 태그 제안이 없습니다.",
+    "action": {
+      "suggest": "태그 제안",
+      "accept": "태그 수락",
+      "dismiss": "태그 무시"
+    },
+    "status": {
+      "running": "이 자산을 분석하는 중…",
+      "failed": "마지막 태그 지정 실행이 실패했습니다. {{message}}"
+    }
   }
 }

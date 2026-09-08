@@ -2730,6 +2730,544 @@ paths:
       responses:
         '200':
           description: dismissed
+  "/api/v1/assets/{asset_id}/ai_tagging_runs":
+    parameters:
+    - name: asset_id
+      in: path
+      required: true
+      description: Asset database ID or UUID
+      schema:
+        type: string
+    get:
+      summary: List an asset's tagging runs
+      tags:
+      - AI Tagging
+      security:
+      - Bearer: []
+      description: |
+        Each run is one dispatch of this asset to a vision model.
+
+        The run exists so the pipeline is safe to retry: dispatch is a no-op
+        unless the run is still `queued`, and a failure is *visible* rather than
+        indistinguishable from a model that simply found nothing to say.
+
+        Requires `read` on the asset.
+      responses:
+        '200':
+          description: runs listed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  runs:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        asset_id:
+                          type: string
+                          format: uuid
+                        status:
+                          type: string
+                          enum:
+                          - queued
+                          - running
+                          - completed
+                          - failed
+                        profile:
+                          type: string
+                          enum:
+                          - general_subject
+                          - product
+                          - scene_mood
+                        trigger:
+                          type: string
+                          enum:
+                          - upload
+                          - manual
+                          - batch
+                        model_name:
+                          type: string
+                          nullable: true
+                        provider:
+                          type: string
+                          nullable: true
+                        suggestions_count:
+                          type: integer
+                        error_message:
+                          type: string
+                          nullable: true
+                        requested_by:
+                          type: string
+                          nullable: true
+                          description: Null for an automatic upload-time run
+                        started_at:
+                          type: string
+                          format: date-time
+                          nullable: true
+                        completed_at:
+                          type: string
+                          format: date-time
+                          nullable: true
+                        created_at:
+                          type: string
+                          format: date-time
+    post:
+      summary: Request tag suggestions for an asset
+      tags:
+      - AI Tagging
+      security:
+      - Bearer: []
+      description: |
+        Queues a vision model to propose subject tags.
+
+        **Nothing is applied automatically.** Labels come back as *pending
+        suggestions* that a person accepts or dismisses. Tags are load-bearing —
+        people search on them, collections filter on them, rights rules can key
+        off them — so a library whose vocabulary silently blends curated and
+        speculative terms cannot be trusted, and there is no cheap way to
+        separate them again afterwards.
+
+        `profile` is an **allow-listed key, never a prompt**: `general_subject`,
+        `product`, `scene_mood`. An unrecognised value falls back to
+        `general_subject` rather than being passed through, because a caller
+        able to dictate the instruction could redirect the model to do something
+        other than tagging under our credentials.
+
+        Returns `409` if a run is already in flight for this asset — a second
+        one would propose the same labels twice and double the triage burden for
+        no new information.
+
+        Requires `modify` on the asset.
+      parameters: []
+      responses:
+        '201':
+          description: run queued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  asset_id:
+                    type: string
+                    format: uuid
+                  status:
+                    type: string
+                    enum:
+                    - queued
+                    - running
+                    - completed
+                    - failed
+                  profile:
+                    type: string
+                    enum:
+                    - general_subject
+                    - product
+                    - scene_mood
+                  trigger:
+                    type: string
+                    enum:
+                    - upload
+                    - manual
+                    - batch
+                  model_name:
+                    type: string
+                    nullable: true
+                  provider:
+                    type: string
+                    nullable: true
+                  suggestions_count:
+                    type: integer
+                  error_message:
+                    type: string
+                    nullable: true
+                  requested_by:
+                    type: string
+                    nullable: true
+                    description: Null for an automatic upload-time run
+                  started_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  completed_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  created_at:
+                    type: string
+                    format: date-time
+        '409':
+          description: a run is already in flight
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                profile:
+                  type: string
+                  enum:
+                  - general_subject
+                  - product
+                  - scene_mood
+  "/api/v1/assets/{asset_id}/ai_tag_suggestions":
+    parameters:
+    - name: asset_id
+      in: path
+      required: true
+      schema:
+        type: string
+    get:
+      summary: List the pending suggestion queue for an asset
+      tags:
+      - AI Tagging
+      security:
+      - Bearer: []
+      description: |
+        What the machine proposes for this asset that nobody has ruled on yet,
+        highest confidence first.
+
+        Already-decided suggestions are excluded. Dismissed rows are retained
+        rather than deleted so the same label is not proposed and rejected
+        forever, but they do not reappear in the queue.
+
+        Requires `read` on the asset.
+      responses:
+        '200':
+          description: pending suggestions listed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  suggestions:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        asset_id:
+                          type: string
+                          format: uuid
+                        run_id:
+                          type: string
+                          format: uuid
+                        label:
+                          type: string
+                          example: sunset
+                        confidence:
+                          type: number
+                          nullable: true
+                          description: 0..1, or null if the model did not report one
+                        state:
+                          type: string
+                          enum:
+                          - pending
+                          - accepted
+                          - dismissed
+                        decided_by:
+                          type: string
+                          nullable: true
+                        decided_at:
+                          type: string
+                          format: date-time
+                          nullable: true
+                        created_at:
+                          type: string
+                          format: date-time
+  "/api/v1/ai_tagging_runs/{id}":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      description: Run UUID
+      schema:
+        type: string
+    get:
+      summary: Show one tagging run and its suggestions
+      tags:
+      - AI Tagging
+      security:
+      - Bearer: []
+      description: Addressable in its own right so a client can poll a queued run
+        to completion.
+      responses:
+        '200':
+          description: run returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  asset_id:
+                    type: string
+                    format: uuid
+                  status:
+                    type: string
+                    enum:
+                    - queued
+                    - running
+                    - completed
+                    - failed
+                  profile:
+                    type: string
+                    enum:
+                    - general_subject
+                    - product
+                    - scene_mood
+                  trigger:
+                    type: string
+                    enum:
+                    - upload
+                    - manual
+                    - batch
+                  model_name:
+                    type: string
+                    nullable: true
+                  provider:
+                    type: string
+                    nullable: true
+                  suggestions_count:
+                    type: integer
+                  error_message:
+                    type: string
+                    nullable: true
+                  requested_by:
+                    type: string
+                    nullable: true
+                    description: Null for an automatic upload-time run
+                  started_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  completed_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  created_at:
+                    type: string
+                    format: date-time
+        '404':
+          description: run not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+  "/api/v1/ai_tagging_runs/{id}/suggestions":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: string
+    post:
+      summary: 'AI Gateway callback: deliver proposed labels'
+      tags:
+      - AI Tagging
+      description: |
+        Called by the AI Gateway, **not** by an API client. Authenticated with
+        the shared `X-Gateway-Secret` header rather than a user session, because
+        the gateway is a machine caller with no account.
+
+        This endpoint can only ever create *pending* rows. It has no path to the
+        asset's real tags — that promotion happens exclusively through
+        `/accept`, under a signed-in user with `modify` rights.
+
+        The payload is treated as untrusted input. Labels are normalised and
+        length-checked, confidence is clamped into `0..1`, the list is capped,
+        and a malformed entry is skipped rather than aborting the import — one
+        bad label should not discard nine good ones.
+
+        Three classes of label are discarded outright: those below the
+        confidence floor, those the asset already carries, and those a person
+        dismissed on a previous run.
+
+        Posting `{ "error": "..." }` instead marks the run failed, so a gateway
+        outage is visible rather than looking like a model that found nothing.
+
+        Returns `409` for a run that has already terminated, so a replayed or
+        late delivery cannot duplicate every label.
+      parameters: []
+      responses:
+        '401':
+          description: missing or wrong gateway secret
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                suggestions:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      label:
+                        type: string
+                        example: sunset
+                      confidence:
+                        type: number
+                        example: 0.91
+                error:
+                  type: string
+                  description: Present instead of suggestions when the run failed
+        required: true
+  "/api/v1/ai_tag_suggestions/{id}/accept":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      description: Suggestion UUID
+      schema:
+        type: string
+    post:
+      summary: Accept a proposed tag
+      tags:
+      - AI Tagging
+      security:
+      - Bearer: []
+      description: |
+        The **only** path in the system that writes a machine-derived label into
+        `assets.properties["tags"]`.
+
+        Idempotent in effect: a label the asset already carries is not added
+        twice, and a suggestion that has already been decided returns `409` so
+        two curators clicking at once cannot double-apply it.
+
+        Requires `modify` on the asset — promoting a machine guess into the
+        library's vocabulary is not a read-adjacent act.
+      responses:
+        '200':
+          description: accepted and applied to the asset
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  asset_id:
+                    type: string
+                    format: uuid
+                  run_id:
+                    type: string
+                    format: uuid
+                  label:
+                    type: string
+                    example: sunset
+                  confidence:
+                    type: number
+                    nullable: true
+                    description: 0..1, or null if the model did not report one
+                  state:
+                    type: string
+                    enum:
+                    - pending
+                    - accepted
+                    - dismissed
+                  decided_by:
+                    type: string
+                    nullable: true
+                  decided_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  created_at:
+                    type: string
+                    format: date-time
+  "/api/v1/ai_tag_suggestions/{id}/dismiss":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: string
+    post:
+      summary: Dismiss a proposed tag
+      tags:
+      - AI Tagging
+      security:
+      - Bearer: []
+      description: |
+        Rejects the machine's guess. The row is **kept**, not deleted: a
+        rejection is a decision, and discarding it would let the next run
+        propose the same label to be rejected again, forever.
+
+        Deliberately does *not* remove the label from the asset's tags. If a
+        person had separately applied that tag themselves, that is their
+        decision and it stands.
+
+        Requires `modify` on the asset.
+      responses:
+        '200':
+          description: dismissed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  asset_id:
+                    type: string
+                    format: uuid
+                  run_id:
+                    type: string
+                    format: uuid
+                  label:
+                    type: string
+                    example: sunset
+                  confidence:
+                    type: number
+                    nullable: true
+                    description: 0..1, or null if the model did not report one
+                  state:
+                    type: string
+                    enum:
+                    - pending
+                    - accepted
+                    - dismissed
+                  decided_by:
+                    type: string
+                    nullable: true
+                  decided_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  created_at:
+                    type: string
+                    format: date-time
   "/api/v1/asset_downloads":
     post:
       summary: Bundle one or more folders and/or assets into a ZIP for download
@@ -12163,6 +12701,264 @@ paths:
               properties:
                 review_notes:
                   type: string
+  "/api/v1/assets/{asset_id}/renditions":
+    parameters:
+    - name: asset_id
+      in: path
+      required: true
+      description: Asset database ID or UUID
+      schema:
+        type: string
+    get:
+      summary: List an asset's renditions
+      tags:
+      - Renditions
+      security:
+      - Bearer: []
+      description: |
+        Alternative stored forms of the same work — a print-ready CMYK TIFF, a
+        hand-cropped social variant, a broadcast proxy.
+
+        Renditions are not versions. A version answers "what did this asset look
+        like at time T" and the newest one wins; a rendition answers "give me
+        this asset in form X", and all of them are current at once.
+
+        `storage_key` is deliberately absent. It is an internal address, and
+        publishing it invites callers to build their own URLs against a backend
+        layout that is not part of this contract.
+
+        Requires `read` on the asset.
+      responses:
+        '200':
+          description: renditions listed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  renditions:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        asset_id:
+                          type: string
+                          format: uuid
+                        kind:
+                          type: string
+                          example: print_cmyk
+                        content_type:
+                          type: string
+                          example: image/tiff
+                          nullable: true
+                        width:
+                          type: integer
+                          nullable: true
+                          description: Derived from the file, not supplied by the
+                            caller
+                        height:
+                          type: integer
+                          nullable: true
+                        file_size:
+                          type: integer
+                          nullable: true
+                        source:
+                          type: string
+                          enum:
+                          - manual
+                          - generated
+                          description: Whether a person uploaded this or the processing
+                            pipeline produced it
+                        storage_backend:
+                          type: string
+                          nullable: true
+                          description: The backend the bytes were written to, recorded
+                            per row so it survives a provider switch
+                        metadata:
+                          type: object
+                        url:
+                          type: string
+                          nullable: true
+                          description: Null when the backend cannot currently resolve
+                            it
+                        created_at:
+                          type: string
+                          format: date-time
+                  meta:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+        '404':
+          description: asset not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+    post:
+      summary: Upload a manual rendition (multipart)
+      tags:
+      - Renditions
+      security:
+      - Bearer: []
+      description: |
+        Stores a file as a named form of this asset.
+
+        **`kind` is a key, not a label.** Lowercase words separated by
+        underscores, unique per asset. The vocabulary is open — `print_cmyk`,
+        `social_square`, `broadcast_proxy` — because which forms matter is an
+        organisational question.
+
+        **Reserved kinds.** `thumbnail`, `web_preview` and `poster` are produced
+        by the processing pipeline and are rejected here. Other code is entitled
+        to assume a thumbnail came from the thumbnailer.
+
+        **Dimensions are derived, not accepted.** Width and height are read from
+        the file itself; a caller that reported them wrongly would make every
+        downstream layout decision wrong with it. Non-images simply have none.
+
+        **Storage.** The rendition records the backend it was written to. If no
+        backend is active the upload is refused with `503` rather than guessed
+        at — storing somewhere we cannot name would produce a row we could never
+        resolve again.
+
+        Requires `modify` on the asset: adding a rendition changes what the
+        asset is to every downstream consumer.
+      parameters: []
+      responses:
+        '201':
+          description: rendition stored
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  asset_id:
+                    type: string
+                    format: uuid
+                  kind:
+                    type: string
+                    example: print_cmyk
+                  content_type:
+                    type: string
+                    example: image/tiff
+                    nullable: true
+                  width:
+                    type: integer
+                    nullable: true
+                    description: Derived from the file, not supplied by the caller
+                  height:
+                    type: integer
+                    nullable: true
+                  file_size:
+                    type: integer
+                    nullable: true
+                  source:
+                    type: string
+                    enum:
+                    - manual
+                    - generated
+                    description: Whether a person uploaded this or the processing
+                      pipeline produced it
+                  storage_backend:
+                    type: string
+                    nullable: true
+                    description: The backend the bytes were written to, recorded per
+                      row so it survives a provider switch
+                  metadata:
+                    type: object
+                  url:
+                    type: string
+                    nullable: true
+                    description: Null when the backend cannot currently resolve it
+                  created_at:
+                    type: string
+                    format: date-time
+        '422':
+          description: invalid kind, duplicate kind, reserved kind, or no file
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  errors:
+                    type: array
+                    items:
+                      type: string
+                  reserved_kinds:
+                    type: array
+                    items:
+                      type: string
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: string
+        required: true
+        description: Binary file to store
+  "/api/v1/assets/{asset_id}/renditions/{id}":
+    parameters:
+    - name: asset_id
+      in: path
+      required: true
+      schema:
+        type: string
+    - name: id
+      in: path
+      required: true
+      description: Rendition UUID
+      schema:
+        type: string
+    delete:
+      summary: Delete a rendition
+      tags:
+      - Renditions
+      security:
+      - Bearer: []
+      description: |
+        Removes the row **and** the stored object.
+
+        There is no soft delete here. Unlike an asset, a rendition carries no
+        history of its own, so a hidden row would be a file nobody can see and
+        nobody can reclaim.
+
+        Confined to the asset in the path: a rendition id cannot be used to
+        reach across to another asset's derivative.
+
+        Requires `modify` on the asset.
+      responses:
+        '200':
+          description: rendition deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  deleted:
+                    type: boolean
+        '404':
+          description: rendition not found on this asset
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
   "/api/v1/review_links":
     get:
       summary: List review links

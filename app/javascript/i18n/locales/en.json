@@ -46,7 +46,8 @@
       "Queues": "Sidekiq Queues",
       "Inbox": "Inbox",
       "Quarantine Review": "Quarantine Review",
-      "Custom Nodes": "Custom Nodes"
+      "Custom Nodes": "Custom Nodes",
+      "Portals": "Distribution Portals"
     }
   },
   "common": {
@@ -2380,7 +2381,8 @@
       "workflows": "Workflows",
       "aiEngine": "AI Engine",
       "comments": "Comments",
-      "commentsWithCount": "Comments ({{count}})"
+      "commentsWithCount": "Comments ({{count}})",
+      "renditions": "Renditions"
     },
     "info": {
       "generalMetadata": "General Metadata",
@@ -3239,5 +3241,162 @@
     "name": "Name (optional)",
     "later": "Not now",
     "continue": "Continue"
+  },
+  "portalManager": {
+    "title": "Distribution Portals",
+    "subtitle": "Branded, credential-protected pages for sharing approved assets outside the organisation.",
+    "create": "New portal",
+    "refresh": "Refresh",
+    "empty": "No portals yet.",
+    "untitled": "Untitled portal",
+    "passphraseSet": "Passphrase",
+    "cancel": "Cancel",
+    "save": "Save changes",
+    "close": "Close",
+    "saved": "Portal updated.",
+    "revoked": "Portal revoked.",
+    "grantsCount": "{{granted}} granted / {{deliverable}} deliverable",
+    "grantsTooltip": "{{granted}} assets have been granted; {{deliverable}} of them may actually leave under their rights.",
+    "filter": {
+      "all": "All",
+      "active": "Active",
+      "expired": "Expired",
+      "revoked": "Revoked"
+    },
+    "column": {
+      "name": "Name",
+      "target": "Shares",
+      "status": "Status",
+      "grants": "Grants",
+      "downloads": "Downloads",
+      "expires": "Expires",
+      "actions": "Actions"
+    },
+    "status": {
+      "active": "Active",
+      "expired": "Expired",
+      "revoked": "Revoked"
+    },
+    "action": {
+      "edit": "Edit portal",
+      "downloads": "Download log",
+      "revoke": "Revoke"
+    },
+    "revoke": {
+      "title": "Revoke this portal?",
+      "body": "The link stops working immediately. The record is kept so the download history remains auditable, but it cannot be reactivated.",
+      "confirm": "Revoke"
+    },
+    "form": {
+      "createTitle": "New distribution portal",
+      "editTitle": "Edit portal",
+      "createSubmit": "Create portal",
+      "name": "Portal name",
+      "collection": "Collection to share",
+      "targetRequired": "Choose a collection to share.",
+      "targetLocked": "Shares {{target}}. The target cannot be changed after creation.",
+      "expiresAt": "Expires at",
+      "passphrase": "Passphrase",
+      "passphraseHelp": "Optional. Recipients must enter this before they see anything.",
+      "passphraseKeep": "Leave blank to keep the current passphrase.",
+      "requireEmail": "Ask recipients to identify themselves",
+      "grantsAfterCreate": "You can choose which assets are shared, and whether they can be downloaded, once the portal exists."
+    },
+    "branding": {
+      "title": "Branding",
+      "help": "Shown on the recipient's page. Values that are not recognised are dropped rather than rejected.",
+      "accent": "Accent colour",
+      "logoUrl": "Logo URL",
+      "headline": "Headline",
+      "message": "Welcome message"
+    },
+    "grants": {
+      "title": "Shared assets",
+      "help": "Anything set to no access is withheld. This list replaces the previous one entirely when you save.",
+      "none": "This portal's target has no assets yet.",
+      "summary": "{{granted}} of {{total}} assets shared",
+      "selectAll": "Share all",
+      "clearAll": "Withhold all",
+      "asset": "Asset",
+      "rights": "Rights",
+      "permission": "Permission",
+      "permissionFor": "Permission for {{name}}",
+      "distributable": "Distributable",
+      "notDistributable": "Not distributable",
+      "notDistributableHelp": "This asset's usage terms do not allow external distribution, so it will not be shared even if you grant it here.",
+      "blockedNotice": "{{count}} of the assets you have shared cannot leave under their current rights and will not appear on the portal.",
+      "option": {
+        "none": "No access",
+        "view": "View only",
+        "download": "View and download"
+      }
+    },
+    "token": {
+      "title": "Portal created",
+      "warning": "Copy this link now. It is shown only once and cannot be recovered — if you lose it you will have to revoke this portal and create another.",
+      "urlLabel": "Portal link",
+      "copy": "Copy link",
+      "copied": "Copied",
+      "done": "I have copied the link"
+    },
+    "downloads": {
+      "title": "Downloads — {{name}}",
+      "empty": "Nothing has been downloaded from this portal.",
+      "total": "{{count}} downloads recorded",
+      "asset": "Asset",
+      "guest": "Recipient",
+      "ip": "IP address",
+      "when": "Downloaded"
+    }
+  },
+  "renditions": {
+    "description": "Alternative stored forms of this asset — a print-ready CMYK file, a hand-cropped social variant. Unlike versions, every rendition is current at once.",
+    "empty": "No renditions yet.",
+    "field": {
+      "kind": "Kind",
+      "kindHelp": "Lowercase words joined by underscores, e.g. print_cmyk"
+    },
+    "action": {
+      "chooseFile": "Choose file",
+      "upload": "Upload",
+      "delete": "Delete",
+      "open": "Open",
+      "generatedLocked": "Generated automatically — delete the source instead"
+    },
+    "column": {
+      "kind": "Kind",
+      "type": "Type",
+      "dimensions": "Dimensions",
+      "size": "Size",
+      "source": "Source",
+      "actions": "Actions"
+    },
+    "source": {
+      "manual": "Manual",
+      "generated": "Generated"
+    },
+    "error": {
+      "reservedKind": "\"{{kind}}\" is generated automatically and cannot be uploaded manually.",
+      "malformedKind": "Use lowercase words joined by underscores.",
+      "duplicateKind": "This asset already has a rendition of that kind."
+    },
+    "deleteDialog": {
+      "title": "Delete rendition?",
+      "body": "The \"{{kind}}\" rendition and its stored file will be removed permanently."
+    }
+  },
+  "aiTagging": {
+    "title": "AI tag suggestions",
+    "description": "Proposed labels from a vision model. Nothing is applied to this asset until you accept it.",
+    "empty": "No tag suggestions are waiting for review.",
+    "action": {
+      "suggest": "Suggest tags",
+      "accept": "Accept tag",
+      "dismiss": "Dismiss tag"
+    },
+    "status": {
+      "running": "Analysing this asset…",
+      "failed": "The last tagging run failed. {{message}}"
+    }
   }
 }

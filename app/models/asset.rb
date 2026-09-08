@@ -52,6 +52,17 @@ class Asset < ApplicationRecord
   #     all immutable snapshots of this asset, ordered by creation time
   has_many :asset_versions, dependent: :destroy
 
+  # @!attribute [r] renditions
+  #   @return [ActiveRecord::Associations::CollectionProxy<Rendition>]
+  #     alternative forms of this same work (print, social, proxy). Unlike
+  #     versions these are all current at once; see {Rendition}.
+  #
+  # +dependent: :destroy+ rather than +delete_all+ so each row's
+  # +after_destroy_commit+ runs and its stored object is purged. Assets are
+  # soft-deleted into the bin, so this only fires on a real purge — which is
+  # exactly when the bytes should go.
+  has_many :renditions, dependent: :destroy
+
   # @!attribute [r] active_version
   #   @return [AssetVersion, nil] the version currently presented to consumers
   belongs_to :active_version, class_name: "AssetVersion", optional: true

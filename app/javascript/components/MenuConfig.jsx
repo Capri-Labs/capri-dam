@@ -15,7 +15,7 @@ import {
     PersonOutlined,
     SecurityOutlined, ContentCopy,
     ManageSearchOutlined, CollectionsBookmark, AutoAwesome, Route, QueryStats, CloudSync, BackupTable, HealthAndSafety,
-    BuildOutlined, SchemaOutlined, FileDownloadOutlined, FileUploadOutlined, BlockOutlined, TuneOutlined, Inbox as InboxIcon, ExtensionOutlined
+    BuildOutlined, SchemaOutlined, FileDownloadOutlined, FileUploadOutlined, BlockOutlined, TuneOutlined, Inbox as InboxIcon, ExtensionOutlined, ShareOutlined
 } from '@mui/icons-material';
 
 /**
@@ -74,6 +74,12 @@ export const MENU_GROUPS = [
                         labelKey: 'menu.item.Duplicate Manager',
                         icon: <ContentCopy fontSize="small" />,
                         url: '/duplicates' },
+                    {
+                        id: 'Portals',
+                        label: 'Distribution Portals',
+                        labelKey: 'menu.item.Portals',
+                        icon: <ShareOutlined fontSize="small" />,
+                        url: '/portals' },
                     {
                         id: 'Bin',
                         label: 'Recycle Bin',

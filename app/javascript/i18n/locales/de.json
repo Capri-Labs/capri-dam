@@ -46,7 +46,8 @@
       "Queues": "Sidekiq-Warteschlangen",
       "Inbox": "Posteingang",
       "Quarantine Review": "Quarantine Review",
-      "Custom Nodes": "Benutzerdefinierte Knoten"
+      "Custom Nodes": "Benutzerdefinierte Knoten",
+      "Portals": "Distributionsportale"
     }
   },
   "common": {
@@ -2362,7 +2363,8 @@
       "workflows": "Workflows",
       "aiEngine": "KI-Engine",
       "comments": "Kommentare",
-      "commentsWithCount": "Kommentare ({{count}})"
+      "commentsWithCount": "Kommentare ({{count}})",
+      "renditions": "Renditionen"
     },
     "info": {
       "generalMetadata": "Allgemeine Metadaten",
@@ -3239,5 +3241,162 @@
     "name": "Name (optional)",
     "later": "Jetzt nicht",
     "continue": "Weiter"
+  },
+  "portalManager": {
+    "title": "Distributionsportale",
+    "subtitle": "Gebrandete, zugangsgeschützte Seiten, um freigegebene Assets außerhalb der Organisation zu teilen.",
+    "create": "Neues Portal",
+    "refresh": "Aktualisieren",
+    "empty": "Noch keine Portale.",
+    "untitled": "Portal ohne Namen",
+    "passphraseSet": "Passphrase",
+    "cancel": "Abbrechen",
+    "save": "Änderungen speichern",
+    "close": "Schließen",
+    "saved": "Portal aktualisiert.",
+    "revoked": "Portal widerrufen.",
+    "grantsCount": "{{granted}} freigegeben / {{deliverable}} lieferbar",
+    "grantsTooltip": "{{granted}} Assets wurden freigegeben; {{deliverable}} davon dürfen laut ihren Rechten tatsächlich herausgegeben werden.",
+    "filter": {
+      "all": "Alle",
+      "active": "Aktiv",
+      "expired": "Abgelaufen",
+      "revoked": "Widerrufen"
+    },
+    "column": {
+      "name": "Name",
+      "target": "Teilt",
+      "status": "Status",
+      "grants": "Freigaben",
+      "downloads": "Downloads",
+      "expires": "Läuft ab",
+      "actions": "Aktionen"
+    },
+    "status": {
+      "active": "Aktiv",
+      "expired": "Abgelaufen",
+      "revoked": "Widerrufen"
+    },
+    "action": {
+      "edit": "Portal bearbeiten",
+      "downloads": "Download-Protokoll",
+      "revoke": "Widerrufen"
+    },
+    "revoke": {
+      "title": "Dieses Portal widerrufen?",
+      "body": "Der Link funktioniert sofort nicht mehr. Der Datensatz bleibt erhalten, damit die Download-Historie prüfbar bleibt, aber er kann nicht reaktiviert werden.",
+      "confirm": "Widerrufen"
+    },
+    "form": {
+      "createTitle": "Neues Distributionsportal",
+      "editTitle": "Portal bearbeiten",
+      "createSubmit": "Portal erstellen",
+      "name": "Portalname",
+      "collection": "Zu teilende Sammlung",
+      "targetRequired": "Wählen Sie eine Sammlung zum Teilen aus.",
+      "targetLocked": "Teilt {{target}}. Das Ziel kann nach der Erstellung nicht mehr geändert werden.",
+      "expiresAt": "Läuft ab am",
+      "passphrase": "Passphrase",
+      "passphraseHelp": "Optional. Empfänger müssen sie eingeben, bevor sie etwas sehen.",
+      "passphraseKeep": "Leer lassen, um die aktuelle Passphrase beizubehalten.",
+      "requireEmail": "Empfänger um Identifikation bitten",
+      "grantsAfterCreate": "Sobald das Portal existiert, können Sie auswählen, welche Assets geteilt werden und ob sie heruntergeladen werden dürfen."
+    },
+    "branding": {
+      "title": "Branding",
+      "help": "Wird auf der Empfängerseite angezeigt. Nicht erkannte Werte werden verworfen, nicht abgelehnt.",
+      "accent": "Akzentfarbe",
+      "logoUrl": "Logo-URL",
+      "headline": "Überschrift",
+      "message": "Willkommensnachricht"
+    },
+    "grants": {
+      "title": "Geteilte Assets",
+      "help": "Alles ohne Zugriff wird zurückgehalten. Diese Liste ersetzt die vorherige beim Speichern vollständig.",
+      "none": "Das Ziel dieses Portals enthält noch keine Assets.",
+      "summary": "{{granted}} von {{total}} Assets geteilt",
+      "selectAll": "Alle teilen",
+      "clearAll": "Alle zurückhalten",
+      "asset": "Asset",
+      "rights": "Rechte",
+      "permission": "Berechtigung",
+      "permissionFor": "Berechtigung für {{name}}",
+      "distributable": "Verteilbar",
+      "notDistributable": "Nicht verteilbar",
+      "notDistributableHelp": "Die Nutzungsbedingungen dieses Assets erlauben keine externe Verteilung. Es wird auch dann nicht geteilt, wenn Sie es hier freigeben.",
+      "blockedNotice": "{{count}} der von Ihnen geteilten Assets dürfen nach ihren aktuellen Rechten nicht herausgegeben werden und erscheinen nicht im Portal.",
+      "option": {
+        "none": "Kein Zugriff",
+        "view": "Nur ansehen",
+        "download": "Ansehen und herunterladen"
+      }
+    },
+    "token": {
+      "title": "Portal erstellt",
+      "warning": "Kopieren Sie diesen Link jetzt. Er wird nur einmal angezeigt und kann nicht wiederhergestellt werden — geht er verloren, müssen Sie das Portal widerrufen und ein neues erstellen.",
+      "urlLabel": "Portal-Link",
+      "copy": "Link kopieren",
+      "copied": "Kopiert",
+      "done": "Ich habe den Link kopiert"
+    },
+    "downloads": {
+      "title": "Downloads — {{name}}",
+      "empty": "Aus diesem Portal wurde noch nichts heruntergeladen.",
+      "total": "{{count}} Downloads erfasst",
+      "asset": "Asset",
+      "guest": "Empfänger",
+      "ip": "IP-Adresse",
+      "when": "Heruntergeladen"
+    }
+  },
+  "renditions": {
+    "description": "Alternative gespeicherte Formen dieses Assets – eine druckfertige CMYK-Datei, eine manuell zugeschnittene Social-Variante. Anders als Versionen sind alle Renditionen gleichzeitig aktuell.",
+    "empty": "Noch keine Renditionen.",
+    "field": {
+      "kind": "Art",
+      "kindHelp": "Kleinbuchstaben mit Unterstrichen, z. B. print_cmyk"
+    },
+    "action": {
+      "chooseFile": "Datei wählen",
+      "upload": "Hochladen",
+      "delete": "Löschen",
+      "open": "Öffnen",
+      "generatedLocked": "Automatisch erzeugt – löschen Sie stattdessen die Quelle"
+    },
+    "column": {
+      "kind": "Art",
+      "type": "Typ",
+      "dimensions": "Abmessungen",
+      "size": "Größe",
+      "source": "Quelle",
+      "actions": "Aktionen"
+    },
+    "source": {
+      "manual": "Manuell",
+      "generated": "Erzeugt"
+    },
+    "error": {
+      "reservedKind": "„{{kind}}“ wird automatisch erzeugt und kann nicht manuell hochgeladen werden.",
+      "malformedKind": "Verwenden Sie Kleinbuchstaben mit Unterstrichen.",
+      "duplicateKind": "Dieses Asset hat bereits eine Rendition dieser Art."
+    },
+    "deleteDialog": {
+      "title": "Rendition löschen?",
+      "body": "Die Rendition „{{kind}}“ und ihre gespeicherte Datei werden dauerhaft entfernt."
+    }
+  },
+  "aiTagging": {
+    "title": "KI-Tag-Vorschläge",
+    "description": "Vorgeschlagene Bezeichnungen aus einem Vision-Modell. Nichts wird auf dieses Asset angewendet, bis Sie es akzeptieren.",
+    "empty": "Es warten keine Tag-Vorschläge auf eine Prüfung.",
+    "action": {
+      "suggest": "Tags vorschlagen",
+      "accept": "Tag akzeptieren",
+      "dismiss": "Tag verwerfen"
+    },
+    "status": {
+      "running": "Asset wird analysiert…",
+      "failed": "Der letzte Tagging-Lauf ist fehlgeschlagen. {{message}}"
+    }
   }
 }

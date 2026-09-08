@@ -46,7 +46,8 @@
       "Queues": "Sidekiq-wachtrijen",
       "Inbox": "Inbox",
       "Quarantine Review": "Quarantine Review",
-      "Custom Nodes": "Aangepaste knooppunten"
+      "Custom Nodes": "Aangepaste knooppunten",
+      "Portals": "Distributieportalen"
     }
   },
   "common": {
@@ -2362,7 +2363,8 @@
       "workflows": "Workflows",
       "aiEngine": "AI-engine",
       "comments": "Opmerkingen",
-      "commentsWithCount": "Opmerkingen ({{count}})"
+      "commentsWithCount": "Opmerkingen ({{count}})",
+      "renditions": "Renditions"
     },
     "info": {
       "generalMetadata": "Algemene metadata",
@@ -3239,5 +3241,162 @@
     "name": "Naam (optioneel)",
     "later": "Niet nu",
     "continue": "Doorgaan"
+  },
+  "portalManager": {
+    "title": "Distributieportalen",
+    "subtitle": "Gebrande, met een sleutel beveiligde pagina's om goedgekeurde assets buiten de organisatie te delen.",
+    "create": "Nieuw portaal",
+    "refresh": "Vernieuwen",
+    "empty": "Nog geen portalen.",
+    "untitled": "Naamloos portaal",
+    "passphraseSet": "Wachtwoordzin",
+    "cancel": "Annuleren",
+    "save": "Wijzigingen opslaan",
+    "close": "Sluiten",
+    "saved": "Portaal bijgewerkt.",
+    "revoked": "Portaal ingetrokken.",
+    "grantsCount": "{{granted}} verleend / {{deliverable}} leverbaar",
+    "grantsTooltip": "Er zijn {{granted}} assets verleend; {{deliverable}} daarvan mogen volgens hun rechten daadwerkelijk naar buiten.",
+    "filter": {
+      "all": "Alle",
+      "active": "Actief",
+      "expired": "Verlopen",
+      "revoked": "Ingetrokken"
+    },
+    "column": {
+      "name": "Naam",
+      "target": "Deelt",
+      "status": "Status",
+      "grants": "Toekenningen",
+      "downloads": "Downloads",
+      "expires": "Verloopt",
+      "actions": "Acties"
+    },
+    "status": {
+      "active": "Actief",
+      "expired": "Verlopen",
+      "revoked": "Ingetrokken"
+    },
+    "action": {
+      "edit": "Portaal bewerken",
+      "downloads": "Downloadlogboek",
+      "revoke": "Intrekken"
+    },
+    "revoke": {
+      "title": "Dit portaal intrekken?",
+      "body": "De link werkt onmiddellijk niet meer. De registratie blijft bewaard zodat de downloadgeschiedenis controleerbaar blijft, maar hij kan niet opnieuw worden geactiveerd.",
+      "confirm": "Intrekken"
+    },
+    "form": {
+      "createTitle": "Nieuw distributieportaal",
+      "editTitle": "Portaal bewerken",
+      "createSubmit": "Portaal aanmaken",
+      "name": "Naam van het portaal",
+      "collection": "Te delen collectie",
+      "targetRequired": "Kies een collectie om te delen.",
+      "targetLocked": "Deelt {{target}}. Het doel kan na het aanmaken niet meer worden gewijzigd.",
+      "expiresAt": "Verloopt op",
+      "passphrase": "Wachtwoordzin",
+      "passphraseHelp": "Optioneel. Ontvangers moeten deze invoeren voordat ze iets zien.",
+      "passphraseKeep": "Laat leeg om de huidige wachtwoordzin te behouden.",
+      "requireEmail": "Ontvangers vragen zich te identificeren",
+      "grantsAfterCreate": "Zodra het portaal bestaat, kunt u kiezen welke assets worden gedeeld en of ze mogen worden gedownload."
+    },
+    "branding": {
+      "title": "Huisstijl",
+      "help": "Wordt getoond op de pagina van de ontvanger. Niet-herkende waarden worden genegeerd in plaats van geweigerd.",
+      "accent": "Accentkleur",
+      "logoUrl": "Logo-URL",
+      "headline": "Kop",
+      "message": "Welkomstbericht"
+    },
+    "grants": {
+      "title": "Gedeelde assets",
+      "help": "Alles dat op geen toegang staat, wordt achtergehouden. Deze lijst vervangt de vorige volledig bij het opslaan.",
+      "none": "Het doel van dit portaal bevat nog geen assets.",
+      "summary": "{{granted}} van {{total}} assets gedeeld",
+      "selectAll": "Alles delen",
+      "clearAll": "Alles achterhouden",
+      "asset": "Asset",
+      "rights": "Rechten",
+      "permission": "Machtiging",
+      "permissionFor": "Machtiging voor {{name}}",
+      "distributable": "Distribueerbaar",
+      "notDistributable": "Niet distribueerbaar",
+      "notDistributableHelp": "De gebruiksvoorwaarden van deze asset staan externe distributie niet toe, dus hij wordt niet gedeeld, ook niet als u hem hier toekent.",
+      "blockedNotice": "{{count}} van de assets die u hebt gedeeld mogen volgens hun huidige rechten niet naar buiten en verschijnen niet op het portaal.",
+      "option": {
+        "none": "Geen toegang",
+        "view": "Alleen bekijken",
+        "download": "Bekijken en downloaden"
+      }
+    },
+    "token": {
+      "title": "Portaal aangemaakt",
+      "warning": "Kopieer deze link nu. Hij wordt maar één keer getoond en kan niet worden hersteld — raakt u hem kwijt, dan moet u dit portaal intrekken en een nieuw aanmaken.",
+      "urlLabel": "Portaallink",
+      "copy": "Link kopiëren",
+      "copied": "Gekopieerd",
+      "done": "Ik heb de link gekopieerd"
+    },
+    "downloads": {
+      "title": "Downloads — {{name}}",
+      "empty": "Er is nog niets van dit portaal gedownload.",
+      "total": "{{count}} downloads vastgelegd",
+      "asset": "Asset",
+      "guest": "Ontvanger",
+      "ip": "IP-adres",
+      "when": "Gedownload"
+    }
+  },
+  "renditions": {
+    "description": "Alternatieve opgeslagen vormen van dit asset — een drukklaar CMYK-bestand, een handmatig bijgesneden socialvariant. Anders dan versies zijn alle renditions tegelijk actueel.",
+    "empty": "Nog geen renditions.",
+    "field": {
+      "kind": "Soort",
+      "kindHelp": "Kleine letters verbonden met underscores, bijv. print_cmyk"
+    },
+    "action": {
+      "chooseFile": "Bestand kiezen",
+      "upload": "Uploaden",
+      "delete": "Verwijderen",
+      "open": "Openen",
+      "generatedLocked": "Automatisch gegenereerd — verwijder in plaats daarvan de bron"
+    },
+    "column": {
+      "kind": "Soort",
+      "type": "Type",
+      "dimensions": "Afmetingen",
+      "size": "Grootte",
+      "source": "Herkomst",
+      "actions": "Acties"
+    },
+    "source": {
+      "manual": "Handmatig",
+      "generated": "Gegenereerd"
+    },
+    "error": {
+      "reservedKind": "‘{{kind}}’ wordt automatisch gegenereerd en kan niet handmatig worden geüpload.",
+      "malformedKind": "Gebruik kleine letters verbonden met underscores.",
+      "duplicateKind": "Dit asset heeft al een rendition van dat soort."
+    },
+    "deleteDialog": {
+      "title": "Rendition verwijderen?",
+      "body": "De rendition ‘{{kind}}’ en het opgeslagen bestand worden definitief verwijderd."
+    }
+  },
+  "aiTagging": {
+    "title": "AI-tagsuggesties",
+    "description": "Voorgestelde labels van een visiemodel. Er wordt niets op dit asset toegepast totdat u het accepteert.",
+    "empty": "Er wachten geen tagsuggesties op beoordeling.",
+    "action": {
+      "suggest": "Tags voorstellen",
+      "accept": "Tag accepteren",
+      "dismiss": "Tag afwijzen"
+    },
+    "status": {
+      "running": "Dit asset wordt geanalyseerd…",
+      "failed": "De laatste tagging-run is mislukt. {{message}}"
+    }
   }
 }

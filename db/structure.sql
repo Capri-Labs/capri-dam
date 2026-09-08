@@ -391,6 +391,52 @@ CREATE TABLE public.ai_reviews (
 
 
 --
+-- Name: ai_tag_suggestions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.ai_tag_suggestions (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    ai_tagging_run_id uuid NOT NULL,
+    asset_id uuid NOT NULL,
+    label character varying NOT NULL,
+    confidence double precision,
+    state character varying DEFAULT 'pending'::character varying NOT NULL,
+    decided_by_id bigint,
+    decided_at timestamp(6) without time zone,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT ai_tag_suggestions_confidence_range CHECK (((confidence IS NULL) OR ((confidence >= (0)::double precision) AND (confidence <= (1)::double precision)))),
+    CONSTRAINT ai_tag_suggestions_state_valid CHECK (((state)::text = ANY ((ARRAY['pending'::character varying, 'accepted'::character varying, 'dismissed'::character varying])::text[])))
+);
+
+
+--
+-- Name: ai_tagging_runs; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.ai_tagging_runs (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    asset_id uuid NOT NULL,
+    asset_version_id uuid,
+    requested_by_id bigint,
+    status character varying DEFAULT 'queued'::character varying NOT NULL,
+    profile character varying DEFAULT 'general_subject'::character varying NOT NULL,
+    trigger character varying DEFAULT 'upload'::character varying NOT NULL,
+    ai_model_name character varying,
+    provider character varying,
+    suggestions_count integer DEFAULT 0 NOT NULL,
+    error_message text,
+    options jsonb DEFAULT '{}'::jsonb NOT NULL,
+    started_at timestamp(6) without time zone,
+    completed_at timestamp(6) without time zone,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT ai_tagging_runs_status_valid CHECK (((status)::text = ANY ((ARRAY['queued'::character varying, 'running'::character varying, 'completed'::character varying, 'failed'::character varying])::text[]))),
+    CONSTRAINT ai_tagging_runs_trigger_valid CHECK (((trigger)::text = ANY ((ARRAY['upload'::character varying, 'manual'::character varying, 'batch'::character varying])::text[])))
+);
+
+
+--
 -- Name: annotation_targets; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -3135,6 +3181,22 @@ ALTER TABLE ONLY public.ai_reviews
 
 
 --
+-- Name: ai_tag_suggestions ai_tag_suggestions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_tag_suggestions
+    ADD CONSTRAINT ai_tag_suggestions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: ai_tagging_runs ai_tagging_runs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_tagging_runs
+    ADD CONSTRAINT ai_tagging_runs_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: annotation_targets annotation_targets_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3915,6 +3977,55 @@ CREATE INDEX index_ai_reviews_on_requested_by_id ON public.ai_reviews USING btre
 --
 
 CREATE INDEX index_ai_reviews_on_status ON public.ai_reviews USING btree (status);
+
+
+--
+-- Name: index_ai_tag_suggestions_on_ai_tagging_run_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_tag_suggestions_on_ai_tagging_run_id ON public.ai_tag_suggestions USING btree (ai_tagging_run_id);
+
+
+--
+-- Name: index_ai_tag_suggestions_on_ai_tagging_run_id_and_label; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_ai_tag_suggestions_on_ai_tagging_run_id_and_label ON public.ai_tag_suggestions USING btree (ai_tagging_run_id, label);
+
+
+--
+-- Name: index_ai_tag_suggestions_on_asset_id_and_state; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_tag_suggestions_on_asset_id_and_state ON public.ai_tag_suggestions USING btree (asset_id, state);
+
+
+--
+-- Name: index_ai_tag_suggestions_on_decided_by_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_tag_suggestions_on_decided_by_id ON public.ai_tag_suggestions USING btree (decided_by_id);
+
+
+--
+-- Name: index_ai_tagging_runs_on_asset_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_tagging_runs_on_asset_id ON public.ai_tagging_runs USING btree (asset_id);
+
+
+--
+-- Name: index_ai_tagging_runs_on_asset_id_and_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_tagging_runs_on_asset_id_and_status ON public.ai_tagging_runs USING btree (asset_id, status);
+
+
+--
+-- Name: index_ai_tagging_runs_on_requested_by_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ai_tagging_runs_on_requested_by_id ON public.ai_tagging_runs USING btree (requested_by_id);
 
 
 --
@@ -5635,6 +5746,14 @@ ALTER TABLE ONLY public.style_presets
 
 
 --
+-- Name: ai_tagging_runs fk_rails_53ecd294ee; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_tagging_runs
+    ADD CONSTRAINT fk_rails_53ecd294ee FOREIGN KEY (asset_version_id) REFERENCES public.asset_versions(id);
+
+
+--
 -- Name: inbox_messages fk_rails_5468752965; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -5776,6 +5895,14 @@ ALTER TABLE ONLY public.comment_threads
 
 ALTER TABLE ONLY public.portal_grants
     ADD CONSTRAINT fk_rails_770be9eabd FOREIGN KEY (review_link_id) REFERENCES public.review_links(id);
+
+
+--
+-- Name: ai_tagging_runs fk_rails_7b648a001f; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_tagging_runs
+    ADD CONSTRAINT fk_rails_7b648a001f FOREIGN KEY (requested_by_id) REFERENCES public.users(id);
 
 
 --
@@ -5923,6 +6050,14 @@ ALTER TABLE ONLY public.asset_versions
 
 
 --
+-- Name: ai_tag_suggestions fk_rails_9f8777a148; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_tag_suggestions
+    ADD CONSTRAINT fk_rails_9f8777a148 FOREIGN KEY (ai_tagging_run_id) REFERENCES public.ai_tagging_runs(id);
+
+
+--
 -- Name: comment_threads fk_rails_a13f781f72; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -5968,6 +6103,14 @@ ALTER TABLE ONLY public.comments
 
 ALTER TABLE ONLY public.in_app_notifications
     ADD CONSTRAINT fk_rails_a5f2d7e793 FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
+-- Name: ai_tagging_runs fk_rails_a5fe8ae709; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_tagging_runs
+    ADD CONSTRAINT fk_rails_a5fe8ae709 FOREIGN KEY (asset_id) REFERENCES public.assets(id);
 
 
 --
@@ -6059,6 +6202,14 @@ ALTER TABLE ONLY public.comment_threads
 
 
 --
+-- Name: ai_tag_suggestions fk_rails_bb7770b7d0; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_tag_suggestions
+    ADD CONSTRAINT fk_rails_bb7770b7d0 FOREIGN KEY (asset_id) REFERENCES public.assets(id);
+
+
+--
 -- Name: active_storage_attachments fk_rails_c3b3935057; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -6131,6 +6282,14 @@ ALTER TABLE ONLY public.user_groups
 
 
 --
+-- Name: ai_tag_suggestions fk_rails_db0ab22ebb; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ai_tag_suggestions
+    ADD CONSTRAINT fk_rails_db0ab22ebb FOREIGN KEY (decided_by_id) REFERENCES public.users(id);
+
+
+--
 -- Name: comments fk_rails_dccb5f9120; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -6193,6 +6352,7 @@ ALTER TABLE ONLY public.comments
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260908090000'),
 ('20260907120000'),
 ('20260907110000'),
 ('20260907100000'),

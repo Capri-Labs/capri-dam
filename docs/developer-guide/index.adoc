@@ -129,6 +129,12 @@ include::src/30_rights-and-licensing.adoc[]
 // 31. Distribution Portal
 include::src/31_distribution-portal.adoc[]
 
+// 32. Manual Renditions
+include::src/32_manual-renditions.adoc[]
+
+// 33. AI Auto-Tagging
+include::src/33_ai-auto-tagging.adoc[]
+
 ifdef::backend-html5[]
 // Back-to-top button
 ++++

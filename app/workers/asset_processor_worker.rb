@@ -400,6 +400,8 @@ class AssetProcessorWorker
 
       AssetWorkflowTriggerWorker.perform_async(asset.id, "on_upload") if defined?(AssetWorkflowTriggerWorker)
 
+      enqueue_auto_tagging(asset, version, extracted_meta)
+
       # Enqueue duplicate detection if a checksum was extracted.
       sha256 = extracted_meta[:checksum_sha256]
       if sha256.present?
@@ -412,6 +414,36 @@ class AssetProcessorWorker
       Rails.logger.warn "⚠️ Worker failed for AssetVersion #{version.id}: #{e.message}"
       raise e
     end
+  end
+
+  # Queues a vision model to propose tags for a freshly-uploaded image.
+  #
+  # Off by default. Automatic tagging costs money per asset and fills a triage
+  # queue somebody has to work through, so it is an explicit decision an
+  # administrator makes rather than something a fresh install starts doing.
+  #
+  # Only images: the tagging capability is a vision model, and handing it a
+  # spreadsheet would burn a gateway call to be told nothing.
+  #
+  # Failure here must never fail the upload. The asset is already stored and
+  # +ready+ by this point; losing a speculative tagging run is a far smaller
+  # problem than marking a perfectly good upload as failed.
+  def enqueue_auto_tagging(asset, version, extracted_meta)
+    return unless Setting.get("ai_auto_tagging_enabled").to_s == "true"
+
+    mime = (extracted_meta[:content_type] || extracted_meta["content_type"] ||
+            asset.properties.to_h["content_type"]).to_s
+    return unless mime.start_with?("image/")
+
+    run = AiTaggingRun.create!(
+      asset: asset,
+      asset_version: version,
+      trigger: "upload",
+      profile: "general_subject",
+    )
+    AiAutoTagWorker.perform_async(run.id)
+  rescue StandardError => e
+    Rails.logger.warn("Auto-tagging not queued for asset #{asset.id}: #{e.message}")
   end
 
   # Regenerates a flattened PNG web preview for an *already-processed* asset whose

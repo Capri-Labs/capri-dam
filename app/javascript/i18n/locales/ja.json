@@ -46,7 +46,8 @@
       "Queues": "Sidekiqキュー",
       "Inbox": "受信トレイ",
       "Quarantine Review": "Quarantine Review",
-      "Custom Nodes": "カスタムノード"
+      "Custom Nodes": "カスタムノード",
+      "Portals": "配信ポータル"
     }
   },
   "common": {
@@ -2362,7 +2363,8 @@
       "workflows": "ワークフロー",
       "aiEngine": "AIエンジン",
       "comments": "コメント",
-      "commentsWithCount": "コメント ({{count}})"
+      "commentsWithCount": "コメント ({{count}})",
+      "renditions": "レンディション"
     },
     "info": {
       "generalMetadata": "一般メタデータ",
@@ -3239,5 +3241,162 @@
     "name": "名前 (任意)",
     "later": "後で",
     "continue": "続ける"
+  },
+  "portalManager": {
+    "title": "配信ポータル",
+    "subtitle": "承認済みアセットを組織外と共有するための、ブランド設定付き・認証保護されたページです。",
+    "create": "新しいポータル",
+    "refresh": "再読み込み",
+    "empty": "ポータルはまだありません。",
+    "untitled": "無題のポータル",
+    "passphraseSet": "パスフレーズ",
+    "cancel": "キャンセル",
+    "save": "変更を保存",
+    "close": "閉じる",
+    "saved": "ポータルを更新しました。",
+    "revoked": "ポータルを失効させました。",
+    "grantsCount": "許可 {{granted}} 件 / 配信可能 {{deliverable}} 件",
+    "grantsTooltip": "{{granted}} 件のアセットが許可されており、そのうち {{deliverable}} 件が権利上実際に配信できます。",
+    "filter": {
+      "all": "すべて",
+      "active": "有効",
+      "expired": "期限切れ",
+      "revoked": "失効済み"
+    },
+    "column": {
+      "name": "名前",
+      "target": "共有対象",
+      "status": "状態",
+      "grants": "許可",
+      "downloads": "ダウンロード",
+      "expires": "有効期限",
+      "actions": "操作"
+    },
+    "status": {
+      "active": "有効",
+      "expired": "期限切れ",
+      "revoked": "失効済み"
+    },
+    "action": {
+      "edit": "ポータルを編集",
+      "downloads": "ダウンロード履歴",
+      "revoke": "失効させる"
+    },
+    "revoke": {
+      "title": "このポータルを失効させますか？",
+      "body": "リンクは直ちに使用できなくなります。ダウンロード履歴を監査できるよう記録は保持されますが、再度有効にすることはできません。",
+      "confirm": "失効させる"
+    },
+    "form": {
+      "createTitle": "新しい配信ポータル",
+      "editTitle": "ポータルを編集",
+      "createSubmit": "ポータルを作成",
+      "name": "ポータル名",
+      "collection": "共有するコレクション",
+      "targetRequired": "共有するコレクションを選択してください。",
+      "targetLocked": "{{target}} を共有しています。作成後に対象を変更することはできません。",
+      "expiresAt": "有効期限",
+      "passphrase": "パスフレーズ",
+      "passphraseHelp": "任意。受信者は内容を見る前にこれを入力する必要があります。",
+      "passphraseKeep": "現在のパスフレーズを維持する場合は空欄のままにしてください。",
+      "requireEmail": "受信者に本人確認を求める",
+      "grantsAfterCreate": "どのアセットを共有するか、またダウンロードを許可するかは、ポータルの作成後に選択できます。"
+    },
+    "branding": {
+      "title": "ブランド設定",
+      "help": "受信者のページに表示されます。認識できない値は拒否されず、破棄されます。",
+      "accent": "アクセントカラー",
+      "logoUrl": "ロゴ URL",
+      "headline": "見出し",
+      "message": "ウェルカムメッセージ"
+    },
+    "grants": {
+      "title": "共有アセット",
+      "help": "アクセスなしに設定したものは提供されません。保存すると、この一覧が以前の内容を完全に置き換えます。",
+      "none": "このポータルの対象にはまだアセットがありません。",
+      "summary": "{{total}} 件中 {{granted}} 件のアセットを共有中",
+      "selectAll": "すべて共有",
+      "clearAll": "すべて非共有",
+      "asset": "アセット",
+      "rights": "権利",
+      "permission": "権限",
+      "permissionFor": "{{name}} の権限",
+      "distributable": "配信可能",
+      "notDistributable": "配信不可",
+      "notDistributableHelp": "このアセットの利用条件では外部配信が許可されていないため、ここで許可しても共有されません。",
+      "blockedNotice": "共有したアセットのうち {{count}} 件は現在の権利では外部に出せないため、ポータルには表示されません。",
+      "option": {
+        "none": "アクセスなし",
+        "view": "閲覧のみ",
+        "download": "閲覧とダウンロード"
+      }
+    },
+    "token": {
+      "title": "ポータルを作成しました",
+      "warning": "このリンクを今すぐコピーしてください。表示は一度きりで復元できません。紛失した場合は、このポータルを失効させて新しく作成する必要があります。",
+      "urlLabel": "ポータルのリンク",
+      "copy": "リンクをコピー",
+      "copied": "コピーしました",
+      "done": "リンクをコピーしました"
+    },
+    "downloads": {
+      "title": "ダウンロード — {{name}}",
+      "empty": "このポータルからはまだ何もダウンロードされていません。",
+      "total": "{{count}} 件のダウンロードを記録",
+      "asset": "アセット",
+      "guest": "受信者",
+      "ip": "IP アドレス",
+      "when": "ダウンロード日時"
+    }
+  },
+  "renditions": {
+    "description": "このアセットの別形式の保存物です（印刷用 CMYK ファイル、手作業でトリミングした SNS 用など）。バージョンとは異なり、すべてのレンディションが同時に有効です。",
+    "empty": "レンディションはまだありません。",
+    "field": {
+      "kind": "種別",
+      "kindHelp": "小文字をアンダースコアでつなぎます（例: print_cmyk）"
+    },
+    "action": {
+      "chooseFile": "ファイルを選択",
+      "upload": "アップロード",
+      "delete": "削除",
+      "open": "開く",
+      "generatedLocked": "自動生成されたものです。元のファイルを削除してください"
+    },
+    "column": {
+      "kind": "種別",
+      "type": "種類",
+      "dimensions": "寸法",
+      "size": "サイズ",
+      "source": "由来",
+      "actions": "操作"
+    },
+    "source": {
+      "manual": "手動",
+      "generated": "自動生成"
+    },
+    "error": {
+      "reservedKind": "「{{kind}}」は自動生成されるため、手動でアップロードできません。",
+      "malformedKind": "小文字をアンダースコアでつないで入力してください。",
+      "duplicateKind": "このアセットには既に同じ種別のレンディションがあります。"
+    },
+    "deleteDialog": {
+      "title": "レンディションを削除しますか？",
+      "body": "「{{kind}}」レンディションと保存されたファイルが完全に削除されます。"
+    }
+  },
+  "aiTagging": {
+    "title": "AI タグ候補",
+    "description": "ビジョンモデルによる推奨ラベルです。承認するまでこのアセットには適用されません。",
+    "empty": "レビュー待ちのタグ候補はありません。",
+    "action": {
+      "suggest": "タグを提案",
+      "accept": "タグを承認",
+      "dismiss": "タグを却下"
+    },
+    "status": {
+      "running": "このアセットを解析中…",
+      "failed": "前回のタグ付け実行に失敗しました。{{message}}"
+    }
   }
 }

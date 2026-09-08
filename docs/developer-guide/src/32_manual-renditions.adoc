@@ -1,0 +1,192 @@
+[[section-manual-renditions]]
+= Manual Renditions
+
+A *rendition* is the same work in a different form: a print-ready CMYK TIFF, a
+hand-cropped square for social, a low-bitrate broadcast proxy, a signed-off
+proof PDF.
+
+The processing pipeline already produces some of these automatically — a
+thumbnail, a web preview, a video poster. What it cannot produce is anything
+that required a person: a crop that keeps the logo intact, a colour profile a
+client stipulated, a cut a producer approved. Manual renditions give those a
+home on the asset they belong to.
+
+Without this, such files end up as *separate assets* whose relationship to the
+original lives only in a filename convention — and filename conventions are not
+enforceable, searchable, or survivable.
+
+== A rendition is not a version
+
+This is the distinction the whole feature rests on.
+
+[cols="1,2,2", options="header"]
+|===
+| | Asset version | Rendition
+
+| Question it answers | "What did this look like at time T?" | "Give me this in form X"
+| Relationship        | Sequential — the newest supersedes the rest | Parallel — all are current at once
+| Cardinality         | Ordered history | A set, keyed by `kind`
+| Deleting one        | Rewrites history | Removes one form
+|===
+
+Filing a CMYK print master as a *version* would make it **the** asset the moment
+it was uploaded, and the web original would immediately read as superseded
+history. That is not what happened: both files are current, and each is right
+for a different purpose. Hence a separate table.
+
+== The `kind` is a key, not a label
+
+`kind` is constrained to lowercase words joined by underscores
+(`+/\A[a-z0-9]+(?:_[a-z0-9]+)*\z/+`, max 50 characters) and is **unique per
+asset**.
+
+The format is constrained because other systems match on it — a publishing
+integration asks for `print_cmyk` and must get the same thing every time. The
+*vocabulary* is deliberately open, because which forms matter is an
+organisational question: `print_cmyk`, `social_square`, `broadcast_proxy`,
+`packaging_dieline`.
+
+Uniqueness is scoped to the asset, so a second upload of an existing kind is a
+`422` rather than a silent replace. Replacing a rendition is a delete followed
+by an upload — two decisions, made deliberately.
+
+=== Reserved kinds
+
+`thumbnail`, `web_preview` and `poster` (`Rendition::SYSTEM_KINDS`) are produced
+by the pipeline and are **refused** for manual upload.
+
+Other code is entitled to assume that a rendition called `thumbnail` came from
+the thumbnailer and has the properties a thumbnail has. Letting a person put an
+arbitrary 200 MB TIFF there would turn a safe assumption into an intermittent,
+hard-to-trace bug somewhere far away.
+
+== Where the bytes go
+
+`renditions.storage_backend_id` is `NOT NULL`, and that is the load-bearing
+design decision.
+
+A rendition is a pointer to exactly one object in exactly one place. If the
+backend were resolved at *read* time from whatever happens to be active, then
+every rendition uploaded before an organisation switched storage provider would
+silently break — the bytes do not move just because the setting did.
+
+So:
+
+* The backend is resolved **once, at upload**, from `StorageBackend.active`.
+* The bytes are written through **that same record's own adapter** — not
+  `StorageManager.active_adapter`, which is assembled from `Setting` rows and
+  can diverge from any `StorageBackend` row.
+* The id is stored on the rendition, and `Rendition#url` resolves against it.
+
+If no backend is active, the upload is **refused with `503`** rather than
+guessed at. Storing bytes somewhere we cannot name would produce a row we could
+never resolve again — worse than not storing them.
+
+Storage keys look like `renditions/<asset-uuid>/<kind>_<random>.<ext>`. The
+random suffix means re-uploading a kind can never overwrite the object a
+still-live row points at.
+
+== Object lifecycle
+
+[cols="1,3", options="header"]
+|===
+| Event | What happens
+
+| Upload succeeds
+| Object written, then row created.
+
+| Upload written but row rejected (bad `kind`, duplicate)
+| The object is deleted again. The write happens first deliberately: an
+  *orphaned object* is strictly better than a *row pointing at nothing*, because
+  the orphan cannot corrupt a later read.
+
+| Rendition destroyed
+| `after_destroy_commit` purges the object. It is `after_destroy_commit`, not
+  `after_destroy`: deleting inside a transaction that later rolled back would
+  leave a live row pointing at bytes that no longer exist.
+
+| Purge fails (storage outage)
+| Logged and swallowed. A storage outage must not leave a user unable to delete
+  a row they have every right to delete.
+
+| Asset purged
+| `has_many :renditions, dependent: :destroy` — `:destroy`, not `:delete_all`,
+  so each row's purge callback actually runs.
+|===
+
+There is no soft delete. Unlike an asset, a rendition carries no history of its
+own, so a hidden row would be a file nobody can see and nobody can reclaim.
+
+== Dimensions are derived, never accepted
+
+Width and height are read from the file itself, server-side, via MiniMagick.
+They are properties of the file; a caller that reported them wrongly would make
+every downstream layout decision wrong with it.
+
+Non-images — a PDF proof, an audio proxy — simply have no dimensions. That is a
+normal outcome, not an error.
+
+== API
+
+All routes are nested under the asset, so a rendition id can never be used to
+reach across to another asset's derivative.
+
+[cols="1,2,3", options="header"]
+|===
+| Method | Path | Notes
+
+| `GET`
+| `/api/v1/assets/{asset_id}/renditions`
+| Requires `read` on the asset.
+
+| `POST`
+| `/api/v1/assets/{asset_id}/renditions`
+| `multipart/form-data`: `file`, `kind`, optional `metadata`. Requires `modify`.
+
+| `DELETE`
+| `/api/v1/assets/{asset_id}/renditions/{id}`
+| Removes row and object. Requires `modify`.
+|===
+
+Creating or deleting requires `modify`, not `read`: adding a rendition changes
+what the asset *is* to every downstream consumer, so it is not a read-adjacent
+act.
+
+`storage_key` is **never serialised**. It is an internal address, and publishing
+it invites callers to build their own URLs against a backend layout that is not
+part of the contract.
+
+A rendition whose URL cannot currently be resolved is reported with
+`"url": null` rather than failing the whole listing — one broken backend should
+not turn a listing into a `500`.
+
+== UI
+
+`AssetRenditionsTab` sits in the asset inspector, beside Versions rather than
+inside it, for the reason set out above.
+
+* Uploading takes a `kind` and a file. Reserved, malformed and duplicate kinds
+  are caught in the browser *and* on the server — the client check is a courtesy,
+  the server check is the rule.
+* Generated renditions are listed alongside manual ones, marked as such, and
+  cannot be deleted from here: they are reproducible from the source, so
+  deleting one merely invites the pipeline to make it again.
+
+== Testing
+
+[cols="1,2", options="header"]
+|===
+| Layer | File
+
+| Model
+| `spec/models/rendition_spec.rb`
+
+| Request
+| `spec/requests/api/v1/renditions_request_spec.rb`
+
+| OpenAPI
+| `spec/requests/api/v1/renditions_spec.rb`
+
+| Frontend
+| `spec/javascript/components/Folders/AssetRenditionsTab.test.jsx`
+|===

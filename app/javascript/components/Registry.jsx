@@ -33,6 +33,7 @@ import InboxPage from "./Inbox/InboxPage";
 import QuarantineManager from "./Admin/Quarantine/QuarantineManager";
 import CustomNodeManager from "./Admin/CustomNodes/CustomNodeManager";
 import SecurityPoliciesManager from "./Admin/SecurityPoliciesManager";
+import PortalsManager from "./Portals/PortalsManager";
 
 export const COMPONENT_REGISTRY = {
     'dashboard': DashboardManager,
@@ -70,4 +71,5 @@ export const COMPONENT_REGISTRY = {
     'quarantine-manager-screen': QuarantineManager,
     'custom-nodes-screen': CustomNodeManager,
     'policies': SecurityPoliciesManager,
+    'portalsView': PortalsManager,
 };

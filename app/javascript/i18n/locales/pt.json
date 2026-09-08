@@ -46,7 +46,8 @@
       "Queues": "Filas Sidekiq",
       "Inbox": "Caixa de entrada",
       "Quarantine Review": "Quarantine Review",
-      "Custom Nodes": "Nós personalizados"
+      "Custom Nodes": "Nós personalizados",
+      "Portals": "Portais de distribuição"
     }
   },
   "common": {
@@ -2362,7 +2363,8 @@
       "workflows": "Fluxos de trabalho",
       "aiEngine": "Motor de IA",
       "comments": "Comentários",
-      "commentsWithCount": "Comentários ({{count}})"
+      "commentsWithCount": "Comentários ({{count}})",
+      "renditions": "Representações"
     },
     "info": {
       "generalMetadata": "Metadados gerais",
@@ -3239,5 +3241,162 @@
     "name": "Nome (opcional)",
     "later": "Agora não",
     "continue": "Continuar"
+  },
+  "portalManager": {
+    "title": "Portais de distribuição",
+    "subtitle": "Páginas personalizadas e protegidas por credencial para partilhar ativos aprovados fora da organização.",
+    "create": "Novo portal",
+    "refresh": "Atualizar",
+    "empty": "Ainda não há portais.",
+    "untitled": "Portal sem título",
+    "passphraseSet": "Palavra-passe",
+    "cancel": "Cancelar",
+    "save": "Guardar alterações",
+    "close": "Fechar",
+    "saved": "Portal atualizado.",
+    "revoked": "Portal revogado.",
+    "grantsCount": "{{granted}} concedidos / {{deliverable}} entregáveis",
+    "grantsTooltip": "{{granted}} ativos foram concedidos; {{deliverable}} deles podem realmente sair ao abrigo dos seus direitos.",
+    "filter": {
+      "all": "Todos",
+      "active": "Ativos",
+      "expired": "Expirados",
+      "revoked": "Revogados"
+    },
+    "column": {
+      "name": "Nome",
+      "target": "Partilha",
+      "status": "Estado",
+      "grants": "Concessões",
+      "downloads": "Transferências",
+      "expires": "Expira",
+      "actions": "Ações"
+    },
+    "status": {
+      "active": "Ativo",
+      "expired": "Expirado",
+      "revoked": "Revogado"
+    },
+    "action": {
+      "edit": "Editar portal",
+      "downloads": "Registo de transferências",
+      "revoke": "Revogar"
+    },
+    "revoke": {
+      "title": "Revogar este portal?",
+      "body": "A ligação deixa de funcionar imediatamente. O registo é mantido para que o histórico de transferências continue auditável, mas não pode ser reativado.",
+      "confirm": "Revogar"
+    },
+    "form": {
+      "createTitle": "Novo portal de distribuição",
+      "editTitle": "Editar portal",
+      "createSubmit": "Criar portal",
+      "name": "Nome do portal",
+      "collection": "Coleção a partilhar",
+      "targetRequired": "Escolha uma coleção para partilhar.",
+      "targetLocked": "Partilha {{target}}. O destino não pode ser alterado após a criação.",
+      "expiresAt": "Expira em",
+      "passphrase": "Palavra-passe",
+      "passphraseHelp": "Opcional. Os destinatários têm de a introduzir antes de verem seja o que for.",
+      "passphraseKeep": "Deixe em branco para manter a palavra-passe atual.",
+      "requireEmail": "Pedir aos destinatários que se identifiquem",
+      "grantsAfterCreate": "Poderá escolher que ativos são partilhados, e se podem ser transferidos, assim que o portal existir."
+    },
+    "branding": {
+      "title": "Personalização",
+      "help": "Apresentado na página do destinatário. Valores não reconhecidos são descartados em vez de rejeitados.",
+      "accent": "Cor de destaque",
+      "logoUrl": "URL do logótipo",
+      "headline": "Título",
+      "message": "Mensagem de boas-vindas"
+    },
+    "grants": {
+      "title": "Ativos partilhados",
+      "help": "Tudo o que estiver definido como sem acesso fica retido. Esta lista substitui integralmente a anterior ao guardar.",
+      "none": "O destino deste portal ainda não tem ativos.",
+      "summary": "{{granted}} de {{total}} ativos partilhados",
+      "selectAll": "Partilhar tudo",
+      "clearAll": "Reter tudo",
+      "asset": "Ativo",
+      "rights": "Direitos",
+      "permission": "Permissão",
+      "permissionFor": "Permissão para {{name}}",
+      "distributable": "Distribuível",
+      "notDistributable": "Não distribuível",
+      "notDistributableHelp": "As condições de utilização deste ativo não permitem distribuição externa, pelo que não será partilhado mesmo que o conceda aqui.",
+      "blockedNotice": "{{count}} dos ativos que partilhou não podem sair ao abrigo dos direitos atuais e não aparecerão no portal.",
+      "option": {
+        "none": "Sem acesso",
+        "view": "Apenas ver",
+        "download": "Ver e transferir"
+      }
+    },
+    "token": {
+      "title": "Portal criado",
+      "warning": "Copie esta ligação agora. É apresentada apenas uma vez e não pode ser recuperada — se a perder, terá de revogar este portal e criar outro.",
+      "urlLabel": "Ligação do portal",
+      "copy": "Copiar ligação",
+      "copied": "Copiado",
+      "done": "Já copiei a ligação"
+    },
+    "downloads": {
+      "title": "Transferências — {{name}}",
+      "empty": "Nada foi transferido a partir deste portal.",
+      "total": "{{count}} transferências registadas",
+      "asset": "Ativo",
+      "guest": "Destinatário",
+      "ip": "Endereço IP",
+      "when": "Transferido"
+    }
+  },
+  "renditions": {
+    "description": "Formas alternativas armazenadas deste ativo — um ficheiro CMYK pronto para impressão, uma variante social recortada à mão. Ao contrário das versões, todas as representações são atuais ao mesmo tempo.",
+    "empty": "Ainda não há representações.",
+    "field": {
+      "kind": "Tipo",
+      "kindHelp": "Minúsculas unidas por sublinhados, ex.: print_cmyk"
+    },
+    "action": {
+      "chooseFile": "Escolher ficheiro",
+      "upload": "Carregar",
+      "delete": "Eliminar",
+      "open": "Abrir",
+      "generatedLocked": "Gerado automaticamente — elimine antes a origem"
+    },
+    "column": {
+      "kind": "Tipo",
+      "type": "Tipo MIME",
+      "dimensions": "Dimensões",
+      "size": "Tamanho",
+      "source": "Origem",
+      "actions": "Ações"
+    },
+    "source": {
+      "manual": "Manual",
+      "generated": "Gerado"
+    },
+    "error": {
+      "reservedKind": "«{{kind}}» é gerado automaticamente e não pode ser carregado manualmente.",
+      "malformedKind": "Utilize minúsculas unidas por sublinhados.",
+      "duplicateKind": "Este ativo já tem uma representação desse tipo."
+    },
+    "deleteDialog": {
+      "title": "Eliminar representação?",
+      "body": "A representação «{{kind}}» e o respetivo ficheiro serão removidos permanentemente."
+    }
+  },
+  "aiTagging": {
+    "title": "Sugestões de tags de IA",
+    "description": "Rótulos propostos por um modelo de visão. Nada é aplicado a este ativo até que você aceite.",
+    "empty": "Não há sugestões de tags aguardando revisão.",
+    "action": {
+      "suggest": "Sugerir tags",
+      "accept": "Aceitar tag",
+      "dismiss": "Descartar tag"
+    },
+    "status": {
+      "running": "Analisando este ativo…",
+      "failed": "A última execução de marcação falhou. {{message}}"
+    }
   }
 }

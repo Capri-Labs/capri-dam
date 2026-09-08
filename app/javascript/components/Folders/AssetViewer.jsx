@@ -15,7 +15,8 @@ import {
     LocalOffer,
     ChevronRight,
     ExpandMore,
-    ContentCopy, PushPin, Share, PolicyOutlined, SchemaOutlined, ChatBubbleOutlined
+    ContentCopy, PushPin, Share, PolicyOutlined, SchemaOutlined, ChatBubbleOutlined,
+    PhotoLibraryOutlined
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import ImageEditorDialog from './ImageEditorDialog';
@@ -28,6 +29,8 @@ import PinToCollectionDialog from './PinToCollectionDialog';
 import { useNotify } from '../../context/NotificationContext';
 
 import AssetVersionsTab from './AssetVersionsTab';
+import AssetRenditionsTab from './AssetRenditionsTab';
+import AiTagSuggestionsPanel from './AiTagSuggestionsPanel';
 import AssetAuditTab from './AssetAuditTab';
 import AssetMetadataPanel from './AssetMetadataPanel';
 import AssetRightsPanel from './AssetRightsPanel';
@@ -44,7 +47,7 @@ const interpolate = (template, values = {}) => template.replace(/\{\{(\w+)\}\}/g
 
 // Index of the Comments tab. Named because the annotation overlay switches to
 // it when a marker on the image is clicked.
-const COMMENTS_TAB_INDEX = 6;
+const COMMENTS_TAB_INDEX = 7;
 
 // Video MIME types every modern browser can play natively in a <video>
 // element without server-side transcoding. Anything outside this list
@@ -560,6 +563,7 @@ export default function AssetViewer({ asset: initialAsset, open, onClose, onAsse
                             <Tab icon={<InfoOutlined fontSize="small" />} iconPosition="start" label={translate('assetViewer.tabs.info', 'Info')} />
                             <Tab icon={<SchemaOutlined fontSize="small" />} iconPosition="start" label={translate('assetViewer.tabs.metadata', 'Metadata')} />
                             <Tab icon={<History fontSize="small" />} iconPosition="start" label={translate('assetViewer.tabs.versions', 'Versions')} />
+                            <Tab icon={<PhotoLibraryOutlined fontSize="small" />} iconPosition="start" data-testid="asset-viewer-renditions-tab" label={translate('assetViewer.tabs.renditions', 'Renditions')} />
                             <Tab icon={<PolicyOutlined fontSize="small" />} iconPosition="start" label={translate('assetViewer.tabs.audit', 'Audit')} />
                             <Tab icon={<AccountTreeOutlined fontSize="small" />} iconPosition="start" label={translate('assetViewer.tabs.workflows', 'Workflows')} />
                             <Tab icon={<AutoAwesome fontSize="small" />} iconPosition="start" label={translate('assetViewer.tabs.aiEngine', 'AI Engine')} />
@@ -738,18 +742,29 @@ export default function AssetViewer({ asset: initialAsset, open, onClose, onAsse
                         <TabPanel value={activeTab} index={2}>
                             <AssetVersionsTab asset={asset} onAssetUpdated={onAssetUpdated} />
                         </TabPanel>
-                        {/* TAB 3: AUDIT */}
-                        <TabPanel value={activeTab} index={3}><AssetAuditTab asset={asset} /></TabPanel>
-                        {/* TAB 4: WORKFLOWS */}
-                        <TabPanel value={activeTab} index={4}>
+                        {/* TAB 3: RENDITIONS */}
+                        <TabPanel value={activeTab} index={3}>
+                            {/* Permission is enforced server-side; the panel surfaces the
+                                controls and the API refuses what the user may not do. */}
+                            <AssetRenditionsTab asset={asset} canModify />
+                        </TabPanel>
+                        {/* TAB 4: AUDIT */}
+                        <TabPanel value={activeTab} index={4}><AssetAuditTab asset={asset} /></TabPanel>
+                        {/* TAB 5: WORKFLOWS */}
+                        <TabPanel value={activeTab} index={5}>
                             <WorkflowPanel assetId={asset.id} onWorkflowUpdate={() => { if (onAssetUpdated) onAssetUpdated(asset); }} />
                         </TabPanel>
-                        {/* TAB 5: AI */}
-                        <TabPanel value={activeTab} index={5}>
+                        {/* TAB 6: AI */}
+                        <TabPanel value={activeTab} index={6}>
                             <Typography variant="subtitle1" fontWeight="700" sx={{ mb: 2 }}>{translate('assetViewer.ai.semanticAndVisionAnalysis', 'Semantic & Vision Analysis')}</Typography>
+                            <AiTagSuggestionsPanel
+                                asset={asset}
+                                canModify
+                                onTagsChanged={() => { if (onAssetUpdated) onAssetUpdated(asset); }}
+                            />
                         </TabPanel>
 
-                        {/* TAB 6: COMMENTS & ANNOTATIONS */}
+                        {/* TAB 7: COMMENTS & ANNOTATIONS */}
                         <TabPanel value={activeTab} index={COMMENTS_TAB_INDEX}>
                             <AiSuggestionsPanel review={aiReview} canModify />
                             <AssetCommentsPanel comments={comments} asset={asset} />
