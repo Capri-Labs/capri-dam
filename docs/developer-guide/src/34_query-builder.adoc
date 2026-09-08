@@ -1,0 +1,206 @@
+[[section-query-builder]]
+= Graphical Query Builder
+
+The search endpoint used to accept a flat bag of parameters, all of them
+implicitly AND-ed. That is exactly right for a facet bar — every control the
+user touches narrows the result — and it cannot express the query that motivates
+this chapter:
+
+----
+(shot_on_location OR studio) AND NOT expired
+----
+
+No amount of additional parameters ever gets there, because what is missing is
+*structure*, not vocabulary. So the search API gained a query AST, and the search
+screen gained a builder for it.
+
+== The AST
+
+Two node shapes, and no others.
+
+[source,json]
+----
+{
+  "op": "and",
+  "children": [
+    { "field": "title", "operator": "contains", "value": "sunset" },
+    { "op": "or", "children": [
+      { "field": "status", "operator": "eq", "value": "approved" },
+      { "field": "status", "operator": "eq", "value": "ready" }
+    ] },
+    { "op": "not", "children": [
+      { "field": "license_expires_at", "operator": "before", "value": "2026-01-01" }
+    ] }
+  ]
+}
+----
+
+`Search::QueryCompiler` is the only place an AST becomes SQL. Every field name is
+resolved through `Search::FieldRegistry`; every value arrives as a bind
+parameter. A caller can influence *what* is compared, never the shape of the
+query.
+
+=== NOT takes exactly one child
+
+A NOT with several children could mean "not all of these" or "none of these",
+and those differ on every partially-matching row. Rather than pick one silently,
+the compiler refuses the shape and the UI disables the NOT toggle once a group
+holds more than one condition.
+
+=== An empty group is unfinished, not false
+
+Logically an empty OR is `FALSE`. In a builder it means the user has added a
+group and not filled it in yet, and blanking their results at that moment reads
+as a bug. Empty groups compile to no constraint.
+
+== Why the limits are not optional
+
+An AST is caller-supplied structure, and structure recurses. Without a cap, a few
+kilobytes of nested JSON becomes a query with thousands of predicates — a
+denial-of-service that costs the attacker nothing and the database everything.
+
+[cols="1,1,3", options="header"]
+|===
+| Limit | Value | Guards against
+
+| `MAX_DEPTH` | 8 | Recursive nesting
+| `MAX_NODES` | 100 | Breadth: one group with ten thousand children
+| `MAX_LIST_VALUES` | 50 | A single `IN` with an enormous operand
+| `MAX_VALUE_LENGTH` | 500 | Multi-megabyte `ILIKE` patterns
+|===
+
+All four are checked *during the walk*, before any SQL is produced, and all four
+are published by `GET /api/v1/search/fields` so the builder can stop a user
+before the server has to.
+
+== The field registry
+
+`assets.properties` is a `jsonb` blob holding curated metadata alongside
+implementation detail — `checksum_sha256`, `storage_path`, `thumbnail_data`.
+Reflection cannot tell those apart, so a compiler that reflected over the column
+would let a caller read any of them. The registry inverts the default: *a field
+is unreachable until it is listed*.
+
+It also records types, which JSON does not have.
+`(properties->>'file_size')::bigint` is only safe because we decided that key
+holds an integer, and the registry is where that decision lives.
+
+=== One list, not two
+
+`GET /api/v1/search/fields` serves the registry to the builder. The pick-list a
+user sees and the allow-list the compiler enforces are therefore the same list. A
+hardcoded client list would drift the first time someone added a field to one and
+not the other, and the failure would look like a broken query rather than a stale
+constant.
+
+Schema-defined metadata fields are *data*, not code, so they are resolved at
+request time from `MetadataSchema` tabs — but only via `map_to_property`, and
+static definitions win on a name collision so an administrator cannot redefine
+`title` and change how a core field compiles.
+
+== Decisions that show up in results
+
+=== Negation includes unfilled rows
+
+`not_eq` compiles to `IS DISTINCT FROM`, not `<>`. An asset with no
+`content_type` genuinely *is* "not equal to image/jpeg", and plain `<>` would
+drop it, because `NULL <> 'image/jpeg'` is `NULL`. Quietly excluding unfilled
+rows from a negation is the most surprising thing a query builder can do.
+
+=== A malformed row cannot break the search
+
+Property casts are wrapped in a `CASE` with a regex guard rather than written as
+a bare `(properties->>'x')::numeric`. One asset whose `file_size` holds
+`"unknown"` would otherwise abort the whole query with a cast error. The `CASE`
+is short-circuit-safe in a way an `AND` guard is not — Postgres does not promise
+to evaluate `AND` operands left to right.
+
+The same applies to `tags`: `jsonb_array_elements_text` raises on a non-array, so
+a `jsonb_typeof` guard coerces anything else to an empty array.
+
+=== `LIKE` wildcards in a value are literal
+
+A user typing `50%_off` into a *contains* box means those characters. Without
+escaping, `%` and `_` would silently match far more than they asked for.
+
+=== Date equality means "on that day"
+
+An exact timestamp match would practically never be true. `eq` on a datetime
+field compiles to a half-open day range.
+
+== Composition with the flat params
+
+The AST is AND-ed onto whatever the flat params already narrowed to, rather than
+replacing them.
+
+The flat params are a facet bar; the AST is arbitrary field logic. Layering them
+is what "these filters, plus this query" means on the screen. Nothing is
+reimplemented, so every existing parameter keeps its tested code path and the
+change is purely additive. The one thing that must not be duplicated is the
+*field allow-list*, and the AST owns that alone — the flat params reach only the
+fixed set of keys they always did.
+
+`query` is a reserved parameter name. Without that, the AST's JSON string would
+be swept up by the dynamic-property filter and compiled into
+`properties->>'query' IN (...)`.
+
+== The builder
+
+`app/javascript/components/Search/QueryBuilder/` — recursive, because the
+structure it edits is recursive.
+
+The working tree is *not* the wire AST: every node carries a client id so React
+keys survive reordering, and a leaf may be half-finished while the user is still
+typing. `queryTree.js` is the boundary, and it is deliberately free of React so
+the round-trip property can be tested directly.
+
+=== Round-tripping
+
+An AST loaded from the server renders back into the same tree it was built from.
+That is what makes a builder worth having over a text query language — a saved or
+shared query can be *edited*, not merely re-run.
+
+The AST rides in the URL as a `query` parameter, so a bookmarked link reopens the
+same conditions rather than just the same result list.
+
+=== Incomplete rows are omitted, not sent
+
+A freshly added condition has no field yet. Sending it would make the live count
+fail with a validation error on every click of "Add condition", which reads as
+the builder being broken rather than incomplete.
+
+=== The live count
+
+`POST /api/v1/search/count` returns a total with no rows. It is debounced, and
+each in-flight request is abandoned when a newer one starts — otherwise a slow
+early response can overwrite the count for a query the user has since changed,
+and the wrong number stays on screen.
+
+It is also the one search response that is deliberately *uncached*: the whole
+value of the number is that it reflects the query as it stands this instant.
+
+== GraphQL
+
+`searchAssets` gained a `filter` argument carrying the same AST.
+`metadataFilters` is deprecated rather than removed — it is exact-match only,
+implicitly AND-ed, and reaches any property key including internal ones.
+
+The AST is a `Json` scalar rather than a recursive input object. A hand-written
+input type would still have to keep `value` polymorphic (string, number, or
+list), so it would buy partial schema validation at the cost of a second
+definition of the query language that could drift from the first.
+
+== Related files
+
+[cols="1,2", options="header"]
+|===
+| Path | Role
+
+| `app/services/search/field_registry.rb` | The allow-list; also the UI's pick-list
+| `app/services/search/query_compiler.rb` | AST → SQL, and every limit
+| `app/controllers/api/v1/search_controller.rb` | `#fields`, `#count`, `#apply_query_ast`
+| `app/javascript/components/Search/QueryBuilder/queryTree.js` | Serialize/deserialize
+| `app/javascript/components/Search/QueryBuilder/QueryBuilder.jsx` | Panel, count, apply
+| `app/javascript/components/Search/QueryBuilder/ConditionGroup.jsx` | Recursive group
+| `app/javascript/components/Search/QueryBuilder/ConditionRow.jsx` | Leaf editor
+|===

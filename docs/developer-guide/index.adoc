@@ -135,6 +135,9 @@ include::src/32_manual-renditions.adoc[]
 // 33. AI Auto-Tagging
 include::src/33_ai-auto-tagging.adoc[]
 
+// 34. Graphical Query Builder
+include::src/34_query-builder.adoc[]
+
 ifdef::backend-html5[]
 // Back-to-top button
 ++++

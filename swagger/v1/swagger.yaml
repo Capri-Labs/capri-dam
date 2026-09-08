@@ -3806,6 +3806,148 @@ paths:
                         href:
                           type: string
                           example: "/assets?id=a1b2c3d4-..."
+  "/api/v1/search/fields":
+    get:
+      summary: Field allow-list for the query builder
+      tags:
+      - Assets
+      security:
+      - Bearer: []
+      description: |
+        The set of fields a query AST may reference, with the operators valid for each.
+
+        Served rather than hardcoded in clients so the fields a user is offered and the
+        fields the compiler accepts are the same list. Fields absent from this response
+        are rejected by `POST /api/v1/search/count` and by `GET /api/v1/search?query=`,
+        which is what keeps internal `properties` keys unreachable.
+      responses:
+        '200':
+          description: Field list returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  fields:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                          example: file_size
+                        label:
+                          type: string
+                          example: File size
+                        type:
+                          type: string
+                          enum:
+                          - string
+                          - text
+                          - enum
+                          - number
+                          - datetime
+                          - boolean
+                          - array
+                        group:
+                          type: string
+                          example: file
+                        operators:
+                          type: array
+                          items:
+                            type: string
+                          example:
+                          - gt
+                          - between
+                        values:
+                          type: array
+                          items:
+                            type: string
+                          nullable: true
+                  limits:
+                    type: object
+                    properties:
+                      max_depth:
+                        type: integer
+                        example: 8
+                      max_nodes:
+                        type: integer
+                        example: 100
+                      max_list_values:
+                        type: integer
+                        example: 50
+  "/api/v1/search/count":
+    post:
+      summary: Result count for a query AST
+      tags:
+      - Assets
+      security:
+      - Bearer: []
+      description: |
+        Counts the assets matching a nested boolean query without returning any rows,
+        so a query builder can show a live total while the query is being edited.
+
+        The AST has two node shapes: groups of `{op: and|or|not, children: [...]}` and
+        leaves of `{field, operator, value}`. `not` takes exactly one child. Nesting is
+        capped at 8 levels and 100 nodes — an unbounded AST is a denial-of-service
+        vector, since a few kilobytes of nested JSON would otherwise become thousands
+        of SQL predicates.
+      parameters: []
+      responses:
+        '200':
+          description: Count returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                    example: 142
+        '422':
+          description: Query rejected — unknown field, invalid operator, or over the
+            limits
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: Unknown field 'checksum_sha256'
+                  path:
+                    type: array
+                    items:
+                      type: string
+                    example:
+                    - children
+                    - '0'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                query:
+                  type: object
+                  description: Nested boolean query AST
+                  example:
+                    op: and
+                    children:
+                    - op: or
+                      children:
+                      - field: content_type
+                        operator: eq
+                        value: image/jpeg
+                      - field: content_type
+                        operator: eq
+                        value: image/png
+                    - op: not
+                      children:
+                      - field: status
+                        operator: eq
+                        value: approved
+        required: true
   "/api/v1/assets":
     post:
       summary: Upload a new asset (multipart)

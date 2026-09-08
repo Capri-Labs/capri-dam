@@ -255,6 +255,65 @@ RSpec.describe "GraphQL endpoint", type: :request do
       end
     end
 
+    context "with a nested boolean filter AST" do
+      let(:filter_query) do
+        <<~GQL
+          query SearchAssets($filter: Json) {
+            searchAssets(mode: "all", filter: $filter, first: 25) {
+              edges { node { title } }
+            }
+          }
+        GQL
+      end
+
+      before do
+        create(:asset, title: "Sunset", status: :approved,
+                       properties: { "content_type" => "image/jpeg" })
+        create(:asset, title: "Studio", status: :ready,
+                       properties: { "content_type" => "image/png" })
+      end
+
+      def titles
+        json.dig("data", "searchAssets", "edges").map { |e| e.dig("node", "title") }
+      end
+
+      it "expresses (a OR b) AND NOT c, which metadataFilters cannot" do
+        gql_post(query: filter_query, user: viewer_user, variables: {
+          filter: {
+            op: "and",
+            children: [
+              { op: "or", children: [
+                { field: "content_type", operator: "eq", value: "image/jpeg" },
+                { field: "content_type", operator: "eq", value: "image/png" },
+              ] },
+              { op: "not", children: [ { field: "status", operator: "eq", value: "approved" } ] },
+            ],
+          },
+        })
+
+        expect(response).to have_http_status(:ok)
+        expect(titles).to contain_exactly("Studio")
+      end
+
+      it "refuses a field outside the allow-list, unlike metadataFilters" do
+        gql_post(query: filter_query, user: viewer_user, variables: {
+          filter: { field: "checksum_sha256", operator: "eq", value: "x" },
+        })
+
+        expect(json["errors"].first["message"]).to match(/Unknown field/)
+        expect(json.dig("data", "searchAssets")).to be_nil
+      end
+
+      it "reports a rejected query as a GraphQL error rather than a 500" do
+        gql_post(query: filter_query, user: viewer_user, variables: {
+          filter: { op: "xor", children: [] },
+        })
+
+        expect(response).to have_http_status(:ok)
+        expect(json["errors"].first["message"]).to match(/Unknown operator/)
+      end
+    end
+
     context "with sorting" do
       let(:sorted_query) do
         <<~GQL

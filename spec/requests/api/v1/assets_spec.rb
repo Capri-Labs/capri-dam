@@ -127,6 +127,113 @@ RSpec.describe 'Api::V1::Assets', type: :request do
   end
 
   # ===========================================================================
+  # QUERY BUILDER FIELDS — GET /api/v1/search/fields
+  # ===========================================================================
+  path '/api/v1/search/fields' do
+    get 'Field allow-list for the query builder' do
+      tags 'Assets'
+      produces 'application/json'
+      security [ Bearer: [] ]
+      description <<~DESC
+        The set of fields a query AST may reference, with the operators valid for each.
+
+        Served rather than hardcoded in clients so the fields a user is offered and the
+        fields the compiler accepts are the same list. Fields absent from this response
+        are rejected by `POST /api/v1/search/count` and by `GET /api/v1/search?query=`,
+        which is what keeps internal `properties` keys unreachable.
+      DESC
+
+      response '200', 'Field list returned' do
+        schema type: :object,
+               properties: {
+                 fields: {
+                   type: :array,
+                   items: {
+                     type: :object,
+                     properties: {
+                       name:      { type: :string, example: 'file_size' },
+                       label:     { type: :string, example: 'File size' },
+                       type:      { type: :string,
+                                    enum: %w[string text enum number datetime boolean array] },
+                       group:     { type: :string, example: 'file' },
+                       operators: { type: :array, items: { type: :string }, example: %w[gt between] },
+                       values:    { type: :array, items: { type: :string }, nullable: true },
+                     },
+                   },
+                 },
+                 limits: {
+                   type: :object,
+                   properties: {
+                     max_depth:       { type: :integer, example: 8 },
+                     max_nodes:       { type: :integer, example: 100 },
+                     max_list_values: { type: :integer, example: 50 },
+                   },
+                 },
+               }
+        run_test!
+      end
+    end
+  end
+
+  # ===========================================================================
+  # QUERY COUNT — POST /api/v1/search/count
+  # ===========================================================================
+  path '/api/v1/search/count' do
+    post 'Result count for a query AST' do
+      tags 'Assets'
+      consumes 'application/json'
+      produces 'application/json'
+      security [ Bearer: [] ]
+      description <<~DESC
+        Counts the assets matching a nested boolean query without returning any rows,
+        so a query builder can show a live total while the query is being edited.
+
+        The AST has two node shapes: groups of `{op: and|or|not, children: [...]}` and
+        leaves of `{field, operator, value}`. `not` takes exactly one child. Nesting is
+        capped at 8 levels and 100 nodes — an unbounded AST is a denial-of-service
+        vector, since a few kilobytes of nested JSON would otherwise become thousands
+        of SQL predicates.
+      DESC
+
+      parameter name: :payload, in: :body, required: true, schema: {
+        type: :object,
+        properties: {
+          query: {
+            type: :object,
+            description: 'Nested boolean query AST',
+            example: {
+              op: 'and',
+              children: [
+                { op: 'or', children: [
+                  { field: 'content_type', operator: 'eq', value: 'image/jpeg' },
+                  { field: 'content_type', operator: 'eq', value: 'image/png' },
+                ] },
+                { op: 'not', children: [ { field: 'status', operator: 'eq', value: 'approved' } ] },
+              ],
+            },
+          },
+        },
+      }
+
+      response '200', 'Count returned' do
+        let(:payload) { { query: { field: 'status', operator: 'eq', value: 'ready' } } }
+        schema type: :object, properties: { count: { type: :integer, example: 142 } }
+        run_test!
+      end
+
+      response '422', 'Query rejected — unknown field, invalid operator, or over the limits' do
+        let(:payload) { { query: { field: 'checksum_sha256', operator: 'eq', value: 'x' } } }
+        schema type: :object,
+               properties: {
+                 error: { type: :string, example: "Unknown field 'checksum_sha256'" },
+                 path:  { type: :array, items: { type: :string }, example: %w[children 0] },
+               }
+        run_test!
+      end
+    end
+  end
+
+  # ===========================================================================
   # ASSET CREATION — POST /api/v1/assets
   # ===========================================================================
   path '/api/v1/assets' do

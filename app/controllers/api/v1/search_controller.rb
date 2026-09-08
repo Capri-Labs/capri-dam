@@ -11,6 +11,7 @@ module Api
                            video_height_min video_height_max video_width_min video_width_max
                            video_format video_codec video_bitrate_min video_bitrate_max
                            audio_codec audio_bitrate_min audio_bitrate_max include_bin
+                           query
                            page per_page sort_by sort_dir controller action format].freeze
 
       # Matches the default used by the folder/asset grid (see
@@ -72,6 +73,42 @@ module Api
       def index
         payload = SearchCache.fetch(cache_key_for("index"), expires_in: INDEX_CACHE_TTL) { build_index_payload }
         render json: payload
+      rescue Search::QueryCompiler::InvalidQuery => e
+        render json: { error: e.message, path: e.path }, status: :unprocessable_entity
+      end
+
+      # GET /api/v1/search/fields
+      #
+      # The field allow-list the query builder draws its pick-list from. Served
+      # rather than hardcoded in the client so the list a user is offered and
+      # the list the compiler accepts are the same list — see
+      # {Search::FieldRegistry}.
+      def fields
+        render json: {
+          fields: Search::FieldRegistry.all.map(&:to_h),
+          limits: {
+            max_depth: Search::QueryCompiler::MAX_DEPTH,
+            max_nodes: Search::QueryCompiler::MAX_NODES,
+            max_list_values: Search::QueryCompiler::MAX_LIST_VALUES,
+          },
+        }
+      end
+
+      # POST /api/v1/search/count
+      #
+      # Result count for an AST, without the rows. The builder calls this on
+      # every edit to show "142 results", and a user refining a query wants that
+      # number, not a page of thumbnails they are about to discard.
+      #
+      # Deliberately uncached: the whole value of the number is that it reflects
+      # the query as it stands this instant, and a 30-second-stale count while
+      # someone is actively editing would read as a broken builder.
+      def count
+        scope = include_bin? ? Asset.all : Asset.active
+        scope = Search::QueryCompiler.new(parsed_query_ast).apply(scope)
+        render json: { count: scope.count }
+      rescue Search::QueryCompiler::InvalidQuery => e
+        render json: { error: e.message, path: e.path }, status: :unprocessable_entity
       end
 
       # GET /api/v1/search/suggestions
@@ -120,6 +157,7 @@ module Api
         scope = apply_video_filters(scope)
         scope = apply_audio_filters(scope)
         scope = apply_dynamic_filters(scope)
+        scope = apply_query_ast(scope)
         scope = apply_sort(scope)
 
         total = scope.count
@@ -501,6 +539,36 @@ module Api
       # Applies any extra query params as JSONB property filters.
       # Supports one-level nested paths via dot notation: editor_state.filter
       # Uses ? placeholders to prevent SQL injection.
+      # Composes the nested boolean AST on top of whatever the flat params
+      # already narrowed to.
+      #
+      # AND-composition rather than replacement is deliberate. The flat params
+      # are a *facet bar* — mime group, orientation, publish status — and the
+      # AST is arbitrary field logic; layering them is exactly what "these
+      # filters, plus this query" means to the person using the screen. Nothing
+      # is reimplemented, so every existing param keeps its tested code path and
+      # this phase stays additive. The one thing that must not be duplicated is
+      # the field allow-list, and the AST owns that alone: the flat params reach
+      # only the fixed set of keys they always did.
+      def apply_query_ast(scope)
+        return scope if params[:query].blank?
+
+        Search::QueryCompiler.new(parsed_query_ast).apply(scope)
+      end
+
+      # The AST arrives as a JSON *string* on GET (so it lands in
+      # `query_parameters` and is therefore covered by the response cache key —
+      # a body-only AST would make every distinct query share one cache entry)
+      # and as a nested object on POST.
+      def parsed_query_ast
+        raw = params[:query]
+        return raw unless raw.is_a?(String)
+
+        JSON.parse(raw)
+      rescue JSON::ParserError
+        raise Search::QueryCompiler::InvalidQuery, "Query is not valid JSON"
+      end
+
       def apply_dynamic_filters(scope)
         filter_params = request.query_parameters.except(*RESERVED_PARAMS)
         filter_params.each do |key, value|

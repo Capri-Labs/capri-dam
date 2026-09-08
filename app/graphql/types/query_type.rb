@@ -51,7 +51,15 @@ module Types
       argument :query,            String,         required: false
       argument :mode,             String,         required: false, default_value: "images"
       argument :metadata_filters, Types::JsonType, required: false,
-               description: "Key-value map for strict JSONB matching."
+               description: "Key-value map for strict JSONB matching.",
+               deprecation_reason: "Use `filter` instead. This map is exact-match only, " \
+                                   "implicitly AND-ed, and reaches any property key including " \
+                                   "internal ones."
+      argument :filter, Types::JsonType, required: false,
+               description: "Nested boolean query AST — groups of " \
+                            "`{op: and|or|not, children: [...]}` over leaves of " \
+                            "`{field, operator, value}`. Fields are restricted to the " \
+                            "allow-list served by `GET /api/v1/search/fields`."
       argument :sort_by, String, required: false, default_value: "name",
                description: "Sort field: name, created_at, updated_at, size, or type."
       argument :sort_direction, String, required: false, default_value: "asc",
@@ -72,7 +80,7 @@ module Types
       "type"       => "properties->>'content_type'",
     }.freeze
 
-    def search_assets(query: nil, mode: "images", metadata_filters: nil,
+    def search_assets(query: nil, mode: "images", metadata_filters: nil, filter: nil,
                       sort_by: "name", sort_direction: "asc")
       scope = Asset.active
       scope = scope.where("title ILIKE ?", "%#{query}%") if query.present?
@@ -84,9 +92,22 @@ module Types
         end
       end
 
+      # The AST is carried as a JSON scalar rather than a recursive input object
+      # so that REST and GraphQL speak the *same* format and share the one
+      # compiler. A hand-written input type would have to keep `value`
+      # polymorphic (string, number, or list) as a JSON scalar anyway, so it
+      # would buy partial schema validation at the cost of a second definition
+      # of the query language that could drift from this one.
+      scope = Search::QueryCompiler.new(filter).apply(scope) if filter.present?
+
       column    = ASSET_SORT_COLUMNS[sort_by.to_s] || ASSET_SORT_COLUMNS["name"]
       direction = sort_direction.to_s == "desc" ? "DESC" : "ASC"
       scope.order(Arel.sql("#{column} #{direction} NULLS LAST"))
+    rescue Search::QueryCompiler::InvalidQuery => e
+      # A rejected query is the caller's mistake, not a server fault: surface it
+      # as a GraphQL error carrying the path to the offending node rather than
+      # letting it surface as an unhandled 500.
+      raise GraphQL::ExecutionError.new(e.message, extensions: { "path" => e.path })
     end
 
     # Returns all active, non-expired collections ordered newest-first.

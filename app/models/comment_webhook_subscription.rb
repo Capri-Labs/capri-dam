@@ -33,8 +33,9 @@ class CommentWebhookSubscription < ApplicationRecord
   belongs_to :created_by, class_name: "User", optional: true
 
   validates :name, presence: true
-  validates :url, presence: true, format: { with: %r{\Ahttps?://}i, message: "must be an http(s) URL" }
+  validates :url, presence: true
   validates :secret, presence: true
+  validate  :url_is_http
   validate  :events_are_known
 
   before_validation :generate_secret, on: :create
@@ -98,6 +99,25 @@ class CommentWebhookSubscription < ApplicationRecord
 
   def generate_secret
     self.secret = SecureRandom.hex(32) if secret.blank?
+  end
+
+  # The URL is POSTed to by {CommentWebhookWorker}, so a prefix check is not
+  # enough: an unanchored pattern accepts trailing whitespace or embedded
+  # newlines, which is header-injection material against the outbound request.
+  # Parsing is also the only way to reject a scheme-only value like "https://",
+  # which any "starts with http" regex happily accepts.
+  def url_is_http
+    return if url.blank?
+
+    parsed = begin
+      URI.parse(url)
+    rescue URI::InvalidURIError
+      nil
+    end
+
+    return if parsed.is_a?(URI::HTTP) && parsed.host.present?
+
+    errors.add(:url, "must be an http(s) URL")
   end
 
   def events_are_known

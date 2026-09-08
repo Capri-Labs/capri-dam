@@ -1703,6 +1703,13 @@ type Query {
     before: String
 
     """
+    Nested boolean query AST — groups of `{op: and|or|not, children: [...]}`
+    over leaves of `{field, operator, value}`. Fields are restricted to the
+    allow-list served by `GET /api/v1/search/fields`.
+    """
+    filter: Json
+
+    """
     Returns the first _n_ elements from the list.
     """
     first: Int
@@ -1715,7 +1722,7 @@ type Query {
     """
     Key-value map for strict JSONB matching.
     """
-    metadataFilters: Json
+    metadataFilters: Json @deprecated(reason: "Use `filter` instead. This map is exact-match only, implicitly AND-ed, and reaches any property key including internal ones.")
     mode: String = "images"
     query: String
 

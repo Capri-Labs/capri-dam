@@ -195,6 +195,10 @@ Rails.application.routes.draw do
       # Global Search & AI
       get "search", to: "search#index"
       get "search/suggestions", to: "search#suggestions"
+      # Field allow-list for the graphical query builder, and a rows-free count
+      # so the builder can show a live result total while a query is edited.
+      get "search/fields", to: "search#fields"
+      post "search/count", to: "search#count"
       post "copilot/search", to: "copilots#search"
 
       # AI Lab (Prompt Playground) — routes into Api::V1::Ai::LabController

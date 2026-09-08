@@ -12,6 +12,7 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import SearchFilterSidebar from './SearchFilterSidebar';
+import QueryBuilder from './QueryBuilder/QueryBuilder';
 import SearchResultCard, { SearchResultCardSkeleton } from './SearchResultCard';
 
 // Mirrors AssetFilterBar's PER_PAGE_OPTIONS so Search and the folder/asset
@@ -83,6 +84,18 @@ function buildQueryString(query, filters, page, perPage, sortBy, sortDir, mode, 
   return params.toString();
 }
 
+// A malformed `query` param must not take the whole Search screen down with it
+// — a hand-edited URL is a normal thing to encounter, so an unparseable AST
+// degrades to an empty builder rather than throwing during render.
+function parseAst(raw) {
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
 function parseFiltersFromURL(params) {
   // 1. Read static filters explicitly
   // Use a null-prototype object so that even if a URL param name were
@@ -137,7 +150,9 @@ export default function SearchScreen() {
   const [resultMode, setResultMode] = useState(initialMode);
   const [includeBin, setIncludeBin] = useState(initialIncludeBin);
   const [viewMode,  setViewMode]  = useState('grid');
-  const [gridSize,  setGridSize]  = useState('medium');
+  // Opened automatically when a URL already carries a query, so a shared link
+  // shows the conditions rather than an unexplained result set.
+  const [showQueryBuilder, setShowQueryBuilder] = useState(() => Boolean(initialFilters.query));  const [gridSize,  setGridSize]  = useState('medium');
   const [assets, setAssets] = useState([]);
   const [meta, setMeta] = useState({ total_found: 0, total_pages: 1, facets: {}, mode: initialMode, result_type: 'asset' });
   const [loading, setLoading] = useState(true);
@@ -201,6 +216,19 @@ export default function SearchScreen() {
     setPage(1);
     fetchResults(query, newFilters, 1, sortBy, sortDir, resultMode, perPage, includeBin);
   }, [fetchResults, query, sortBy, sortDir, resultMode, perPage, includeBin]);
+
+  // The AST rides in `filters` as a JSON string under `query`, which is what
+  // gives it URL round-tripping for free: `buildQueryString` writes it, the
+  // server reserves the name, and `parseFiltersFromURL` reads it back — so a
+  // shared or bookmarked link reopens the same builder tree, not just the same
+  // result list.
+  const handleApplyQuery = useCallback((ast) => {
+    handleFilterChange({ ...filters, query: ast ? JSON.stringify(ast) : '' });
+  }, [filters, handleFilterChange]);
+
+  const handleClearQuery = useCallback(() => {
+    handleFilterChange({ ...filters, query: '' });
+  }, [filters, handleFilterChange]);
 
   const handlePageChange = (_, newPage) => {
     setPage(newPage);
@@ -351,8 +379,36 @@ export default function SearchScreen() {
                 }}
               />
             ))}
+            <Box sx={{ flexGrow: 1 }} />
+            <Chip
+              label={showQueryBuilder ? t('queryBuilder.close') : t('queryBuilder.open')}
+              size="small"
+              onClick={() => setShowQueryBuilder((open) => !open)}
+              color={filters.query ? 'secondary' : 'default'}
+              sx={{
+                bgcolor: filters.query ? undefined : 'rgba(255,255,255,0.2)',
+                color: filters.query ? undefined : '#fff',
+                border: '1px solid rgba(255,255,255,0.3)',
+                cursor: 'pointer',
+                fontWeight: 600,
+              }}
+            />
           </Box>
         </Box>
+
+        {showQueryBuilder && (
+          <Box sx={{ px: 3, py: 2, bgcolor: '#fff', borderBottom: '1px solid #e2e8f0', flexShrink: 0 }}>
+            {/* Keyed on the applied AST so that clearing the query, or loading a
+                different one from the URL, rebuilds the tree rather than leaving
+                the previous one on screen. */}
+            <QueryBuilder
+              key={filters.query || 'empty'}
+              initialAst={parseAst(filters.query)}
+              onApply={handleApplyQuery}
+              onClear={handleClearQuery}
+            />
+          </Box>
+        )}
 
         <Box
           sx={{
