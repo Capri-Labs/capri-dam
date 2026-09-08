@@ -12,7 +12,7 @@ rolling deployments):
   removals ship after all code references are gone.
 * **Feature Flags:** Breaking changes may be gated behind a Rails
   `ActiveSupport::CurrentAttributes` flag to allow safe rollback.
-* **Docker Images:** The canonical `Dockerfile` pins Ruby `4.0.3` and Node
+* **Docker Images:** The canonical `Dockerfile` pins Ruby `4.0.6` and Node
   `22.16.0`. Kamal pushes versioned image tags and can rollback to any previous tag.
 
 === Observability and Auditing

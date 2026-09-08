@@ -26,7 +26,7 @@ powered by **PostgreSQL + pgvector**.
 
 | Layer | Technology |
 |-------|-----------|
-| Language | Ruby `4.0.3` (see `.ruby-version`) |
+| Language | Ruby `4.0.6` (see `.ruby-version`) |
 | Framework | Rails `~> 8.1` |
 | Node | `22.16.0` (see `.node-version`), engines `>=20` |
 | Frontend | React `19`, **MUI v9**, Emotion 11, `@xyflow/react`, TipTap, Recharts |
@@ -46,7 +46,7 @@ powered by **PostgreSQL + pgvector**.
 
 | Tool | Version | Notes |
 |------|---------|-------|
-| Ruby | `4.0.3` | see `.ruby-version` (managed via rbenv) |
+| Ruby | `4.0.6` | see `.ruby-version` (managed via rbenv) |
 | Node.js | `22.16.0` | see `.node-version` |
 | Yarn | 1.22.x | classic |
 | PostgreSQL | 14 + **pgvector** | `make bootstrap` installs `postgresql@14` |
@@ -67,7 +67,7 @@ configuration. Follow these steps in order.
 
 If you are setting up on a new machine, this installs the required system
 libraries (Redis, rbenv, ruby-build, Node, Yarn, exiv2, pkg-config, and
-PostgreSQL 14) and ensures Ruby `4.0.3` is active.
+PostgreSQL 14) and ensures Ruby `4.0.6` is active.
 
 ```bash
 make bootstrap
@@ -152,7 +152,7 @@ API/GraphQL changes that ship without regenerated docs.
 
 | Command | Description |
 |---------|-------------|
-| `make bootstrap` | Install system packages and Ruby `4.0.3` (macOS/Homebrew) |
+| `make bootstrap` | Install system packages and Ruby `4.0.6` (macOS/Homebrew) |
 | `make setup` | Install dependencies, create & prepare the database, seed data |
 | `make dev` | Start the server, JS watcher, and Sidekiq workers |
 | `make db-setup` | Create and migrate the PostgreSQL database |

@@ -8,7 +8,7 @@
 # For a containerized dev environment, see Dev Containers: https://guides.rubyonrails.org/getting_started_with_devcontainer.html
 
 # Make sure RUBY_VERSION matches the Ruby version in .ruby-version
-ARG RUBY_VERSION=4.0.3
+ARG RUBY_VERSION=4.0.6
 FROM docker.io/library/ruby:$RUBY_VERSION-slim AS base
 
 # Rails app lives here
@@ -27,9 +27,19 @@ WORKDIR /rails
 #                                 pattern). Installing only the writer/calc/impress components
 #                                 (not the full `libreoffice` meta-package) keeps the image
 #                                 smaller while covering every OFFICE_DOCUMENT_MIME_TYPES entry.
+# imagemagick                  - the ImageMagick 7 `magick` CLI that mini_magick 5.x drives.
+#                                 It backs ActiveStorage variants
+#                                 (config.active_storage.variant_processor = :mini_magick)
+#                                 and ImageDelivery::Derivative's AVIF/WebP transcoding.
+#                                 Without it MiniMagick raises, Derivative#generate rescues
+#                                 and returns false, and every image is silently served in
+#                                 its original format — a degradation with no error to see.
+#                                 Debian trixie ships ImageMagick 7 with the libheif
+#                                 delegate needed to encode AVIF; ImageMagick 6 would not
+#                                 work here, as it provides only `convert`.
 RUN apt-get update -qq && \
     apt-get install --no-install-recommends -y curl libimage-exiftool-perl libjemalloc2 libvips postgresql-client \
-      ffmpeg libreoffice-core libreoffice-writer libreoffice-calc libreoffice-impress && \
+      imagemagick ffmpeg libreoffice-core libreoffice-writer libreoffice-calc libreoffice-impress && \
     ln -s /usr/lib/$(uname -m)-linux-gnu/libjemalloc.so.2 /usr/local/lib/libjemalloc.so && \
     rm -rf /var/lib/apt/lists /var/cache/apt/archives
 

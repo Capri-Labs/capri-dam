@@ -4,7 +4,7 @@
 === Why ECS on Fargate
 
 Capri DAM ships as a single Docker image (see the repository root `Dockerfile`) that already
-contains everything the app needs at runtime: Ruby 4.0.3, the precompiled JS/CSS bundle, `ffmpeg`
+contains everything the app needs at runtime: Ruby 4.0.6, the precompiled JS/CSS bundle, `ffmpeg`
 (video previews/transcodes), and headless LibreOffice (Office document previews). That same image
 runs unmodified on **Amazon ECS with the Fargate launch type** — no EC2 instances to patch or size,
 AWS manages the underlying compute. This guide pairs ECS/Fargate with fully-managed data services so

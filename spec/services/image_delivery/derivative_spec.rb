@@ -1,6 +1,6 @@
 require "rails_helper"
 
-RSpec.describe ImageDelivery::Derivative do
+RSpec.describe ImageDelivery::Derivative, requires_image_magick: true do
   let(:workspace) { Rails.root.join("tmp/derivative_spec") }
   let(:source) { workspace.join("source.jpg").to_s }
 
@@ -8,10 +8,7 @@ RSpec.describe ImageDelivery::Derivative do
   # unrealistically well in every format and would prove nothing about whether
   # the encoder actually ran.
   def write_source(geometry: "800x600", quality: 92, path: source)
-    FileUtils.mkdir_p(File.dirname(path))
-    system("magick", "-size", geometry, "plasma:fractal", "-quality", quality.to_s, path,
-           out: File::NULL, err: File::NULL)
-    path
+    ImageMagickSupport.write_source!(path, geometry: geometry, quality: quality)
   end
 
   def fetch(format: "avif", path: source)

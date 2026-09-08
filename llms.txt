@@ -9,7 +9,7 @@ Capri DAM is an enterprise-grade **Headless Digital Asset Management (DAM)** pla
 
 ## Tech Stack (Authoritative)
 - **Backend:** Ruby on Rails 8.1 (not API-only — hybrid monolith serving HTML shells + JSON API)
-- **Language:** Ruby 4.0.3
+- **Language:** Ruby 4.0.6
 - **Frontend:** React 19 + Material UI v9 + Emotion 11 (mounted via `data-view` DOM attributes)
 - **Database:** PostgreSQL 14+ with `pgvector` (1536-dim HNSW index) and `pgcrypto` extensions
 - **Background Jobs:** Sidekiq + Redis (strict queue weighting)

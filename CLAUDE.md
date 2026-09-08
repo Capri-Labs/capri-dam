@@ -20,7 +20,7 @@ uses **PostgreSQL + pgvector** for semantic similarity.
 
 | Layer | Technology |
 |-------|-----------|
-| Language | Ruby `4.0.3` (see `.ruby-version`) |
+| Language | Ruby `4.0.6` (see `.ruby-version`) |
 | Framework | Rails `~> 8.1` |
 | Node | `22.16.0` (see `.node-version`), engines `>=20` |
 | Frontend | React `19`, **MUI v9**, `@xyflow/react`, TipTap, Recharts |

@@ -70,7 +70,7 @@ registry:
 builder:
   arch: amd64 # switch to arm64 if your server is ARM (e.g. AWS Graviton)
   args:
-    RUBY_VERSION: 4.0.3
+    RUBY_VERSION: 4.0.6
     NODE_VERSION: 22.16.0
 
 # Environment variables passed into the running containers.

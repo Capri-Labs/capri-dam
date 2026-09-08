@@ -4,7 +4,7 @@
 === Why AKS
 
 Capri DAM ships as a single Docker image (see the repository root `Dockerfile`) containing everything
-the app needs: Ruby 4.0.3, the precompiled JS/CSS bundle, `ffmpeg`, and headless LibreOffice. That same
+the app needs: Ruby 4.0.6, the precompiled JS/CSS bundle, `ffmpeg`, and headless LibreOffice. That same
 image runs unmodified on **Azure Kubernetes Service** as two Kubernetes `Deployment` workloads (`web`
 and `worker`), giving you:
 

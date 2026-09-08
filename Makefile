@@ -2,7 +2,7 @@
 RAILS = ./bin/rails
 BUNDLE = bundle
 YARN = yarn
-RUBY_VERSION = 4.0.3
+RUBY_VERSION = 4.0.6
 
 .PHONY: help bootstrap check-system install db-setup setup dev stop \
         swagger-docs graphql-schema graphql-docs api-docs \

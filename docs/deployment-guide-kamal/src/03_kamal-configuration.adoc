@@ -84,7 +84,7 @@ main/master and on `v*.*.*` tags). Both values are resolved from `.kamal/secrets
 builder:
   arch: amd64
   args:
-    RUBY_VERSION: 4.0.3
+    RUBY_VERSION: 4.0.6
     NODE_VERSION: 22.16.0
 ----
 

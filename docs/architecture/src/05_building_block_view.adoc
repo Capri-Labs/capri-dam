@@ -48,7 +48,7 @@ Fastly --> Storage  : Fetch master\nasset
 | **Rails Application**
 | The core orchestrator. Handles business logic, REST & GraphQL APIs, URL
   signing, permission evaluation, and cloud provider handshakes.
-  Built with Ruby on Rails 8.1 / Ruby 4.0.3.
+  Built with Ruby on Rails 8.1 / Ruby 4.0.6.
 
 | **Metadata Store (PostgreSQL 14 + pgvector)**
 | Relational database for persistent storage of asset records, technical

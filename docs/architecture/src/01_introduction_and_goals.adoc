@@ -5,7 +5,7 @@
 
 The **Capri DAM** project is a high-performance, cost-optimised Digital Asset
 Management system built on **Ruby on Rails 8.1** (backend) and **React 19** with
-Material UI v9 (frontend), deployed on **Ruby 4.0.3**.
+Material UI v9 (frontend), deployed on **Ruby 4.0.6**.
 
 It modernises media workflows by providing advanced dynamic media features — real-time
 image transformation, smart cropping, structured metadata, role-based access control

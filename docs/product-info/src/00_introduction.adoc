@@ -54,7 +54,7 @@ logs, and workflow-guarded purge satisfy strict information-governance requireme
 |===
 | Requirement | Minimum / Recommended
 
-| Ruby | 4.0.3 (`.ruby-version`)
+| Ruby | 4.0.6 (`.ruby-version`)
 | Node | 22.16.0 (`.node-version`); engines `>=20`
 | PostgreSQL | 14 + `pgvector` extension
 | Redis | 6+

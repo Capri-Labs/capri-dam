@@ -4,7 +4,7 @@
 === Why Kamal 2
 
 Capri DAM ships as a single Docker image (see the repository root `Dockerfile`) that already
-contains everything the app needs at runtime: Ruby 4.0.3, the precompiled JS/CSS bundle, `ffmpeg`
+contains everything the app needs at runtime: Ruby 4.0.6, the precompiled JS/CSS bundle, `ffmpeg`
 (video previews/transcodes), and headless LibreOffice (Office document previews). **Kamal 2**
 (https://kamal-deploy.org) was chosen as the first supported deployment target because it deploys
 that exact image to plain Linux servers you already control — no Kubernetes cluster, no managed

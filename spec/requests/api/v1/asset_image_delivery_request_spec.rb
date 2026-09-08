@@ -4,7 +4,7 @@ require "rails_helper"
 
 # End-to-end coverage for request-time image format negotiation on the local
 # delivery endpoint (Api::V1::AssetsController#serve_local).
-RSpec.describe "Api::V1::Assets image delivery", type: :request do
+RSpec.describe "Api::V1::Assets image delivery", type: :request, requires_image_magick: true do
   let(:user) { create(:user, :admin) }
   let(:dam_dir) { Rails.root.join("storage/dam/image_delivery_spec") }
   let(:relative_path) { "image_delivery_spec/hero.jpg" }
@@ -18,8 +18,7 @@ RSpec.describe "Api::V1::Assets image delivery", type: :request do
     allow(CdnInvalidationWorker).to receive(:perform_async) if defined?(CdnInvalidationWorker)
 
     FileUtils.mkdir_p(dam_dir)
-    system("magick", "-size", "900x600", "plasma:fractal", "-quality", "92",
-           dam_dir.join("hero.jpg").to_s, out: File::NULL, err: File::NULL)
+    ImageMagickSupport.write_source!(dam_dir.join("hero.jpg"), geometry: "900x600")
   end
 
   after do

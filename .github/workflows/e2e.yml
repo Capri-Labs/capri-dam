@@ -38,7 +38,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  RUBY_VERSION: "4.0.3"
+  RUBY_VERSION: "4.0.6"
   NODE_VERSION: "22"
   BUNDLE_WITHOUT: "production"
   RAILS_ENV: test
@@ -175,7 +175,23 @@ jobs:
 
     steps:
       - name: Install system packages
-        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y libpq-dev libvips node-gyp exiv2 imagemagick libimage-exiftool-perl
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y libpq-dev libvips node-gyp exiv2 libimage-exiftool-perl
+          # Ubuntu ships ImageMagick 6, which provides only `convert`. mini_magick 5.x
+          # drives the ImageMagick 7 `magick` binary and ignores `convert`, so the apt
+          # package is not usable here: without this the image pipeline silently falls
+          # back to serving originals. Installed from the upstream portable build.
+          IM_VERSION=7.1.2-31
+          curl -fsSL -o /tmp/magick.AppImage \
+            "https://github.com/ImageMagick/ImageMagick/releases/download/$IM_VERSION/ImageMagick-$IM_VERSION-gcc-x86_64.AppImage"
+          chmod +x /tmp/magick.AppImage
+          # Extracted rather than run directly: the runners have no FUSE.
+          (cd /tmp && ./magick.AppImage --appimage-extract > /dev/null)
+          sudo rm -rf /opt/imagemagick
+          sudo mv /tmp/squashfs-root /opt/imagemagick
+          sudo ln -sf /opt/imagemagick/AppRun /usr/local/bin/magick
+          magick -version
 
       - name: Checkout
         uses: actions/checkout@v7
