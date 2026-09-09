@@ -33,7 +33,7 @@ RSpec.describe 'Api::V1::CommentThreads', type: :request do
       visibility: { type: :string, enum: %w[internal guest] },
       closed: { type: :boolean },
       origin_version: { type: :object, nullable: true },
-      created_by: { type: :object },
+      created_by: { type: :object, nullable: true },
       resolved_at: { type: :string, format: 'date-time', nullable: true },
       resolved_by: { type: :object, nullable: true },
       comment_count: { type: :integer },

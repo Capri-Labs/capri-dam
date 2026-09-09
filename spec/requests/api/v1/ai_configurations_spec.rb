@@ -24,7 +24,8 @@ RSpec.describe 'Api::V1::AiConfiguration', type: :request do
                                       description: 'openai | anthropic | local' },
                  generation_model:  { type: :string, example: 'gpt-4o' },
                  embedding_model:   { type: :string, example: 'text-embedding-ada-002' },
-                 monthly_budget_usd: { type: :number, example: 200.00 },
+                 monthly_budget_usd: { type: :string, example: '200.0',
+                                       description: 'Decimal string. Backed by a numeric column and serialised as a string so the value survives a round trip without binary-float rounding.' },
                  system_prompt:     { type: :string, nullable: true },
                  fallback_to_local: { type: :boolean, example: false },
                }

@@ -1925,8 +1925,11 @@ paths:
                     type: string
                     example: text-embedding-ada-002
                   monthly_budget_usd:
-                    type: number
-                    example: 200.0
+                    type: string
+                    example: '200.0'
+                    description: Decimal string. Backed by a numeric column and serialised
+                      as a string so the value survives a round trip without binary-float
+                      rounding.
                   system_prompt:
                     type: string
                     nullable: true
@@ -3365,7 +3368,8 @@ paths:
                           - folder
                           - asset
                         id:
-                          type: integer
+                          type: string
+                          format: uuid
                         name:
                           type: string
                           nullable: true
@@ -4214,6 +4218,7 @@ paths:
                           - datetime
                           - boolean
                           - array
+                          - entity
                         group:
                           type: string
                           example: file
@@ -4805,7 +4810,8 @@ paths:
                       type: object
                       properties:
                         id:
-                          type: integer
+                          type: string
+                          format: uuid
                         version_number:
                           type: integer
                           example: 3
@@ -5002,7 +5008,8 @@ paths:
                 type: object
                 properties:
                   id:
-                    type: integer
+                    type: string
+                    format: uuid
                   uuid:
                     type: string
                     format: uuid
@@ -6121,7 +6128,8 @@ paths:
                       type: object
                       properties:
                         id:
-                          type: integer
+                          type: string
+                          format: uuid
                         title:
                           type: string
                         properties:
@@ -7037,110 +7045,9 @@ paths:
                           nullable: true
             application/pdf:
               schema:
-                type: object
-                properties:
-                  "@context":
-                    type: array
-                    items: {}
-                    description: anno.jsonld plus the capri extension prefix
-                  id:
-                    type: string
-                  type:
-                    type: string
-                    example: AnnotationPage
-                  label:
-                    type: string
-                  capri:generated:
-                    type: string
-                    format: date-time
-                  capri:asset:
-                    type: object
-                  items:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        id:
-                          type: string
-                          description: Dereferenceable IRI for this annotation
-                        type:
-                          type: string
-                          example: Annotation
-                        motivation:
-                          type: string
-                          example: editing
-                          description: W3C Web Annotation motivation vocabulary (§3.3.5)
-                        created:
-                          type: string
-                          format: date-time
-                        creator:
-                          type: object
-                        body:
-                          type: object
-                          description: TextualBody carrying the comment text
-                        target:
-                          type: object
-                          properties:
-                            source:
-                              type: string
-                              description: IRI of the asset version the note was made
-                                against
-                            type:
-                              type: string
-                              enum:
-                              - Image
-                              - Video
-                              - Text
-                              - Dataset
-                            selector:
-                              type: object
-                              properties:
-                                type:
-                                  type: string
-                                  enum:
-                                  - FragmentSelector
-                                  - SvgSelector
-                                  - TextQuoteSelector
-                                  - TextPositionSelector
-                                conformsTo:
-                                  type: string
-                                  example: http://www.w3.org/TR/media-frags/
-                                value:
-                                  type: string
-                                  example: xywh=percent:10,20,30,40
-                                capri:shape:
-                                  type: string
-                                  enum:
-                                  - pin
-                                  - rect
-                                  - ellipse
-                                  - arrow
-                                  - line
-                                  - freehand
-                                  - text
-                                  - highlight
-                                  - time
-                                capri:style:
-                                  type: object
-                                  description: Stroke colour, width and opacity, lost
-                                    in plain W3C
-                                capri:source:
-                                  type: object
-                                  description: Original media dimensions and rotation
-                        capri:commentId:
-                          type: string
-                          format: uuid
-                        capri:threadId:
-                          type: string
-                          format: uuid
-                        capri:thread:
-                          type: object
-                          description: Thread status and visibility, for a lossless
-                            round trip
-                        capri:versionId:
-                          type: string
-                          format: uuid
-                          nullable: true
+                type: string
+                format: binary
+                description: PDF contact sheet (export_format=pdf)
         '401':
           description: unauthenticated
         '403':
@@ -7555,6 +7462,7 @@ paths:
                           nullable: true
                         created_by:
                           type: object
+                          nullable: true
                         resolved_at:
                           type: string
                           format: date-time
@@ -7668,6 +7576,7 @@ paths:
                     nullable: true
                   created_by:
                     type: object
+                    nullable: true
                   resolved_at:
                     type: string
                     format: date-time
@@ -7844,6 +7753,7 @@ paths:
                     nullable: true
                   created_by:
                     type: object
+                    nullable: true
                   resolved_at:
                     type: string
                     format: date-time
@@ -7945,6 +7855,7 @@ paths:
                     nullable: true
                   created_by:
                     type: object
+                    nullable: true
                   resolved_at:
                     type: string
                     format: date-time
@@ -8085,6 +7996,7 @@ paths:
                     nullable: true
                   created_by:
                     type: object
+                    nullable: true
                   resolved_at:
                     type: string
                     format: date-time
@@ -8198,6 +8110,7 @@ paths:
                     nullable: true
                   created_by:
                     type: object
+                    nullable: true
                   resolved_at:
                     type: string
                     format: date-time
@@ -11226,6 +11139,7 @@ paths:
                         started_at:
                           type: string
                           format: date-time
+                          nullable: true
                         completed_at:
                           type: string
                           format: date-time
@@ -11446,7 +11360,8 @@ paths:
                       type: object
                       properties:
                         id:
-                          type: integer
+                          type: string
+                          format: uuid
                         original_filename:
                           type: string
                         file_hash:
@@ -14825,46 +14740,111 @@ paths:
         Returns all configured system connectors ordered by `created_at DESC`.
         A connector is a named integration bridge to an external DAM/storage
         provider (Cloudinary, Brandfolder, Bynder, FTP, HTTP API, etc.).
+
+        The response shape depends on whether `page` is supplied. Without it
+        the endpoint returns a bare array — the original, unpaginated contract,
+        kept so existing clients do not break. Supplying `page` returns an
+        object wrapping `connectors` and `pagination`.
+      parameters:
+      - name: page
+        in: query
+        required: false
+        description: Switches the response to the paginated object shape (12 per page).
+        schema:
+          type: integer
       responses:
         '200':
           description: Connectors returned
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  type: object
+                oneOf:
+                - type: array
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      name:
+                        type: string
+                        example: Cloudinary Production
+                      provider_type:
+                        type: string
+                        example: cloudinary
+                      provider_label:
+                        type: string
+                        example: Cloudinary
+                      endpoint:
+                        type: string
+                        nullable: true
+                      status:
+                        type: string
+                        example: active
+                        description: idle | active | error
+                      assets_imported:
+                        type: integer
+                        example: 0
+                      concurrency_limit:
+                        type: integer
+                        nullable: true
+                      rps_limit:
+                        type: integer
+                        nullable: true
+                      created_at:
+                        type: string
+                        format: date-time
+                - type: object
                   properties:
-                    id:
-                      type: integer
-                    name:
-                      type: string
-                      example: Cloudinary Production
-                    provider_type:
-                      type: string
-                      example: cloudinary
-                    provider_label:
-                      type: string
-                      example: Cloudinary
-                    endpoint:
-                      type: string
-                      nullable: true
-                    status:
-                      type: string
-                      example: active
-                      description: idle | active | error
-                    assets_imported:
-                      type: integer
-                      example: 0
-                    concurrency_limit:
-                      type: integer
-                      nullable: true
-                    rps_limit:
-                      type: integer
-                      nullable: true
-                    created_at:
-                      type: string
-                      format: date-time
+                    connectors:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          id:
+                            type: integer
+                          name:
+                            type: string
+                            example: Cloudinary Production
+                          provider_type:
+                            type: string
+                            example: cloudinary
+                          provider_label:
+                            type: string
+                            example: Cloudinary
+                          endpoint:
+                            type: string
+                            nullable: true
+                          status:
+                            type: string
+                            example: active
+                            description: idle | active | error
+                          assets_imported:
+                            type: integer
+                            example: 0
+                          concurrency_limit:
+                            type: integer
+                            nullable: true
+                          rps_limit:
+                            type: integer
+                            nullable: true
+                          created_at:
+                            type: string
+                            format: date-time
+                    pagination:
+                      type: object
+                      properties:
+                        page:
+                          type: integer
+                          example: 1
+                        per_page:
+                          type: integer
+                          example: 12
+                        total:
+                          type: integer
+                          example: 37
+                        total_pages:
+                          type: integer
+                          example: 4
     post:
       summary: Create a new system connector
       tags:
@@ -16425,7 +16405,7 @@ paths:
                   queued:
                     type: integer
                   workflow_id:
-                    type: string
+                    type: integer
       requestBody:
         content:
           application/json:
@@ -16433,20 +16413,22 @@ paths:
               type: object
               properties:
                 workflow_id:
-                  type: string
+                  type: integer
                   example: 1
                 asset_ids:
                   type: array
                   items:
                     type: string
+                    format: uuid
                   example:
                   - 11111111-1111-1111-1111-111111111111
                 folder_ids:
                   type: array
                   items:
                     type: string
+                    format: uuid
                   example:
-                  - 42
+                  - 22222222-2222-2222-2222-222222222222
   "/api/v1/workflow_tasks/{id}/submit":
     parameters:
     - name: id
@@ -16569,7 +16551,8 @@ paths:
                         step_title:
                           type: string
                         asset_id:
-                          type: integer
+                          type: string
+                          format: uuid
                         asset_name:
                           type: string
                         asset_thumb:
@@ -16590,12 +16573,14 @@ paths:
                         current_step:
                           type: string
                         asset_id:
-                          type: integer
+                          type: string
+                          format: uuid
                         asset_name:
                           type: string
                         started_at:
                           type: string
                           format: date-time
+                          nullable: true
                   completed_workflows:
                     type: array
                     items:
@@ -16606,7 +16591,8 @@ paths:
                         workflow_name:
                           type: string
                         asset_id:
-                          type: integer
+                          type: string
+                          format: uuid
                         asset_name:
                           type: string
                         status:

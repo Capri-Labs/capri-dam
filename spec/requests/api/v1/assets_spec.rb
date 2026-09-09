@@ -154,7 +154,7 @@ RSpec.describe 'Api::V1::Assets', type: :request do
                        name:      { type: :string, example: 'file_size' },
                        label:     { type: :string, example: 'File size' },
                        type:      { type: :string,
-                                    enum: %w[string text enum number datetime boolean array] },
+                                    enum: %w[string text enum number datetime boolean array entity] },
                        group:     { type: :string, example: 'file' },
                        operators: { type: :array, items: { type: :string }, example: %w[gt between] },
                        values:    { type: :array, items: { type: :string }, nullable: true },
@@ -582,7 +582,7 @@ RSpec.describe 'Api::V1::Assets', type: :request do
                    items: {
                      type: :object,
                      properties: {
-                       id:             { type: :integer },
+                       id:             { type: :string, format: :uuid },
                        version_number: { type: :integer, example: 3 },
                        action_type:    { type: :string, example: 'Image Edit' },
                        created_at:     { type: :string, example: 'Jun 21, 2026 at 03:15 PM' },
@@ -729,7 +729,7 @@ RSpec.describe 'Api::V1::Assets', type: :request do
       response '200', 'Version promoted to active' do
         schema type: :object,
                properties: {
-                 id:       { type: :integer },
+                 id:       { type: :string, format: :uuid },
                  uuid:     { type: :string, format: :uuid },
                  title:    { type: :string },
                  version:  { type: :integer, example: 2 },

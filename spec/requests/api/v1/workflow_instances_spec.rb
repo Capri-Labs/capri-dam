@@ -49,9 +49,9 @@ RSpec.describe 'Api::V1::WorkflowInstances', type: :request do
       parameter name: :payload, in: :body, schema: {
         type: :object,
         properties: {
-          workflow_id: { type: :string, example: 1 },
-          asset_ids:   { type: :array, items: { type: :string }, example: [ '11111111-1111-1111-1111-111111111111' ] },
-          folder_ids:  { type: :array, items: { type: :string }, example: [ 42 ] },
+          workflow_id: { type: :integer, example: 1 },
+          asset_ids:   { type: :array, items: { type: :string, format: :uuid }, example: [ '11111111-1111-1111-1111-111111111111' ] },
+          folder_ids:  { type: :array, items: { type: :string, format: :uuid }, example: [ '22222222-2222-2222-2222-222222222222' ] },
         },
       }
 
@@ -59,7 +59,7 @@ RSpec.describe 'Api::V1::WorkflowInstances', type: :request do
         schema type: :object, properties: {
           message:     { type: :string },
           queued:      { type: :integer },
-          workflow_id: { type: :string },
+          workflow_id: { type: :integer },
         }
         run_test!
       end

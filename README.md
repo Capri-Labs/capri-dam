@@ -17,7 +17,7 @@ powered by **PostgreSQL + pgvector**.
 [![E2E Tests](https://github.com/Capri-Labs/capri-dam/actions/workflows/e2e.yml/badge.svg?branch=master)](https://github.com/Capri-Labs/capri-dam/actions/workflows/e2e.yml)
 [![SAST & Security](https://github.com/Capri-Labs/capri-dam/actions/workflows/sast.yml/badge.svg?branch=master)](https://github.com/Capri-Labs/capri-dam/actions/workflows/sast.yml)
 [![Docker](https://github.com/Capri-Labs/capri-dam/actions/workflows/docker.yml/badge.svg?branch=master)](https://github.com/Capri-Labs/capri-dam/actions/workflows/docker.yml)
-[![Code Coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/Capri-Labs/capri-dam/master/.github/badges/coverage.json)](https://github.com/Capri-Labs/capri-dam/actions/workflows/ci.yml)
+[![Code Coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/Capri-Labs/capri-dam/badges/.github/badges/coverage.json)](https://github.com/Capri-Labs/capri-dam/actions/workflows/ci.yml)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 
 ---

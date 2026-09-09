@@ -223,8 +223,10 @@ jobs:
           name: coverage-backend
           path: coverage/backend/
 
+      # The badge is only published from a green run on master: a coverage
+      # figure taken from a suite that failed part-way through is misleading.
       - name: Generate coverage badge data
-        if: always() && github.ref == 'refs/heads/master' && github.event_name == 'push'
+        if: github.ref == 'refs/heads/master' && github.event_name == 'push'
         run: |
           mkdir -p .github/badges
           ruby -rjson -e '
@@ -239,12 +241,47 @@ jobs:
             }))
           '
 
-      - name: Commit coverage badge
-        if: always() && github.ref == 'refs/heads/master' && github.event_name == 'push'
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: "chore: update coverage badge [skip ci]"
-          file_pattern: .github/badges/coverage.json
+      # master is covered by a ruleset that requires pull requests and signed
+      # commits, so CI cannot push the badge there. The badge is instead
+      # published to the orphan `badges` branch, which carries no history of
+      # its own and sits outside the ruleset. README points shields.io at that
+      # branch.
+      - name: Publish coverage badge
+        if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          badge=$(mktemp)
+          cp .github/badges/coverage.json "$badge"
+
+          remote="https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          work=$(mktemp -d)
+
+          if git clone --depth=1 --branch badges --quiet "$remote" "$work" 2>/dev/null; then
+            echo "Reusing existing badges branch."
+          else
+            echo "Creating the badges branch."
+            git clone --depth=1 --quiet "$remote" "$work"
+            git -C "$work" checkout --quiet --orphan badges
+            git -C "$work" rm -rqf .
+          fi
+
+          mkdir -p "$work/.github/badges"
+          cp "$badge" "$work/.github/badges/coverage.json"
+
+          git -C "$work" config user.name  "github-actions[bot]"
+          git -C "$work" config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git -C "$work" add .github/badges/coverage.json
+
+          if git -C "$work" diff --quiet --cached; then
+            echo "Coverage unchanged; nothing to publish."
+          else
+            git -C "$work" commit --quiet -m "chore: update coverage badge [skip ci]"
+            git -C "$work" push --quiet origin badges
+            echo "Published $(cat "$badge")"
+          fi
 
   # ─── 4. Frontend unit tests (Jest) ──────────────────────────────────────────
   jest:

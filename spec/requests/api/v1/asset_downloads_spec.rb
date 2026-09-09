@@ -82,7 +82,7 @@ RSpec.describe 'Api::V1::AssetDownloads', type: :request do
                      type: :object,
                      properties: {
                        type: { type: :string, enum: %w[folder asset] },
-                       id: { type: :integer },
+                       id: { type: :string, format: :uuid },
                        name: { type: :string, nullable: true },
                        error: { type: :string },
                      },

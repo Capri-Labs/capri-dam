@@ -15,26 +15,52 @@ RSpec.describe 'Api::V1::SystemConnectors', type: :request do
         Returns all configured system connectors ordered by `created_at DESC`.
         A connector is a named integration bridge to an external DAM/storage
         provider (Cloudinary, Brandfolder, Bynder, FTP, HTTP API, etc.).
+
+        The response shape depends on whether `page` is supplied. Without it
+        the endpoint returns a bare array — the original, unpaginated contract,
+        kept so existing clients do not break. Supplying `page` returns an
+        object wrapping `connectors` and `pagination`.
       DESC
 
+      parameter name: :page, in: :query, type: :integer, required: false,
+                description: 'Switches the response to the paginated object shape (12 per page).'
+
+      connector_schema = {
+        type: :object,
+        properties: {
+          id:               { type: :integer },
+          name:             { type: :string, example: 'Cloudinary Production' },
+          provider_type:    { type: :string, example: 'cloudinary' },
+          provider_label:   { type: :string, example: 'Cloudinary' },
+          endpoint:         { type: :string, nullable: true },
+          status:           { type: :string, example: 'active',
+                              description: 'idle | active | error' },
+          assets_imported:  { type: :integer, example: 0 },
+          concurrency_limit: { type: :integer, nullable: true },
+          rps_limit:        { type: :integer, nullable: true },
+          created_at:       { type: :string, format: 'date-time' },
+        },
+      }
+
       response '200', 'Connectors returned' do
-        schema type: :array,
-               items: {
-                 type: :object,
-                 properties: {
-                   id:               { type: :integer },
-                   name:             { type: :string, example: 'Cloudinary Production' },
-                   provider_type:    { type: :string, example: 'cloudinary' },
-                   provider_label:   { type: :string, example: 'Cloudinary' },
-                   endpoint:         { type: :string, nullable: true },
-                   status:           { type: :string, example: 'active',
-                                       description: 'idle | active | error' },
-                   assets_imported:  { type: :integer, example: 0 },
-                   concurrency_limit: { type: :integer, nullable: true },
-                   rps_limit:        { type: :integer, nullable: true },
-                   created_at:       { type: :string, format: 'date-time' },
-                 },
-               }
+        schema oneOf: [
+          { type: :array, items: connector_schema },
+          {
+            type: :object,
+            properties: {
+              connectors: { type: :array, items: connector_schema },
+              pagination: {
+                type: :object,
+                properties: {
+                  page:        { type: :integer, example: 1 },
+                  per_page:    { type: :integer, example: 12 },
+                  total:       { type: :integer, example: 37 },
+                  total_pages: { type: :integer, example: 4 },
+                },
+              },
+            },
+          },
+        ]
         run_test!
       end
     end

@@ -33,7 +33,7 @@ RSpec.describe 'Api::V1::IngestionBatches', type: :request do
                        source_type:    { type: :string, example: 'cloudinary' },
                        status:         { type: :string, example: 'review_needed',
                                          description: 'initializing | extracting | transforming | review_needed | committed | failed' },
-                       started_at:     { type: :string, format: 'date-time' },
+                       started_at:     { type: :string, format: 'date-time', nullable: true },
                        completed_at:   { type: :string, format: 'date-time', nullable: true },
                      },
                    },
@@ -199,7 +199,7 @@ RSpec.describe 'Api::V1::IngestionBatches', type: :request do
                    items: {
                      type: :object,
                      properties: {
-                       id:                { type: :integer },
+                       id:                { type: :string, format: 'uuid' },
                        original_filename: { type: :string },
                        file_hash:         { type: :string, description: 'SHA-256 hash' },
                        file_size:         { type: :integer },

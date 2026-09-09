@@ -105,7 +105,18 @@ RSpec.describe 'Api::V1::CommentExports', type: :request do
                 description: 'Only threads anchored to a region of the media'
 
       response '200', 'annotation page or PDF returned' do
-        schema page_schema
+        # This operation returns a genuinely different shape per media type: a
+        # JSON-LD annotation page, or a PDF byte stream. rswag's `schema` helper
+        # copies a single schema across every entry in `produces` (an open TODO
+        # in the gem), which would document the PDF as a JSON object. Writing
+        # `content` directly is the supported escape hatch: `upgrade_content!`
+        # only rewrites the node when a `schema` was set, so this survives.
+        metadata[:response][:content] = {
+          'application/ld+json' => { schema: page_schema },
+          'application/pdf' => {
+            schema: { type: :string, format: :binary, description: 'PDF contact sheet (export_format=pdf)' },
+          },
+        }
         run_test!
       end
 

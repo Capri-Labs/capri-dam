@@ -206,7 +206,7 @@ RSpec.describe 'Api::V1::Collections', type: :request do
                    items: {
                      type: :object,
                      properties: {
-                       id:               { type: :integer },
+                       id:               { type: :string, format: :uuid },
                        title:            { type: :string },
                        properties:       { type: :object },
                        mock_match_score: { type: :number, example: 0.923 },
