@@ -1,0 +1,151 @@
+[[section-fixity-and-preservation]]
+= Fixity & Preservation
+
+Storage does not announce that it has lost something. Bit rot, a truncated
+multipart upload, a botched lifecycle-policy migration and a well-meaning bucket
+cleanup all present identically: the object is still listed, the metadata is
+still in Postgres, and nobody notices until the day somebody needs the file. By
+then the corruption has usually been replicated into every backup generation
+still retained, which is the failure that turns a recovery into a loss.
+
+Fixity checking cannot prevent any of that. What it provides is a *date* — the
+last time these bytes were known good — so an operator restoring from backup
+knows which generation to reach for.
+
+== Two questions, not one
+
+They fail independently and are handled by separate machinery:
+
+[cols="1,3,2", options="header"]
+|===
+| Question | What can go wrong | Answered by
+
+| Are the bytes still the bytes?
+| Corruption, truncation, silent deletion, a path that no longer resolves.
+| `Fixity::Verifier`
+
+| Will anything still be able to read them?
+| The format's ecosystem dies. The bytes are perfect and the file is gone anyway.
+| `Preservation::FormatRegistry`
+|===
+
+The second is the quieter one. An intact SWF, an FLV, or a raw file from a
+discontinued camera body passes every integrity check ever run against it and is
+still, in practice, unreadable.
+
+== Verification
+
+`Fixity::Verifier.call(asset_version)` re-reads the stored object and compares
+its SHA-256 against the digest written at ingest
+(`properties["checksum_sha256"]`).
+
+The digest is streamed in 5 MB chunks and the bytes are discarded as they are
+consumed. Fixity is the one operation guaranteed to touch the *largest* files in
+the estate — the masters, the ProRes, the layered PSDs — so
+`StorageManager.read_file_from_adapter`, which returns the whole object as one
+String, is deliberately bypassed.
+
+=== Four verdicts, not two
+
+Collapsing these into "pass/fail" is the mistake that gets fixity alerting muted
+within a month.
+
+[cols="1,4", options="header"]
+|===
+| Status | Meaning
+
+| `passed`     | The digest matches. These are the bytes that were ingested.
+| `failed`     | The digest does not match. The content changed.
+| `missing`    | Nothing at that storage path. A storage or path problem, not corruption.
+| `unreadable` | The check never reached a verdict — a timeout, a refused connection, an expired signature.
+|===
+
+`unreadable` exists so that a network fault can never raise a corruption alarm.
+`FixityCheck#conclusive?` excludes it for exactly that reason.
+
+A version with *no* recorded checksum returns `nil` rather than any status.
+There is nothing to compare against, so it can neither pass nor fail; it is
+reported separately as **unverifiable** — a coverage gap to close, not an
+incident. Without this distinction, day one of fixity checking is entirely false
+alarms.
+
+=== Recording the result
+
+Every check is a row in `fixity_checks`, and the two columns on `asset_versions`
+(`last_fixity_check_at`, `fixity_status`) are a *cache* of the newest row. The
+history is what matters: the window between the last pass and the first failure
+is precisely what tells an operator which backup generation is still trustworthy.
+A single `verified_at` column would throw that away.
+
+The cache is written with `update_columns`, so a verification sweep never fires
+callbacks, touches `updated_at`, or reindexes the asset. A read-only audit must
+not appear in an asset's history as an edit.
+
+== Scheduling
+
+`FixityAuditWorker` runs nightly at 04:00 (see `config/schedule.rb`) on the
+low-priority `preservation` queue.
+
+It never sweeps everything. Verifying every object means *downloading* every
+object; on remote storage that is an egress bill roughly equal to the size of the
+estate, recurring on whatever cadence the sweep runs. A nightly full sweep gets
+approved once and switched off after the first invoice, which leaves the archive
+with no fixity checking at all — worse than a modest sample that survives contact
+with the finance team.
+
+So `Fixity::Sampler` treats the estate as a queue ordered by staleness:
+
+* `last_fixity_check_at ASC NULLS FIRST` — never-checked versions have *no*
+  evidence behind them, while a version checked last month has evidence that is
+  merely old. Draining the unknown first makes coverage climb monotonically.
+* Versions verified within `DEFAULT_RECHECK_AFTER` (90 days) are skipped;
+  re-checking sooner spends egress to re-prove something recently proven.
+* `DEFAULT_BATCH_SIZE` (250) caps each run. The useful property is that the
+  audit runs every day for years, not that any single run is thorough.
+
+Findings are notified to administrators via the inbox, **once per run** rather
+than once per asset — a systemic failure such as a bucket remounted read-only
+should produce one actionable message, not a thousand.
+
+The worker uses `retry: 0`. A failed run is not worth retrying: nothing was
+marked as checked, so the next scheduled run picks up exactly the same work.
+Retrying would instead stack duplicate sweeps and double the egress.
+
+== Format obsolescence
+
+`Preservation::FormatRegistry` classifies MIME types into `low`, `medium` and
+`high` risk. The list is curated, not derived — there is no signal inside a file
+that says its ecosystem is dying. The risk is a fact about the outside world
+(vendor support, browser removals, whether an open specification exists), so it
+has to be asserted and revisited deliberately.
+
+The tiers are coarse on purpose. The useful output is "migrate this class of
+thing", not a false-precision score, and each entry carries a `note` phrased as
+an action rather than a rating.
+
+An unlisted format is reported as **unknown**, not as safe. Saying "low risk"
+about something nobody has assessed is exactly the mistake the registry exists to
+prevent.
+
+== API
+
+All three endpoints require an administrator. The fixity report names every
+object the system cannot currently account for, which is a map of where the gaps
+are.
+
+[cols="1,3,4", options="header"]
+|===
+| Method | Path | Returns
+
+| `GET`  | `/api/v1/preservation/fixity`  | Coverage percentage, counts by status, never-checked and stale totals, oldest check, and recent conclusive failures.
+| `POST` | `/api/v1/preservation/verify`  | On-demand verification of one asset's versions. Runs inline — the caller is waiting for the answer — and is capped at the 25 most recent versions so one request cannot trigger unbounded egress.
+| `GET`  | `/api/v1/preservation/formats` | The estate's format profile, sorted riskiest first, with per-tier totals.
+|===
+
+== Related
+
+* `app/services/fixity/verifier.rb` — streaming digest and verdict classification
+* `app/services/fixity/sampler.rb` — staleness ordering and coverage arithmetic
+* `app/services/preservation/format_registry.rb` — obsolescence tiers
+* `app/workers/fixity_audit_worker.rb` — the nightly sweep
+* `app/models/fixity_check.rb` — the audit trail

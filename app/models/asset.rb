@@ -52,6 +52,15 @@ class Asset < ApplicationRecord
   #     all immutable snapshots of this asset, ordered by creation time
   has_many :asset_versions, dependent: :destroy
 
+  # @!attribute [r] asset_entities
+  #   @return [ActiveRecord::Associations::CollectionProxy<AssetEntity>]
+  #     typed links to the people, products, places, campaigns, brands and
+  #     events this asset refers to, each carrying a stated relationship. This
+  #     is the layer that makes "shot by Berlin" and "showing Berlin" different
+  #     questions rather than one ambiguous tag.
+  has_many :asset_entities, dependent: :destroy
+  has_many :entities, through: :asset_entities
+
   # @!attribute [r] renditions
   #   @return [ActiveRecord::Associations::CollectionProxy<Rendition>]
   #     alternative forms of this same work (print, social, proxy). Unlike

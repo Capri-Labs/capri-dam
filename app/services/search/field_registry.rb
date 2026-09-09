@@ -52,6 +52,12 @@ module Search
       # A tag list is a set, so equality is the wrong question to ask of it.
       # "Does it contain" is the useful one, and it splits three ways.
       array:    %w[has_any has_all none_of] + COMMON_OPERATORS,
+      # An entity link is also a set, so it takes the same shape — but the
+      # members are records rather than strings, and the values a caller sends
+      # are entity references rather than free text. Keeping it a distinct type
+      # is what stops the compiler reaching for `properties` and what lets the
+      # builder UI offer a picker instead of a text box.
+      entity:   %w[has_any has_all none_of] + COMMON_OPERATORS,
     }.freeze
 
     # Schema field types, as authored in MetadataSchema tabs, mapped onto the
@@ -98,6 +104,20 @@ module Search
         Field.new(name: "audio_codec",         type: :string, source: :property, path: "audio_codec",         group: :audio),
         Field.new(name: "audio_bitrate",       type: :number, source: :property, path: "audio_bitrate",       group: :audio),
         Field.new(name: "applied_schema_name", type: :string, source: :property, path: "applied_schema_name", group: :schema),
+
+        # --- Entity links ----------------------------------------------------
+        # One field per relationship, because the relationship is the whole
+        # point: "shot by Berlin" and "showing Berlin" are different questions,
+        # and a single `entity` field would collapse them back into the
+        # ambiguity the entity layer was built to remove. `entity` is kept as
+        # well for the genuinely relationship-agnostic question — "anything to
+        # do with this thing" — which is a real question, just a vaguer one.
+        Field.new(name: "entity",     label: "Related entity", type: :entity, source: :entity, path: "any",        group: :entities),
+        Field.new(name: "depicts",    label: "Depicts",        type: :entity, source: :entity, path: "depicts",    group: :entities),
+        Field.new(name: "shot_by",    label: "Shot by",        type: :entity, source: :entity, path: "shot_by",    group: :entities),
+        Field.new(name: "belongs_to", label: "Belongs to",     type: :entity, source: :entity, path: "belongs_to", group: :entities),
+        Field.new(name: "located_at", label: "Located at",     type: :entity, source: :entity, path: "located_at", group: :entities),
+        Field.new(name: "mentions",   label: "Mentions",       type: :entity, source: :entity, path: "mentions",   group: :entities),
       ].freeze
     end
     # rubocop:enable Layout/LineLength

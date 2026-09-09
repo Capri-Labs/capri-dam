@@ -33,6 +33,22 @@ module Types
     field :published_at,   GraphQL::Types::ISO8601DateTime,  null: true,
           description: "When this asset was last published; null when unpublished."
 
+    field :entity_links, [ Types::AssetEntityType ], null: false, complexity: 5 do
+      description "Entity links for this asset. Includes unconfirmed proposals by " \
+                  "default; pass `assertedOnly: true` for links a person has stated " \
+                  "or agreed with, which is what a policy decision should read."
+      argument :relationship, String,  required: false,
+               description: "Restrict to one relationship (depicts, shot_by, …)."
+      argument :asserted_only, Boolean, required: false, default_value: false
+    end
+
+    def entity_links(relationship: nil, asserted_only: false)
+      scope = object.asset_entities.includes(:entity)
+      scope = scope.where(relationship: relationship) if relationship.present?
+      scope = scope.asserted if asserted_only
+      scope.order(:relationship)
+    end
+
     #  Temporarily disabled — re-enable once FolderType circular ref is resolved
     # field :parent_folder, Types::FolderType, null: true, complexity: 5
     # field :active_workflows, [Types::WorkflowType], null: false, complexity: 10

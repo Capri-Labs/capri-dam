@@ -542,6 +542,28 @@ CREATE TABLE public.asset_embeddings (
 
 
 --
+-- Name: asset_entities; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.asset_entities (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    asset_id uuid NOT NULL,
+    entity_id uuid NOT NULL,
+    relationship character varying NOT NULL,
+    source character varying DEFAULT 'manual'::character varying NOT NULL,
+    confidence double precision,
+    confirmed_at timestamp(6) without time zone,
+    confirmed_by_id bigint,
+    created_by_id bigint,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT asset_entities_confidence_in_range CHECK (((confidence IS NULL) OR ((confidence >= (0)::double precision) AND (confidence <= (1)::double precision)))),
+    CONSTRAINT asset_entities_relationship_in_vocabulary CHECK (((relationship)::text = ANY ((ARRAY['depicts'::character varying, 'shot_by'::character varying, 'belongs_to'::character varying, 'located_at'::character varying, 'mentions'::character varying])::text[]))),
+    CONSTRAINT asset_entities_source_in_vocabulary CHECK (((source)::text = ANY ((ARRAY['manual'::character varying, 'tag_resolution'::character varying, 'ai'::character varying])::text[])))
+);
+
+
+--
 -- Name: asset_provenance_records; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -608,7 +630,10 @@ CREATE TABLE public.asset_versions (
     created_by_id bigint,
     properties jsonb DEFAULT '{}'::jsonb,
     updated_at timestamp(6) without time zone NOT NULL,
-    version_number integer DEFAULT 1 NOT NULL
+    version_number integer DEFAULT 1 NOT NULL,
+    last_fixity_check_at timestamp(6) without time zone,
+    fixity_status character varying,
+    CONSTRAINT asset_versions_fixity_status_valid CHECK (((fixity_status IS NULL) OR ((fixity_status)::text = ANY ((ARRAY['passed'::character varying, 'failed'::character varying, 'missing'::character varying, 'unreadable'::character varying])::text[]))))
 );
 
 
@@ -1189,6 +1214,64 @@ CREATE SEQUENCE public.email_templates_id_seq
 --
 
 ALTER SEQUENCE public.email_templates_id_seq OWNED BY public.email_templates.id;
+
+
+--
+-- Name: entities; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.entities (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    entity_type character varying NOT NULL,
+    name character varying NOT NULL,
+    slug character varying NOT NULL,
+    description text,
+    properties jsonb DEFAULT '{}'::jsonb NOT NULL,
+    external_ids jsonb DEFAULT '{}'::jsonb NOT NULL,
+    canonical_id uuid,
+    created_by_id bigint,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT entities_canonical_is_not_self CHECK (((canonical_id IS NULL) OR (canonical_id <> id))),
+    CONSTRAINT entities_type_in_vocabulary CHECK (((entity_type)::text = ANY ((ARRAY['person'::character varying, 'product'::character varying, 'place'::character varying, 'campaign'::character varying, 'brand'::character varying, 'event'::character varying])::text[])))
+);
+
+
+--
+-- Name: entity_aliases; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.entity_aliases (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    entity_id uuid NOT NULL,
+    alias_text character varying NOT NULL,
+    source character varying DEFAULT 'manual'::character varying NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: fixity_checks; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.fixity_checks (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    asset_id uuid NOT NULL,
+    asset_version_id uuid NOT NULL,
+    status character varying NOT NULL,
+    expected_checksum character varying,
+    actual_checksum character varying,
+    byte_size bigint,
+    storage_path character varying,
+    storage_backend character varying,
+    duration_ms integer,
+    error_message text,
+    checked_at timestamp(6) without time zone NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT fixity_checks_status_valid CHECK (((status)::text = ANY ((ARRAY['passed'::character varying, 'failed'::character varying, 'missing'::character varying, 'unreadable'::character varying])::text[])))
+);
 
 
 --
@@ -3229,6 +3312,14 @@ ALTER TABLE ONLY public.asset_embeddings
 
 
 --
+-- Name: asset_entities asset_entities_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.asset_entities
+    ADD CONSTRAINT asset_entities_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: asset_provenance_records asset_provenance_records_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -3386,6 +3477,30 @@ ALTER TABLE ONLY public.email_deliveries
 
 ALTER TABLE ONLY public.email_templates
     ADD CONSTRAINT email_templates_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: entities entities_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.entities
+    ADD CONSTRAINT entities_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: entity_aliases entity_aliases_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.entity_aliases
+    ADD CONSTRAINT entity_aliases_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: fixity_checks fixity_checks_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.fixity_checks
+    ADD CONSTRAINT fixity_checks_pkey PRIMARY KEY (id);
 
 
 --
@@ -4092,6 +4207,48 @@ CREATE INDEX index_asset_embeddings_on_embedding ON public.asset_embeddings USIN
 
 
 --
+-- Name: index_asset_entities_on_asset_entity_relationship; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_asset_entities_on_asset_entity_relationship ON public.asset_entities USING btree (asset_id, entity_id, relationship);
+
+
+--
+-- Name: index_asset_entities_on_asset_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_asset_entities_on_asset_id ON public.asset_entities USING btree (asset_id);
+
+
+--
+-- Name: index_asset_entities_on_confirmed_by_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_asset_entities_on_confirmed_by_id ON public.asset_entities USING btree (confirmed_by_id);
+
+
+--
+-- Name: index_asset_entities_on_created_by_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_asset_entities_on_created_by_id ON public.asset_entities USING btree (created_by_id);
+
+
+--
+-- Name: index_asset_entities_on_entity_id_and_relationship; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_asset_entities_on_entity_id_and_relationship ON public.asset_entities USING btree (entity_id, relationship);
+
+
+--
+-- Name: index_asset_entities_unconfirmed; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_asset_entities_unconfirmed ON public.asset_entities USING btree (created_at) WHERE (confirmed_at IS NULL);
+
+
+--
 -- Name: index_asset_provenance_records_on_asset_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -4159,6 +4316,20 @@ CREATE UNIQUE INDEX index_asset_versions_on_asset_id_and_version_number ON publi
 --
 
 CREATE INDEX index_asset_versions_on_created_by_id ON public.asset_versions USING btree (created_by_id);
+
+
+--
+-- Name: index_asset_versions_on_last_fixity_check_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_asset_versions_on_last_fixity_check_at ON public.asset_versions USING btree (last_fixity_check_at);
+
+
+--
+-- Name: index_asset_versions_on_unhealthy_fixity_status; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_asset_versions_on_unhealthy_fixity_status ON public.asset_versions USING btree (fixity_status) WHERE ((fixity_status IS NOT NULL) AND ((fixity_status)::text <> 'passed'::text));
 
 
 --
@@ -4628,6 +4799,76 @@ CREATE INDEX index_email_templates_on_created_by_id ON public.email_templates US
 --
 
 CREATE UNIQUE INDEX index_email_templates_on_event_trigger ON public.email_templates USING btree (event_trigger);
+
+
+--
+-- Name: index_entities_on_canonical_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_entities_on_canonical_id ON public.entities USING btree (canonical_id);
+
+
+--
+-- Name: index_entities_on_created_by_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_entities_on_created_by_id ON public.entities USING btree (created_by_id);
+
+
+--
+-- Name: index_entities_on_entity_type_and_slug; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_entities_on_entity_type_and_slug ON public.entities USING btree (entity_type, slug);
+
+
+--
+-- Name: index_entities_on_name; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_entities_on_name ON public.entities USING btree (name);
+
+
+--
+-- Name: index_entities_on_type_when_canonical; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_entities_on_type_when_canonical ON public.entities USING btree (entity_type) WHERE (canonical_id IS NULL);
+
+
+--
+-- Name: index_entity_aliases_on_alias_text; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_entity_aliases_on_alias_text ON public.entity_aliases USING btree (alias_text);
+
+
+--
+-- Name: index_entity_aliases_on_entity_id_and_alias_text; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_entity_aliases_on_entity_id_and_alias_text ON public.entity_aliases USING btree (entity_id, alias_text);
+
+
+--
+-- Name: index_fixity_checks_on_asset_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_fixity_checks_on_asset_id ON public.fixity_checks USING btree (asset_id);
+
+
+--
+-- Name: index_fixity_checks_on_asset_version_id_and_checked_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_fixity_checks_on_asset_version_id_and_checked_at ON public.fixity_checks USING btree (asset_version_id, checked_at);
+
+
+--
+-- Name: index_fixity_checks_on_status_and_checked_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_fixity_checks_on_status_and_checked_at ON public.fixity_checks USING btree (status, checked_at);
 
 
 --
@@ -5618,6 +5859,14 @@ ALTER TABLE ONLY public.ai_reviews
 
 
 --
+-- Name: fixity_checks fk_rails_25f7d285d8; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.fixity_checks
+    ADD CONSTRAINT fk_rails_25f7d285d8 FOREIGN KEY (asset_version_id) REFERENCES public.asset_versions(id);
+
+
+--
 -- Name: portal_downloads fk_rails_275c2f96ab; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -5631,6 +5880,14 @@ ALTER TABLE ONLY public.portal_downloads
 
 ALTER TABLE ONLY public.renditions
     ADD CONSTRAINT fk_rails_27f1b0206e FOREIGN KEY (asset_id) REFERENCES public.assets(id);
+
+
+--
+-- Name: fixity_checks fk_rails_2950403fc8; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.fixity_checks
+    ADD CONSTRAINT fk_rails_2950403fc8 FOREIGN KEY (asset_id) REFERENCES public.assets(id);
 
 
 --
@@ -5719,6 +5976,14 @@ ALTER TABLE ONLY public.asset_usage_events
 
 ALTER TABLE ONLY public.comment_threads
     ADD CONSTRAINT fk_rails_450e53a469 FOREIGN KEY (review_link_id) REFERENCES public.review_links(id);
+
+
+--
+-- Name: asset_entities fk_rails_475ea4930a; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.asset_entities
+    ADD CONSTRAINT fk_rails_475ea4930a FOREIGN KEY (asset_id) REFERENCES public.assets(id);
 
 
 --
@@ -5922,6 +6187,14 @@ ALTER TABLE ONLY public.asset_downloads
 
 
 --
+-- Name: entities fk_rails_828926881c; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.entities
+    ADD CONSTRAINT fk_rails_828926881c FOREIGN KEY (created_by_id) REFERENCES public.users(id);
+
+
+--
 -- Name: asset_provenance_records fk_rails_866ef11ca9; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -6122,6 +6395,14 @@ ALTER TABLE ONLY public.user_preferences
 
 
 --
+-- Name: entities fk_rails_a80b56d7e2; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.entities
+    ADD CONSTRAINT fk_rails_a80b56d7e2 FOREIGN KEY (canonical_id) REFERENCES public.entities(id);
+
+
+--
 -- Name: user_group_memberships fk_rails_aece7151f8; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -6143,6 +6424,14 @@ ALTER TABLE ONLY public.workflow_steps
 
 ALTER TABLE ONLY public.notifications
     ADD CONSTRAINT fk_rails_b080fb4855 FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
+-- Name: asset_entities fk_rails_b2c21d739a; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.asset_entities
+    ADD CONSTRAINT fk_rails_b2c21d739a FOREIGN KEY (created_by_id) REFERENCES public.users(id);
 
 
 --
@@ -6258,6 +6547,14 @@ ALTER TABLE ONLY public.workflow_instances
 
 
 --
+-- Name: entity_aliases fk_rails_d1a934bbb3; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.entity_aliases
+    ADD CONSTRAINT fk_rails_d1a934bbb3 FOREIGN KEY (entity_id) REFERENCES public.entities(id);
+
+
+--
 -- Name: quarantined_assets fk_rails_d4a6a4f170; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -6271,6 +6568,14 @@ ALTER TABLE ONLY public.quarantined_assets
 
 ALTER TABLE ONLY public.comments
     ADD CONSTRAINT fk_rails_da28d53ee7 FOREIGN KEY (parent_comment_id) REFERENCES public.comments(id);
+
+
+--
+-- Name: asset_entities fk_rails_da3489f95a; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.asset_entities
+    ADD CONSTRAINT fk_rails_da3489f95a FOREIGN KEY (confirmed_by_id) REFERENCES public.users(id);
 
 
 --
@@ -6314,6 +6619,14 @@ ALTER TABLE ONLY public.assets
 
 
 --
+-- Name: asset_entities fk_rails_e36d6f59cb; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.asset_entities
+    ADD CONSTRAINT fk_rails_e36d6f59cb FOREIGN KEY (entity_id) REFERENCES public.entities(id);
+
+
+--
 -- Name: duplicate_group_assets fk_rails_e5995b56ce; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -6352,6 +6665,8 @@ ALTER TABLE ONLY public.comments
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260909080000'),
+('20260908170000'),
 ('20260908090000'),
 ('20260907120000'),
 ('20260907110000'),

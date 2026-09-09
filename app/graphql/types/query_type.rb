@@ -442,6 +442,57 @@ module Types
     end
 
     # -------------------------------------------------------------------------
+    # Entity graph
+    # -------------------------------------------------------------------------
+
+    field :entities, [ Types::EntityType ], null: false do
+      description "Search the entity catalogue. Merged-away duplicates are excluded — " \
+                  "they exist only so old links keep resolving, not to be picked from a list."
+      argument :entity_type, String,  required: false,
+               description: "person, place, product, brand, campaign or event."
+      argument :query,       String,  required: false,
+               description: "Matches the name or any alias, case- and accent-insensitively."
+      argument :limit,       Integer, required: false, default_value: 50
+    end
+
+    def entities(entity_type: nil, query: nil, limit: 50)
+      return [] unless context[:current_user]
+
+      scope = Entity.selectable
+      scope = scope.where(entity_type: entity_type) if entity_type.present?
+
+      if query.present?
+        normalised = EntityAlias.normalise(query)
+        alias_ids  = EntityAlias.where("LOWER(alias_text) LIKE ?", "%#{normalised}%").select(:entity_id)
+        scope = scope.where("LOWER(entities.name) LIKE :q OR entities.id IN (:ids)",
+                            q: "%#{normalised}%", ids: alias_ids)
+      end
+
+      scope.order(:name).limit(limit.clamp(1, 200))
+    end
+
+    field :entity, Types::EntityType, null: true do
+      description "Fetch one entity by UUID or by its `type:slug` reference. " \
+                  "A merged-away entity resolves to its survivor, so a stored " \
+                  "reference does not rot when a duplicate is cleaned up."
+      argument :reference, String, required: true
+    end
+
+    def entity(reference:)
+      return nil unless context[:current_user]
+
+      found =
+        if reference.match?(/\A[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\z/i)
+          Entity.find_by(id: reference)
+        elsif reference.include?(":")
+          type, slug = reference.split(":", 2)
+          Entity.find_by(entity_type: type, slug: slug)
+        end
+
+      found&.canonical_entity
+    end
+
+    # -------------------------------------------------------------------------
     # Duplicate Manager
     # -------------------------------------------------------------------------
 

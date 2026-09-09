@@ -26,3 +26,4 @@
   - [ingest, 1]             # 50k batch uploads
   - [downloads, 1]          # Bulk folder/asset ZIP export (AssetDownloadWorker)
   - [edge_metadata_bulk, 1] # Mass folder metadata sync (FolderMetadataSyncWorker)
+  - [preservation, 1]       # Nightly fixity audit (FixityAuditWorker)

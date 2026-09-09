@@ -64,6 +64,15 @@ module Search
     NUMERIC_PATTERN   = '^-{0,1}[0-9]+(\.[0-9]+){0,1}$'
     TIMESTAMP_PATTERN = "^[0-9]{4}-[0-9]{2}-[0-9]{2}"
 
+    UUID_PATTERN = /\A[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\z/i
+
+    # A well-formed uuid that no entity will ever have, so a filter naming only
+    # unresolvable entities matches nothing. Returning an empty list instead
+    # would produce `IN ()` — a syntax error — and dropping the predicate
+    # entirely would match *everything*, which is the dangerous direction for a
+    # filter to fail in.
+    NO_ENTITY_ID = "00000000-0000-0000-0000-000000000000"
+
     def initialize(ast)
       @ast = ast
       @node_count = 0
@@ -158,6 +167,7 @@ module Search
       when :datetime then datetime_predicate(field, operator, value, path)
       when :boolean  then boolean_predicate(field, operator, value, path)
       when :array    then array_predicate(field, operator, value, path)
+      when :entity   then entity_predicate(field, operator, value, path)
       else                text_predicate(field, operator, value, path)
       end
     end
@@ -278,13 +288,83 @@ module Search
       end
     end
 
-    # -- Expressions ----------------------------------------------------------
+    # Entity links live in their own table, so unlike every other field type
+    # this compiles to a correlated EXISTS rather than an expression over
+    # `assets`. A join would have been the obvious alternative and is wrong
+    # here: the compiler returns a WHERE fragment that callers apply to a scope
+    # they own, and a join would silently multiply their rows.
+    def entity_predicate(field, operator, value, path)
+      relationship = field.path == "any" ? nil : field.path
+      link = "asset_entities ae"
+      correlate = "ae.asset_id = assets.id"
+      correlate += " AND ae.relationship = '#{relationship}'" if relationship
+
+      case operator
+      when "present" then [ "EXISTS (SELECT 1 FROM #{link} WHERE #{correlate})", [] ]
+      when "blank"   then [ "NOT EXISTS (SELECT 1 FROM #{link} WHERE #{correlate})", [] ]
+      when "has_any"
+        ids = entity_ids(value, path)
+        [ "EXISTS (SELECT 1 FROM #{link} WHERE #{correlate} AND ae.entity_id IN (?))", [ ids ] ]
+      when "none_of"
+        ids = entity_ids(value, path)
+        [ "NOT EXISTS (SELECT 1 FROM #{link} WHERE #{correlate} AND ae.entity_id IN (?))", [ ids ] ]
+      when "has_all"
+        ids = entity_ids(value, path)
+        [
+          "(SELECT COUNT(DISTINCT ae.entity_id) FROM #{link} WHERE #{correlate} AND ae.entity_id IN (?)) = ?",
+          [ ids, ids.length ],
+        ]
+      else raise InvalidQuery.new("Unsupported operator '#{operator}'", path)
+      end
+    end
+
+    # Turns caller-supplied entity references into entity ids.
     #
-    # Field paths are never caller-supplied: they come from the registry, whose
-    # dynamic entries are themselves filtered through `\A[\w:\-.]+\z`. That is
-    # what makes interpolating them here safe, and why nothing else may be.
+    # A reference is a UUID or a type-qualified slug (`person:jane-doe`). A bare
+    # slug is rejected on purpose: "berlin" is ambiguous across a place, a
+    # person and a campaign, and silently picking one would reintroduce, inside
+    # the entity layer, precisely the collapse that the entity layer exists to
+    # remove. The error names the alternative rather than just refusing.
+    #
+    # References are resolved through the merge chain, so a query written
+    # against an entity that has since been merged away still finds the assets
+    # whose links moved to the survivor. Without this, cleaning up duplicates
+    # would silently break every saved search that named one.
+    def entity_ids(value, path)
+      references = list(value, path)
+
+      resolved = references.filter_map { |reference| resolve_entity_reference(reference, path) }
+
+      # An IN () with no members is a syntax error, and an unresolvable
+      # reference should match nothing rather than everything.
+      resolved.presence || [ NO_ENTITY_ID ]
+    end
+
+    def resolve_entity_reference(reference, path)
+      reference = reference.to_s.strip
+      entity =
+        if reference.match?(UUID_PATTERN)
+          Entity.find_by(id: reference)
+        elsif reference.include?(":")
+          entity_type, slug = reference.split(":", 2)
+          Entity.find_by(entity_type: entity_type, slug: slug)
+        else
+          raise InvalidQuery.new(
+            "Entity reference '#{reference}' is ambiguous; use an id or a qualified slug such as 'person:#{reference}'",
+            path,
+          )
+        end
+
+      entity&.canonical_entity&.id
+    end
+
+    # -- Expressions ----------------------------------------------------------
 
     def text_expression(field)
+      # Field paths are never caller-supplied: they come from the registry,
+      # whose dynamic entries are themselves filtered through `\A[\w:\-.]+\z`.
+      # That is what makes interpolating them here safe, and why nothing else
+      # may be.
       if field.source == :column
         "assets.#{field.path}::text"
       else

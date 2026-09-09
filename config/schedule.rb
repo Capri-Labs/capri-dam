@@ -36,3 +36,12 @@ end
 every 5.minutes do
   runner "PublishSchedulerWorker.perform_async"
 end
+
+# Nightly integrity audit. Verifies a budgeted, staleness-ordered slice of the
+# estate rather than everything: a full sweep means downloading every object,
+# which on remote storage is an egress bill that gets the whole audit switched
+# off after the first invoice. Runs at 4am, after the other nightly jobs, so it
+# is competing for storage bandwidth with as little else as possible.
+every 1.day, at: "4:00 am" do
+  runner "FixityAuditWorker.perform_async"
+end

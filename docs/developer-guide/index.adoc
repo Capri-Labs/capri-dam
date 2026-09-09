@@ -138,6 +138,11 @@ include::src/33_ai-auto-tagging.adoc[]
 // 34. Graphical Query Builder
 include::src/34_query-builder.adoc[]
 
+// 35. Fixity & Preservation
+include::src/35_fixity-and-preservation.adoc[]
+
+include::src/36_entity-graph.adoc[]
+
 ifdef::backend-html5[]
 // Back-to-top button
 ++++

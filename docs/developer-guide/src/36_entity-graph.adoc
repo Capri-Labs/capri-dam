@@ -1,0 +1,184 @@
+[[section-entity-graph]]
+= The Entity Graph
+
+A tag is a string. That is its strength — anyone can add one in a second — and
+it is also the reason a tag cannot answer most of the questions a DAM is
+eventually asked.
+
+Three of them, in a library tagged only with strings:
+
+* *Which photographs is Jane Doe in?* Search `jane-doe` and you get her
+  portraits, the shoots she art-directed, and the two assets belonging to a
+  different Jane Doe in the Sydney office.
+* *Who took this?* The tag `jane-doe` is on the asset. It does not say whether
+  she is in front of the camera or behind it, and those two facts lead to
+  opposite answers when a credit or a consent question arrives.
+* *What did we shoot in Berlin?* Some assets say `berlin`, some `berlin-de`,
+  some `Berlin`, and one says `berliln`.
+
+Each is the same failure in a different costume: the tag names a *string*, and
+the question is about a *thing*. The entity graph adds the thing.
+
+== What an entity is
+
+An `Entity` is a named subject the library knows about, with a closed type
+vocabulary:
+
+[cols="1,3", options="header"]
+|===
+| Type | Examples
+
+| `person`   | A photographer, a model, an executive, a customer
+| `place`    | Berlin, Studio 4, the Cornwall coast
+| `product`  | An SKU, a model line
+| `brand`    | A house brand or a sub-brand
+| `campaign` | Spring 2026, Always On
+| `event`    | A launch, a conference, a shoot day
+|===
+
+The type is closed on purpose. An open type vocabulary drifts into an ontology
+project, and an ontology nobody maintains is indistinguishable from free-text
+tags with extra ceremony.
+
+Alternate spellings live in `entity_aliases`, so `berlin-de`, `Berlin, DE` and
+`berlin` all resolve to one place. An alias is *deliberately not unique across
+entities* — two real people may genuinely share a name, and pretending
+otherwise is what collapsed them in the first place.
+
+== Why it is not a triple store
+
+The obvious design is a general subject–predicate–object graph. It is also the
+wrong one here. An open predicate set cannot be indexed usefully, cannot be
+offered as a UI control, and cannot be reasoned about by a rights or consent
+policy — a policy has to know what `depicts` *means*, and it can only know that
+if the set is finite and someone decided it.
+
+So the relationship vocabulary is fixed at five, and each is only valid for
+certain entity types:
+
+[cols="1,2,3", options="header"]
+|===
+| Relationship | Valid entity types | Means
+
+| `depicts`    | person, product, place, brand | The thing is in the frame
+| `shot_by`    | person only                   | This person created the asset
+| `belongs_to` | campaign, brand, event        | The asset is part of this
+| `located_at` | place only                    | Where it was captured
+| `mentions`   | all types                     | The asset refers to it — a document naming a product
+|===
+
+`shot_by` accepting only a person is not fussiness. It is the constraint that
+makes "who took this?" answerable at all, and it is enforced in the database as
+well as the model.
+
+== Resolution proposes; it never asserts
+
+`Entities::Resolver` reads an asset's existing tags and links the ones that name
+exactly one known entity, matching against names and aliases. Three rules make
+it safe to run repeatedly and safe to trust:
+
+*Tags are read, never written.* The tags stay as the raw record of what somebody
+typed. If they were rewritten, the pass could not be re-run after the alias
+table improved — the evidence it works from would have been consumed.
+
+*An ambiguous tag is reported, not guessed.* A tag matching two people is
+returned in `ambiguous` with its candidates, and no link is made. Breaking the
+tie automatically would reintroduce the exact conflation the feature exists to
+remove, one layer down and much harder to see.
+
+*`shot_by` is never inferred.* A tag cannot distinguish the photographer from
+the subject, so resolution never claims it did. `shot_by` only ever arrives from
+a person.
+
+Every link resolution creates is *unconfirmed*. The distinction is carried on
+each link:
+
+[cols="1,3", options="header"]
+|===
+| Field | Meaning
+
+| `source`
+| Where the claim came from — `manual`, `tag_resolution` or `ai`. Never
+  rewritten, so provenance survives.
+
+| `asserted`
+| Whether a person stated or agreed with it. `AssetEntity#confirm!` sets it;
+  `AssetEntity.asserted` scopes to it.
+|===
+
+Consumers making a *policy* decision — consent, rights, credit — must read
+`asserted`. An unconfirmed link is a proposal about someone's identity, and
+acting on a guess about identity is precisely the mistake this feature is meant
+to prevent. Search deliberately does the opposite and includes unconfirmed links,
+because search is discovery: showing a maybe is helpful, and the user can see the
+asset and judge.
+
+The API also refuses a `confidence` value on a `manual` link. A person does not
+have a confidence score, and recording one as `1.0` would make a curator's
+statement indistinguishable from a very sure model.
+
+== Merging, not deleting
+
+Duplicates are discovered late — usually after hundreds of links already point
+at both records. `Entities::Merger` therefore never deletes: it sets
+`canonical_id` on the loser, moves its links and aliases to the survivor, and
+adopts the loser's *name* as an alias of the survivor.
+
+That last step is what stops the duplicate coming straight back: the name that
+created it is now a known alias, so the next resolution pass routes it to the
+survivor instead of minting a second record.
+
+Keeping the tombstone means every stored reference — a saved search, a bookmarked
+URL, an integration's hard-coded slug — still resolves, because lookups walk
+`canonical_entity` to the survivor. The walk is cycle-safe, so a mis-ordered pair
+of merges degrades to "returns one of them" rather than hanging.
+
+== Searching by entity
+
+Six search fields are registered, all compiling to the same machinery:
+
+[source]
+----
+entity:person:jane-doe        any relationship
+depicts:person:jane-doe       in the frame
+shot_by:person:jane-doe       took the photograph
+belongs_to:campaign:spring-26
+located_at:place:berlin
+mentions:product:sku-1234
+----
+
+Two decisions in the compiler are worth knowing about.
+
+*A bare slug is rejected.* `depicts:berlin` is an error, and the message names
+the qualified form. Slugs are unique per type, not globally — the place `berlin`
+and the campaign `berlin` may both hold it, which is the point — so accepting a
+bare slug would mean picking one silently.
+
+*It compiles to a correlated `EXISTS`, never a `JOIN`.* The compiler returns a
+`WHERE` fragment applied to a scope the caller owns. A join would multiply the
+caller's rows once per matching link, quietly corrupting counts and pagination
+in every consumer. There is a spec asserting the row tally is unaffected.
+
+Filter values resolve through the merge chain, so a saved search naming an
+entity that was merged away last month still returns the right assets. When a
+reference resolves to nothing, the predicate is compiled against a sentinel
+all-zero UUID: an unresolvable filter must match *nothing*, and an empty `IN ()`
+is a SQL syntax error rather than a safe no-op.
+
+== Where to look
+
+[cols="2,3", options="header"]
+|===
+| File | Responsibility
+
+| `app/models/entity.rb`            | Types, slugs, the cycle-safe `canonical_entity` walk
+| `app/models/entity_alias.rb`      | Normalisation (NFKC, case, whitespace); `candidates_for` returns a *relation*
+| `app/models/asset_entity.rb`      | The relationship × type matrix; `asserted?` / `confirm!`
+| `app/services/entities/resolver.rb` | Tag → entity proposal pass, with `dry_run`
+| `app/services/entities/merger.rb`   | Transactional merge
+| `app/services/search/field_registry.rb` | The six `entity` search fields
+| `app/services/search/query_compiler.rb` | `entity_predicate` and reference resolution
+| `app/controllers/api/v1/entities_controller.rb` | Entity CRUD, aliases, merge
+| `app/controllers/api/v1/asset_entities_controller.rb` | Linking, resolution, confirmation
+| `app/graphql/types/entity_type.rb` | `entities`, `entity`, and `Asset.entityLinks`
+|===

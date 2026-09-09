@@ -234,3 +234,139 @@ not a tab, so it's visible without switching tabs).
   merge into `Asset#usage_stats` as a secondary, clearly-labelled data source.
 
 
+=== ADR 7: Named UI Extension Slots vs. a Runtime Plugin Hook Bus
+**Status:** Accepted
+
+**Background:**
+Roadmap rows 37 and 69 ask for a documented way to add custom panels, dashboard
+widgets and Properties tabs "without forking the React source". Custom
+_metadata fields_ are already fully supported through Metadata Schemas; this ADR
+is about extending the _UI itself_.
+
+Three facts about the current codebase set the constraints, and each was
+verified rather than assumed:
+
+* There is **no existing registry to generalise**. `Admin/widgets/BarChartWidget.jsx`
+  is 29 lines and is referenced only by its own Jest test — it is not mounted
+  anywhere in the product. This is greenfield, not a refactor.
+* The frontend is a **build-time static import map**. `components/Registry.jsx`
+  maps a `data-view` key to a component, `application.js` looks the key up and
+  mounts the island. Every component is compiled into one esbuild bundle. There
+  is no runtime module loading anywhere in the app.
+* **The page has no security boundary inside it.** Authentication is a Devise
+  session cookie, and the CSRF token is published in a `meta` tag that any
+  script in the document can read (`utils/adminUtils.js`, `utils/format.js`).
+  `config/initializers/content_security_policy.rb` is commented out in its
+  entirety, so no CSP is enforced.
+
+Taken together: any JavaScript that reaches the main bundle can read the CSRF
+token and issue authenticated same-origin requests as the current user,
+including administrative ones. "Loading a third-party widget" and "granting a
+third party the estate" are, today, the same act.
+
+**Assumptions:**
+
+* The near-term demand is first-party and customer-specific composition — a
+  customer wants _their_ panel in _their_ deployment — not an open marketplace
+  of untrusted plugins.
+* Extension authors are frontend developers who can build and deploy an
+  artefact; they are not writing code in a browser text box.
+* An extension API that breaks on every release is worse than no extension API,
+  because it converts one fork into a permanent maintenance relationship.
+* A slot that renders nothing is an acceptable failure; a slot that takes down
+  the asset viewer is not.
+
+**Requirements:**
+
+* Enumerable, documentable extension points — we must be able to say exactly
+  what the API _is_.
+* A stated security boundary, not an implied one.
+* A versioning and deprecation story defined before the first extension exists.
+* Failure isolation: a faulty extension must degrade locally.
+
+**Decision:**
+
+*1. Extension points are named slots, not a hook bus.*
+A slot is a declared location with a declared prop contract; the host renders
+whatever is registered for it. We explicitly reject a publish/subscribe hook bus.
+A bus is open-ended — every hook becomes a compatibility commitment the moment
+someone depends on it, and the semantics that matter most (ordering between
+subscribers, whether a subscriber may mutate what it is handed, what happens
+when two extensions disagree) are precisely the ones a bus leaves unspecified.
+Slots are finite and enumerable, so they can be listed, documented, versioned
+and tested, and the blast radius of an extension is bounded by where it renders.
+
+*2. The security boundary: trusted-first-party now, sandboxed-untrusted later —
+and never third-party JavaScript in the main bundle.*
+This is the crux of the ADR, so it is stated as two tiers with an explicit
+prohibition between them.
+
+**Tier 1 (ships in Phases 17–18).** Extensions are **first-party and trusted**:
+source-level, code-reviewed, compiled into the bundle exactly like every other
+component. This is honest about what it is — _composition from configuration_,
+not a plugin sandbox — and it is worth having on its own, because it replaces
+hardcoded JSX with a registry and a persisted layout. It removes the fork for
+people who control their own build. It does **not** make it safe to run someone
+else's code, and the documentation must not imply that it does.
+
+**Tier 2 (specified here, deliberately not built yet).** Untrusted third-party
+extensions run in an **iframe with `sandbox="allow-scripts"` and without
+`allow-same-origin`**, served from a **separate origin**. Omitting
+`allow-same-origin` is the whole point: the frame gets an opaque origin, so it
+cannot read the session cookie, the CSRF token, or the host DOM. It talks to the
+host only over `postMessage` using a versioned, schema-checked message contract,
+and it reaches the API with **its own Doorkeeper token** carrying narrowed
+scopes (`read`/`write`/`admin` already exist), never the user's session. A
+third-party extension therefore has _less_ authority than the user who installed
+it, which is the property that makes it installable at all.
+
+**Prohibited, permanently:** loading untrusted third-party JavaScript into the
+main document, by any mechanism — bundled, `import()`-ed, or injected via a
+script tag. There is no configuration of that arrangement which is safe, because
+the CSRF token is readable from the DOM by design.
+
+**Prerequisite for Tier 2:** a Content-Security-Policy must be enabled first. It
+is currently commented out, and shipping a sandbox while the page itself permits
+arbitrary script sources would be a boundary in name only.
+
+*3. Versioning.*
+The slot name plus its prop contract _is_ the public API. Adding a slot, or
+adding a prop to an existing one, is a minor change. Renaming or removing a slot,
+or changing the meaning of an existing prop, is a major change. Every extension
+declares the major `apiVersion` it targets; the host refuses to render an
+extension whose declared major it does not implement, rendering a visible
+placeholder rather than throwing — a silently absent panel is indistinguishable
+from a bug in the extension. A slot may only be removed after one minor release
+in which it is deprecated and logs a console warning. Every slot render is
+wrapped in an error boundary, so a thrown extension degrades to "this panel
+failed to load" and the surrounding screen survives.
+
+*4. Which slots ship first.*
+`dashboard.widget` in Phase 17 (widget key → component plus a declared data
+contract, with per-user layout persisted), then `asset.inspector.tab` and
+`asset.properties.section` in Phase 18. These three are chosen because they are
+read-mostly presentation surfaces. Upload and ingestion, authentication, and
+settings are deliberately **not** extensible in the first iteration: they carry
+the highest blast radius and the least well-understood contracts.
+
+**Consequences:**
+
+* **Pros:** The API surface is finite and can be documented in full. Tier 1 is
+  achievable with no new security machinery, because it grants no new authority
+  to anyone. The security posture is written down before an extension exists,
+  which is the only time it can be chosen freely. Error boundaries and the
+  `apiVersion` refusal make third-party breakage local and legible.
+* **Cons:** Tier 1 does not satisfy "without forking" for a customer who does
+  not control their own build — they must still build and deploy an artefact.
+  This is a real and acknowledged limitation, and the honest answer is that
+  closing it fully requires Tier 2. Named slots also mean every new extension
+  point is a deliberate act; there is no generic escape hatch, so demand for a
+  slot we did not anticipate becomes a change request rather than something an
+  extension author can work around.
+* **Risk:** the value of a slot is only proven by a real consumer. Phase 18 must
+  therefore ship a reference extension alongside the API, because an extension
+  API with no worked example is indistinguishable from an untested one.
+* **Follow-up:** enable CSP (prerequisite for Tier 2); revisit Tier 2 only when
+  there is a concrete untrusted-extension requirement, since building a sandbox
+  for a hypothetical consumer is the most likely way for this feature to be
+  over-built.

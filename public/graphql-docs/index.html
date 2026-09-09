@@ -53,6 +53,8 @@
                   <li><a href="#query-customNodeDefinitions">customNodeDefinitions</a></li>
                   <li><a href="#query-duplicateGroup">duplicateGroup</a></li>
                   <li><a href="#query-duplicateGroups">duplicateGroups</a></li>
+                  <li><a href="#query-entities">entities</a></li>
+                  <li><a href="#query-entity">entity</a></li>
                   <li><a href="#query-imageProfile">imageProfile</a></li>
                   <li><a href="#query-imageProfiles">imageProfiles</a></li>
                   <li><a href="#query-inbox">inbox</a></li>
@@ -113,6 +115,7 @@
               <li><a href="#definition-ArchiveInboxMessageInput">ArchiveInboxMessageInput</a></li>
               <li><a href="#definition-ArchiveInboxMessagePayload">ArchiveInboxMessagePayload</a></li>
               <li><a href="#definition-Asset">Asset</a></li>
+              <li><a href="#definition-AssetEntity">AssetEntity</a></li>
               <li><a href="#definition-AssetProvenanceRecord">AssetProvenanceRecord</a></li>
               <li><a href="#definition-BigInt">BigInt</a></li>
               <li><a href="#definition-BinAiSuggestion">BinAiSuggestion</a></li>
@@ -149,6 +152,7 @@
               <li><a href="#definition-DuplicateGroupEdge">DuplicateGroupEdge</a></li>
               <li><a href="#definition-EmptyBinInput">EmptyBinInput</a></li>
               <li><a href="#definition-EmptyBinPayload">EmptyBinPayload</a></li>
+              <li><a href="#definition-Entity">Entity</a></li>
               <li><a href="#definition-FolderPolicy">FolderPolicy</a></li>
               <li><a href="#definition-ImageProfile">ImageProfile</a></li>
               <li><a href="#definition-InboxMessage">InboxMessage</a></li>
@@ -509,13 +513,17 @@
                 <div class="example-section example-section-is-code operation-query-example">
                   <h5>Query</h5>
                   <pre><code class="hljs language-gql"><span class="hljs-symbol"><span class="hljs-keyword">query</span> assetDetail <span class="hljs-tag">{
-  <span class="hljs-symbol">assetDetail</span>
+  <span class="hljs-symbol">assetDetail <span class="hljs-tag">{
+    <span class="hljs-symbol">entityLinks <span class="hljs-tag">{
+      <span class="hljs-type">...AssetEntityFragment</span>
+    }</span></span>
+  }</span></span>
 }</span></span>
 </code></pre>
                 </div>
                 <div class="example-section example-section-is-code operation-response-example">
                   <h5>Response</h5>
-                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"data"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-attr">"assetDetail"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"data"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-attr">"assetDetail"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-attr">"entityLinks"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-string">AssetEntity</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span>
 </code></pre>
                 </div>
               </div>
@@ -836,7 +844,9 @@
                   <h5>Query</h5>
                   <pre><code class="hljs language-gql"><span class="hljs-symbol"><span class="hljs-keyword">query</span> collection <span class="hljs-tag">{
   <span class="hljs-symbol">collection <span class="hljs-tag">{
-    <span class="hljs-symbol">assets</span>
+    <span class="hljs-symbol">assets <span class="hljs-tag">{
+      <span class="hljs-type">...AssetFragment</span>
+    }</span></span>
     <span class="hljs-symbol">collectionRule <span class="hljs-tag">{
       <span class="hljs-type">...CollectionRuleFragment</span>
     }</span></span>
@@ -892,7 +902,9 @@
                   <h5>Query</h5>
                   <pre><code class="hljs language-gql"><span class="hljs-symbol"><span class="hljs-keyword">query</span> collections <span class="hljs-tag">{
   <span class="hljs-symbol">collections <span class="hljs-tag">{
-    <span class="hljs-symbol">assets</span>
+    <span class="hljs-symbol">assets <span class="hljs-tag">{
+      <span class="hljs-type">...AssetFragment</span>
+    }</span></span>
     <span class="hljs-symbol">collectionRule <span class="hljs-tag">{
       <span class="hljs-type">...CollectionRuleFragment</span>
     }</span></span>
@@ -1098,6 +1110,86 @@
     <span class="hljs-punctuation">}</span>
   <span class="hljs-punctuation">}</span>
 <span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="query-entities" class="operation operation-query" data-traverse-target="query-entities">
+            <div class="operation-group-name">
+              <a href="#group-Operations-Queries">Queries</a>
+            </div>
+            <h2 class="operation-heading ">
+              <code>entities</code>
+            </h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Search the entity catalogue. Merged-away duplicates are excluded — they exist only so old links keep resolving, not to be picked from a list.</p>
+                </div>
+              </div>
+            </div>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-response doc-copy-section">
+                  <h5>Response</h5>
+                  <p> Returns <a href="#definition-Entity"><code>[Entity!]!</code></a>
+                  </p>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <h4 class="example-heading">Example</h4>
+                <div class="example-section example-section-is-code operation-query-example">
+                  <h5>Query</h5>
+                  <pre><code class="hljs language-gql"><span class="hljs-symbol"><span class="hljs-keyword">query</span> entities <span class="hljs-tag">{
+  <span class="hljs-symbol">entities</span>
+}</span></span>
+</code></pre>
+                </div>
+                <div class="example-section example-section-is-code operation-response-example">
+                  <h5>Response</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"data"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-attr">"entities"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="query-entity" class="operation operation-query" data-traverse-target="query-entity">
+            <div class="operation-group-name">
+              <a href="#group-Operations-Queries">Queries</a>
+            </div>
+            <h2 class="operation-heading ">
+              <code>entity</code>
+            </h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>Fetch one entity by UUID or by its <code>type:slug</code> reference. A merged-away entity resolves to its survivor, so a stored reference does not rot when a duplicate is cleaned up.</p>
+                </div>
+              </div>
+            </div>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="operation-response doc-copy-section">
+                  <h5>Response</h5>
+                  <p> Returns an <a href="#definition-Entity"><code>Entity</code></a>
+                  </p>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <h4 class="example-heading">Example</h4>
+                <div class="example-section example-section-is-code operation-query-example">
+                  <h5>Query</h5>
+                  <pre><code class="hljs language-gql"><span class="hljs-symbol"><span class="hljs-keyword">query</span> entity <span class="hljs-tag">{
+  <span class="hljs-symbol">entity</span>
+}</span></span>
+</code></pre>
+                </div>
+                <div class="example-section example-section-is-code operation-response-example">
+                  <h5>Response</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"data"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-attr">"entity"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span><span class="hljs-punctuation">}</span>
 </code></pre>
                 </div>
               </div>
@@ -2565,7 +2657,9 @@
                   <h5>Query</h5>
                   <pre><code class="hljs language-gql"><span class="hljs-symbol"><span class="hljs-keyword">mutation</span> publishAsset<span class="hljs-tag">(<span class="hljs-code">$input</span>:<span class="hljs-type"> PublishAssetInput!</span>)</span> <span class="hljs-tag">{
   <span class="hljs-symbol">publishAsset<span class="hljs-tag">(input: <span class="hljs-code">$input</span>)</span> <span class="hljs-tag">{
-    <span class="hljs-symbol">asset</span>
+    <span class="hljs-symbol">asset <span class="hljs-tag">{
+      <span class="hljs-type">...AssetFragment</span>
+    }</span></span>
   }</span></span>
 }</span></span>
 </code></pre>
@@ -3558,11 +3652,70 @@
                   <h5>Description</h5>
                   <p>Represents a core digital asset within the Capri DAM platform.</p>
                 </div>
+                <div class="definition-properties doc-copy-section">
+                  <h5>Fields</h5>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Field Name</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td data-property-name=""><span class="property-name"><code>entityLinks</code></span> - <span class="property-type"><a href="#definition-AssetEntity"><code>[AssetEntity!]!</code></a></span>
+                        </td>
+                        <td> Entity links for this asset. Includes unconfirmed proposals by default; pass <code>assertedOnly: true</code> for links a person has stated or agreed with, which is what a policy decision should read. </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
               </div>
               <div class="doc-examples">
                 <div class="example-section example-section-is-code">
                   <h5>Example</h5>
-                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"entityLinks"</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-string">AssetEntity</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="definition-AssetEntity" class="definition definition-object" data-traverse-target="definition-AssetEntity">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">AssetEntity</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>A statement that an asset relates to an entity in a particular way.</p>
+                  <p>The relationship is the point. A tag reading &quot;jane-doe&quot; cannot tell you whether Jane is in the photograph or took it, and those two facts lead to opposite answers when a consent or a credit question is asked later.</p>
+                </div>
+                <div class="definition-properties doc-copy-section">
+                  <h5>Fields</h5>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Field Name</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td data-property-name=""><span class="property-name"><code>entity</code></span> - <span class="property-type"><a href="#definition-Entity"><code>Entity!</code></a></span>
+                        </td>
+                        <td>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <div class="example-section example-section-is-code">
+                  <h5>Example</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-attr">"entity"</span><span class="hljs-punctuation">:</span> <span class="hljs-string">Entity</span><span class="hljs-punctuation">}</span>
 </code></pre>
                 </div>
               </div>
@@ -4689,6 +4842,28 @@
                 <div class="definition-description doc-copy-section">
                   <h5>Description</h5>
                   <p>Autogenerated return type of EmptyBin.</p>
+                </div>
+              </div>
+              <div class="doc-examples">
+                <div class="example-section example-section-is-code">
+                  <h5>Example</h5>
+                  <pre><code class="hljs language-json"><span class="hljs-punctuation">{</span><span class="hljs-punctuation">}</span>
+</code></pre>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="definition-Entity" class="definition definition-object" data-traverse-target="definition-Entity">
+            <div class="definition-group-name">
+              <a href="#group-Types">Types</a>
+            </div>
+            <h2 class="definition-heading">Entity</h2>
+            <div class="doc-row">
+              <div class="doc-copy">
+                <div class="definition-description doc-copy-section">
+                  <h5>Description</h5>
+                  <p>A named thing the DAM knows about — a person, place, product, brand, campaign or event — as opposed to a tag, which is only a string that somebody once typed.</p>
+                  <p>The difference matters because two different people can share a name and one person can be written five different ways. An entity survives both: the alternate spellings become aliases, and a duplicate discovered later is merged into the survivor rather than deleted, so links made against the duplicate still resolve.</p>
                 </div>
               </div>
               <div class="doc-examples">

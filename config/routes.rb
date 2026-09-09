@@ -489,6 +489,30 @@ Rails.application.routes.draw do
         end
       end
 
+      # Entity graph — typed people/products/places/campaigns/brands/events and
+      # their stated relationships to assets.
+      resources :entities, only: [ :index, :show, :create, :update, :destroy ] do
+        collection do
+          get :vocabulary
+        end
+        member do
+          post :merge
+          post "aliases", to: "entities#add_alias"
+          delete "aliases/:alias_id", to: "entities#remove_alias"
+        end
+      end
+
+      get  "assets/:asset_id/entities",         to: "asset_entities#index"
+      post "assets/:asset_id/entities",         to: "asset_entities#create"
+      post "assets/:asset_id/entities/resolve", to: "asset_entities#resolve"
+      post   "asset_entities/:id/confirm", to: "asset_entities#confirm"
+      delete "asset_entities/:id",         to: "asset_entities#destroy"
+
+      # Digital preservation — fixity audit reporting and format obsolescence.
+      get  "preservation/fixity",  to: "preservation#fixity"
+      get  "preservation/formats", to: "preservation#formats"
+      post "preservation/verify",  to: "preservation#verify"
+
       # Data Health — TDM & Storage Health dashboard API
       resources :data_health, only: [] do
         collection do

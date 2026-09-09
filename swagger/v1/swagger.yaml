@@ -3607,6 +3607,371 @@ paths:
       description: Asset ID
       schema:
         type: string
+  "/api/v1/assets/{asset_id}/entities":
+    parameters:
+    - name: asset_id
+      in: path
+      schema:
+        type: string
+      required: true
+      description: Asset UUID or primary key
+    get:
+      summary: Lists an asset's entity links
+      tags:
+      - Entities
+      security:
+      - Bearer: []
+      description: |
+        Each link states *how* the asset relates to the entity, which is what
+        separates the photographer from the person in the frame.
+
+        `asserted` is the field that matters for any policy decision: a link
+        produced by tag resolution or by a model is a proposal about identity,
+        and identity is what consent and rights decisions later hang on.
+      responses:
+        '200':
+          description: links returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  asset_id:
+                    type: string
+                    format: uuid
+                  links:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        asset_id:
+                          type: string
+                          format: uuid
+                        entity:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                              format: uuid
+                            name:
+                              type: string
+                            entity_type:
+                              type: string
+                            reference:
+                              type: string
+                        relationship:
+                          type: string
+                          enum:
+                          - depicts
+                          - shot_by
+                          - belongs_to
+                          - located_at
+                          - mentions
+                        source:
+                          type: string
+                          enum:
+                          - manual
+                          - tag_resolution
+                          - ai
+                        confidence:
+                          type: number
+                          nullable: true
+                          description: Machine-derived links only
+                        asserted:
+                          type: boolean
+                          description: A person stated or agreed with this link
+                        confirmed_at:
+                          type: string
+                          format: date-time
+                          nullable: true
+                        confirmed_by:
+                          type: string
+                          nullable: true
+                        created_at:
+                          type: string
+                          format: date-time
+        '404':
+          description: asset not found
+    post:
+      summary: Links an asset to an entity
+      tags:
+      - Entities
+      security:
+      - Bearer: []
+      description: |
+        Creates a human assertion. `source` is forced to `manual` rather than
+        taken from the request: a client that could name its own source could
+        post a machine guess that arrives already indistinguishable from a
+        curator's statement.
+
+        The relationship must be valid for the entity's type — `shot_by` accepts
+        only a person. Linking to an entity that has been merged away links to
+        the survivor instead.
+      parameters: []
+      responses:
+        '201':
+          description: link created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  asset_id:
+                    type: string
+                    format: uuid
+                  entity:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      name:
+                        type: string
+                      entity_type:
+                        type: string
+                      reference:
+                        type: string
+                  relationship:
+                    type: string
+                    enum:
+                    - depicts
+                    - shot_by
+                    - belongs_to
+                    - located_at
+                    - mentions
+                  source:
+                    type: string
+                    enum:
+                    - manual
+                    - tag_resolution
+                    - ai
+                  confidence:
+                    type: number
+                    nullable: true
+                    description: Machine-derived links only
+                  asserted:
+                    type: boolean
+                    description: A person stated or agreed with this link
+                  confirmed_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  confirmed_by:
+                    type: string
+                    nullable: true
+                  created_at:
+                    type: string
+                    format: date-time
+        '422':
+          description: relationship invalid for the entity type
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                entity_id:
+                  type: string
+                  format: uuid
+                relationship:
+                  type: string
+                  enum:
+                  - depicts
+                  - shot_by
+                  - belongs_to
+                  - located_at
+                  - mentions
+              required:
+              - entity_id
+              - relationship
+  "/api/v1/assets/{asset_id}/entities/resolve":
+    parameters:
+    - name: asset_id
+      in: path
+      schema:
+        type: string
+      required: true
+    post:
+      summary: Proposes entity links from the asset's existing tags
+      tags:
+      - Entities
+      security:
+      - Bearer: []
+      description: |
+        Reads the asset's tags and links the ones that name exactly one known
+        entity, matching on entity names and aliases. The tags themselves are
+        never modified: they remain the raw record of what somebody typed, so
+        the pass can be re-run after the alias table improves.
+
+        A tag matching several entities is reported as `ambiguous` with its
+        candidates and is *not* linked. That ambiguity is the exact failure this
+        feature exists to fix, and breaking the tie automatically would
+        reintroduce it one layer up and much harder to see.
+
+        Every link created here is unconfirmed.
+      parameters: []
+      responses:
+        '200':
+          description: resolution complete
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  asset_id:
+                    type: string
+                    format: uuid
+                  dry_run:
+                    type: boolean
+                  linked:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        tag:
+                          type: string
+                        entity_id:
+                          type: string
+                          format: uuid
+                        entity_name:
+                          type: string
+                        entity_type:
+                          type: string
+                        relationship:
+                          type: string
+                  ambiguous:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        tag:
+                          type: string
+                        candidates:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                                format: uuid
+                              name:
+                                type: string
+                              entity_type:
+                                type: string
+                  unmatched:
+                    type: array
+                    items:
+                      type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                dry_run:
+                  type: boolean
+                  description: Report what would happen without writing
+  "/api/v1/asset_entities/{id}/confirm":
+    parameters:
+    - name: id
+      in: path
+      schema:
+        type: string
+        format: uuid
+      required: true
+    post:
+      summary: Confirms a machine-derived link
+      tags:
+      - Entities
+      security:
+      - Bearer: []
+      description: |
+        Records human agreement with a proposal. `source` is left as it was, so
+        the record still shows where the claim came from; `asserted` becomes
+        true, which is what policy consumers read.
+      responses:
+        '200':
+          description: link confirmed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  asset_id:
+                    type: string
+                    format: uuid
+                  entity:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      name:
+                        type: string
+                      entity_type:
+                        type: string
+                      reference:
+                        type: string
+                  relationship:
+                    type: string
+                    enum:
+                    - depicts
+                    - shot_by
+                    - belongs_to
+                    - located_at
+                    - mentions
+                  source:
+                    type: string
+                    enum:
+                    - manual
+                    - tag_resolution
+                    - ai
+                  confidence:
+                    type: number
+                    nullable: true
+                    description: Machine-derived links only
+                  asserted:
+                    type: boolean
+                    description: A person stated or agreed with this link
+                  confirmed_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  confirmed_by:
+                    type: string
+                    nullable: true
+                  created_at:
+                    type: string
+                    format: date-time
+        '404':
+          description: link not found
+  "/api/v1/asset_entities/{id}":
+    parameters:
+    - name: id
+      in: path
+      schema:
+        type: string
+        format: uuid
+      required: true
+    delete:
+      summary: Removes a link
+      tags:
+      - Entities
+      security:
+      - Bearer: []
+      description: Removes the claim only. The entity itself is untouched.
+      responses:
+        '204':
+          description: link removed
   "/api/v1/search":
     get:
       summary: Search assets (lexical + dynamic metadata facets)
@@ -9365,6 +9730,360 @@ paths:
                   description: Asset UUIDs whose delivery URLs should be purged
                   example:
                   - 3fa85f64-5717-4562-b3fc-2c963f66afa6
+  "/api/v1/entities/vocabulary":
+    get:
+      summary: Returns the entity types and the relationships each may hold
+      tags:
+      - Entities
+      security:
+      - Bearer: []
+      description: |
+        Served rather than hardcoded in the client, for the same reason the
+        search field registry is: a client-side copy eventually offers a
+        combination the server rejects, and the failure then looks like a bug in
+        the user's input rather than a stale constant.
+
+        Note that `shot_by` accepts only `person`. A campaign did not take the
+        photograph, and allowing it would put nonsense in the index.
+      responses:
+        '200':
+          description: vocabulary returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  entity_types:
+                    type: array
+                    items:
+                      type: string
+                  relationships:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                        label:
+                          type: string
+                        entity_types:
+                          type: array
+                          items:
+                            type: string
+                  sources:
+                    type: array
+                    items:
+                      type: string
+  "/api/v1/entities":
+    get:
+      summary: Lists entities
+      tags:
+      - Entities
+      security:
+      - Bearer: []
+      description: Searches names and aliases. Entities merged into another are never
+        listed.
+      parameters:
+      - name: entity_type
+        in: query
+        schema:
+          type: string
+        required: false
+      - name: q
+        in: query
+        schema:
+          type: string
+        required: false
+        description: Matches the name or any alias
+      - name: limit
+        in: query
+        schema:
+          type: integer
+        required: false
+      - name: offset
+        in: query
+        schema:
+          type: integer
+        required: false
+      responses:
+        '200':
+          description: entities returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  entities:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        entity_type:
+                          type: string
+                          enum:
+                          - person
+                          - product
+                          - place
+                          - campaign
+                          - brand
+                          - event
+                        name:
+                          type: string
+                        slug:
+                          type: string
+                          description: Unique within the entity type, not globally
+                        reference:
+                          type: string
+                          description: Qualified form used in search filters, e.g.
+                            "person:jane-doe"
+                        description:
+                          type: string
+                          nullable: true
+                        asset_count:
+                          type: integer
+                        created_at:
+                          type: string
+                          format: date-time
+                  total:
+                    type: integer
+    post:
+      summary: Creates an entity
+      tags:
+      - Entities
+      security:
+      - Bearer: []
+      description: |
+        The slug is derived from the name unless supplied, and is unique
+        *within* a type. "berlin" the place and "berlin" the campaign are
+        different entities and both may hold the obvious slug — which is the
+        distinction that plain tags cannot express.
+      parameters: []
+      responses:
+        '201':
+          description: entity created
+        '422':
+          description: validation failed
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                entity:
+                  type: object
+                  properties:
+                    entity_type:
+                      type: string
+                      enum:
+                      - person
+                      - product
+                      - place
+                      - campaign
+                      - brand
+                      - event
+                    name:
+                      type: string
+                    slug:
+                      type: string
+                      description: Optional; derived from the name when omitted
+                    description:
+                      type: string
+                    properties:
+                      type: object
+                      description: Type-specific attributes (SKU, coordinates, dates)
+                    external_ids:
+                      type: object
+                      description: Identifiers in other systems, for later reconciliation
+                  required:
+                  - entity_type
+                  - name
+                aliases:
+                  type: array
+                  items:
+                    type: string
+                  description: Other strings that mean this entity
+              required:
+              - entity
+  "/api/v1/entities/{id}":
+    parameters:
+    - name: id
+      in: path
+      schema:
+        type: string
+        format: uuid
+      required: true
+    get:
+      summary: Returns one entity with its aliases and link counts
+      tags:
+      - Entities
+      security:
+      - Bearer: []
+      responses:
+        '200':
+          description: entity returned
+        '404':
+          description: entity not found
+    patch:
+      summary: Updates an entity
+      tags:
+      - Entities
+      security:
+      - Bearer: []
+      description: |
+        `entity_type` is ignored if sent. Changing it would reclassify every
+        existing link in one write — a "shot_by person" would silently become a
+        "shot_by campaign", which the relationship matrix forbids on creation
+        but cannot retroactively undo. Reclassifying means creating the right
+        entity and merging into it, which leaves a trail.
+      parameters: []
+      responses:
+        '200':
+          description: entity updated
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                entity:
+                  type: object
+    delete:
+      summary: Deletes an entity that nothing links to
+      tags:
+      - Entities
+      security:
+      - Bearer: []
+      description: |
+        Refused while links exist. Deleting would strip a claim from every asset
+        that carried it, and the link being destroyed is the only record that it
+        ever existed. Merge is the operation for a duplicate; deletion is only
+        for something created by mistake.
+      responses:
+        '204':
+          description: entity deleted
+        '409':
+          description: entity still has links
+  "/api/v1/entities/{id}/merge":
+    parameters:
+    - name: id
+      in: path
+      schema:
+        type: string
+        format: uuid
+      required: true
+    post:
+      summary: Merges this entity into another
+      tags:
+      - Entities
+      security:
+      - Bearer: []
+      description: |
+        Duplicates are not a defect; they are what happens when the input is
+        prose. The duplicate is kept and made to point at the survivor, so links
+        made against it still resolve and the merge stays legible — and
+        reversible — after the fact. Its name is adopted as an alias of the
+        survivor, or the next resolution pass would simply recreate it.
+
+        Merging across types is refused: it would reclassify every link at once.
+      parameters: []
+      responses:
+        '200':
+          description: entities merged
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  canonical:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      entity_type:
+                        type: string
+                        enum:
+                        - person
+                        - product
+                        - place
+                        - campaign
+                        - brand
+                        - event
+                      name:
+                        type: string
+                      slug:
+                        type: string
+                        description: Unique within the entity type, not globally
+                      reference:
+                        type: string
+                        description: Qualified form used in search filters, e.g. "person:jane-doe"
+                      description:
+                        type: string
+                        nullable: true
+                      asset_count:
+                        type: integer
+                      created_at:
+                        type: string
+                        format: date-time
+                  links_moved:
+                    type: integer
+                  links_discarded:
+                    type: integer
+                    description: Claims both entities already carried
+                  aliases_moved:
+                    type: integer
+        '422':
+          description: merge refused
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                canonical_id:
+                  type: string
+                  format: uuid
+                  description: The entity that survives
+              required:
+              - canonical_id
+  "/api/v1/entities/{id}/aliases":
+    parameters:
+    - name: id
+      in: path
+      schema:
+        type: string
+        format: uuid
+      required: true
+    post:
+      summary: Adds an alias
+      tags:
+      - Entities
+      security:
+      - Bearer: []
+      description: |
+        Aliases are how resolution reaches the library's existing vocabulary:
+        "VW", "Volkswagen" and "volkswagen ag" are one brand. Stored normalised
+        (lowercased, whitespace collapsed).
+
+        The same alias may belong to several entities. That ambiguity is real
+        and is surfaced by the resolver rather than resolved arbitrarily.
+      parameters: []
+      responses:
+        '201':
+          description: alias added
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                alias_text:
+                  type: string
+              required:
+              - alias_text
   "/api/v1/folders":
     get:
       summary: Retrieve the full folder tree (flat list with paths)
@@ -12504,6 +13223,217 @@ paths:
                         type: integer
         '404':
           description: not found, or belongs to another user
+  "/api/v1/preservation/fixity":
+    get:
+      summary: Returns the estate-wide fixity (integrity) report
+      tags:
+      - Preservation
+      security:
+      - Bearer: []
+      description: |
+        Coverage-first integrity report. The headline figure is the proportion
+        of stored versions that have *any* verification evidence behind them,
+        not how many checks happened to run overnight.
+
+        `unverifiable` counts versions that were ingested without a checksum:
+        they can never pass and are a coverage gap to close, not a fault.
+      responses:
+        '200':
+          description: report generated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  coverage:
+                    type: object
+                    properties:
+                      verifiable:
+                        type: integer
+                        description: Versions with both a digest and a path
+                      unverifiable:
+                        type: integer
+                        description: Stored versions with no digest recorded at ingest
+                      checked:
+                        type: integer
+                      never_checked:
+                        type: integer
+                      stale:
+                        type: integer
+                        description: Checked, but outside the recheck window
+                      due_now:
+                        type: integer
+                      coverage_percent:
+                        type: number
+                      oldest_check_at:
+                        type: string
+                        format: date-time
+                        nullable: true
+                      by_status:
+                        type: object
+                  recent_failures:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        asset_id:
+                          type: string
+                          format: uuid
+                        asset_version_id:
+                          type: string
+                          format: uuid
+                        status:
+                          type: string
+                          enum:
+                          - failed
+                          - missing
+                        storage_path:
+                          type: string
+                          nullable: true
+                        storage_backend:
+                          type: string
+                          nullable: true
+                        error_message:
+                          type: string
+                          nullable: true
+                        checked_at:
+                          type: string
+                          format: date-time
+                  last_run_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  checks_last_24h:
+                    type: integer
+                  batch_size:
+                    type: integer
+                    description: Per-run verification budget
+                  recheck_after_days:
+                    type: integer
+        '403':
+          description: administrator privileges required
+  "/api/v1/preservation/verify":
+    post:
+      summary: Verifies one asset's stored versions on demand
+      tags:
+      - Preservation
+      security:
+      - Bearer: []
+      description: |
+        Re-reads each version's bytes and compares the SHA-256 with the digest
+        recorded at ingest. Runs inline because the caller is waiting for the
+        answer. Capped at the 25 most recent versions so one request cannot
+        trigger unbounded storage egress.
+      parameters: []
+      responses:
+        '200':
+          description: verification complete
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  asset_id:
+                    type: string
+                    format: uuid
+                  verified:
+                    type: integer
+                  skipped:
+                    type: integer
+                    description: Versions with no digest to compare against
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        version_id:
+                          type: string
+                          format: uuid
+                        version_number:
+                          type: integer
+                        status:
+                          type: string
+                          enum:
+                          - passed
+                          - failed
+                          - missing
+                          - unreadable
+                          - unverifiable
+                        message:
+                          type: string
+                          nullable: true
+                        checked_at:
+                          type: string
+                          format: date-time
+                          nullable: true
+        '404':
+          description: asset not found
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                asset_id:
+                  type: string
+                  description: Asset UUID or primary key
+              required:
+              - asset_id
+  "/api/v1/preservation/formats":
+    get:
+      summary: Returns the format obsolescence profile of the estate
+      tags:
+      - Preservation
+      security:
+      - Bearer: []
+      description: |
+        Fixity answers "are the bytes still the bytes". This answers the
+        question that outlives it: "will anything still be able to read them".
+        Formats are sorted riskiest first. An unassessed format is reported as
+        `medium` risk with category `unknown` rather than assumed safe.
+      responses:
+        '200':
+          description: profile generated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  formats:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        content_type:
+                          type: string
+                        risk:
+                          type: string
+                          enum:
+                          - low
+                          - medium
+                          - high
+                        category:
+                          type: string
+                        note:
+                          type: string
+                        count:
+                          type: integer
+                  totals:
+                    type: object
+                    properties:
+                      assets:
+                        type: integer
+                      distinct_formats:
+                        type: integer
+                      high_risk:
+                        type: integer
+                      medium_risk:
+                        type: integer
+                      low_risk:
+                        type: integer
   "/api/v1/c2pa_configuration":
     get:
       summary: Show C2PA policy configuration (admin only)

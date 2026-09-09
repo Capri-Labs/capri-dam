@@ -162,6 +162,20 @@ Represents a core digital asset within the Capri DAM platform.
 """
 type Asset {
   createdAt: ISO8601DateTime!
+
+  """
+  Entity links for this asset. Includes unconfirmed proposals by default; pass
+  `assertedOnly: true` for links a person has stated or agreed with, which is
+  what a policy decision should read.
+  """
+  entityLinks(
+    assertedOnly: Boolean = false
+
+    """
+    Restrict to one relationship (depicts, shot_by, …).
+    """
+    relationship: String
+  ): [AssetEntity!]!
   id: ID!
 
   """
@@ -256,6 +270,43 @@ type AssetEdge {
   The item at the end of the edge.
   """
   node: Asset
+}
+
+"""
+A statement that an asset relates to an entity in a particular way.
+
+The relationship is the point. A tag reading "jane-doe" cannot tell you
+whether Jane is in the photograph or took it, and those two facts lead to
+opposite answers when a consent or a credit question is asked later.
+"""
+type AssetEntity {
+  """
+  True when a person stated or confirmed this link. This — not `source` — is the
+  field any consent or rights decision should read: an unconfirmed link is a
+  proposal about identity, not a finding.
+  """
+  asserted: Boolean!
+
+  """
+  Machine-derived links only. A person does not get a confidence score, and
+  giving one 1.0 would make the two indistinguishable.
+  """
+  confidence: Float
+  confirmedAt: ISO8601DateTime
+  createdAt: ISO8601DateTime!
+  entity: Entity!
+  id: ID!
+
+  """
+  One of: depicts, shot_by, belongs_to, located_at, mentions. The vocabulary is
+  closed so it can be indexed, offered in a UI and reasoned about by a policy.
+  """
+  relationship: String!
+
+  """
+  Where the claim came from: manual, tag_resolution or ai.
+  """
+  source: String!
 }
 
 """
@@ -1011,6 +1062,69 @@ type EmptyBinPayload {
 }
 
 """
+A named thing the DAM knows about — a person, place, product, brand,
+campaign or event — as opposed to a tag, which is only a string that
+somebody once typed.
+
+The difference matters because two different people can share a name and
+one person can be written five different ways. An entity survives both:
+the alternate spellings become aliases, and a duplicate discovered later
+is merged into the survivor rather than deleted, so links made against the
+duplicate still resolve.
+"""
+type Entity {
+  """
+  Alternate spellings that resolve to this entity.
+  """
+  aliases: [String!]!
+
+  """
+  Number of assets linked to this entity, confirmed or not.
+  """
+  assetCount: Int!
+
+  """
+  Set when this entity was merged into another. Non-null means this record is a tombstone kept so old links keep working.
+  """
+  canonicalId: ID
+  createdAt: ISO8601DateTime!
+  description: String
+
+  """
+  One of: person, place, product, brand, campaign, event.
+  """
+  entityType: String!
+
+  """
+  Identifiers in other systems ({ wikidata:, pim_sku:, … }) — the hook for reconciling against an external authority.
+  """
+  externalIds: Json
+  id: ID!
+
+  """
+  The canonical display name.
+  """
+  name: String!
+
+  """
+  Free-form structured attributes (role, coordinates, SKU, …).
+  """
+  properties: Json
+
+  """
+  The `type:slug` form a search filter takes, e.g. `person:jane-doe`. Emitted by
+  the server so a client never has to build it.
+  """
+  reference: String!
+
+  """
+  URL-safe name. Unique per type, not globally — the place 'berlin' and the campaign 'berlin' may both hold it.
+  """
+  slug: String!
+  updatedAt: ISO8601DateTime!
+}
+
+"""
 ACL entry linking a user group to a folder with specific permissions
 """
 type FolderPolicy {
@@ -1671,6 +1785,29 @@ type Query {
   Counts of duplicate groups by status.
   """
   duplicateManagerStats: Json!
+
+  """
+  Search the entity catalogue. Merged-away duplicates are excluded — they exist
+  only so old links keep resolving, not to be picked from a list.
+  """
+  entities(
+    """
+    person, place, product, brand, campaign or event.
+    """
+    entityType: String
+    limit: Int = 50
+
+    """
+    Matches the name or any alias, case- and accent-insensitively.
+    """
+    query: String
+  ): [Entity!]!
+
+  """
+  Fetch one entity by UUID or by its `type:slug` reference. A merged-away entity
+  resolves to its survivor, so a stored reference does not rot when a duplicate is cleaned up.
+  """
+  entity(reference: String!): Entity
 
   """
   Find an Image Processing Profile by ID
