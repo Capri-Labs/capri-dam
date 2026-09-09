@@ -4,8 +4,10 @@
 //  - Navigation to /settings/system (default tab — no explicit click needed,
 //    but we click it anyway for parity/clarity with the other tab specs).
 //  - Diagnostic vitals cards (Application Node, PostgreSQL, Redis & Sidekiq,
-//    ActiveStorage) populated from the real GET /admin/system_status.json
-//    endpoint.
+//    ActiveStorage, Content pipeline, Fixity coverage) populated from the real
+//    GET /admin/system_status.json endpoint.
+//  - The detail sections: per-queue latency, fixity coverage, content
+//    pipeline, datastores and runtime.
 //  - "Refresh Vitals" re-fetches diagnostics.
 //  - "Initiate Application Reload" (soft restart) confirm + real
 //    POST /admin/system_status/restart_server round-trip.
@@ -47,18 +49,72 @@ test.describe('Admin — System Observability', () => {
     await page.getByRole('tab', { name: /system observability/i }).click();
   });
 
-  test('renders the four infrastructure vitals cards populated from the real diagnostics endpoint', async ({ page }) => {
+  test('renders the infrastructure vitals cards populated from the real diagnostics endpoint', async ({ page }) => {
     await expect(page.getByText('Application Node')).toBeVisible();
     await expect(page.getByText('Puma Rack')).toBeVisible();
 
-    await expect(page.getByText('PostgreSQL')).toBeVisible();
+    // "PostgreSQL" also labels the Datastores sub-heading, so scope to the first.
+    await expect(page.getByText('PostgreSQL').first()).toBeVisible();
     await expect(page.getByText('Redis & Sidekiq')).toBeVisible();
     await expect(page.getByText('ActiveStorage')).toBeVisible();
+    await expect(page.getByText('Content pipeline').first()).toBeVisible();
+    await expect(page.getByText('Fixity coverage')).toBeVisible();
 
     // Pool/latency captions confirm the real backend payload was rendered,
     // not just static labels.
-    await expect(page.getByText(/pool:/i)).toBeVisible();
+    await expect(page.getByText(/pool:/i).first()).toBeVisible();
     await expect(page.getByText(/queue depth:/i)).toBeVisible();
+  });
+
+  test('breaks the job queues down per queue, with latency rather than only depth', async ({ page }) => {
+    await expect(page.getByText('Background job queues')).toBeVisible();
+
+    // The column that makes a stalled queue visible: a queue can be shallow
+    // and still be an hour behind.
+    await expect(page.getByRole('columnheader', { name: 'Latency' })).toBeVisible();
+    await expect(page.getByRole('columnheader', { name: 'Queue' })).toBeVisible();
+
+    // Sets a single "enqueued" total hides entirely.
+    await expect(page.getByText('Retrying')).toBeVisible();
+    await expect(page.getByText('Dead', { exact: true })).toBeVisible();
+
+    // Sidekiq always registers a default queue, so the table is never empty.
+    await expect(page.getByRole('cell', { name: 'default', exact: true })).toBeVisible();
+  });
+
+  test('reports fixity coverage and the content pipeline from the real endpoint', async ({ page }) => {
+    await expect(page.getByText('Fixity & preservation')).toBeVisible();
+    await expect(page.getByText('Verified coverage')).toBeVisible();
+    await expect(page.getByText('Unverifiable')).toBeVisible();
+
+    await expect(page.getByText('Content pipeline').first()).toBeVisible();
+    await expect(page.getByText('Stuck processing')).toBeVisible();
+    await expect(page.getByText('Active assets')).toBeVisible();
+  });
+
+  test('reports datastore and runtime detail', async ({ page }) => {
+    await expect(page.getByText('Datastores')).toBeVisible();
+    await expect(page.getByText('Connection pool')).toBeVisible();
+    await expect(page.getByText('Longest running query')).toBeVisible();
+
+    await expect(page.getByText('Runtime & release')).toBeVisible();
+    await expect(page.getByText('Process uptime')).toBeVisible();
+    await expect(page.getByText('Hostname')).toBeVisible();
+  });
+
+  test('does not poll until auto-refresh is enabled', async ({ page }) => {
+    let calls = 0;
+    page.on('request', (req) => {
+      if (req.url().includes('/admin/system_status.json')) calls += 1;
+    });
+
+    await expect(page.getByText('Application Node')).toBeVisible();
+    const seenAfterLoad = calls;
+
+    // Each poll runs a real write/read/delete against the object store, so the
+    // tab must stay quiet unless somebody asks for it.
+    await page.waitForTimeout(3000);
+    expect(calls).toBe(seenAfterLoad);
   });
 
   test('"Refresh Vitals" re-fetches diagnostics and confirms via a success toast', async ({ page }) => {

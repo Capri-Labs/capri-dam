@@ -116,86 +116,10 @@ class Admin::SystemStatusController < ApplicationController
     config
   end
 
+  # The System Observability payload. Delegated to {Observability::Report} —
+  # the diagnostics grew past what belongs inline in a controller, and a
+  # service can be exercised directly by a spec without a request.
   def diagnostic_report
-    {
-      app_server: {
-        status: "healthy",
-        environment: Rails.env,
-        rails_version: Rails.version,
-        ruby_version: RUBY_VERSION,
-        uptime: system_uptime,
-      },
-      database: db_diagnostics,
-      cache_queue: redis_and_sidekiq_diagnostics,
-      storage_backend: active_storage_diagnostics,
-    }
-  end
-
-  def system_uptime
-    `uptime`.strip rescue "Unavailable"
-  end
-
-  def db_diagnostics
-    start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-    connected = ActiveRecord::Base.connection.active?
-    latency = ((Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time) * 1000).round(2)
-
-    {
-      status: connected ? "healthy" : "offline",
-      latency_ms: latency,
-      adapter: ActiveRecord::Base.connection.adapter_name,
-      pool_size: ActiveRecord::Base.connection.pool.size,
-      active_connections: ActiveRecord::Base.connection.pool.stat[:connections],
-    }
-  rescue => e
-    { status: "offline", error: e.message }
-  end
-
-  def redis_and_sidekiq_diagnostics
-    require "sidekiq/api"
-
-    redis_info = nil
-    redis_connected = false
-    start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-
-    Sidekiq.redis do |conn|
-      redis_info = conn.info
-      redis_connected = true
-    end
-
-    latency = ((Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time) * 1000).round(2)
-    stats = Sidekiq::Stats.new
-
-    {
-      status: "healthy",
-      latency_ms: latency,
-      redis_version: redis_info&.dig("redis_version") || "Unknown",
-      queue_depth: stats.enqueued,
-      processed: stats.processed,
-      failed: stats.failed,
-      active_workers: Sidekiq::Workers.new.size,
-      processes: Sidekiq::ProcessSet.new.size,
-    }
-  rescue => e
-    { status: "degraded", error: "Sidekiq/Redis offline. Details: #{e.message}" }
-  end
-
-  def active_storage_diagnostics
-    service = ActiveStorage::Blob.service
-    test_key = "healthcheck-#{SecureRandom.uuid}.txt"
-
-    start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-    service.upload(test_key, StringIO.new("1"))
-    service.download(test_key)
-    service.delete(test_key)
-    latency = ((Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time) * 1000).round(2)
-
-    {
-      status: "healthy",
-      provider: service.class.name.demodulize,
-      latency_ms: latency,
-    }
-  rescue => e
-    { status: "unreachable", error: "Storage driver error: #{e.message}" }
+    Observability::Report.call
   end
 end

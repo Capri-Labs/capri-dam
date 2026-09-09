@@ -105,8 +105,8 @@ describe('SystemStatus tabs', () => {
 
   it('renders ObservabilityTab with health cards', async () => {
     render(<ObservabilityTab />);
-    expect(await screen.findByText('Puma Rack')).toBeInTheDocument();
-    expect(screen.getByText('PostgreSQL')).toBeInTheDocument();
+    expect(await screen.findByText('observability.cards.pumaRack')).toBeInTheDocument();
+    expect(screen.getByText('observability.cards.postgres')).toBeInTheDocument();
   });
 
   it('renders OperationalLoggingTab and applies config', async () => {
@@ -275,7 +275,7 @@ describe('SystemStatus tabs', () => {
   it('renders SystemStatus main and switches tabs', async () => {
     await act(async () => { render(<SystemStatus incomingConfigs={{ address: 'smtp.example.com' }} />); });
     expect(screen.getByText('System Operations')).toBeInTheDocument();
-    expect(await screen.findByText('Puma Rack')).toBeInTheDocument();
+    expect(await screen.findByText('observability.cards.pumaRack')).toBeInTheDocument();
     fireEvent.click(screen.getByText('SMTP & Email Settings'));
     expect(await screen.findByText('SMTP Infrastructure Setup')).toBeInTheDocument();
     fireEvent.click(screen.getByText('Audit Trail'));
