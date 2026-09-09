@@ -5,6 +5,26 @@ require "rails_helper"
 RSpec.describe Observability::Report do
   subject(:report) { described_class.call }
 
+  # Redis is stubbed for every example so the suite gives the same answer on a
+  # machine without a running Redis as it does in CI. Examples that care about
+  # queue behaviour override `Sidekiq::Queue.all` below.
+  before do
+    allow(Sidekiq).to receive(:redis).and_yield(
+      instance_double(Redis, info: { "redis_version" => "7.2.4", "used_memory_human" => "2.1M",
+                                     "keyspace_hits" => "98", "keyspace_misses" => "2",
+                                     "evicted_keys" => "0", "connected_clients" => "9",
+                                     "uptime_in_days" => "3" })
+    )
+    allow(Sidekiq::Stats).to receive(:new)
+      .and_return(instance_double(Sidekiq::Stats, enqueued: 0, processed: 10, failed: 1))
+    allow(Sidekiq::Workers).to receive(:new).and_return(double(size: 0))
+    allow(Sidekiq::ProcessSet).to receive(:new).and_return(double(size: 1, map: []))
+    allow(Sidekiq::Queue).to receive(:all).and_return([])
+    allow(Sidekiq::RetrySet).to receive(:new).and_return(double(size: 0))
+    allow(Sidekiq::ScheduledSet).to receive(:new).and_return(double(size: 0))
+    allow(Sidekiq::DeadSet).to receive(:new).and_return(double(size: 0))
+  end
+
   describe "structure" do
     it "returns every section the dashboard renders" do
       expect(report.keys).to include(

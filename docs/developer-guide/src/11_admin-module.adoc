@@ -114,6 +114,49 @@ controls instead of compile-time environment switching.
 * storage operations and service checks
 * operational logging / status summaries
 
+=== System Observability tab
+
+`Admin/SystemStatus/ObservabilityTab.jsx` renders the diagnostic payload
+returned by `GET /admin/system_status/diagnostic_report`, which delegates
+entirely to the `Observability::Report` service
+(`app/services/observability/report.rb`).
+
+The report is assembled from independent sections. Each one is wrapped so a
+failing subsystem degrades to `{ status: "error", error: ... }` rather than
+blanking the whole page -- a diagnostics screen that goes dark when one
+dependency is down fails at exactly the moment it is needed.
+
+[cols="1,3", options="header"]
+|===
+| Section | Contents
+| `app_server` | Ruby/Rails versions, process PID, environment, worker model, host and application uptime.
+| `database` | Adapter and server version, a timed `SELECT 1` probe, pool utilisation, database size, and the pending-migration count.
+| `cache_queue` | Cache store, Redis round-trip time, and Sidekiq enqueued/processed/failed/busy/process counts.
+| `queues` | Per-queue depth and latency, plus retry, scheduled, and dead set sizes.
+| `redis` | Version, memory use, keyspace hit ratio, evictions, client count, and uptime.
+| `storage_backend` | Active service class, a live upload/download/delete round-trip, and blob/attachment totals.
+| `runtime` | Process RSS, GC statistics, thread count, and open file descriptors.
+| `content_pipeline` | Asset counts by processing state and a `stuck_processing` count.
+| `preservation` | Fixity-check coverage, last sweep time, and corrupted-version count.
+|===
+
+Two grading rules are worth knowing when reading the UI:
+
+* Queue health is graded on **latency**, not depth. A deep queue that is
+  draining is healthy; a shallow queue nothing has touched for an hour is not.
+  The threshold is `QUEUE_LATENCY_WARNING`.
+* `preservation` reports `offline` only when a fixity check has actually found
+  corruption. Thin coverage is merely `degraded` (`COVERAGE_WARNING_PERCENT`),
+  because a library that has never been swept has not yet lost anything.
+
+CAUTION: The storage section performs a real write/read/delete against the
+active service on every call, so the tab's auto-refresh is opt-in rather than
+on by default. For the same reason `fetchHealthData` must not close over the
+`t` function from `useTranslation` -- `t` is not referentially stable, and
+capturing it in the effect's dependency array re-arms the fetch on every
+render, producing an unbounded request loop. The component holds `t` in a ref
+to avoid this; there is a regression test covering it.
+
 == Key admin endpoints
 
 [cols="1,2,3", options="header"]

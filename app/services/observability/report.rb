@@ -133,19 +133,33 @@ module Observability
         size_bytes: database_size_bytes,
         longest_query_seconds: longest_running_query_seconds,
       }
+    rescue StandardError => e
+      # Reported as "offline" rather than left to the generic section rescue.
+      # An unreachable database is a specific, expected state the dashboard
+      # renders a red card for; "error" would read as a bug in diagnostics.
+      { status: "offline", error: e.message }
     end
 
     # Kept for the existing summary card. Detail now lives in {#queues} and
     # {#redis}.
     def cache_queue
       stats = sidekiq_stats
+      # Timed around the INFO fetch rather than a separate PING: this is the
+      # first section to touch Redis, so the figure is a real round-trip and
+      # costs no extra command.
       started = monotonic
-      Sidekiq.redis { |conn| conn.call("PING") }
+      info = redis_info
+      latency = elapsed_ms(started)
+      # `redis_info` returns nil when the call itself failed, as distinct from
+      # an empty hash, which means Redis answered but had nothing to say. Only
+      # the first is an outage, and saying so here is better than leaving it to
+      # whichever later call happens to blow up first.
+      raise "Redis is unreachable" if info.nil?
 
       {
         status: "healthy",
-        latency_ms: elapsed_ms(started),
-        redis_version: redis_info["redis_version"] || "Unknown",
+        latency_ms: latency,
+        redis_version: info["redis_version"].presence || "Unknown",
         queue_depth: stats.enqueued,
         processed: stats.processed,
         failed: stats.failed,
@@ -190,7 +204,7 @@ module Observability
 
     def redis
       info = redis_info
-      raise "Redis unreachable" if info.empty?
+      raise "Redis is unreachable" if info.nil?
 
       hits = info["keyspace_hits"].to_i
       misses = info["keyspace_misses"].to_i
@@ -315,10 +329,14 @@ module Observability
       end
     end
 
+    # @return [Hash] Redis INFO, +{}+ if Redis answered with nothing,
+    #   or +nil+ if it could not be reached at all.
     def redis_info
-      @redis_info ||= (Sidekiq.redis { |conn| conn.info } || {})
+      return @redis_info if defined?(@redis_info)
+
+      @redis_info = Sidekiq.redis { |conn| conn.info } || {}
     rescue StandardError
-      @redis_info = {}
+      @redis_info = nil
     end
 
     def server_version

@@ -207,7 +207,18 @@ end
 RSpec.describe "Admin::SystemStatus coverage additions", type: :request do
   let(:admin) { create(:user, :admin) }
 
-  before { sign_in admin }
+  before do
+    sign_in admin
+
+    # The report enumerates queues and the retry/scheduled/dead sets. These
+    # tests drive Sidekiq through a doubled Redis, which cannot answer the
+    # SSCAN those enumerations issue, so they are stubbed for every example
+    # here. Their content is asserted in spec/services/observability.
+    allow(Sidekiq::Queue).to receive(:all).and_return([])
+    allow(Sidekiq::RetrySet).to receive(:new).and_return(double(size: 0))
+    allow(Sidekiq::ScheduledSet).to receive(:new).and_return(double(size: 0))
+    allow(Sidekiq::DeadSet).to receive(:new).and_return(double(size: 0))
+  end
 
   it "builds a full diagnostic report with healthy redis and storage" do
     allow(Setting).to receive(:get).with("smtp_settings").and_return({})
@@ -217,7 +228,7 @@ RSpec.describe "Admin::SystemStatus coverage additions", type: :request do
     stats = instance_double(Sidekiq::Stats, enqueued: 1, processed: 2, failed: 3)
     allow(Sidekiq::Stats).to receive(:new).and_return(stats)
     allow(Sidekiq::Workers).to receive(:new).and_return(double(size: 4))
-    allow(Sidekiq::ProcessSet).to receive(:new).and_return(double(size: 5))
+    allow(Sidekiq::ProcessSet).to receive(:new).and_return(double(size: 5, map: []))
     service = double("storage", upload: true, download: "1", delete: true)
     allow(ActiveStorage::Blob).to receive(:service).and_return(service)
 
@@ -245,22 +256,19 @@ RSpec.describe "Admin::SystemStatus coverage additions", type: :request do
 
   it "reports offline database status when the connection is inactive" do
     allow(Setting).to receive(:get).and_return({})
-    allow_any_instance_of(Admin::SystemStatusController).to receive(:system_uptime).and_return("up") # rubocop:disable RSpec/AnyInstance
+    allow_any_instance_of(Observability::Report).to receive(:host_uptime).and_return("up") # rubocop:disable RSpec/AnyInstance
 
-    pool = instance_double(ActiveRecord::ConnectionAdapters::ConnectionPool, size: 5, stat: { connections: 2 })
-    connection = instance_double(
-      ActiveRecord::ConnectionAdapters::AbstractAdapter,
-      active?: false,
-      adapter_name: "PostgreSQL",
-      pool: pool
-    )
-    allow(ActiveRecord::Base).to receive(:connection).and_return(connection)
+    # The probe is a real `SELECT 1` round-trip: `connection.active?` answers
+    # "have we connected?", not "does the database respond?", so an unreachable
+    # database can only be simulated by the query itself failing.
+    connection = ActiveRecord::Base.connection
+    allow(connection).to receive(:select_value).with("SELECT 1").and_raise(PG::ConnectionBad, "could not connect")
 
     redis = instance_double("Redis", info: { "redis_version" => "7.2" })
     allow(Sidekiq).to receive(:redis).and_yield(redis)
     allow(Sidekiq::Stats).to receive(:new).and_return(instance_double(Sidekiq::Stats, enqueued: 0, processed: 0, failed: 0))
     allow(Sidekiq::Workers).to receive(:new).and_return(double(size: 0))
-    allow(Sidekiq::ProcessSet).to receive(:new).and_return(double(size: 0))
+    allow(Sidekiq::ProcessSet).to receive(:new).and_return(double(size: 0, map: []))
     service = double("storage", upload: true, download: "1", delete: true)
     allow(ActiveStorage::Blob).to receive(:service).and_return(service)
 
@@ -272,13 +280,13 @@ RSpec.describe "Admin::SystemStatus coverage additions", type: :request do
 
   it "falls back to an unknown redis version when redis info is unavailable" do
     allow(Setting).to receive(:get).and_return({})
-    allow_any_instance_of(Admin::SystemStatusController).to receive(:system_uptime).and_return("up") # rubocop:disable RSpec/AnyInstance
+    allow_any_instance_of(Observability::Report).to receive(:host_uptime).and_return("up") # rubocop:disable RSpec/AnyInstance
 
     redis = instance_double("Redis", info: nil)
     allow(Sidekiq).to receive(:redis).and_yield(redis)
     allow(Sidekiq::Stats).to receive(:new).and_return(instance_double(Sidekiq::Stats, enqueued: 0, processed: 0, failed: 0))
     allow(Sidekiq::Workers).to receive(:new).and_return(double(size: 1))
-    allow(Sidekiq::ProcessSet).to receive(:new).and_return(double(size: 1))
+    allow(Sidekiq::ProcessSet).to receive(:new).and_return(double(size: 1, map: []))
     service = double("storage", upload: true, download: "1", delete: true)
     allow(ActiveStorage::Blob).to receive(:service).and_return(service)
 
